@@ -1,0 +1,68 @@
+name: Nix Vendor Hash
+
+# Keep flake.nix's buildGoModule vendorHash in sync after dependency-bearing
+# changes land on develop. The release-PR tagging job runs the same script before
+# creating a tag (tagged release source cannot be repaired in place).
+#
+# The schema leaf has NO local-path `replace` (proven by
+# TestVendorHashStableOnFirstPartyEdit), so a first-party edit never drifts the
+# hash — this gate fires ONLY on a real go.mod/go.sum/flake dependency bump.
+on:
+  push:
+    branches: [develop]
+    paths:
+      - "go.mod"
+      - "go.sum"
+      - "flake.nix"
+      - "flake.lock"
+      - "Makefile"
+      - "scripts/update-nix-vendor-hash.sh"
+      - ".github/workflows/nix-vendor-hash.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: nix-vendor-hash-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: update vendorHash
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Mint App token (Contents:write to commit hash drift)
+        id: tok
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PEASANT_RELEASER_APP_ID }}
+          private-key: ${{ secrets.PEASANT_RELEASER_APP_PRIVATE_KEY }}
+          owner: peasant-labs
+          repositories: schema
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ steps.tok.outputs.token }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Update vendorHash
+        run: nix develop -c make nix-vendor-hash
+
+      - name: Commit updated vendorHash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- flake.nix; then
+            echo "vendorHash already current"
+            exit 0
+          fi
+          git config user.name "peasant-release-bot"
+          git config user.email "bots@peasant-labs.invalid"
+          git add flake.nix
+          git commit -m "chore: update nix vendor hash"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

@@ -1,0 +1,225 @@
+# Transcript Scenario 4: Claude - Production debugging, permission issues, race condition
+# User reports intermittent 500 errors. Agent investigates logs, hits
+# permission denied on prod config, traces through multiple files to find
+# a race condition in a cache layer.
+
+scenario_id: "debugging_race_condition"
+provider: "claude-code"
+model: "claude-sonnet-4-6"
+
+turns:
+  - index: 0
+    role: "user"
+    content: |
+      We're getting intermittent 500 errors on the /api/inventory endpoint in production.
+      It only happens under load — maybe 1 in 50 requests fails.
+      Here's a sample error from the logs:
+
+      ```
+      TypeError: Cannot read properties of undefined (reading 'quantity')
+          at InventoryService.getStock (src/services/inventory.ts:47)
+      ```
+
+      Can you investigate?
+    timestamp: "2026-02-24T10:00:00Z"
+    depth: 0
+
+  - index: 1
+    role: "assistant"
+    content: "This looks like a race condition — it only fails under load and the error suggests a cache miss returning undefined. Let me trace through the code."
+    toolCalls:
+      - name: "Read"
+        arguments:
+          file_path: "src/services/inventory.ts"
+        result: |
+          import { cache } from '../lib/cache';
+          import { db } from '../db';
+
+          export class InventoryService {
+            async getStock(productId: string): Promise<StockInfo> {
+              // Check cache first
+              const cached = cache.get(`stock:${productId}`);
+              if (cached) return cached;
+
+              // Cache miss — load from DB
+              const result = await db.query(
+                'SELECT quantity, reserved, warehouse_id FROM inventory WHERE product_id = $1',
+                [productId]
+              );
+
+              const stock = result.rows[0];
+              // BUG IS HERE: stock can be undefined if product doesn't exist
+              const info: StockInfo = {
+                available: stock.quantity - stock.reserved, // line 47
+                warehouse: stock.warehouse_id,
+              };
+
+              cache.set(`stock:${productId}`, info, { ttl: 30_000 });
+              return info;
+            }
+          }
+        durationMs: 12
+        filePath: "src/services/inventory.ts"
+    timestamp: "2026-02-24T10:01:00Z"
+    depth: 0
+
+  - index: 2
+    role: "assistant"
+    content: "I see one obvious bug: `stock` can be undefined if the product doesn't exist. But you said it's intermittent, which suggests this isn't a missing-product issue. Let me check if there's a cache invalidation race."
+    toolCalls:
+      - name: "Grep"
+        arguments:
+          pattern: "cache\\.invalidate"
+          path: "src/"
+          type: "ts"
+        result: |
+          src/services/inventory.ts:31:    cache.invalidate(`stock:${productId}`);
+          src/services/orders.ts:58:    cache.invalidate(`stock:${item.productId}`);
+          src/workers/inventory-sync.ts:22:    cache.invalidate('stock:');
+        durationMs: 32
+    timestamp: "2026-02-24T10:02:00Z"
+    depth: 0
+
+  - index: 3
+    role: "assistant"
+    content: "Found it. The `inventory-sync` worker invalidates the entire stock cache prefix, then updates rows one-by-one in a loop. During that loop, any `getStock()` call will:\n\n1. Miss the cache (just invalidated)\n2. Read stale/mid-update data from DB\n3. Potentially get `undefined` if the row is being updated\n\nLet me check how often this sync runs and how long the update loop takes."
+    toolCalls:
+      - name: "Bash"
+        arguments:
+          command: "cat config/production.json 2>&1"
+        result: "cat: config/production.json: Permission denied"
+        durationMs: 20
+        exitCode: 1
+      - name: "Read"
+        arguments:
+          file_path: "config/default.json"
+        result: |
+          {
+            "inventory": {
+              "syncIntervalMs": 30000,
+              "cacheDefaultTtl": 30000
+            }
+          }
+        durationMs: 8
+        filePath: "config/default.json"
+    timestamp: "2026-02-24T10:03:00Z"
+    depth: 0
+
+  - index: 4
+    role: "assistant"
+    content: "Couldn't read the prod config (permission denied), but the defaults show `syncIntervalMs: 30000` — the sync runs every 30 seconds and the cache TTL is also 30 seconds. This creates a guaranteed race window.\n\nThe fix is to use a write-through pattern: update the cache *after* each DB write instead of invalidating everything upfront. Let me implement this."
+    toolCalls:
+      - name: "Edit"
+        arguments:
+          file_path: "src/workers/inventory-sync.ts"
+          old_string: |
+            // Bulk update — invalidate ALL stock cache entries first
+            cache.invalidate('stock:');
+
+            for (const item of warehouses.flatMap(w => w.items)) {
+              await db.query(
+                'UPDATE inventory SET quantity = $1, updated_at = NOW() WHERE product_id = $2',
+                [item.quantity, item.productId]
+              );
+            }
+          new_string: |
+            for (const item of warehouses.flatMap(w => w.items)) {
+              await db.query(
+                'UPDATE inventory SET quantity = $1, updated_at = NOW() WHERE product_id = $2',
+                [item.quantity, item.productId]
+              );
+              // Write-through: update cache atomically after each DB write
+              const reserved = await db.query(
+                'SELECT reserved, warehouse_id FROM inventory WHERE product_id = $1',
+                [item.productId]
+              );
+              if (reserved.rows[0]) {
+                cache.set(`stock:${item.productId}`, {
+                  available: item.quantity - reserved.rows[0].reserved,
+                  warehouse: reserved.rows[0].warehouse_id,
+                }, { ttl: 30_000 });
+              }
+            }
+        result: "File edited successfully."
+        durationMs: 22
+        filePath: "src/workers/inventory-sync.ts"
+    timestamp: "2026-02-24T10:04:00Z"
+    depth: 0
+
+  - index: 5
+    role: "assistant"
+    content: "I should also add a null guard in `getStock` to prevent the crash even without the race condition."
+    toolCalls:
+      - name: "Edit"
+        arguments:
+          file_path: "src/services/inventory.ts"
+          old_string: |
+            const stock = result.rows[0];
+            // BUG IS HERE: stock can be undefined if product doesn't exist
+            const info: StockInfo = {
+              available: stock.quantity - stock.reserved, // line 47
+              warehouse: stock.warehouse_id,
+            };
+          new_string: |
+            const stock = result.rows[0];
+            if (!stock) {
+              return { available: 0, warehouse: null };
+            }
+            const info: StockInfo = {
+              available: stock.quantity - stock.reserved,
+              warehouse: stock.warehouse_id,
+            };
+        result: "File edited successfully."
+        durationMs: 16
+        filePath: "src/services/inventory.ts"
+    timestamp: "2026-02-24T10:05:00Z"
+    depth: 0
+
+  - index: 6
+    role: "assistant"
+    content: "Let me run the tests to make sure the fix doesn't break anything."
+    toolCalls:
+      - name: "Bash"
+        arguments:
+          command: "npm test -- --testPathPattern=\"inventory|sync\" 2>&1"
+        result: |
+          PASS src/services/__tests__/inventory.test.ts (6 tests)
+          PASS src/workers/__tests__/inventory-sync.test.ts (3 tests)
+
+          Test Suites: 2 passed, 2 total
+          Tests:       9 passed, 9 total
+          Time:        2.341s
+        durationMs: 4800
+        exitCode: 0
+    timestamp: "2026-02-24T10:06:00Z"
+    depth: 0
+
+  - index: 7
+    role: "assistant"
+    content: |
+      Root cause identified and fixed.
+
+      **Problem**: `inventory-sync` worker invalidated the entire `stock:*` cache prefix before updating DB rows one-by-one. During that update window (~2-5s under load), any `getStock()` call would miss the cache and read stale/undefined data from the DB.
+
+      **Fix**: Write-through cache — update each cache entry *after* its corresponding DB row is written, instead of bulk-invalidating upfront. Also added a null guard in `getStock()` for missing products.
+
+      **Files changed** (2):
+      - `src/workers/inventory-sync.ts` — write-through pattern
+      - `src/services/inventory.ts` — null guard
+    timestamp: "2026-02-24T10:07:00Z"
+    depth: 0
+
+git:
+  branch: "main"
+  user: "Vitor Hugo"
+  email: "vitor@example.com"
+  remote: "git@github.com:acme-dev/inventory-service.git"
+  workingDirectory: "/Users/acme-dev/Projects/inventory-service"
+  startCommit: "d5e6f7g"
+  commits:
+    - hash: "c4d5e6f"
+      message: "fix: race condition in inventory cache invalidation during sync"
+      timestamp: "2026-02-24T10:06:00Z"
+      filesChanged: 2
+      insertions: 14
+      deletions: 6

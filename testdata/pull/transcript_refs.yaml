@@ -1,0 +1,131 @@
+# Transcript-reference parse fixtures for internal/pull.ParseTranscriptRef.
+#
+# AGENTFILTER-STYLE combinatorial shape (per the unified-schema-qcgim ratified
+# design, 2026-06-11): hoisted named axes (id_casings, ref_forms), a generated
+# valid cross-product with its expectation attached at the generator, explicit
+# invalid_refs grouped by category with the expectation attached to the CATEGORY,
+# and a first-class negative_lookalikes section for inputs that LOOK valid but
+# must be rejected.
+#
+# `values` are the self-contained canonical strings this fixture owns. They are
+# ADOPTED VERBATIM from internal/testutil (TestTranscriptUUID / TestVillageHost)
+# so re-pointing testutil to re-export these is a zero-behaviour-change move.
+#
+# Template placeholders, substituted by the loader:
+#   {id}    -> the per-case id_casing value (a transform of values.uuid_lower)
+#   {host}  -> values.village_host
+#
+# The Go loader (pkg/schema/testdata_pull.go) generates RefCase values from the
+# axes and runs them against the REAL pull.ParseTranscriptRef in
+# internal/pull/types_test.go.
+
+values:
+  # Canonical lowercase-hex UUID. MUST equal internal/testutil.TestTranscriptUUID.
+  uuid_lower: "11111111-2222-3333-4444-555555555555"
+  # Canonical village host. MUST equal internal/testutil.TestVillageHost.
+  village_host: "village.example.com"
+
+# --- AXIS: id_casings ---
+# Named transforms of values.uuid_lower. ParseTranscriptRef case-normalizes the
+# extracted UUID to lowercase, so every casing must resolve to the SAME canonical
+# (lowercase) ID. `transform` is interpreted by the loader.
+id_casings:
+  - name: "lower"
+    transform: "lower"   # values.uuid_lower unchanged
+  - name: "upper"
+    transform: "upper"   # strings.ToUpper(values.uuid_lower)
+  - name: "mixed"
+    transform: "mixed"   # alternating-case of values.uuid_lower
+
+# --- AXIS: ref_forms ---
+# Templated reference shapes. `template` is substituted with {id}/{host}; the
+# `from_url` flag is the expected TranscriptRef.FromURL for this form.
+ref_forms:
+  - name: "bare"
+    template: "{id}"
+    from_url: false
+  - name: "bare-whitespace"
+    template: "  {id}\n"
+    from_url: false
+  - name: "https-url"
+    template: "https://{host}/transcripts/{id}"
+    from_url: true
+  - name: "url-trailing-slash"
+    template: "https://{host}/transcripts/{id}/"
+    from_url: true
+  - name: "url-query"
+    template: "https://{host}/transcripts/{id}?ref=share"
+    from_url: true
+
+# --- valid_generation ---
+# Cross-product [id_casings x ref_forms] = 3 x 5 = 15 generated cases. Expectation
+# is attached HERE (at the generator), per the agentfilter category-attached-
+# expectation convention: every generated input must PARSE, normalize its ID to
+# lowercase (values.uuid_lower), and report FromURL per its ref_form.
+valid_generation:
+  axes: [id_casings, ref_forms]
+  expect:
+    parses: true
+    want_id: "lower"        # normalized canonical ID == values.uuid_lower
+    from_url_per_form: true # FromURL taken from the ref_form's from_url flag
+
+# --- invalid_refs ---
+# Explicit reject cases grouped by CATEGORY, with errContains attached to the
+# category (every case in a category shares the category's expected substring).
+invalid_refs:
+  - category: "empty"
+    err_contains: "empty"
+    cases:
+      - name: "empty-string"
+        input: ""
+      - name: "whitespace-only"
+        input: "   "
+  - category: "malformed_id"
+    err_contains: "not a transcript UUID"
+    cases:
+      - name: "garbage"
+        input: "not-a-uuid"
+      - name: "truncated"
+        input: "11111111-2222-3333"
+  - category: "malformed_url"
+    # Two distinct error substrings within this category, so the substring is
+    # attached per-case (overriding the category default) where they differ.
+    err_contains: "not a transcript UUID"
+    cases:
+      - name: "url-non-uuid-segment"
+        template: "https://{host}/transcripts/garbage"
+        # inherits category err_contains: "not a transcript UUID"
+      - name: "url-empty-path"
+        template: "https://{host}"
+        # A host-only URL has no /transcripts/<uuid> path at all — rejected on the
+        # same canonical-shape check as the other wrong-shape URLs.
+        err_contains: "not a village transcript URL"
+
+# --- negative_lookalikes ---
+# First-class section: inputs that LOOK valid (end in / contain a UUID) but per
+# the DESIGN intent MUST be rejected. err_contains is the design-intended reject
+# substring.
+#
+# The 2026-06-11 probe surfaced two cases (wrong-path-shape, double-uuid-path)
+# that the THEN-loose parser PARSED instead of rejecting: it validated only the
+# LAST path segment, not the /transcripts/<uuid> path SHAPE. The parser was
+# subsequently TIGHTENED to anchor on the exact /transcripts/<uuid> shape, so all
+# three lookalikes now reject LIVE and this section is the executed source of
+# truth (the transitional pending_parser_fix escape-hatch was retired once the
+# fix landed in the same wave).
+negative_lookalikes:
+  - name: "wrong-path-shape"
+    # /users/<uuid> is NOT /transcripts/<uuid> — the wrong path collection. The
+    # tightened parser rejects on PATH SHAPE (not UUID validity), so the reject
+    # substring is the canonical-shape message, not "not a transcript UUID".
+    template: "https://{host}/users/{id}"
+    err_contains: "not a village transcript URL"
+  - name: "uuid-with-suffix"
+    template: "{id}-extra"
+    err_contains: "not a transcript UUID"
+  - name: "double-uuid-path"
+    # /transcripts/<uuid>/annotations/<uuid> has the right FIRST segment but the
+    # extra /annotations/<uuid> tail makes it a 4-segment path — the loose parser
+    # would have extracted the WRONG (annotation) UUID. Rejected on path shape.
+    template: "https://{host}/transcripts/{id}/annotations/{id}"
+    err_contains: "not a village transcript URL"

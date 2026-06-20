@@ -1,0 +1,220 @@
+# Transcript Scenario 1: Claude - Multi-agent feature with git workflow
+# User asks to add rate limiting. Main agent plans, spawns researcher +
+# test-runner subagents. Includes test failures, retries, and re-edits.
+
+scenario_id: "rate_limiting"
+provider: "claude-code"
+model: "claude-opus-4-6"
+
+turns:
+  - index: 0
+    role: "user"
+    content: |
+      Add rate limiting to the POST /api/messages endpoint. We need:
+      - 10 requests per minute per user
+      - 429 response with Retry-After header when exceeded
+      - Redis-backed so it works across multiple instances
+      - Integration tests
+
+      Use a sliding window algorithm, not fixed windows.
+    timestamp: "2026-02-24T09:00:00Z"
+    depth: 0
+
+  - index: 1
+    role: "assistant"
+    content: |
+      I'll implement sliding window rate limiting with Redis. Let me first explore the codebase to understand the existing middleware pattern, then I'll spawn agents to research the algorithm and write tests in parallel.
+    toolCalls:
+      - name: "Glob"
+        arguments:
+          pattern: "src/middleware/**/*.ts"
+        result: |
+          src/middleware/auth.ts
+          src/middleware/cors.ts
+          src/middleware/logger.ts
+          src/middleware/index.ts
+        durationMs: 45
+      - name: "Read"
+        arguments:
+          file_path: "src/middleware/index.ts"
+        result: |
+          import { authMiddleware } from './auth';
+          import { corsMiddleware } from './cors';
+          import { loggerMiddleware } from './logger';
+
+          export const middleware = [corsMiddleware, loggerMiddleware, authMiddleware];
+        durationMs: 12
+        filePath: "src/middleware/index.ts"
+    timestamp: "2026-02-24T09:00:30Z"
+    depth: 0
+
+  - index: 2
+    role: "assistant"
+    content: "Good — Redis is already set up. Let me create a feature branch and then spawn parallel agents."
+    toolCalls:
+      - name: "Bash"
+        arguments:
+          command: "git checkout -b feat/rate-limiting"
+        result: "Switched to a new branch 'feat/rate-limiting'"
+        durationMs: 340
+        exitCode: 0
+    timestamp: "2026-02-24T09:01:00Z"
+    depth: 0
+
+  - index: 3
+    role: "assistant"
+    content: "I'll spawn a researcher to verify the sliding window Redis implementation pattern while I write the middleware."
+    toolCalls:
+      - name: "Task"
+        arguments:
+          description: "Research sliding window rate limiting"
+          prompt: "Research the Redis sliding window rate limiter pattern using sorted sets."
+          subagent_type: "Explore"
+        result: "Agent spawned: researcher"
+        durationMs: 120
+    timestamp: "2026-02-24T09:01:30Z"
+    depth: 0
+
+  # Researcher subagent (depth 1)
+  - index: 4
+    role: "assistant"
+    content: "Researching Redis sliding window rate limiting with sorted sets..."
+    toolCalls:
+      - name: "WebSearch"
+        arguments:
+          query: "redis sliding window rate limiter sorted set lua script 2025"
+        result: "Found 8 results. Top: \"Rate Limiting with Redis Sorted Sets\" (blog.redis.io)"
+        durationMs: 1200
+      - name: "WebFetch"
+        arguments:
+          url: "https://blog.redis.io/sliding-window-rate-limiter"
+          prompt: "Extract the Lua script and Redis commands for sliding window rate limiting"
+        result: |
+          ## Sliding Window with Sorted Sets
+
+          Use ZREMRANGEBYSCORE to clear old entries, ZADD to record the request, ZCARD to count.
+
+          ```lua
+          local key = KEYS[1]
+          ...
+          ```
+
+          Edge cases: clock skew between instances, key expiry to prevent memory leaks, unique member IDs.
+        durationMs: 2100
+    timestamp: "2026-02-24T09:02:00Z"
+    depth: 1
+    agentName: "researcher"
+
+  - index: 5
+    role: "assistant"
+    content: |
+      Research complete. The sliding window pattern uses Redis sorted sets:
+
+      1. **ZREMRANGEBYSCORE** — remove entries outside the window
+      2. **ZCARD** — count remaining entries
+      3. **ZADD** — add new request if under limit
+      4. **EXPIRE** — prevent memory leak on inactive keys
+
+      Critical: wrap in a Lua script for atomicity.
+    timestamp: "2026-02-24T09:03:00Z"
+    depth: 1
+    agentName: "researcher"
+
+  # Main agent writes middleware
+  - index: 6
+    role: "assistant"
+    content: "Based on the research, I'll implement the rate limiter as a configurable middleware using the Lua script pattern."
+    toolCalls:
+      - name: "Write"
+        arguments:
+          file_path: "src/middleware/rate-limit.ts"
+        result: "File created successfully."
+        durationMs: 35
+        filePath: "src/middleware/rate-limit.ts"
+    timestamp: "2026-02-24T09:03:30Z"
+    depth: 0
+
+  - index: 7
+    role: "assistant"
+    content: "Now let me wire it into the messages route and update the middleware barrel export."
+    toolCalls:
+      - name: "Edit"
+        arguments:
+          file_path: "src/routes/messages.ts"
+          old_string: "router.post('/', authMiddleware, async (req, res) => {"
+          new_string: "router.post('/', authMiddleware, rateLimiter({ limit: 10, windowMs: 60_000 }), async (req, res) => {"
+        result: "File edited successfully."
+        durationMs: 18
+        filePath: "src/routes/messages.ts"
+    timestamp: "2026-02-24T09:04:30Z"
+    depth: 0
+
+  # Test failure
+  - index: 8
+    role: "assistant"
+    content: "Let me check if the existing tests still pass before writing new ones."
+    toolCalls:
+      - name: "Bash"
+        arguments:
+          command: "npm test -- --testPathPattern=messages 2>&1"
+        result: |
+          FAIL src/routes/__tests__/messages.test.ts
+          ● POST /api/messages › creates a message
+
+            TypeError: rateLimiter is not a function
+
+          Tests: 2 failed, 2 total
+          Time:  1.456s
+        durationMs: 4200
+        exitCode: 1
+    timestamp: "2026-02-24T09:05:30Z"
+    depth: 0
+
+  # Fix and retry
+  - index: 9
+    role: "assistant"
+    content: "Missing the `export` keyword on `rateLimiter`. Let me fix that."
+    toolCalls:
+      - name: "Edit"
+        arguments:
+          file_path: "src/middleware/rate-limit.ts"
+          old_string: "function rateLimiter(opts: RateLimitOptions) {"
+          new_string: "export function rateLimiter(opts: RateLimitOptions) {"
+        result: "File edited successfully."
+        durationMs: 14
+        filePath: "src/middleware/rate-limit.ts"
+      - name: "Bash"
+        arguments:
+          command: "npm test -- --testPathPattern=messages 2>&1"
+        result: |
+          PASS src/routes/__tests__/messages.test.ts
+            POST /api/messages
+              ✓ creates a message (45 ms)
+              ✓ rejects unauthenticated requests (8 ms)
+
+          Tests: 2 passed, 2 total
+        durationMs: 3800
+        exitCode: 0
+    timestamp: "2026-02-24T09:07:00Z"
+    depth: 0
+
+  - index: 14
+    role: "assistant"
+    content: "Done. Here's what was implemented:\n\n**Algorithm**: Sliding window counter using Redis sorted sets + Lua script\n**Config**: 10 req/min per user with 429 + Retry-After\n\n**Files changed** (4):\n- `src/middleware/rate-limit.ts` — new middleware\n- `src/middleware/index.ts` — re-export\n- `src/routes/messages.ts` — wired into POST route\n- `src/middleware/__tests__/rate-limit.test.ts` — 4 integration tests\n\n**Branch**: `feat/rate-limiting` — ready for PR."
+    timestamp: "2026-02-24T09:14:00Z"
+    depth: 0
+
+git:
+  branch: "feat/rate-limiting"
+  user: "Vitor Hugo"
+  email: "vitor@example.com"
+  remote: "git@github.com:acme-dev/messaging-app.git"
+  workingDirectory: "/Users/acme-dev/Projects/messaging-app"
+  startCommit: "e4f5a6b"
+  commits:
+    - hash: "a1b2c3d"
+      message: "feat: add sliding window rate limiting to POST /api/messages"
+      timestamp: "2026-02-24T09:13:00Z"
+      filesChanged: 4
+      insertions: 147
+      deletions: 2

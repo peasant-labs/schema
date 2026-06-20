@@ -1,0 +1,203 @@
+# Annotation test fixtures for combinatorial testing
+# Used by both Go E2E tests (via go:embed) and TypeScript tests (via generated TS file)
+
+annotation_summaries:
+  # === Core annotation templates (human/agent/rule × resolved/not_resolved) ===
+  - name: "human_outcome_resolved"
+    id: "ann-fixture-0001"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "human"
+    annotatorName: "reviewer-1"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "resolved"
+    createdAt: 1700000000000
+
+  - name: "human_outcome_not_resolved"
+    id: "ann-fixture-0002"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "human"
+    annotatorName: "reviewer-1"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "not_resolved"
+    createdAt: 1700000001000
+
+  - name: "agent_outcome_resolved"
+    id: "ann-fixture-0003"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "agent"
+    annotatorName: "auto-evaluator"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "resolved"
+    createdAt: 1700000002000
+
+  - name: "agent_outcome_not_resolved"
+    id: "ann-fixture-0004"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "agent"
+    annotatorName: "auto-evaluator"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "not_resolved"
+    createdAt: 1700000003000
+
+  - name: "rule_outcome_resolved"
+    id: "ann-fixture-0005"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "rule"
+    annotatorName: "heuristic-classifier"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "resolved"
+    createdAt: 1700000004000
+
+  - name: "rule_outcome_not_resolved"
+    id: "ann-fixture-0006"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "rule"
+    annotatorName: "heuristic-classifier"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "not_resolved"
+    createdAt: 1700000005000
+
+  # === Edge cases ===
+  - name: "wrong_type_id"
+    id: "ann-fixture-0007"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "human"
+    annotatorName: "reviewer-1"
+    typeId: "quality.other_metric"
+    typeName: "Other Metric"
+    value: "high"
+    createdAt: 1700000006000
+
+  - name: "unknown_value"
+    id: "ann-fixture-0008"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: true
+    annotatorKind: "human"
+    annotatorName: "reviewer-1"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "unknown_value"
+    createdAt: 1700000007000
+
+  - name: "second_human_annotation"
+    id: "ann-fixture-0009"
+    targetKind: "session"
+    targetSessionId: "quality-ann-1"
+    isPrimary: false
+    annotatorKind: "human"
+    annotatorName: "reviewer-2"
+    typeId: "quality.session_outcome"
+    typeName: "Session Outcome"
+    value: "not_resolved"
+    createdAt: 1700000008000
+
+  # === Entry-level annotations (targetKind=entry) ===
+  - name: "rule_frustration_signal_entry"
+    id: "ann-fixture-0010"
+    targetKind: "entry"
+    targetSessionId: "quality-ann-1"
+    targetEntryIndex: 3
+    isPrimary: false
+    annotatorKind: "rule"
+    annotatorName: "frustration-signal-classifier"
+    typeId: "quality.frustration_signal"
+    typeName: "Frustration Signal"
+    value: "detected"
+    createdAt: 1700000009000
+
+  - name: "rule_resolution_evidence_entry"
+    id: "ann-fixture-0011"
+    targetKind: "entry"
+    targetSessionId: "quality-ann-1"
+    targetEntryIndex: 7
+    isPrimary: false
+    annotatorKind: "rule"
+    annotatorName: "resolution-evidence-classifier"
+    typeId: "quality.resolution_evidence"
+    typeName: "Resolution Evidence"
+    value: "detected"
+    createdAt: 1700000010000
+
+# Subscription validation test cases (Go-only)
+subscription_validations:
+  # Happy paths
+  - name: "dashboard"
+    topic: "dashboard"
+    valid: true
+  - name: "sessions"
+    topic: "sessions"
+    valid: true
+  - name: "trends"
+    topic: "trends"
+    valid: true
+  - name: "quality"
+    topic: "quality"
+    valid: true
+  - name: "session_detail_with_id"
+    topic: "session_detail"
+    id: "abc"
+    valid: true
+  - name: "annotations_session_axis"
+    topic: "annotations"
+    axis: "session"
+    id: "sess-abc"
+    valid: true
+  - name: "annotations_type_axis"
+    topic: "annotations"
+    axis: "type"
+    id: "quality.session_outcome"
+    valid: true
+  - name: "annotations_project_axis"
+    topic: "annotations"
+    axis: "project"
+    id: "proj-hash"
+    valid: true
+  - name: "project_familiarity_with_id"
+    topic: "project_familiarity"
+    id: "abc123hash"
+    valid: true
+  # Failure paths
+  - name: "project_familiarity_missing_id"
+    topic: "project_familiarity"
+    valid: false
+  - name: "session_detail_missing_id"
+    topic: "session_detail"
+    valid: false
+  - name: "annotations_missing_axis"
+    topic: "annotations"
+    id: "abc"
+    valid: false
+  - name: "annotations_missing_id"
+    topic: "annotations"
+    axis: "session"
+    valid: false
+  - name: "annotations_missing_both"
+    topic: "annotations"
+    valid: false
+  - name: "unknown_topic"
+    topic: "nonexistent"
+    valid: false
+  - name: "empty_topic"
+    topic: ""
+    valid: false

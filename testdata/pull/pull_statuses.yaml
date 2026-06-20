@@ -1,0 +1,28 @@
+# PullStatus <-> wire-string mappings (internal/pull.PullStatus.String()).
+#
+# Source of truth for the 6 PullStatus enum values and their wire/CLI string
+# representation. The peasant-side test (internal/pull/types_test.go) compares the
+# TYPED constant's String() against `wire` here — never a bare literal in test
+# code (ast-grep no-bare-* boundary). `const_name` documents the Go constant each
+# row pins (for reviewer cross-reference); the test maps each typed constant to
+# its expected `wire` by enumerating the typed constants, not by reflecting names.
+
+statuses:
+  - name: "pulled"
+    const_name: "PullStatusPulled"
+    wire: "pulled"
+  - name: "up-to-date"
+    const_name: "PullStatusUpToDate"
+    wire: "up-to-date"
+  - name: "not-found"
+    const_name: "PullStatusNotFound"
+    wire: "not-found"
+  - name: "not-logged-in"
+    const_name: "PullStatusNotLoggedIn"
+    wire: "not-logged-in"
+  - name: "contract-error"
+    const_name: "PullStatusContractError"
+    wire: "contract-error"
+  - name: "error"
+    const_name: "PullStatusError"
+    wire: "error"
