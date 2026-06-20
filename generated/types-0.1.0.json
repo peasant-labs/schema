@@ -1,0 +1,546 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Peasant Types",
+    "description": "Shared domain type catalog for Peasant APIs. No operations — register these components for SDK code generation and cross-API type sharing.",
+    "version": "0.1.0"
+  },
+  "components": {
+    "schemas": {
+      "BestiaryHarness": {
+        "description": "AI coding tool or development environment",
+        "enum": [
+          "claude-code",
+          "gemini-cli",
+          "codex",
+          "opencode",
+          "cursor",
+          "antigravity"
+        ],
+        "examples": [
+          "claude-code",
+          "opencode"
+        ],
+        "title": "Harness",
+        "type": "string"
+      },
+      "EntryType": {
+        "description": "Classification of a single entry within an agent session transcript",
+        "enum": [
+          "text",
+          "tool_use",
+          "tool_result",
+          "thinking",
+          "system",
+          "error",
+          "result"
+        ],
+        "examples": [
+          "text",
+          "tool_use",
+          "tool_result"
+        ],
+        "title": "Entry Type",
+        "type": "string"
+      },
+      "ModelID": {
+        "description": "Model identifier (e.g. 'claude-opus-4-6', 'gemini-2.0-flash')",
+        "examples": [
+          "claude-opus-4-6",
+          "gemini-2.0-flash",
+          "codex-mini-latest"
+        ],
+        "minLength": 1,
+        "title": "Model ID",
+        "type": "string"
+      },
+      "Provider": {
+        "description": "AI coding tool or development environment",
+        "enum": [
+          "claude-code",
+          "gemini-cli",
+          "codex",
+          "opencode",
+          "cursor",
+          "antigravity"
+        ],
+        "examples": [
+          "claude-code",
+          "opencode"
+        ],
+        "title": "Harness",
+        "type": "string"
+      },
+      "QualityMetrics": {
+        "properties": {
+          "computeVersion": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "computedAt": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "costCacheReadUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "costCacheWriteUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "costInputUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "costModelId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "costOutputUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "costReasoningUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "costTotalUsd": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "discoveryTurns": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "durationMinutes": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "explorationRatio": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "filesTouched": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "inputTokens": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "linesChanged": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m2TokenOutcomeRatio": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "m3UniqueToolCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m4ConsecutiveErrorMax": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m4ErrorRecoveryCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m5AvgMessageTokens": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m5ContextUtilizationPct": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "m5PeakContextTokens": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m6LinesSurvived": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m6LinesTotal": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "m6OutputSurvivalPct": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "m7SpecHasConstraints": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "m7SpecHasExamples": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "m7SpecWordCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SessionOutcome"
+          },
+          "outputTokens": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "retryLoops": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "retryTokensWasted": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "scope": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "scopeBreadth": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "signalDensity": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "specQualityScore": {
+            "type": [
+              "null",
+              "number"
+            ]
+          },
+          "subagentCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "titleGenerated": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toolCalls": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "totalTokens": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "turnCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "withinSessionReverts": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "Role": {
+        "description": "Sender role of a message turn",
+        "enum": [
+          "user",
+          "assistant",
+          "tool",
+          "system"
+        ],
+        "examples": [
+          "user",
+          "assistant"
+        ],
+        "title": "Role",
+        "type": "string"
+      },
+      "SessionEntry": {
+        "properties": {
+          "contentPreview": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "depth": {
+            "type": "integer"
+          },
+          "entryId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "entryIndex": {
+            "type": "integer"
+          },
+          "entryType": {
+            "$ref": "#/components/schemas/EntryType"
+          },
+          "extra": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "harness": {
+            "$ref": "#/components/schemas/BestiaryHarness"
+          },
+          "hasThinking": {
+            "type": "boolean"
+          },
+          "hasToolUse": {
+            "type": "boolean"
+          },
+          "isError": {
+            "type": "boolean"
+          },
+          "parentEntryId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "parentIndex": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "partType": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawByteLength": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "stopReason": {
+            "$ref": "#/components/schemas/StopReason"
+          },
+          "timestampMs": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "tokensIn": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "tokensOut": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "toolCallId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toolInput": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toolKind": {
+            "$ref": "#/components/schemas/ToolCallKind"
+          },
+          "toolNamesCsv": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "toolOutput": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "SessionID": {
+        "description": "Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})",
+        "examples": [
+          "99d59925-36bc-424c-a789-8be54d9702ba",
+          "agent-a3aee4f",
+          "ses_3cd91f52effeXd3QAJ54jOyzv5",
+          "sess_3cd91f52effeXd3QAJ54jOyzv5"
+        ],
+        "format": "session-id",
+        "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+)$",
+        "title": "Session ID",
+        "type": "string"
+      },
+      "SessionOutcome": {
+        "description": "Resolution status of the session",
+        "enum": [
+          "resolved",
+          "partial",
+          "failed"
+        ],
+        "examples": [
+          "resolved",
+          "partial",
+          "failed"
+        ],
+        "title": "Session Outcome",
+        "type": "string"
+      },
+      "StopReason": {
+        "description": "Reason why a session or turn ended (ACP-aligned)",
+        "enum": [
+          "end_turn",
+          "cancelled",
+          "max_tokens",
+          "max_turn_requests",
+          "refusal"
+        ],
+        "examples": [
+          "end_turn",
+          "max_tokens"
+        ],
+        "title": "Stop Reason",
+        "type": "string"
+      },
+      "ToolCallKind": {
+        "description": "Classification of a tool call, aligned with ACP ToolCallUpdate.kind",
+        "enum": [
+          "read",
+          "edit",
+          "delete",
+          "move",
+          "search",
+          "execute",
+          "think",
+          "fetch",
+          "other"
+        ],
+        "examples": [
+          "read",
+          "edit",
+          "execute"
+        ],
+        "title": "Tool Call Kind",
+        "type": "string"
+      },
+      "Visibility": {
+        "description": "Access control level for a published transcript",
+        "enum": [
+          "private",
+          "group",
+          "public"
+        ],
+        "examples": [
+          "public",
+          "private"
+        ],
+        "title": "Visibility",
+        "type": "string"
+      }
+    }
+  }
+}

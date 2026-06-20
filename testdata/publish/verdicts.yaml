@@ -1,0 +1,165 @@
+# PublishRequest schema-verdict corpus.
+#
+# This is the shared source of truth for publish-body accept/reject expectations:
+# schema parity tests consume `schema_accepts`; direct publish/e2e consumers use
+# `http_status` + `error_category` for rows they exercise at the HTTP boundary.
+
+cases:
+  - name: "full-valid"
+    body: |
+      {
+        "diagnostics": {"warnings": []},
+        "entries": [
+          {"depth": 0, "entryIndex": 0, "entryType": "text", "harness": "claude-code",
+           "hasThinking": false, "hasToolUse": false, "isError": false, "role": "user",
+           "sessionId": "99d59925-36bc-424c-a789-8be54d9702ba"}
+        ],
+        "git": {"branch": "feat/openapi-docs", "remote": "https://github.com/user/repo.git"},
+        "identity": {"schemaVersion": 9, "sessionId": "99d59925-36bc-424c-a789-8be54d9702ba"},
+        "model": {"harness": "claude-code", "hostSlug": "github.com--user--repo",
+                  "model": "claude-opus-4-6", "version": "2.1.47"},
+        "project": {"hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2", "name": "repo"},
+        "quality": {"outcome": "resolved", "totalTokens": 67000, "turnCount": 24},
+        "source": {"format": "jsonl"},
+        "stats": {"durationMs": 7200000, "subagentCount": 1, "tokensIn": 45000,
+                  "tokensOut": 22000, "toolCallCount": 16, "turnCount": 24},
+        "timestamp": {"end": 1709139600000, "start": 1709136000000}
+      }
+    expect:
+      schema_accepts: true
+      error_category: "accepted"
+
+  - name: "empty-object"
+    body: "{}"
+    expect:
+      schema_accepts: true
+      error_category: "accepted"
+
+  - name: "unknown-top-level-field"
+    body: |
+      {"source": {"format": "jsonl"}, "bogusField": 42}
+    expect:
+      schema_accepts: true
+      error_category: "accepted"
+
+  - name: "bad-source-format"
+    body: |
+      {"source": {"format": "xml"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "bad-entry-type"
+    body: |
+      {"entries": [{"depth": 0, "entryIndex": 0, "entryType": "nonsense",
+        "hasThinking": false, "hasToolUse": false, "isError": false}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "bad-role"
+    body: |
+      {"entries": [{"depth": 0, "entryIndex": 0, "entryType": "text", "role": "wizard",
+        "hasThinking": false, "hasToolUse": false, "isError": false}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "bad-outcome"
+    body: |
+      {"quality": {"outcome": "exploded"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "bad-tool-kind"
+    body: |
+      {"entries": [{"depth": 0, "entryIndex": 0, "entryType": "tool_use",
+        "toolKind": "teleport", "hasThinking": false, "hasToolUse": true, "isError": false}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "bad-stop-reason"
+    body: |
+      {"entries": [{"depth": 0, "entryIndex": 0, "entryType": "text",
+        "stopReason": "vibes", "hasThinking": false, "hasToolUse": false, "isError": false}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "enum"
+
+  - name: "unknown-harness"
+    body: |
+      {"model": {"harness": "not-a-harness", "hostSlug": "github.com--user--repo",
+                 "model": "claude-opus-4-6", "version": "2.1.47"}}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "enum"
+      error_contains: "value must be one of"
+
+  - name: "wrong-type-depth-string"
+    body: |
+      {"entries": [{"depth": "zero", "entryIndex": 0, "entryType": "text",
+        "hasThinking": false, "hasToolUse": false, "isError": false}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "type"
+
+  - name: "wrong-type-turncount-string"
+    body: |
+      {"stats": {"turnCount": "twenty", "tokensIn": 1, "tokensOut": 1,
+        "toolCallCount": 1, "durationMs": 1, "subagentCount": 0}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "type"
+
+  - name: "wrong-type-start-string"
+    body: |
+      {"timestamp": {"start": "soon", "end": 2}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "type"
+
+  - name: "wrong-type-entries-object"
+    body: |
+      {"entries": {"not": "an array"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "type"
+
+  - name: "wrong-type-isError-string"
+    body: |
+      {"entries": [{"depth": 0, "entryIndex": 0, "entryType": "text",
+        "hasThinking": false, "hasToolUse": false, "isError": "nope"}]}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "type"
+
+  - name: "bad-project-hash"
+    body: |
+      {"project": {"hash": "tooshort", "name": "x"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "pattern"
+
+  - name: "bad-session-id"
+    body: |
+      {"identity": {"sessionId": "not-a-valid-id", "schemaVersion": 1}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "pattern"

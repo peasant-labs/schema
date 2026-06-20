@@ -1,0 +1,16 @@
+# Vacuum ruleset for the peasant-labs/schema contract gates.
+#
+# vacuum (https://quobix.com/vacuum) is the Go-native OpenAPI/Swagger linter
+# provisioned in the flake dev shell (nixpkgs `vacuum-go`, binary `vacuum`). The
+# `vacuum` contract gate (scripts/contract-gates.sh) lints every generated
+# OpenAPI spec under generated/ against this ruleset and FAILS on any result at
+# `error` severity (the `--fail-severity error` invocation).
+#
+# We extend vacuum's built-in `recommended` OpenAPI rule set. The generated specs
+# (swaggest/openapi-go output) are structurally valid and currently produce only
+# warnings/informs (descriptions, examples, tag metadata), so the gate passes
+# today while still failing hard on a genuinely malformed spec (unresolved $ref,
+# duplicate operationId, invalid schema, broken structure — all `error` severity
+# in `recommended`). Tighten individual rules to `error` here as the contract
+# matures.
+extends: [[vacuum:oas, recommended]]

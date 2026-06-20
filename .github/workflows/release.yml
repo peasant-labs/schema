@@ -1,0 +1,163 @@
+name: Release
+
+# Tag-triggered release pipeline for the contract LIBRARY. The tag is pushed by
+# release-pr.yml's App token (the default GITHUB_TOKEN cannot push a tag that
+# re-triggers a workflow), so this runs automatically when a release PR merges.
+#
+# MIRRORS peasant's release.yml gate chain (guard -> nix-vendor-hash -> gates ->
+# publish) but SUBTRACTS every CLI-binary stage: NO goreleaser build, NO
+# deb/rpm/AUR/Homebrew/nix packaging, NO release-validate distro matrix, NO
+# release-e2e / e2e / smoke. The publisher is a single GitHub Release carrying the
+# generated/ OpenAPI specs as downloadable ASSETS (prerelease for -rcN).
+#
+# The job graph is asserted by `release-guard check-workflow` (run in `make
+# check`): the `release` publish job must sit behind guard, nix-vendor-hash, and
+# contract-gates.
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # create the GitHub Release + upload assets
+  actions: read # release-guard check-final reads rc release-run conclusions
+
+jobs:
+  # Gate the build: reject non-schema tags, and for FINAL releases require a
+  # same-version rc that is green AND an ancestor of the final commit.
+  guard:
+    name: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository (full history + tags)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Parse + classify the tag
+        id: parse
+        run: go run ./cmd/release-guard parse-tag "$TAG"
+
+      - name: Final-release guard (green same-version rc + ancestor)
+        if: steps.parse.outputs.kind == 'final'
+        run: go run ./cmd/release-guard check-final --tag "$TAG"
+
+  nix-vendor-hash:
+    name: assert nix vendorHash current
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Check Nix vendor hash freshness
+        run: |
+          set -euo pipefail
+          nix develop -c make nix-vendor-hash
+          if ! git diff --quiet -- flake.nix; then
+            echo "::error::flake.nix vendorHash is stale on ${GITHUB_REF_NAME}. Create the release tag from a commit that has run make nix-vendor-hash."
+            git diff -- flake.nix
+            exit 1
+          fi
+
+  # Contract gates on the release commit: vacuum lints the published specs, and
+  # (when a prior release tag exists) oasdiff + go-apidiff diff against it. The
+  # heavy breaking-change gating already ran on the PR; this is the final
+  # belt-and-suspenders before publication.
+  contract-gates:
+    name: contract gates
+    needs: [guard, nix-vendor-hash]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Checkout repository (full history + tags)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Determine prior release tag (the released golden to diff against)
+        id: prior
+        run: |
+          set -euo pipefail
+          # The most recent v* tag that is an ancestor of this tag, excluding it.
+          prior="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)"
+          echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
+          if [ -n "${prior}" ]; then
+            echo "::notice::diffing the contract against prior release ${prior}"
+          else
+            echo "::notice::no prior release tag; running vacuum lint only (first release)"
+          fi
+
+      - name: Run contract gates
+        run: nix develop -c make gates BASE_REF="${{ steps.prior.outputs.base_ref }}"
+
+  # Publish: a single GitHub Release carrying the generated OpenAPI specs as
+  # assets. Prerelease for -rcN; full release for a final vX.Y.Z.
+  release:
+    name: publish GitHub Release
+    needs: [guard, nix-vendor-hash, contract-gates]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Classify the tag (prerelease for -rc)
+        id: kind
+        run: |
+          set -euo pipefail
+          if printf '%s' "$TAG" | grep -q -- '-rc'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create the GitHub Release with the OpenAPI specs as assets
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [ "${{ steps.kind.outputs.prerelease }}" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
+          # Assets: every generated contract artifact (OpenAPI specs + the publish
+          # JSON Schema), both JSON and YAML.
+          assets=(generated/*.json generated/*.yaml)
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG" \
+            --generate-notes \
+            $prerelease_flag \
+            "${assets[@]}"
+          echo "::notice::published GitHub Release $TAG with ${#assets[@]} contract assets"

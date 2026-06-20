@@ -1,0 +1,26 @@
+{
+  "manifestVersion": 1,
+  "villageURL": "https://village.example.com",
+  "villageHost": "village.example.com",
+  "transcriptId": "11111111-2222-3333-4444-555555555555",
+  "localSessionId": "01234567-89ab-cdef-0123-456789abcdef",
+  "ownerUserId": "usr_000000000000000000000001",
+  "ownerUsername": "alice",
+  "servedETag": "\"3f786850e387550fdab836ed7e6dc881de23001b\"",
+  "servedBlobHash": "3f786850e387550fdab836ed7e6dc881de23001b",
+  "blobContractVersion": "0.1.0",
+  "pullEnvelopeVersion": "0.1.0",
+  "pulledAt": 1700000000000,
+  "annotations": [
+    {
+      "contentHash": "89e6c98d92887913cadf06b2adb97f26cde4849b",
+      "authorUserId": "usr_000000000000000000000002",
+      "authorUsername": "bob"
+    },
+    {
+      "contentHash": "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3",
+      "authorUserId": "usr_000000000000000000000003",
+      "authorUsername": "carol"
+    }
+  ]
+}

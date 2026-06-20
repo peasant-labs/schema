@@ -33,23 +33,38 @@
       pname = "peasant-labs-schema";
 
       # Version is derived from the git short rev: this is a -dev/source build,
-      # NOT a tagged release (tagged release binaries come from goreleaser with
-      # -X ...version=<tag>). self.shortRev exists only for a clean tree; fall
+      # NOT a tagged release. self.shortRev exists only for a clean tree; fall
       # back to dirtyShortRev, then a literal, so `nix build` works on a dirty
-      # working tree too. This string is injected into internal/defaults.version
-      # via ldflags below (shortRev + ldflags).
+      # working tree too. The schema module ships no version-injection var, so
+      # this is NOT injected via ldflags (unlike peasant's internal/defaults).
       version = self.shortRev or self.dirtyShortRev or "dev";
 
       # Go package attribute (e.g., go, go_1_26)
       # Set to null to use the default Go version from nixpkgs
       goAttr = "go_1_26";
 
-      # Vendor hash for buildGoModule. Recompute when go.mod/go.sum changes:
-      # set this to nixpkgs.lib.fakeHash, run `nix build`, copy the reported `got:`
-      # hash back here.
-      vendorHash = null;
+      # Vendor hash for buildGoModule. It covers ONLY the third-party deps in
+      # go.sum, so a FIRST-PARTY edit (e.g. a schema testdata YAML) never drifts
+      # it — the #119 pathology required peasant's local `replace` and is absent
+      # in this leaf module (proven by TestVendorHashStableOnFirstPartyEdit).
+      # Recompute ONLY on a go.mod/go.sum dep bump: set this to
+      # nixpkgs.lib.fakeHash, run `nix build`, copy the reported `got:` hash here.
+      vendorHash = "sha256-vzwUd5NCzJxUBy3DbHov/lH9VPyTHTOESdO92ORG7WA=";
 
-      # Extra CLI tools available in the dev shell
+      # Extra CLI tools available in the dev shell. The contract-gate CLIs
+      # (oasdiff / go-apidiff / vacuum) are dev/CI tools and MUST NOT enter
+      # go.mod (the leaf-audit test enforces the require set). They are
+      # provisioned here so `nix develop` (and CI, which runs through the same
+      # flake) is the single dev-dependency manifest:
+      #   - vacuum  : Go-native OpenAPI linter, packaged in nixpkgs as vacuum-go
+      #               (binary name `vacuum`).
+      #   - oasdiff : OpenAPI breaking-change diff — NOT in nixpkgs, so built
+      #               from source by the `oasdiff` buildGoModule derivation in the
+      #               inner let below and appended to the dev shell there.
+      #   - go-apidiff : exported-Go-API breaking-change diff — likewise built
+      #               from source by the `go-apidiff` derivation below.
+      # The two source-built gates can't be named here (they need `pkgs`, which is
+      # only bound inside mkOutputs); they are appended to devShell.packages.
       devTools = pkgs: with pkgs; [
         gopls # LSP
         gotools # goimports, godoc, etc.
@@ -57,22 +72,13 @@
         delve # debugger
         ast-grep # structural code search and lint
         golangci-lint # linter suite
-        sqlite # CLI for inspecting analytics store
-        goreleaser # validate .goreleaser.yml (`goreleaser check`) + local --snapshot builds
         actionlint # lint GitHub Actions workflow YAML (.github/workflows/*.yml)
-        nodejs_24 # Node.js runtime (npm ci, npm run build)
-        pnpm # pnpm workspace builds for first-party file: deps (@peasant-labs/transcript-browser + analytics)
-        typescript
-        typescript-language-server
+        vacuum-go # Go-native OpenAPI/Swagger linter (contract gate; binary: vacuum)
       ];
 
-      # Native build dependencies (C libraries, system packages)
-      # gcc is required for tree-sitter CGo bindings (github.com/tree-sitter/go-tree-sitter)
+      # Native build dependencies (C libraries, system packages). The schema leaf
+      # is pure Go (modernc/zombiezen sqlite are cgo-free), so none are required.
       nativeBuildDeps = pkgs: with pkgs; [
-        gcc
-        # pkg-config
-        # openssl
-        # sqlite
       ];
 
       # Extra check commands run during `nix build` after go test
@@ -105,6 +111,67 @@
               else pkgs.go;
 
             # ----------------------------------------------------------
+            # Contract-gate CLIs built from source (not in nixpkgs)
+            # ----------------------------------------------------------
+            # These are dev/CI tools, NEVER go.mod requires (the leaf-audit test
+            # enforces that). They are appended to devShell.packages and also
+            # exposed as packages.{oasdiff,go-apidiff} so CI can `nix build`
+            # them and the synthetic-break tests find them on PATH inside
+            # `nix develop`. vendorHash covers each tool's OWN third-party graph;
+            # recompute (set to lib.fakeHash, `nix build .#<tool>`, copy `got:`)
+            # only on a version bump.
+
+            # oasdiff — OpenAPI breaking-change diff. https://github.com/oasdiff/oasdiff
+            oasdiff = pkgs.buildGoModule {
+              pname = "oasdiff";
+              version = "1.19.1";
+              src = pkgs.fetchFromGitHub {
+                owner = "oasdiff";
+                repo = "oasdiff";
+                rev = "v1.19.1";
+                hash = "sha256-fAMeFt3bmkxTXZuhGIlazga4lGnTCNIlXEST3NGnjFI=";
+              };
+              vendorHash = "sha256-+bRE23X6KL2Y7hdXPRxPu3WFPMWrjipINyf+5lJn0Q0=";
+              # The CLI main is at the module root; don't build/test the library
+              # subpackages (faster, and avoids any network-touching tests).
+              subPackages = [ "." ];
+              doCheck = false;
+              env.CGO_ENABLED = 0;
+              ldflags = [ "-s" "-w" ];
+              meta = with pkgs.lib; {
+                description = "OpenAPI diff and breaking-change detector (contract gate)";
+                homepage = "https://github.com/oasdiff/oasdiff";
+                license = licenses.asl20;
+                mainProgram = "oasdiff";
+              };
+            };
+
+            # go-apidiff — exported-Go-API breaking-change diff over two git refs.
+            # https://github.com/joelanford/go-apidiff
+            go-apidiff = pkgs.buildGoModule {
+              pname = "go-apidiff";
+              version = "0.8.3";
+              src = pkgs.fetchFromGitHub {
+                owner = "joelanford";
+                repo = "go-apidiff";
+                rev = "v0.8.3";
+                hash = "sha256-qDx+vGmXFdFTMXHT6/5mbsGagvBixsxUkXmNg6dI/SE=";
+              };
+              vendorHash = "sha256-TEesxbzvlT9VeVujbPzfd6fSQZJMzf/9KoiWECrY7wk=";
+              doCheck = false;
+              env.CGO_ENABLED = 0;
+              ldflags = [ "-s" "-w" ];
+              meta = with pkgs.lib; {
+                description = "Detect incompatible changes in a Go module's exported API across git refs (contract gate)";
+                homepage = "https://github.com/joelanford/go-apidiff";
+                license = licenses.asl20;
+                mainProgram = "go-apidiff";
+              };
+            };
+
+            contractGateTools = [ oasdiff go-apidiff ];
+
+            # ----------------------------------------------------------
             # Build
             # ----------------------------------------------------------
 
@@ -113,67 +180,34 @@
               src = ./.;
               inherit vendorHash;
 
-              # Build ONLY the peasant CLI. The default `./...` enumeration would
-              # try to build ./pkg/schema, which is a SEPARATE nested Go module
-              # (its own go.mod, pulled into the main module via a local replace)
-              # and fails as "main module does not contain package …/pkg/schema".
-              # cmd/schema-gen and cmd/release-guard are dev/CI tools, not shipped.
-              subPackages = [ "cmd/peasant" ];
+              # Build the schema repo's dev/CI tools. cmd/schema-gen regenerates
+              # the OpenAPI specs + Redoc HTML; cmd/release-guard is the release
+              # pipeline's title/tag/guard CLI. The schema module ships NO runtime
+              # binary (it is a contract-only leaf). The default `./...` would also
+              # try to "build" the library packages, which is fine, but we name the
+              # two commands explicitly so the package output is just those tools.
+              subPackages = [ "cmd/schema-gen" "cmd/release-guard" ];
 
-              # Build the same way the release binaries do: CGO disabled, so the
-              # output is a static, portable binary. tree-sitter (the cgo-only
-              # Maximum-redaction backend) is therefore NOT linked; `peasant
-              # … --redaction maximum` returns the actionable hard error from
-              # pkg/redact (redact.MaximumAvailable == false), consistent with
-              # the goreleaser/distro builds. -race in checkPhase is removed
-              # below for the same reason (the race detector requires cgo).
+              # Pure-Go leaf (no cgo deps) → CGO disabled for a static, portable
+              # tool binary.
               env.CGO_ENABLED = 0;
 
-              # Inject the version into internal/defaults.version (matches the
-              # release ldflags) and strip debug info for a smaller binary.
+              # Strip debug info for smaller binaries. No -X version injection: the
+              # schema module has no internal/defaults.version var (W8).
               ldflags = [
                 "-s"
                 "-w"
-                "-X github.com/peasant-labs/peasant/internal/defaults.version=${version}"
               ];
-
-              # The binary embeds web/out via `//go:embed all:web/out`
-              # (embed.go). A committed placeholder (web/out/.gitkeep) already
-              # satisfies it, but `src = ./.` would also capture any stale local
-              # `make web` output, making the build non-deterministic. Reset
-              # web/out to a deterministic stub so the nix build never bundles a
-              # developer's local front-end build.
-              postPatch = ''
-                rm -rf web/out
-                mkdir -p web/out
-                cat > web/out/index.html <<'HTML'
-                <!doctype html>
-                <title>Peasant — dashboard assets not bundled</title>
-                <p>This nix build does not bundle the web dashboard front-end. The CLI works fully; build from source with <code>make build</code> for the embedded UI.</p>
-                HTML
-              '';
 
               nativeBuildInputs = nativeBuildDeps pkgs;
 
-              # No -race: the data-race detector requires cgo, and this build is
-              # CGO_ENABLED=0. The authoritative race-enabled FULL suite runs in
-              # `make check` / CI (incl. the CGO=0 leg).
-              #
-              # Two packages are excluded because they are environment-dependent
-              # INTEGRATION suites that cannot run in nix's hermetic build sandbox
-              # (they pass in `make check` / CI, which is the real gate):
-              #   - internal/e2e: resolves its testdata via runtime.Caller, which
-              #     buildGoModule's `-trimpath` rewrites to a module-relative path
-              #     that does not exist at test time → fixture-not-found.
-              #   - internal/ingest: ExecGitResolver/CommitDetector tests shell
-              #     out to a real `git` and build throwaway repos, neither of
-              #     which the sandbox provides.
-              # This checkPhase is a packaging sanity gate over the other 21
-              # packages (incl. pkg/redact — the CGO=0 redaction seam this build
-              # mode actually exercises), not a substitute for the full suite.
+              # The schema leaf is pure Go and fully hermetic (no git/network in
+              # tests), so the whole suite runs as a packaging sanity gate. No
+              # -race: the detector requires cgo and this build is CGO_ENABLED=0;
+              # the authoritative race-enabled suite runs in CI (`go test -race`).
               checkPhase = ''
                 runHook preCheck
-                go test $(go list ./... | grep -vE '/internal/(e2e|ingest)$')
+                go test ./...
                 ${extraCheckPhase}
                 runHook postCheck
               '';
@@ -181,26 +215,19 @@
               postInstall = extraInstallPhase;
 
               meta = with pkgs.lib; {
-                description = "Local-first coding-agent transcript analytics, redaction, and publishing CLI";
-                homepage = "https://github.com/peasant-labs/peasant";
-                # PLACEHOLDER license, honestly NON-SPDX: the committed LICENSE is
-                # a BSD-3-Clause variant with a branding-preservation clause
-                # (adapted from the Open WebUI License), which is NOT any standard
-                # SPDX license. Do NOT claim a stock SPDX id (that would be a lie
-                # to nixpkgs/validators).
-                # free = false: the branding-preservation clause (clause 4 of the
-                # LICENSE) restricts altering/removing "Peasant" branding above a
-                # 50-user threshold, so the placeholder is arguably NON-free — the
-                # conservative, honest truth for a BSD-3+branding variant. The
-                # flake already sets config.allowUnfree = true, so this does not
-                # block `nix build`. The FINAL license is deferred (#10) and gates
-                # the public flip (runbook); revisit free/SPDX at that decision.
+                description = "Peasant public API contract: OpenAPI specs, shared types, fixtures, validators, and migrations (single leaf module)";
+                homepage = "https://github.com/peasant-labs/schema";
+                # PLACEHOLDER license: this public contract repo has no committed
+                # LICENSE yet. Do NOT claim a stock SPDX id (that would be a lie to
+                # nixpkgs/validators). The final license is a user decision (see
+                # README open items); config.allowUnfree = true keeps `nix build`
+                # unblocked until then. Revisit when LICENSE is committed.
                 license = {
-                  shortName = "LicenseRef-Peasant-Placeholder";
-                  fullName = "Peasant License (placeholder; BSD-3-Clause variant with a branding-preservation clause, adapted from the Open WebUI License)";
+                  shortName = "LicenseRef-Peasant-Schema-Placeholder";
+                  fullName = "Peasant Schema License (placeholder; final license TBD — no LICENSE committed yet)";
                   free = false;
                 };
-                mainProgram = "peasant";
+                mainProgram = "schema-gen";
               };
             };
 
@@ -211,12 +238,15 @@
             devShell = pkgs.mkShell {
               name = "${pname}-dev";
               inputsFrom = [ package ];
-              packages = (devTools pkgs);
+              # devTools (incl. vacuum-go from nixpkgs) + the source-built
+              # oasdiff/go-apidiff gates, so `nix develop` and CI share one
+              # contract-gate toolchain.
+              packages = (devTools pkgs) ++ contractGateTools;
 
               shellHook = ''
                 echo "Go $(go version | cut -d' ' -f3) dev shell"
                 export CGO_ENABLED=1
-                source .envrc.local
+                [ -f .envrc.local ] && source .envrc.local || true
               '';
             };
 
@@ -224,6 +254,10 @@
           {
             packages.default = package;
             packages.${pname} = package;
+            # Contract-gate CLIs, exposed so CI can `nix build .#oasdiff` /
+            # `.#go-apidiff` and the dev shell provisions them.
+            packages.oasdiff = oasdiff;
+            packages.go-apidiff = go-apidiff;
 
             devShells.default = devShell;
 

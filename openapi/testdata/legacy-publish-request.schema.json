@@ -1,0 +1,790 @@
+{
+  "$id": "urn:peasant:publish-request:0.1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Publish Request Schema",
+  "description": "JSON Schema for peasant push PublishRequest wire format",
+  "definitions": {
+    "SchemaCommitInfo": {
+      "properties": {
+        "authorEmail": {
+          "type": "string"
+        },
+        "authorName": {
+          "type": "string"
+        },
+        "authorTime": {
+          "type": "integer"
+        },
+        "commitTime": {
+          "type": "integer"
+        },
+        "hash": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaDiagnosticEntry": {
+      "properties": {
+        "errorType": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "remediation": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaDiagnosticsInfo": {
+      "properties": {
+        "partial": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "warnings": {
+          "items": {
+            "$ref": "#/definitions/SchemaDiagnosticEntry"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SchemaEntryType": {
+      "title": "Entry Type",
+      "description": "Classification of a single entry within an agent session transcript",
+      "examples": [
+        "text",
+        "tool_use",
+        "tool_result"
+      ],
+      "enum": [
+        "text",
+        "tool_use",
+        "tool_result",
+        "thinking",
+        "system",
+        "error",
+        "result"
+      ],
+      "type": "string"
+    },
+    "SchemaGitContext": {
+      "properties": {
+        "branch": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "commits": {
+          "items": {
+            "$ref": "#/definitions/SchemaCommitInfo"
+          },
+          "type": "array"
+        },
+        "remote": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "tracking": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "worktree": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SchemaHostSlug": {
+      "title": "Host Slug",
+      "description": "Sanitized, filesystem-safe identifier derived from git remote; contains only [a-zA-Z0-9._\u003c\u003e-]",
+      "examples": [
+        "github.com--user--repo",
+        "local--home-user-projects-myapp"
+      ],
+      "pattern": "^[a-zA-Z0-9._\u003c\u003e-]+$",
+      "type": "string"
+    },
+    "SchemaModelID": {
+      "title": "Model ID",
+      "description": "Model identifier (e.g. 'claude-opus-4-6', 'gemini-2.0-flash')",
+      "examples": [
+        "claude-opus-4-6",
+        "gemini-2.0-flash",
+        "codex-mini-latest"
+      ],
+      "minLength": 1,
+      "type": "string"
+    },
+    "SchemaModelInfo": {
+      "properties": {
+        "harness": {
+          "type": "string"
+        },
+        "hostSlug": {
+          "$ref": "#/definitions/SchemaHostSlug"
+        },
+        "model": {
+          "$ref": "#/definitions/SchemaModelID"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaProjectContext": {
+      "properties": {
+        "filePath": {
+          "type": "string"
+        },
+        "hash": {
+          "$ref": "#/definitions/SchemaProjectHash"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaProjectHash": {
+      "title": "Project Hash",
+      "description": "SHA-256 hex digest of the project's origin URL or local path",
+      "examples": [
+        "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      ],
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "SchemaQualityMetrics": {
+      "properties": {
+        "computeVersion": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "computedAt": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "costCacheReadUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "costCacheWriteUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "costInputUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "costModelId": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "costOutputUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "costReasoningUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "costTotalUsd": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "discoveryTurns": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "durationMinutes": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "explorationRatio": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "filesTouched": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "inputTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "linesChanged": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m2TokenOutcomeRatio": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "m3UniqueToolCount": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m4ConsecutiveErrorMax": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m4ErrorRecoveryCount": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m5AvgMessageTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m5ContextUtilizationPct": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "m5PeakContextTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m6LinesSurvived": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m6LinesTotal": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "m6OutputSurvivalPct": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "m7SpecHasConstraints": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "m7SpecHasExamples": {
+          "type": [
+            "null",
+            "boolean"
+          ]
+        },
+        "m7SpecWordCount": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "outcome": {
+          "$ref": "#/definitions/SchemaSessionOutcome"
+        },
+        "outputTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "retryLoops": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "retryTokensWasted": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "scope": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "scopeBreadth": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "signalDensity": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "specQualityScore": {
+          "type": [
+            "null",
+            "number"
+          ]
+        },
+        "subagentCount": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "titleGenerated": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "toolCalls": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "totalTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "turnCount": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "withinSessionReverts": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SchemaRole": {
+      "title": "Role",
+      "description": "Sender role of a message turn",
+      "examples": [
+        "user",
+        "assistant"
+      ],
+      "enum": [
+        "user",
+        "assistant",
+        "tool",
+        "system"
+      ],
+      "type": "string"
+    },
+    "SchemaSessionEntry": {
+      "properties": {
+        "contentPreview": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "depth": {
+          "type": "integer"
+        },
+        "entryId": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "entryIndex": {
+          "type": "integer"
+        },
+        "entryType": {
+          "$ref": "#/definitions/SchemaEntryType"
+        },
+        "extra": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "harness": {
+          "type": "string"
+        },
+        "hasThinking": {
+          "type": "boolean"
+        },
+        "hasToolUse": {
+          "type": "boolean"
+        },
+        "isError": {
+          "type": "boolean"
+        },
+        "parentEntryId": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "parentIndex": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "partType": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "rawByteLength": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "role": {
+          "$ref": "#/definitions/SchemaRole"
+        },
+        "sessionId": {
+          "$ref": "#/definitions/SchemaSessionID"
+        },
+        "stopReason": {
+          "$ref": "#/definitions/SchemaStopReason"
+        },
+        "timestampMs": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "tokensIn": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "tokensOut": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "toolCallId": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "toolInput": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "toolKind": {
+          "$ref": "#/definitions/SchemaToolCallKind"
+        },
+        "toolNamesCsv": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "toolOutput": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SchemaSessionID": {
+      "title": "Session ID",
+      "description": "Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})",
+      "examples": [
+        "99d59925-36bc-424c-a789-8be54d9702ba",
+        "agent-a3aee4f",
+        "ses_3cd91f52effeXd3QAJ54jOyzv5",
+        "sess_3cd91f52effeXd3QAJ54jOyzv5"
+      ],
+      "pattern": "^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+)$",
+      "type": "string",
+      "format": "session-id"
+    },
+    "SchemaSessionIdentity": {
+      "properties": {
+        "parentUuid": {
+          "$ref": "#/definitions/SchemaSessionID"
+        },
+        "schemaVersion": {
+          "type": "integer"
+        },
+        "sessionId": {
+          "$ref": "#/definitions/SchemaSessionID"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaSessionOutcome": {
+      "title": "Session Outcome",
+      "description": "Resolution status of the session",
+      "examples": [
+        "resolved",
+        "partial",
+        "failed"
+      ],
+      "enum": [
+        "resolved",
+        "partial",
+        "failed"
+      ],
+      "type": "string"
+    },
+    "SchemaSessionStats": {
+      "properties": {
+        "cachedReadTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "cachedWriteTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "durationMs": {
+          "type": "integer"
+        },
+        "subagentCount": {
+          "type": "integer"
+        },
+        "thoughtTokens": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "tokensIn": {
+          "type": "integer"
+        },
+        "tokensOut": {
+          "type": "integer"
+        },
+        "toolCallCount": {
+          "type": "integer"
+        },
+        "turnCount": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaSourceFormat": {
+      "title": "Source Format",
+      "description": "Transcript file format",
+      "examples": [
+        "jsonl",
+        "json"
+      ],
+      "enum": [
+        "jsonl",
+        "json"
+      ],
+      "type": "string"
+    },
+    "SchemaSourceInfo": {
+      "properties": {
+        "filePath": {
+          "type": "string"
+        },
+        "format": {
+          "$ref": "#/definitions/SchemaSourceFormat"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaStopReason": {
+      "title": "Stop Reason",
+      "description": "Reason why a session or turn ended (ACP-aligned)",
+      "examples": [
+        "end_turn",
+        "max_tokens"
+      ],
+      "enum": [
+        "end_turn",
+        "cancelled",
+        "max_tokens",
+        "max_turn_requests",
+        "refusal"
+      ],
+      "type": "string"
+    },
+    "SchemaSubagentRef": {
+      "properties": {
+        "parentUuid": {
+          "$ref": "#/definitions/SchemaSessionID"
+        },
+        "sessionId": {
+          "$ref": "#/definitions/SchemaSessionID"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaTimestampInfo": {
+      "properties": {
+        "end": {
+          "type": "integer"
+        },
+        "ingested": {
+          "type": [
+            "null",
+            "integer"
+          ]
+        },
+        "start": {
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "SchemaToolCallKind": {
+      "title": "Tool Call Kind",
+      "description": "Classification of a tool call, aligned with ACP ToolCallUpdate.kind",
+      "examples": [
+        "read",
+        "edit",
+        "execute"
+      ],
+      "enum": [
+        "read",
+        "edit",
+        "delete",
+        "move",
+        "search",
+        "execute",
+        "think",
+        "fetch",
+        "other"
+      ],
+      "type": "string"
+    }
+  },
+  "properties": {
+    "diagnostics": {
+      "$ref": "#/definitions/SchemaDiagnosticsInfo"
+    },
+    "entries": {
+      "items": {
+        "$ref": "#/definitions/SchemaSessionEntry"
+      },
+      "type": "array"
+    },
+    "git": {
+      "$ref": "#/definitions/SchemaGitContext"
+    },
+    "identity": {
+      "$ref": "#/definitions/SchemaSessionIdentity"
+    },
+    "model": {
+      "$ref": "#/definitions/SchemaModelInfo"
+    },
+    "project": {
+      "$ref": "#/definitions/SchemaProjectContext"
+    },
+    "quality": {
+      "$ref": "#/definitions/SchemaQualityMetrics"
+    },
+    "source": {
+      "$ref": "#/definitions/SchemaSourceInfo"
+    },
+    "stats": {
+      "$ref": "#/definitions/SchemaSessionStats"
+    },
+    "subagents": {
+      "items": {
+        "$ref": "#/definitions/SchemaSubagentRef"
+      },
+      "type": "array"
+    },
+    "timestamp": {
+      "$ref": "#/definitions/SchemaTimestampInfo"
+    }
+  },
+  "type": "object"
+}

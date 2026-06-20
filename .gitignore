@@ -1,6 +1,13 @@
 # NixOS, direnv/
 .direnv/
 
+.envrc.*
+
+# Generated API docs (Redoc/HTML) — regenerable via `go run ./cmd/schema-gen`.
+# The committed contract goldens live in generated/ (gate-checked); the rendered
+# HTML under docs/api is build output and is NOT committed.
+/docs/api/
+
 #==================================
 # Golang Gitignore Template
 # If you prefer the allow list template instead of the deny list, see community template:

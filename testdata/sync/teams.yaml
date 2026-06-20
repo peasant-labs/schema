@@ -1,0 +1,83 @@
+# Teams for combinatorial testing
+
+teams:
+  - key: "platform_engineering"
+    id: "team-001"
+    name: "Platform Engineering"
+    slug: "platform-eng"
+    memberCount: 8
+    projects:
+      - id: "proj-001"
+        name: "agent-data-leverage"
+        projectHash: "ph-adl-001"
+      - id: "proj-002"
+        name: "village-api"
+        projectHash: "ph-mkt-002"
+      - id: "proj-003"
+        name: "infra-terraform"
+        projectHash: "ph-infra-003"
+
+  - key: "product_team"
+    id: "team-002"
+    name: "Product"
+    slug: "product"
+    memberCount: 5
+    projects:
+      - id: "proj-004"
+        name: "docs-site"
+        projectHash: "ph-docs-004"
+      - id: "proj-005"
+        name: "billing-service"
+        projectHash: "ph-bill-005"
+
+  - key: "research_team"
+    id: "team-003"
+    name: "Research"
+    slug: "research"
+    memberCount: 3
+    projects: []
+
+# Combinatorial variations
+team_variations:
+  member_counts:
+    - name: "zero"
+      value: 0
+    - name: "one"
+      value: 1
+    - name: "typical"
+      value: 5
+    - name: "large"
+      value: 100
+    - name: "negative"
+      value: -1
+
+  slugs:
+    - value: "platform-eng"
+    - value: "product"
+    - value: "research"
+    - value: ""  # empty - invalid
+    - value: "has-dash"
+    - value: "has_underscore"
+    - value: "UPPERCASE"
+    - value: "with spaces"
+    - value: "special!@#$%"
+
+  project_count_variations:
+    - name: "none"
+      projects: []
+    - name: "one"
+      projects:
+        - id: "proj-x"
+          name: "single-project"
+          projectHash: "ph-single-001"
+    - name: "many"
+      projects:
+        - id: "proj-001"
+          name: "project-one"
+          projectHash: "ph-one-001"
+        - id: "proj-002"
+          name: "project-two"
+          projectHash: "ph-two-002"
+        - id: "proj-003"
+          name: "project-three"
+          projectHash: "ph-three-003"

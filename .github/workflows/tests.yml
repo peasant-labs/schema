@@ -1,0 +1,116 @@
+name: Tests
+
+# The schema repo quality gate. Mirrors peasant's tests.yml but for a
+# contract-only leaf: NO web/pnpm jobs, NO CGO=0 redact job (the leaf is pure Go,
+# ships no binary). Two jobs:
+#   - check          : `nix develop -c make check` — gofmt + vet + the release-
+#                      workflow guard + `go test -race ./...` (which includes the
+#                      leaf-audit test and the oasdiff/go-apidiff synthetic-break
+#                      tests; inside the dev shell those gate binaries are present
+#                      and run for real).
+#   - contract-gates : the breaking-change gates vs the PR base — oasdiff (spec
+#                      diff vs the prior released golden), go-apidiff (exported Go
+#                      API), and vacuum (OpenAPI lint). PR-only (a base ref is
+#                      required to diff against).
+#
+# Everything runs through the project's own nix dev shell so the toolchain (Go,
+# oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. Runs on
+# GitHub-hosted ubuntu-latest (no org-specific runner dependency for a fresh
+# public repo); swap in self-hosted runners if/when provisioned.
+on:
+  pull_request:
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "generated/**"
+      - "openapi/**"
+      - "Makefile"
+      - "flake.nix"
+      - "flake.lock"
+      - ".vacuum.yaml"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+  push:
+    branches: [develop, main]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
+      - "generated/**"
+      - "openapi/**"
+      - "Makefile"
+      - "flake.nix"
+      - "flake.lock"
+      - ".vacuum.yaml"
+      - "scripts/**"
+      - ".github/workflows/tests.yml"
+  # Reusable entry point: release-pr.yml calls this on a release(...) PR so the
+  # quality gate runs even when the release marker commit touches none of the
+  # path-filtered files above. Also handy for on-demand reruns.
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: make check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Cache Go build + modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
+
+      - name: make check
+        run: nix develop -c make check
+
+  contract-gates:
+    name: contract gates (vs base)
+    # The breaking-change gates need a base ref to diff against; only meaningful
+    # on a pull request.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository (full history for the base diff)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Cache Go build + modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-gates-${{ hashFiles('go.sum') }}
+          restore-keys: ${{ runner.os }}-go-gates-
+
+      - name: Fetch the PR base ref
+        run: git fetch --no-tags origin "${{ github.base_ref }}"
+
+      - name: Run contract gates vs base
+        run: nix develop -c make gates BASE_REF="origin/${{ github.base_ref }}"
