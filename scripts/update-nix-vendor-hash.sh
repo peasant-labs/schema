@@ -27,7 +27,10 @@ if [[ -z "${current_hash}" ]]; then
 fi
 
 restore_current_hash() {
-  perl -0pi -e "s/vendorHash = nixpkgs\\.lib\\.fakeHash;/vendorHash = \"${current_hash}\";/" "${flake}"
+  # s{}{} delimiters (NOT s///): the sha256 vendorHash is base64 and may contain
+  # '/', which under s/// is read as a regex delimiter (perl "Unknown regexp
+  # modifier" error). Braces are safe — base64 never contains '{' or '}'.
+  perl -0pi -e "s{vendorHash = nixpkgs\\.lib\\.fakeHash;}{vendorHash = \"${current_hash}\";}" "${flake}"
 }
 
 # Substitute only the first occurrence (no /g) so the gate-tool hashes are safe.
@@ -52,6 +55,8 @@ if [[ -z "${new_hash}" ]]; then
 fi
 
 trap - EXIT
-perl -0pi -e "s/vendorHash = nixpkgs\\.lib\\.fakeHash;/vendorHash = \"${new_hash}\";/" "${flake}"
+# s{}{} delimiters (NOT s///): ${new_hash} is base64 and may contain '/' — see
+# restore_current_hash above for why s/// breaks on it.
+perl -0pi -e "s{vendorHash = nixpkgs\\.lib\\.fakeHash;}{vendorHash = \"${new_hash}\";}" "${flake}"
 
 echo "updated vendorHash: ${current_hash} -> ${new_hash}"
