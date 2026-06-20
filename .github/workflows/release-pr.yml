@@ -120,10 +120,15 @@ jobs:
         id: title
         run: go run ./cmd/release-guard parse-title "$PR_TITLE"
 
-      - name: Assert at least one maintainer APPROVED review
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: go run ./cmd/release-guard check-approval --pr "$PR_NUMBER"
+      # TEMPORARILY DISABLED (rc1 — user-directed 2026-06-20): the maintainer-approval
+      # gate is removed so a release PR can mint the tag without a separate co-maintainer
+      # approval while the maintainer team is small. This step is the guard that prevents
+      # an unauthorized release-titled PR from minting a tag — RESTORE it before the
+      # final v0.1.0 (uncomment the four lines below). Tracked in beads.
+      # - name: Assert at least one maintainer APPROVED review
+      #   env:
+      #     GH_TOKEN: ${{ github.token }}
+      #   run: go run ./cmd/release-guard check-approval --pr "$PR_NUMBER"
 
       - name: Update Nix vendor hash before tagging
         id: nix_hash
