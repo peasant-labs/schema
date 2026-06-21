@@ -37,6 +37,32 @@ func LoadPublishVerdictFixtures() (*PublishVerdictFixtures, error) {
 	return &f, nil
 }
 
+// Acceptances returns the corpus rows the schema MUST accept (schema_accepts:true).
+// It is the accept-pass input to RunPublishVerdicts; together with Rejections it
+// partitions Cases exactly (the partition-completeness guard in RunPublishVerdicts
+// depends on len(Acceptances)+len(Rejections)==len(Cases)).
+func (f *PublishVerdictFixtures) Acceptances() []PublishVerdictCase {
+	var out []PublishVerdictCase
+	for _, c := range f.Cases {
+		if c.Expect.SchemaAccepts {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// Rejections returns the corpus rows the schema MUST reject (schema_accepts:false).
+// It is the reject-pass input to RunPublishVerdicts (see Acceptances).
+func (f *PublishVerdictFixtures) Rejections() []PublishVerdictCase {
+	var out []PublishVerdictCase
+	for _, c := range f.Cases {
+		if !c.Expect.SchemaAccepts {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
 // CaseByName returns the verdict row with the given stable name.
 func (f *PublishVerdictFixtures) CaseByName(name string) (PublishVerdictCase, bool) {
 	for _, c := range f.Cases {

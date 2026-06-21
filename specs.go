@@ -45,12 +45,13 @@ func VillageAPISpecJSON() []byte {
 // and committed under generated/publish-request-<VillageAPIVersion>.schema.json.
 //
 // This is the SINGLE BYTE-SOURCE the publish-enforce path validates against:
-// validate.ValidatePublishRequest compiles exactly these bytes, and village's
-// publish handler (W9 / Method 1) enforces through validate.ValidatePublishRequest
-// rather than vendoring its own schema copy. Routing both the documented spec and
-// the enforced schema through this one accessor means they can never drift (it
-// retired the hand-maintained validate/schema.json, which had diverged from the
-// generated artifact).
+// schema.ValidatePublishRequest (root publish_validate.go) compiles exactly these
+// bytes, and village's publish handler (W9 / Method 1) enforces through it rather
+// than vendoring its own schema copy. Routing both the documented spec and the
+// enforced schema through this one accessor means they can never drift (it retired
+// the hand-maintained validate/schema.json, which had diverged from the generated
+// artifact, and — rc2 #118 — folded the standalone `validate` subpackage into the
+// root schema package).
 //
 // It is version-aware: the filename is derived from VillageAPIVersion, never a
 // literal, so a version bump in versions.go re-points it in lockstep. The bytes

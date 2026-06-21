@@ -10,9 +10,14 @@ package schema
 // MIGRATION NOTE: The CLI's current flat UnifiedMetadata will need a coordinated
 // update to send this nested structure. This is NOT backward-compatible with the
 // current village handler — both CLI and village must update together.
+//
+// rc2 (#118): Model carries required:"true" so swaggest emits a
+// SchemaPublishRequest.required:["model"] array — a publish body with no model
+// object is rejected at the root. Metadata only (changes the generated schema's
+// `required`, not the Go wire shape).
 type PublishRequest struct {
 	Identity    SessionIdentity `json:"identity"`
-	Model       ModelInfo       `json:"model"`
+	Model       ModelInfo       `json:"model" required:"true"`
 	Timestamp   TimestampInfo   `json:"timestamp"`
 	Source      SourceInfo      `json:"source"`
 	Git         GitContext      `json:"git"`

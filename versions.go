@@ -16,7 +16,11 @@ package schema
 const (
 	// VillageAPIVersion is the info.version of the Village API spec. Bumped to
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
-	VillageAPIVersion = "0.2.0"
+	// Bumped to 0.3.0 (rc2 #118) when model + model.harness/model.model became
+	// required — a tightening of the publish contract (selective required arrays on
+	// SchemaPublishRequest + SchemaModelInfo). The 0.2.0 spec trio is retained
+	// byte-frozen under the retired-spec immutability guard.
+	VillageAPIVersion = "0.3.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). The retired 0.1.0 spec is retained byte-frozen
