@@ -28,14 +28,20 @@ type retiredSpec struct {
 	//     file's hash equals this pinned constant BY CONSTRUCTION.
 	jsonSHA256 string
 	yamlSHA256 string
+	// jsonOnly marks a retired artifact that has ONLY a .json copy and no .yaml
+	// sibling — the extracted publish-request JSON-Schema (publish-request-<v>.schema)
+	// is emitted JSON-only by the generator (it is a JSON Schema, not an OpenAPI
+	// spec doc), so freezing it must skip the .yaml present/hash check. yamlSHA256
+	// is left empty for such entries.
+	jsonOnly bool
 }
 
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
 // released-versions-immutability guard.
 //
 // SCOPE (M-A): RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.2.0, village-api-0.2.0, types-0.1.0,
-// publish-request-0.2.0) are deliberately EXCLUDED — they stay under the
+// (peasantlocal-api-0.2.0, village-api-0.3.0, types-0.1.0,
+// publish-request-0.3.0) are deliberately EXCLUDED — they stay under the
 // codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
 // them from the Go source on every run. Pinning a current version's hash here would
 // false-fail `make check` on every legitimate regen. The partition key is simply
@@ -44,7 +50,9 @@ type retiredSpec struct {
 //
 // REGISTER-AT-FREEZE-TIME: a version is MOVED into this registry at the moment it is
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
-// window where a retired spec is mutable-and-unguarded.
+// window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
+// (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
+// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model).
 var retiredSpecRegistry = []retiredSpec{
 	{
 		name:       "peasantlocal-api-0.1.0",
@@ -55,6 +63,19 @@ var retiredSpecRegistry = []retiredSpec{
 		name:       "village-api-0.1.0",
 		jsonSHA256: "114ceda1e4f6a22f1d770b0eb7964d6d4c32b0855b339b1892a2f75a88660c6d",
 		yamlSHA256: "6e9710cdad192a7ba43355ca92317f2b994e009d7a288fa7d3b49ab11a0133f1",
+	},
+	// --- 0.2.0 village-api trio: frozen at the 0.3.0 bump (rc2 #118) ---
+	{
+		name:       "village-api-0.2.0",
+		jsonSHA256: "39c89136901ee843daabd8cd25681541705d2e72b98e434c16cbe5aececa36ac",
+		yamlSHA256: "8036e5dcc74f557561adea6ca838627bcf82c901a285107a17ad8d5300826aaa",
+	},
+	{
+		// publish-request schema is JSON-only (a JSON Schema, not an OpenAPI doc),
+		// so the file is publish-request-0.2.0.schema.json with no .yaml sibling.
+		name:       "publish-request-0.2.0.schema",
+		jsonSHA256: "2f55f5472ce1a0604ccc3fa41219ed9096a8845f0d84bc6ea5b607986a4f2657",
+		jsonOnly:   true,
 	},
 }
 
@@ -82,7 +103,11 @@ func TestRetiredSpecsImmutable(t *testing.T) {
 	for _, dir := range committedSpecDirs(root) {
 		for _, rs := range retiredSpecRegistry {
 			assertFrozen(t, filepath.Join(dir, rs.name+".json"), rs.jsonSHA256)
-			assertFrozen(t, filepath.Join(dir, rs.name+".yaml"), rs.yamlSHA256)
+			// JSON-only artifacts (the extracted publish-request schema) have no
+			// .yaml sibling — skip the yaml present/hash check for them.
+			if !rs.jsonOnly {
+				assertFrozen(t, filepath.Join(dir, rs.name+".yaml"), rs.yamlSHA256)
+			}
 		}
 	}
 }

@@ -24,7 +24,7 @@ contract/<version>/{valid,invalid}/{metadata,content,annotations}.json
 
 | Version | content.json shape | Exercises |
 |---|---|---|
-| `current` | `TranscriptContent` envelope (`contractVersion` 0.1.0, `kind` session_detail), `sessionDetail` with `harness` key, a **partType-bearing** turn, `scorecard`, `outcome` | the post-merge contract; migrate-on-read no-op (already canonical) |
+| `current` | `TranscriptContent` envelope (`contractVersion` 0.1.1, `kind` session_detail), `sessionDetail` with `harness` key, a **partType-bearing** turn, `scorecard`, `outcome` | the post-merge contract (rc2 #118 PushContractVersion 0.1.1); migrate-on-read no-op (already canonical) |
 | `legacy-provider-keyed` | a **bare** `SessionDetailPayload` using the **pre-flip** `"provider"` key + legacy value `claude`; metadata uses `model.modelHarness` | B3 migrate-on-read **key+value** migration (`provider`/`modelHarness`→`harness`, `claude`→`claude-code`) + rewrite |
 | `legacy-raw-jsonl` | a raw provider **JSONL array** (no envelope); metadata uses `model.provider: gemini` | B3 raw-JSONL projection onto turns; metadata-surface `provider`→`harness` + `gemini`→`gemini-cli` |
 | `legacy-metadata-field` | **current** envelope content, but `metadata.json` carries the legacy `model.modelHarness: claude` key | isolates the **SECOND wire surface** (B-IMP-1): `normalizeMetadataHarnessKey` on the publish path (`modelHarness`→`harness`, `claude`→`claude-code`), independent of the content shape |

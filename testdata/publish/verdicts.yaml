@@ -29,18 +29,96 @@ cases:
       schema_accepts: true
       error_category: "accepted"
 
+  # rc2 (#118): model is now required at the PublishRequest root, so a body with
+  # no model object is a documented schema-422. The legacy (pre-required) 0.1.0
+  # schema still accepted {} (it had no required arrays), hence the legacy_accepts
+  # divergence. The verdict FLIP is sequenced with SLICE-3 (the 0.3.0 schema that
+  # enforces it); under 0.2.0 this row lands RED until the version bump.
   - name: "empty-object"
     body: "{}"
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "required"
+      error_contains: "missing properties: 'model'"
+
+  # Smallest body that satisfies the rc2 required-model rule: a model object with
+  # both required keys (harness + model) and nothing else. Anchors the accept side
+  # of the required-flip (the positive counterpart to the absent-* reject rows).
+  - name: "minimal-valid"
+    body: |
+      {"model": {"harness": "claude-code", "model": "claude-opus-4-6"}}
     expect:
       schema_accepts: true
       error_category: "accepted"
 
+  # Carries a valid model so it still exercises unknown-top-level-field tolerance
+  # (additionalProperties) under the rc2 required-model rule rather than being
+  # rejected for a missing model.
   - name: "unknown-top-level-field"
     body: |
-      {"source": {"format": "jsonl"}, "bogusField": 42}
+      {"model": {"harness": "claude-code", "model": "claude-opus-4-6"},
+       "source": {"format": "jsonl"}, "bogusField": 42}
     expect:
       schema_accepts: true
       error_category: "accepted"
+
+  # --- rc2 (#118) dedicated model.harness+model required-rejection rows ---
+  # All diverge from the legacy (pre-required) 0.1.0 schema, whose SchemaModelInfo
+  # had no required array and a plain-string (un-enum'd) harness, so legacy_accepts:
+  # true. error_contains is pinned to the real santhosh-tekuri/jsonschema/v5 v5.3.1
+  # messages (see RunPublishVerdicts breadcrumb). These land RED until SLICE-3.
+
+  # The model object is present with a valid model, but the `harness` KEY is
+  # omitted — SchemaModelInfo.required includes harness, so the validator reports
+  # the missing property.
+  - name: "absent-harness-key"
+    body: |
+      {"model": {"model": "claude-opus-4-6"}}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "required"
+      error_contains: "missing properties: 'harness'"
+
+  # The `harness` key is PRESENT but empty — required is satisfied, so the failure
+  # is the enum (key present, value not a known harness), not a missing-property.
+  - name: "empty-harness"
+    body: |
+      {"model": {"harness": "", "model": "claude-opus-4-6"}}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "enum"
+      error_contains: "value must be one of"
+
+  # The model object is present with a valid harness, but the `model` KEY is
+  # omitted — SchemaModelInfo.required includes model.
+  - name: "absent-model-key"
+    body: |
+      {"model": {"harness": "claude-code"}}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "required"
+      error_contains: "missing properties: 'model'"
+
+  # The whole top-level `model` object is omitted (other fields present) —
+  # SchemaPublishRequest.required includes model, so the root rejects.
+  - name: "absent-model-object"
+    body: |
+      {"identity": {"sessionId": "99d59925-36bc-424c-a789-8be54d9702ba", "schemaVersion": 9},
+       "source": {"format": "jsonl"}}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "required"
+      error_contains: "missing properties: 'model'"
 
   - name: "bad-source-format"
     body: |
@@ -163,3 +241,65 @@ cases:
       schema_accepts: false
       http_status: 422
       error_category: "pattern"
+
+  # --- Subsumption of the retired validate/validate_test.go discriminations ---
+  # These preserve the SessionID-newtype regex + nested-$ref coverage that lived
+  # ONLY in validate_test.go (FINDING-1 / AC5). Each carries a complete, valid
+  # model so the ONLY discriminating factor is the sessionId/parentUuid pattern
+  # (not the rc2 required-model rule). Both verdicts hold under the legacy 0.1.0
+  # schema too (it validates sessionId/parentUuid via the same SchemaSessionID
+  # $ref pattern), so no legacy_accepts divergence.
+  #
+  # AC5 SUBSUMPTION-MAP COMPLETENESS (every deleted validate_test.go case is
+  # accounted for — auditable here):
+  #   _Valid                          -> full-valid (accept)
+  #   _Invalid (top-level sessionId)  -> invalid-sessionId (reject, pattern)
+  #   _MissingRequired ({})           -> empty-object FLIP (reject, required)
+  #   _NestedSessionID/invalid        -> invalid-parentUuid (reject, pattern)
+  #   _NestedSessionID/valid agent-   -> valid-agent-parentUuid (accept)
+  #   _NestedSessionID/invalid prov.  -> unknown-harness (reject, enum)
+  #   omitted-harness-accepts (0.2.0) -> absent-harness-key (reject, required @0.3.0)
+  #   bad-source-format/wrong-type-*  -> existing same-named corpus rows
+  #   _InvalidJSON (malformed body)   -> NOT a corpus row. Subsumed by the inline
+  #     TestValidatePublishRequest_InvalidJSON (root publish_validate_test.go):
+  #     malformed JSON is a VALIDATOR concern (json.Unmarshal pre-pass), not a
+  #     schema-verdict one, and the corpus carries a valid-JSON-per-row invariant
+  #     (TestPublishVerdictFixtures_Structure + the parity accepts() both
+  #     json.Unmarshal every row) that a non-JSON row would break. Same shape as
+  #     upstream peasant #118. Behavior preserved (non-JSON -> reject still tested).
+
+  # Subsumes validate_test `_Invalid`: a bad TOP-LEVEL sessionId UUID is rejected
+  # by the SchemaSessionID newtype pattern.
+  - name: "invalid-sessionId"
+    body: |
+      {"identity": {"sessionId": "not-a-valid-uuid", "schemaVersion": 1},
+       "model": {"harness": "claude-code", "model": "claude-opus-4-6"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "pattern"
+      error_contains: "does not match pattern"
+
+  # Subsumes validate_test `_NestedSessionID/invalid`: a bad NESTED parentUuid is
+  # rejected via $ref to SchemaSessionID (proves nested-newtype $ref wiring).
+  - name: "invalid-parentUuid"
+    body: |
+      {"identity": {"sessionId": "99d59925-36bc-424c-a789-8be54d9702ba",
+       "parentUuid": "not-a-valid-uuid", "schemaVersion": 1},
+       "model": {"harness": "claude-code", "model": "claude-opus-4-6"}}
+    expect:
+      schema_accepts: false
+      http_status: 422
+      error_category: "pattern"
+      error_contains: "does not match pattern"
+
+  # Subsumes validate_test `_NestedSessionID/valid`: an agent-prefixed parentUuid
+  # is ACCEPTED by the SchemaSessionID pattern's agent-{hex} alternative.
+  - name: "valid-agent-parentUuid"
+    body: |
+      {"identity": {"sessionId": "99d59925-36bc-424c-a789-8be54d9702ba",
+       "parentUuid": "agent-a3aee4f", "schemaVersion": 1},
+       "model": {"harness": "claude-code", "model": "claude-opus-4-6"}}
+    expect:
+      schema_accepts: true
+      error_category: "accepted"
