@@ -23,8 +23,13 @@ import (
 // This type is ADDITIVE — it introduces a new endpoint's response shape and does
 // not alter any existing publish/annotation-push wire contract.
 type AnnotationManifestResponse struct {
-	Hashes []string `json:"hashes"`
-	Digest string   `json:"digest"`
+	// Hex-encoded SHA3-256 annotation content-hashes the village holds for the owner (sorted, de-duplicated).
+	// Always emitted as a (possibly empty) NON-null array: NewAnnotationManifestResponse
+	// normalizes via sortedUniqueHashes, which never returns nil — so nullable:"false"
+	// is the correct wire contract (matches develop's served village-api spec).
+	Hashes []string `json:"hashes" description:"Hex-encoded SHA3-256 annotation content-hashes the village holds for the owner (sorted, de-duplicated)." nullable:"false"`
+	// Deterministic, order-independent digest over the hash set; a client computing the same digest over its local set knows nothing diverged.
+	Digest string `json:"digest" description:"Deterministic, order-independent digest over the hash set; a client computing the same digest over its local set knows nothing diverged."`
 }
 
 // NewAnnotationManifestResponse builds a manifest from a set of content-hashes,

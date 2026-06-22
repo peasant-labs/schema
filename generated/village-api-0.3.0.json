@@ -428,16 +428,15 @@
       "SchemaAnnotationManifestResponse": {
         "properties": {
           "digest": {
+            "description": "Deterministic, order-independent digest over the hash set; a client computing the same digest over its local set knows nothing diverged.",
             "type": "string"
           },
           "hashes": {
+            "description": "Hex-encoded SHA3-256 annotation content-hashes the village holds for the owner (sorted, de-duplicated).",
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "type": "object"
