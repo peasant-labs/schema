@@ -36,15 +36,6 @@
 //	    goreleaser-gate check — it asserts the SUBTRACTED (binary-free) pipeline's
 //	    own publication gates via release.CheckReleaseWorkflowFile.
 //
-//	release-guard land --pr <N> --target develop [--remote origin] [--actor <login>] [--sign-key <gpg-id>]
-//	    Auto-land a PR as GitLab's "squash + merge-commit" triangle: reshape the
-//	    PR head into ONE squashed commit S on the target tip T (force-pushed with
-//	    --force-with-lease), poll mergeable_state to a settled "clean" (with S's
-//	    re-triggered checks having run), recheck the base tip, then call the merge
-//	    API (merge_method=merge, sha=S) so GitHub authors the --no-ff merge commit
-//	    M (parents [T, S]) and marks the PR MERGED. Refuses a non-clean PR. See
-//	    land.go for the full sequence and the F1/F2 race fixes.
-//
 // Every subcommand that derives a (version, kind) writes "version=<v>" and
 // "kind=<k>" to the file named by $GITHUB_OUTPUT when set (so workflow steps can
 // consume them via steps.<id>.outputs.*), and always echoes them to stdout.
@@ -66,7 +57,7 @@ var commandOutput = func(name string, args ...string) ([]byte, error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: release-guard <parse-title|parse-tag|check-final|check-workflow|check-maintainer|check-approval|land> ...")
+		fatalf("usage: release-guard <parse-title|parse-tag|check-final|check-workflow|check-maintainer|check-approval> ...")
 	}
 	sub := os.Args[1]
 	args := os.Args[2:]
@@ -84,10 +75,8 @@ func main() {
 		runCheckMaintainer(args)
 	case "check-approval":
 		runCheckApproval(args)
-	case "land":
-		runLand(args)
 	default:
-		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, check-approval, or land", sub)
+		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, or check-approval", sub)
 	}
 }
 
