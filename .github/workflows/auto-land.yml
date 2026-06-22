@@ -1,0 +1,115 @@
+name: Auto-land
+
+# Auto-land a PR into develop as GitLab's "squash + merge-commit" triangle
+# (SLICE-G). This workflow is intentionally THIN: all orchestration lives in
+# `go run ./cmd/release-guard land`, which is unit-tested via the git/gh-api
+# subprocess seam. The YAML only resolves the PR + actor, mints the releaser App
+# token, checks out full history, and invokes the CLI.
+#
+# Trigger: a maintainer either adds the `auto-merge` label to an approved+green
+# PR, or comments `/merge` on it. The trigger is NOT the gate — `land`
+# re-verifies at run time that the actor is a maintainer (--actor), that there is
+# a standing maintainer approval, and that the PR settles to
+# mergeable_state=="clean" (with the re-pushed commit's OWN checks having run)
+# before it merges.
+#
+# LOAD-BEARING — the App token: the merge MUST be authored with the
+# `peasant-labs-releaser` GitHub App token, NOT the default GITHUB_TOKEN. Only an
+# App/PAT-initiated event RE-TRIGGERS workflows, so a `release(vX.Y.Z-rcN)` PR
+# auto-landed here still fires release-pr.yml's Trigger B (which mints the tag); a
+# GITHUB_TOKEN merge would silently skip the release ceremony. The same token
+# also force-pushes the squashed commit S (Contents:write) and calls the merge
+# API (Pull-requests:write). The App must NOT be granted any branch-protection
+# bypass: an approved+green PR already satisfies develop's protection, and the
+# tool gate refuses anything non-clean.
+#
+# develop branch-protection config required (see docs/auto-land.md): NO "require
+# linear history" (it would reject the merge commit M) and NO "require signed
+# commits" unless the bot-GPG `--sign-key` path is enabled.
+
+on:
+  pull_request:
+    types: [labeled]
+    branches: [develop]
+  issue_comment:
+    types: [created]
+
+# Serialize all auto-lands into develop so two landings cannot interleave between
+# the base-tip recheck and the merge. cancel-in-progress:false — never abandon a
+# landing mid-flight (a cancelled run could leave a force-pushed S un-merged).
+concurrency:
+  group: auto-land-develop
+  cancel-in-progress: false
+
+# The workflow's own GITHUB_TOKEN stays read-only; every write (force-push S,
+# merge M) is performed with the App token minted below, so the merge re-triggers
+# downstream workflows.
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  auto-land:
+    name: auto-land into develop
+    # Gate the trigger: the `auto-merge` label was just added, OR a `/merge`
+    # comment was made on a pull request (not a plain issue).
+    if: >-
+      (github.event_name == 'pull_request' && github.event.label.name == 'auto-merge') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && startsWith(github.event.comment.body, '/merge'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Resolve PR number + triggering actor
+        id: ctx
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_FROM_PR: ${{ github.event.pull_request.number }}
+          PR_FROM_ISSUE: ${{ github.event.issue.number }}
+          ACTOR_FROM_PR: ${{ github.event.sender.login }}
+          ACTOR_FROM_COMMENT: ${{ github.event.comment.user.login }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "pr=$PR_FROM_PR" >> "$GITHUB_OUTPUT"
+            echo "actor=$ACTOR_FROM_PR" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr=$PR_FROM_ISSUE" >> "$GITHUB_OUTPUT"
+            echo "actor=$ACTOR_FROM_COMMENT" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mint App token (Contents:write to push S, Pull-requests:write to merge)
+        id: tok
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PEASANT_RELEASER_APP_ID }}
+          private-key: ${{ secrets.PEASANT_RELEASER_APP_PRIVATE_KEY }}
+          owner: peasant-labs
+          repositories: schema
+
+      - name: Checkout repository (full history)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ steps.tok.outputs.token }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Auto-land the PR (reshape -> poll-clean -> recheck -> merge)
+        env:
+          # GH_TOKEN is the App token so the merge RE-TRIGGERS workflows (the
+          # release ceremony) and the force-push has Contents:write.
+          GH_TOKEN: ${{ steps.tok.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR: ${{ steps.ctx.outputs.pr }}
+          ACTOR: ${{ steps.ctx.outputs.actor }}
+        run: |
+          set -euo pipefail
+          # Identity for the squashed commit S (M is GitHub web-flow-authored).
+          git config user.name "peasant-release-bot"
+          git config user.email "bots@peasant-labs.invalid"
+          go run ./cmd/release-guard land --pr "$PR" --target develop --actor "$ACTOR"
