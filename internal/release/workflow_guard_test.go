@@ -98,7 +98,7 @@ func peasantShapePolicy() WorkflowPolicy {
 
 // --- Each repo's own policy validates its own release.yml -------------------
 
-func TestCheckReleaseWorkflowWithPolicy_OwnPairsPass(t *testing.T) {
+func TestCheckReleaseWorkflow_OwnPairsPass(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -114,7 +114,7 @@ func TestCheckReleaseWorkflowWithPolicy_OwnPairsPass(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if err := checkReleaseWorkflowWithPolicy("release.yml", []byte(tc.workflow), tc.policy); err != nil {
+			if err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy); err != nil {
 				t.Fatalf("own policy/workflow pair rejected: %v", err)
 			}
 		})
@@ -123,7 +123,7 @@ func TestCheckReleaseWorkflowWithPolicy_OwnPairsPass(t *testing.T) {
 
 // --- Cross-fed wrong policy fails actionably (BDD #5) -----------------------
 
-func TestCheckReleaseWorkflowWithPolicy_CrossFedFailsActionably(t *testing.T) {
+func TestCheckReleaseWorkflow_CrossFedFailsActionably(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -150,7 +150,7 @@ func TestCheckReleaseWorkflowWithPolicy_CrossFedFailsActionably(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := checkReleaseWorkflowWithPolicy("release.yml", []byte(tc.workflow), tc.policy)
+			err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy)
 			if err == nil {
 				t.Fatalf("expected cross-fed pair to be rejected, got nil")
 			}
@@ -163,7 +163,7 @@ func TestCheckReleaseWorkflowWithPolicy_CrossFedFailsActionably(t *testing.T) {
 
 // --- Per-assertion rejections ------------------------------------------------
 
-func TestCheckReleaseWorkflowWithPolicy_Rejects(t *testing.T) {
+func TestCheckReleaseWorkflow_Rejects(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -286,7 +286,7 @@ jobs:
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := checkReleaseWorkflowWithPolicy("release.yml", []byte(tc.workflow), tc.policy)
+			err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy)
 			if err == nil {
 				t.Fatalf("expected rejection for %q, got nil", tc.name)
 			}
@@ -373,7 +373,7 @@ func TestLoadWorkflowPolicy_RoundTripsAndValidates(t *testing.T) {
 		t.Fatalf("loaded policy does not match expected:\n got: %+v\nwant: %+v", policy, peasantShapePolicy())
 	}
 	// End-to-end: the loaded policy validates the peasant-shape workflow.
-	if err := checkReleaseWorkflowWithPolicy("release.yml", []byte(peasantShapeReleaseWorkflow), policy); err != nil {
+	if err := checkReleaseWorkflow("release.yml", []byte(peasantShapeReleaseWorkflow), policy); err != nil {
 		t.Fatalf("loaded policy rejected its own workflow shape: %v", err)
 	}
 }

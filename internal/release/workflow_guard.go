@@ -83,13 +83,13 @@ func CheckReleaseWorkflowFile(workflowPath string, policy WorkflowPolicy) error 
 	if err != nil {
 		return fmt.Errorf("check workflow: cannot read %s during release workflow validation: %w. Fix the path or run from the repository root", workflowPath, err)
 	}
-	return checkReleaseWorkflowWithPolicy(workflowPath, data, policy)
+	return checkReleaseWorkflow(workflowPath, data, policy)
 }
 
-// checkReleaseWorkflowWithPolicy validates parsed workflow YAML against policy.
+// checkReleaseWorkflow validates parsed workflow YAML against policy.
 // It reuses the shared mappingValue/needsList/requireNeeds helpers so the
 // assertions are byte-equivalent to the hardcoded checks they generalize.
-func checkReleaseWorkflowWithPolicy(path string, data []byte, policy WorkflowPolicy) error {
+func checkReleaseWorkflow(path string, data []byte, policy WorkflowPolicy) error {
 	if len(policy.Jobs) == 0 {
 		return fmt.Errorf("check workflow: the policy for %s declares no jobs during release workflow validation. A release-guard policy must list at least the publish job and its required gates", path)
 	}
