@@ -299,11 +299,11 @@ jobs:
 
 // --- Public file wrapper: read-error path -----------------------------------
 
-func TestCheckReleaseWorkflowFileWithPolicy_ReadError(t *testing.T) {
+func TestCheckReleaseWorkflowFile_ReadError(t *testing.T) {
 	t.Parallel()
 
 	missing := filepath.Join(t.TempDir(), "does-not-exist.yml")
-	err := CheckReleaseWorkflowFileWithPolicy(missing, schemaShapePolicy())
+	err := CheckReleaseWorkflowFile(missing, schemaShapePolicy())
 	if err == nil {
 		t.Fatalf("expected a read error for a nonexistent workflow path, got nil")
 	}
@@ -315,7 +315,7 @@ func TestCheckReleaseWorkflowFileWithPolicy_ReadError(t *testing.T) {
 	}
 }
 
-func TestCheckReleaseWorkflowFileWithPolicy_ReadsAndValidates(t *testing.T) {
+func TestCheckReleaseWorkflowFile_ReadsAndValidates(t *testing.T) {
 	t.Parallel()
 
 	// The wrapper reads a real file and validates it end-to-end (happy path), so
@@ -324,7 +324,7 @@ func TestCheckReleaseWorkflowFileWithPolicy_ReadsAndValidates(t *testing.T) {
 	if err := os.WriteFile(path, []byte(schemaShapeReleaseWorkflow), 0o644); err != nil {
 		t.Fatalf("write workflow fixture: %v", err)
 	}
-	if err := CheckReleaseWorkflowFileWithPolicy(path, schemaShapePolicy()); err != nil {
+	if err := CheckReleaseWorkflowFile(path, schemaShapePolicy()); err != nil {
 		t.Fatalf("wrapper rejected a valid schema-shape workflow file: %v", err)
 	}
 }
@@ -430,18 +430,5 @@ func TestLoadWorkflowPolicy_Errors(t *testing.T) {
 				t.Fatalf("error %q does not contain expected substring %q", err.Error(), tc.wantSub)
 			}
 		})
-	}
-}
-
-// --- Retained smoke test: the hardcoded entry point stays live until SLICE-4 -
-
-func TestCheckReleaseWorkflow_HardcodedStillValid(t *testing.T) {
-	t.Parallel()
-
-	// cmd/release-guard and `make check` still call the hardcoded
-	// CheckReleaseWorkflow against schema's own release.yml shape; this guards
-	// that path until SLICE-4 cuts main.go over to the policy API.
-	if err := CheckReleaseWorkflow("release.yml", []byte(schemaShapeReleaseWorkflow)); err != nil {
-		t.Fatalf("hardcoded schema-shape check unexpectedly failed: %v", err)
 	}
 }
