@@ -23,9 +23,6 @@ const (
 	WorkflowRunPending WorkflowRunStatus = "pending"
 )
 
-// String renders the workflow-run status for CLI output and error messages.
-func (s WorkflowRunStatus) String() string { return string(s) }
-
 // WorkflowRunConclusion is the `.conclusion` field of a GitHub Actions workflow
 // run — meaningful only once Status is WorkflowRunCompleted. Typed for the same
 // reason as WorkflowRunStatus.
@@ -51,9 +48,6 @@ const (
 	// WorkflowRunNoConclusion is the empty conclusion of a not-yet-completed run.
 	WorkflowRunNoConclusion WorkflowRunConclusion = ""
 )
-
-// String renders the workflow-run conclusion for CLI output and error messages.
-func (c WorkflowRunConclusion) String() string { return string(c) }
 
 // WorkflowRun is the minimal projection of a GitHub Actions workflow run the
 // release-final gate consumes: the commit it ran against and its terminal

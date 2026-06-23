@@ -297,6 +297,38 @@ jobs:
 	}
 }
 
+// --- Public file wrapper: read-error path -----------------------------------
+
+func TestCheckReleaseWorkflowFileWithPolicy_ReadError(t *testing.T) {
+	t.Parallel()
+
+	missing := filepath.Join(t.TempDir(), "does-not-exist.yml")
+	err := CheckReleaseWorkflowFileWithPolicy(missing, schemaShapePolicy())
+	if err == nil {
+		t.Fatalf("expected a read error for a nonexistent workflow path, got nil")
+	}
+	// Actionable: names the file, says it could not be read, and how to fix it.
+	for _, want := range []string{"cannot read", missing, "Fix the path or run from the repository root"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("read error %q does not contain expected substring %q", err.Error(), want)
+		}
+	}
+}
+
+func TestCheckReleaseWorkflowFileWithPolicy_ReadsAndValidates(t *testing.T) {
+	t.Parallel()
+
+	// The wrapper reads a real file and validates it end-to-end (happy path), so
+	// the os.ReadFile success branch is exercised alongside the error branch.
+	path := filepath.Join(t.TempDir(), "release.yml")
+	if err := os.WriteFile(path, []byte(schemaShapeReleaseWorkflow), 0o644); err != nil {
+		t.Fatalf("write workflow fixture: %v", err)
+	}
+	if err := CheckReleaseWorkflowFileWithPolicy(path, schemaShapePolicy()); err != nil {
+		t.Fatalf("wrapper rejected a valid schema-shape workflow file: %v", err)
+	}
+}
+
 // --- LoadWorkflowPolicy round-trips a policy file ----------------------------
 
 const peasantShapePolicyYAML = `
