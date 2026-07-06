@@ -105,9 +105,14 @@ gate_oasdiff() {
 #
 # The match is deliberately tight: the EXACT const names, anchored, and only the
 # ` value changed from "…" to "…"` form. A stamp that is REMOVED or RENAMED
-# (`- VillageAPIVersion: removed`), or ANY non-stamp incompatible change, does NOT
-# match and still fails the gate. See TestGoAPIDiffStampExemption for the proof that
-# this exemption cannot mask a real break.
+# (`- VillageAPIVersion: removed`), a NON-stamp const value change
+# (`- OtherVersion: value changed …`), or ANY other incompatible change does NOT
+# match and still fails the gate; and a bare "Incompatible changes" header with no
+# parseable bullets fails closed. Each of those cases is pinned as a regression guard
+# in TestGoAPIDiffStampExemptionFilter (exhaustive, canned go-apidiff v0.8.3 strings
+# through this same decision), with TestGoAPIDiffStampExemption anchoring those
+# strings to go-apidiff's real output format — together the proof that this exemption
+# cannot mask a real break.
 stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion): value changed from "[^"]*" to "[^"]*"$'
 
 # evaluate_go_apidiff reads raw go-apidiff output on stdin and is the PURE pass/fail
