@@ -40,8 +40,8 @@ type retiredSpec struct {
 // released-versions-immutability guard.
 //
 // SCOPE (M-A): RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.2.0, village-api-0.3.0, types-0.1.0,
-// publish-request-0.3.0) are deliberately EXCLUDED — they stay under the
+// (peasantlocal-api-0.2.0, village-api-0.4.0, types-0.1.0,
+// publish-request-0.4.0) are deliberately EXCLUDED — they stay under the
 // codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
 // them from the Go source on every run. Pinning a current version's hash here would
 // false-fail `make check` on every legitimate regen. The partition key is simply
@@ -52,7 +52,10 @@ type retiredSpec struct {
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
 // window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
 // (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
-// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model).
+// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). The
+// 0.3.0 village-api trio (village-api-0.3.0 json+yaml + publish-request-0.3.0.schema
+// json-only) was frozen here when VillageAPIVersion bumped to 0.4.0 (added the
+// optional top-level license enum).
 var retiredSpecRegistry = []retiredSpec{
 	{
 		name:       "peasantlocal-api-0.1.0",
@@ -75,6 +78,18 @@ var retiredSpecRegistry = []retiredSpec{
 		// so the file is publish-request-0.2.0.schema.json with no .yaml sibling.
 		name:       "publish-request-0.2.0.schema",
 		jsonSHA256: "2f55f5472ce1a0604ccc3fa41219ed9096a8845f0d84bc6ea5b607986a4f2657",
+		jsonOnly:   true,
+	},
+	// --- 0.3.0 village-api trio: frozen at the 0.4.0 bump (added the license enum) ---
+	{
+		name:       "village-api-0.3.0",
+		jsonSHA256: "3a4a4b5fb893247946dcf1b2ac5c99a30b437fe5070cf2aa54ecc4ff7d2f9344",
+		yamlSHA256: "a3ed38c9f7a4e01890eb5ab2186c4945a83174a08d15cf08b45fc4ddc033de97",
+	},
+	{
+		// json-only, like publish-request-0.2.0.schema above.
+		name:       "publish-request-0.3.0.schema",
+		jsonSHA256: "06eb63fde21cd6b0a2811ff48c3c3fcce7116d14aee9e66afd30f80f14af7285",
 		jsonOnly:   true,
 	},
 }

@@ -13,13 +13,18 @@
 #              base ref (the "prior released golden"); fail on ERR-level breaks.
 #              New version files (absent on base) have nothing to diff and skip.
 #   go-apidiff exported-Go-API breaking-change diff of the module vs the base ref;
-#              fail if any incompatible change is reported.
+#              fail on any incompatible change EXCEPT an intentional spec-version
+#              stamp bump (a VillageAPIVersion / PeasantLocalAPIVersion / TypesVersion
+#              value change). Those consts are version MARKERS, not API surface (see
+#              gate_go_apidiff / stamp_exempt_regex for the full rationale).
 #
 # Usage:
 #   contract-gates.sh vacuum
-#   contract-gates.sh oasdiff   <BASE_REF>
-#   contract-gates.sh go-apidiff <BASE_REF>
-#   contract-gates.sh all       <BASE_REF>
+#   contract-gates.sh oasdiff        <BASE_REF>
+#   contract-gates.sh go-apidiff     <BASE_REF>
+#   contract-gates.sh evaluate-apidiff   # reads go-apidiff output on stdin; the
+#                                        # pure pass/fail decision (for tests)
+#   contract-gates.sh all            <BASE_REF>
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -85,6 +90,77 @@ gate_oasdiff() {
   return "${rc}"
 }
 
+# stamp_exempt_regex matches — and ONLY matches — a go-apidiff "Incompatible
+# changes" bullet reporting a VALUE CHANGE of a spec-version STAMP const. These three
+# consts (VillageAPIVersion / PeasantLocalAPIVersion / TypesVersion, from versions.go)
+# are version MARKERS, not part of the behavioural API surface: their value is the pin
+# target a consumer asserts against and the trigger that names the newly-generated
+# golden spec files. A bump is therefore an INTENTIONAL, expected "change" that
+# go-apidiff (which only sees a const's value moved) mislabels as an incompatible
+# break. The bump's real correctness is enforced elsewhere — its DRIFT is caught at
+# the CONSUMER's CI (the consumer pins + asserts the version), and its
+# new-golden-vs-mutated-golden safety is already covered on the module side by the
+# oasdiff breaking gate plus the retired-spec immutability and generated-dir
+# completeness guards. So a stamp value-change is exempt from THIS gate.
+#
+# The match is deliberately tight: the EXACT const names, anchored, and only the
+# ` value changed from "…" to "…"` form. A stamp that is REMOVED or RENAMED
+# (`- VillageAPIVersion: removed`), a NON-stamp const value change
+# (`- OtherVersion: value changed …`), or ANY other incompatible change does NOT
+# match and still fails the gate; and a bare "Incompatible changes" header with no
+# parseable bullets fails closed. Each of those cases is pinned as a regression guard
+# in TestGoAPIDiffStampExemptionFilter (exhaustive, canned go-apidiff v0.8.3 strings
+# through this same decision), with TestGoAPIDiffStampExemption anchoring those
+# strings to go-apidiff's real output format — together the proof that this exemption
+# cannot mask a real break.
+stamp_exempt_regex='^[[:space:]]*-[[:space:]]+(VillageAPIVersion|PeasantLocalAPIVersion|TypesVersion): value changed from "[^"]*" to "[^"]*"$'
+
+# evaluate_go_apidiff reads raw go-apidiff output on stdin and is the PURE pass/fail
+# decision of the go-apidiff gate (no process invocation), so it can be exercised
+# directly by a synthetic-break test. It returns:
+#   0 — PASS: no "Incompatible changes" at all, OR the only incompatible-change
+#       bullets are exempt spec-version stamp value-changes; and
+#   1 — FAIL: at least one NON-exempt incompatible change remains.
+# It is FAIL-CLOSED: if an "Incompatible changes" section is present but no bullet
+# items parse out of it, it returns 1 (the output format may have changed — do not
+# silently pass an unparsed break).
+evaluate_go_apidiff() {
+  local out; out="$(cat)"
+
+  # No incompatible-changes section anywhere -> nothing to exempt, pass.
+  if ! printf '%s\n' "${out}" | grep -qiE 'Incompatible changes'; then
+    return 0
+  fi
+
+  # Collect the incompatible-change bullet lines: the "- …" items that appear under
+  # an "Incompatible changes:" heading, per package block. A "Compatible changes:"
+  # heading or a new (non-indented) package header closes the block.
+  local incompatible
+  incompatible="$(printf '%s\n' "${out}" | awk '
+    /^[[:space:]]*Incompatible changes:/ { inblock=1; next }
+    /^[[:space:]]*Compatible changes:/   { inblock=0; next }
+    /^[^[:space:]]/                      { inblock=0 }
+    inblock && /^[[:space:]]*-[[:space:]]/ { print }
+  ')"
+
+  # Fail-closed: header seen but no bullets parsed -> unexpected format.
+  if [[ -z "$(printf '%s' "${incompatible}" | tr -d '[:space:]')" ]]; then
+    echo "::error::go-apidiff reported an 'Incompatible changes' section but no change bullets could be parsed; refusing to pass (its output format may have changed)." >&2
+    return 1
+  fi
+
+  # Drop the exempt spec-version stamp value-changes; anything left is a real break.
+  local remaining
+  remaining="$(printf '%s\n' "${incompatible}" | grep -vE "${stamp_exempt_regex}" || true)"
+  if [[ -n "$(printf '%s' "${remaining}" | tr -d '[:space:]')" ]]; then
+    echo "::error::go-apidiff reports incompatible exported-Go-API change(s) beyond the exempt spec-version stamps. A consumer pinning this module would break; treat as a breaking release (version bump) or revert the API break:" >&2
+    printf '%s\n' "${remaining}" >&2
+    return 1
+  fi
+  echo "go-apidiff: the only incompatible change(s) are intentional spec-version stamp bump(s) (VillageAPIVersion/PeasantLocalAPIVersion/TypesVersion); exempted."
+  return 0
+}
+
 gate_go_apidiff() {
   require_bin go-apidiff
   local base_ref="$1"
@@ -96,12 +172,12 @@ gate_go_apidiff() {
   local out
   out="$(go-apidiff "${base_ref}" --repo-path "${repo_root}" 2>&1)" || true
   printf '%s\n' "${out}"
-  if printf '%s\n' "${out}" | grep -qiE 'Incompatible changes'; then
-    echo "::error::go-apidiff reports incompatible exported-Go-API changes vs ${base_ref}. A consumer pinning this module would break; treat as a breaking release (version bump) or revert the API break." >&2
-    return 1
+  if printf '%s\n' "${out}" | evaluate_go_apidiff; then
+    echo "go-apidiff: no disqualifying incompatible exported-API changes vs ${base_ref}."
+    return 0
   fi
-  echo "go-apidiff: no incompatible exported-API changes vs ${base_ref}."
-  return 0
+  echo "::error::go-apidiff gate failed vs ${base_ref} (see the non-exempt incompatible change(s) above)." >&2
+  return 1
 }
 
 main() {
@@ -110,6 +186,10 @@ main() {
     vacuum)     gate_vacuum ;;
     oasdiff)    gate_oasdiff "${2:-}" ;;
     go-apidiff) gate_go_apidiff "${2:-}" ;;
+    # evaluate-apidiff reads go-apidiff output on stdin and applies ONLY the pure
+    # pass/fail decision (the stamp-exemption filter) — the seam the synthetic-break
+    # test drives with real go-apidiff output from a throwaway repo.
+    evaluate-apidiff) evaluate_go_apidiff ;;
     all)
       local base_ref="${2:-}" rc=0
       gate_vacuum || rc=1
@@ -118,7 +198,7 @@ main() {
       return "${rc}"
       ;;
     *)
-      echo "usage: contract-gates.sh <vacuum|oasdiff <BASE_REF>|go-apidiff <BASE_REF>|all <BASE_REF>>" >&2
+      echo "usage: contract-gates.sh <vacuum|oasdiff <BASE_REF>|go-apidiff <BASE_REF>|evaluate-apidiff|all <BASE_REF>>" >&2
       exit 2
       ;;
   esac

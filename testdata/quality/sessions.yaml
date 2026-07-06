@@ -122,6 +122,12 @@ quality_sessions:
     scopeBreadth: 1
     discoveryTurns: 1
 
+quality_fixture_sets:
+  - name: "project_mix"
+    cases:
+      - "resolved_typical"
+      - "partial_medium"
+
 # Combinatorial variations for fuzzing
 quality_variations:
   outcomes:

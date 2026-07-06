@@ -219,3 +219,206 @@ func Stable() string { return "stable" }
 		t.Fatalf("go-apidiff reported incompatible changes but did not mention the removed symbol:\n%s", out)
 	}
 }
+
+// runEvaluateAPIDiff pipes go-apidiff output through the SHIPPED gate decision
+// (scripts/contract-gates.sh evaluate-apidiff) and returns its exit code
+// (0 = gate PASS, 1 = gate FAIL). It needs only bash + the committed gate script —
+// NOT the go-apidiff binary — so canned-string cases can exercise the filter even
+// where go-apidiff is absent.
+func runEvaluateAPIDiff(t *testing.T, root, apidiff string) int {
+	t.Helper()
+	gateScript := filepath.Join(root, "scripts", "contract-gates.sh")
+	cmd := exec.Command("bash", gateScript, "evaluate-apidiff")
+	cmd.Dir = root
+	cmd.Stdin = strings.NewReader(apidiff)
+	out, err := cmd.CombinedOutput()
+	t.Logf("evaluate-apidiff verdict:\n%s", out)
+	if err == nil {
+		return 0
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		return exitErr.ExitCode()
+	}
+	t.Fatalf("evaluate-apidiff failed to run: %v\n%s", err, out)
+	return -1
+}
+
+// TestGoAPIDiffStampExemption is the REAL-go-apidiff FORMAT ANCHOR for the stamp
+// exemption: it proves the two cases through actual go-apidiff v0.8.3 output (from a
+// throwaway repo, where go-apidiff — unlike a linked worktree — analyses cleanly),
+// confirming the canned strings in TestGoAPIDiffStampExemptionFilter mirror the tool's
+// current format:
+//
+//	(a) a stamp-ONLY value change PASSES the gate; and
+//	(b) a stamp change ACCOMPANIED by a real incompatible change (a removed exported
+//	    symbol) still FAILS.
+//
+// The EXHAUSTIVE tightness/fail-closed cases (non-stamp value change, stamp removal,
+// header-without-bullets) live in TestGoAPIDiffStampExemptionFilter as canned-string
+// cases through the SAME seam — kept separate so they run without the go-apidiff
+// binary. Both drive the SHIPPED gate decision (contract-gates.sh evaluate-apidiff),
+// not a reimplementation of it.
+func TestGoAPIDiffStampExemption(t *testing.T) {
+	skipIfMissing(t, "go-apidiff")
+	skipIfMissing(t, "git")
+	skipIfMissing(t, "go")
+	skipIfMissing(t, "bash")
+
+	root := moduleRoot(t)
+	gateScript := filepath.Join(root, "scripts", "contract-gates.sh")
+	if _, err := os.Stat(gateScript); err != nil {
+		t.Fatalf("gate script %s missing: %v", gateScript, err)
+	}
+
+	// apidiffOutput builds a throwaway git repo (base API, then head API), runs
+	// go-apidiff across the two commits, and returns its raw output.
+	apidiffOutput := func(t *testing.T, baseAPI, headAPI string) string {
+		t.Helper()
+		dir := t.TempDir()
+		writeFile := func(name, content string) {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+				t.Fatalf("write %s: %v", name, err)
+			}
+		}
+		git := func(args ...string) string {
+			cmd := exec.Command("git", args...)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(),
+				"GIT_AUTHOR_NAME=stampexempt", "GIT_AUTHOR_EMAIL=stampexempt@invalid",
+				"GIT_COMMITTER_NAME=stampexempt", "GIT_COMMITTER_EMAIL=stampexempt@invalid",
+			)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+			}
+			return strings.TrimSpace(string(out))
+		}
+		writeFile("go.mod", "module example.com/stampexempt\n\ngo 1.25\n")
+		writeFile("api.go", baseAPI)
+		git("init", "-q")
+		git("add", ".")
+		git("commit", "-q", "-m", "base")
+		base := git("rev-parse", "HEAD")
+		writeFile("api.go", headAPI)
+		git("add", ".")
+		git("commit", "-q", "-m", "head")
+		head := git("rev-parse", "HEAD")
+
+		cmd := exec.Command("go-apidiff", base, head, "--repo-path", dir)
+		// go-apidiff resolves the module from the working directory, so run it inside
+		// the throwaway repo (see TestGoAPIDiffSyntheticBreak).
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod")
+		out, runErr := cmd.CombinedOutput()
+		t.Logf("go-apidiff output (exit %v):\n%s", runErr, out)
+		return string(out)
+	}
+
+	// (a) stamp-ONLY value change -> gate PASSES.
+	aOut := apidiffOutput(t,
+		`package stampexempt
+
+const VillageAPIVersion = "0.3.0"
+
+func Stable() string { return "s" }
+`,
+		`package stampexempt
+
+const VillageAPIVersion = "0.4.0"
+
+func Stable() string { return "s" }
+`,
+	)
+	if !strings.Contains(aOut, "Incompatible changes") || !strings.Contains(aOut, "VillageAPIVersion") {
+		t.Fatalf("precondition (a): go-apidiff did not flag the VillageAPIVersion bump as incompatible:\n%s", aOut)
+	}
+	if got := runEvaluateAPIDiff(t, root, aOut); got != 0 {
+		t.Fatalf("(a) stamp-only bump: gate exit = %d, want 0 (PASS) — the stamp exemption did not apply", got)
+	}
+
+	// (b) stamp value change + a REAL break (removed exported func) -> gate FAILS.
+	bOut := apidiffOutput(t,
+		`package stampexempt
+
+const VillageAPIVersion = "0.3.0"
+
+func Stable() string { return "s" }
+func Removed() string { return "r" }
+`,
+		`package stampexempt
+
+const VillageAPIVersion = "0.4.0"
+
+func Stable() string { return "s" }
+`,
+	)
+	if !strings.Contains(bOut, "Removed") {
+		t.Fatalf("precondition (b): go-apidiff did not flag the removed exported func:\n%s", bOut)
+	}
+	if got := runEvaluateAPIDiff(t, root, bOut); got != 1 {
+		t.Fatalf("(b) stamp bump + removed exported func: gate exit = %d, want 1 (FAIL) — the exemption masked a REAL break", got)
+	}
+}
+
+// TestGoAPIDiffStampExemptionFilter exhaustively pins the tightness of the stamp
+// exemption through the SAME shipped seam (contract-gates.sh evaluate-apidiff) using
+// CANNED go-apidiff v0.8.3-format strings — so these cases run without the go-apidiff
+// binary (only bash is required) and are the durable regression guard behind the
+// script's "cannot mask a real break" claim. TestGoAPIDiffStampExemption validates
+// that these strings mirror go-apidiff's REAL current format; if a future go-apidiff
+// bump changes it, that test surfaces the drift.
+func TestGoAPIDiffStampExemptionFilter(t *testing.T) {
+	skipIfMissing(t, "bash")
+	root := moduleRoot(t)
+
+	// Only a stamp const's VALUE CHANGE is exempt — this is the PASS control at the
+	// seam (mirrors TestGoAPIDiffStampExemption case (a) without needing a repo).
+	stampValueChange := `example.com/cap
+  Incompatible changes:
+  - VillageAPIVersion: value changed from "0.3.0" to "0.4.0"
+`
+
+	// A NON-stamp const value change: identical quoted value-change FORM, only the
+	// name differs. This is the case (b) does NOT cover — (b)'s break is a func
+	// removal (a different bullet form), so a regex over-broadened to
+	// `.*: value changed from` would still pass (a) and fail (b); ONLY this row
+	// catches that over-broadening. (A string const is used deliberately: an int
+	// const renders unquoted — `value changed from 3 to 5` — and would not exercise
+	// the quoted-form tightness.)
+	nonStampValueChange := `example.com/cap
+  Incompatible changes:
+  - OtherVersion: value changed from "0.3.0" to "0.4.0"
+`
+
+	// A stamp REMOVED (not a value change) is a real break — proves the exemption is
+	// tight to the value-change FORM, not just the name.
+	stampRemoved := `example.com/cap
+  Incompatible changes:
+  - VillageAPIVersion: removed
+`
+
+	// An "Incompatible changes" header with no parseable bullets. go-apidiff v0.8.3
+	// never emits this (it always renders ≥1 bullet); it is a SYNTHETIC stand-in for a
+	// future output-format drift, which is exactly what the fail-closed branch guards
+	// against — silently passing a real break it could no longer parse.
+	headerNoBullets := `example.com/cap
+  Incompatible changes:
+`
+
+	for _, tc := range []struct {
+		name     string
+		apidiff  string
+		wantExit int // 0 = gate PASS, 1 = gate FAIL
+	}{
+		{"stamp value-change is exempt (PASS)", stampValueChange, 0},
+		{"non-stamp value-change is NOT exempt (FAIL)", nonStampValueChange, 1},
+		{"stamp removal is NOT exempt (FAIL)", stampRemoved, 1},
+		{"fail-closed on header without bullets (FAIL)", headerNoBullets, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := runEvaluateAPIDiff(t, root, tc.apidiff); got != tc.wantExit {
+				t.Fatalf("%s: evaluate-apidiff exit = %d, want %d", tc.name, got, tc.wantExit)
+			}
+		})
+	}
+}
