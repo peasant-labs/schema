@@ -1,6 +1,8 @@
 package schema_test
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema"
@@ -359,5 +361,86 @@ func TestVisibility_IsValid(t *testing.T) {
 	}
 	if schema.Visibility("unknown").IsValid() {
 		t.Error("unknown visibility should be invalid")
+	}
+}
+
+// --- License ---
+
+func TestLicense_IsValid(t *testing.T) {
+	for _, l := range schema.AllLicenses {
+		if !l.IsValid() {
+			t.Errorf("AllLicenses contains %q but IsValid() = false", l)
+		}
+	}
+	if schema.License("MIT").IsValid() {
+		t.Error(`License("MIT").IsValid() = true, want false`)
+	}
+	if schema.License("").IsValid() {
+		t.Error(`License("").IsValid() = true, want false`)
+	}
+}
+
+// TestLicenseMenu pins the human-readable menu directly (de-circularizing the
+// CLI/error-message tests that assert against LicenseMenu()'s own output): it
+// catches a separator or ordering regression in the AllLicenses join.
+func TestLicenseMenu(t *testing.T) {
+	const want = "CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0"
+	if got := schema.LicenseMenu(); got != want {
+		t.Errorf("LicenseMenu() = %q, want %q", got, want)
+	}
+}
+
+// TestLicense_WireRoundTrip pins the omitempty + round-trip behaviour on the two
+// wire fields that carry a license: an absent license must NOT serialize the key
+// (omitempty), and a set license must survive a JSON marshal→unmarshal round-trip.
+func TestLicense_WireRoundTrip(t *testing.T) {
+	// PublishRequest.License
+	var pr schema.PublishRequest
+	b, err := json.Marshal(pr)
+	if err != nil {
+		t.Fatalf("marshal empty PublishRequest: %v", err)
+	}
+	if strings.Contains(string(b), "license") {
+		t.Errorf("PublishRequest with no license must omit the key (omitempty); got %s", b)
+	}
+	pr.License = schema.LicenseCCBY
+	b, err = json.Marshal(pr)
+	if err != nil {
+		t.Fatalf("marshal PublishRequest with license: %v", err)
+	}
+	if !strings.Contains(string(b), `"license":"CC-BY-4.0"`) {
+		t.Errorf("PublishRequest license not serialized; got %s", b)
+	}
+	var prBack schema.PublishRequest
+	if err := json.Unmarshal(b, &prBack); err != nil {
+		t.Fatalf("unmarshal PublishRequest: %v", err)
+	}
+	if prBack.License != schema.LicenseCCBY {
+		t.Errorf("PublishRequest license round-trip = %q, want %q", prBack.License, schema.LicenseCCBY)
+	}
+
+	// PullTranscriptInfo.License
+	var pti schema.PullTranscriptInfo
+	b, err = json.Marshal(pti)
+	if err != nil {
+		t.Fatalf("marshal empty PullTranscriptInfo: %v", err)
+	}
+	if strings.Contains(string(b), "license") {
+		t.Errorf("PullTranscriptInfo with no license must omit the key (omitempty); got %s", b)
+	}
+	pti.License = schema.LicenseCC0
+	b, err = json.Marshal(pti)
+	if err != nil {
+		t.Fatalf("marshal PullTranscriptInfo with license: %v", err)
+	}
+	if !strings.Contains(string(b), `"license":"CC0-1.0"`) {
+		t.Errorf("PullTranscriptInfo license not serialized; got %s", b)
+	}
+	var ptiBack schema.PullTranscriptInfo
+	if err := json.Unmarshal(b, &ptiBack); err != nil {
+		t.Fatalf("unmarshal PullTranscriptInfo: %v", err)
+	}
+	if ptiBack.License != schema.LicenseCC0 {
+		t.Errorf("PullTranscriptInfo license round-trip = %q, want %q", ptiBack.License, schema.LicenseCC0)
 	}
 }

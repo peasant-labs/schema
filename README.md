@@ -20,7 +20,7 @@ Module path: `github.com/peasant-labs/schema`
 | `versions.go` | Single source of truth for the versioned-spec semvers (`VillageAPIVersion`, `PeasantLocalAPIVersion`, `TypesVersion`). |
 | `openapi/` | OpenAPI 3.1 spec builders (`BuildVillageAPISpec`, `BuildPeasantLocalAPISpec`, `BuildTypesSpec`) + the artifact generator. |
 | `generated/` | Committed OpenAPI spec goldens (JSON + YAML) + the standalone PublishRequest JSON Schema. **Gate-checked**; regenerate with `go run ./cmd/schema-gen`. |
-| `validate/` | `ValidatePublishRequest` — the JSON-Schema validator the village enforces on publish. |
+| `publish_validate.go` (root, `package schema`) | `ValidatePublishRequest` — the JSON-Schema validator the village enforces on publish (compiles the `PublishRequestSchemaJSON()` bytes, so the served doc ≡ the enforced schema). |
 | `migrations/village/` | Embedded village SQL migrations (`embed.FS`). |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + test fixtures. |
 | `cmd/schema-gen/` | Regenerates `generated/` specs + Redoc/HTML docs. The contract gates' freshness/immutability/surface tests live here. |
@@ -87,9 +87,9 @@ the no-local-`replace` (`vendorHash`-stability) rules.
 
 ## Open items
 
-- **LICENSE** — this public repo has no committed `LICENSE` yet; the flake `meta`
-  carries an honest placeholder (`LicenseRef-Peasant-Schema-Placeholder`,
-  `free = false`) until the final license is chosen. This is a user decision.
+- **LICENSE** — Apache-2.0. The `LICENSE` file at the repo root carries the
+  verbatim Apache License 2.0 text; the flake `meta.license` is the SPDX
+  `Apache-2.0` id (`licenses.asl20`).
 - **CI + release pipeline** — DONE (SLICE-B): contract gates (`oasdiff` /
   `go-apidiff` / `vacuum`, provisioned via the flake), `tests.yml`,
   `release-pr.yml` / `release.yml`, and `nix-vendor-hash.yml`. The release

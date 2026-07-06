@@ -219,3 +219,138 @@ func Stable() string { return "stable" }
 		t.Fatalf("go-apidiff reported incompatible changes but did not mention the removed symbol:\n%s", out)
 	}
 }
+
+// TestGoAPIDiffStampExemption is the load-bearing proof that the go-apidiff gate's
+// spec-version-stamp exemption does NOT punch a hole. go-apidiff sees a bump of a
+// version-marker const (VillageAPIVersion / PeasantLocalAPIVersion / TypesVersion) as
+// an "incompatible" value change; the gate exempts exactly that so an intentional
+// version bump does not red the contract gate. This test proves:
+//
+//	(a) a stamp-ONLY value change PASSES the gate; but
+//	(b) a stamp change ACCOMPANIED by a real incompatible change (a removed exported
+//	    symbol) still FAILS.
+//
+// It drives the SHIPPED gate decision — scripts/contract-gates.sh evaluate-apidiff —
+// with REAL go-apidiff output produced from a throwaway repo (where go-apidiff, unlike
+// a linked worktree, analyses cleanly), so it exercises the real filter, not a
+// reimplementation of it.
+func TestGoAPIDiffStampExemption(t *testing.T) {
+	skipIfMissing(t, "go-apidiff")
+	skipIfMissing(t, "git")
+	skipIfMissing(t, "go")
+	skipIfMissing(t, "bash")
+
+	root := moduleRoot(t)
+	gateScript := filepath.Join(root, "scripts", "contract-gates.sh")
+	if _, err := os.Stat(gateScript); err != nil {
+		t.Fatalf("gate script %s missing: %v", gateScript, err)
+	}
+
+	// apidiffOutput builds a throwaway git repo (base API, then head API), runs
+	// go-apidiff across the two commits, and returns its raw output.
+	apidiffOutput := func(t *testing.T, baseAPI, headAPI string) string {
+		t.Helper()
+		dir := t.TempDir()
+		writeFile := func(name, content string) {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+				t.Fatalf("write %s: %v", name, err)
+			}
+		}
+		git := func(args ...string) string {
+			cmd := exec.Command("git", args...)
+			cmd.Dir = dir
+			cmd.Env = append(os.Environ(),
+				"GIT_AUTHOR_NAME=stampexempt", "GIT_AUTHOR_EMAIL=stampexempt@invalid",
+				"GIT_COMMITTER_NAME=stampexempt", "GIT_COMMITTER_EMAIL=stampexempt@invalid",
+			)
+			out, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+			}
+			return strings.TrimSpace(string(out))
+		}
+		writeFile("go.mod", "module example.com/stampexempt\n\ngo 1.25\n")
+		writeFile("api.go", baseAPI)
+		git("init", "-q")
+		git("add", ".")
+		git("commit", "-q", "-m", "base")
+		base := git("rev-parse", "HEAD")
+		writeFile("api.go", headAPI)
+		git("add", ".")
+		git("commit", "-q", "-m", "head")
+		head := git("rev-parse", "HEAD")
+
+		cmd := exec.Command("go-apidiff", base, head, "--repo-path", dir)
+		// go-apidiff resolves the module from the working directory, so run it inside
+		// the throwaway repo (see TestGoAPIDiffSyntheticBreak).
+		cmd.Dir = dir
+		cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod")
+		out, runErr := cmd.CombinedOutput()
+		t.Logf("go-apidiff output (exit %v):\n%s", runErr, out)
+		return string(out)
+	}
+
+	// evaluate pipes go-apidiff output through the REAL gate decision and returns its
+	// exit code (0 = gate PASS, 1 = gate FAIL).
+	evaluate := func(t *testing.T, apidiff string) int {
+		t.Helper()
+		cmd := exec.Command("bash", gateScript, "evaluate-apidiff")
+		cmd.Dir = root
+		cmd.Stdin = strings.NewReader(apidiff)
+		out, err := cmd.CombinedOutput()
+		t.Logf("evaluate-apidiff verdict:\n%s", out)
+		if err == nil {
+			return 0
+		}
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return exitErr.ExitCode()
+		}
+		t.Fatalf("evaluate-apidiff failed to run: %v\n%s", err, out)
+		return -1
+	}
+
+	// (a) stamp-ONLY value change -> gate PASSES.
+	aOut := apidiffOutput(t,
+		`package stampexempt
+
+const VillageAPIVersion = "0.3.0"
+
+func Stable() string { return "s" }
+`,
+		`package stampexempt
+
+const VillageAPIVersion = "0.4.0"
+
+func Stable() string { return "s" }
+`,
+	)
+	if !strings.Contains(aOut, "Incompatible changes") || !strings.Contains(aOut, "VillageAPIVersion") {
+		t.Fatalf("precondition (a): go-apidiff did not flag the VillageAPIVersion bump as incompatible:\n%s", aOut)
+	}
+	if got := evaluate(t, aOut); got != 0 {
+		t.Fatalf("(a) stamp-only bump: gate exit = %d, want 0 (PASS) — the stamp exemption did not apply", got)
+	}
+
+	// (b) stamp value change + a REAL break (removed exported func) -> gate FAILS.
+	bOut := apidiffOutput(t,
+		`package stampexempt
+
+const VillageAPIVersion = "0.3.0"
+
+func Stable() string { return "s" }
+func Removed() string { return "r" }
+`,
+		`package stampexempt
+
+const VillageAPIVersion = "0.4.0"
+
+func Stable() string { return "s" }
+`,
+	)
+	if !strings.Contains(bOut, "Removed") {
+		t.Fatalf("precondition (b): go-apidiff did not flag the removed exported func:\n%s", bOut)
+	}
+	if got := evaluate(t, bOut); got != 1 {
+		t.Fatalf("(b) stamp bump + removed exported func: gate exit = %d, want 1 (FAIL) — the exemption masked a REAL break", got)
+	}
+}
