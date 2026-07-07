@@ -23,10 +23,10 @@ A release is cut by **merging a `release(vX.Y.Z[-rcN]): <summary>`-titled PR int
 
 ```
 release PR (title: "release(vX.Y.Z[-rcN]): …")  →  develop
-   │  ≥1 maintainer approval; merged by a maintainer
+   │  merged by a maintainer (approval gate deferred to the public flip — §2/§6)
    ▼
 release-pr.yml (merge trigger)
-   │  check-approval → make nix-vendor-hash (commit a flake.nix fix if needed)
+   │  make nix-vendor-hash (commit a flake.nix fix if needed)
    │  → push annotated tag vX.Y.Z[-rcN] via the releaser App token
    ▼ (tag push triggers)
 release.yml
@@ -86,6 +86,24 @@ the same App peasant uses, additionally installed on the schema repo. The live
 No other secrets are needed (no registry tokens, no AUR key, no Homebrew tap — all
 subtracted).
 
+### Maintainer gating
+
+Authorization is GitHub collaborator **permission** (`admin`/`maintain`), asserted by
+`release-guard check-maintainer` on the PR author — not a checked-in `MAINTAINERS`
+file:
+
+- On release-PR open/edit: the PR **author** must be `admin`/`maintain`, and the title
+  must parse (`release-guard parse-title`).
+- On merge: a pre-existing tag is a **hard fail**. The at-least-one-APPROVED-review
+  assertion is **deferred until the public flip**: with a single active maintainer,
+  GitHub's no-self-approval rule makes it unsatisfiable. `release-guard check-approval`
+  remains implemented + tested (byte-identical to peasant's guard); its step in
+  `release-pr.yml`'s tag job is commented out and is re-enabled alongside branch
+  protection at the public flip (§6).
+
+Branch protection (≥1 approval on `develop`) is defense-in-depth, configured at the
+public flip.
+
 ---
 
 ## 3. Cutting an rc (the v0.1.0-rc1 ceremony)
@@ -101,8 +119,9 @@ subtracted).
    `release-pr.yml` (open trigger) validates the title grammar + that **you are an
    admin/maintain collaborator**, and runs the full `tests.yml` gate (make check +
    contract-gates) on the PR.
-3. Get **one maintainer approval**, then **merge**. On merge, `release-pr.yml`:
-   - asserts the approval (`release-guard check-approval`),
+3. **Merge** (the maintainer-approval assertion is deferred to the public flip — §2/§6;
+   the guard code is live and tested, its workflow step commented out). On merge,
+   `release-pr.yml`:
    - runs `make nix-vendor-hash` on the merge commit (commits a `chore: update nix
      vendor hash` fix to develop first if `flake.nix` changed),
    - pushes the annotated tag `v0.1.0-rc1` on the hash-current commit (App token).
@@ -140,13 +159,39 @@ same-version `-rcN` that is green **and** an ancestor of the final commit
 
 **Requires a maintainer / the user (an agent must not do these):**
 
-1. **Push this SLICE-B branch + open the PR** into `develop` on
+1. **Push this branch + open the PR** into `develop` on
    `peasant-labs/schema` (GitHub).
 2. **Install the `peasant-labs-releaser` GitHub App** on `peasant-labs/schema`
    with Contents: write, and add the `PEASANT_RELEASER_APP_ID` /
    `PEASANT_RELEASER_APP_PRIVATE_KEY` repo secrets (§2).
 3. **Cut `v0.1.0-rc1`** via the §3 ceremony — the live run is the MVP proof gate.
-   A maintainer must open the `release(v0.1.0-rc1): …` PR, approve, and merge; the
-   pipeline mints the tag and publishes the prerelease. **Do not push the
-   `v0.1.0-rc1` tag manually** — the ceremony is the only sanctioned path, and
-   the App-token tag push is what proves the installation works.
+   A maintainer must open the `release(v0.1.0-rc1): …` PR and merge it (the
+   approval assertion is deferred to the public flip — §2/§6); the pipeline mints
+   the tag and publishes the prerelease. **Do not push the `v0.1.0-rc1` tag
+   manually** — the ceremony is the only sanctioned path, and the App-token tag
+   push is what proves the installation works.
+
+---
+
+## 6. Public-flip checklist (one-time)
+
+Run these, in order, when taking the schema repo public and enabling external
+consumption of tagged releases. Mirrors peasant's public-flip checklist, minus the
+binary/packaging items this contract library does not ship (no goreleaser, no
+deb/rpm/AUR/Homebrew/nixpkgs — see "What is SUBTRACTED vs peasant" in §1).
+
+- [ ] Make the repository **public**.
+- [ ] Confirm the `peasant-labs-releaser` GitHub App has `Contents: write` on
+      `peasant-labs/schema` (§2) — it pushes the annotated tag + the `chore: update
+      nix vendor hash` commit.
+- [ ] Configure branch protection on `develop` (≥1 approval) as defense-in-depth,
+      and **re-enable the `check-approval` step** in `release-pr.yml`'s tag job
+      (commented out pre-flip; the `release-guard check-approval` guard code is live
+      and tested — byte-identical to peasant's). This closes the §2 deferral.
+- [ ] **Live verification (post-flip):**
+      - A `release(vX.Y.Z-rcN): …` PR merges and `release-pr.yml` mints the annotated
+        tag via the App token; `release.yml` runs guard → nix-vendor-hash freshness →
+        contract-gates and publishes a prerelease GitHub Release with the `generated/`
+        OpenAPI specs attached.
+      - `go get github.com/peasant-labs/schema@vX.Y.Z-rcN` resolves against the public
+        module for a downstream consumer (peasant / village pin).

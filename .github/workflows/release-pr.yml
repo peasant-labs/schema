@@ -120,11 +120,13 @@ jobs:
         id: title
         run: go run ./cmd/release-guard parse-title "$PR_TITLE"
 
-      # TEMPORARILY DISABLED (rc1 — user-directed 2026-06-20): the maintainer-approval
-      # gate is removed so a release PR can mint the tag without a separate co-maintainer
-      # approval while the maintainer team is small. This step is the guard that prevents
-      # an unauthorized release-titled PR from minting a tag — RESTORE it before the
-      # final v0.1.0 (uncomment the four lines below). Tracked in beads.
+      # The maintainer-approval assertion (release-guard check-approval) is
+      # DELIBERATELY not enforced pre-flip: with a single active maintainer,
+      # GitHub's no-self-approval rule makes it unsatisfiable. This step is the
+      # guard that stops an unauthorized release-titled PR from minting a tag;
+      # the subcommand + its tests remain live in cmd/release-guard. Re-enable
+      # this step alongside branch protection at the public flip (runbook §6 —
+      # uncomment the four lines below):
       # - name: Assert at least one maintainer APPROVED review
       #   env:
       #     GH_TOKEN: ${{ github.token }}
