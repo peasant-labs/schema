@@ -1,0 +1,130 @@
+name: go-apidiff comment
+
+# Write-scoped companion to the READ-ONLY Tests workflow. tests.yml's
+# contract-gates job runs go-apidiff ONCE and uploads its outcome (the changes /
+# compatible files + the PR number) as the `go-apidiff-comment` artifact; this
+# workflow_run-triggered workflow downloads that artifact from the completed run
+# and posts/upserts the sticky PR comment with the pull-requests:write scope that
+# tests.yml deliberately no longer holds — so tests.yml can be called as a
+# reusable gate by release-pr.yml (whose token ceiling is pull-requests: read).
+#
+# The five comment states + the marker + idempotency are IDENTICAL to the logic
+# that used to live inline in tests.yml; only WHERE it posts moved. The gate
+# decision itself (scripts/contract-gates.sh / internal/contractgates) is
+# unchanged.
+on:
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+
+# workflow_run runs in the BASE repo context, so this has write even for fork
+# PRs. contents: read (none needed beyond default), actions: read (cross-run
+# artifact download), pull-requests: write (upsert the comment).
+permissions:
+  contents: read
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    name: upsert go-apidiff PR comment
+    # Only PR-triggered Tests runs produce the artifact; push/dispatch runs skip
+    # contract-gates entirely, so there is nothing to comment on.
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Download the payload from the TRIGGERING Tests run. A missing artifact
+      # (contract-gates skipped, or upload failed) must be a clean no-op, not a
+      # failure — continue-on-error + gating the comment step on the outcome.
+      - name: Download the go-apidiff comment payload
+        id: download
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: go-apidiff-comment
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: apidiff-comment
+
+      - name: Upsert go-apidiff PR comment
+        if: steps.download.outcome == 'success'
+        uses: actions/github-script@v7
+        env:
+          APIDIFF_DIR: apidiff-comment
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const dir = process.env.APIDIFF_DIR;
+            const marker = '<!-- go-apidiff-gate -->';
+
+            // PR number: a workflow_run event has NO context.issue.number, so the
+            // producing job carried it in the artifact.
+            let issue_number;
+            try {
+              issue_number = parseInt(fs.readFileSync(path.join(dir, 'pr-number.txt'), 'utf8').trim(), 10);
+            } catch (e) {
+              core.info('go-apidiff: no pr-number.txt in the artifact; nothing to comment on.');
+              return;
+            }
+            if (!Number.isInteger(issue_number) || issue_number <= 0) {
+              core.warning('go-apidiff: artifact pr-number.txt is not a valid PR number; skipping.');
+              return;
+            }
+
+            // Incompatible signal is a TRI-STATE derived from go-apidiff's OWN outcome:
+            //   readFileSync throws (absent) => blind / fail-closed => established nothing
+            //   present + empty              => go-apidiff CLEAN (oasdiff state irrelevant)
+            //   present + non-empty          => WARN (incompatible change(s) to report)
+            let established = true, changes = '';
+            try { changes = fs.readFileSync(path.join(dir, 'apidiff-changes.txt'), 'utf8').trim(); }
+            catch (e) { established = false; }
+            let compatible = '';
+            try { compatible = fs.readFileSync(path.join(dir, 'apidiff-compatible.txt'), 'utf8').trim(); }
+            catch (e) { compatible = ''; }
+
+            const { owner, repo } = context.repo;
+            let existing = null;
+            try {
+              const all = await github.paginate(github.rest.issues.listComments,
+                { owner, repo, issue_number, per_page: 100 });
+              existing = all.find(c => c.body && c.body.includes(marker));
+            } catch (e) { core.warning(`list comments failed: ${e.message}`); }
+
+            const incompatibleSection = changes
+              ? `### go-apidiff — incompatible exported-Go-API change(s) vs base\n\n`
+                + `Pre-release policy: these are **warnings, not blockers** (the module is pre-1.0). `
+                + `Ship a version bump when you release.\n\n\`\`\`\n${changes}\n\`\`\`\n\n`
+              : '';
+            const compatibleSection = compatible
+              ? `### go-apidiff — compatible (non-breaking) changes vs base\n\n`
+                + `Informational (additive) — no action required.\n\n\`\`\`\n${compatible}\n\`\`\`\n\n`
+              : '';
+
+            let body;
+            if (!established) {
+              // Fail-closed / gate blind: establish nothing; never touch a prior comment.
+              core.info('go-apidiff: outcome not established (fail-closed/absent signal); leaving any prior comment untouched.');
+              return;
+            } else if (changes) {
+              body = `${marker}\n${incompatibleSection}${compatibleSection}`.trimEnd();     // warning + BOTH sections
+            } else if (compatible) {
+              // Compatible-only additive delta -> informational comment (no warning, green job).
+              // Settled at Plan UAT: purely-additive PRs post their own informational delta comment.
+              body = `${marker}\n${compatibleSection}`.trimEnd();
+            } else if (existing) {
+              // Truly clean AND a prior comment exists -> flip to "no changes", REGARDLESS of oasdiff.
+              body = `${marker}\n### go-apidiff — no incompatible or compatible exported-Go-API changes vs base\n\n`
+                + `The previously-listed change(s) no longer apply to the latest commit on this pull request.`;
+            } else {
+              core.info('go-apidiff: clean and no prior comment; nothing to post.');         // silent
+              return;
+            }
+            try {
+              if (existing) { await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body }); }
+              else { await github.rest.issues.createComment({ owner, repo, issue_number, body }); }
+            } catch (e) {
+              // Fork PRs get a read-only token: degrade gracefully, never fail the job.
+              core.warning(`go-apidiff: could not upsert PR comment (likely a fork PR read-only token): ${e.message}`);
+            }

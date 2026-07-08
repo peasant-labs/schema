@@ -101,9 +101,13 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # READ-ONLY: this workflow requests no write scope on any job, so it can be
+    # called as a reusable gate by release-pr.yml (whose token ceiling is
+    # pull-requests: read). The go-apidiff PR comment is posted out-of-band by the
+    # write-scoped go-apidiff-comment.yml (workflow_run), fed by the artifact this
+    # job uploads below.
     permissions:
-      contents: read # checkout
-      pull-requests: write # upsert the single sticky go-apidiff comment (job-scoped)
+      contents: read # checkout only
     steps:
       - name: Checkout repository (full history for the base diff)
         uses: actions/checkout@v5
@@ -131,70 +135,45 @@ jobs:
           APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
         run: nix develop -c make gates BASE_REF="origin/${{ github.base_ref }}"
 
-      - name: Upsert go-apidiff PR comment
-        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
-        uses: actions/github-script@v7
+      # Hand the go-apidiff outcome off to the write-scoped go-apidiff-comment.yml
+      # via a single artifact (this job holds no pull-requests:write). always() so
+      # the payload is uploaded even when an EARLIER step failed — a failed run
+      # still needs its comment reconciled.
+      - name: Stage go-apidiff comment payload
+        if: ${{ always() && github.event_name == 'pull_request' }}
         env:
           APIDIFF_CHANGES_FILE: ${{ runner.temp }}/apidiff-changes.txt
           APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
+          STAGE_DIR: ${{ runner.temp }}/go-apidiff-comment
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$STAGE_DIR"
+          # The commenter runs in a workflow_run event, where context.issue.number
+          # is unavailable — carry the PR number in the artifact.
+          printf '%s\n' "$PR_NUMBER" > "$STAGE_DIR/pr-number.txt"
+          # Changes file: copy ONLY if go-apidiff actually wrote it. Its ABSENCE is
+          # the "gate blind / established nothing" tri-state (distinct from an EMPTY
+          # file = clean); fabricating an empty file here would masquerade as clean,
+          # so the absence is preserved and the commenter reproduces the
+          # not-established branch via readFileSync-catch.
+          if [ -f "$APIDIFF_CHANGES_FILE" ]; then
+            cp "$APIDIFF_CHANGES_FILE" "$STAGE_DIR/apidiff-changes.txt"
+          fi
+          # Compatible file: absent and empty are equivalent in the comment logic,
+          # so normalise to an always-present (possibly empty) file for a robust
+          # download.
+          if [ -f "$APIDIFF_COMPATIBLE_FILE" ]; then
+            cp "$APIDIFF_COMPATIBLE_FILE" "$STAGE_DIR/apidiff-compatible.txt"
+          else
+            : > "$STAGE_DIR/apidiff-compatible.txt"
+          fi
+
+      - name: Upload go-apidiff comment payload
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const fs = require('fs');
-            const marker = '<!-- go-apidiff-gate -->';
-
-            // Incompatible signal is a TRI-STATE derived from go-apidiff's OWN outcome:
-            //   readFileSync throws (absent) => blind / fail-closed => established nothing
-            //   present + empty              => go-apidiff CLEAN (oasdiff state irrelevant)
-            //   present + non-empty          => WARN (incompatible change(s) to report)
-            let established = true, changes = '';
-            try { changes = fs.readFileSync(process.env.APIDIFF_CHANGES_FILE, 'utf8').trim(); }
-            catch (e) { established = false; }
-            let compatible = '';
-            try { compatible = fs.readFileSync(process.env.APIDIFF_COMPATIBLE_FILE, 'utf8').trim(); }
-            catch (e) { compatible = ''; }
-
-            const { owner, repo } = context.repo;
-            const issue_number = context.issue.number;
-            let existing = null;
-            try {
-              const all = await github.paginate(github.rest.issues.listComments,
-                { owner, repo, issue_number, per_page: 100 });
-              existing = all.find(c => c.body && c.body.includes(marker));
-            } catch (e) { core.warning(`list comments failed: ${e.message}`); }
-
-            const incompatibleSection = changes
-              ? `### go-apidiff — incompatible exported-Go-API change(s) vs base\n\n`
-                + `Pre-release policy: these are **warnings, not blockers** (the module is pre-1.0). `
-                + `Ship a version bump when you release.\n\n\`\`\`\n${changes}\n\`\`\`\n\n`
-              : '';
-            const compatibleSection = compatible
-              ? `### go-apidiff — compatible (non-breaking) changes vs base\n\n`
-                + `Informational (additive) — no action required.\n\n\`\`\`\n${compatible}\n\`\`\`\n\n`
-              : '';
-
-            let body;
-            if (!established) {
-              // Fail-closed / gate blind: establish nothing; never touch a prior comment.
-              core.info('go-apidiff: outcome not established (fail-closed/absent signal); leaving any prior comment untouched.');
-              return;
-            } else if (changes) {
-              body = `${marker}\n${incompatibleSection}${compatibleSection}`.trimEnd();     // warning + BOTH sections
-            } else if (compatible) {
-              // Compatible-only additive delta -> informational comment (no warning, green job).
-              // Settled at Plan UAT: purely-additive PRs post their own informational delta comment.
-              body = `${marker}\n${compatibleSection}`.trimEnd();
-            } else if (existing) {
-              // Truly clean AND a prior comment exists -> flip to "no changes", REGARDLESS of oasdiff.
-              body = `${marker}\n### go-apidiff — no incompatible or compatible exported-Go-API changes vs base\n\n`
-                + `The previously-listed change(s) no longer apply to the latest commit on this pull request.`;
-            } else {
-              core.info('go-apidiff: clean and no prior comment; nothing to post.');         // silent
-              return;
-            }
-            try {
-              if (existing) { await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body }); }
-              else { await github.rest.issues.createComment({ owner, repo, issue_number, body }); }
-            } catch (e) {
-              // Fork PRs get a read-only token: degrade gracefully, never fail the job.
-              core.warning(`go-apidiff: could not upsert PR comment (likely a fork PR read-only token): ${e.message}`);
-            }
+          name: go-apidiff-comment
+          path: ${{ runner.temp }}/go-apidiff-comment
+          if-no-files-found: error
+          retention-days: 1
