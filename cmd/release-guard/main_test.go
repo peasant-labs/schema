@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -302,4 +304,187 @@ func TestRunParseTag_RejectsNamespacedTag(t *testing.T) {
 	if err := runParseTag([]string{"pkg/schema/v1.2.3"}); err == nil {
 		t.Fatal("runParseTag(namespaced tag) = nil, want rejection")
 	}
+}
+
+// --- composition root: the token is read from the workflows' $GH_TOKEN --------
+//
+// The release workflows export $GH_TOKEN (`env: { GH_TOKEN: ${{ github.token }} }`);
+// the tool must read that exact variable or every API-backed gate authenticates
+// with an empty token and fails. readGitHubToken is the testable core of the
+// composition root's fail-fast (mustGitHubClient maps its error to os.Exit).
+//
+// This test uses t.Setenv (process-global env), so it must NOT run in parallel.
+func TestReadGitHubToken(t *testing.T) {
+	// Pin the variable name the composition root reads to the one the workflows
+	// export — the whole point of the BLOCKER fix. Setting the RAW literal below
+	// (not the const) then independently proves readGitHubToken reads THIS name.
+	if gitHubTokenEnv != "GH_TOKEN" {
+		t.Fatalf("gitHubTokenEnv = %q, want \"GH_TOKEN\" (the variable every release workflow exports)", gitHubTokenEnv)
+	}
+
+	t.Run("reads the value of the exported GH_TOKEN", func(t *testing.T) {
+		t.Setenv("GH_TOKEN", "ghp_a_real_looking_token")
+		token, err := readGitHubToken("check-final")
+		if err != nil {
+			t.Fatalf("readGitHubToken with $GH_TOKEN set = %v, want nil", err)
+		}
+		if token != "ghp_a_real_looking_token" {
+			t.Fatalf("readGitHubToken = %q, want the $GH_TOKEN value", token)
+		}
+	})
+
+	t.Run("empty token yields an actionable fail-fast", func(t *testing.T) {
+		t.Setenv("GH_TOKEN", "")
+		_, err := readGitHubToken("check-approval")
+		if err == nil {
+			t.Fatal("readGitHubToken with an empty $GH_TOKEN = nil error, want an actionable fail-fast")
+		}
+		// what/why/where/how + it names the subcommand and the env var. Requiring
+		// "GH_TOKEN" ALSO guards the regression: the pre-swap name is not a
+		// superstring of "GH_TOKEN", so a revert to it would fail this assertion.
+		for _, want := range []string{"GH_TOKEN", "check-approval", "empty or unset", "token with repo read access"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("error %q is not actionable (missing %q)", err.Error(), want)
+			}
+		}
+	})
+}
+
+// --- $GITHUB_OUTPUT: emit APPENDS version=/kind= to the step-output file -------
+//
+// Exit-code mapping is proven-by-construction, not unit-tested here: every
+// subcommand funnels through the uniform `if err != nil { fatalf(...) }` in main()
+// (a one-line os.Exit(1) wrapper), and each handler's error vs nil-error is
+// covered by the per-gate `wantErr` tests above. What IS observable without
+// re-exec'ing the process is emit()'s file effect, asserted here.
+//
+// Uses t.Setenv (process-global $GITHUB_OUTPUT), so it must NOT run in parallel.
+func TestEmit_AppendsToGitHubOutput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "github_output")
+	// Seed a prior line so the test proves emit APPENDS (O_APPEND), never
+	// truncates — the file accumulates outputs across a job's steps.
+	if err := os.WriteFile(path, []byte("preexisting=1\n"), 0o644); err != nil {
+		t.Fatalf("seed $GITHUB_OUTPUT: %v", err)
+	}
+	t.Setenv("GITHUB_OUTPUT", path)
+
+	v, kind, err := release.ParseTag("v1.2.3-rc4")
+	if err != nil {
+		t.Fatalf("ParseTag: %v", err)
+	}
+	if err := emit(v, kind); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read $GITHUB_OUTPUT: %v", err)
+	}
+	want := "preexisting=1\nversion=v1.2.3-rc4\nkind=rc\n"
+	if string(got) != want {
+		t.Fatalf("$GITHUB_OUTPUT = %q, want %q (emit appends version=/kind=)", string(got), want)
+	}
+}
+
+// --- findMaintainerApprover: first maintainer in order; none; error-wrap -------
+
+func TestFindMaintainerApprover_ReturnsFirstMaintainerInOrder(t *testing.T) {
+	t.Parallel()
+
+	// carol is not a maintainer (skipped); dave and erin both are — the FIRST in
+	// slice order (dave) must win, so approval is attributed deterministically.
+	perms := map[string]release.CollaboratorPermission{
+		"carol": release.PermWrite,
+		"dave":  release.PermMaintain,
+		"erin":  release.PermAdmin,
+	}
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, user string) (release.CollaboratorPermission, error) {
+			return perms[user], nil
+		},
+	}
+	approver, perm, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol", "dave", "erin"})
+	if err != nil {
+		t.Fatalf("findMaintainerApprover: %v", err)
+	}
+	if approver != "dave" || perm != release.PermMaintain {
+		t.Fatalf("findMaintainerApprover = (%q,%q), want (dave, maintain) — the first maintainer in order", approver, perm)
+	}
+}
+
+func TestFindMaintainerApprover_NoneAreMaintainers(t *testing.T) {
+	t.Parallel()
+
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, _ string) (release.CollaboratorPermission, error) {
+			return release.PermWrite, nil
+		},
+	}
+	approver, perm, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol", "dave"})
+	if err != nil {
+		t.Fatalf("findMaintainerApprover: %v", err)
+	}
+	if approver != "" || perm != "" {
+		t.Fatalf("findMaintainerApprover = (%q,%q), want empty (no approver is a maintainer)", approver, perm)
+	}
+}
+
+func TestFindMaintainerApprover_PermissionErrorIsWrapped(t *testing.T) {
+	t.Parallel()
+
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, _ string) (release.CollaboratorPermission, error) {
+			return "", errors.New("boom: 500 from GitHub")
+		},
+	}
+	_, _, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol"})
+	if err == nil {
+		t.Fatal("findMaintainerApprover with a permission error = nil, want a wrapped error")
+	}
+	for _, want := range []string{"collaborator permission of approving reviewer", "carol", testRepo} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
+// --- check-workflow handler flag parsing (--policy / --release / unknown) ------
+
+func TestRunCheckWorkflow_FlagParse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unknown flag is rejected by name", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--nope", "x"})
+		if err == nil || !strings.Contains(err.Error(), `unknown flag "--nope"`) {
+			t.Fatalf("runCheckWorkflow(--nope) = %v, want an unknown-flag error naming it", err)
+		}
+	})
+
+	t.Run("--policy requires a value", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--policy"})
+		if err == nil || !strings.Contains(err.Error(), "--policy requires a value") {
+			t.Fatalf("runCheckWorkflow(--policy) = %v, want a missing-value error", err)
+		}
+	})
+
+	t.Run("--release requires a value", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--release"})
+		if err == nil || !strings.Contains(err.Error(), "--release requires a value") {
+			t.Fatalf("runCheckWorkflow(--release) = %v, want a missing-value error", err)
+		}
+	})
+
+	t.Run("--policy value flows into the loader", func(t *testing.T) {
+		t.Parallel()
+		// A custom --policy path is threaded to LoadWorkflowPolicy; a nonexistent
+		// one surfaces a read error naming that exact path (proves the wiring).
+		missing := filepath.Join(t.TempDir(), "custom.policy.yml")
+		err := runCheckWorkflow([]string{"--policy", missing})
+		if err == nil || !strings.Contains(err.Error(), missing) {
+			t.Fatalf("runCheckWorkflow(--policy %s) = %v, want a load error naming the custom path", missing, err)
+		}
+	})
 }

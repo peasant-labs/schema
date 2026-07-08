@@ -35,17 +35,17 @@ type githubClient struct {
 
 // newGitHubClient builds the production GitHubClient from a GitHub token.
 // github.WithAuthToken sends the token as a bearer credential on every request
-// (the same auth the previous `gh` shell-outs relied on via GITHUB_TOKEN) and,
+// (the same auth the previous `gh` shell-outs relied on via GH_TOKEN) and,
 // in go-github v88, rejects an empty token at construction — so this is also a
-// fail-fast on a missing GITHUB_TOKEN before any API call is attempted.
+// fail-fast on a missing GH_TOKEN before any API call is attempted.
 //
 // NOTE: go-github v88's NewClient returns (*Client, error) (the constructor was
-// reshaped to options funcs), so this returns an error too. main (SLICE-4), the
-// sole composition root, surfaces it as the actionable fail-fast.
+// reshaped to options funcs), so this returns an error too. main, the sole
+// composition root, surfaces it as the actionable fail-fast.
 func newGitHubClient(token string) (GitHubClient, error) {
 	gh, err := github.NewClient(github.WithAuthToken(token))
 	if err != nil {
-		return nil, fmt.Errorf("github client: cannot construct the GitHub API client for release-guard: %w. Set GITHUB_TOKEN to a non-empty token with repo read access before invoking a check-* subcommand", err)
+		return nil, fmt.Errorf("github client: cannot construct the GitHub API client for release-guard: %w. Set GH_TOKEN to a non-empty token with repo read access before invoking a check-* subcommand", err)
 	}
 	return &githubClient{gh: gh}, nil
 }
@@ -69,7 +69,7 @@ func (c *githubClient) CollaboratorPermission(ctx context.Context, repo, user st
 	}
 	level, _, err := c.gh.Repositories.GetPermissionLevel(ctx, owner, name, user)
 	if err != nil {
-		return "", fmt.Errorf("github client: cannot read the collaborator permission of %q on %s/%s during release-guard: %w. Confirm the user exists and GITHUB_TOKEN can read repo collaborators", user, owner, name, err)
+		return "", fmt.Errorf("github client: cannot read the collaborator permission of %q on %s/%s during release-guard: %w. Confirm the user exists and GH_TOKEN can read repo collaborators", user, owner, name, err)
 	}
 	return release.CollaboratorPermission(level.GetPermission()), nil
 }
@@ -90,7 +90,7 @@ func (c *githubClient) WorkflowRunsForCommit(ctx context.Context, repo, workflow
 	for {
 		page, resp, err := c.gh.Actions.ListWorkflowRunsByFileName(ctx, owner, name, workflowFile, opts)
 		if err != nil {
-			return nil, fmt.Errorf("github client: cannot list runs of %s for commit %s on %s/%s during check-final: %w. Confirm the workflow file name and that GITHUB_TOKEN can read Actions", workflowFile, commitSHA, owner, name, err)
+			return nil, fmt.Errorf("github client: cannot list runs of %s for commit %s on %s/%s during check-final: %w. Confirm the workflow file name and that GH_TOKEN can read Actions", workflowFile, commitSHA, owner, name, err)
 		}
 		for _, r := range page.WorkflowRuns {
 			if r == nil {
@@ -123,7 +123,7 @@ func (c *githubClient) PullReviews(ctx context.Context, repo string, prNumber in
 	for {
 		page, resp, err := c.gh.PullRequests.ListReviews(ctx, owner, name, prNumber, opts)
 		if err != nil {
-			return nil, fmt.Errorf("github client: cannot list reviews for PR #%d on %s/%s during check-approval: %w. Confirm the PR number and that GITHUB_TOKEN can read pull requests", prNumber, owner, name, err)
+			return nil, fmt.Errorf("github client: cannot list reviews for PR #%d on %s/%s during check-approval: %w. Confirm the PR number and that GH_TOKEN can read pull requests", prNumber, owner, name, err)
 		}
 		for _, r := range page {
 			if r == nil {

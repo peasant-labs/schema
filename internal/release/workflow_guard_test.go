@@ -297,6 +297,48 @@ jobs:
 	}
 }
 
+// --- Reusable gate points at the WRONG workflow file ------------------------
+//
+// The <missing>-uses case (in TestCheckReleaseWorkflow_Rejects) covers a gate
+// with no `uses:` at all. This covers the distinct, previously-tested case where
+// the gate DOES declare `uses:` but at the wrong reusable workflow — the error
+// must name BOTH the wrong target it found and the required one to point it at.
+func TestCheckReleaseWorkflow_RejectsWrongUsesTarget(t *testing.T) {
+	t.Parallel()
+
+	const wrongUsesWorkflow = `
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+  nix-vendor-hash:
+    needs: guard
+    runs-on: ubuntu-latest
+  e2e:
+    needs: [guard, nix-vendor-hash]
+    uses: ./.github/workflows/e2e-WRONG.yml
+    secrets: inherit
+  release-e2e:
+    needs: [guard, nix-vendor-hash]
+    uses: ./.github/workflows/release-e2e.yml
+    secrets: inherit
+  release:
+    needs: [guard, nix-vendor-hash, e2e, release-e2e]
+    runs-on: ubuntu-latest
+`
+	err := checkReleaseWorkflow("release.yml", []byte(wrongUsesWorkflow), peasantShapePolicy())
+	if err == nil {
+		t.Fatal("a reusable gate pointing at the wrong workflow file must be rejected, got nil")
+	}
+	for _, want := range []string{
+		"jobs.e2e uses ./.github/workflows/e2e-WRONG.yml", // names the wrong target it found
+		"Point it at ./.github/workflows/e2e.yml",         // names the required target
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("wrong-uses error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
 // --- Public file wrapper: read-error path -----------------------------------
 
 func TestCheckReleaseWorkflowFile_ReadError(t *testing.T) {

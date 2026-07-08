@@ -42,7 +42,7 @@
 // "kind=<k>" to the file named by $GITHUB_OUTPUT when set (so workflow steps can
 // consume them via steps.<id>.outputs.*), and always echoes them to stdout.
 //
-// main() is the SOLE composition root: it reads GITHUB_TOKEN + GITHUB_REPOSITORY
+// main() is the SOLE composition root: it reads GH_TOKEN + GITHUB_REPOSITORY
 // from the environment ONCE, builds the GitHubClient (go-github) and the hardened
 // GitRunner, and injects them DOWN into pure handler funcs that take their deps
 // as parameters and never touch os.Getenv. Handlers return an error; main maps a
@@ -94,14 +94,34 @@ func main() {
 
 // --- composition root: env read ONCE, deps built here (never in handlers) ---
 
-// mustGitHubClient reads GITHUB_TOKEN once and builds the production
-// GitHubClient, FAILING FAST (actionable) on an empty/unset token BEFORE any API
-// call (BDD #1 / C2). newGitHubClient also rejects an empty token, but checking
+// gitHubTokenEnv is the SINGLE environment variable release-guard reads for the
+// GitHub API token. It is GH_TOKEN — the variable every release workflow exports
+// (`env: { GH_TOKEN: ${{ github.token }} }`), which is also what the previous
+// `gh` shell-outs consumed — so the go-github seam authenticates with the exact
+// credential the workflows already provide (no separate GITHUB_-prefixed name).
+const gitHubTokenEnv = "GH_TOKEN"
+
+// readGitHubToken reads the GitHub API token from $GH_TOKEN. It returns an
+// actionable error (what/why/where/how) when the token is empty or unset, and is
+// the TESTABLE core of the composition root's fail-fast: mustGitHubClient calls
+// it and maps a non-nil error to a fatal exit, so both the env-var name read and
+// its diagnostic are covered without a test having to trigger os.Exit.
+func readGitHubToken(sub string) (string, error) {
+	token := os.Getenv(gitHubTokenEnv)
+	if token == "" {
+		return "", fmt.Errorf("%s: $%s is empty or unset, but this command calls the GitHub API. Export a token with repo read access before running release-guard %s (in GitHub Actions: `env: { %s: ${{ github.token }} }`)", sub, gitHubTokenEnv, sub, gitHubTokenEnv)
+	}
+	return token, nil
+}
+
+// mustGitHubClient reads $GH_TOKEN once (via readGitHubToken) and builds the
+// production GitHubClient, FAILING FAST (actionable) on an empty/unset token
+// BEFORE any API call. newGitHubClient also rejects an empty token, but checking
 // here first yields the what/why/where/how message.
 func mustGitHubClient(sub string) GitHubClient {
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		fatalf("%s: $GITHUB_TOKEN is empty or unset, but this command calls the GitHub API. Export a token with repo read access before running release-guard %s (in GitHub Actions: `env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }`)", sub, sub)
+	token, err := readGitHubToken(sub)
+	if err != nil {
+		fatalf("%v", err)
 	}
 	gh, err := newGitHubClient(token)
 	if err != nil {

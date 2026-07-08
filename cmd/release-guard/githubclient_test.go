@@ -146,6 +146,172 @@ func TestGitHubClient_PullReviews_PaginatesInOrder(t *testing.T) {
 	}
 }
 
+// --- Error paths: a non-2xx response fires the actionable error wrap ----------
+//
+// The go-github seam is the crux of this change; each method wraps a transport
+// error into a what/why/where/how message. These drive a real non-2xx status
+// through the go-github decode machinery and assert the wrapper's message (not
+// just "an error occurred").
+
+func TestGitHubClient_CollaboratorPermission_ErrorOnNon2xx(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"Not Found"}`)
+	}))
+
+	_, err := c.CollaboratorPermission(context.Background(), "peasant-labs/schema", "ghost")
+	if err == nil {
+		t.Fatal("CollaboratorPermission on a 404 = nil error, want the actionable wrap")
+	}
+	for _, want := range []string{
+		"cannot read the collaborator permission",
+		"ghost",
+		"peasant-labs/schema",
+		"GH_TOKEN can read repo collaborators",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
+func TestGitHubClient_WorkflowRunsForCommit_ErrorOnNon2xx(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"message":"Server Error"}`)
+	}))
+
+	_, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", "deadbeef")
+	if err == nil {
+		t.Fatal("WorkflowRunsForCommit on a 500 = nil error, want the actionable wrap")
+	}
+	for _, want := range []string{
+		"cannot list runs of release.yml",
+		"deadbeef",
+		"peasant-labs/schema",
+		"GH_TOKEN can read Actions",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
+func TestGitHubClient_PullReviews_ErrorOnNon2xx(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Fprint(w, `{"message":"Not Found"}`)
+	}))
+
+	_, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
+	if err == nil {
+		t.Fatal("PullReviews on a 404 = nil error, want the actionable wrap")
+	}
+	for _, want := range []string{
+		"cannot list reviews for PR #7",
+		"peasant-labs/schema",
+		"GH_TOKEN can read pull requests",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
+// --- Empty results stay fail-safe: no runs → not green; no reviews → no approve.
+
+func TestGitHubClient_WorkflowRunsForCommit_EmptyIsFailSafe(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"total_count":0,"workflow_runs":[]}`)
+	}))
+
+	runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", "deadbeef")
+	if err != nil {
+		t.Fatalf("WorkflowRunsForCommit (0 runs) = %v, want nil", err)
+	}
+	if len(runs) != 0 {
+		t.Fatalf("collected %d runs, want 0 (empty result): %+v", len(runs), runs)
+	}
+	// Fail-safe: an empty run set must NOT satisfy the green-run gate.
+	if release.RunGreenForCommit(runs, "deadbeef") {
+		t.Fatal("RunGreenForCommit(empty) = true, want false (empty result must not pass the final gate)")
+	}
+}
+
+func TestGitHubClient_PullReviews_EmptyIsFailSafe(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `[]`)
+	}))
+
+	reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
+	if err != nil {
+		t.Fatalf("PullReviews (0 reviews) = %v, want nil", err)
+	}
+	if len(reviews) != 0 {
+		t.Fatalf("collected %d reviews, want 0 (empty result): %+v", len(reviews), reviews)
+	}
+	// Fail-safe: no reviews → no standing approvers.
+	if approvers := release.LatestApprovers(reviews); len(approvers) != 0 {
+		t.Fatalf("LatestApprovers(empty) = %v, want none (empty result must not approve a release)", approvers)
+	}
+}
+
+// --- Null array elements are nil-guarded at the wrapper (no panic, skipped) ---
+
+func TestGitHubClient_WorkflowRunsForCommit_SkipsNullElement(t *testing.T) {
+	t.Parallel()
+
+	const commit = "deadbeefcafe"
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A JSON null decodes to a nil *github.WorkflowRun; the wrapper's
+		// `if r == nil { continue }` guard must skip it instead of dereferencing.
+		fmt.Fprintf(w, `{"total_count":2,"workflow_runs":[null,{"head_sha":%q,"status":"completed","conclusion":"success"}]}`, commit)
+	}))
+
+	runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", commit)
+	if err != nil {
+		t.Fatalf("WorkflowRunsForCommit with a null element = %v, want nil (guarded, not panicked)", err)
+	}
+	// The null element is skipped; only the real run survives, mapped correctly.
+	if len(runs) != 1 {
+		t.Fatalf("collected %d runs, want 1 (null element skipped): %+v", len(runs), runs)
+	}
+	if !release.RunGreenForCommit(runs, commit) {
+		t.Fatalf("the surviving run should be green for %s: %+v", commit, runs)
+	}
+}
+
+func TestGitHubClient_PullReviews_SkipsNullElement(t *testing.T) {
+	t.Parallel()
+
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A JSON null decodes to a nil *github.PullRequestReview; the wrapper's
+		// `if r == nil { continue }` guard must skip it instead of dereferencing.
+		fmt.Fprint(w, `[null,{"user":{"login":"alice"},"state":"APPROVED"}]`)
+	}))
+
+	reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
+	if err != nil {
+		t.Fatalf("PullReviews with a null element = %v, want nil (guarded, not panicked)", err)
+	}
+	if len(reviews) != 1 {
+		t.Fatalf("collected %d reviews, want 1 (null element skipped): %+v", len(reviews), reviews)
+	}
+	if approvers := release.LatestApprovers(reviews); len(approvers) != 1 || approvers[0] != "alice" {
+		t.Fatalf("LatestApprovers = %v, want [alice]", approvers)
+	}
+}
+
 func TestSplitRepo(t *testing.T) {
 	t.Parallel()
 
