@@ -1,0 +1,88 @@
+# go-github seam single-response cases. The httptest server serves one canned
+# body (the `response` file under testdata/github) with the given `status`, and
+# the REAL production githubClient wrapper is driven against it. Only the canned
+# bytes moved to fixtures — the wrapper is never mocked.
+#
+# method selects which wrapper call runs:
+#   collaborator_permission  (input: user;   expects wantPermission [+ wantPath])
+#   workflow_runs            (input: commit; expects wantRunCount + wantGreen)
+#   pull_reviews             (input: pr;     expects wantReviewCount + wantApprovers)
+# A non-empty wantErrContains marks an error case: the call must fail with a
+# message containing every listed substring (result fields are then ignored).
+#
+# The multi-page pagination happy paths are NOT here — they keep their inline
+# Link-header handlers (sourcing page bodies from runs-page*.json /
+# reviews-page*.json) because they assert page-count + ordering behavior.
+
+cases:
+  - name: collaborator permission admin (happy path)
+    method: collaborator_permission
+    status: 200
+    response: permission-admin.json
+    user: octocat
+    wantPermission: admin
+    wantPath: /repos/peasant-labs/schema/collaborators/octocat/permission
+
+  - name: collaborator permission 404 fires the actionable wrap
+    method: collaborator_permission
+    status: 404
+    response: error-not-found.json
+    user: ghost
+    wantErrContains:
+      - "cannot read the collaborator permission"
+      - "ghost"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read repo collaborators"
+
+  - name: workflow runs 500 fires the actionable wrap
+    method: workflow_runs
+    status: 500
+    response: error-server.json
+    commit: deadbeef
+    wantErrContains:
+      - "cannot list runs of release.yml"
+      - "deadbeef"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read Actions"
+
+  - name: workflow runs empty is fail-safe
+    method: workflow_runs
+    status: 200
+    response: runs-empty.json
+    commit: deadbeef
+    wantRunCount: 0
+    wantGreen: false
+
+  - name: workflow runs skips null element
+    method: workflow_runs
+    status: 200
+    response: runs-null-element.json
+    commit: deadbeefcafe
+    wantRunCount: 1
+    wantGreen: true
+
+  - name: pull reviews 404 fires the actionable wrap
+    method: pull_reviews
+    status: 404
+    response: error-not-found.json
+    pr: 7
+    wantErrContains:
+      - "cannot list reviews for PR #7"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read pull requests"
+
+  - name: pull reviews empty is fail-safe
+    method: pull_reviews
+    status: 200
+    response: reviews-empty.json
+    pr: 7
+    wantReviewCount: 0
+    wantApprovers: []
+
+  - name: pull reviews skips null element
+    method: pull_reviews
+    status: 200
+    response: reviews-null-element.json
+    pr: 7
+    wantReviewCount: 1
+    wantApprovers: ["alice"]

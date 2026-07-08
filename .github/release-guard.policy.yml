@@ -1,0 +1,23 @@
+# release-guard policy for the schema repo.
+#
+# Declares the schema release pipeline's job graph so `release-guard
+# check-workflow` can validate .github/workflows/release.yml against it WITHOUT
+# any repo-specific job-shape knowledge baked into the shared tool. The schema
+# module ships NO binary, so (unlike peasant) it has no goreleaser / e2e /
+# release-e2e reusable gates — it publishes a GitHub Release with the OpenAPI
+# specs as assets, behind the contract gates.
+#
+# Each entry: a job that must exist, and the needs-edges it must declare.
+jobs:
+  # The tag guard (parse-tag + final-requires-green-ancestor-rc): the entry gate.
+  - name: guard
+  # The flake vendorHash freshness gate: never publish from a hash-stale tree.
+  - name: nix-vendor-hash
+    needs: [guard]
+  # The contract gates (oasdiff / go-apidiff / vacuum): no breaking contract
+  # change may publish a release.
+  - name: contract-gates
+    needs: [guard, nix-vendor-hash]
+  # The GitHub-Release publish job sits behind all three gates.
+  - name: release
+    needs: [guard, nix-vendor-hash, contract-gates]

@@ -34,7 +34,7 @@ vet:
 # The release-workflow guard (release-guard check-workflow) keeps publication
 # behind the required gates; the race suite is the authoritative test run.
 check: fmt vet freshness
-	$(GO) run ./cmd/release-guard check-workflow --release .github/workflows/release.yml
+	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
 	$(GO) test -race ./...
 
 test:

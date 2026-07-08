@@ -1,300 +1,490 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"os"
-	"os/exec"
-	"slices"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release"
 )
 
-func TestRunGreenFiltersRunsByRCCommit(t *testing.T) {
-	const (
-		workflow = "release.yml"
-		rcTag    = "v1.2.3-rc1"
-		rcCommit = "0123456789abcdef0123456789abcdef01234567"
-	)
+// --- interface mocks (mock the DEPENDENCY, never the SUT) -------------------
 
-	var calls [][]string
-	restoreCommandOutput(t, func(name string, args ...string) ([]byte, error) {
-		calls = append(calls, append([]string{name}, args...))
-		switch {
-		case name == "git" && slices.Equal(args, []string{"rev-list", "-n", "1", rcTag}):
-			return []byte(rcCommit + "\n"), nil
-		case name == "gh":
-			return []byte(fmt.Sprintf(`[{"headSha":%q,"status":"completed","conclusion":"success"}]`, rcCommit)), nil
-		default:
-			return nil, fmt.Errorf("unexpected command: %s %v", name, args)
-		}
-	})
-
-	green, err := runGreen(workflow, rcTag)
-	if err != nil {
-		t.Fatalf("runGreen(%q, %q): %v", workflow, rcTag, err)
-	}
-	if !green {
-		t.Fatalf("runGreen(%q, %q) = false, want true", workflow, rcTag)
-	}
-
-	wantGH := []string{
-		"gh", "run", "list",
-		"--workflow", workflow,
-		"--commit", rcCommit,
-		"--limit", "100",
-		"--json", "headSha,status,conclusion",
-	}
-	if len(calls) != 2 {
-		t.Fatalf("command calls = %v, want 2 calls", calls)
-	}
-	if !slices.Equal(calls[1], wantGH) {
-		t.Fatalf("gh run list args = %v, want %v", calls[1], wantGH)
-	}
+type mockGitHubClient struct {
+	collaboratorPermissionFn func(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
+	workflowRunsForCommitFn  func(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
+	pullReviewsFn            func(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
 }
 
-func TestRunGreenRequiresCompletedSuccess(t *testing.T) {
-	const (
-		workflow = "release.yml"
-		rcTag    = "v1.2.3-rc1"
-		rcCommit = "0123456789abcdef0123456789abcdef01234567"
-	)
-
-	restoreCommandOutput(t, func(name string, args ...string) ([]byte, error) {
-		switch name {
-		case "git":
-			return []byte(rcCommit + "\n"), nil
-		case "gh":
-			return []byte(fmt.Sprintf(`[
-				{"headSha":%q,"status":"in_progress","conclusion":"success"},
-				{"headSha":%q,"status":"completed","conclusion":"failure"},
-				{"headSha":"fedcba9876543210fedcba9876543210fedcba98","status":"completed","conclusion":"success"}
-			]`, rcCommit, rcCommit)), nil
-		default:
-			return nil, fmt.Errorf("unexpected command: %s %v", name, args)
-		}
-	})
-
-	green, err := runGreen(workflow, rcTag)
-	if err != nil {
-		t.Fatalf("runGreen(%q, %q): %v", workflow, rcTag, err)
-	}
-	if green {
-		t.Fatalf("runGreen(%q, %q) = true, want false", workflow, rcTag)
-	}
+func (m *mockGitHubClient) CollaboratorPermission(ctx context.Context, repo, user string) (release.CollaboratorPermission, error) {
+	return m.collaboratorPermissionFn(ctx, repo, user)
+}
+func (m *mockGitHubClient) WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error) {
+	return m.workflowRunsForCommitFn(ctx, repo, workflowFile, commitSHA)
+}
+func (m *mockGitHubClient) PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error) {
+	return m.pullReviewsFn(ctx, repo, prNumber)
 }
 
-func TestParseReviewsFlattensSlurpedPages(t *testing.T) {
-	data := []byte(`[
-		[
-			{"user":{"login":"alice"},"state":"APPROVED"}
-		],
-		[
-			{"user":{"login":"alice"},"state":"CHANGES_REQUESTED"},
-			{"user":{"login":"bob"},"state":"APPROVED"}
-		]
-	]`)
-
-	reviews, err := parseReviews(data)
-	if err != nil {
-		t.Fatalf("parseReviews(): %v", err)
-	}
-	if len(reviews) != 3 {
-		t.Fatalf("parseReviews() returned %d reviews, want 3", len(reviews))
-	}
-	if got, want := reviews[0].User.Login, "alice"; got != want {
-		t.Fatalf("first review login = %q, want %q", got, want)
-	}
-	if got, want := reviews[1].State, release.ReviewStateChangesRequested; got != want {
-		t.Fatalf("second review state = %q, want %q", got, want)
-	}
-
-	approvers := release.LatestApprovers(reviews)
-	if !slices.Equal(approvers, []string{"bob"}) {
-		t.Fatalf("LatestApprovers(parseReviews(slurped pages)) = %v, want [bob]", approvers)
-	}
+type mockGitRunner struct {
+	revParseFn   func(ctx context.Context, ref string) (string, error)
+	listTagsFn   func(ctx context.Context, pattern string) ([]string, error)
+	isAncestorFn func(ctx context.Context, ancestor, descendant string) (bool, error)
 }
 
-func TestParseReviewsAcceptsSingleArray(t *testing.T) {
-	data := []byte(`[
-		{"user":{"login":"alice"},"state":"APPROVED"},
-		{"user":{"login":"alice"},"state":"COMMENTED"}
-	]`)
-
-	reviews, err := parseReviews(data)
-	if err != nil {
-		t.Fatalf("parseReviews(): %v", err)
-	}
-	if len(reviews) != 2 {
-		t.Fatalf("parseReviews() returned %d reviews, want 2", len(reviews))
-	}
-	if got, want := release.LatestApprovers(reviews), []string{"alice"}; !slices.Equal(got, want) {
-		t.Fatalf("LatestApprovers(parseReviews(single array)) = %v, want %v", got, want)
-	}
+func (m *mockGitRunner) RevParse(ctx context.Context, ref string) (string, error) {
+	return m.revParseFn(ctx, ref)
+}
+func (m *mockGitRunner) ListTags(ctx context.Context, pattern string) ([]string, error) {
+	return m.listTagsFn(ctx, pattern)
+}
+func (m *mockGitRunner) IsAncestor(ctx context.Context, ancestor, descendant string) (bool, error) {
+	return m.isAncestorFn(ctx, ancestor, descendant)
 }
 
-func TestFetchReviewsUsesPaginateSlurp(t *testing.T) {
-	const (
-		repo = "peasant-labs/schema"
-		pr   = "94"
-	)
+const testRepo = "peasant-labs/schema"
 
-	var calls [][]string
-	restoreCommandOutput(t, func(name string, args ...string) ([]byte, error) {
-		calls = append(calls, append([]string{name}, args...))
-		if name != "gh" {
-			return nil, fmt.Errorf("unexpected command: %s %v", name, args)
-		}
-		return []byte(`[[{"user":{"login":"alice"},"state":"APPROVED"}]]`), nil
-	})
+// --- BDD #1: check-maintainer (maintainer vs non-maintainer) ----------------
 
-	reviews, err := fetchReviews(repo, pr)
-	if err != nil {
-		t.Fatalf("fetchReviews(%q, %q): %v", repo, pr, err)
-	}
-	if len(reviews) != 1 {
-		t.Fatalf("fetchReviews(%q, %q) returned %d reviews, want 1", repo, pr, len(reviews))
-	}
+func TestRunCheckMaintainer(t *testing.T) {
+	t.Parallel()
 
-	want := []string{
-		"gh", "api",
-		"repos/peasant-labs/schema/pulls/94/reviews",
-		"--paginate",
-		"--slurp",
-	}
-	if len(calls) != 1 {
-		t.Fatalf("command calls = %v, want 1 call", calls)
-	}
-	if !slices.Equal(calls[0], want) {
-		t.Fatalf("fetchReviews gh args = %v, want %v", calls[0], want)
-	}
-}
-
-func TestFindMaintainerApproverChecksApproversInOrder(t *testing.T) {
-	const repo = "peasant-labs/schema"
-
-	var calls [][]string
-	restoreCommandOutput(t, func(name string, args ...string) ([]byte, error) {
-		calls = append(calls, append([]string{name}, args...))
-		if name != "gh" {
-			return nil, fmt.Errorf("unexpected command: %s %v", name, args)
-		}
-		switch args[1] {
-		case "repos/peasant-labs/schema/collaborators/alice/permission":
-			return []byte("write\n"), nil
-		case "repos/peasant-labs/schema/collaborators/bob/permission":
-			return []byte("maintain\n"), nil
-		default:
-			return nil, fmt.Errorf("unexpected gh args: %v", args)
-		}
-	})
-
-	approver, perm, err := findMaintainerApprover(repo, []string{"alice", "bob", "carol"})
-	if err != nil {
-		t.Fatalf("findMaintainerApprover(): %v", err)
-	}
-	if approver != "bob" || perm != release.PermMaintain {
-		t.Fatalf("findMaintainerApprover() = (%q, %q), want (bob, %q)", approver, perm, release.PermMaintain)
-	}
-	if len(calls) != 2 {
-		t.Fatalf("command calls = %v, want 2 calls", calls)
-	}
-}
-
-func TestRunCheckApprovalExitCodes(t *testing.T) {
 	tests := []struct {
-		name     string
-		scenario string
-		wantOK   bool
+		name    string
+		perm    release.CollaboratorPermission
+		wantErr bool
 	}{
-		{
-			name:     "no standing approver",
-			scenario: "no-approver",
-			wantOK:   false,
-		},
-		{
-			name:     "approvals but no maintainer approver",
-			scenario: "no-maintainer",
-			wantOK:   false,
-		},
-		{
-			name:     "fetch error",
-			scenario: "fetch-error",
-			wantOK:   false,
-		},
-		{
-			name:     "standing maintainer approval",
-			scenario: "maintainer",
-			wantOK:   true,
-		},
+		{"admin is a maintainer", release.PermAdmin, false},
+		{"maintain is a maintainer", release.PermMaintain, false},
+		{"write is not a maintainer", release.PermWrite, true},
+		{"triage is not a maintainer", release.PermTriage, true},
+		{"read is not a maintainer", release.PermRead, true},
+		{"none is not a maintainer", release.PermNone, true},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(os.Args[0], "-test.run=TestRunCheckApprovalExitCodesHelper")
-			cmd.Env = append(os.Environ(),
-				"RELEASE_GUARD_CHECK_APPROVAL_HELPER="+tt.scenario,
-				"GITHUB_REPOSITORY=peasant-labs/schema",
-			)
-			out, err := cmd.CombinedOutput()
-			gotOK := err == nil
-			if gotOK != tt.wantOK {
-				t.Fatalf("check-approval exit success = %v, want %v; err=%v output:\n%s", gotOK, tt.wantOK, err, out)
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			gh := &mockGitHubClient{
+				collaboratorPermissionFn: func(_ context.Context, repo, user string) (release.CollaboratorPermission, error) {
+					if repo != testRepo || user != "octocat" {
+						t.Fatalf("CollaboratorPermission called with (%q,%q), want (%q, octocat)", repo, user, testRepo)
+					}
+					return tc.perm, nil
+				},
 			}
-			if !tt.wantOK {
-				if _, ok := err.(*exec.ExitError); !ok {
-					t.Fatalf("check-approval error = %T %[1]v, want exec.ExitError; output:\n%s", err, out)
-				}
+			err := runCheckMaintainer(context.Background(), gh, testRepo, []string{"--user", "octocat"})
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("runCheckMaintainer(perm=%s) err = %v, wantErr %v", tc.perm, err, tc.wantErr)
 			}
 		})
 	}
 }
 
-func TestRunCheckApprovalExitCodesHelper(t *testing.T) {
-	scenario := os.Getenv("RELEASE_GUARD_CHECK_APPROVAL_HELPER")
-	if scenario == "" {
-		return
-	}
+// --- BDD #2: check-final (green via server-side HeadSHA; no-green blocks) ----
 
-	commandOutput = func(name string, args ...string) ([]byte, error) {
-		if name != "gh" {
-			return nil, fmt.Errorf("unexpected command: %s %v", name, args)
-		}
-		if slices.Equal(args, []string{"api", "repos/peasant-labs/schema/pulls/94/reviews", "--paginate", "--slurp"}) {
-			switch scenario {
-			case "no-approver":
-				return []byte(`[[{"user":{"login":"alice"},"state":"CHANGES_REQUESTED"}]]`), nil
-			case "no-maintainer", "maintainer":
-				return []byte(`[[{"user":{"login":"alice"},"state":"APPROVED"}]]`), nil
-			case "fetch-error":
-				return nil, fmt.Errorf("review fetch failed")
-			default:
-				return nil, fmt.Errorf("unknown helper scenario %q", scenario)
-			}
-		}
-		if slices.Equal(args, []string{"api", "repos/peasant-labs/schema/collaborators/alice/permission", "--jq", ".permission"}) {
-			switch scenario {
-			case "no-maintainer":
-				return []byte("write\n"), nil
-			case "maintainer":
-				return []byte("maintain\n"), nil
-			default:
-				return nil, fmt.Errorf("unexpected collaborator lookup for scenario %q", scenario)
-			}
-		}
-		return nil, fmt.Errorf("unexpected gh args: %v", args)
-	}
+// finalCheckRunner builds a GitRunner for a v1.2.3 final with one rc (v1.2.3-rc1)
+// that is an ancestor; RevParse maps the final tag and the rc tag to distinct
+// 40-hex commits.
+const (
+	finalCommit = "1111111111111111111111111111111111111111"
+	rcCommit    = "2222222222222222222222222222222222222222"
+)
 
-	os.Args = []string{"release-guard", "check-approval", "--pr", "94"}
-	main()
-	os.Exit(0)
+func finalCheckRunner() *mockGitRunner {
+	return &mockGitRunner{
+		revParseFn: func(_ context.Context, ref string) (string, error) {
+			switch ref {
+			case "v1.2.3":
+				return finalCommit, nil
+			case "v1.2.3-rc1":
+				return rcCommit, nil
+			default:
+				return "", errors.New("unexpected ref " + ref)
+			}
+		},
+		listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
+			if pattern != "v1.2.3-rc*" {
+				return nil, errors.New("unexpected pattern " + pattern)
+			}
+			return []string{"v1.2.3-rc1"}, nil
+		},
+		isAncestorFn: func(_ context.Context, ancestor, descendant string) (bool, error) {
+			return ancestor == "v1.2.3-rc1" && descendant == finalCommit, nil
+		},
+	}
 }
 
-func restoreCommandOutput(t *testing.T, fn func(string, ...string) ([]byte, error)) {
-	t.Helper()
-	orig := commandOutput
-	commandOutput = fn
-	t.Cleanup(func() {
-		commandOutput = orig
+func TestRunCheckFinal_GreenViaHeadSHA(t *testing.T) {
+	t.Parallel()
+
+	var gotCommitSHA string
+	gh := &mockGitHubClient{
+		workflowRunsForCommitFn: func(_ context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error) {
+			gotCommitSHA = commitSHA
+			// Decoys (other commit / in-progress / failure) + the green run on
+			// the rc commit. The server-side HeadSHA filter is modelled by the
+			// handler passing the rc commit; RunGreenForCommit re-checks it.
+			return []release.WorkflowRun{
+				{HeadSHA: "deadbeef", Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
+				{HeadSHA: commitSHA, Status: release.WorkflowRunInProgress, Conclusion: release.WorkflowRunNoConclusion},
+				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunFailure},
+				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
+			}, nil
+		},
+	}
+	err := runCheckFinal(context.Background(), gh, finalCheckRunner(), testRepo, []string{"--tag", "v1.2.3"})
+	if err != nil {
+		t.Fatalf("runCheckFinal (green rc) = %v, want nil", err)
+	}
+	// The run lookup must use the rc's COMMIT (resolved via RevParse), not the tag.
+	if gotCommitSHA != rcCommit {
+		t.Fatalf("WorkflowRunsForCommit got commit %q, want the rc commit %q", gotCommitSHA, rcCommit)
+	}
+}
+
+func TestRunCheckFinal_NoGreenRunBlocks(t *testing.T) {
+	t.Parallel()
+
+	gh := &mockGitHubClient{
+		workflowRunsForCommitFn: func(_ context.Context, _, _, commitSHA string) ([]release.WorkflowRun, error) {
+			// No completed+success run on the rc commit → not green.
+			return []release.WorkflowRun{
+				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunFailure},
+			}, nil
+		},
+	}
+	err := runCheckFinal(context.Background(), gh, finalCheckRunner(), testRepo, []string{"--tag", "v1.2.3"})
+	if err == nil {
+		t.Fatal("runCheckFinal (no green rc) = nil, want a blocking error")
+	}
+}
+
+// PARITY: a genuine git lineage failure (IsAncestor exit >1 → error) must be
+// treated as not-an-ancestor and BLOCK — never silently pass.
+func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
+	t.Parallel()
+
+	git := finalCheckRunner()
+	git.isAncestorFn = func(_ context.Context, _, _ string) (bool, error) {
+		return false, errors.New("merge-base: exit status 128 (bad object)")
+	}
+	gh := &mockGitHubClient{
+		workflowRunsForCommitFn: func(_ context.Context, _, _, commitSHA string) ([]release.WorkflowRun, error) {
+			// The rc IS green — only the lineage error must keep it from passing.
+			return []release.WorkflowRun{
+				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
+			}, nil
+		},
+	}
+	err := runCheckFinal(context.Background(), gh, git, testRepo, []string{"--tag", "v1.2.3"})
+	if err == nil {
+		t.Fatal("runCheckFinal must BLOCK when IsAncestor errors (green-but-lineage-broken rc), got nil")
+	}
+}
+
+// --- BDD #3: check-approval (paginated approvals; maintainer gate) ----------
+
+func TestRunCheckApproval(t *testing.T) {
+	t.Parallel()
+
+	// reviews modelling a multi-page result already flattened by PullReviews:
+	// alice comments then approves; bob approves.
+	reviews := []release.Review{
+		{User: &release.ReviewUser{Login: "alice"}, State: release.ReviewStateCommented},
+		{User: &release.ReviewUser{Login: "alice"}, State: release.ReviewStateApproved},
+		{User: &release.ReviewUser{Login: "bob"}, State: release.ReviewStateApproved},
+	}
+
+	tests := []struct {
+		name    string
+		reviews []release.Review
+		perms   map[string]release.CollaboratorPermission
+		wantErr bool
+	}{
+		{
+			name:    "standing maintainer approval (bob is maintain)",
+			reviews: reviews,
+			perms:   map[string]release.CollaboratorPermission{"alice": release.PermWrite, "bob": release.PermMaintain},
+			wantErr: false,
+		},
+		{
+			name:    "approvals but no maintainer among them",
+			reviews: reviews,
+			perms:   map[string]release.CollaboratorPermission{"alice": release.PermWrite, "bob": release.PermWrite},
+			wantErr: true,
+		},
+		{
+			name:    "no standing approvals",
+			reviews: []release.Review{{User: &release.ReviewUser{Login: "alice"}, State: release.ReviewStateChangesRequested}},
+			perms:   map[string]release.CollaboratorPermission{},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var gotPR int
+			gh := &mockGitHubClient{
+				pullReviewsFn: func(_ context.Context, repo string, prNumber int) ([]release.Review, error) {
+					gotPR = prNumber
+					return tc.reviews, nil
+				},
+				collaboratorPermissionFn: func(_ context.Context, _, user string) (release.CollaboratorPermission, error) {
+					return tc.perms[user], nil
+				},
+			}
+			err := runCheckApproval(context.Background(), gh, testRepo, []string{"--pr", "94"})
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("runCheckApproval err = %v, wantErr %v", err, tc.wantErr)
+			}
+			if gotPR != 94 {
+				t.Fatalf("PullReviews got PR #%d, want #94 (--pr parsed to int)", gotPR)
+			}
+		})
+	}
+}
+
+func TestRunCheckApproval_RejectsNonNumericPR(t *testing.T) {
+	t.Parallel()
+	gh := &mockGitHubClient{} // never called
+	err := runCheckApproval(context.Background(), gh, testRepo, []string{"--pr", "not-a-number"})
+	if err == nil || !strings.Contains(err.Error(), "is not a number") {
+		t.Fatalf("runCheckApproval(--pr not-a-number) = %v, want a 'not a number' error", err)
+	}
+}
+
+// --- carry-note #5: $GITHUB_OUTPUT byte-parity ------------------------------
+
+func TestFormatOutput_ByteParity(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		tag      string
+		wantLine string
+	}{
+		{"v1.2.3", "version=v1.2.3\nkind=final\n"},
+		{"v1.2.3-rc4", "version=v1.2.3-rc4\nkind=rc\n"},
+	}
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.tag, func(t *testing.T) {
+			t.Parallel()
+			v, kind, err := release.ParseTag(tc.tag)
+			if err != nil {
+				t.Fatalf("ParseTag(%q): %v", tc.tag, err)
+			}
+			// Byte-identical to the pre-swap emit() format string.
+			if got := formatOutput(v, kind); got != tc.wantLine {
+				t.Fatalf("formatOutput(%q) = %q, want byte-identical %q", tc.tag, got, tc.wantLine)
+			}
+		})
+	}
+}
+
+// --- BDD #1 mechanism: empty token fails fast at construction ---------------
+
+func TestNewGitHubClient_EmptyTokenErrors(t *testing.T) {
+	t.Parallel()
+	if _, err := newGitHubClient(""); err == nil {
+		t.Fatal("newGitHubClient(\"\") = nil error, want a fail-fast empty-token error")
+	}
+}
+
+// --- parse handlers reject malformed input ----------------------------------
+
+func TestRunParseTag_RejectsNamespacedTag(t *testing.T) {
+	t.Parallel()
+	if err := runParseTag([]string{"pkg/schema/v1.2.3"}); err == nil {
+		t.Fatal("runParseTag(namespaced tag) = nil, want rejection")
+	}
+}
+
+// --- composition root: the token is read from the workflows' $GH_TOKEN --------
+//
+// The release workflows export $GH_TOKEN (`env: { GH_TOKEN: ${{ github.token }} }`);
+// the tool must read that exact variable or every API-backed gate authenticates
+// with an empty token and fails. readGitHubToken is the testable core of the
+// composition root's fail-fast (mustGitHubClient maps its error to os.Exit).
+//
+// This test uses t.Setenv (process-global env), so it must NOT run in parallel.
+func TestReadGitHubToken(t *testing.T) {
+	// Pin the variable name the composition root reads to the one the workflows
+	// export — the whole point of the BLOCKER fix. Setting the RAW literal below
+	// (not the const) then independently proves readGitHubToken reads THIS name.
+	if gitHubTokenEnv != "GH_TOKEN" {
+		t.Fatalf("gitHubTokenEnv = %q, want \"GH_TOKEN\" (the variable every release workflow exports)", gitHubTokenEnv)
+	}
+
+	t.Run("reads the value of the exported GH_TOKEN", func(t *testing.T) {
+		t.Setenv("GH_TOKEN", "ghp_a_real_looking_token")
+		token, err := readGitHubToken("check-final")
+		if err != nil {
+			t.Fatalf("readGitHubToken with $GH_TOKEN set = %v, want nil", err)
+		}
+		if token != "ghp_a_real_looking_token" {
+			t.Fatalf("readGitHubToken = %q, want the $GH_TOKEN value", token)
+		}
+	})
+
+	t.Run("empty token yields an actionable fail-fast", func(t *testing.T) {
+		t.Setenv("GH_TOKEN", "")
+		_, err := readGitHubToken("check-approval")
+		if err == nil {
+			t.Fatal("readGitHubToken with an empty $GH_TOKEN = nil error, want an actionable fail-fast")
+		}
+		// what/why/where/how + it names the subcommand and the env var. Requiring
+		// "GH_TOKEN" ALSO guards the regression: the pre-swap name is not a
+		// superstring of "GH_TOKEN", so a revert to it would fail this assertion.
+		for _, want := range []string{"GH_TOKEN", "check-approval", "empty or unset", "token with repo read access"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Fatalf("error %q is not actionable (missing %q)", err.Error(), want)
+			}
+		}
+	})
+}
+
+// --- $GITHUB_OUTPUT: emit APPENDS version=/kind= to the step-output file -------
+//
+// Exit-code mapping is proven-by-construction, not unit-tested here: every
+// subcommand funnels through the uniform `if err != nil { fatalf(...) }` in main()
+// (a one-line os.Exit(1) wrapper), and each handler's error vs nil-error is
+// covered by the per-gate `wantErr` tests above. What IS observable without
+// re-exec'ing the process is emit()'s file effect, asserted here.
+//
+// Uses t.Setenv (process-global $GITHUB_OUTPUT), so it must NOT run in parallel.
+func TestEmit_AppendsToGitHubOutput(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "github_output")
+	// Seed a prior line so the test proves emit APPENDS (O_APPEND), never
+	// truncates — the file accumulates outputs across a job's steps.
+	if err := os.WriteFile(path, []byte("preexisting=1\n"), 0o644); err != nil {
+		t.Fatalf("seed $GITHUB_OUTPUT: %v", err)
+	}
+	t.Setenv("GITHUB_OUTPUT", path)
+
+	v, kind, err := release.ParseTag("v1.2.3-rc4")
+	if err != nil {
+		t.Fatalf("ParseTag: %v", err)
+	}
+	if err := emit(v, kind); err != nil {
+		t.Fatalf("emit: %v", err)
+	}
+
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read $GITHUB_OUTPUT: %v", err)
+	}
+	want := "preexisting=1\nversion=v1.2.3-rc4\nkind=rc\n"
+	if string(got) != want {
+		t.Fatalf("$GITHUB_OUTPUT = %q, want %q (emit appends version=/kind=)", string(got), want)
+	}
+}
+
+// --- findMaintainerApprover: first maintainer in order; none; error-wrap -------
+
+func TestFindMaintainerApprover_ReturnsFirstMaintainerInOrder(t *testing.T) {
+	t.Parallel()
+
+	// carol is not a maintainer (skipped); dave and erin both are — the FIRST in
+	// slice order (dave) must win, so approval is attributed deterministically.
+	perms := map[string]release.CollaboratorPermission{
+		"carol": release.PermWrite,
+		"dave":  release.PermMaintain,
+		"erin":  release.PermAdmin,
+	}
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, user string) (release.CollaboratorPermission, error) {
+			return perms[user], nil
+		},
+	}
+	approver, perm, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol", "dave", "erin"})
+	if err != nil {
+		t.Fatalf("findMaintainerApprover: %v", err)
+	}
+	if approver != "dave" || perm != release.PermMaintain {
+		t.Fatalf("findMaintainerApprover = (%q,%q), want (dave, maintain) — the first maintainer in order", approver, perm)
+	}
+}
+
+func TestFindMaintainerApprover_NoneAreMaintainers(t *testing.T) {
+	t.Parallel()
+
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, _ string) (release.CollaboratorPermission, error) {
+			return release.PermWrite, nil
+		},
+	}
+	approver, perm, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol", "dave"})
+	if err != nil {
+		t.Fatalf("findMaintainerApprover: %v", err)
+	}
+	if approver != "" || perm != "" {
+		t.Fatalf("findMaintainerApprover = (%q,%q), want empty (no approver is a maintainer)", approver, perm)
+	}
+}
+
+func TestFindMaintainerApprover_PermissionErrorIsWrapped(t *testing.T) {
+	t.Parallel()
+
+	gh := &mockGitHubClient{
+		collaboratorPermissionFn: func(_ context.Context, _, _ string) (release.CollaboratorPermission, error) {
+			return "", errors.New("boom: 500 from GitHub")
+		},
+	}
+	_, _, err := findMaintainerApprover(context.Background(), gh, testRepo, []string{"carol"})
+	if err == nil {
+		t.Fatal("findMaintainerApprover with a permission error = nil, want a wrapped error")
+	}
+	for _, want := range []string{"collaborator permission of approving reviewer", "carol", testRepo} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
+	}
+}
+
+// --- check-workflow handler flag parsing (--policy / --release / unknown) ------
+
+func TestRunCheckWorkflow_FlagParse(t *testing.T) {
+	t.Parallel()
+
+	t.Run("unknown flag is rejected by name", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--nope", "x"})
+		if err == nil || !strings.Contains(err.Error(), `unknown flag "--nope"`) {
+			t.Fatalf("runCheckWorkflow(--nope) = %v, want an unknown-flag error naming it", err)
+		}
+	})
+
+	t.Run("--policy requires a value", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--policy"})
+		if err == nil || !strings.Contains(err.Error(), "--policy requires a value") {
+			t.Fatalf("runCheckWorkflow(--policy) = %v, want a missing-value error", err)
+		}
+	})
+
+	t.Run("--release requires a value", func(t *testing.T) {
+		t.Parallel()
+		err := runCheckWorkflow([]string{"--release"})
+		if err == nil || !strings.Contains(err.Error(), "--release requires a value") {
+			t.Fatalf("runCheckWorkflow(--release) = %v, want a missing-value error", err)
+		}
+	})
+
+	t.Run("--policy value flows into the loader", func(t *testing.T) {
+		t.Parallel()
+		// A custom --policy path is threaded to LoadWorkflowPolicy; a nonexistent
+		// one surfaces a read error naming that exact path (proves the wiring).
+		missing := filepath.Join(t.TempDir(), "custom.policy.yml")
+		err := runCheckWorkflow([]string{"--policy", missing})
+		if err == nil || !strings.Contains(err.Error(), missing) {
+			t.Fatalf("runCheckWorkflow(--policy %s) = %v, want a load error naming the custom path", missing, err)
+		}
 	})
 }

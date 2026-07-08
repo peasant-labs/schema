@@ -31,6 +31,11 @@ on:
       - ".vacuum.yaml"
       - "scripts/**"
       - ".github/workflows/tests.yml"
+      # The release-workflow guard (make check -> release-guard check-workflow)
+      # validates release.yml against the policy file, so a change to EITHER must
+      # re-run this gate to catch drift.
+      - ".github/workflows/release.yml"
+      - ".github/release-guard.policy.yml"
   push:
     branches: [develop, main]
     paths:
@@ -45,6 +50,11 @@ on:
       - ".vacuum.yaml"
       - "scripts/**"
       - ".github/workflows/tests.yml"
+      # The release-workflow guard (make check -> release-guard check-workflow)
+      # validates release.yml against the policy file, so a change to EITHER must
+      # re-run this gate to catch drift.
+      - ".github/workflows/release.yml"
+      - ".github/release-guard.policy.yml"
   # Reusable entry point: release-pr.yml calls this on a release(...) PR so the
   # quality gate runs even when the release marker commit touches none of the
   # path-filtered files above. Also handy for on-demand reruns.

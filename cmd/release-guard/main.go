@@ -15,45 +15,48 @@
 //	release-guard check-final --tag vX.Y.Z [--workflow release.yml]
 //	    Guard a FINAL release: require a same-version release candidate whose
 //	    release run is green AND whose tag is an ancestor of the final commit.
-//	    Queries git (tag list, rev-list, merge-base) and gh (workflow run
-//	    conclusions), then defers the decision to release.CheckFinal.
+//	    Queries git (tag list, rev-list, merge-base) via the hardened GitRunner
+//	    and the GitHub API (workflow-run conclusions) via the GitHubClient, then
+//	    defers the decision to release.CheckFinal.
 //
 //	release-guard check-maintainer --user <login>
 //	    Assert a GitHub user is a release maintainer (admin/maintain collaborator
-//	    on $GITHUB_REPOSITORY). Queries gh for the collaborator permission and
-//	    applies release.IsMaintainer — the single source of the maintainer
-//	    predicate consumed by both release-pr.yml gates.
+//	    on $GITHUB_REPOSITORY). Reads the collaborator permission via the
+//	    GitHubClient and applies release.IsMaintainer — the single source of the
+//	    maintainer predicate consumed by both release-pr.yml gates.
 //
 //	release-guard check-approval --pr <number>
 //	    Assert a release PR has at least one standing APPROVED review from a
-//	    maintainer. Fetches all review pages, reduces each reviewer's latest
-//	    non-COMMENTED review, then applies release.IsMaintainer per approver.
+//	    maintainer. Fetches all review pages via the GitHubClient, reduces each
+//	    reviewer's latest non-COMMENTED review, then applies release.IsMaintainer
+//	    per approver.
 //
-//	release-guard check-workflow [--release .github/workflows/release.yml]
-//	    Validate that the release workflow keeps the GitHub-Release publish job
-//	    behind the guard, the Nix vendorHash gate, and the contract gates
-//	    (oasdiff / go-apidiff / vacuum). The schema-repo analogue of peasant's
-//	    goreleaser-gate check — it asserts the SUBTRACTED (binary-free) pipeline's
-//	    own publication gates via release.CheckReleaseWorkflowFile.
+//	release-guard check-workflow [--release .github/workflows/release.yml] [--policy .github/release-guard.policy.yml]
+//	    Validate that the release workflow satisfies the per-repo policy
+//	    (.github/release-guard.policy.yml): every declared job exists with the
+//	    required needs-edges (and, for reusable gates, the required uses /
+//	    secrets:inherit / no-if shape). Repo-agnostic — the job graph lives in the
+//	    policy file, not in this tool.
 //
 // Every subcommand that derives a (version, kind) writes "version=<v>" and
 // "kind=<k>" to the file named by $GITHUB_OUTPUT when set (so workflow steps can
 // consume them via steps.<id>.outputs.*), and always echoes them to stdout.
+//
+// main() is the SOLE composition root: it reads GH_TOKEN + GITHUB_REPOSITORY
+// from the environment ONCE, builds the GitHubClient (go-github) and the hardened
+// GitRunner, and injects them DOWN into pure handler funcs that take their deps
+// as parameters and never touch os.Getenv. Handlers return an error; main maps a
+// non-nil error to a non-zero exit via fatalf, preserving exit-code parity.
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"os"
-	"os/exec"
-	"strings"
+	"strconv"
 
 	"github.com/peasant-labs/schema/internal/release"
 )
-
-var commandOutput = func(name string, args ...string) ([]byte, error) {
-	return exec.Command(name, args...).Output()
-}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -61,112 +64,188 @@ func main() {
 	}
 	sub := os.Args[1]
 	args := os.Args[2:]
+	ctx := context.Background()
 
+	var err error
 	switch sub {
 	case "parse-title":
-		runParseTitle(args)
+		err = runParseTitle(args)
 	case "parse-tag":
-		runParseTag(args)
-	case "check-final":
-		runCheckFinal(args)
+		err = runParseTag(args)
 	case "check-workflow":
-		runCheckWorkflow(args)
+		err = runCheckWorkflow(args)
+	case "check-final":
+		gh := mustGitHubClient(sub)
+		git := mustGitRunner(sub)
+		err = runCheckFinal(ctx, gh, git, mustRepo(sub), args)
 	case "check-maintainer":
-		runCheckMaintainer(args)
+		gh := mustGitHubClient(sub)
+		err = runCheckMaintainer(ctx, gh, mustRepo(sub), args)
 	case "check-approval":
-		runCheckApproval(args)
+		gh := mustGitHubClient(sub)
+		err = runCheckApproval(ctx, gh, mustRepo(sub), args)
 	default:
 		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, or check-approval", sub)
 	}
+	if err != nil {
+		fatalf("%v", err)
+	}
 }
 
-// runCheckWorkflow validates the schema repo's release.yml: the GitHub-Release
-// publish job must sit behind the guard, the Nix vendorHash gate, and the
-// contract gates. This is the (binary-free) schema analogue of peasant's
-// goreleaser-gate check; the grammar lives in release.CheckReleaseWorkflow.
-func runCheckWorkflow(args []string) {
+// --- composition root: env read ONCE, deps built here (never in handlers) ---
+
+// gitHubTokenEnv is the SINGLE environment variable release-guard reads for the
+// GitHub API token. It is GH_TOKEN — the variable every release workflow exports
+// (`env: { GH_TOKEN: ${{ github.token }} }`), which is also what the previous
+// `gh` shell-outs consumed — so the go-github seam authenticates with the exact
+// credential the workflows already provide (no separate GITHUB_-prefixed name).
+const gitHubTokenEnv = "GH_TOKEN"
+
+// readGitHubToken reads the GitHub API token from $GH_TOKEN. It returns an
+// actionable error (what/why/where/how) when the token is empty or unset, and is
+// the TESTABLE core of the composition root's fail-fast: mustGitHubClient calls
+// it and maps a non-nil error to a fatal exit, so both the env-var name read and
+// its diagnostic are covered without a test having to trigger os.Exit.
+func readGitHubToken(sub string) (string, error) {
+	token := os.Getenv(gitHubTokenEnv)
+	if token == "" {
+		return "", fmt.Errorf("%s: $%s is empty or unset, but this command calls the GitHub API. Export a token with repo read access before running release-guard %s (in GitHub Actions: `env: { %s: ${{ github.token }} }`)", sub, gitHubTokenEnv, sub, gitHubTokenEnv)
+	}
+	return token, nil
+}
+
+// mustGitHubClient reads $GH_TOKEN once (via readGitHubToken) and builds the
+// production GitHubClient, FAILING FAST (actionable) on an empty/unset token
+// BEFORE any API call. newGitHubClient also rejects an empty token, but checking
+// here first yields the what/why/where/how message.
+func mustGitHubClient(sub string) GitHubClient {
+	token, err := readGitHubToken(sub)
+	if err != nil {
+		fatalf("%v", err)
+	}
+	gh, err := newGitHubClient(token)
+	if err != nil {
+		fatalf("%s: cannot construct the GitHub API client: %v", sub, err)
+	}
+	return gh
+}
+
+// mustGitRunner builds the hardened git-lineage runner, failing fast if git is
+// not resolvable on PATH.
+func mustGitRunner(sub string) GitRunner {
+	git, err := newExecGit()
+	if err != nil {
+		fatalf("%s: %v", sub, err)
+	}
+	return git
+}
+
+// mustRepo reads GITHUB_REPOSITORY once (owner/repo); the wrapper splits it.
+func mustRepo(sub string) string {
+	repo := os.Getenv("GITHUB_REPOSITORY")
+	if repo == "" {
+		fatalf("%s: $GITHUB_REPOSITORY is not set; cannot address the repository for the GitHub API call. Set it to owner/repo (GitHub Actions sets it automatically)", sub)
+	}
+	return repo
+}
+
+// --- handlers (pure: deps injected, never os.Getenv; return error) ----------
+
+func runParseTitle(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("usage: release-guard parse-title \"<pr title>\"")
+	}
+	v, kind, err := release.ParseReleaseTitle(args[0])
+	if err != nil {
+		return err
+	}
+	return emit(v, kind)
+}
+
+func runParseTag(args []string) error {
+	if len(args) != 1 {
+		return fmt.Errorf("usage: release-guard parse-tag \"<git tag>\"")
+	}
+	v, kind, err := release.ParseTag(args[0])
+	if err != nil {
+		return err
+	}
+	return emit(v, kind)
+}
+
+func runCheckWorkflow(args []string) error {
 	releaseWorkflow := ".github/workflows/release.yml"
+	policyPath := ".github/release-guard.policy.yml"
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--release":
 			i++
 			if i >= len(args) {
-				fatalf("--release requires a value")
+				return fmt.Errorf("--release requires a value")
 			}
 			releaseWorkflow = args[i]
+		case "--policy":
+			i++
+			if i >= len(args) {
+				return fmt.Errorf("--policy requires a value")
+			}
+			policyPath = args[i]
 		default:
-			fatalf("unknown flag %q for check-workflow", args[i])
+			return fmt.Errorf("unknown flag %q for check-workflow", args[i])
 		}
 	}
-	if err := release.CheckReleaseWorkflowFile(releaseWorkflow); err != nil {
-		fatalf("%v", err)
-	}
-	fmt.Printf("release workflow gates are valid: %s keeps the GitHub-Release publish behind guard, nix-vendor-hash, and contract-gates\n", releaseWorkflow)
-}
-
-func runParseTitle(args []string) {
-	if len(args) != 1 {
-		fatalf("usage: release-guard parse-title \"<pr title>\"")
-	}
-	v, kind, err := release.ParseReleaseTitle(args[0])
+	policy, err := release.LoadWorkflowPolicy(policyPath)
 	if err != nil {
-		fatalf("%v", err)
+		return err
 	}
-	emit(v, kind)
+	if err := release.CheckReleaseWorkflowFile(releaseWorkflow, policy); err != nil {
+		return err
+	}
+	fmt.Printf("release workflow gates are valid: %s satisfies the release-guard policy in %s\n", releaseWorkflow, policyPath)
+	return nil
 }
 
-func runParseTag(args []string) {
-	if len(args) != 1 {
-		fatalf("usage: release-guard parse-tag \"<git tag>\"")
-	}
-	v, kind, err := release.ParseTag(args[0])
-	if err != nil {
-		fatalf("%v", err)
-	}
-	emit(v, kind)
-}
-
-func runCheckFinal(args []string) {
-	var tag, workflow string
-	workflow = "release.yml"
+func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo string, args []string) error {
+	tag := ""
+	workflow := "release.yml"
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--tag":
 			i++
 			if i >= len(args) {
-				fatalf("--tag requires a value")
+				return fmt.Errorf("--tag requires a value")
 			}
 			tag = args[i]
 		case "--workflow":
 			i++
 			if i >= len(args) {
-				fatalf("--workflow requires a value")
+				return fmt.Errorf("--workflow requires a value")
 			}
 			workflow = args[i]
 		default:
-			fatalf("unknown flag %q for check-final", args[i])
+			return fmt.Errorf("unknown flag %q for check-final", args[i])
 		}
 	}
 	if tag == "" {
-		fatalf("usage: release-guard check-final --tag vX.Y.Z [--workflow release.yml]")
+		return fmt.Errorf("usage: release-guard check-final --tag vX.Y.Z [--workflow release.yml]")
 	}
 
 	final, kind, err := release.ParseTag(tag)
 	if err != nil {
-		fatalf("%v", err)
+		return err
 	}
 	if kind != release.KindFinal {
-		fatalf("check-final: %s is a release candidate, not a final release; the rc→final guard only applies to final tags", final)
+		return fmt.Errorf("check-final: %s is a release candidate, not a final release; the rc→final guard only applies to final tags", final)
 	}
 
-	finalCommit, err := revParse(string(final))
+	finalCommit, err := git.RevParse(ctx, string(final))
 	if err != nil {
-		fatalf("check-final: cannot resolve the commit for final tag %s: %v", final, err)
+		return fmt.Errorf("check-final: cannot resolve the commit for final tag %s: %v", final, err)
 	}
 
-	rcTags, err := listRCTags(final.Base())
+	rcTags, err := git.ListTags(ctx, string(final.Base())+"-rc*")
 	if err != nil {
-		fatalf("check-final: cannot list release-candidate tags for %s: %v", final.Base(), err)
+		return fmt.Errorf("check-final: cannot list release-candidate tags for %s: %v", final.Base(), err)
 	}
 
 	statuses := make([]release.RCStatus, 0, len(rcTags))
@@ -175,211 +254,120 @@ func runCheckFinal(args []string) {
 		if perr != nil || rcKind != release.KindRC || rcVer.Base() != final.Base() {
 			continue
 		}
-		ancestor := isAncestor(string(rcVer), finalCommit)
-		green, gerr := runGreen(workflow, string(rcVer))
-		if gerr != nil {
-			fatalf("check-final: cannot determine the release-run status of %s: %v", rcVer, gerr)
+
+		rcCommit, rerr := git.RevParse(ctx, string(rcVer))
+		if rerr != nil {
+			return fmt.Errorf("check-final: cannot resolve the commit for release candidate %s: %v", rcVer, rerr)
 		}
+
+		// PARITY: the old inline isAncestor reported ANY git failure (exit >1) as
+		// a bare not-an-ancestor; the hardened GitRunner now returns an error for
+		// exit >1. Keep the guard BLOCKING — treat an error as not-an-ancestor so
+		// the rc cannot satisfy CheckFinal — but surface the reason on stderr
+		// instead of swallowing it. (exit 1 is the definitive (false, nil).)
+		ancestor, aerr := git.IsAncestor(ctx, string(rcVer), finalCommit)
+		if aerr != nil {
+			fmt.Fprintf(os.Stderr, "release-guard: check-final: treating release candidate %s as NOT an ancestor of the final commit because the lineage check failed: %v\n", rcVer, aerr)
+			ancestor = false
+		}
+
+		runs, gerr := gh.WorkflowRunsForCommit(ctx, repo, workflow, rcCommit)
+		if gerr != nil {
+			return fmt.Errorf("check-final: cannot determine the release-run status of %s: %v", rcVer, gerr)
+		}
+		green := release.RunGreenForCommit(runs, rcCommit)
+
 		statuses = append(statuses, release.RCStatus{Tag: rcVer, RunGreen: green, IsAncestor: ancestor})
 	}
 
 	if err := release.CheckFinal(final, statuses); err != nil {
-		fatalf("%v", err)
+		return err
 	}
 	fmt.Printf("final release %s is permitted: a same-version rc is green and an ancestor of the final commit\n", final)
+	return nil
 }
 
-func runCheckMaintainer(args []string) {
-	var user string
+func runCheckMaintainer(ctx context.Context, gh GitHubClient, repo string, args []string) error {
+	user := ""
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--user":
 			i++
 			if i >= len(args) {
-				fatalf("--user requires a value")
+				return fmt.Errorf("--user requires a value")
 			}
 			user = args[i]
 		default:
-			fatalf("unknown flag %q for check-maintainer", args[i])
+			return fmt.Errorf("unknown flag %q for check-maintainer", args[i])
 		}
 	}
 	if user == "" {
-		fatalf("usage: release-guard check-maintainer --user <login>")
-	}
-	repo := os.Getenv("GITHUB_REPOSITORY")
-	if repo == "" {
-		fatalf("check-maintainer: $GITHUB_REPOSITORY is not set; cannot resolve the collaborator permission for %q", user)
+		return fmt.Errorf("usage: release-guard check-maintainer --user <login>")
 	}
 
-	perm, err := collaboratorPermission(repo, user)
+	perm, err := gh.CollaboratorPermission(ctx, repo, user)
 	if err != nil {
-		fatalf("check-maintainer: cannot read the collaborator permission of %q on %s (gh api): %v", user, repo, err)
+		return fmt.Errorf("check-maintainer: cannot read the collaborator permission of %q on %s: %v", user, repo, err)
 	}
 	if !release.IsMaintainer(perm) {
-		fatalf("user %q has permission %q on %s, but a release action (open or approve a release PR) requires a maintainer (%s or %s); ask a maintainer to perform it",
+		return fmt.Errorf("user %q has permission %q on %s, but a release action (open or approve a release PR) requires a maintainer (%s or %s); ask a maintainer to perform it",
 			user, perm, repo, release.PermAdmin, release.PermMaintain)
 	}
 	fmt.Printf("user %s is a maintainer (%s)\n", user, perm)
+	return nil
 }
 
-func runCheckApproval(args []string) {
-	var pr string
+func runCheckApproval(ctx context.Context, gh GitHubClient, repo string, args []string) error {
+	pr := ""
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--pr":
 			i++
 			if i >= len(args) {
-				fatalf("--pr requires a value")
+				return fmt.Errorf("--pr requires a value")
 			}
 			pr = args[i]
 		default:
-			fatalf("unknown flag %q for check-approval", args[i])
+			return fmt.Errorf("unknown flag %q for check-approval", args[i])
 		}
 	}
 	if pr == "" {
-		fatalf("usage: release-guard check-approval --pr <number>")
+		return fmt.Errorf("usage: release-guard check-approval --pr <number>")
 	}
-	repo := os.Getenv("GITHUB_REPOSITORY")
-	if repo == "" {
-		fatalf("check-approval: $GITHUB_REPOSITORY is not set; cannot fetch reviews for PR #%s", pr)
+	prNumber, err := strconv.Atoi(pr)
+	if err != nil {
+		return fmt.Errorf("check-approval: --pr value %q is not a number: %v", pr, err)
 	}
 
-	reviews, err := fetchReviews(repo, pr)
+	reviews, err := gh.PullReviews(ctx, repo, prNumber)
 	if err != nil {
-		fatalf("check-approval: cannot read reviews for release PR #%s on %s: %v", pr, repo, err)
+		return fmt.Errorf("check-approval: cannot read reviews for release PR #%d on %s: %v", prNumber, repo, err)
 	}
 	approvers := release.LatestApprovers(reviews)
 	if len(approvers) == 0 {
-		fatalf("release PR #%s has no standing APPROVED reviews; a maintainer (%s or %s) must approve before merge",
-			pr, release.PermAdmin, release.PermMaintain)
+		return fmt.Errorf("release PR #%d has no standing APPROVED reviews; a maintainer (%s or %s) must approve before merge",
+			prNumber, release.PermAdmin, release.PermMaintain)
 	}
 
-	approver, perm, err := findMaintainerApprover(repo, approvers)
+	approver, perm, err := findMaintainerApprover(ctx, gh, repo, approvers)
 	if err != nil {
-		fatalf("check-approval: %v", err)
+		return fmt.Errorf("check-approval: %v", err)
 	}
 	if approver != "" {
-		fmt.Printf("release PR #%s has a standing maintainer approval from %s (%s)\n", pr, approver, perm)
-		return
+		fmt.Printf("release PR #%d has a standing maintainer approval from %s (%s)\n", prNumber, approver, perm)
+		return nil
 	}
-	fatalf("release PR #%s has standing approvals, but none from an %s/%s maintainer; a maintainer must approve the release",
-		pr, release.PermAdmin, release.PermMaintain)
+	return fmt.Errorf("release PR #%d has standing approvals, but none from an %s/%s maintainer; a maintainer must approve the release",
+		prNumber, release.PermAdmin, release.PermMaintain)
 }
 
-// --- git / gh helpers ---
-
-func revParse(ref string) (string, error) {
-	out, err := commandOutput("git", "rev-list", "-n", "1", ref)
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func listRCTags(base release.Version) ([]string, error) {
-	out, err := commandOutput("git", "tag", "--list", string(base)+"-rc*")
-	if err != nil {
-		return nil, err
-	}
-	var tags []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if t := strings.TrimSpace(line); t != "" {
-			tags = append(tags, t)
-		}
-	}
-	return tags, nil
-}
-
-func isAncestor(rcRef, finalCommit string) bool {
-	// Exit 0 = ancestor; exit 1 = not; >1 = error (treated as not-ancestor, the
-	// safe default — the guard then blocks and the maintainer investigates).
-	return exec.Command("git", "merge-base", "--is-ancestor", rcRef, finalCommit).Run() == nil
-}
-
-// ghRun is the subset of `gh run list --json` output we consume.
-type ghRun struct {
-	HeadSHA    string `json:"headSha"`
-	Status     string `json:"status"`
-	Conclusion string `json:"conclusion"`
-}
-
-// runGreen reports whether the given rc tag's commit has a completed, successful
-// run of the named workflow. It matches on the commit SHA (a tag run's headSha
-// is the tagged commit) so a later run on the same commit is also accepted.
-func runGreen(workflow, rcTag string) (bool, error) {
-	rcCommit, err := revParse(rcTag)
-	if err != nil {
-		return false, fmt.Errorf("resolving commit for %s: %w", rcTag, err)
-	}
-	out, err := commandOutput(
-		"gh", "run", "list",
-		"--workflow", workflow,
-		"--commit", rcCommit,
-		"--limit", "100",
-		"--json", "headSha,status,conclusion",
-	)
-	if err != nil {
-		return false, fmt.Errorf("gh run list: %w", err)
-	}
-	var runs []ghRun
-	if err := json.Unmarshal(out, &runs); err != nil {
-		return false, fmt.Errorf("parsing gh run list output: %w", err)
-	}
-	for _, r := range runs {
-		if r.HeadSHA == rcCommit && r.Status == "completed" && r.Conclusion == "success" {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func fetchReviews(repo, pr string) ([]release.Review, error) {
-	out, err := commandOutput(
-		"gh", "api",
-		fmt.Sprintf("repos/%s/pulls/%s/reviews", repo, pr),
-		"--paginate",
-		"--slurp",
-	)
-	if err != nil {
-		return nil, err
-	}
-	return parseReviews(out)
-}
-
-func parseReviews(data []byte) ([]release.Review, error) {
-	var pages [][]release.Review
-	if err := json.Unmarshal(data, &pages); err == nil {
-		var reviews []release.Review
-		for _, page := range pages {
-			reviews = append(reviews, page...)
-		}
-		return reviews, nil
-	}
-
-	var reviews []release.Review
-	if err := json.Unmarshal(data, &reviews); err != nil {
-		return nil, fmt.Errorf("parsing gh reviews JSON: %w", err)
-	}
-	return reviews, nil
-}
-
-func collaboratorPermission(repo, user string) (release.CollaboratorPermission, error) {
-	out, err := commandOutput(
-		"gh", "api",
-		fmt.Sprintf("repos/%s/collaborators/%s/permission", repo, user),
-		"--jq", ".permission",
-	)
-	if err != nil {
-		return "", err
-	}
-	return release.CollaboratorPermission(strings.TrimSpace(string(out))), nil
-}
-
-func findMaintainerApprover(repo string, approvers []string) (string, release.CollaboratorPermission, error) {
+// findMaintainerApprover returns the first approver who is a maintainer, in the
+// given order. ("", "", nil) means none of the approvers is a maintainer.
+func findMaintainerApprover(ctx context.Context, gh GitHubClient, repo string, approvers []string) (string, release.CollaboratorPermission, error) {
 	for _, approver := range approvers {
-		perm, err := collaboratorPermission(repo, approver)
+		perm, err := gh.CollaboratorPermission(ctx, repo, approver)
 		if err != nil {
-			return "", "", fmt.Errorf("cannot read the collaborator permission of approving reviewer %q on %s (gh api): %w", approver, repo, err)
+			return "", "", fmt.Errorf("cannot read the collaborator permission of approving reviewer %q on %s: %w", approver, repo, err)
 		}
 		if release.IsMaintainer(perm) {
 			return approver, perm, nil
@@ -390,20 +378,28 @@ func findMaintainerApprover(repo string, approvers []string) (string, release.Co
 
 // --- output helpers ---
 
+// formatOutput renders the version/kind lines exactly as written to
+// $GITHUB_OUTPUT and stdout. It is the byte-parity surface: the format is
+// "version=<v>\nkind=<k>\n", unchanged across the go-github swap.
+func formatOutput(v release.Version, kind release.ReleaseKind) string {
+	return fmt.Sprintf("version=%s\nkind=%s\n", v, kind)
+}
+
 // emit writes version/kind to $GITHUB_OUTPUT (when set) and stdout.
-func emit(v release.Version, kind release.ReleaseKind) {
-	line := fmt.Sprintf("version=%s\nkind=%s\n", v, kind)
+func emit(v release.Version, kind release.ReleaseKind) error {
+	line := formatOutput(v, kind)
 	if path := os.Getenv("GITHUB_OUTPUT"); path != "" {
 		f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
 		if err != nil {
-			fatalf("cannot open $GITHUB_OUTPUT (%s): %v", path, err)
+			return fmt.Errorf("cannot open $GITHUB_OUTPUT (%s): %v", path, err)
 		}
 		defer f.Close()
 		if _, err := f.WriteString(line); err != nil {
-			fatalf("cannot write to $GITHUB_OUTPUT (%s): %v", path, err)
+			return fmt.Errorf("cannot write to $GITHUB_OUTPUT (%s): %v", path, err)
 		}
 	}
 	fmt.Print(line)
+	return nil
 }
 
 func fatalf(format string, a ...any) {
