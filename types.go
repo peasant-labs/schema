@@ -327,6 +327,65 @@ func (Visibility) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
+// --- License ---
+
+// License is the content license a contributor selects for a published
+// transcript. Closed menu: the village `licenses` table (its migration 026)
+// carries each license's obligations, and the peasant local store mirrors the set
+// in a CHECK (migration v37). This is the single source of truth for the menu on
+// the publish/pull wire.
+type License string
+
+const (
+	LicenseCC0    License = "CC0-1.0"
+	LicenseCCBY   License = "CC-BY-4.0"
+	LicenseCCBYSA License = "CC-BY-SA-4.0"
+)
+
+// IsValid reports whether the license is one of the known menu entries.
+func (l License) IsValid() bool {
+	switch l {
+	case LicenseCC0, LicenseCCBY, LicenseCCBYSA:
+		return true
+	}
+	return false
+}
+
+func (l License) String() string { return string(l) }
+
+// AllLicenses is the canonical menu of known licenses.
+var AllLicenses = []License{
+	LicenseCC0, LicenseCCBY, LicenseCCBYSA,
+}
+
+// LicenseMenu returns the known license IDs as a comma-separated string, derived
+// from AllLicenses so help text and error messages can't drift from the canonical
+// menu when a license is added.
+func LicenseMenu() string {
+	ids := make([]string, len(AllLicenses))
+	for i, l := range AllLicenses {
+		ids[i] = l.String()
+	}
+	return strings.Join(ids, ", ")
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (License) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("License")
+	s.WithDescription("Content license for a published transcript")
+	// Derive the enum from AllLicenses rather than hardcoding it, so a new license
+	// flows through automatically (matches the Harness pattern; avoids DRY drift).
+	enum := make([]any, len(AllLicenses))
+	for i, l := range AllLicenses {
+		enum[i] = l.String()
+	}
+	s.WithEnum(enum...)
+	s.WithExamples("CC0-1.0")
+	return s, nil
+}
+
 // --- ToolCallKind ---
 
 // ToolCallKind classifies a tool call in an agent session.

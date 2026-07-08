@@ -5,8 +5,8 @@ and the [village](https://github.com/peasant-labs) marketplace — a single,
 contract-only Go **leaf module**.
 
 It holds the wire/domain types, the versioned OpenAPI specs, fixtures, the
-request validators, the village SQL migrations, and the codegen + release-guard
-tooling. It has **no runtime**: no HTTP server, no WebSocket hub, no CLI product.
+request validators, and the codegen + release-guard tooling. It has **no
+runtime**: no HTTP server, no WebSocket hub, no CLI product.
 Both consumers (the peasant client and the village server) depend on it; it
 depends on nothing first-party except `bestiary` (a sibling dependency).
 
@@ -20,8 +20,7 @@ Module path: `github.com/peasant-labs/schema`
 | `versions.go` | Single source of truth for the versioned-spec semvers (`VillageAPIVersion`, `PeasantLocalAPIVersion`, `TypesVersion`). |
 | `openapi/` | OpenAPI 3.1 spec builders (`BuildVillageAPISpec`, `BuildPeasantLocalAPISpec`, `BuildTypesSpec`) + the artifact generator. |
 | `generated/` | Committed OpenAPI spec goldens (JSON + YAML) + the standalone PublishRequest JSON Schema. **Gate-checked**; regenerate with `go run ./cmd/schema-gen`. |
-| `validate/` | `ValidatePublishRequest` — the JSON-Schema validator the village enforces on publish. |
-| `migrations/village/` | Embedded village SQL migrations (`embed.FS`). |
+| `publish_validate.go` (root, `package schema`) | `ValidatePublishRequest` — the JSON-Schema validator the village enforces on publish (compiles the `PublishRequestSchemaJSON()` bytes, so the served doc ≡ the enforced schema). |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + test fixtures. |
 | `cmd/schema-gen/` | Regenerates `generated/` specs + Redoc/HTML docs. The contract gates' freshness/immutability/surface tests live here. |
 | `cmd/release-guard/` + `internal/release/` | The release pipeline's title/tag grammar + final-release guard CLI (see CONTRIBUTING). |
@@ -87,10 +86,10 @@ the no-local-`replace` (`vendorHash`-stability) rules.
 
 ## Open items
 
-- **LICENSE** — this public repo has no committed `LICENSE` yet; the flake `meta`
-  carries an honest placeholder (`LicenseRef-Peasant-Schema-Placeholder`,
-  `free = false`) until the final license is chosen. This is a user decision.
-- **CI + release pipeline** — DONE (SLICE-B): contract gates (`oasdiff` /
+- **LICENSE** — Apache-2.0. The `LICENSE` file at the repo root carries the
+  verbatim Apache License 2.0 text; the flake `meta.license` is the SPDX
+  `Apache-2.0` id (`licenses.asl20`).
+- **CI + release pipeline** — DONE: contract gates (`oasdiff` /
   `go-apidiff` / `vacuum`, provisioned via the flake), `tests.yml`,
   `release-pr.yml` / `release.yml`, and `nix-vendor-hash.yml`. The release
   ceremony and the `v0.1.0-rc1` cut are documented in

@@ -102,7 +102,6 @@
           let
             pkgs = import nixpkgs-channel {
               inherit system;
-              config.allowUnfree = true;
             };
 
             goPackage =
@@ -217,16 +216,9 @@
               meta = with pkgs.lib; {
                 description = "Peasant public API contract: OpenAPI specs, shared types, fixtures, validators, and migrations (single leaf module)";
                 homepage = "https://github.com/peasant-labs/schema";
-                # PLACEHOLDER license: this public contract repo has no committed
-                # LICENSE yet. Do NOT claim a stock SPDX id (that would be a lie to
-                # nixpkgs/validators). The final license is a user decision (see
-                # README open items); config.allowUnfree = true keeps `nix build`
-                # unblocked until then. Revisit when LICENSE is committed.
-                license = {
-                  shortName = "LicenseRef-Peasant-Schema-Placeholder";
-                  fullName = "Peasant Schema License (placeholder; final license TBD — no LICENSE committed yet)";
-                  free = false;
-                };
+                # Apache-2.0: the committed root LICENSE file. SPDX-identified so
+                # nixpkgs/validators and downstream consumers read the real license.
+                license = licenses.asl20;
                 mainProgram = "schema-gen";
               };
             };

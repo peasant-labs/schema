@@ -18,9 +18,11 @@ const (
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
 	// Bumped to 0.3.0 (rc2 #118) when model + model.harness/model.model became
 	// required — a tightening of the publish contract (selective required arrays on
-	// SchemaPublishRequest + SchemaModelInfo). The 0.2.0 spec trio is retained
-	// byte-frozen under the retired-spec immutability guard.
-	VillageAPIVersion = "0.3.0"
+	// SchemaPublishRequest + SchemaModelInfo). Bumped to 0.4.0 when
+	// PublishRequest.License + PullTranscriptInfo.License were added (additive
+	// optional field = minor bump). Each prior version's generated goldens are
+	// retained byte-frozen under the retired-spec immutability guard.
+	VillageAPIVersion = "0.4.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). The retired 0.1.0 spec is retained byte-frozen

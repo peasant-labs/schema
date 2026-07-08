@@ -120,6 +120,31 @@ cases:
       error_category: "required"
       error_contains: "missing properties: 'model'"
 
+  # --- license: optional top-level enum (CC0-1.0 / CC-BY-4.0 / CC-BY-SA-4.0) ---
+  # A valid license on an otherwise-minimal-valid body is accepted. Absent license is
+  # already covered by the minimal/full valid rows (the field is omitempty), and the
+  # legacy pre-license schema likewise accepts it, so no legacy_accepts divergence.
+  - name: "valid-license"
+    body: |
+      {"model": {"harness": "claude-code", "model": "claude-opus-4-6"}, "license": "CC0-1.0"}
+    expect:
+      schema_accepts: true
+      error_category: "accepted"
+
+  # A license outside the closed menu is a documented schema-422. The body carries a
+  # valid model, so the ONLY violation is the license enum. The legacy pre-license
+  # schema had no license enum, so it accepts an unknown license — legacy_accepts
+  # diverges from schema_accepts here.
+  - name: "bad-license"
+    body: |
+      {"model": {"harness": "claude-code", "model": "claude-opus-4-6"}, "license": "MIT"}
+    expect:
+      schema_accepts: false
+      legacy_accepts: true
+      http_status: 422
+      error_category: "enum"
+      error_contains: "value must be one of"
+
   - name: "bad-source-format"
     body: |
       {"source": {"format": "xml"}}

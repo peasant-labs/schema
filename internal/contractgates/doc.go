@@ -1,5 +1,6 @@
 // Package contractgates holds the SYNTHETIC-BREAK tests for the schema repo's
-// breaking-change contract gates (PROPOSAL-4 W5 / b3).
+// breaking-change contract gates: oasdiff for the OpenAPI specs and go-apidiff
+// for the exported Go API.
 //
 // Each breaking gate (oasdiff for the OpenAPI specs, go-apidiff for the exported
 // Go API) ships a test here that applies a KNOWN breaking mutation and asserts

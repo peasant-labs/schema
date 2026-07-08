@@ -36,6 +36,12 @@ jobs:
     env:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}
+    # The tag's release kind ("rc" | "final"), derived once here by the tested
+    # `release-guard parse-tag` (internal/release Kind() over the anchored tag
+    # grammar). Downstream jobs consume `needs.guard.outputs.kind` rather than
+    # re-detecting rc-ness with an untested shell substring match.
+    outputs:
+      kind: ${{ steps.parse.outputs.kind }}
     steps:
       - name: Checkout repository (full history + tags)
         uses: actions/checkout@v5
@@ -106,13 +112,26 @@ jobs:
         id: prior
         run: |
           set -euo pipefail
-          # The most recent v* tag that is an ancestor of this tag, excluding it.
-          prior="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)"
-          echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
-          if [ -n "${prior}" ]; then
-            echo "::notice::diffing the contract against prior release ${prior}"
+          # Prereleases (kind == "rc", classified once by the guard job's tested
+          # `release-guard parse-tag`) are unstable: they may carry breaking changes
+          # vs the prior release as they converge toward a final vX.Y.Z, so the
+          # vs-prior breaking diff (oasdiff + go-apidiff) does NOT apply to an rc.
+          # The compatibility guarantee is enforced only at a FINAL release (here,
+          # plus `release-guard check-final`); PR-time gates already cover breaks vs
+          # develop. For an rc, leave BASE_REF empty so contract-gates.sh runs
+          # vacuum lint only (its empty-base behaviour skips the breaking diffs).
+          if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
+            echo "base_ref=" >> "$GITHUB_OUTPUT"
+            echo "::notice::prerelease ${TAG}: skipping the vs-prior breaking diff (rc tags may break); vacuum lint only."
           else
-            echo "::notice::no prior release tag; running vacuum lint only (first release)"
+            # The most recent v* tag that is an ancestor of this tag, excluding it.
+            prior="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)"
+            echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
+            if [ -n "${prior}" ]; then
+              echo "::notice::diffing the contract against prior release ${prior}"
+            else
+              echo "::notice::no prior release tag; running vacuum lint only (first release)"
+            fi
           fi
 
       - name: Run contract gates
@@ -134,21 +153,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Classify the tag (prerelease for -rc)
-        id: kind
-        run: |
-          set -euo pipefail
-          if printf '%s' "$TAG" | grep -q -- '-rc'; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Create the GitHub Release with the OpenAPI specs as assets
         run: |
           set -euo pipefail
+          # Prerelease iff the guard job classified the tag as an rc — the single
+          # tested source of truth (release-guard parse-tag -> internal/release Kind()),
+          # not a re-derived shell substring match.
           prerelease_flag=""
-          if [ "${{ steps.kind.outputs.prerelease }}" = "true" ]; then
+          if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
             prerelease_flag="--prerelease"
           fi
           # Assets: every generated contract artifact (OpenAPI specs + the publish

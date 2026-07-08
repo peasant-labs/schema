@@ -67,6 +67,7 @@ type PullTranscriptInfo struct {
 	Harness         Harness         `json:"harness,omitempty"` // existing typed form
 	ProjectName     string          `json:"projectName,omitempty"`
 	Visibility      Visibility      `json:"visibility"`                // existing typed form
+	License         License         `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
 	ContentHash     string          `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
 	ContractVersion ContractVersion `json:"contractVersion,omitempty"` // push contract the blob was published under
 	PublishedAt     int64           `json:"publishedAt"`

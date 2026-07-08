@@ -27,6 +27,12 @@ type PublishRequest struct {
 	Entries     []SessionEntry  `json:"entries,omitempty"`
 	Subagents   []SubagentRef   `json:"subagents,omitempty"`
 	Diagnostics DiagnosticsInfo `json:"diagnostics"`
+	// License is the content license the contributor selected for this transcript
+	// (CC0-1.0 / CC-BY-4.0 / CC-BY-SA-4.0). Optional — omitempty ⇒ a publish with no
+	// license stores NULL (legacy/un-set). The village persists it to
+	// transcripts.license_id; the vendored schema enum makes an invalid value a
+	// documented schema-422. NOT `required` (keeps SchemaPublishRequest.required = [model]).
+	License License `json:"license,omitempty"`
 }
 
 // PublishResponse is returned by the village after successful publish.
