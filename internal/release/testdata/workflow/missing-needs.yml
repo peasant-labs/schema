@@ -1,0 +1,12 @@
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+  nix-vendor-hash:
+    needs: guard
+    runs-on: ubuntu-latest
+  contract-gates:
+    needs: [guard, nix-vendor-hash]
+    runs-on: ubuntu-latest
+  release:
+    needs: [guard, nix-vendor-hash]
+    runs-on: ubuntu-latest

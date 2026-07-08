@@ -1,0 +1,18 @@
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+  nix-vendor-hash:
+    needs: guard
+    runs-on: ubuntu-latest
+  e2e:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [guard, nix-vendor-hash]
+    uses: ./.github/workflows/e2e.yml
+    secrets: inherit
+  release-e2e:
+    needs: [guard, nix-vendor-hash]
+    uses: ./.github/workflows/release-e2e.yml
+    secrets: inherit
+  release:
+    needs: [guard, nix-vendor-hash, e2e, release-e2e]
+    runs-on: ubuntu-latest

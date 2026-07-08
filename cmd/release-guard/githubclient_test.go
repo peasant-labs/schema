@@ -28,49 +28,133 @@ func newTestGitHubClient(t *testing.T, handler http.Handler) *githubClient {
 	return &githubClient{gh: gh}
 }
 
-func TestGitHubClient_CollaboratorPermission(t *testing.T) {
-	t.Parallel()
-
-	var gotPath string
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPath = r.URL.Path
-		fmt.Fprint(w, `{"permission":"admin"}`)
-	}))
-
-	perm, err := c.CollaboratorPermission(context.Background(), "peasant-labs/schema", "octocat")
-	if err != nil {
-		t.Fatalf("CollaboratorPermission: %v", err)
+// assertErrContains fails unless err is non-nil and its message contains every
+// listed substring.
+func assertErrContains(t *testing.T, err error, wants []string) {
+	t.Helper()
+	if err == nil {
+		t.Fatalf("expected an error containing %v, got nil", wants)
 	}
-	if perm != release.PermAdmin {
-		t.Fatalf("permission = %q, want %q", perm, release.PermAdmin)
-	}
-	// owner/repo split: the wrapper must address /repos/<owner>/<repo>/...
-	if want := "/repos/peasant-labs/schema/collaborators/octocat/permission"; gotPath != want {
-		t.Fatalf("request path = %q, want %q (owner/repo split)", gotPath, want)
+	for _, want := range wants {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
+		}
 	}
 }
 
+// TestGitHubClient_SeamCases drives the single-response seam cases from
+// testdata/github/cases.yaml: happy path, non-2xx error-wrap (404/500),
+// empty-result fail-safety, and the [null]-element nil-guards, across all three
+// wrapper methods. The canned bytes live in fixtures; the httptest server still
+// drives the REAL production githubClient (the SUT is never mocked).
+func TestGitHubClient_SeamCases(t *testing.T) {
+	t.Parallel()
+
+	cases := loadGithubSeamCases(t)
+	if len(cases) != 8 {
+		t.Fatalf("github seam fixture has %d cases, want 8 (fixture truncated?)", len(cases))
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Parallel()
+
+			body := readGithubFixture(t, tc.Response)
+			var gotPath string
+			c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				if tc.Status != 0 {
+					w.WriteHeader(tc.Status)
+				}
+				_, _ = w.Write(body)
+			}))
+
+			switch tc.Method {
+			case "collaborator_permission":
+				perm, err := c.CollaboratorPermission(context.Background(), "peasant-labs/schema", tc.User)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("CollaboratorPermission: %v", err)
+				}
+				if perm != release.CollaboratorPermission(tc.WantPermission) {
+					t.Fatalf("permission = %q, want %q", perm, tc.WantPermission)
+				}
+				if tc.WantPath != "" && gotPath != tc.WantPath {
+					t.Fatalf("request path = %q, want %q (owner/repo split)", gotPath, tc.WantPath)
+				}
+
+			case "workflow_runs":
+				runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", tc.Commit)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("WorkflowRunsForCommit: %v", err)
+				}
+				if len(runs) != tc.WantRunCount {
+					t.Fatalf("collected %d runs, want %d: %+v", len(runs), tc.WantRunCount, runs)
+				}
+				if got := release.RunGreenForCommit(runs, tc.Commit); got != tc.WantGreen {
+					t.Fatalf("RunGreenForCommit(%s) = %v, want %v", tc.Commit, got, tc.WantGreen)
+				}
+
+			case "pull_reviews":
+				reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", tc.PR)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("PullReviews: %v", err)
+				}
+				if len(reviews) != tc.WantReviewCount {
+					t.Fatalf("collected %d reviews, want %d: %+v", len(reviews), tc.WantReviewCount, reviews)
+				}
+				approvers := release.LatestApprovers(reviews)
+				if len(approvers) != len(tc.WantApprovers) {
+					t.Fatalf("LatestApprovers = %v, want %v", approvers, tc.WantApprovers)
+				}
+				for i := range approvers {
+					if approvers[i] != tc.WantApprovers[i] {
+						t.Fatalf("LatestApprovers[%d] = %q, want %q", i, approvers[i], tc.WantApprovers[i])
+					}
+				}
+
+			default:
+				t.Fatalf("unknown seam method %q in fixture case %q", tc.Method, tc.Name)
+			}
+		})
+	}
+}
+
+// TestGitHubClient_WorkflowRunsForCommit covers the multi-page pagination
+// boundary + server-side HeadSHA filter. The per-page bodies live in fixtures;
+// the Link-header page routing + page-count assertions stay inline (behavioral).
 func TestGitHubClient_WorkflowRunsForCommit(t *testing.T) {
 	t.Parallel()
 
 	const commit = "deadbeefcafe"
+	// Pre-read outside the handler goroutine (t.Fatalf must run on the test goroutine).
+	page1 := readGithubFixture(t, "runs-page1.json") // in_progress + failure decoys
+	page2 := readGithubFixture(t, "runs-page2.json") // the green run on the commit
+
 	var gotHeadSHA, gotPath string
 	var page1Hits int
-
 	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotHeadSHA = r.URL.Query().Get("head_sha")
 		gotPath = r.URL.Path
 		if r.URL.Query().Get("page") == "2" {
-			// Final page: a green run on the commit (plus a nil-safe decoy).
-			fmt.Fprintf(w, `{"total_count":3,"workflow_runs":[{"head_sha":%q,"status":"completed","conclusion":"success"}]}`, commit)
+			_, _ = w.Write(page2)
 			return
 		}
 		page1Hits++
-		// First page: an in-progress decoy + a completed-failure decoy; link to p2.
 		w.Header().Set("Link", fmt.Sprintf("<http://%s%s?page=2>; rel=\"next\"", r.Host, r.URL.Path))
-		fmt.Fprintf(w, `{"total_count":3,"workflow_runs":[`+
-			`{"head_sha":%q,"status":"in_progress","conclusion":null},`+
-			`{"head_sha":%q,"status":"completed","conclusion":"failure"}]}`, commit, commit)
+		_, _ = w.Write(page1)
 	}))
 
 	runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", commit)
@@ -103,19 +187,24 @@ func TestGitHubClient_WorkflowRunsForCommit(t *testing.T) {
 	}
 }
 
+// TestGitHubClient_PullReviews_PaginatesInOrder covers the multi-page review
+// pagination + ascending-order preservation + the null-user nil-guard. Per-page
+// bodies live in fixtures; the Link-header routing stays inline (behavioral).
 func TestGitHubClient_PullReviews_PaginatesInOrder(t *testing.T) {
 	t.Parallel()
+
+	page1 := readGithubFixture(t, "reviews-page1.json") // alice comments then approves
+	page2 := readGithubFixture(t, "reviews-page2.json") // bob approves; a null-user review
 
 	var gotPath string
 	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		if r.URL.Query().Get("page") == "2" {
-			// Page 2: bob approves; a null-user review must be nil-guarded.
-			fmt.Fprint(w, `[{"user":{"login":"bob"},"state":"APPROVED"},{"user":null,"state":"COMMENTED"}]`)
+			_, _ = w.Write(page2)
 			return
 		}
 		w.Header().Set("Link", fmt.Sprintf("<http://%s%s?page=2>; rel=\"next\"", r.Host, r.URL.Path))
-		fmt.Fprint(w, `[{"user":{"login":"alice"},"state":"COMMENTED"},{"user":{"login":"alice"},"state":"APPROVED"}]`)
+		_, _ = w.Write(page1)
 	}))
 
 	reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", 42)
@@ -143,172 +232,6 @@ func TestGitHubClient_PullReviews_PaginatesInOrder(t *testing.T) {
 	approvers := release.LatestApprovers(reviews)
 	if len(approvers) != 2 || approvers[0] != "alice" || approvers[1] != "bob" {
 		t.Fatalf("LatestApprovers = %v, want [alice bob]", approvers)
-	}
-}
-
-// --- Error paths: a non-2xx response fires the actionable error wrap ----------
-//
-// The go-github seam is the crux of this change; each method wraps a transport
-// error into a what/why/where/how message. These drive a real non-2xx status
-// through the go-github decode machinery and assert the wrapper's message (not
-// just "an error occurred").
-
-func TestGitHubClient_CollaboratorPermission_ErrorOnNon2xx(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(w, `{"message":"Not Found"}`)
-	}))
-
-	_, err := c.CollaboratorPermission(context.Background(), "peasant-labs/schema", "ghost")
-	if err == nil {
-		t.Fatal("CollaboratorPermission on a 404 = nil error, want the actionable wrap")
-	}
-	for _, want := range []string{
-		"cannot read the collaborator permission",
-		"ghost",
-		"peasant-labs/schema",
-		"GH_TOKEN can read repo collaborators",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
-		}
-	}
-}
-
-func TestGitHubClient_WorkflowRunsForCommit_ErrorOnNon2xx(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprint(w, `{"message":"Server Error"}`)
-	}))
-
-	_, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", "deadbeef")
-	if err == nil {
-		t.Fatal("WorkflowRunsForCommit on a 500 = nil error, want the actionable wrap")
-	}
-	for _, want := range []string{
-		"cannot list runs of release.yml",
-		"deadbeef",
-		"peasant-labs/schema",
-		"GH_TOKEN can read Actions",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
-		}
-	}
-}
-
-func TestGitHubClient_PullReviews_ErrorOnNon2xx(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprint(w, `{"message":"Not Found"}`)
-	}))
-
-	_, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
-	if err == nil {
-		t.Fatal("PullReviews on a 404 = nil error, want the actionable wrap")
-	}
-	for _, want := range []string{
-		"cannot list reviews for PR #7",
-		"peasant-labs/schema",
-		"GH_TOKEN can read pull requests",
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("error %q missing actionable substring %q", err.Error(), want)
-		}
-	}
-}
-
-// --- Empty results stay fail-safe: no runs → not green; no reviews → no approve.
-
-func TestGitHubClient_WorkflowRunsForCommit_EmptyIsFailSafe(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"total_count":0,"workflow_runs":[]}`)
-	}))
-
-	runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", "deadbeef")
-	if err != nil {
-		t.Fatalf("WorkflowRunsForCommit (0 runs) = %v, want nil", err)
-	}
-	if len(runs) != 0 {
-		t.Fatalf("collected %d runs, want 0 (empty result): %+v", len(runs), runs)
-	}
-	// Fail-safe: an empty run set must NOT satisfy the green-run gate.
-	if release.RunGreenForCommit(runs, "deadbeef") {
-		t.Fatal("RunGreenForCommit(empty) = true, want false (empty result must not pass the final gate)")
-	}
-}
-
-func TestGitHubClient_PullReviews_EmptyIsFailSafe(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `[]`)
-	}))
-
-	reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
-	if err != nil {
-		t.Fatalf("PullReviews (0 reviews) = %v, want nil", err)
-	}
-	if len(reviews) != 0 {
-		t.Fatalf("collected %d reviews, want 0 (empty result): %+v", len(reviews), reviews)
-	}
-	// Fail-safe: no reviews → no standing approvers.
-	if approvers := release.LatestApprovers(reviews); len(approvers) != 0 {
-		t.Fatalf("LatestApprovers(empty) = %v, want none (empty result must not approve a release)", approvers)
-	}
-}
-
-// --- Null array elements are nil-guarded at the wrapper (no panic, skipped) ---
-
-func TestGitHubClient_WorkflowRunsForCommit_SkipsNullElement(t *testing.T) {
-	t.Parallel()
-
-	const commit = "deadbeefcafe"
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// A JSON null decodes to a nil *github.WorkflowRun; the wrapper's
-		// `if r == nil { continue }` guard must skip it instead of dereferencing.
-		fmt.Fprintf(w, `{"total_count":2,"workflow_runs":[null,{"head_sha":%q,"status":"completed","conclusion":"success"}]}`, commit)
-	}))
-
-	runs, err := c.WorkflowRunsForCommit(context.Background(), "peasant-labs/schema", "release.yml", commit)
-	if err != nil {
-		t.Fatalf("WorkflowRunsForCommit with a null element = %v, want nil (guarded, not panicked)", err)
-	}
-	// The null element is skipped; only the real run survives, mapped correctly.
-	if len(runs) != 1 {
-		t.Fatalf("collected %d runs, want 1 (null element skipped): %+v", len(runs), runs)
-	}
-	if !release.RunGreenForCommit(runs, commit) {
-		t.Fatalf("the surviving run should be green for %s: %+v", commit, runs)
-	}
-}
-
-func TestGitHubClient_PullReviews_SkipsNullElement(t *testing.T) {
-	t.Parallel()
-
-	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// A JSON null decodes to a nil *github.PullRequestReview; the wrapper's
-		// `if r == nil { continue }` guard must skip it instead of dereferencing.
-		fmt.Fprint(w, `[null,{"user":{"login":"alice"},"state":"APPROVED"}]`)
-	}))
-
-	reviews, err := c.PullReviews(context.Background(), "peasant-labs/schema", 7)
-	if err != nil {
-		t.Fatalf("PullReviews with a null element = %v, want nil (guarded, not panicked)", err)
-	}
-	if len(reviews) != 1 {
-		t.Fatalf("collected %d reviews, want 1 (null element skipped): %+v", len(reviews), reviews)
-	}
-	if approvers := release.LatestApprovers(reviews); len(approvers) != 1 || approvers[0] != "alice" {
-		t.Fatalf("LatestApprovers = %v, want [alice]", approvers)
 	}
 }
 

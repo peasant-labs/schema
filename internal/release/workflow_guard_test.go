@@ -8,64 +8,11 @@ import (
 	"testing"
 )
 
-// --- Workflow fixtures ------------------------------------------------------
-
-// schemaShapeReleaseWorkflow is the schema repo's release.yml shape: a guard
-// job, a nix-vendor-hash job, a contract-gates job behind the guard, and a
-// publish job behind all three. No reusable gates, no goreleaser.
-const schemaShapeReleaseWorkflow = `
-name: Release
-on:
-  push:
-    tags: ["v*"]
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-    steps: [{ run: "go run ./cmd/release-guard parse-tag $TAG" }]
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-    steps: [{ run: "make nix-vendor-hash" }]
-  contract-gates:
-    needs: [guard, nix-vendor-hash]
-    runs-on: ubuntu-latest
-    steps: [{ run: "make gates" }]
-  release:
-    needs: [guard, nix-vendor-hash, contract-gates]
-    runs-on: ubuntu-latest
-    steps: [{ run: "gh release create $TAG generated/*" }]
-`
-
-// peasantShapeReleaseWorkflow is the peasant repo's release.yml shape: the
-// goreleaser publish job sits behind two reusable-workflow gates (e2e and
-// release-e2e), each using its reusable workflow, passing secrets: inherit, and
-// carrying no `if:`.
-const peasantShapeReleaseWorkflow = `
-name: Release
-on:
-  push:
-    tags: ["v*"]
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-    steps: [{ run: "go run github.com/peasant-labs/schema/cmd/release-guard parse-tag $TAG" }]
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-    steps: [{ run: "make nix-vendor-hash" }]
-  e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/e2e.yml
-    secrets: inherit
-  release-e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/release-e2e.yml
-    secrets: inherit
-  release:
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-    runs-on: ubuntu-latest
-    steps: [{ run: "goreleaser release" }]
-`
+// The workflow-shape YAML fixtures, the peasant policy file, and the
+// check-workflow case table now live under testdata/workflow (loaded via the
+// embedded FS in workflow_fixtures_test.go). The policy Go VALUES stay here:
+// they are the canonical expected shapes (also asserted by the LoadWorkflowPolicy
+// round-trip) and are referenced by name from the case fixture.
 
 // --- Policy fixtures (Go values) --------------------------------------------
 
@@ -96,247 +43,58 @@ func peasantShapePolicy() WorkflowPolicy {
 	}}
 }
 
-// --- Each repo's own policy validates its own release.yml -------------------
-
-func TestCheckReleaseWorkflow_OwnPairsPass(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		policy   WorkflowPolicy
-		workflow string
-	}{
-		{"schema policy vs schema release.yml", schemaShapePolicy(), schemaShapeReleaseWorkflow},
-		{"peasant policy vs peasant release.yml", peasantShapePolicy(), peasantShapeReleaseWorkflow},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			if err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy); err != nil {
-				t.Fatalf("own policy/workflow pair rejected: %v", err)
-			}
-		})
-	}
-}
-
-// --- Cross-fed wrong policy fails actionably (BDD #5) -----------------------
-
-func TestCheckReleaseWorkflow_CrossFedFailsActionably(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		policy   WorkflowPolicy
-		workflow string
-		wantSub  string // observable, names the offending job
-	}{
-		{
-			name:     "schema policy rejects peasant release.yml (no contract-gates job)",
-			policy:   schemaShapePolicy(),
-			workflow: peasantShapeReleaseWorkflow,
-			wantSub:  "missing jobs.contract-gates",
-		},
-		{
-			name:     "peasant policy rejects schema release.yml (no e2e reusable gate)",
-			policy:   peasantShapePolicy(),
-			workflow: schemaShapeReleaseWorkflow,
-			wantSub:  "missing jobs.e2e",
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy)
-			if err == nil {
-				t.Fatalf("expected cross-fed pair to be rejected, got nil")
-			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Fatalf("error %q does not name the offending job (want substring %q)", err.Error(), tc.wantSub)
-			}
-		})
-	}
-}
-
-// --- Per-assertion rejections ------------------------------------------------
-
-func TestCheckReleaseWorkflow_Rejects(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		policy   WorkflowPolicy
-		workflow string
-		wantSub  string
-	}{
-		{
-			name:     "empty policy",
-			policy:   WorkflowPolicy{},
-			workflow: schemaShapeReleaseWorkflow,
-			wantSub:  "declares no jobs",
-		},
-		{
-			name:     "no jobs mapping",
-			policy:   schemaShapePolicy(),
-			workflow: "name: Release\non:\n  push:\n    tags: [\"v*\"]\n",
-			wantSub:  "has no jobs mapping",
-		},
-		{
-			name:   "missing required needs edge",
-			policy: schemaShapePolicy(),
-			workflow: `
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-  contract-gates:
-    needs: [guard, nix-vendor-hash]
-    runs-on: ubuntu-latest
-  release:
-    needs: [guard, nix-vendor-hash]
-    runs-on: ubuntu-latest
-`,
-			wantSub: "jobs.release.needs is missing contract-gates",
-		},
-		{
-			name:   "reusable gate missing uses",
-			policy: peasantShapePolicy(),
-			workflow: `
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-  e2e:
-    needs: [guard, nix-vendor-hash]
-    secrets: inherit
-  release-e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/release-e2e.yml
-    secrets: inherit
-  release:
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-    runs-on: ubuntu-latest
-`,
-			wantSub: "jobs.e2e uses <missing>",
-		},
-		{
-			name:   "reusable gate missing secrets inherit",
-			policy: peasantShapePolicy(),
-			workflow: `
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-  e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/e2e.yml
-  release-e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/release-e2e.yml
-    secrets: inherit
-  release:
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-    runs-on: ubuntu-latest
-`,
-			wantSub: "jobs.e2e secrets is <missing>",
-		},
-		{
-			name:   "reusable gate has forbidden if condition",
-			policy: peasantShapePolicy(),
-			workflow: `
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-  e2e:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/e2e.yml
-    secrets: inherit
-  release-e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/release-e2e.yml
-    secrets: inherit
-  release:
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-    runs-on: ubuntu-latest
-`,
-			wantSub: "jobs.e2e has an if condition",
-		},
-		{
-			name:     "malformed yaml",
-			policy:   schemaShapePolicy(),
-			workflow: "jobs: [this is: not valid: mapping",
-			wantSub:  "cannot parse",
-		},
-	}
-
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			err := checkReleaseWorkflow("release.yml", []byte(tc.workflow), tc.policy)
-			if err == nil {
-				t.Fatalf("expected rejection for %q, got nil", tc.name)
-			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Fatalf("error %q does not contain expected substring %q", err.Error(), tc.wantSub)
-			}
-		})
-	}
-}
-
-// --- Reusable gate points at the WRONG workflow file ------------------------
+// --- Fixture-driven policy/workflow validation cases ------------------------
 //
-// The <missing>-uses case (in TestCheckReleaseWorkflow_Rejects) covers a gate
-// with no `uses:` at all. This covers the distinct, previously-tested case where
-// the gate DOES declare `uses:` but at the wrong reusable workflow — the error
-// must name BOTH the wrong target it found and the required one to point it at.
-func TestCheckReleaseWorkflow_RejectsWrongUsesTarget(t *testing.T) {
+// One table over testdata/workflow/cases.yaml: the accept pairs must validate,
+// and every reject pair must fail with a message containing all its substrings.
+// This subsumes the former OwnPairsPass / CrossFedFailsActionably / Rejects /
+// RejectsWrongUsesTarget tables — same cases, same assertions, data moved out.
+
+func TestCheckReleaseWorkflow_Cases(t *testing.T) {
 	t.Parallel()
 
-	const wrongUsesWorkflow = `
-jobs:
-  guard:
-    runs-on: ubuntu-latest
-  nix-vendor-hash:
-    needs: guard
-    runs-on: ubuntu-latest
-  e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/e2e-WRONG.yml
-    secrets: inherit
-  release-e2e:
-    needs: [guard, nix-vendor-hash]
-    uses: ./.github/workflows/release-e2e.yml
-    secrets: inherit
-  release:
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-    runs-on: ubuntu-latest
-`
-	err := checkReleaseWorkflow("release.yml", []byte(wrongUsesWorkflow), peasantShapePolicy())
-	if err == nil {
-		t.Fatal("a reusable gate pointing at the wrong workflow file must be rejected, got nil")
+	cases := loadCheckWorkflowCases(t)
+	if len(cases.Accept) != 2 || len(cases.Reject) != 10 {
+		t.Fatalf("check-workflow fixture has accept=%d reject=%d, want accept=2 reject=10 (fixture truncated?)",
+			len(cases.Accept), len(cases.Reject))
 	}
-	for _, want := range []string{
-		"jobs.e2e uses ./.github/workflows/e2e-WRONG.yml", // names the wrong target it found
-		"Point it at ./.github/workflows/e2e.yml",         // names the required target
-	} {
-		if !strings.Contains(err.Error(), want) {
-			t.Fatalf("wrong-uses error %q missing actionable substring %q", err.Error(), want)
+
+	t.Run("accept", func(t *testing.T) {
+		t.Parallel()
+		for _, tc := range cases.Accept {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				t.Parallel()
+				data := readWorkflowFixture(t, tc.Workflow)
+				if err := checkReleaseWorkflow(tc.Workflow, data, policyByName(t, tc.Policy)); err != nil {
+					t.Fatalf("accept case %q rejected: %v", tc.Name, err)
+				}
+			})
 		}
-	}
+	})
+
+	t.Run("reject", func(t *testing.T) {
+		t.Parallel()
+		for _, tc := range cases.Reject {
+			tc := tc
+			t.Run(tc.Name, func(t *testing.T) {
+				t.Parallel()
+				if len(tc.WantContains) == 0 {
+					t.Fatalf("reject case %q declares no wantContains substrings (fixture error)", tc.Name)
+				}
+				data := readWorkflowFixture(t, tc.Workflow)
+				err := checkReleaseWorkflow(tc.Workflow, data, policyByName(t, tc.Policy))
+				if err == nil {
+					t.Fatalf("expected rejection for %q, got nil", tc.Name)
+				}
+				for _, want := range tc.WantContains {
+					if !strings.Contains(err.Error(), want) {
+						t.Fatalf("error %q does not contain expected substring %q", err.Error(), want)
+					}
+				}
+			})
+		}
+	})
 }
 
 // --- Public file wrapper: read-error path -----------------------------------
@@ -361,9 +119,10 @@ func TestCheckReleaseWorkflowFile_ReadsAndValidates(t *testing.T) {
 	t.Parallel()
 
 	// The wrapper reads a real file and validates it end-to-end (happy path), so
-	// the os.ReadFile success branch is exercised alongside the error branch.
+	// the os.ReadFile success branch is exercised alongside the error branch. The
+	// bytes come from the embedded schema-shape workflow fixture.
 	path := filepath.Join(t.TempDir(), "release.yml")
-	if err := os.WriteFile(path, []byte(schemaShapeReleaseWorkflow), 0o644); err != nil {
+	if err := os.WriteFile(path, readWorkflowFixture(t, "schema-release.yml"), 0o644); err != nil {
 		t.Fatalf("write workflow fixture: %v", err)
 	}
 	if err := CheckReleaseWorkflowFile(path, schemaShapePolicy()); err != nil {
@@ -372,27 +131,6 @@ func TestCheckReleaseWorkflowFile_ReadsAndValidates(t *testing.T) {
 }
 
 // --- LoadWorkflowPolicy round-trips a policy file ----------------------------
-
-const peasantShapePolicyYAML = `
-jobs:
-  - name: guard
-  - name: nix-vendor-hash
-    needs: [guard]
-  - name: e2e
-    needs: [guard, nix-vendor-hash]
-    reusable:
-      uses: ./.github/workflows/e2e.yml
-      secretsInherit: true
-      forbidIf: true
-  - name: release-e2e
-    needs: [guard, nix-vendor-hash]
-    reusable:
-      uses: ./.github/workflows/release-e2e.yml
-      secretsInherit: true
-      forbidIf: true
-  - name: release
-    needs: [guard, nix-vendor-hash, e2e, release-e2e]
-`
 
 func writePolicyFile(t *testing.T, content string) string {
 	t.Helper()
@@ -406,7 +144,10 @@ func writePolicyFile(t *testing.T, content string) string {
 func TestLoadWorkflowPolicy_RoundTripsAndValidates(t *testing.T) {
 	t.Parallel()
 
-	path := writePolicyFile(t, peasantShapePolicyYAML)
+	// The peasant policy YAML now lives in testdata/workflow/peasant.policy.yml;
+	// LoadWorkflowPolicy must reconstruct the peasantShapePolicy() Go value from
+	// it, and that loaded policy must validate the peasant-shape workflow.
+	path := writePolicyFile(t, string(readWorkflowFixture(t, "peasant.policy.yml")))
 	policy, err := LoadWorkflowPolicy(path)
 	if err != nil {
 		t.Fatalf("LoadWorkflowPolicy(%s) failed: %v", path, err)
@@ -415,7 +156,7 @@ func TestLoadWorkflowPolicy_RoundTripsAndValidates(t *testing.T) {
 		t.Fatalf("loaded policy does not match expected:\n got: %+v\nwant: %+v", policy, peasantShapePolicy())
 	}
 	// End-to-end: the loaded policy validates the peasant-shape workflow.
-	if err := checkReleaseWorkflow("release.yml", []byte(peasantShapeReleaseWorkflow), policy); err != nil {
+	if err := checkReleaseWorkflow("release.yml", readWorkflowFixture(t, "peasant-release.yml"), policy); err != nil {
 		t.Fatalf("loaded policy rejected its own workflow shape: %v", err)
 	}
 }

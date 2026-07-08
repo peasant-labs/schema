@@ -1,0 +1,20 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps: [{ run: "go run ./cmd/release-guard parse-tag $TAG" }]
+  nix-vendor-hash:
+    needs: guard
+    runs-on: ubuntu-latest
+    steps: [{ run: "make nix-vendor-hash" }]
+  contract-gates:
+    needs: [guard, nix-vendor-hash]
+    runs-on: ubuntu-latest
+    steps: [{ run: "make gates" }]
+  release:
+    needs: [guard, nix-vendor-hash, contract-gates]
+    runs-on: ubuntu-latest
+    steps: [{ run: "gh release create $TAG generated/*" }]

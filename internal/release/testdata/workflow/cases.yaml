@@ -1,0 +1,63 @@
+# check-workflow validation cases: a named policy (schema | peasant | empty) run
+# against a sibling workflow fixture file. An `accept` case must validate with no
+# error; a `reject` case must return an error whose message contains EVERY
+# `wantContains` substring (the substrings name the offending job / assertion).
+#
+# Policy names resolve to the WorkflowPolicy Go values in workflow_guard_test.go
+# (schemaShapePolicy / peasantShapePolicy / the empty no-jobs policy); workflow
+# names resolve to the embedded testdata/workflow/*.yml files.
+
+accept:
+  - name: schema policy validates schema release.yml
+    policy: schema
+    workflow: schema-release.yml
+  - name: peasant policy validates peasant release.yml
+    policy: peasant
+    workflow: peasant-release.yml
+
+reject:
+  # cross-fed: each repo's policy rejects the other's release.yml
+  - name: schema policy rejects peasant release.yml (no contract-gates job)
+    policy: schema
+    workflow: peasant-release.yml
+    wantContains: ["missing jobs.contract-gates"]
+  - name: peasant policy rejects schema release.yml (no e2e reusable gate)
+    policy: peasant
+    workflow: schema-release.yml
+    wantContains: ["missing jobs.e2e"]
+
+  # per-assertion rejections
+  - name: empty policy declares no jobs
+    policy: empty
+    workflow: schema-release.yml
+    wantContains: ["declares no jobs"]
+  - name: no jobs mapping
+    policy: schema
+    workflow: no-jobs-mapping.yml
+    wantContains: ["has no jobs mapping"]
+  - name: missing required needs edge
+    policy: schema
+    workflow: missing-needs.yml
+    wantContains: ["jobs.release.needs is missing contract-gates"]
+  - name: reusable gate missing uses
+    policy: peasant
+    workflow: missing-uses.yml
+    wantContains: ["jobs.e2e uses <missing>"]
+  - name: reusable gate missing secrets inherit
+    policy: peasant
+    workflow: missing-secrets.yml
+    wantContains: ["jobs.e2e secrets is <missing>"]
+  - name: reusable gate has forbidden if condition
+    policy: peasant
+    workflow: forbidden-if.yml
+    wantContains: ["jobs.e2e has an if condition"]
+  - name: reusable gate points at the wrong workflow file
+    policy: peasant
+    workflow: wrong-uses.yml
+    wantContains:
+      - "jobs.e2e uses ./.github/workflows/e2e-WRONG.yml"
+      - "Point it at ./.github/workflows/e2e.yml"
+  - name: malformed yaml
+    policy: schema
+    workflow: malformed.yml
+    wantContains: ["cannot parse"]
