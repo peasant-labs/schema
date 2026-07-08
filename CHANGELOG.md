@@ -3,6 +3,21 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **The exported-Go-API breaking-change gate is now advisory while the module is pre-1.0, and now
+  also surfaces non-breaking changes for review.** An incompatible exported-Go-API change no longer
+  fails CI: it surfaces as a workflow warning annotation and a single sticky pull-request comment
+  listing the changed or removed symbols, and the gate exits successfully. The comment additionally
+  lists compatible (non-breaking / additive) API changes to aid reviewers; those never affect the
+  gate outcome. The OpenAPI breaking-change diff and the OpenAPI linter remain hard gates. Detection
+  is unchanged — the same incompatible changes are still found; only the consequence changed.
+  Intentional spec-version stamp bumps stay exempt (no spurious warning), and an unrecognizable
+  diff-tool output format still fails closed (it means the gate can no longer see whether a real
+  break is hidden).
+
 ## [v0.1.0-rc2] — 2026-07-06
 
 Second release candidate. Adds the **transcript-licensing contract** and regenerates
