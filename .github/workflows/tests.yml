@@ -91,6 +91,9 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read # checkout
+      pull-requests: write # upsert the single sticky go-apidiff comment (job-scoped)
     steps:
       - name: Checkout repository (full history for the base diff)
         uses: actions/checkout@v5
@@ -113,4 +116,75 @@ jobs:
         run: git fetch --no-tags origin "${{ github.base_ref }}"
 
       - name: Run contract gates vs base
+        env:
+          APIDIFF_CHANGES_FILE: ${{ runner.temp }}/apidiff-changes.txt
+          APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
         run: nix develop -c make gates BASE_REF="origin/${{ github.base_ref }}"
+
+      - name: Upsert go-apidiff PR comment
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        env:
+          APIDIFF_CHANGES_FILE: ${{ runner.temp }}/apidiff-changes.txt
+          APIDIFF_COMPATIBLE_FILE: ${{ runner.temp }}/apidiff-compatible.txt
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- go-apidiff-gate -->';
+
+            // Incompatible signal is a TRI-STATE derived from go-apidiff's OWN outcome:
+            //   readFileSync throws (absent) => blind / fail-closed => established nothing
+            //   present + empty              => go-apidiff CLEAN (oasdiff state irrelevant)
+            //   present + non-empty          => WARN (incompatible change(s) to report)
+            let established = true, changes = '';
+            try { changes = fs.readFileSync(process.env.APIDIFF_CHANGES_FILE, 'utf8').trim(); }
+            catch (e) { established = false; }
+            let compatible = '';
+            try { compatible = fs.readFileSync(process.env.APIDIFF_COMPATIBLE_FILE, 'utf8').trim(); }
+            catch (e) { compatible = ''; }
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            let existing = null;
+            try {
+              const all = await github.paginate(github.rest.issues.listComments,
+                { owner, repo, issue_number, per_page: 100 });
+              existing = all.find(c => c.body && c.body.includes(marker));
+            } catch (e) { core.warning(`list comments failed: ${e.message}`); }
+
+            const incompatibleSection = changes
+              ? `### go-apidiff — incompatible exported-Go-API change(s) vs base\n\n`
+                + `Pre-release policy: these are **warnings, not blockers** (the module is pre-1.0). `
+                + `Ship a version bump when you release.\n\n\`\`\`\n${changes}\n\`\`\`\n\n`
+              : '';
+            const compatibleSection = compatible
+              ? `### go-apidiff — compatible (non-breaking) changes vs base\n\n`
+                + `Informational (additive) — no action required.\n\n\`\`\`\n${compatible}\n\`\`\`\n\n`
+              : '';
+
+            let body;
+            if (!established) {
+              // Fail-closed / gate blind: establish nothing; never touch a prior comment.
+              core.info('go-apidiff: outcome not established (fail-closed/absent signal); leaving any prior comment untouched.');
+              return;
+            } else if (changes) {
+              body = `${marker}\n${incompatibleSection}${compatibleSection}`.trimEnd();     // warning + BOTH sections
+            } else if (compatible) {
+              // Compatible-only additive delta -> informational comment (no warning, green job).
+              // Settled at Plan UAT: purely-additive PRs post their own informational delta comment.
+              body = `${marker}\n${compatibleSection}`.trimEnd();
+            } else if (existing) {
+              // Truly clean AND a prior comment exists -> flip to "no changes", REGARDLESS of oasdiff.
+              body = `${marker}\n### go-apidiff — no incompatible or compatible exported-Go-API changes vs base\n\n`
+                + `The previously-listed change(s) no longer apply to the latest commit on this pull request.`;
+            } else {
+              core.info('go-apidiff: clean and no prior comment; nothing to post.');         // silent
+              return;
+            }
+            try {
+              if (existing) { await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body }); }
+              else { await github.rest.issues.createComment({ owner, repo, issue_number, body }); }
+            } catch (e) {
+              // Fork PRs get a read-only token: degrade gracefully, never fail the job.
+              core.warning(`go-apidiff: could not upsert PR comment (likely a fork PR read-only token): ${e.message}`);
+            }
