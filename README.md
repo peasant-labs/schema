@@ -1,6 +1,6 @@
 # peasant-labs/schema
 
-The **canonical data / wire contract** for [Peasant](https://github.com/peasant-labs/peasant)
+The **canonical data / wire contract** for [peasant](https://github.com/peasant-labs/peasant)
 and the village transcript commons: one contract-only Go **leaf module** that every
 backend produces and every client consumes.
 
@@ -27,7 +27,7 @@ This module is the **single source of truth** for that wire. It was extracted fr
 peasant's old nested `pkg/schema` into a standalone, public, versioned Go module so
 that:
 
-- **One definition, many consumers.** The Go types here ARE the contract. Peasant
+- **One definition, many consumers.** The Go types here ARE the contract. peasant
   emits `SessionDetailPayload` / `PublishRequest`; the village validates and stores
   the same shapes; the frontends render them. Nobody redefines the wire.
 - **Served ≡ enforced.** The village serves its OpenAPI doc from `VillageAPISpecJSON()`
@@ -39,6 +39,27 @@ that:
   dependency set pinned. That is what lets consumers pin it cheaply (see
   [Pinning](#how-pinning-works)).
 
+The data path end-to-end: the contract defines the wire, the peasant and village
+backends produce it, and transcript-browser (embedded by the two frontends)
+renders it.
+
+```mermaid
+flowchart LR
+    schema["schema module<br/>the wire contract"]
+    peasant["peasant backend"]
+    village["village backend"]
+    tb["transcript-browser"]
+    pweb["peasant web"]
+    vfe["village frontend"]
+
+    schema -->|defines the wire| peasant
+    schema -->|defines the wire| village
+    peasant -->|SessionDetailPayload| tb
+    village -->|SessionDetailPayload| tb
+    pweb -->|embeds| tb
+    vfe -->|embeds| tb
+```
+
 ---
 
 ## Coordinates & status
@@ -49,7 +70,7 @@ that:
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc3` (GitHub **prerelease**) - `v0.1.0-rc1` and `v0.1.0-rc2` are also published prereleases |
 | License | Apache-2.0 |
-| Spec versions | Village API `0.4.0` · Peasant Local API `0.2.0` · Types `0.1.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.4.0` · peasant local API `0.2.0` · Types `0.1.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -103,6 +124,58 @@ It carries the session header (`Harness`, timing, token totals), the ordered
 optional thinking / stop-reason / token fields), an optional `SessionScorecard`,
 and the resolved `SessionOutcome`.
 
+Its composition (`[]` = has-many; a `*` pointer = optional):
+
+```mermaid
+classDiagram
+    class SessionDetailPayload {
+        Harness harness
+        int totalTokens
+        int turnCount
+        int toolCallCount
+        SessionOutcome outcome
+    }
+    class TurnDetail {
+        int index
+        Role role
+        string content
+        EntryType entryType
+        StopReason stopReason
+    }
+    class ToolCallDetail {
+        string name
+        string arguments
+        string result
+        ToolCallKind toolKind
+    }
+    class ChildSessionRef {
+        string id
+        string project
+    }
+    class SessionScorecard {
+        float specQualityScore
+        float m2TokenOutcomeRatio
+        int m4ConsecutiveErrorMax
+    }
+    SessionDetailPayload "1" *-- "many" TurnDetail : turns
+    SessionDetailPayload "1" *-- "many" ChildSessionRef : childSessions
+    SessionDetailPayload "1" o-- "0..1" SessionScorecard : scorecard
+    TurnDetail "1" *-- "many" ToolCallDetail : toolCalls
+```
+
+A trimmed excerpt of the top-level shape (`local_api.go`):
+
+```go
+type SessionDetailPayload struct {
+    Harness       Harness           `json:"harness"`
+    Turns         []TurnDetail      `json:"turns"`
+    ChildSessions []ChildSessionRef `json:"childSessions,omitempty"`
+    Outcome       SessionOutcome    `json:"outcome,omitempty"`
+    Scorecard     *SessionScorecard `json:"scorecard,omitempty"`
+    // + session header: timing, token totals, turn/tool-call counts
+}
+```
+
 ### The License surface
 
 The content-license menu is owned by this contract (`types.go`), so producers,
@@ -118,7 +191,7 @@ enforcers, and UIs all read one closed set:
 
 The publish/pull wire carries it as an optional `license` field (`PublishRequest`,
 `PullTranscriptInfo`); the generated JSON-Schema's `license` enum is derived from
-`AllLicenses`, so widening the menu flows through the schema automatically. Village
+`AllLicenses`, so widening the menu flows through the schema automatically. village
 enforces it; peasant mirrors it in two SQLite CHECK constraints.
 
 ### Generated OpenAPI specs (`generated/`)
@@ -129,15 +202,15 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **Village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.4.0` |
-| **Peasant Local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
+| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.4.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
 | **Types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.1.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
 without vendoring their own copy:
 
-- **`VillageAPISpecJSON()`**: the current Village API spec (village serves it as
+- **`VillageAPISpecJSON()`**: the current village API spec (village serves it as
   `GET /openapi.json`).
 - **`PublishRequestSchemaJSON()`**: the current PublishRequest JSON-Schema (the
   single byte-source `ValidatePublishRequest` compiles and the village enforces
@@ -156,6 +229,18 @@ relevant version constant in [`versions.go`](versions.go) (minor for additive
 surface, major for a breaking change), regenerate, and commit: the new version is
 emitted while every prior version stays byte-frozen exactly as shipped.
 
+```mermaid
+flowchart TD
+    change["a surface change<br/>(additive or breaking)"]
+    bump["bump the version constant<br/>versions.go (minor / major)"]
+    regen["go run ./cmd/schema-gen"]
+    current["new current spec in generated/<br/>codegen-freshness gate"]
+    frozen["every prior version byte-frozen<br/>retired-versions immutability guard<br/>(retired_specs_test.go)"]
+    change --> bump --> regen
+    regen --> current
+    regen --> frozen
+```
+
 Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
 
 - **Codegen-freshness gate**: the committed artifacts under `generated/` (and the
@@ -173,10 +258,10 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: Village API `0.1.0` / `0.2.0` / `0.3.0`,
-PublishRequest schema `0.2.0` / `0.3.0`, and Peasant Local API `0.1.0`. The
-still-generated current versions (Village API `0.4.0`, PublishRequest `0.4.0`,
-Peasant Local API `0.2.0`, Types `0.1.0`) live under the freshness gate instead.
+Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0`,
+PublishRequest schema `0.2.0` / `0.3.0`, and peasant local API `0.1.0`. The
+still-generated current versions (village API `0.4.0`, PublishRequest `0.4.0`,
+peasant local API `0.2.0`, Types `0.1.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
