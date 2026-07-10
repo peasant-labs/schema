@@ -1,4 +1,4 @@
-# Versioned push-contract golden corpus (SLICE-B5)
+# Versioned push-contract golden corpus
 
 Shared back-compat fixtures for the `peasant push` → village transcript wire.
 This tree is **duplicated verbatim** in both repos (separate Go modules cannot
@@ -7,7 +7,7 @@ share a `testdata/` dir); keep the two copies byte-identical:
 - peasant: `pkg/schema/testdata/contract/`
 - village: `backend/internal/handler/testdata/contract/`
 
-The SLICE-B5-L2 back-compat suites in each repo read their local copy.
+The back-compat suites in each repo read their local copy.
 
 ## Layout
 

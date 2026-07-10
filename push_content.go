@@ -60,7 +60,7 @@ func (k ContentKind) String() string { return string(k) }
 // ContractVersion WINS and is authoritative for migrate-on-read dispatch; the
 // embedded SchemaVersion is advisory and exists so a SessionDetailPayload
 // extracted and stored on its OWN (outside any envelope) remains self-describing.
-// The village SLICE-B3 ContentMigrator MUST honor this same rule.
+// The village ContentMigrator MUST honor this same rule.
 type TranscriptContent struct {
 	ContractVersion PushContractVersion   `json:"contractVersion"`
 	Kind            ContentKind           `json:"kind"`

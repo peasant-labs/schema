@@ -44,7 +44,7 @@ func (l RedactionFixtureLevel) IsValid() bool {
 // testdata/session-detail/redactions.yaml. The leaf never recomputes
 // RedactedReplacement — the redaction ENGINE lives only in peasant (pkg/redact),
 // and a peasant-side behavioural conformance test binds RedactedReplacement to
-// the real engine output (the no-drift guarantee). See SLICE-F-PROPOSAL-2.
+// the real engine output (the no-drift guarantee).
 type RedactionExample struct {
 	// Name is the stable case key (snake_case). The web codegen joins its
 	// presentation side-table (UI context snippets) to a case by this Name.
