@@ -72,7 +72,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// GET /api/v1/annotations/manifest — server-authoritative annotation skip-gate
-	// (GH #69 C3). Returns the set of annotation content-hashes the village holds
+	// (GH #69). Returns the set of annotation content-hashes the village holds
 	// for the authenticated owner, plus a deterministic order-independent digest
 	// for a no-op short-circuit. Emitted here so the vendored village-api spec
 	// carries the route + AnnotationManifestResponse schema (a re-vendor must not
@@ -198,7 +198,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 
 	AddVillageExamples(r.Spec)
 
-	// TODO(annotation/S9): register annotation components for the village push format.
+	// TODO(annotation): register annotation components for the village push format.
 	//   - What: add AnnotationSummary, AnnotationTypeSummary, Provenance, ValueDomain
 	//     as reusable OpenAPI components; extend PublishRequest with an optional
 	//     Annotations []schema.AnnotationSummary field so buyers receive annotations

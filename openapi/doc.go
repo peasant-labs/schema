@@ -65,5 +65,5 @@
 // (publish_schema_parity_test.go): a frozen copy of the old BuildJSONSchema output
 // (testdata/legacy-publish-request.schema.json) and the new extracted schema must
 // return IDENTICAL accept/reject verdicts across a corpus of valid + malformed
-// bodies. See GH #53 and unified-schema-1g8jg (option B).
+// bodies. See GH #53.
 package openapi

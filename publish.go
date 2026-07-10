@@ -127,7 +127,7 @@ type AnnotationPushResult struct {
 //     the village will still accept on the publish path. A CLI ahead of Current
 //     downgrade-emits toward this window (never "upgrade the village").
 //
-// A3/C3 — TWO DISTINCT FLOORS: MinPushContractVersion is the push-acceptance
+// TWO DISTINCT FLOORS: MinPushContractVersion is the push-acceptance
 // floor (gates INCOMING uploads). It is deliberately SEPARATE from the village's
 // display MIGRATE-ON-READ floor (how far back stored blobs can be normalized for
 // rendering), which may reach FURTHER back than MinPushContractVersion — the

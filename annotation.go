@@ -10,7 +10,7 @@ type ValueDomain struct {
 	ConstraintSpec    string             `json:"constraintSpec,omitempty"`    // for described; JSON
 }
 
-// Provenance records how a non-human annotator derived its annotation value (EvalevalAI R7).
+// Provenance records how a non-human annotator derived its annotation value.
 // Only populated for rule-based and agent annotators; nil for human annotations.
 type Provenance struct {
 	Method   string            `json:"method"` // "heuristic", "regex", "llm_judge", "manual"

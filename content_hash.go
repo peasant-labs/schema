@@ -61,7 +61,7 @@ func (item *AnnotationPushItem) ComputeContentHash() string {
 }
 
 // annotationHashPayload is the canonical struct for computing content hashes
-// for annotation deduplication (R9). Field order is fixed — changing it would
+// for annotation deduplication. Field order is fixed — changing it would
 // alter all existing hashes. New fields must be appended at the end.
 //
 // This struct covers the content-bearing fields of an annotation. It is used

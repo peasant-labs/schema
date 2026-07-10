@@ -50,7 +50,7 @@ func GenerateSpecArtifacts() (SpecArtifacts, error) {
 	// Extracted from the village-api spec (single source of truth) rather than
 	// reflected separately, so the documented surface and the enforced wire schema
 	// cannot drift. This replaced the retired BuildJSONSchema/BuildOpenAPISpec
-	// legacy artifacts (GH #53; unified-schema-1g8jg, option B).
+	// legacy artifacts (GH #53).
 	publishSchemaBytes, err := BuildPublishRequestSchema(VillageAPIVersion)
 	if err != nil {
 		return nil, fmt.Errorf("build PublishRequest schema: %w", err)

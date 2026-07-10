@@ -9,7 +9,7 @@ import (
 // by `go run ./cmd/schema-gen`. It is the single in-binary source consumers read
 // the published specs from — village serves GET /openapi.json from
 // VillageAPISpecJSON() rather than vendoring its own copy, so the served spec
-// follows the go.mod pin automatically (W9 / Method 1).
+// follows the go.mod pin automatically.
 //
 //go:embed generated
 var generatedFS embed.FS
@@ -46,7 +46,7 @@ func VillageAPISpecJSON() []byte {
 //
 // This is the SINGLE BYTE-SOURCE the publish-enforce path validates against:
 // schema.ValidatePublishRequest (root publish_validate.go) compiles exactly these
-// bytes, and village's publish handler (W9 / Method 1) enforces through it rather
+// bytes, and village's publish handler enforces through it rather
 // than vendoring its own schema copy. Routing both the documented spec and the
 // enforced schema through this one accessor means they can never drift (it retired
 // the hand-maintained validate/schema.json, which had diverged from the generated

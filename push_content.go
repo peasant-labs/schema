@@ -1,6 +1,6 @@
 package schema
 
-// --- Push contract versioning + structured content envelope (D1/D2) ---
+// --- Push contract versioning + structured content envelope ---
 //
 // These types define the versioned wire contract for `peasant push`'s transcript
 // body. Before this contract, peasant uploaded raw provider JSONL bytes as the
@@ -52,7 +52,7 @@ func (k ContentKind) String() string { return string(k) }
 // push` uploads in place of raw provider JSONL. The village decodes this
 // envelope (migrate-on-read for legacy/older blobs) and renders SessionDetail.
 //
-// VERSION CONFLICT-WINNER (N1/B5): a TranscriptContent envelope carries TWO
+// VERSION CONFLICT-WINNER: a TranscriptContent envelope carries TWO
 // version markers — the envelope's ContractVersion and the embedded
 // SessionDetailPayload.SchemaVersion. They are emitted IN LOCKSTROKE by peasant
 // (both equal defaults.PublishSchemaVersion). If a decoder ever observes them
