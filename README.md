@@ -70,7 +70,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc3` (GitHub **prerelease**) - `v0.1.0-rc1` and `v0.1.0-rc2` are also published prereleases |
 | License | Apache-2.0 |
-| Spec versions | village API `0.4.0` · peasant local API `0.2.0` · Types `0.1.0` (see [`versions.go`](versions.go)) |
+| Spec versions | Village API `0.4.0` · Peasant Local API `0.2.0` · Types `0.1.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -163,6 +163,9 @@ classDiagram
     TurnDetail "1" *-- "many" ToolCallDetail : toolCalls
 ```
 
+The enum field types (`Role`, `EntryType`, `StopReason`, `ToolCallKind`,
+`SessionOutcome`) are schema newtypes; `Harness` is re-exported from `bestiary`.
+
 A trimmed excerpt of the top-level shape (`local_api.go`):
 
 ```go
@@ -202,15 +205,15 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.4.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
+| **Village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.4.0` |
+| **Peasant Local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
 | **Types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.1.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
 without vendoring their own copy:
 
-- **`VillageAPISpecJSON()`**: the current village API spec (village serves it as
+- **`VillageAPISpecJSON()`**: the current Village API spec (village serves it as
   `GET /openapi.json`).
 - **`PublishRequestSchemaJSON()`**: the current PublishRequest JSON-Schema (the
   single byte-source `ValidatePublishRequest` compiles and the village enforces
@@ -258,10 +261,10 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0`,
-PublishRequest schema `0.2.0` / `0.3.0`, and peasant local API `0.1.0`. The
-still-generated current versions (village API `0.4.0`, PublishRequest `0.4.0`,
-peasant local API `0.2.0`, Types `0.1.0`) live under the freshness gate instead.
+Currently frozen (retired) goldens: Village API `0.1.0` / `0.2.0` / `0.3.0`,
+PublishRequest schema `0.2.0` / `0.3.0`, and Peasant Local API `0.1.0`. The
+still-generated current versions (Village API `0.4.0`, PublishRequest `0.4.0`,
+Peasant Local API `0.2.0`, Types `0.1.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
