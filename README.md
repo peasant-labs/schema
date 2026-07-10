@@ -56,12 +56,12 @@ that:
 | Consumer | Language | How it pins / uses the contract |
 |---|---|---|
 | **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc3`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
-| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc2`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
+| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc3`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
 | **transcript-browser** (`@peasant-labs/types`) | TypeScript | A hand-maintained TS port that has **drifted** from the Go, so treat the Go here as authoritative when they disagree. The durable fix is OpenAPI→TS codegen off `generated/` (an open follow-up), which retires the hand port. |
 
-> Village currently pins one tag behind peasant (`rc2` vs `rc3`). Because the module
-> is normal `go get`-pinned, each consumer moves independently; a re-pin is a
-> one-line `go.mod` change plus `go mod tidy`.
+> Both consumers now pin `rc3`. Because the module is normal `go get`-pinned, each
+> consumer moves independently, so they can briefly sit on different tags between
+> re-pins; a re-pin is a one-line `go.mod` change plus `go mod tidy`.
 
 ---
 
