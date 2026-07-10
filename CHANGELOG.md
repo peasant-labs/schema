@@ -3,9 +3,25 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [v0.1.0-rc3] — 2026-07-08
+
+Tooling + CI release candidate — **no wire-contract change from rc2** (the OpenAPI specs and the
+version markers are unchanged). Bundles the release-guard consolidation, the advisory
+exported-Go-API gate, release-CI hardening, and a small maintenance removal. Published as a GitHub
+**prerelease**.
 
 ### Changed
+
+- **`release-guard` adopts `google/go-github` and becomes the single canonical release-gating
+  tool.** The gh-CLI shell-outs (collaborator permission / workflow-run status / PR reviews) are
+  now typed `google/go-github` calls behind a mockable client; a server-side `HeadSHA` filter
+  replaces the old 100-run client-side scan. `check-workflow` reads a per-repo
+  `.github/release-guard.policy.yml`, so one tool serves schema, peasant, and later village; the
+  tool reads `GH_TOKEN` (matching the release workflows). go-github is isolated to
+  `cmd/release-guard`; the published contract surface is untouched. The `GitRunner` for the
+  git-lineage checks is hardened (subcommand allowlist, leading-dash rejection, `--end-of-options`),
+  and the grammar / policy / go-github seam tests are data-driven `testdata/*.yaml` fixtures.
+  (peasant-labs/peasant#113)
 
 - **The exported-Go-API breaking-change gate is now advisory while the module is pre-1.0, and now
   also surfaces non-breaking changes for review.** An incompatible exported-Go-API change no longer
@@ -17,6 +33,20 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   Intentional spec-version stamp bumps stay exempt (no spurious warning), and an unrecognizable
   diff-tool output format still fails closed (it means the gate can no longer see whether a real
   break is hidden).
+
+- **Release CI hardening.** The go-apidiff advisory comment is now posted from a dedicated
+  `workflow_run` workflow so `tests.yml` stays read-only — a reusable-workflow permission conflict
+  (the gate job requesting `pull-requests: write`) was previously blocking the release-PR pipeline
+  from starting — and the comment now works on fork PRs. The release classifier decides rc-vs-final
+  once via the tested `release-guard parse-tag`, and the vs-prior breaking-change diff is skipped
+  for `-rc` prerelease tags (a prerelease has no prior same-line release to diff against).
+  (peasant-labs/schema#15, #16, #21)
+
+### Removed
+
+- **The never-adopted `migrations/village` embed** — an embedded-SQL sharing mechanism that was
+  never used by any consumer — is dropped; the module stays contract-only.
+  (peasant-labs/schema#18)
 
 ## [v0.1.0-rc2] — 2026-07-06
 
