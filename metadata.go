@@ -16,7 +16,7 @@ import "encoding/json"
 // v8: DerivedAt field — Unix ms when metadata.json was derived from DB (DB as SOT)
 // v9: harness key unification — UnifiedMetadata.ModelHarness re-keyed json:"modelHarness"
 //
-//	-> json:"harness" (SLICE-B1 emit-side flip). The bump forces the DIFF stage to
+//	-> json:"harness" (emit-side flip). The bump forces the DIFF stage to
 //	re-classify existing on-disk sessions as Updated so the stale "modelHarness" key
 //	self-heals (re-extract + rewrite) on next ingest; UnmarshalJSON still accepts the
 //	legacy key on pre-v9 files in the meantime.

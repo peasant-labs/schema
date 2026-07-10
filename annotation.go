@@ -10,7 +10,7 @@ type ValueDomain struct {
 	ConstraintSpec    string             `json:"constraintSpec,omitempty"`    // for described; JSON
 }
 
-// Provenance records how a non-human annotator derived its annotation value (EvalevalAI R7).
+// Provenance records how a non-human annotator derived its annotation value.
 // Only populated for rule-based and agent annotators; nil for human annotations.
 type Provenance struct {
 	Method   string            `json:"method"` // "heuristic", "regex", "llm_judge", "manual"
@@ -76,7 +76,7 @@ type AnnotatorSummary struct {
 	ModelID     *string       `json:"modelId,omitempty"`
 	// DO NOT TOUCH (TRAP): ProviderKey is the model-VENDOR credential
 	// (e.g. "anthropic"), a DIFFERENT axis from the coding-tool Harness. The
-	// SLICE-B1 harness changeover left this as json:"providerKey" on purpose.
+	// harness-key changeover left this as json:"providerKey" on purpose.
 	// Never flip it to json:"harness" — enforced by ast-grep/no-trap-harness-flip.yml.
 	ProviderKey *string `json:"providerKey,omitempty"`
 	Status      string  `json:"status"`

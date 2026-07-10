@@ -46,7 +46,7 @@ type MapGraphPayload struct {
 	ActivityEdges   []ActivityEdge  `json:"activityEdges"`   // co-EDIT observations
 	Violations      []EdgeViolation `json:"violations"`      // cycles + wrong-way edges
 	GeneratedAtMs   int64           `json:"generatedAtMs"`
-	AtCommit        string          `json:"atCommit,omitempty"` // set when ?commit= was used (phase 2 scrub)
+	AtCommit        string          `json:"atCommit,omitempty"` // set when ?commit= was used
 }
 
 // NewMapGraphPayload returns a MapGraphPayload with all slices initialized
@@ -247,7 +247,7 @@ type ReviewListPayload struct {
 	ProjectHash   string          `json:"projectHash"`
 	RepoFound     bool            `json:"repoFound"`
 	DefaultBranch string          `json:"defaultBranch,omitempty"`
-	Changes       []ChangeSummary `json:"changes"`       // open first, then merged (phase 2)
+	Changes       []ChangeSummary `json:"changes"`       // open first, then merged
 	RecentCommits []CommitRef     `json:"recentCommits"` // default-branch, cap 200 (time strip)
 }
 

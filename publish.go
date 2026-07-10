@@ -74,7 +74,7 @@ type AnnotationEntryTarget struct {
 
 // AnnotationPushRequest is the body sent to POST /api/v1/annotations.
 //
-// Retractions (PROPOSAL-4 C3b) is an ADDITIVE, backwards-compatible field: a set
+// Retractions is an ADDITIVE, backwards-compatible field: a set
 // of content-hashes the client wants the village to DROP (tombstone) for this
 // owner. It carries propagated deletions/supersessions inline on the existing
 // push request rather than via a separate DELETE endpoint (avoids a second
@@ -118,8 +118,7 @@ type AnnotationPushResult struct {
 
 // SchemaVersionResponse is returned by GET /api/v1/schema/version.
 // It communicates which annotation schema AND which push CONTENT contract the
-// village currently supports, so the CLI can preflight and version-negotiate
-// (SLICE-B2).
+// village currently supports, so the CLI can preflight and version-negotiate.
 //
 // PushContractVersion / MinPushContractVersion advertise the village's accept
 // WINDOW [Min, Current] for the TranscriptContent push wire:
@@ -128,12 +127,12 @@ type AnnotationPushResult struct {
 //     the village will still accept on the publish path. A CLI ahead of Current
 //     downgrade-emits toward this window (never "upgrade the village").
 //
-// A3/C3 — TWO DISTINCT FLOORS: MinPushContractVersion is the push-acceptance
+// TWO DISTINCT FLOORS: MinPushContractVersion is the push-acceptance
 // floor (gates INCOMING uploads). It is deliberately SEPARATE from the village's
 // display MIGRATE-ON-READ floor (how far back stored blobs can be normalized for
 // rendering), which may reach FURTHER back than MinPushContractVersion — the
 // village can still render a legacy stored blob it would no longer ACCEPT as a
-// fresh push. The migrate-on-read floor lives village-side (SLICE-B3) and is not
+// fresh push. The migrate-on-read floor lives village-side and is not
 // advertised here; only the push-acceptance window is negotiated over the wire.
 //
 // PullContractVersion / MinPullContractVersion advertise the village's PULL

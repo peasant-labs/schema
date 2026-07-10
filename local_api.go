@@ -80,9 +80,9 @@ type ToolCallDetail struct {
 
 // SessionDetailPayload is the data sent on the session_detail WebSocket channel
 // AND promoted to the versioned `peasant push` wire body inside a
-// TranscriptContent envelope (D2).
+// TranscriptContent envelope.
 //
-// SchemaVersion is the EMBEDDED push-contract version (Δ1). It is advisory: when
+// SchemaVersion is the EMBEDDED push-contract version. It is advisory: when
 // this payload travels inside a TranscriptContent envelope the envelope's
 // ContractVersion is authoritative (see TranscriptContent's conflict-winner
 // note). The embedded copy keeps the payload self-describing when stored on its

@@ -192,7 +192,7 @@
               env.CGO_ENABLED = 0;
 
               # Strip debug info for smaller binaries. No -X version injection: the
-              # schema module has no internal/defaults.version var (W8).
+              # schema module has no internal/defaults.version var.
               ldflags = [
                 "-s"
                 "-w"

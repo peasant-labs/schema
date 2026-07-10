@@ -285,14 +285,14 @@ func ValidateScaleDomainCombo(scale ScaleKind, domain ValueDomainKind) error {
 // --- TargetKind ---
 
 // TargetKind identifies what is being annotated.
-// Derived from the 4-arm exclusive arc on the annotations table (R3).
+// Derived from the 4-arm exclusive arc on the annotations table.
 type TargetKind string
 
 const (
 	TargetSession    TargetKind = "session"
 	TargetEntry      TargetKind = "entry"      // turn, tool call, tool result
 	TargetAnnotation TargetKind = "annotation" // meta-annotation
-	TargetProject    TargetKind = "project"    // project-level annotation (F1)
+	TargetProject    TargetKind = "project"    // project-level annotation
 )
 
 // IsValid returns true if the target kind is one of the known variants.

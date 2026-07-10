@@ -9,9 +9,9 @@ import (
 )
 
 // GitRunner is the release-guard's git-lineage seam: the three read-only history
-// queries check-final needs. It is hardened per R6 (typed structured argv, no
+// queries check-final needs. It is hardened (typed structured argv, no
 // shell, leading-dash rejection, an --end-of-options sentinel, and a subcommand
-// allowlist) but still SHELLS `git` — go-git adoption is out of scope (R7).
+// allowlist) but still SHELLS `git` — go-git adoption is out of scope.
 type GitRunner interface {
 	// RevParse resolves ref to a single commit SHA (git rev-list -n 1).
 	RevParse(ctx context.Context, ref string) (string, error)
@@ -26,7 +26,7 @@ type GitRunner interface {
 }
 
 // gitSubcommand is the typed, closed allowlist of git subcommands the lineage
-// seam may invoke (R6 blast-radius cap — a stringly-typed subcommand could be
+// seam may invoke (blast-radius cap — a stringly-typed subcommand could be
 // any git porcelain; this enum is exactly the three read-only history queries).
 type gitSubcommand string
 
@@ -58,8 +58,8 @@ type execGit struct {
 
 // newExecGit resolves `git` on PATH and returns the hardened runner.
 //
-// PATH safety (R6): we use the stdlib exec.LookPath rather than the proposal's
-// cited cli/safeexec. Since Go 1.19, os/exec refuses to resolve an executable
+// PATH safety: we use the stdlib exec.LookPath rather than cli/safeexec.
+// Since Go 1.19, os/exec refuses to resolve an executable
 // from a cwd-relative PATH entry (it returns exec.ErrDot), which closes the
 // PATH/cwd hijack hole cli/safeexec was created to patch. On the Linux GitHub
 // Actions runners + nix dev shell where release-guard runs, PATH never contains

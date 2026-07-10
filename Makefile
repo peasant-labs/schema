@@ -40,7 +40,7 @@ check: fmt vet freshness
 test:
 	$(GO) test -race ./...
 
-# freshness is the W5 (FIX-B1) git-diff backstop: regenerate the specs and fail
+# freshness is the git-diff backstop: regenerate the specs and fail
 # if the committed generated/ artifacts drift from the Go source. It is largely
 # REDUNDANT with TestCodegenFreshness (which byte-diffs the SAME
 # GenerateSpecArtifacts() map main() writes); its marginal value is catching a

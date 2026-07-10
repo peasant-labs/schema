@@ -72,7 +72,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// GET /api/v1/annotations/manifest — server-authoritative annotation skip-gate
-	// (GH #69 C3). Returns the set of annotation content-hashes the village holds
+	// (GH #69). Returns the set of annotation content-hashes the village holds
 	// for the authenticated owner, plus a deterministic order-independent digest
 	// for a no-op short-circuit. Emitted here so the vendored village-api spec
 	// carries the route + AnnotationManifestResponse schema (a re-vendor must not
@@ -110,9 +110,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("add schema version operation: %w", err)
 	}
 
-	// --- Pull surface (PROPOSAL-2/4) — AuthRequired; thin wrappers gated by
+	// --- Pull surface: AuthRequired; thin wrappers gated by
 	// canPullTranscript (404-not-403). Registers the pull envelope wire types so
-	// the village (SLICE-2) and the relocated client (SLICE-3) share one contract.
+	// the village and the relocated client share one contract.
 
 	// GET /api/v1/pull/transcripts — list pullable transcripts (own + group-shared;
 	// public excluded). Offset pagination via page/limit query params.
@@ -198,7 +198,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 
 	AddVillageExamples(r.Spec)
 
-	// TODO(annotation/S9): register annotation components for the village push format.
+	// TODO(annotation): register annotation components for the village push format.
 	//   - What: add AnnotationSummary, AnnotationTypeSummary, Provenance, ValueDomain
 	//     as reusable OpenAPI components; extend PublishRequest with an optional
 	//     Annotations []schema.AnnotationSummary field so buyers receive annotations
@@ -206,7 +206,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	//   - Why: village consumers need annotation metadata to filter and evaluate datasets
 	//   - Wiring: call addComponentSchema(r, "AnnotationSummary", new(schema.AnnotationSummary)) etc.
 	//     after PublishRequest is registered; bump village spec version to "1.2"
-	//   - When: SLICE-9 (push format annotation extension)
+	//   - When: the push-format annotation extension ships
 
 	return r.Spec, nil
 }

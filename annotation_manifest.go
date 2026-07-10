@@ -7,8 +7,8 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// AnnotationManifestResponse is the body returned by GET /api/v1/annotations/manifest
-// (PROPOSAL-4 C3). It advertises the SET of annotation content-hashes the village
+// AnnotationManifestResponse is the body returned by GET /api/v1/annotations/manifest.
+// It advertises the SET of annotation content-hashes the village
 // currently holds for the authenticated owner, so a push client can SKIP any local
 // annotation whose hash already appears here (server-authoritative skip-gate).
 //
