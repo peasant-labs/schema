@@ -383,9 +383,19 @@ retired-version immutability, the `oasdiff` / `vacuum` / `go-apidiff` gates, the
 leaf-purity audit, and the vendor-hash guard, each with a real test plus a
 synthetic-break meta-gate that proves it fires); **unit tests** alongside every
 source (closed enums, JSON shapes, validator behaviour); and **typed fixture
-families** under `testdata/` loaded via the `//go:embed` + `yaml.Unmarshal` idiom
-with row-count guards. The whole suite runs with a bare `go` toolchain, the
-tool-gated tests skipping when `oasdiff` / `go-apidiff` / `vacuum` are absent.
+families** under `testdata/`. The whole suite runs with a bare `go` toolchain,
+the tool-gated tests skipping when `oasdiff` / `go-apidiff` / `vacuum` are absent.
+
+**Case corpora live in fixtures, not inline.** When a test drives a set of cases,
+the cases live in a `testdata/*.yaml` corpus loaded through one idiom: a typed
+struct with `yaml:` tags, a `//go:embed` of the file, a `yaml.Unmarshal`, a small
+`Load...Fixtures` loader, and a row-count guard that fails loudly on an empty or
+mis-keyed corpus (so an iterating test can never pass on no cases). A contract
+change then updates one corpus instead of N inline tables, and a new test follows
+this by default. The corpora sit under `testdata/` (`annotations`, `contract`,
+`publish`, `pull`, `quality`, `session-detail`, `sync`),
+`internal/release/testdata/` (`grammar`, `workflow`), and
+`cmd/release-guard/testdata/github`.
 
 See **[`TESTING.md`](TESTING.md)** for the full strategy and the test behind each
 gate.
