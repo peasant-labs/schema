@@ -3,10 +3,13 @@ package release_test
 // The version_kind and parse_tag grammar corpora, migrated onto the canonical
 // github.com/peasant-labs/schema/testcase corpus standard: the rows load through
 // testcase.LoadCorpus, carry classification + provenance + mutation metadata
-// (Corpus.Validate enforces non-vacuity), and each suite pins an EXACT
-// case-count control so a drop-and-add net-same regression reddens (the general
-// min-floor RequireMin would silently pass such a swap). All prior assertions
-// from the pre-migration table tests are preserved.
+// (Corpus.Validate enforces non-vacuity), and each suite guards coverage two
+// ways. An EXACT case-count control catches a silent drop or a stray add (a
+// min-floor RequireMin would pass a drop that stays above the floor). Because an
+// exact count cannot see a NET-SAME swap (drop a real case, add a filler, count
+// unchanged), a lean present-by-value coverage check asserts the load-bearing
+// cases are still there. All prior assertions from the pre-migration table tests
+// are preserved.
 
 import (
 	_ "embed"
@@ -40,13 +43,31 @@ func TestVersionKindBaseIsRC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load version_kind corpus: %v", err)
 	}
-	// Count-preserved control: EXACT equality with the migrated corpus's size, so
-	// a silent drop-and-add net-same regression reddens (a min floor would not).
+	// Exact case-count control: a silent drop or a stray add reddens (a min floor
+	// would not). It cannot see a net-same swap, so the value-coverage check below
+	// guards the load-bearing cases.
 	if got := len(corpus.Cases); got != 3 {
 		t.Fatalf("version_kind corpus has %d cases, want exactly 3", got)
 	}
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("version_kind corpus is under-populated: %v", err)
+	}
+	// Value coverage: both version kinds must remain present, so a net-same swap
+	// that drops the rc (or final) case reddens instead of silently losing it.
+	var haveRC, haveFinal bool
+	for _, c := range corpus.Cases {
+		switch c.Expected.Kind {
+		case release.KindRC:
+			haveRC = true
+		case release.KindFinal:
+			haveFinal = true
+		}
+	}
+	if !haveRC {
+		t.Error("value coverage lost: no rc case remains in the version_kind corpus")
+	}
+	if !haveFinal {
+		t.Error("value coverage lost: no final case remains in the version_kind corpus")
 	}
 
 	for _, c := range corpus.Cases {
@@ -78,6 +99,18 @@ func TestParseTag(t *testing.T) {
 	}
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("parse_tag corpus is under-populated: %v", err)
+	}
+	// Value coverage: the load-bearing must-fail inputs must remain present by
+	// value, so a net-same swap that drops a real negative (for example the
+	// namespaced tag that must never parse as a release) reddens.
+	present := map[string]bool{}
+	for _, c := range corpus.Cases {
+		present[c.Input] = true
+	}
+	for _, want := range []string{"pkg/schema/v1.2.3", "v0.1.0-rc", ""} {
+		if !present[want] {
+			t.Errorf("value coverage lost: must-fail case for input %q is missing", want)
+		}
 	}
 
 	for _, c := range corpus.Cases {

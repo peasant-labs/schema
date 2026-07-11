@@ -20,8 +20,10 @@
 //     test;
 //   - load it with LoadCorpus[I, E];
 //   - assert every case is non-vacuous with Corpus.Validate;
-//   - guard the case count: assert.RequireMin for a growable floor, or an exact
-//     "len == N" control when migrating a fixed corpus so a silent drop reddens;
+//   - guard coverage: assert.RequireMin for a growable floor, or an exact
+//     "len == N" control (catching a drop or a stray add) plus a lean
+//     present-by-value check (catching a net-same swap that drops a real case)
+//     when migrating a fixed corpus;
 //   - drive the system under test over each case and assert its result against
 //     the case's Expected and Classification.
 //
