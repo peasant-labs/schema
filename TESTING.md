@@ -72,6 +72,8 @@ script) behind it.
 | Leaf-purity audit | `leaf_audit_test.go` | **Hard.** A `go.mod` direct require outside the allowed set fails. |
 | Vendor-hash stability | `vendorhash_test.go` | **Hard.** A local-path `replace` in `go.mod` fails. |
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish behind un-gated workflow, is rejected. |
+| License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
+| License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 
 ### Codegen freshness
 
@@ -240,3 +242,59 @@ at least 17 cases; `testdata_pull_test.go` requires at least 15 valid and 9 inva
 transcript-id cases across its two generation axes; `testdata_quality_test.go`
 pins its session count. Add rows to the YAML corpus, not new inline literals, when
 a contract case is added.
+
+### The canonical corpus standard: `testcase`
+
+The idiom above is ad hoc: each family hand-rolls its own row struct and loader.
+`github.com/peasant-labs/schema/testcase` promotes it to a single canonical form
+that new corpora adopt. It is a generic, pure-data corpus model whose closed-set
+metadata keeps every case both traceable and non-vacuous.
+
+- **Generic `Case[I, E]` / `Corpus[I, E]`.** A case is a named `Input` of type
+  `I` with its `Expected` output of type `E`, plus a `Classification`, a
+  `Provenance`, and a `Mutation`. The caller instantiates `I`/`E` at load time,
+  so one model serves the `schema.License`-in/bool-out enum corpus and the
+  `string`-in/struct-out grammar corpora alike (both real consumers below).
+- **Closed-set `Classification`.** `must-pass` (an input the system under test
+  must accept) or `must-fail` (one it must reject); a value outside the set fails
+  validation.
+- **`Provenance{source, ref}` + `Mutation{description}`.** Every case records WHY
+  it exists and WHAT single change it embodies. `source` is a closed set
+  (`requirement`, `bug`, `enum`, `boundary`, `manual`) and `ref` is a concrete
+  pointer (a requirement id, a bug link, an enum name); `description` names the
+  one change under test. For a must-fail case that change is the mutation that
+  makes a valid input invalid, so a negative case is never vacuous.
+- **Pure loader + pure validators.** `LoadCorpus[I, E]` unmarshals the YAML and
+  returns an error rather than failing a test. `Case.Validate` / `Corpus.Validate`
+  reject a vacuous case: an out-of-set classification or provenance source, an
+  empty `ref`, or an empty mutation `description`. `CheckMin(n)` is the pure
+  minimum-size floor (`len >= n`), so a corpus may grow without tripping it.
+- **The leaf-purity split.** `testcase` carries no `testing` import: it is pure
+  data, so it never drags `testing` into anything that consumes it. The loud
+  `*testing.T` seam `RequireMin` lives in the sibling `testcase/assert`
+  subpackage and wraps `CheckMin`, keeping the size logic in one pure function a
+  negative-control test can drive without a `*testing.T`. This promotes the
+  module's existing file-level testing-helper isolation to a package boundary.
+
+The enum-exhaustion generator `licensecorpus` shows the payoff for a closed enum.
+`BuildCorpus` enumerates `schema.AllLicenses` into one must-pass case per menu
+member (each carrying `enum` provenance and a mutation naming what removing that
+member would break), then appends the must-fail negatives (a non-menu id and the
+empty license). `cmd/gen-license-corpus` renders it to the committed
+`licensecorpus/testdata/license_corpus.yaml`. Two guards, both in the Layer 1
+table, keep it honest: `TestLicenseCorpus_ExhaustiveCoverage` reddens if
+`schema.AllLicenses` widens without the corpus regenerated (a menu member with no
+case, backstopped by `assert.RequireMin` at `len(AllLicenses)` plus the two
+negatives), and `TestLicenseCorpus_Freshness` byte-compares the committed file
+against a fresh `RenderCorpus`, so a hand-edit or a stale artifact reddens.
+
+The two worked migrations are the reference examples.
+`internal/release/grammar_corpus_test.go` moves the `version_kind` and `parse_tag`
+grammar corpora onto the standard (`TestVersionKindBaseIsRC`, `TestParseTag`),
+loading through `testcase.LoadCorpus` and preserving every pre-migration
+assertion. Each guards coverage two ways: an exact case-count control (a min-floor
+would pass a silent drop that stays above the floor) plus a lean present-by-value
+check (an exact count cannot see a net-same swap that drops a real case and adds a
+filler). The older `versions.yaml` corpus (`new_version` / `parse_title`)
+deliberately stays on its ad-hoc `loadGrammarFixtures` loader; `testcase` is the
+generalization new corpora adopt, not a forced rewrite of every existing family.

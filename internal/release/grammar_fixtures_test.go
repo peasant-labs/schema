@@ -24,14 +24,6 @@ type newVersionCase struct {
 	WantErr bool            `yaml:"wantErr"`
 }
 
-// versionKindCase is one Version.Kind()/Base()/IsRC() row over a valid version.
-type versionKindCase struct {
-	Raw      string              `yaml:"raw"`
-	WantKind release.ReleaseKind `yaml:"wantKind"`
-	WantBase release.Version     `yaml:"wantBase"`
-	WantRC   bool                `yaml:"wantRC"`
-}
-
 // parseTitleCase is one ParseReleaseTitle(title) row.
 type parseTitleCase struct {
 	Name     string              `yaml:"name"`
@@ -41,22 +33,13 @@ type parseTitleCase struct {
 	WantErr  bool                `yaml:"wantErr"`
 }
 
-// parseTagCase is one ParseTag(tag) row.
-type parseTagCase struct {
-	Name     string              `yaml:"name"`
-	Tag      string              `yaml:"tag"`
-	WantVer  release.Version     `yaml:"wantVer"`
-	WantKind release.ReleaseKind `yaml:"wantKind"`
-	WantErr  bool                `yaml:"wantErr"`
-}
-
 // grammarFixtures is the parsed testdata/grammar/versions.yaml corpus: one
-// section per grammar table-test.
+// section per grammar table-test. The version_kind and parse_tag sections were
+// migrated onto the github.com/peasant-labs/schema/testcase corpus standard (see
+// grammar_corpus_test.go); this loader now serves the two remaining sections.
 type grammarFixtures struct {
-	NewVersion  []newVersionCase  `yaml:"new_version"`
-	VersionKind []versionKindCase `yaml:"version_kind"`
-	ParseTitle  []parseTitleCase  `yaml:"parse_title"`
-	ParseTag    []parseTagCase    `yaml:"parse_tag"`
+	NewVersion []newVersionCase `yaml:"new_version"`
+	ParseTitle []parseTitleCase `yaml:"parse_title"`
 }
 
 // loadGrammarFixtures parses the embedded grammar corpus.

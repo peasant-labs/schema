@@ -1,0 +1,67 @@
+# ParseTag(tag) rows, migrated onto the schema/testcase Corpus schema: input is
+# the tag, expected is the parsed {ver, kind} for the must-pass rows. Must-fail
+# rows expect an error (and KindInvalid) and carry no expected value. Every case
+# carries provenance + mutation metadata for non-vacuity.
+cases:
+  - name: final tag parses
+    input: v0.1.0
+    expected:
+      ver: v0.1.0
+      kind: final
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: "release grammar: ParseTag accepts a well-formed final tag"
+    mutation:
+      description: "a well-formed final release tag"
+  - name: rc tag parses
+    input: v0.1.0-rc1
+    expected:
+      ver: v0.1.0-rc1
+      kind: rc
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: "release grammar: ParseTag accepts a well-formed release-candidate tag"
+    mutation:
+      description: "a well-formed release-candidate tag"
+  - name: pkg-namespaced tag is rejected
+    input: pkg/schema/v1.2.3
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "release grammar: a tag is a bare version, not a path-namespaced ref"
+    mutation:
+      description: "prefixed a valid version with a pkg/schema/ path"
+  - name: rc without a number is rejected
+    input: v0.1.0-rc
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "release grammar: an rc prerelease must carry a number"
+    mutation:
+      description: "dropped the number from the -rcN suffix"
+  - name: missing v prefix is rejected
+    input: "0.1.0"
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "release grammar: a release tag must start with a v"
+    mutation:
+      description: "removed the leading v prefix"
+  - name: non-version garbage is rejected
+    input: latest
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "release grammar: a non-version word is not a tag"
+    mutation:
+      description: "used a non-version word in place of a version"
+  - name: empty tag is rejected
+    input: ""
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "release grammar: the empty string is not a tag"
+    mutation:
+      description: "cleared the tag to the empty string"

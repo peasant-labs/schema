@@ -390,9 +390,13 @@ the tool-gated tests skipping when `oasdiff` / `go-apidiff` / `vacuum` are absen
 the cases live in a `testdata/*.yaml` corpus loaded through one idiom: a typed
 struct with `yaml:` tags, a `//go:embed` of the file, a `yaml.Unmarshal`, a small
 `Load...Fixtures` loader, and a row-count guard that fails loudly on an empty or
-mis-keyed corpus (so an iterating test can never pass on no cases). A contract
-change then updates one corpus instead of N inline tables, and a new test follows
-this by default. The corpora sit under `testdata/` (`annotations`, `contract`,
+mis-keyed corpus (so an iterating test can never pass on no cases). New corpora
+adopt the canonical `testcase` standard (a generic `Case[I, E]` / `Corpus[I, E]`
+with closed-set classification and provenance + mutation metadata, a pure loader,
+and its `*testing.T` seam split into `testcase/assert`), so each case also records
+why it exists and the single change it embodies. A contract change then updates
+one corpus instead of N inline tables, and a new test follows this by default.
+The corpora sit under `testdata/` (`annotations`, `contract`,
 `publish`, `pull`, `quality`, `session-detail`, `sync`),
 `internal/release/testdata/` (`grammar`, `workflow`), and
 `cmd/release-guard/testdata/github`.
