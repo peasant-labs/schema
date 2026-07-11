@@ -373,6 +373,25 @@ cut.
 
 ---
 
+## Testing
+
+The suite keeps the contract honest rather than exercising a runtime: the
+committed specs stay byte-identical to the Go source, released spec versions stay
+frozen, a breaking wire change is caught before it ships, and the module stays a
+dependency leaf. Three layers do this: the **contract gates** (codegen freshness,
+retired-version immutability, the `oasdiff` / `vacuum` / `go-apidiff` gates, the
+leaf-purity audit, and the vendor-hash guard, each with a real test plus a
+synthetic-break meta-gate that proves it fires); **unit tests** alongside every
+source (closed enums, JSON shapes, validator behaviour); and **typed fixture
+families** under `testdata/` loaded via the `//go:embed` + `yaml.Unmarshal` idiom
+with row-count guards. The whole suite runs with a bare `go` toolchain, the
+tool-gated tests skipping when `oasdiff` / `go-apidiff` / `vacuum` are absent.
+
+See **[`TESTING.md`](TESTING.md)** for the full strategy and the test behind each
+gate.
+
+---
+
 ## Releasing
 
 Releases are cut by **merging a PR titled `release(vX.Y.Z[-rcN]): <summary>` into
