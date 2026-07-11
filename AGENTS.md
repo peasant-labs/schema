@@ -47,7 +47,8 @@ unpublished schema change.
 ## Releases and tags (reserved)
 
 Releases are PR-title driven. Open a PR to `develop` titled
-`release(vX.Y.Z[-rcN]): <summary>`. The title grammar is the single
+`release(vX.Y.Z[-rcN]): <summary>` (for example
+`release(v0.1.0-rc1): first release candidate`). The title grammar is the single
 source enforced by `cmd/release-guard parse-title`, and the release workflow gate
 keys on the title, so it runs regardless of which files the PR touches (a
 content-carrying release PR is supported). On merge,
