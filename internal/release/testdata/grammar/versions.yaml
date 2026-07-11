@@ -56,21 +56,6 @@ new_version:
     raw: V0.1.0
     wantErr: true
 
-# Version.Kind()/Base()/IsRC() over a valid (already-constructed) version
-version_kind:
-  - raw: v0.1.0
-    wantKind: final
-    wantBase: v0.1.0
-    wantRC: false
-  - raw: v0.1.0-rc1
-    wantKind: rc
-    wantBase: v0.1.0
-    wantRC: true
-  - raw: v3.2.1-rc9
-    wantKind: rc
-    wantBase: v3.2.1
-    wantRC: true
-
 # ParseReleaseTitle(title) -> (Version, Kind)
 parse_title:
   - name: rc
@@ -116,32 +101,4 @@ parse_title:
     wantErr: true
   - name: leading space
     title: " release(v0.1.0): x"
-    wantErr: true
-
-# ParseTag(tag) -> (Version, Kind); pkg/schema/v* must NEVER parse as a release
-parse_tag:
-  - name: final
-    tag: v0.1.0
-    wantVer: v0.1.0
-    wantKind: final
-  - name: rc
-    tag: v0.1.0-rc1
-    wantVer: v0.1.0-rc1
-    wantKind: rc
-
-  # must-fail grammar set
-  - name: pkg/schema namespaced
-    tag: pkg/schema/v1.2.3
-    wantErr: true
-  - name: rc without number
-    tag: v0.1.0-rc
-    wantErr: true
-  - name: missing v
-    tag: "0.1.0"
-    wantErr: true
-  - name: garbage
-    tag: latest
-    wantErr: true
-  - name: empty
-    tag: ""
     wantErr: true

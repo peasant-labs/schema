@@ -1,0 +1,41 @@
+# Version.Kind()/Base()/IsRC() rows over a valid version, migrated onto the
+# schema/testcase Corpus schema: input is the raw version, expected is the
+# derived {kind, base, rc}. Every case is must-pass (a valid version always
+# classifies) and carries provenance + mutation metadata for non-vacuity.
+cases:
+  - name: final version
+    input: v0.1.0
+    expected:
+      kind: final
+      base: v0.1.0
+      rc: false
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: "release grammar: a final version has Kind=final, Base=itself, IsRC=false"
+    mutation:
+      description: "a plain final version tag"
+  - name: release candidate
+    input: v0.1.0-rc1
+    expected:
+      kind: rc
+      base: v0.1.0
+      rc: true
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: "release grammar: an -rcN version is a release candidate whose Base drops the suffix"
+    mutation:
+      description: "appended an -rc1 prerelease suffix to a final version"
+  - name: multi-digit release candidate
+    input: v3.2.1-rc9
+    expected:
+      kind: rc
+      base: v3.2.1
+      rc: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: "release grammar: multi-digit major/minor/patch and a multi-digit rc number"
+    mutation:
+      description: "used multi-digit version components and a multi-digit rc number"

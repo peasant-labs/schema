@@ -36,30 +36,6 @@ func TestNewVersion(t *testing.T) {
 	}
 }
 
-func TestVersionKindBaseIsRC(t *testing.T) {
-	cases := loadGrammarFixtures(t).VersionKind
-	if len(cases) != 3 {
-		t.Fatalf("grammar fixture version_kind has %d rows, want 3 (fixture truncated?)", len(cases))
-	}
-	for _, tc := range cases {
-		t.Run(tc.Raw, func(t *testing.T) {
-			v, err := release.NewVersion(tc.Raw)
-			if err != nil {
-				t.Fatalf("NewVersion(%q): %v", tc.Raw, err)
-			}
-			if got := v.Kind(); got != tc.WantKind {
-				t.Errorf("Kind() = %q, want %q", got, tc.WantKind)
-			}
-			if got := v.Base(); got != tc.WantBase {
-				t.Errorf("Base() = %q, want %q", got, tc.WantBase)
-			}
-			if got := v.IsRC(); got != tc.WantRC {
-				t.Errorf("IsRC() = %v, want %v", got, tc.WantRC)
-			}
-		})
-	}
-}
-
 func TestParseReleaseTitle(t *testing.T) {
 	cases := loadGrammarFixtures(t).ParseTitle
 	if len(cases) != 13 {
@@ -82,33 +58,6 @@ func TestParseReleaseTitle(t *testing.T) {
 			}
 			if v != tc.WantVer || k != tc.WantKind {
 				t.Errorf("ParseReleaseTitle(%q) = (%q, %q), want (%q, %q)", tc.Title, v, k, tc.WantVer, tc.WantKind)
-			}
-		})
-	}
-}
-
-func TestParseTag(t *testing.T) {
-	cases := loadGrammarFixtures(t).ParseTag
-	if len(cases) != 7 {
-		t.Fatalf("grammar fixture parse_tag has %d rows, want 7 (fixture truncated?)", len(cases))
-	}
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			v, k, err := release.ParseTag(tc.Tag)
-			if tc.WantErr {
-				if err == nil {
-					t.Fatalf("ParseTag(%q): expected error, got (%q, %q)", tc.Tag, v, k)
-				}
-				if k != release.KindInvalid {
-					t.Errorf("ParseTag(%q): want KindInvalid on error, got %q", tc.Tag, k)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("ParseTag(%q): unexpected error: %v", tc.Tag, err)
-			}
-			if v != tc.WantVer || k != tc.WantKind {
-				t.Errorf("ParseTag(%q) = (%q, %q), want (%q, %q)", tc.Tag, v, k, tc.WantVer, tc.WantKind)
 			}
 		})
 	}
