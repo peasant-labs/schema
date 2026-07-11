@@ -47,8 +47,7 @@ unpublished schema change.
 ## Releases and tags (reserved)
 
 Releases are PR-title driven. Open a PR to `develop` titled
-`release(vX.Y.Z[-rcN]): <summary>` (for example
-`release(v0.1.0-rc1): first release candidate`). The title grammar is the single
+`release(vX.Y.Z[-rcN]): <summary>`. The title grammar is the single
 source enforced by `cmd/release-guard parse-title`, and the release workflow gate
 keys on the title, so it runs regardless of which files the PR touches (a
 content-carrying release PR is supported). On merge,
@@ -73,9 +72,9 @@ release here.
 ## Spec versioning: bump, do not mutate
 
 A released spec version is immutable. To change a surface, bump its version stamp
-in `versions.go` (`VillageAPIVersion`, currently `0.4.0`; `PeasantLocalAPIVersion`,
-`0.2.0`; `TypesVersion`, `0.1.0`) and regenerate; do not edit a version already
-released. Retired versions are byte-frozen and guarded by
+in `versions.go` (the current versions are stamped there as `VillageAPIVersion`,
+`PeasantLocalAPIVersion`, and `TypesVersion`) and regenerate; do not edit a
+version already released. Retired versions are byte-frozen and guarded by
 `cmd/schema-gen/retired_specs_test.go`, which fails on both an in-place edit and a
 deletion. An intentional stamp bump is exempt from the exported-Go-API advisory
 gate; every other incompatible change is reported.
@@ -123,7 +122,10 @@ real test behind each one.
 
 - Describe work by substance. Do not write internal task-tracking terminology
   into shipped code, comments, docs, or commit messages.
-- ASCII punctuation only; no em-dashes.
+- No AI-slop punctuation in prose: use ASCII hyphens (not em-dashes or
+  en-dashes), straight quotes (not smart quotes), and three dots rather than an
+  ellipsis glyph. Semantic or diagram characters the docs already use (arrows,
+  the identical-to sign, a middot separator) are fine.
 - Never install a git hook (from `bd` or any other tool) without explicit
   permission. This is a hard rule.
 - Never hand-merge a generated file on conflict: merge the source, rerun the

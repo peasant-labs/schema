@@ -395,7 +395,8 @@ adopt the canonical `testcase` standard (a generic `Case[I, E]` / `Corpus[I, E]`
 with closed-set classification and provenance + mutation metadata, a pure loader,
 and its `*testing.T` seam split into `testcase/assert`), so each case also records
 why it exists and the single change it embodies. A contract change then updates
-one corpus instead of N inline tables, and a new test follows this by default. The corpora sit under `testdata/` (`annotations`, `contract`,
+one corpus instead of N inline tables, and a new test follows this by default.
+The corpora sit under `testdata/` (`annotations`, `contract`,
 `publish`, `pull`, `quality`, `session-detail`, `sync`),
 `internal/release/testdata/` (`grammar`, `workflow`), and
 `cmd/release-guard/testdata/github`.
