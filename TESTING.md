@@ -64,7 +64,7 @@ script) behind it.
 
 | Gate | Where it lives | Consequence |
 |---|---|---|
-| Codegen freshness | `cmd/schema-gen/freshness_test.go`, `redactions_freshness_test.go`, `generated_accounted_test.go`; `make freshness` | **Hard.** A committed spec that drifts from the Go source fails the build. |
+| Codegen freshness | `cmd/schema-gen/freshness_test.go`, `cmd/schema-gen/redactions_freshness_test.go`, `cmd/schema-gen/generated_accounted_test.go`; `make freshness` | **Hard.** A committed spec that drifts from the Go source fails the build. |
 | Retired-version immutability | `cmd/schema-gen/retired_specs_test.go` | **Hard.** A frozen spec that is edited or deleted fails. |
 | OpenAPI breaking diff (`oasdiff`) | `scripts/contract-gates.sh` (`make gates`); `internal/contractgates/synthetic_break_test.go` | **Hard.** An ERR-level break vs the prior golden fails. |
 | OpenAPI lint (`vacuum`) | `scripts/contract-gates.sh` + `.vacuum.yaml` | **Hard.** An `error`-severity finding in a generated spec fails. |
@@ -104,9 +104,9 @@ the exact gap the freshness gate cannot see, because freshness only diffs versio
 the generator still emits. A version is moved into the registry at the moment it is
 frozen (the same change that bumps the live version past it), so there is never a
 window where a retired spec is mutable and unguarded. The still-generated current
-versions (village API `0.4.0`, peasant local API `0.2.0`, types `0.1.0`,
-publish-request `0.4.0`) are deliberately excluded here; they live under the
-freshness gate instead. `TestCheckFrozen_NegativeControl` is a permanent
+versions are deliberately excluded here; they live under the freshness gate
+instead (`versions.go` stays the single source of truth for which version is
+current). `TestCheckFrozen_NegativeControl` is a permanent
 negative control that proves the guard actually fires.
 
 ### The OpenAPI + Go-API gates (and their meta-gates)
@@ -132,12 +132,14 @@ A gate that can never fail is worthless, so the gates have their own tests.
 `internal/contractgates/synthetic_break_test.go` proves they fire:
 `TestOasdiffSyntheticBreak` removes an endpoint from a committed golden spec and
 asserts `oasdiff breaking --fail-on ERR` exits non-zero, while
-`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. The
-`TestGoAPIDiff*` family drives the go-apidiff decision seams
-(`evaluate-apidiff` / `extract-compatible`) with real, canned go-apidiff output:
-`TestGoAPIDiffSyntheticBreak`, `TestGoAPIDiffStampExemption` and
+`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. Three of the
+six `TestGoAPIDiff*` tests run the real `go-apidiff` binary end-to-end:
+`TestGoAPIDiffSyntheticBreak` (removes an exported func, asserts an incompatible
+change is reported), `TestGoAPIDiffStampExemption`, and `TestGoAPIDiffGateRunner`.
+The other three drive the decision seams (`evaluate-apidiff` /
+`extract-compatible`) with canned real-format output:
 `TestGoAPIDiffStampExemptionFilter` (the stamp-bump exemption cannot mask a real
-break), `TestGoAPIDiffCompatibleExtraction`, `TestGoAPIDiffGateRunner`, and
+break), `TestGoAPIDiffCompatibleExtraction`, and
 `TestGoAPIDiffGateRunnerFailClosed` (the unparseable-section fail-closed path).
 
 ### Leaf-purity audit and vendor-hash stability
