@@ -52,15 +52,16 @@ func TestVersionKindBaseIsRC(t *testing.T) {
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("version_kind corpus is under-populated: %v", err)
 	}
-	// Value coverage: the load-bearing cases must remain present BY INPUT VALUE, so
-	// a net-same swap that drops the rc case or the multi-digit-rc boundary case
-	// reddens. A kind-level check would miss dropping one of two same-kind cases
-	// (including the boundary case, whose whole point is being a boundary).
+	// Value coverage: all three load-bearing cases must remain present BY INPUT
+	// VALUE, so a net-same swap that drops any of them reddens. For this 3-case
+	// corpus the set is complete-but-minimal, each input exercising a distinct
+	// behavior: the final case (v0.1.0, the only IsRC=false path), the rc case
+	// (v0.1.0-rc1), and the multi-digit-rc boundary case (v3.2.1-rc9).
 	present := map[string]bool{}
 	for _, c := range corpus.Cases {
 		present[c.Input] = true
 	}
-	for _, want := range []string{"v0.1.0-rc1", "v3.2.1-rc9"} {
+	for _, want := range []string{"v0.1.0", "v0.1.0-rc1", "v3.2.1-rc9"} {
 		if !present[want] {
 			t.Errorf("value coverage lost: version_kind case for input %q is missing", want)
 		}
