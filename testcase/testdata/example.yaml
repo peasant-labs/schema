@@ -1,0 +1,24 @@
+# A fully-populated example corpus for a trivial "input is a non-empty string"
+# validator: input is the string, expected is whether it should be accepted.
+# Every case populates all four metadata field-groups (classification,
+# provenance.source, provenance.ref, mutation.description) so Corpus.Validate
+# passes and the all-four non-vacuity criterion is exercised end to end.
+cases:
+  - name: a non-empty string is accepted
+    input: "hello"
+    expected: true
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: "the validator accepts any non-empty string"
+    mutation:
+      description: "a representative valid input, left unmodified"
+  - name: the empty string is rejected
+    input: ""
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: "the empty-string boundary of the non-empty rule"
+    mutation:
+      description: "cleared the input down to the empty string"
