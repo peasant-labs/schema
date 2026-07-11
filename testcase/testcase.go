@@ -11,6 +11,22 @@
 // packages, so production code never pulls testing). Here that isolation is
 // promoted from a file boundary to a package boundary: testcase is pure data,
 // testcase/assert is the testing seam.
+//
+// This package is the module's canonical standard for a case corpus. The idiom:
+//
+//   - author a table of {input, expected} rows as a YAML file in the Corpus
+//     schema, each case naming its Classification (must-pass or must-fail), its
+//     Provenance (source category plus a concrete ref), and the Mutation under
+//     test;
+//   - load it with LoadCorpus[I, E];
+//   - assert every case is non-vacuous with Corpus.Validate;
+//   - guard the case count: assert.RequireMin for a growable floor, or an exact
+//     "len == N" control when migrating a fixed corpus so a silent drop reddens;
+//   - drive the system under test over each case and assert its result against
+//     the case's Expected and Classification.
+//
+// New case corpora should adopt this shape. The version_kind and parse_tag
+// grammar corpora under internal/release are a worked migration onto it.
 package testcase
 
 import (
