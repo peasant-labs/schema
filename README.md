@@ -393,9 +393,12 @@ struct with `yaml:` tags, a `//go:embed` of the file, a `yaml.Unmarshal`, a smal
 mis-keyed corpus (so an iterating test can never pass on no cases). New corpora
 adopt the canonical `testcase` standard (a generic `Case[I, E]` / `Corpus[I, E]`
 with closed-set classification and provenance + mutation metadata, a pure loader,
-and its `*testing.T` seam split into `testcase/assert`), so each case also records
-why it exists and the single change it embodies. A contract change then updates
-one corpus instead of N inline tables, and a new test follows this by default.
+and its `*testing.T` seams split into `testcase/assert`), so each case also
+records why it exists and the single change it embodies. Fixtures that split into
+heterogeneous behavioral arms use the segmented form: a typed struct of named
+per-arm `Corpus` fields, each guarded by `RequireMin` + `RequireValid`. A contract
+change then updates one corpus instead of N inline tables, and a new test follows
+this by default.
 The corpora sit under `testdata/` (`annotations`, `contract`,
 `publish`, `pull`, `quality`, `session-detail`, `sync`),
 `internal/release/testdata/` (`grammar`, `workflow`), and

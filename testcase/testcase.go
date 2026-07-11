@@ -28,7 +28,10 @@
 //     the case's Expected and Classification.
 //
 // New case corpora should adopt this shape. The version_kind and parse_tag
-// grammar corpora under internal/release are a worked migration onto it.
+// grammar corpora under internal/release are a worked migration onto it. A
+// feature whose fixtures split into heterogeneous behavioral arms uses the
+// segmented convention: a typed struct of named per-arm Corpus fields, each
+// guarded by assert.RequireMin plus assert.RequireValid (see TESTING.md).
 package testcase
 
 import (

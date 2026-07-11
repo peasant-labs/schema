@@ -271,10 +271,11 @@ metadata keeps every case both traceable and non-vacuous.
   minimum-size floor (`len >= n`), so a corpus may grow without tripping it.
 - **The leaf-purity split.** `testcase` carries no `testing` import: it is pure
   data, so it never drags `testing` into anything that consumes it. The loud
-  `*testing.T` seam `RequireMin` lives in the sibling `testcase/assert`
-  subpackage and wraps `CheckMin`, keeping the size logic in one pure function a
-  negative-control test can drive without a `*testing.T`. This promotes the
-  module's existing file-level testing-helper isolation to a package boundary.
+  `*testing.T` seams `RequireMin` and `RequireValid` live in the sibling
+  `testcase/assert` subpackage and wrap the pure `CheckMin` and `Corpus.Validate`,
+  keeping the size and validity logic in pure functions a negative-control test
+  can drive without a `*testing.T`. This promotes the module's existing
+  file-level testing-helper isolation to a package boundary.
 
 The enum-exhaustion generator `licensecorpus` shows the payoff for a closed enum.
 `BuildCorpus` enumerates `schema.AllLicenses` into one must-pass case per menu
@@ -298,3 +299,57 @@ check (an exact count cannot see a net-same swap that drops a real case and adds
 filler). The older `versions.yaml` corpus (`new_version` / `parse_title`)
 deliberately stays on its ad-hoc `loadGrammarFixtures` loader; `testcase` is the
 generalization new corpora adopt, not a forced rewrite of every existing family.
+
+### Segmented multi-axis fixtures
+
+A uniform `Corpus[I, E]` covers one row shape and one harness. A feature's
+fixtures are often segmented into named behavioral arms with heterogeneous
+`(I, E)` and a distinct assertion per arm. The convention for that is a plain
+typed struct of named `Corpus` fields, one per arm, so each arm keeps its own
+static `(I_arm, E_arm)` at its harness with no downcast. The shape, illustrated
+for a four-arm feature:
+
+```go
+type segmentedFixtures struct {
+    RoundTrip          testcase.Corpus[itemsInput, struct{}]
+    Canonical          testcase.Corpus[itemsInput, canonicalExpected]
+    OrdersByTranscript testcase.Corpus[resultsInput, orderExpected]
+    Withheld           testcase.Corpus[resultsInput, withheldExpected]
+}
+```
+
+Classify each arm before modeling it. The discriminator: does the arm have two or
+more genuinely-distinct, independent `input -> expected` examples, each a real,
+non-filler behavior? If yes it is a **case-list** and reuses `Corpus[I, E]`, and
+`I` may be a collection and `E` a global property of that collection, because the
+per-arm harness (not `Corpus`) owns the comparison; `Corpus` only holds the data.
+If an arm is inherently one assertion over one fixed collection with no plural
+examples, it is a **global-property** arm, and the convention reserves a plain
+typed struct with arm-level provenance for it (no current arm needs this; it is
+documented for the future).
+
+Guard every arm at the top of the test, pairing the size floor with the
+non-vacuity check. `assert.RequireValid` is the loud `*testing.T` wrapper around
+`Corpus.Validate`, symmetric to `RequireMin` around `CheckMin`; each call names
+the arm it guards by its call site:
+
+```go
+assert.RequireMin(t, fx.RoundTrip, 2);          assert.RequireValid(t, fx.RoundTrip)
+assert.RequireMin(t, fx.Canonical, 2);          assert.RequireValid(t, fx.Canonical)
+assert.RequireMin(t, fx.OrdersByTranscript, 2); assert.RequireValid(t, fx.OrdersByTranscript)
+assert.RequireMin(t, fx.Withheld, 2);           assert.RequireValid(t, fx.Withheld)
+```
+
+There is deliberately no generic `Suite` / `Arm` / `RequireSuite` container. A
+single multi-axis consumer does not earn a reusable sweep abstraction, and a
+static struct of named `Corpus` fields already delivers what one would: per-arm
+distinct types, with a duplicate or empty arm made impossible by the compiler
+(two same-named fields do not compile; a struct has no empty-suite state) instead
+of guarded at runtime. Promoting a reusable sweep waits for a second
+heterogeneous consumer to prove the pattern; until then the convention is the
+struct plus the per-arm `RequireMin` + `RequireValid` guard. `RequireValid` has a
+fixture-driven negative control symmetric to `RequireMin`'s: a deliberately
+vacuous corpus fixture reddens it while a populated one passes. One boundary is
+honest and shared by any struct-of-arms shape: nothing structurally forces every
+declared arm to be wired to a guard call, so the guard block above is the pattern
+to copy, and a reviewer confirms every arm is guarded.
