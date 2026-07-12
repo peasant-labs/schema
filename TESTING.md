@@ -307,17 +307,27 @@ A uniform `Corpus[I, E]` covers one row shape and one harness. A feature's
 fixtures are often segmented into named behavioral arms with heterogeneous
 `(I, E)` and a distinct assertion per arm. The convention for that is a plain
 typed struct of named `Corpus` fields, one per arm, so each arm keeps its own
-static `(I_arm, E_arm)` at its harness with no downcast. The shape, illustrated
-for a four-arm feature:
+static `(I_arm, E_arm)` at its harness with no downcast. The worked reference
+example is the pull skip-gate: `skipGateFixtures` in `pull_skip_gate_test.go`, fed
+by `testdata/pull/skip_gate_cases.yaml`, whose four arms are round-trip, canonical
+form, ordering by transcript id, and withheld-by-omission:
 
 ```go
-type segmentedFixtures struct {
+type skipGateFixtures struct {
     RoundTrip          testcase.Corpus[itemsInput, struct{}]
     Canonical          testcase.Corpus[itemsInput, canonicalExpected]
     OrdersByTranscript testcase.Corpus[resultsInput, orderExpected]
     Withheld           testcase.Corpus[resultsInput, withheldExpected]
 }
 ```
+
+Each arm's `Input` is a collection (the request items or the response results) and
+its `Expected` is the global property the harness checks over that collection: the
+canonical arm asserts id order plus each sorted, de-duplicated annotation set, and
+the withheld arm asserts per case that a withheld id appears nowhere in the
+marshaled response bytes (not merely absent from the slice). Each arm carries at
+least two structurally-rich cases, the representative behavior plus an idempotence,
+empty, or nil boundary case, so no arm can pass vacuously.
 
 Classify each arm before modeling it. The discriminator: does the arm have two or
 more genuinely-distinct, independent `input -> expected` examples, each a real,
@@ -329,10 +339,11 @@ examples, it is a **global-property** arm, and the convention reserves a plain
 typed struct with arm-level provenance for it (no current arm needs this; it is
 documented for the future).
 
-Guard every arm at the top of the test, pairing the size floor with the
-non-vacuity check. `assert.RequireValid` is the loud `*testing.T` wrapper around
-`Corpus.Validate`, symmetric to `RequireMin` around `CheckMin`; each call names
-the arm it guards by its call site:
+Guard every arm, pairing the size floor with the non-vacuity check; skip-gate does
+this in `LoadSkipGateFixtures`, so every one of its tests guards all four arms.
+`assert.RequireValid` is the loud `*testing.T` wrapper around `Corpus.Validate`,
+symmetric to `RequireMin` around `CheckMin`; each call names the arm it guards by
+its call site:
 
 ```go
 assert.RequireMin(t, fx.RoundTrip, 2);          assert.RequireValid(t, fx.RoundTrip)
@@ -340,6 +351,13 @@ assert.RequireMin(t, fx.Canonical, 2);          assert.RequireValid(t, fx.Canoni
 assert.RequireMin(t, fx.OrdersByTranscript, 2); assert.RequireValid(t, fx.OrdersByTranscript)
 assert.RequireMin(t, fx.Withheld, 2);           assert.RequireValid(t, fx.Withheld)
 ```
+
+Beyond that floor-and-non-vacuity guard, each arm carries a predicate-based
+coverage assertion (`requireCoverage` in `TestSkipGateFixtures_Coverage`): a
+structural predicate over the loaded cases asserts that each required scenario is
+still present, so a count-preserving swap that drops a load-bearing case reddens
+even at a fixed count. It is the predicate-based counterpart to the grammar
+corpora's value-based coverage assertion, which pins cases by expected value.
 
 There is deliberately no generic `Suite` / `Arm` / `RequireSuite` container. A
 single multi-axis consumer does not earn a reusable sweep abstraction, and a
@@ -353,4 +371,5 @@ fixture-driven negative control symmetric to `RequireMin`'s: a deliberately
 vacuous corpus fixture reddens it while a populated one passes. One boundary is
 honest and shared by any struct-of-arms shape: nothing structurally forces every
 declared arm to be wired to a guard call, so the guard block above is the pattern
-to copy, and a reviewer confirms every arm is guarded.
+to copy; skip-gate wires all four arms to both guards in its loader, and a reviewer
+confirms every arm is guarded.

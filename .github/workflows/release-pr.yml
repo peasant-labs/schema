@@ -75,6 +75,11 @@ jobs:
       startsWith(github.event.pull_request.title, 'release(') &&
       contains(fromJSON('["opened","reopened","synchronize"]'), github.event.action)
     uses: ./.github/workflows/tests.yml
+    # Marks this as the authoritative release-PR gate so the DIRECT pull_request
+    # Tests run skips on this release(...)-titled PR (and their concurrency groups
+    # differ, so this call can never be cancelled by the direct run).
+    with:
+      via_release_gate: true
     secrets: inherit
 
   # Trigger B: a release PR MERGED — assert maintainer approval, then tag.

@@ -59,10 +59,24 @@ on:
   # quality gate runs even when the release marker commit touches none of the
   # path-filtered files above. Also handy for on-demand reruns.
   workflow_call:
+    inputs:
+      via_release_gate:
+        description: >-
+          Set true by release-pr.yml when it calls this workflow as the
+          authoritative release-PR gate. It lets the DIRECT pull_request run skip
+          on a release(...)-titled PR (that PR's gate is this reusable call) while
+          the call itself still runs, and it separates the two runs' concurrency
+          groups so the direct run can never cancel the gate run.
+        type: boolean
+        default: false
   workflow_dispatch:
 
 concurrency:
-  group: tests-${{ github.ref }}
+  # Separate the direct pull_request run from the reusable release-PR gate call
+  # (via_release_gate) so the direct run, which skips on a release PR, can never
+  # cancel the authoritative gate run; a normal PR still cancels its own stale
+  # in-progress run (same group across pushes to the same ref).
+  group: tests-${{ github.ref }}-${{ inputs.via_release_gate && 'release-gate' || 'direct' }}
   cancel-in-progress: true
 
 permissions:
@@ -71,6 +85,14 @@ permissions:
 jobs:
   check:
     name: make check
+    # Skip the DIRECT pull_request run on a release(...)-titled PR: that PR's
+    # authoritative gate is the reusable call from release-pr.yml (via_release_gate),
+    # so a direct run here would duplicate it (and previously collided on the shared
+    # concurrency group). Normal PRs, pushes, workflow_dispatch, and the release-gate
+    # call itself all still run.
+    if: >-
+      inputs.via_release_gate ||
+      !startsWith(github.event.pull_request.title || '', 'release(')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -97,8 +119,12 @@ jobs:
   contract-gates:
     name: contract gates (vs base)
     # The breaking-change gates need a base ref to diff against; only meaningful
-    # on a pull request.
-    if: github.event_name == 'pull_request'
+    # on a pull request. Also skip the DIRECT run on a release(...)-titled PR (the
+    # reusable release-gate call runs them instead), matching the check job.
+    if: >-
+      github.event_name == 'pull_request' &&
+      (inputs.via_release_gate ||
+      !startsWith(github.event.pull_request.title || '', 'release('))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # READ-ONLY: this workflow requests no write scope on any job, so it can be

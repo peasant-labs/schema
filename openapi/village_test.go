@@ -72,6 +72,23 @@ func TestBuildVillageAPISpec_AnnotationManifestPath(t *testing.T) {
 	}
 }
 
+func TestBuildVillageAPISpec_PullSkipGatePath(t *testing.T) {
+	spec, err := specpkg.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatalf("BuildVillageAPISpec() error: %v", err)
+	}
+	yamlStr := specYAML(t, spec)
+	for _, want := range []string{
+		"/api/v1/pull/transcripts/skip-gate",
+		"PullSkipGateRequest",
+		"PullSkipGateResponse",
+	} {
+		if !strings.Contains(yamlStr, want) {
+			t.Errorf("village spec missing %q; got:\n%s", want, yamlStr)
+		}
+	}
+}
+
 // TestBuildVillageAPISpec_PublishRequestComponent verifies PublishRequest schema component.
 func TestBuildVillageAPISpec_PublishRequestComponent(t *testing.T) {
 	spec, err := specpkg.BuildVillageAPISpec()

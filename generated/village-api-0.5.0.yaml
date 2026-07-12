@@ -1,0 +1,1191 @@
+openapi: 3.1.0
+info:
+  description: API for publishing AI agent session transcripts to the data-leverage
+    village. v1.1 adds content-layer types (SessionEntry with ToolCallKind, StopReason,
+    Visibility).
+  title: Transcript Publish API
+  version: 0.5.0
+paths:
+  /api/v1/annotations/manifest:
+    get:
+      description: Return the set of annotation content-hashes the village holds for
+        the authenticated owner (the server-authoritative skip-gate manifest), plus
+        a deterministic digest over the sorted hash set for a no-op short-circuit.
+      operationId: getAnnotationManifest
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaAnnotationManifestResponse'
+          description: OK
+      tags:
+      - annotations
+  /api/v1/auth/cli/exchange:
+    post:
+      description: Exchange an OAuth authorization code and state for API credentials.
+        Called by the CLI's local callback server after receiving the browser redirect.
+      operationId: cliExchangeCode
+      requestBody:
+        content:
+          application/json:
+            examples:
+              codeExchange:
+                summary: Exchange OAuth code for credentials
+                value:
+                  code: a1b2c3d4e5f6g7h8i9j0
+                  state: f47ac10b58cc4372a5670e02b2c3d479
+            schema:
+              $ref: '#/components/schemas/SchemaExchangeCodeRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                credentials:
+                  summary: Successful credential exchange
+                  value:
+                    api_key: ak_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    key_id: key_01HQXYZ1234567890ABCDEF
+                    user_id: usr_01HQXYZ1234567890ABCDEF
+                    username: alice
+              schema:
+                $ref: '#/components/schemas/SchemaExchangeCodeResponse'
+          description: OK
+      tags:
+      - auth
+  /api/v1/auth/cli/login:
+    get:
+      description: Initiate CLI login via browser OAuth flow. The CLI opens this URL
+        in the user's browser with a local callback port and CSRF state. After authentication,
+        the village redirects the browser to the CLI's local callback server.
+      operationId: cliLogin
+      parameters:
+      - description: Local callback server port
+        in: query
+        name: port
+        schema:
+          description: Local callback server port
+          type: integer
+      - description: OAuth state parameter for CSRF protection
+        in: query
+        name: state
+        schema:
+          description: OAuth state parameter for CSRF protection
+          type: string
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - auth
+  /api/v1/pull/transcripts:
+    get:
+      description: List transcripts the authenticated user may pull (own + group-shared;
+        public excluded by the canPullTranscript policy). Offset pagination.
+      operationId: listPullableTranscripts
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: limit
+        schema:
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaPullListResponse'
+          description: OK
+      tags:
+      - pull
+  /api/v1/pull/transcripts/{id}:
+    get:
+      description: Get a pullable transcript's metadata (owner, visibility, server-computed
+        content_hash, push contract version). 404 (not 403) when not pullable.
+      operationId: getPullTranscript
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaPullTranscriptInfo'
+          description: OK
+      tags:
+      - pull
+  /api/v1/pull/transcripts/{id}/annotations:
+    get:
+      description: List a transcript's annotations as PullAnnotation rows (AnnotationSummary
+        plus author identity), so pulled annotations can be foreign-marked and own-authored
+        rows excluded.
+      operationId: getPullTranscriptAnnotations
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/SchemaPullAnnotation'
+                type:
+                - "null"
+                - array
+          description: OK
+      tags:
+      - pull
+  /api/v1/pull/transcripts/{id}/content:
+    get:
+      description: 'Stream the transcript blob as served. Sends ETag: "<content_hash>";
+        a matching If-None-Match request yields 304 Not Modified.'
+      operationId: getPullTranscriptContent
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "204":
+          description: No Content
+      tags:
+      - pull
+  /api/v1/pull/transcripts/skip-gate:
+    post:
+      description: 'Batch currency check for a pulling client: per transcript it holds,
+        send the id, the content-hash it holds, and its own annotation-hash set; receive
+        per pullable id {contentCurrent, annotationsCurrent}. Non-pullable ids are
+        withheld by omission from results.'
+      operationId: pullSkipGate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchemaPullSkipGateRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaPullSkipGateResponse'
+          description: OK
+      tags:
+      - pull
+  /api/v1/schema/version:
+    get:
+      description: Advertise the annotation schema version plus the push and pull
+        contract acceptance/negotiation windows ([Min, Current]) so the CLI can preflight
+        and version-negotiate before publishing or pulling.
+      operationId: getSchemaVersion
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaSchemaVersionResponse'
+          description: OK
+      tags:
+      - schema
+  /api/v1/transcripts/publish:
+    post:
+      description: Publish a transcript with session entries to the village.
+      operationId: publishTranscript
+      requestBody:
+        content:
+          application/json:
+            examples:
+              full:
+                summary: Full publish request with entries and quality
+                value:
+                  diagnostics:
+                    warnings: []
+                  entries:
+                  - depth: 0
+                    entryIndex: 0
+                    entryType: text
+                    harness: claude-code
+                    hasThinking: false
+                    hasToolUse: false
+                    isError: false
+                    role: user
+                    sessionId: 99d59925-36bc-424c-a789-8be54d9702ba
+                  git:
+                    branch: feat/openapi-docs
+                    remote: https://github.com/user/repo.git
+                  identity:
+                    schemaVersion: 9
+                    sessionId: 99d59925-36bc-424c-a789-8be54d9702ba
+                  model:
+                    harness: claude-code
+                    hostSlug: github.com--user--repo
+                    model: claude-opus-4-6
+                    version: 2.1.47
+                  project:
+                    hash: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+                    name: repo
+                  quality:
+                    outcome: resolved
+                    totalTokens: 67000
+                    turnCount: 24
+                  source:
+                    format: jsonl
+                  stats:
+                    durationMs: 7.2e+06
+                    subagentCount: 1
+                    tokensIn: 45000
+                    tokensOut: 22000
+                    toolCallCount: 16
+                    turnCount: 24
+                  timestamp:
+                    end: 1.7091396e+12
+                    start: 1.709136e+12
+              minimal:
+                summary: Minimal publish request
+                value:
+                  diagnostics:
+                    warnings: []
+                  git:
+                    branch: main
+                    remote: https://github.com/user/repo.git
+                  identity:
+                    schemaVersion: 9
+                    sessionId: 99d59925-36bc-424c-a789-8be54d9702ba
+                  model:
+                    harness: claude-code
+                    hostSlug: github.com--user--repo
+                    model: claude-opus-4-6
+                  project:
+                    hash: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+                    name: repo
+                  source:
+                    format: jsonl
+                  stats:
+                    durationMs: 3.6e+06
+                    subagentCount: 0
+                    tokensIn: 15000
+                    tokensOut: 8000
+                    toolCallCount: 8
+                    turnCount: 12
+                  timestamp:
+                    end: 1.7091396e+12
+                    start: 1.709136e+12
+            schema:
+              $ref: '#/components/schemas/SchemaPublishRequest'
+      responses:
+        "200":
+          content:
+            application/json:
+              examples:
+                newTranscript:
+                  summary: Newly created transcript
+                  value:
+                    blobKey: transcripts/2024/02/28/e7f8a9b0-1234-5678-9abc-def012345678.jsonl
+                    blobSizeBytes: 142857
+                    created: true
+                    publishedAt: 1.7091397e+12
+                    transcriptId: e7f8a9b0-1234-5678-9abc-def012345678
+                    updatedAt: 1.7091397e+12
+              schema:
+                $ref: '#/components/schemas/SchemaPublishResponse'
+          description: OK
+      tags:
+      - transcripts
+components:
+  schemas:
+    BestiaryHarness:
+      description: AI coding tool or development environment
+      enum:
+      - claude-code
+      - gemini-cli
+      - codex
+      - opencode
+      - cursor
+      - antigravity
+      examples:
+      - claude-code
+      - opencode
+      title: Harness
+      type: string
+    SchemaAnnotationManifestResponse:
+      properties:
+        digest:
+          description: Deterministic, order-independent digest over the hash set;
+            a client computing the same digest over its local set knows nothing diverged.
+          type: string
+        hashes:
+          description: Hex-encoded SHA3-256 annotation content-hashes the village
+            holds for the owner (sorted, de-duplicated).
+          items:
+            type: string
+          type: array
+      type: object
+    SchemaAnnotatorKind:
+      description: 'Type of entity that produced an annotation: human, agent (AI model),
+        or rule (automated classifier)'
+      enum:
+      - human
+      - agent
+      - rule
+      examples:
+      - human
+      - agent
+      - rule
+      title: Annotator Kind
+      type: string
+    SchemaCommitInfo:
+      properties:
+        authorEmail:
+          type: string
+        authorName:
+          type: string
+        authorTime:
+          format: int64
+          type: integer
+        commitTime:
+          format: int64
+          type: integer
+        hash:
+          type: string
+        message:
+          type: string
+      type: object
+    SchemaDiagnosticEntry:
+      properties:
+        errorType:
+          type: string
+        location:
+          type: string
+        message:
+          type: string
+        remediation:
+          type: string
+      type: object
+    SchemaDiagnosticsInfo:
+      properties:
+        partial:
+          type:
+          - "null"
+          - boolean
+        warnings:
+          items:
+            $ref: '#/components/schemas/SchemaDiagnosticEntry'
+          type:
+          - array
+          - "null"
+      type: object
+    SchemaEntryType:
+      description: Classification of a single entry within an agent session transcript
+      enum:
+      - text
+      - tool_use
+      - tool_result
+      - thinking
+      - system
+      - error
+      - result
+      examples:
+      - text
+      - tool_use
+      - tool_result
+      title: Entry Type
+      type: string
+    SchemaExchangeCodeRequest:
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+      type: object
+    SchemaExchangeCodeResponse:
+      properties:
+        api_key:
+          type: string
+        key_id:
+          type: string
+        user_id:
+          type: string
+        username:
+          type: string
+      type: object
+    SchemaGitContext:
+      properties:
+        branch:
+          type:
+          - "null"
+          - string
+        commits:
+          items:
+            $ref: '#/components/schemas/SchemaCommitInfo'
+          type: array
+        remote:
+          type:
+          - "null"
+          - string
+        tracking:
+          type:
+          - "null"
+          - string
+        worktree:
+          type:
+          - "null"
+          - string
+      type: object
+    SchemaHostSlug:
+      description: Sanitized, filesystem-safe identifier derived from git remote;
+        contains only [a-zA-Z0-9._<>-]
+      examples:
+      - github.com--user--repo
+      - local--home-user-projects-myapp
+      pattern: ^[a-zA-Z0-9._<>-]+$
+      title: Host Slug
+      type: string
+    SchemaLicense:
+      description: Content license for a published transcript
+      enum:
+      - CC0-1.0
+      - CC-BY-4.0
+      - CC-BY-SA-4.0
+      examples:
+      - CC0-1.0
+      title: License
+      type: string
+    SchemaModelID:
+      description: Model identifier (e.g. 'claude-opus-4-6', 'gemini-2.0-flash')
+      examples:
+      - claude-opus-4-6
+      - gemini-2.0-flash
+      - codex-mini-latest
+      minLength: 1
+      title: Model ID
+      type: string
+    SchemaModelInfo:
+      properties:
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        hostSlug:
+          $ref: '#/components/schemas/SchemaHostSlug'
+        model:
+          $ref: '#/components/schemas/SchemaModelID'
+        version:
+          type: string
+      required:
+      - harness
+      - model
+      type: object
+    SchemaProjectContext:
+      properties:
+        filePath:
+          type: string
+        hash:
+          $ref: '#/components/schemas/SchemaProjectHash'
+        name:
+          type: string
+      type: object
+    SchemaProjectHash:
+      description: SHA-256 hex digest of the project's origin URL or local path
+      examples:
+      - a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0-9a-f]{64}$
+      title: Project Hash
+      type: string
+    SchemaProvenance:
+      properties:
+        details:
+          additionalProperties:
+            type: string
+          type: object
+        function:
+          type: string
+        method:
+          type: string
+        version:
+          type: string
+      type: object
+    SchemaPublishRequest:
+      properties:
+        diagnostics:
+          $ref: '#/components/schemas/SchemaDiagnosticsInfo'
+        entries:
+          items:
+            $ref: '#/components/schemas/SchemaSessionEntry'
+          type: array
+        git:
+          $ref: '#/components/schemas/SchemaGitContext'
+        identity:
+          $ref: '#/components/schemas/SchemaSessionIdentity'
+        license:
+          $ref: '#/components/schemas/SchemaLicense'
+        model:
+          $ref: '#/components/schemas/SchemaModelInfo'
+        project:
+          $ref: '#/components/schemas/SchemaProjectContext'
+        quality:
+          $ref: '#/components/schemas/SchemaQualityMetrics'
+        source:
+          $ref: '#/components/schemas/SchemaSourceInfo'
+        stats:
+          $ref: '#/components/schemas/SchemaSessionStats'
+        subagents:
+          items:
+            $ref: '#/components/schemas/SchemaSubagentRef'
+          type: array
+        timestamp:
+          $ref: '#/components/schemas/SchemaTimestampInfo'
+      required:
+      - model
+      type: object
+    SchemaPublishResponse:
+      properties:
+        blobKey:
+          type: string
+        blobSizeBytes:
+          format: int64
+          type: integer
+        created:
+          type: boolean
+        publishedAt:
+          format: int64
+          type: integer
+        transcriptId:
+          type: string
+        updatedAt:
+          format: int64
+          type: integer
+      type: object
+    SchemaPullAnnotation:
+      properties:
+        annotatorKind:
+          $ref: '#/components/schemas/SchemaAnnotatorKind'
+        annotatorName:
+          type: string
+        authorUserId:
+          type: string
+        authorUsername:
+          type: string
+        confidence:
+          type:
+          - "null"
+          - number
+        contentHash:
+          type:
+          - "null"
+          - string
+        createdAt:
+          format: int64
+          type: integer
+        id:
+          type: string
+        isPrimary:
+          type: boolean
+        provenance:
+          $ref: '#/components/schemas/SchemaProvenance'
+        reason:
+          type:
+          - "null"
+          - string
+        supersededBy:
+          type:
+          - "null"
+          - string
+        targetAnnotationId:
+          type:
+          - "null"
+          - string
+        targetEntryEndIndex:
+          type:
+          - "null"
+          - integer
+        targetEntryIndex:
+          type:
+          - "null"
+          - integer
+        targetKind:
+          $ref: '#/components/schemas/SchemaTargetKind'
+        targetProjectHash:
+          type:
+          - "null"
+          - string
+        targetSessionId:
+          type:
+          - "null"
+          - string
+        typeId:
+          type: string
+        typeName:
+          type: string
+        value:
+          type: string
+      type: object
+    SchemaPullListResponse:
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer
+        total:
+          type: integer
+        transcripts:
+          items:
+            $ref: '#/components/schemas/SchemaPullTranscriptInfo'
+          type:
+          - array
+          - "null"
+      type: object
+    SchemaPullSkipGateItem:
+      properties:
+        annotationHashes:
+          description: The client's own annotation content-hashes for this transcript
+            (sorted, de-duplicated); compared as a set against the owner-scoped server
+            set.
+          items:
+            type: string
+          type: array
+        contentHash:
+          description: Hex-encoded SHA3-256 served-blob content-hash the client currently
+            holds for this transcript; compared by value against the server's stored
+            hash.
+          type: string
+        transcriptId:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: The id of a transcript the client holds and is asking about.
+      type: object
+    SchemaPullSkipGateRequest:
+      properties:
+        items:
+          description: The per-transcript items the client is asking a currency question
+            about (ordered by transcriptId, de-duplicated per-item annotation set).
+          items:
+            $ref: '#/components/schemas/SchemaPullSkipGateItem'
+          type: array
+      type: object
+    SchemaPullSkipGateResponse:
+      properties:
+        results:
+          description: Per-id currency answers, present only for pullable ids (non-pullable
+            ids are withheld by omission); ordered by transcriptId.
+          items:
+            $ref: '#/components/schemas/SchemaPullSkipGateResult'
+          type: array
+      type: object
+    SchemaPullSkipGateResult:
+      properties:
+        annotationsCurrent:
+          description: True when the owner-scoped server annotation set for this id
+            equals the client's held set; false when it differs (missing or extra).
+          type: boolean
+        contentCurrent:
+          description: True when the server's stored content-hash equals the client's
+            held hash for this id; false when it has diverged or the server holds
+            none.
+          type: boolean
+        transcriptId:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: The transcript id this currency answer is for (always one the
+            caller may pull).
+      type: object
+    SchemaPullTranscriptInfo:
+      properties:
+        annotationCount:
+          type: integer
+        contentHash:
+          type: string
+        contractVersion:
+          type: string
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        license:
+          $ref: '#/components/schemas/SchemaLicense'
+        localId:
+          type: string
+        ownerUserId:
+          type: string
+        ownerUsername:
+          type: string
+        projectName:
+          type: string
+        publishedAt:
+          format: int64
+          type: integer
+        title:
+          type: string
+        transcriptId:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+        updatedAt:
+          format: int64
+          type: integer
+        visibility:
+          $ref: '#/components/schemas/SchemaVisibility'
+      type: object
+    SchemaQualityMetrics:
+      properties:
+        computeVersion:
+          type:
+          - "null"
+          - integer
+        computedAt:
+          type:
+          - "null"
+          - integer
+        costCacheReadUsd:
+          type:
+          - "null"
+          - number
+        costCacheWriteUsd:
+          type:
+          - "null"
+          - number
+        costInputUsd:
+          type:
+          - "null"
+          - number
+        costModelId:
+          type:
+          - "null"
+          - string
+        costOutputUsd:
+          type:
+          - "null"
+          - number
+        costReasoningUsd:
+          type:
+          - "null"
+          - number
+        costTotalUsd:
+          type:
+          - "null"
+          - number
+        discoveryTurns:
+          type:
+          - "null"
+          - integer
+        durationMinutes:
+          type:
+          - "null"
+          - number
+        explorationRatio:
+          type:
+          - "null"
+          - number
+        filesTouched:
+          type:
+          - "null"
+          - integer
+        inputTokens:
+          type:
+          - "null"
+          - integer
+        linesChanged:
+          type:
+          - "null"
+          - integer
+        m2TokenOutcomeRatio:
+          type:
+          - "null"
+          - number
+        m3UniqueToolCount:
+          type:
+          - "null"
+          - integer
+        m4ConsecutiveErrorMax:
+          type:
+          - "null"
+          - integer
+        m4ErrorRecoveryCount:
+          type:
+          - "null"
+          - integer
+        m5AvgMessageTokens:
+          type:
+          - "null"
+          - integer
+        m5ContextUtilizationPct:
+          type:
+          - "null"
+          - number
+        m5PeakContextTokens:
+          type:
+          - "null"
+          - integer
+        m6LinesSurvived:
+          type:
+          - "null"
+          - integer
+        m6LinesTotal:
+          type:
+          - "null"
+          - integer
+        m6OutputSurvivalPct:
+          type:
+          - "null"
+          - number
+        m7SpecHasConstraints:
+          type:
+          - "null"
+          - boolean
+        m7SpecHasExamples:
+          type:
+          - "null"
+          - boolean
+        m7SpecWordCount:
+          type:
+          - "null"
+          - integer
+        outcome:
+          $ref: '#/components/schemas/SchemaSessionOutcome'
+        outputTokens:
+          type:
+          - "null"
+          - integer
+        retryLoops:
+          type:
+          - "null"
+          - integer
+        retryTokensWasted:
+          type:
+          - "null"
+          - integer
+        scope:
+          type:
+          - "null"
+          - string
+        scopeBreadth:
+          type:
+          - "null"
+          - integer
+        signalDensity:
+          type:
+          - "null"
+          - number
+        specQualityScore:
+          type:
+          - "null"
+          - number
+        subagentCount:
+          type:
+          - "null"
+          - integer
+        titleGenerated:
+          type:
+          - "null"
+          - string
+        toolCalls:
+          type:
+          - "null"
+          - integer
+        totalTokens:
+          type:
+          - "null"
+          - integer
+        turnCount:
+          type:
+          - "null"
+          - integer
+        withinSessionReverts:
+          type:
+          - "null"
+          - integer
+      type: object
+    SchemaRole:
+      description: Sender role of a message turn
+      enum:
+      - user
+      - assistant
+      - tool
+      - system
+      examples:
+      - user
+      - assistant
+      title: Role
+      type: string
+    SchemaSchemaVersionResponse:
+      properties:
+        annotationSchemaVersion:
+          type: string
+        minPullContractVersion:
+          type: string
+        minPushContractVersion:
+          type: string
+        pullContractVersion:
+          type: string
+        pushContractVersion:
+          type: string
+        supportedTargetKinds:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        supportedTypeIds:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+      type: object
+    SchemaSessionEntry:
+      properties:
+        contentPreview:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryId:
+          type:
+          - "null"
+          - string
+        entryIndex:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        extra:
+          type:
+          - "null"
+          - string
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        hasThinking:
+          type: boolean
+        hasToolUse:
+          type: boolean
+        isError:
+          type: boolean
+        parentEntryId:
+          type:
+          - "null"
+          - string
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        partType:
+          type:
+          - "null"
+          - string
+        rawByteLength:
+          type:
+          - "null"
+          - integer
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        timestampMs:
+          type:
+          - "null"
+          - integer
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCallId:
+          type:
+          - "null"
+          - string
+        toolInput:
+          type:
+          - "null"
+          - string
+        toolKind:
+          $ref: '#/components/schemas/SchemaToolCallKind'
+        toolNamesCsv:
+          type:
+          - "null"
+          - string
+        toolOutput:
+          type:
+          - "null"
+          - string
+      type: object
+    SchemaSessionID:
+      description: Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id}
+        (ACP), or msg_{id})
+      examples:
+      - 99d59925-36bc-424c-a789-8be54d9702ba
+      - agent-a3aee4f
+      - ses_3cd91f52effeXd3QAJ54jOyzv5
+      - sess_3cd91f52effeXd3QAJ54jOyzv5
+      format: session-id
+      pattern: ^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+)$
+      title: Session ID
+      type: string
+    SchemaSessionIdentity:
+      properties:
+        parentUuid:
+          $ref: '#/components/schemas/SchemaSessionID'
+        schemaVersion:
+          type: integer
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+      type: object
+    SchemaSessionOutcome:
+      description: Resolution status of the session
+      enum:
+      - resolved
+      - partial
+      - failed
+      examples:
+      - resolved
+      - partial
+      - failed
+      title: Session Outcome
+      type: string
+    SchemaSessionStats:
+      properties:
+        cachedReadTokens:
+          type:
+          - "null"
+          - integer
+        cachedWriteTokens:
+          type:
+          - "null"
+          - integer
+        durationMs:
+          format: int64
+          type: integer
+        subagentCount:
+          type: integer
+        thoughtTokens:
+          type:
+          - "null"
+          - integer
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        turnCount:
+          type: integer
+      type: object
+    SchemaSourceFormat:
+      description: Transcript file format
+      enum:
+      - jsonl
+      - json
+      examples:
+      - jsonl
+      - json
+      title: Source Format
+      type: string
+    SchemaSourceInfo:
+      properties:
+        filePath:
+          type: string
+        format:
+          $ref: '#/components/schemas/SchemaSourceFormat'
+      type: object
+    SchemaStopReason:
+      description: Reason why a session or turn ended (ACP-aligned)
+      enum:
+      - end_turn
+      - cancelled
+      - max_tokens
+      - max_turn_requests
+      - refusal
+      examples:
+      - end_turn
+      - max_tokens
+      title: Stop Reason
+      type: string
+    SchemaSubagentRef:
+      properties:
+        parentUuid:
+          $ref: '#/components/schemas/SchemaSessionID'
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+      type: object
+    SchemaTargetKind:
+      description: 'What is being annotated: session-level, entry-level (turn/tool
+        call), meta-annotation, or project-level'
+      enum:
+      - session
+      - entry
+      - annotation
+      - project
+      examples:
+      - session
+      - entry
+      title: Target Kind
+      type: string
+    SchemaTimestampInfo:
+      properties:
+        end:
+          format: int64
+          type: integer
+        ingested:
+          type:
+          - "null"
+          - integer
+        start:
+          format: int64
+          type: integer
+      type: object
+    SchemaToolCallKind:
+      description: Classification of a tool call, aligned with ACP ToolCallUpdate.kind
+      enum:
+      - read
+      - edit
+      - delete
+      - move
+      - search
+      - execute
+      - think
+      - fetch
+      - other
+      examples:
+      - read
+      - edit
+      - execute
+      title: Tool Call Kind
+      type: string
+    SchemaTranscriptID:
+      description: Village-side transcript identifier (canonical lowercase-hex UUID)
+      examples:
+      - 99d59925-36bc-424c-a789-8be54d9702ba
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      title: Transcript ID
+      type: string
+    SchemaVisibility:
+      description: Access control level for a published transcript
+      enum:
+      - private
+      - group
+      - public
+      examples:
+      - public
+      - private
+      title: Visibility
+      type: string
+    Visibility:
+      description: Access control level for a published transcript
+      enum:
+      - private
+      - group
+      - public
+      examples:
+      - public
+      - private
+      title: Visibility
+      type: string

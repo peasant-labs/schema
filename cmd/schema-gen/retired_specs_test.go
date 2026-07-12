@@ -55,7 +55,8 @@ type retiredSpec struct {
 // here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). The
 // 0.3.0 village-api trio (village-api-0.3.0 json+yaml + publish-request-0.3.0.schema
 // json-only) was frozen here when VillageAPIVersion bumped to 0.4.0 (added the
-// optional top-level license enum).
+// optional top-level license enum). The 0.4.0 village-api trio was frozen here when
+// VillageAPIVersion bumped to 0.5.0 (added the pull skip-gate surface).
 var retiredSpecRegistry = []retiredSpec{
 	{
 		name:       "peasantlocal-api-0.1.0",
@@ -90,6 +91,18 @@ var retiredSpecRegistry = []retiredSpec{
 		// json-only, like publish-request-0.2.0.schema above.
 		name:       "publish-request-0.3.0.schema",
 		jsonSHA256: "06eb63fde21cd6b0a2811ff48c3c3fcce7116d14aee9e66afd30f80f14af7285",
+		jsonOnly:   true,
+	},
+	// --- 0.4.0 village-api trio: frozen at the 0.5.0 bump (added the pull skip-gate surface) ---
+	{
+		name:       "village-api-0.4.0",
+		jsonSHA256: "eab04e0813d220e681dcd79ac7b33e997bae56a5b0138d29e536c0f692ed17b0",
+		yamlSHA256: "76dbefd2c8b3372938f56a771b3e5836e79647152cf885014c8c15ea79c12037",
+	},
+	{
+		// json-only, like publish-request-0.2.0.schema above.
+		name:       "publish-request-0.4.0.schema",
+		jsonSHA256: "bb303091a1996c4fdbb25df0c5e49f56d1571c47b04378506ec5e5ad9581b8eb",
 		jsonOnly:   true,
 	},
 }

@@ -1,0 +1,216 @@
+# Skip-gate wire-type test corpora, in the segmented multi-axis fixture form: one
+# named arm per behaviour, each a testcase.Corpus of cases (see TESTING.md). Every
+# case carries name/input/expected plus classification/provenance/mutation, so the
+# per-arm RequireMin + RequireValid guards enforce a floor and per-case non-vacuity.
+# The representative case in each arm is structurally rich (multiple items/results)
+# so its property assertion can actually fail; the boundary cases cover idempotence,
+# empty, and nil normalization. Transcript ids are canonical lowercase-hex UUIDs
+# chosen so id-1 < id-2 < id-3 lexically, so ordering assertions are deterministic.
+
+# round_trip: a request whose items must survive a JSON marshal then unmarshal
+# unchanged after the constructor canonicalizes them, with nil annotation sets
+# normalized to non-null empty arrays.
+round_trip:
+  cases:
+    - name: a multi-item request survives a JSON round trip
+      input:
+        items:
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_hash: "content-2"
+            annotation_hashes: ["b2", "b1", "b1"]
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_hash: "content-1"
+            annotation_hashes: ["a2", "a1"]
+      expected: {}
+      classification: must-pass
+      provenance:
+        source: requirement
+        ref: "a marshaled then unmarshaled request returns every id, content hash, and annotation set unchanged"
+      mutation:
+        description: "carried two items with distinct annotation sets so a dropped or reordered item on the wire would be caught"
+    - name: a nil annotation set normalizes to a non-null empty array
+      input:
+        items:
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_hash: "content-1"
+            annotation_hashes: ["a1"]
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_hash: "content-2"
+      expected: {}
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "an item given a nil annotation set must serialize as an empty array, never JSON null (the nullable:false wire contract)"
+      mutation:
+        description: "left one item's annotation set unset so the nil-to-empty normalization is exercised alongside a populated item"
+
+# canonical: items given out of transcriptId order with unsorted or duplicated
+# annotation sets; the constructor must order items by id and sort + de-duplicate
+# each set. The boundary case covers idempotence on an already-canonical input.
+canonical:
+  cases:
+    - name: items are ordered by id and each annotation set sorted and de-duplicated
+      input:
+        items:
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_hash: "c2"
+            annotation_hashes: ["b", "b", "a"]
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_hash: "c1"
+            annotation_hashes: ["z", "y", "y"]
+      expected:
+        order:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+        annotation_sets:
+          "11111111-1111-1111-1111-111111111111": ["y", "z"]
+          "22222222-2222-2222-2222-222222222222": ["a", "b"]
+      classification: must-pass
+      provenance:
+        source: requirement
+        ref: "the constructor canonicalizes: items ordered by transcriptId, each annotation set sorted and de-duplicated as a set"
+      mutation:
+        description: "gave two out-of-order items with unsorted and duplicated sets so a missing sort, dedup, or ordering step would be caught"
+    - name: an already-canonical request is unchanged
+      input:
+        items:
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_hash: "c1"
+            annotation_hashes: ["y", "z"]
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_hash: "c2"
+            annotation_hashes: ["a", "b"]
+      expected:
+        order:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+        annotation_sets:
+          "11111111-1111-1111-1111-111111111111": ["y", "z"]
+          "22222222-2222-2222-2222-222222222222": ["a", "b"]
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "canonicalization is idempotent: an already-ordered, already-sorted request is a no-op"
+      mutation:
+        description: "fed an already-canonical two-item request so a spurious reorder or set mutation on canonical input would be caught"
+
+# orders_by_transcript_id: results given out of order; the constructor must order
+# them by transcriptId and return a non-null slice. Boundary cases cover idempotence and the
+# empty-to-non-null normalization.
+orders_by_transcript_id:
+  cases:
+    - name: results are ordered by id regardless of input order
+      input:
+        results:
+          - transcript_id: "33333333-3333-3333-3333-333333333333"
+            content_current: true
+            annotations_current: true
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_current: false
+            annotations_current: true
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_current: true
+            annotations_current: false
+      expected:
+        order:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+          - "33333333-3333-3333-3333-333333333333"
+      classification: must-pass
+      provenance:
+        source: requirement
+        ref: "the constructor orders results by transcriptId regardless of the order they were supplied in"
+      mutation:
+        description: "supplied three results in scrambled order so a missing or wrong sort would be caught"
+    - name: already-ordered results are unchanged
+      input:
+        results:
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_current: true
+            annotations_current: true
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_current: false
+            annotations_current: true
+      expected:
+        order:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "ordering is idempotent: already-ordered results stay put"
+      mutation:
+        description: "fed two already-ordered results so a spurious reorder on canonical input would be caught"
+    - name: an empty result set normalizes to a non-null empty array
+      input:
+        results: []
+      expected:
+        order: []
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "an empty response must be a non-null empty array, so clients can range over it without a nil check"
+      mutation:
+        description: "gave no results so the empty-to-non-null normalization is exercised"
+
+# withheld_by_omission: the client asked about several ids; the server answers only
+# the pullable ids. A non-pullable id must be ABSENT from the results AND from the
+# marshaled bytes (never echoed with a marker), so the batch cannot become an
+# existence or currency oracle. Cases cover some, all, and none withheld.
+withheld_by_omission:
+  cases:
+    - name: some ids withheld are absent from the results and the bytes
+      input:
+        results:
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_current: true
+            annotations_current: true
+          - transcript_id: "33333333-3333-3333-3333-333333333333"
+            content_current: false
+            annotations_current: false
+      expected:
+        present:
+          - "11111111-1111-1111-1111-111111111111"
+          - "33333333-3333-3333-3333-333333333333"
+        absent:
+          - "22222222-2222-2222-2222-222222222222"
+      classification: must-pass
+      provenance:
+        source: requirement
+        ref: "a non-pullable id is withheld by omission: absent from the results and never echoed in the response bytes"
+      mutation:
+        description: "answered two pullable ids and withheld a third, whose id must appear nowhere in the marshaled response"
+    - name: all ids withheld leave an empty response that leaks no asked id
+      input:
+        results: []
+      expected:
+        present: []
+        absent:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "when every asked id is non-pullable the response is empty and still leaks no id in its bytes"
+      mutation:
+        description: "withheld both asked ids so the empty response is checked to echo neither"
+    - name: no ids withheld answers every asked id
+      input:
+        results:
+          - transcript_id: "11111111-1111-1111-1111-111111111111"
+            content_current: true
+            annotations_current: true
+          - transcript_id: "22222222-2222-2222-2222-222222222222"
+            content_current: true
+            annotations_current: true
+      expected:
+        present:
+          - "11111111-1111-1111-1111-111111111111"
+          - "22222222-2222-2222-2222-222222222222"
+        absent: []
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: "when every asked id is pullable all are answered and none are withheld"
+      mutation:
+        description: "answered both asked ids so the all-present path is exercised with no withheld id"
