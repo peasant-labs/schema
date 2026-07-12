@@ -186,6 +186,27 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("add pull annotations operation: %w", err)
 	}
 
+	// POST /api/v1/pull/transcripts/skip-gate. Batch currency check: the client
+	// sends, per transcript it holds, the id + the content-hash it holds + its own
+	// annotation-hash set, and receives per PULLABLE id {contentCurrent,
+	// annotationsCurrent}, so it can skip re-pulling unchanged transcripts. A
+	// non-pullable id is WITHHELD by omission from results (404-not-403 spirit) so
+	// the batch cannot become a currency oracle over ids the caller cannot pull.
+	skipGateOC, err := r.NewOperationContext(http.MethodPost, "/api/v1/pull/transcripts/skip-gate")
+	if err != nil {
+		return nil, fmt.Errorf("new pull skip-gate operation: %w", err)
+	}
+	skipGateOC.AddReqStructure(new(schema.PullSkipGateRequest))
+	skipGateOC.AddRespStructure(new(schema.PullSkipGateResponse))
+	skipGateOC.SetDescription("Batch currency check for a pulling client: per transcript it holds, send the " +
+		"id, the content-hash it holds, and its own annotation-hash set; receive per pullable id " +
+		"{contentCurrent, annotationsCurrent}. Non-pullable ids are withheld by omission from results.")
+	skipGateOC.SetID("pullSkipGate")
+	skipGateOC.SetTags("pull")
+	if err := r.AddOperation(skipGateOC); err != nil {
+		return nil, fmt.Errorf("add pull skip-gate operation: %w", err)
+	}
+
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
 	// Provider, Role, EntryType, and all composite types.

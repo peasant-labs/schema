@@ -3,6 +3,33 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0-rc4] - 2026-07-10
+
+Additive contract change: the pull skip-gate surface. The Village API spec bumps to **0.5.0**
+(additive = minor); the retired 0.4.0 specs are retained byte-frozen. No breaking change; no existing
+wire shape is altered.
+
+### Added
+
+- **Pull skip-gate wire types + endpoint (`POST /api/v1/pull/transcripts/skip-gate`).** A pulling
+  client sends, per transcript it holds, the id + the content-hash it holds + its own annotation-hash
+  set (`PullSkipGateRequest` / `PullSkipGateItem`), and receives per pullable id
+  `{contentCurrent, annotationsCurrent}` (`PullSkipGateResponse` / `PullSkipGateResult`), so it can
+  skip re-pulling transcripts and annotations that have not diverged. Only held hashes travel, never
+  content. A non-pullable id's currency is withheld by omission from the results (the caller receives
+  at most the ids it sent; an absent id is unanswered), so the batch cannot become an
+  existence/currency oracle over ids the caller cannot pull. Constructors canonicalize the request and
+  response (per-item annotation set sorted + de-duplicated, entries ordered by transcriptId, non-null
+  arrays), mirroring the annotation-manifest skip-gate precedent. The Village API spec bumps to 0.5.0;
+  the 0.4.0 goldens are frozen under the retired-spec immutability guard.
+
+### Changed
+
+- **Skip-gate tests adopt the segmented multi-axis fixture convention.** The skip-gate corpus becomes a
+  typed struct of four named `testcase.Corpus` arms (round-trip, canonical, ordering, withheld), each
+  guarded by `assert.RequireMin` + the new `assert.RequireValid`, so every case carries provenance +
+  mutation metadata and the withheld byte-non-leak is asserted per case. Test-only; no wire change.
+
 ## [v0.1.0-rc3] — 2026-07-08
 
 Tooling + CI release candidate — **no wire-contract change from rc2** (the OpenAPI specs and the
