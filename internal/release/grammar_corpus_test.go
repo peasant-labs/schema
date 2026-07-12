@@ -6,8 +6,8 @@ package release_test
 // (Corpus.Validate enforces non-vacuity), and each suite guards coverage two
 // ways. An EXACT case-count control catches a silent drop or a stray add (a
 // min-floor RequireMin would pass a drop that stays above the floor). Because an
-// exact count cannot see a NET-SAME swap (drop a real case, add a filler, count
-// unchanged), a lean present-by-value coverage check asserts the load-bearing
+// exact count cannot see a count-preserving swap (drop a real case, add a filler,
+// count unchanged), a lean value-based coverage assertion checks the load-bearing
 // cases are still there. All prior assertions from the pre-migration table tests
 // are preserved.
 
@@ -44,7 +44,7 @@ func TestVersionKindBaseIsRC(t *testing.T) {
 		t.Fatalf("load version_kind corpus: %v", err)
 	}
 	// Exact case-count control: a silent drop or a stray add reddens (a min floor
-	// would not). It cannot see a net-same swap, so the value-coverage check below
+	// would not). It cannot see a count-preserving swap, so the value-coverage check below
 	// guards the load-bearing cases.
 	if got := len(corpus.Cases); got != 3 {
 		t.Fatalf("version_kind corpus has %d cases, want exactly 3", got)
@@ -53,7 +53,7 @@ func TestVersionKindBaseIsRC(t *testing.T) {
 		t.Fatalf("version_kind corpus is under-populated: %v", err)
 	}
 	// Value coverage: all three load-bearing cases must remain present BY INPUT
-	// VALUE, so a net-same swap that drops any of them reddens. For this 3-case
+	// VALUE, so a count-preserving swap that drops any of them reddens. For this 3-case
 	// corpus the set is complete-but-minimal, each input exercising a distinct
 	// behavior: the final case (v0.1.0, the only IsRC=false path), the rc case
 	// (v0.1.0-rc1), and the multi-digit-rc boundary case (v3.2.1-rc9).
@@ -98,7 +98,7 @@ func TestParseTag(t *testing.T) {
 		t.Fatalf("parse_tag corpus is under-populated: %v", err)
 	}
 	// Value coverage: the load-bearing must-fail inputs must remain present by
-	// value, so a net-same swap that drops a real negative (for example the
+	// value, so a count-preserving swap that drops a real negative (for example the
 	// namespaced tag that must never parse as a release) reddens.
 	present := map[string]bool{}
 	for _, c := range corpus.Cases {

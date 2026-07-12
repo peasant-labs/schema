@@ -294,9 +294,10 @@ The two worked migrations are the reference examples.
 grammar corpora onto the standard (`TestVersionKindBaseIsRC`, `TestParseTag`),
 loading through `testcase.LoadCorpus` and preserving every pre-migration
 assertion. Each guards coverage two ways: an exact case-count control (a min-floor
-would pass a silent drop that stays above the floor) plus a lean present-by-value
-check (an exact count cannot see a net-same swap that drops a real case and adds a
-filler). The older `versions.yaml` corpus (`new_version` / `parse_title`)
+would pass a silent drop that stays above the floor) plus a lean value-based
+coverage assertion (an exact count cannot see a count-preserving swap that drops a
+real case and adds a filler). The older `versions.yaml` corpus (`new_version` /
+`parse_title`)
 deliberately stays on its ad-hoc `loadGrammarFixtures` loader; `testcase` is the
 generalization new corpora adopt, not a forced rewrite of every existing family.
 
