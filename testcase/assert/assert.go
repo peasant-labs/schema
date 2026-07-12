@@ -21,3 +21,17 @@ func RequireMin[I any, E any](t *testing.T, corpus testcase.Corpus[I, E], n int)
 		t.Fatalf("RequireMin: %v", err)
 	}
 }
+
+// RequireValid fails the test (t.Fatalf) unless every case in the corpus is
+// non-vacuous: an in-set classification and provenance source, a non-empty
+// provenance ref, and a non-empty mutation description. It is the loud,
+// testing-side wrapper around the pure Corpus.Validate, symmetric to RequireMin
+// around CheckMin: the validity logic lives in Validate so it can be
+// negative-tested without a *testing.T. A guard call names the arm it guards by
+// its call site, so a segmented fixture pairs it with RequireMin per arm.
+func RequireValid[I any, E any](t *testing.T, corpus testcase.Corpus[I, E]) {
+	t.Helper()
+	if err := corpus.Validate(); err != nil {
+		t.Fatalf("RequireValid: %v", err)
+	}
+}

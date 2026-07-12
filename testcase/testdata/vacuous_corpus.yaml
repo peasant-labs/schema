@@ -1,0 +1,43 @@
+# A deliberately VACUOUS corpus: the negative-control fixture for RequireValid.
+# Each case is under-populated in exactly one of the four ways Corpus.Validate
+# rejects, with every other field left valid so the case fails Validate only on
+# its named defect. Loading succeeds (the fields are well-typed); Validate must
+# reject every case, so RequireValid reddens on this fixture. Do NOT populate
+# these cases: their whole purpose is to be rejected.
+cases:
+  - name: out-of-set classification is rejected
+    input: "x"
+    expected: true
+    classification: sometimes-pass
+    provenance:
+      source: manual
+      ref: "the classification is outside the closed must-pass/must-fail set"
+    mutation:
+      description: "replaced the classification with a value the closed set never lists"
+  - name: out-of-set provenance source is rejected
+    input: "x"
+    expected: true
+    classification: must-pass
+    provenance:
+      source: hearsay
+      ref: "the provenance source is outside the closed set"
+    mutation:
+      description: "replaced the provenance source with a value outside the known sources"
+  - name: empty provenance ref is rejected
+    input: "x"
+    expected: true
+    classification: must-pass
+    provenance:
+      source: manual
+      ref: ""
+    mutation:
+      description: "cleared the provenance ref so the case cites no reason to exist"
+  - name: empty mutation description is rejected
+    input: "x"
+    expected: true
+    classification: must-pass
+    provenance:
+      source: manual
+      ref: "a case with no change under test is vacuous"
+    mutation:
+      description: ""

@@ -98,9 +98,12 @@ Test cases live in `testdata/*.yaml` fixtures, never as inline case tables in
 `_test.go`. The canonical form is the `testcase` corpus package: a generic
 `Case[I, E]` / `Corpus[I, E]` with closed-set classification and provenance plus
 mutation metadata, a pure loader, and pure non-vacuity validators, with the
-`*testing.T` seam split into `testcase/assert`. New corpora adopt it; `TESTING.md`
-documents the standard and every gate behind it. A single contract change should
-update one YAML corpus, not several inline tables.
+`*testing.T` seams (`RequireMin`, `RequireValid`) split into `testcase/assert`.
+New corpora adopt it; a feature whose fixtures split into heterogeneous behavioral
+arms uses the segmented form (a typed struct of named per-arm corpora, each
+guarded by `RequireMin` + `RequireValid`). `TESTING.md` documents the standard,
+the segmented convention, and every gate behind it. A single contract change
+should update one YAML corpus, not several inline tables.
 
 ## Codegen and freshness
 
