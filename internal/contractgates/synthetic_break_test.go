@@ -802,6 +802,15 @@ func Added() string { return "added" }
 // write. No real go-apidiff binary is needed.
 func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 	skipIfMissing(t, "bash")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf(
+			"resolve bash for TestGoAPIDiffGateRunnerFailClosed after its interpreter precondition: %v; "+
+				"the hermetic fake go-apidiff cannot be constructed or executed, so the caller cannot verify that the contract gate fails closed; "+
+				"make bash available on PATH and rerun the test",
+			err,
+		)
+	}
 
 	dir := t.TempDir()
 	root := moduleRoot(t)
@@ -824,7 +833,7 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 	if err := os.MkdirAll(binDir, 0o755); err != nil {
 		t.Fatalf("mkdir bin: %v", err)
 	}
-	shim := "#!/usr/bin/env bash\n" +
+	shim := "#!" + bashPath + "\n" +
 		"printf '%s\\n' 'example.com/x'\n" +
 		"printf '%s\\n' '  Incompatible changes:'\n" +
 		"exit 0\n"

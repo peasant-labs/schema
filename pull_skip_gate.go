@@ -49,10 +49,12 @@ type PullSkipGateItem struct {
 // This is enforced in two distinct places. The RESPONSE SHAPE carries no denial or
 // marker field a withheld id could ride on: it is exactly {results:
 // [{transcriptId, contentCurrent, annotationsCurrent}]}, checked by this module's
-// exact-key-set response test, so adding such a field reddens. The actual OMISSION
-// of non-pullable ids from Results is the village handler's pull-scoping test,
-// since only the server knows which ids are pullable; this constructor merely
-// canonicalizes the entries it is given and never invents one.
+// exact-key-set response test, so adding and populating a wire-visible extra field
+// reddens the assertion. An inert zero-valued `omitempty` field is not emitted and
+// is outside this check. The actual OMISSION of non-pullable ids from Results is
+// the village handler's pull-scoping test, since only the server knows which ids
+// are pullable; this constructor merely canonicalizes the entries it is given and
+// never invents one.
 //
 // This type is ADDITIVE: it introduces a new endpoint's response shape and does
 // not alter any existing pull/publish/annotation-push wire contract.
