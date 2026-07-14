@@ -523,11 +523,13 @@ func TestPullSkipGateResponse_WithheldByOmission(t *testing.T) {
 
 // TestPullSkipGateResponse_ExactShape enforces the response SHAPE at the type level:
 // the marshaled response has EXACTLY {"results"} at the top level and each result
-// has EXACTLY {"transcriptId","contentCurrent","annotationsCurrent"}, so adding any
-// field to PullSkipGateResponse or PullSkipGateResult reddens here, not merely the
-// freshness gate. This is the structural half of the leak-free contract: the wire
-// carries no denial or marker field a withheld id could ride on. The behavioral
-// omission of non-pullable ids is village's handler test.
+// has EXACTLY {"transcriptId","contentCurrent","annotationsCurrent"}, so adding and
+// populating a wire-visible extra field on PullSkipGateResponse or
+// PullSkipGateResult reddens here, not merely the freshness gate. An inert
+// zero-valued `omitempty` field is not emitted and is outside this assertion. This
+// is the structural half of the leak-free contract: the wire carries no denial or
+// marker field a withheld id could ride on. The behavioral omission of
+// non-pullable ids is village's handler test.
 func TestPullSkipGateResponse_ExactShape(t *testing.T) {
 	t.Parallel()
 	fx := LoadSkipGateFixtures(t)
