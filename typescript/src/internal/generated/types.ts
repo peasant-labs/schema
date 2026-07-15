@@ -237,6 +237,7 @@ export type components = {
         CommitRef: {
             hasSession: boolean;
             hash: string;
+            sessionIds: components["schemas"]["SessionID"][] | null;
             subject: string;
             timeMs?: (null | number) | null;
         };
@@ -483,6 +484,10 @@ export type components = {
          * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
          */
         ProjectHash: string;
+        ProjectResolutionPayload: {
+            project: string;
+            projectHash: string;
+        };
         ProjectSummariesPayload: {
             projects: components["schemas"]["ProjectSummary"][] | null;
         };
@@ -694,6 +699,7 @@ export type components = {
             projectHash: string;
             recentCommits: components["schemas"]["CommitRef"][] | null;
             repoFound: boolean;
+            sessions: components["schemas"]["TimelineSessionRef"][] | null;
         };
         ReviewSuggestion: {
             daysSince: number;
@@ -742,8 +748,11 @@ export type components = {
             snippet: string;
         };
         ServerMessage: {
+            axis?: string;
             data?: unknown;
+            id?: string;
             message?: string;
+            topic?: string;
             type: string;
             version?: string;
         };
@@ -924,6 +933,13 @@ export type components = {
         TaxonomyNode: {
             class: string;
             families: components["schemas"]["TaxonomyFamilyNode"][] | null;
+        };
+        TimelineSessionRef: {
+            harness: components["schemas"]["Harness"];
+            hasCommitBinding: boolean;
+            sessionId: components["schemas"]["SessionID"];
+            startMs?: (null | number) | null;
+            title: string;
         };
         TimestampInfo: {
             /** Format: int64 */

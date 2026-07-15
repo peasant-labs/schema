@@ -6,3 +6,4 @@ subpaths:
   - "@peasant-labs/schema/testcase"
   - "@peasant-labs/schema/fixtures"
   - "@peasant-labs/schema/fixtures/quality"
+  - "@peasant-labs/schema/fixtures/timeline"

@@ -404,8 +404,11 @@ type ClientMessage struct {
 
 // ServerMessage is a message sent from the server to the browser via WebSocket.
 type ServerMessage struct {
-	Type    MessageType `json:"type"`
-	Data    any         `json:"data,omitempty"`
-	Message string      `json:"message,omitempty"` // for error type
-	Version string      `json:"version,omitempty"` // for connected type
+	Type    MessageType    `json:"type"`
+	Data    any            `json:"data,omitempty"`
+	Message string         `json:"message,omitempty"` // for error type
+	Version string         `json:"version,omitempty"` // for connected type
+	Topic   ChannelTopic   `json:"topic,omitempty"`   // failed subscription topic for error type
+	ID      string         `json:"id,omitempty"`      // failed topic identity, when applicable
+	Axis    AnnotationAxis `json:"axis,omitempty"`    // failed annotation axis, when applicable
 }

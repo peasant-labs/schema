@@ -5,6 +5,8 @@ files:
   - dist/fixtures.js
   - dist/fixtures/quality.d.ts
   - dist/fixtures/quality.js
+  - dist/fixtures/timeline.d.ts
+  - dist/fixtures/timeline.js
   - dist/index.d.ts
   - dist/index.js
   - dist/internal/generated/local-api.d.ts

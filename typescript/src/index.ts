@@ -2,7 +2,7 @@
 import type { components as TypesComponents } from "./internal/generated/types.js";
 
 export const VillageAPIVersion = "0.5.0" as const;
-export const PeasantLocalAPIVersion = "0.2.0" as const;
+export const PeasantLocalAPIVersion = "0.3.0" as const;
 export const TypesVersion = "0.2.0" as const;
 
 export type ActivityEdge = TypesComponents["schemas"]["ActivityEdge"];
@@ -58,6 +58,7 @@ export type ModelID = TypesComponents["schemas"]["ModelID"];
 export type ModelInfo = TypesComponents["schemas"]["ModelInfo"];
 export type ProjectContext = TypesComponents["schemas"]["ProjectContext"];
 export type ProjectHash = TypesComponents["schemas"]["ProjectHash"];
+export type ProjectResolutionPayload = TypesComponents["schemas"]["ProjectResolutionPayload"];
 export type ProjectSummariesPayload = TypesComponents["schemas"]["ProjectSummariesPayload"];
 export type ProjectSummary = TypesComponents["schemas"]["ProjectSummary"];
 export type ProjectTasksPayload = TypesComponents["schemas"]["ProjectTasksPayload"];
@@ -95,6 +96,7 @@ export type SubagentRef = TypesComponents["schemas"]["SubagentRef"];
 export type TaskSummary = TypesComponents["schemas"]["TaskSummary"];
 export type TaxonomyFamilyNode = TypesComponents["schemas"]["TaxonomyFamilyNode"];
 export type TaxonomyNode = TypesComponents["schemas"]["TaxonomyNode"];
+export type TimelineSessionRef = TypesComponents["schemas"]["TimelineSessionRef"];
 export type TimestampInfo = TypesComponents["schemas"]["TimestampInfo"];
 export type ToolCallDetail = TypesComponents["schemas"]["ToolCallDetail"];
 export type TranscriptContent = TypesComponents["schemas"]["TranscriptContent"];

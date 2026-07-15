@@ -317,6 +317,10 @@ types:
     disposition: catalog
     component: ProjectSummariesPayload
     reason: public wire or domain contract type
+  - go_name: ProjectResolutionPayload
+    disposition: catalog
+    component: ProjectResolutionPayload
+    reason: public wire or domain contract type
   - go_name: ProjectSummary
     disposition: catalog
     component: ProjectSummary
@@ -328,6 +332,10 @@ types:
   - go_name: ReviewListPayload
     disposition: catalog
     component: ReviewListPayload
+    reason: public wire or domain contract type
+  - go_name: TimelineSessionRef
+    disposition: catalog
+    component: TimelineSessionRef
     reason: public wire or domain contract type
   - go_name: TaskSummary
     disposition: catalog
@@ -569,6 +577,15 @@ types:
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable
   - go_name: QualityVariations
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: TimelineFixtureCorpus
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: TimelineFixtureExpected
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: TimelineFixtureInput
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable
   - go_name: EntryType

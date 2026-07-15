@@ -39,8 +39,8 @@ type retiredSpec struct {
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
 // released-versions-immutability guard.
 //
-// SCOPE (M-A): RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.2.0, village-api-0.4.0, types-0.1.0,
+// This registry covers RETIRED versions ONLY. CURRENT-generated specs
+// (peasantlocal-api-0.3.0, village-api-0.5.0, types-0.2.0,
 // publish-request-0.4.0) are deliberately EXCLUDED — they stay under the
 // codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
 // them from the Go source on every run. Pinning a current version's hash here would
@@ -67,6 +67,11 @@ var retiredSpecRegistry = []retiredSpec{
 		name:       "peasantlocal-api-0.1.0",
 		jsonSHA256: "40b31eb6816a96c1283b2854e76d94936198b56c6ee78f16f02d774566791aee",
 		yamlSHA256: "8c147003402e78f5a964135a689247c4876a2a980fcbd3be2c2bf6a553ce1b23",
+	},
+	{
+		name:       "peasantlocal-api-0.2.0",
+		jsonSHA256: "1d19fdb4a776e72153af2e0517ca32bbd8f239b99b9e6bc6a21e98ebb95b9743",
+		yamlSHA256: "fce12cf8a5211ca8318ff49f38a37ddcb8db5746734a5878cd6ec99a707c3fbe",
 	},
 	{
 		name:       "village-api-0.1.0",

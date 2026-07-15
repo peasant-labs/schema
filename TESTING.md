@@ -105,7 +105,7 @@ map) could not see.
 
 The same command regenerates the TypeScript catalogs with the exact
 `openapi-typescript` version pinned in `typescript/pnpm-lock.yaml`, then diffs
-the generated named facades, raw internal catalogs, and typed quality module.
+the generated named facades, raw internal catalogs, and typed quality and timeline modules.
 `TestGeneratedTypeScriptFilesFullyAccounted` independently asserts that no
 generated `.ts` file sits outside the known artifact set.
 
@@ -124,6 +124,13 @@ Quality fixture consumers do not parse YAML. `cmd/schema-gen` first calls the Go
 document, then renders immutable TypeScript constants and clone-returning
 accessors. TypeScript tests cover the five sessions, the named set, and the full
 variation catalog.
+
+The project timeline corpus uses the same schema-owned path. The Go
+`LoadTimelineFixtures` first validates the exact 14-case `testcase.Corpus`, its
+5 accepted and 9 rejected relationship cases, and its per-case provenance and
+mutation metadata. Generation then emits a typed clone-returning
+`/fixtures/timeline` module, so TypeScript consumers never reparse repository
+YAML or redefine the session-to-commit relationship contract.
 
 ### Retired-version immutability
 

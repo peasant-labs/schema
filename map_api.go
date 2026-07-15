@@ -1,5 +1,7 @@
 package schema
 
+import "fmt"
+
 // Map / Review wire contract (impl contract §2).
 //
 // These payloads back the five REST endpoints of the Map and Review surfaces
@@ -137,7 +139,7 @@ type MapNodeDetailPayload struct {
 	TaskCount     int         `json:"taskCount"`
 	LastTouchMs   *int64      `json:"lastTouchMs,omitempty"`
 	// DependsOn / UsedBy are the node's structural role, derived deterministically
-	// from the parsed import graph (Round 5.6 "what this area does"): the node IDs
+	// from the parsed import graph (what this area does): the node IDs
 	// this node imports, and those that import it. Most-connected first, capped.
 	// Empty when there is no parsed graph (activity-only) or no edges.
 	DependsOn     []string      `json:"dependsOn"`
@@ -188,10 +190,16 @@ func NewTaskSummary(sessionID string, entryIndex int) TaskSummary {
 
 // CommitRef is lightweight commit metadata for time strips and rail panels.
 type CommitRef struct {
-	Hash       string `json:"hash"`
-	Subject    string `json:"subject"`
-	TimeMs     *int64 `json:"timeMs,omitempty"`
-	HasSession bool   `json:"hasSession"` // a recorded session is bound to it
+	Hash       string      `json:"hash" yaml:"hash"`
+	Subject    string      `json:"subject" yaml:"subject"`
+	TimeMs     *int64      `json:"timeMs,omitempty" yaml:"timeMs,omitempty"`
+	HasSession bool        `json:"hasSession" yaml:"hasSession"` // compatibility mirror of len(SessionIDs) > 0
+	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds"` // authoritative session_commits bindings
+}
+
+// NewCommitRef returns commit metadata with a non-nil session ID array.
+func NewCommitRef(hash, subject string) CommitRef {
+	return CommitRef{Hash: hash, Subject: subject, SessionIDs: []SessionID{}}
 }
 
 // --- Tasks (Tasks lens + file filter) ---
@@ -239,16 +247,40 @@ type ProjectSummary struct {
 	OpenChanges   int    `json:"openChanges"` // local non-default branches not merged (0 when no repo)
 }
 
+// ProjectResolutionPayload resolves one explicitly requested project display
+// identity to its opaque hash without enumerating sibling projects. It exists
+// for stable deep links when discovery lists are narrowed by user selection.
+type ProjectResolutionPayload struct {
+	Project     string `json:"project"`
+	ProjectHash string `json:"projectHash"`
+}
+
 // --- Review ---
 
 // ReviewListPayload lists a project's changes, served by
 // GET /api/v1/review/{projectHash}.
 type ReviewListPayload struct {
-	ProjectHash   string          `json:"projectHash"`
-	RepoFound     bool            `json:"repoFound"`
-	DefaultBranch string          `json:"defaultBranch,omitempty"`
-	Changes       []ChangeSummary `json:"changes"`       // open first, then merged
-	RecentCommits []CommitRef     `json:"recentCommits"` // default-branch, cap 200 (time strip)
+	ProjectHash   string               `json:"projectHash"`
+	RepoFound     bool                 `json:"repoFound"`
+	DefaultBranch string               `json:"defaultBranch,omitempty"`
+	Changes       []ChangeSummary      `json:"changes"`       // open first, then merged
+	RecentCommits []CommitRef          `json:"recentCommits"` // default-branch, cap 200 (time strip)
+	Sessions      []TimelineSessionRef `json:"sessions"`      // complete visible project timeline identities, including sessions not linked to displayed commits
+}
+
+// TimelineSessionRef is identity and display metadata for a recorded session
+// available to the project timeline. Producers order these references by
+// known startMs descending, then sessionId ascending; missing startMs follows
+// every known timestamp and is likewise ordered by sessionId. HasCommitBinding
+// is computed from the complete authoritative session_commits relation, not
+// merely the bounded default-branch commit window returned alongside it.
+// CommitRef.SessionIDs names bindings that are visible inside that window.
+type TimelineSessionRef struct {
+	SessionID        SessionID `json:"sessionId" yaml:"sessionId"`
+	Title            string    `json:"title" yaml:"title"`
+	Harness          Harness   `json:"harness" yaml:"harness"`
+	StartMs          *int64    `json:"startMs,omitempty" yaml:"startMs,omitempty"`
+	HasCommitBinding bool      `json:"hasCommitBinding" yaml:"hasCommitBinding"`
 }
 
 // NewReviewListPayload returns a ReviewListPayload with all slices
@@ -258,7 +290,64 @@ func NewReviewListPayload(projectHash string) *ReviewListPayload {
 		ProjectHash:   projectHash,
 		Changes:       []ChangeSummary{},
 		RecentCommits: []CommitRef{},
+		Sessions:      []TimelineSessionRef{},
 	}
+}
+
+// Validate checks the normalized timeline relationship and compatibility
+// invariants. It does not infer candidate or temporal associations.
+func (p ReviewListPayload) Validate() error {
+	if p.Changes == nil || p.RecentCommits == nil || p.Sessions == nil {
+		return fmt.Errorf("review list validation: changes, recentCommits, and sessions must be arrays; initialize the payload with NewReviewListPayload before serving it")
+	}
+	knownSessions := make(map[SessionID]TimelineSessionRef, len(p.Sessions))
+	for index, session := range p.Sessions {
+		if session.SessionID == "" {
+			return fmt.Errorf("review list validation: timeline session has an empty sessionId; producers must emit a stable session identity")
+		}
+		if _, exists := knownSessions[session.SessionID]; exists {
+			return fmt.Errorf("review list validation: duplicate timeline session %q; normalize sessions by sessionId before serving the payload", session.SessionID)
+		}
+		knownSessions[session.SessionID] = session
+		if index > 0 {
+			previous := p.Sessions[index-1]
+			outOfOrder := false
+			switch {
+			case previous.StartMs == nil && session.StartMs != nil:
+				outOfOrder = true
+			case previous.StartMs != nil && session.StartMs != nil && *previous.StartMs < *session.StartMs:
+				outOfOrder = true
+			case (previous.StartMs == nil && session.StartMs == nil) || (previous.StartMs != nil && session.StartMs != nil && *previous.StartMs == *session.StartMs):
+				outOfOrder = previous.SessionID > session.SessionID
+			}
+			if outOfOrder {
+				return fmt.Errorf("review list validation: timeline sessions %q and %q violate canonical ordering at index %d; producers must sort known startMs descending, break equal timestamps by sessionId ascending, and place missing startMs last", previous.SessionID, session.SessionID, index)
+			}
+		}
+	}
+	for _, commit := range p.RecentCommits {
+		if commit.SessionIDs == nil {
+			return fmt.Errorf("review list validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
+		}
+		if commit.HasSession != (len(commit.SessionIDs) > 0) {
+			return fmt.Errorf("review list validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", commit.Hash, commit.HasSession, len(commit.SessionIDs))
+		}
+		seen := make(map[SessionID]bool, len(commit.SessionIDs))
+		for _, sessionID := range commit.SessionIDs {
+			if seen[sessionID] {
+				return fmt.Errorf("review list validation: commit %q repeats sessionId %q; deduplicate bindings before serving the payload", commit.Hash, sessionID)
+			}
+			seen[sessionID] = true
+			session, exists := knownSessions[sessionID]
+			if !exists {
+				return fmt.Errorf("review list validation: commit %q references unknown sessionId %q; include it once in sessions or remove the stale binding", commit.Hash, sessionID)
+			}
+			if !session.HasCommitBinding {
+				return fmt.Errorf("review list validation: commit %q references sessionId %q but that session has hasCommitBinding=false; set hasCommitBinding=true because a visible commit reference proves an authoritative binding", commit.Hash, sessionID)
+			}
+		}
+	}
+	return nil
 }
 
 // ChangeSummary is one row of the Review list: a local branch measured
@@ -277,7 +366,7 @@ type ChangeSummary struct {
 	Merged       bool   `json:"merged"`
 	MergedAtMs   *int64 `json:"mergedAtMs,omitempty"`
 	// Reverted is true when this change was merged and later undone by a
-	// `git revert` on the default branch (git-native signal only). Round 4.5.
+	// `git revert` on the default branch (git-native signal only).
 	Reverted bool `json:"reverted,omitempty"`
 
 	// Graph anchors (Changes graph): how this row attaches to lane 0
@@ -305,11 +394,11 @@ type ChangeDetailPayload struct {
 	UnrecordedCommits []CommitRef     `json:"unrecordedCommits"`
 	// Unusual holds NEUTRAL rate-elevation observations vs the project baseline
 	// (e.g. more retry loops per conversation than usual) — facts, never a
-	// verdict or grade (Round 4.4).
+	// verdict or grade.
 	Unusual []UnusualSignal `json:"unusual"`
 	// Frictions holds NEUTRAL recurring-friction counts keyed by (kind, file):
 	// "this kind of friction touched this file N times across M conversations"
-	// — facts for orientation, never a verdict (Round 5.1).
+	// Facts are for orientation, never a verdict.
 	Frictions    []FrictionCluster `json:"frictions"`
 	LinesAdded   int               `json:"linesAdded"`
 	LinesRemoved int               `json:"linesRemoved"`
@@ -350,7 +439,7 @@ type UnusualSignal struct {
 // FrictionCluster is a NEUTRAL count of a recurring friction signal keyed to a
 // file: "this kind of friction touched this file N times across M
 // conversations". A fact for orientation — the surface shows, it does not grade
-// (Round 5.1). Kind is a stable slug ("retryLoop") so more kinds can be added
+// Kind is a stable slug ("retryLoop") so more kinds can be added
 // without a breaking change.
 type FrictionCluster struct {
 	Kind     string `json:"kind"`     // signal slug, e.g. "retryLoop"
@@ -381,7 +470,7 @@ func NewMapSlice() MapSlice {
 // FileChange is one file-level delta of a change (branch vs merge-base).
 // LinesAdded/LinesRemoved are the per-file numstat churn (0 for binary files or
 // when numstat is unavailable) — the change-weight treemap's sizing input
-// (Round 5.3). Always present; 0 is meaningful, so no omitempty.
+// Always present; 0 is meaningful, so no omitempty.
 type FileChange struct {
 	Path         string  `json:"path"`
 	Status       string  `json:"status"` // "M" | "A" | "D" | "R"

@@ -196,6 +196,16 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/projects/resolve?name=<display-identity>
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/projects/resolve",
+		"resolveProject", "Resolve one explicit project display identity without enumerating sibling projects.", []string{"map"},
+		new(struct {
+			Name string `query:"name" required:"true" description:"Exact project display identity from a saved route"`
+		}),
+		new(schema.ProjectResolutionPayload)); err != nil {
+		return nil, err
+	}
+
 	// GET /api/v1/review/{projectHash}
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/review/{projectHash}",
 		"listReviewChanges", "List a project's changes (open branches, then merged).", []string{"review"},

@@ -124,6 +124,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Resolve one explicit project display identity without enumerating sibling projects. */
+        get: operations["resolveProject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/summary": {
         parameters: {
             query?: never;
@@ -435,6 +452,7 @@ export type components = {
         SchemaCommitRef: {
             hasSession?: boolean;
             hash?: string;
+            sessionIds?: components["schemas"]["SchemaSessionID"][] | null;
             subject?: string;
             timeMs?: null | number;
         };
@@ -566,6 +584,10 @@ export type components = {
             tui?: string[];
             web?: string[];
         };
+        SchemaProjectResolutionPayload: {
+            project?: string;
+            projectHash?: string;
+        };
         SchemaProjectSummariesPayload: {
             projects?: components["schemas"]["SchemaProjectSummary"][] | null;
         };
@@ -626,6 +648,7 @@ export type components = {
             projectHash?: string;
             recentCommits?: components["schemas"]["SchemaCommitRef"][] | null;
             repoFound?: boolean;
+            sessions?: components["schemas"]["SchemaTimelineSessionRef"][] | null;
         };
         /**
          * Role
@@ -685,6 +708,16 @@ export type components = {
             turns?: components["schemas"]["SchemaTurnDetail"][] | null;
             workingDirectory?: string;
         };
+        /**
+         * Session ID
+         * Format: session-id
+         * @description Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})
+         * @example 99d59925-36bc-424c-a789-8be54d9702ba
+         * @example agent-a3aee4f
+         * @example ses_3cd91f52effeXd3QAJ54jOyzv5
+         * @example sess_3cd91f52effeXd3QAJ54jOyzv5
+         */
+        SchemaSessionID: string;
         /**
          * Session Outcome
          * @description Resolution status of the session
@@ -758,6 +791,13 @@ export type components = {
             startMs?: null | number;
             title?: string;
         };
+        SchemaTimelineSessionRef: {
+            harness?: components["schemas"]["BestiaryHarness"];
+            hasCommitBinding?: boolean;
+            sessionId?: components["schemas"]["SchemaSessionID"];
+            startMs?: null | number;
+            title?: string;
+        };
         SchemaToolCallDetail: {
             arguments?: string;
             durationMs?: null | number;
@@ -825,8 +865,11 @@ export type components = {
          */
         SchemaValueDomainKind: "enumerated" | "described";
         ServerMessage: {
+            axis?: string;
             data?: unknown;
+            id?: string;
             message?: string;
+            topic?: string;
             type?: string;
             version?: string;
         };
@@ -1057,6 +1100,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaProjectTasksPayload"];
+                };
+            };
+        };
+    };
+    resolveProject: {
+        parameters: {
+            query: {
+                /** @description Exact project display identity from a saved route */
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaProjectResolutionPayload"];
                 };
             };
         };

@@ -93,6 +93,18 @@ func generateTypeScript(moduleRoot string) error {
 		return err
 	}
 
+	timelineFixtures, err := schema.LoadTimelineFixtures()
+	if err != nil {
+		return fmt.Errorf("generate TypeScript timeline fixtures: canonical Go loader rejected testdata/local-api/timeline.yaml: %w", err)
+	}
+	timeline, err := renderTimelineFixtures(timelineFixtures)
+	if err != nil {
+		return err
+	}
+	if err := writeGeneratedFile(filepath.Join(packageRoot, "src", "fixtures", "timeline.ts"), timeline); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -132,6 +144,7 @@ func typeScriptGeneratedFiles(moduleRoot, packageRoot string) []string {
 	files := []string{
 		filepath.Join(packageRoot, "src", "index.ts"),
 		filepath.Join(packageRoot, "src", "fixtures", "quality.ts"),
+		filepath.Join(packageRoot, "src", "fixtures", "timeline.ts"),
 	}
 	for _, surface := range typeScriptSurfaces(moduleRoot, packageRoot) {
 		files = append(files, surface.rawOutput, surface.publicFile)
@@ -427,6 +440,27 @@ func renderQualityFixtures(fixtures *schema.QualityFixtures) ([]byte, error) {
 	out.WriteString("export function qualitySessionsForSet(fixtures: QualityFixtures, name: QualityFixtureSetName): QualitySession[] {\n")
 	out.WriteString("  const fixtureSet = setByName(fixtures, name);\n  if (fixtureSet === undefined) throw new Error(`unknown quality fixture set ${JSON.stringify(name)}`);\n")
 	out.WriteString("  return fixtureSet.cases.map((caseName) => {\n    const fixture = sessionByName(fixtures, caseName);\n    if (fixture === undefined) throw new Error(`quality fixture set ${JSON.stringify(name)} references unknown case ${JSON.stringify(caseName)}`);\n    return toQualitySession(fixture);\n  });\n}\n")
+	return []byte(out.String()), nil
+}
+
+func renderTimelineFixtures(fixtures schema.TimelineFixtureCorpus) ([]byte, error) {
+	payload, err := json.MarshalIndent(fixtures, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshal timeline fixtures for TypeScript: %w", err)
+	}
+
+	var out strings.Builder
+	out.WriteString(generatedTypeScriptHead)
+	out.WriteString("import type { CommitRef, TimelineSessionRef } from \"../index.js\";\n")
+	out.WriteString("import type { Case, Corpus } from \"../testcase.js\";\n\n")
+	out.WriteString("export interface TimelineFixtureInput {\n  sessions: TimelineSessionRef[];\n  commits: CommitRef[];\n}\n\n")
+	out.WriteString("export interface TimelineFixtureExpected {\n  errorContains?: string;\n}\n\n")
+	out.WriteString("export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected>;\n")
+	out.WriteString("export type TimelineFixtureCorpus = Corpus<TimelineFixtureInput, TimelineFixtureExpected>;\n\n")
+	out.WriteString("const canonicalTimelineFixtures: TimelineFixtureCorpus = ")
+	out.Write(payload)
+	out.WriteString(";\n\n")
+	out.WriteString("export function loadTimelineFixtures(): TimelineFixtureCorpus { return structuredClone(canonicalTimelineFixtures); }\n")
 	return []byte(out.String()), nil
 }
 

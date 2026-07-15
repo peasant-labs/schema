@@ -10,12 +10,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - An unpublished `@peasant-labs/schema` TypeScript package whose root is generated
   from the comprehensive Types 0.2 Go catalog. It mirrors the Go module with
   named wire types, runtime closed sets, frozen registries and guards, plus
-  `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`, and
-  `/fixtures/quality` subpaths. The package remains at
+  `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`,
+  `/fixtures/quality`, and `/fixtures/timeline` subpaths. The package remains at
   `0.0.0-development`; no publication workflow is enabled.
 - Cross-language testcase corpus helpers and Go-shaped typed quality-fixture accessors.
   The Go and TypeScript loaders share strict YAML cases, and consumers read
   generated quality data rather than parsing repository-relative YAML.
+- Normalized timeline session identities, authoritative many-to-many commit
+  bindings, and explicit project resolution in Peasant Local API 0.3.0. The
+  canonical 14-case relationship corpus is available to Go and TypeScript
+  consumers through schema-owned typed fixture loaders.
 
 ### Changed
 

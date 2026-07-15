@@ -69,19 +69,19 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.0-rc3` (GitHub **prerelease**) - `v0.1.0-rc1` and `v0.1.0-rc2` are also published prereleases |
+| Latest tag | `v0.1.0-rc5` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.5.0` · peasant local API `0.2.0` · types `0.2.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.5.0` · peasant local API `0.3.0` · types `0.2.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
 | Consumer | Language | How it pins / uses the contract |
 |---|---|---|
-| **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc3`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
-| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc3`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
+| **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc5`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
+| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
 | **TypeScript clients** (`@peasant-labs/schema`) | TypeScript | Consume generated named types and schema-owned fixtures from the unpublished package under `typescript/`. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
-> Both consumers now pin `rc3`. Because the module is normal `go get`-pinned, each
+> Both consumers now pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
 > re-pins; a re-pin is a one-line `go.mod` change plus `go mod tidy`.
 
@@ -102,7 +102,7 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Publish envelope** | `publish.go`, `publish_validate.go` | `PublishRequest`, `PublishResponse`, `ModelInfo`; the annotation push wire (`AnnotationPushItem` / `Request` / `Response`), `SchemaVersionResponse`; `ValidatePublishRequest` |
 | **Pull envelope** | `pull.go` | `TranscriptID`, `PullTranscriptInfo`, `PullListResponse`, `PullAnnotation` |
 | **Push content envelope** | `push_content.go` | `TranscriptContent` (self-describing, versioned blob body), `ContractVersion` / `PushContractVersion`, `ContentKind` |
-| **Map / Review REST** | `map_api.go` | `MapGraphPayload`, `MapNode`, `MapEdge`, `ActivityEdge`, `EdgeViolation`, `MapNodeDetailPayload`, `TaskSummary`, `CommitRef`, `ProjectTasksPayload`, `ProjectSummary`, `ReviewListPayload`, `ChangeSummary`, `ChangeDetailPayload`, `ChangeDiffPayload`, `FrictionCluster`, `FileChange`, `DiffHunk` |
+| **Map / Review REST** | `map_api.go` | `MapGraphPayload`, `MapNode`, `MapEdge`, `ActivityEdge`, `EdgeViolation`, `MapNodeDetailPayload`, `TaskSummary`, `CommitRef`, `TimelineSessionRef`, `ProjectResolutionPayload`, `ProjectTasksPayload`, `ProjectSummary`, `ReviewListPayload`, `ChangeSummary`, `ChangeDetailPayload`, `ChangeDiffPayload`, `FrictionCluster`, `FileChange`, `DiffHunk` |
 | **Search REST** | `search_api.go` | `SearchPayload`, `SearchResult` |
 | **Quality metrics** | `quality.go` | `QualityMetrics`, `QualitySession` (session stats + derived quality/cost signals) |
 | **Annotations** | `annotation.go`, `annotation_enums.go`, `annotation_manifest.go`, `annotation_registry.go`, `annotation_validate.go` | `AnnotationSummary`, `AnnotationTypeSummary`, `AnnotatorSummary`, `ValueDomain`, `Provenance`, `TaxonomyNode`, batch request/response types; the enums `AnnotatorKind`, `AnnotationStatus`, `TargetKind`, `ScaleKind`, `ValueDomainKind`, `AnnotationDatatype`, `TypeOrigin` |
@@ -207,7 +207,7 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
 | **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.5.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.3.0` |
 | **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.2.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
@@ -263,10 +263,10 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   proves the guard actually fires.
 
 Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0`, peasant local API `0.1.0`, and
+PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0`, peasant local API `0.1.0` / `0.2.0`, and
 types `0.1.0`. The
 still-generated current versions (village API `0.5.0`, PublishRequest `0.5.0`,
-peasant local API `0.2.0`, types `0.2.0`) live under the freshness gate instead.
+peasant local API `0.3.0`, types `0.2.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
@@ -281,7 +281,7 @@ Because the contract is a normal published, tagged Go module, a consumer pins **
 version**:
 
 ```bash
-go get github.com/peasant-labs/schema@v0.1.0-rc3
+go get github.com/peasant-labs/schema@v0.1.0-rc5
 ```
 
 That single pin replaces the old model of vendoring an in-tree copy of the types. It
@@ -326,8 +326,8 @@ The `typescript/` directory is the source of the future
 - `/types` projects that same canonical catalog, while `/local-api` and
   `/village-api` remain operation-specific document views;
 - `/testcase` mirrors the pure Go testcase model and strict YAML loader;
-- `/fixtures/quality` provides generated typed data loaded and validated by Go
-  at generation time.
+- `/fixtures/quality` and `/fixtures/timeline` provide generated typed data
+  loaded and validated by Go at generation time.
 
 Raw OpenAPI `components`, `paths`, and `operations` maps are generated internal
 inputs, not the primary public API. Canonical Types names preserve their Go

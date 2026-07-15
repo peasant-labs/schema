@@ -731,6 +731,12 @@ components:
           type: boolean
         hash:
           type: string
+        sessionIds:
+          items:
+            $ref: '#/components/schemas/SessionID'
+          type:
+          - array
+          - "null"
         subject:
           type: string
         timeMs:
@@ -743,6 +749,7 @@ components:
       - hash
       - subject
       - hasSession
+      - sessionIds
       type: object
     ContentKind:
       type:
@@ -1458,6 +1465,16 @@ components:
       pattern: ^[0-9a-f]{64}$
       title: Project Hash
       type: string
+    ProjectResolutionPayload:
+      properties:
+        project:
+          type: string
+        projectHash:
+          type: string
+      required:
+      - project
+      - projectHash
+      type: object
     ProjectSummariesPayload:
       properties:
         projects:
@@ -2169,11 +2186,18 @@ components:
           - "null"
         repoFound:
           type: boolean
+        sessions:
+          items:
+            $ref: '#/components/schemas/TimelineSessionRef'
+          type:
+          - array
+          - "null"
       required:
       - projectHash
       - repoFound
       - changes
       - recentCommits
+      - sessions
       type: object
     ReviewSuggestion:
       properties:
@@ -2288,8 +2312,14 @@ components:
       type: object
     ServerMessage:
       properties:
+        axis:
+          type: string
         data: {}
+        id:
+          type: string
         message:
+          type: string
+        topic:
           type: string
         type:
           type: string
@@ -2829,6 +2859,28 @@ components:
       required:
       - class
       - families
+      type: object
+    TimelineSessionRef:
+      properties:
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hasCommitBinding:
+          type: boolean
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        startMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        title:
+          type: string
+      required:
+      - sessionId
+      - title
+      - harness
+      - hasCommitBinding
       type: object
     TimestampInfo:
       properties:

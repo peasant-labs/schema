@@ -27,9 +27,10 @@ const (
 	VillageAPIVersion = "0.5.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
-	// + FrictionCluster = minor bump). The retired 0.1.0 spec is retained byte-frozen
-	// (no longer emitted) under the retired-versions immutability guard.
-	PeasantLocalAPIVersion = "0.2.0"
+	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
+	// timeline gained normalized session identities and authoritative many-to-many
+	// commit bindings. Prior versions stay byte-frozen.
+	PeasantLocalAPIVersion = "0.3.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical

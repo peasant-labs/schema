@@ -97,8 +97,8 @@ func (s ProvenanceSource) String() string { return string(s) }
 // Provenance records why a case exists: its source category plus a concrete,
 // non-empty reference (a requirement id, a bug link, an enum name, and so on).
 type Provenance struct {
-	Source ProvenanceSource `yaml:"source"`
-	Ref    string           `yaml:"ref"`
+	Source ProvenanceSource `json:"source" yaml:"source"`
+	Ref    string           `json:"ref" yaml:"ref"`
 }
 
 // Mutation records how a case was derived: the single change under test. For a
@@ -106,7 +106,7 @@ type Provenance struct {
 // negative case is never vacuous; for a must-pass case it names what the case
 // exercises.
 type Mutation struct {
-	Description string `yaml:"description"`
+	Description string `json:"description" yaml:"description"`
 }
 
 // Case is one generic test case: a named input with its expected output, a
@@ -114,17 +114,17 @@ type Mutation struct {
 // corpus traceable and non-vacuous. I is the input type, E the expected-output
 // type; both are decoded from YAML by the caller-chosen instantiation.
 type Case[I any, E any] struct {
-	Name           string         `yaml:"name"`
-	Input          I              `yaml:"input"`
-	Expected       E              `yaml:"expected"`
-	Classification Classification `yaml:"classification"`
-	Provenance     Provenance     `yaml:"provenance"`
-	Mutation       Mutation       `yaml:"mutation"`
+	Name           string         `json:"name" yaml:"name"`
+	Input          I              `json:"input" yaml:"input"`
+	Expected       E              `json:"expected" yaml:"expected"`
+	Classification Classification `json:"classification" yaml:"classification"`
+	Provenance     Provenance     `json:"provenance" yaml:"provenance"`
+	Mutation       Mutation       `json:"mutation" yaml:"mutation"`
 }
 
 // Corpus is an ordered collection of cases sharing an input/expected type.
 type Corpus[I any, E any] struct {
-	Cases []Case[I, E] `yaml:"cases"`
+	Cases []Case[I, E] `json:"cases" yaml:"cases"`
 }
 
 // LoadCorpus parses and validates a YAML corpus document into a typed Corpus. It

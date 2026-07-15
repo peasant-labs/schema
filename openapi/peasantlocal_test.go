@@ -28,8 +28,7 @@ func TestBuildPeasantLocalAPISpec_OpenAPI31(t *testing.T) {
 }
 
 // TestBuildPeasantLocalAPISpec_Version verifies info.version tracks the
-// single-source PeasantLocalAPIVersion const (bumped to 0.2.0 for the
-// Map/Review/Search surface), so the assertion is not stranded on a stale
+// single-source PeasantLocalAPIVersion const, so the assertion is not stranded on a stale
 // literal at the next bump.
 func TestBuildPeasantLocalAPISpec_Version(t *testing.T) {
 	spec, err := specpkg.BuildPeasantLocalAPISpec()
@@ -62,6 +61,26 @@ func TestBuildPeasantLocalAPISpec_RESTRoutes(t *testing.T) {
 		if !strings.Contains(yamlStr, route) {
 			t.Errorf("local spec missing route %q", route)
 		}
+	}
+}
+
+func TestBuildPeasantLocalAPISpec_ProjectResolverSurface(t *testing.T) {
+	spec, err := specpkg.BuildPeasantLocalAPISpec()
+	if err != nil {
+		t.Fatalf("BuildPeasantLocalAPISpec() error: %v", err)
+	}
+	yamlStr := specYAML(t, spec)
+	if !strings.Contains(yamlStr, "/api/v1/projects/resolve") {
+		t.Error("local spec resolver surface is missing its route")
+	}
+	if !strings.Contains(yamlStr, "operationId: resolveProject") {
+		t.Error("local spec resolver surface is missing its operation ID")
+	}
+	if !strings.Contains(yamlStr, "ProjectResolutionPayload") {
+		t.Error("local spec resolver surface is missing its response schema")
+	}
+	if !strings.Contains(yamlStr, "projectHash") {
+		t.Error("local spec resolver surface is missing the resolved project hash")
 	}
 }
 

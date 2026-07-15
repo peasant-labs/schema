@@ -234,3 +234,32 @@ func TestRenderQualityFixturesDeterministicAndComplete(t *testing.T) {
 func loadQualityFixturesForGenerator() (*schema.QualityFixtures, error) {
 	return schema.LoadQualityFixtures()
 }
+
+func TestRenderTimelineFixturesDeterministicAndComplete(t *testing.T) {
+	fixtures, err := schema.LoadTimelineFixtures()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := renderTimelineFixtures(fixtures)
+	if err != nil {
+		t.Fatalf("first render: %v", err)
+	}
+	second, err := renderTimelineFixtures(fixtures)
+	if err != nil {
+		t.Fatalf("second render: %v", err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatal("timeline TypeScript rendering is nondeterministic")
+	}
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := os.ReadFile(filepath.Join(root, "typescript", "src", "fixtures", "timeline.ts"))
+	if err != nil {
+		t.Fatalf("read generated timeline fixture module: %v", err)
+	}
+	if !bytes.Equal(first, generated) {
+		t.Fatal("generated timeline fixture module differs from an exact production render")
+	}
+}

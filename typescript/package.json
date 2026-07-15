@@ -39,6 +39,10 @@
     "./fixtures/quality": {
       "types": "./dist/fixtures/quality.d.ts",
       "default": "./dist/fixtures/quality.js"
+    },
+    "./fixtures/timeline": {
+      "types": "./dist/fixtures/timeline.d.ts",
+      "default": "./dist/fixtures/timeline.js"
     }
   },
   "scripts": {
