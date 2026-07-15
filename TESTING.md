@@ -33,10 +33,10 @@ make check                          # the authoritative quality gate (bare-go ru
 make test                           # go test -race ./...
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
-npm --prefix typescript run typecheck
-npm --prefix typescript test
-npm --prefix typescript run package:audit
-npm --prefix typescript run package:smoke
+pnpm --dir typescript run typecheck
+pnpm --dir typescript test
+pnpm --dir typescript run package:audit
+pnpm --dir typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
@@ -81,7 +81,7 @@ script) behind it.
 | TypeScript catalog completeness + collision safety | `cmd/schema-gen/typescript_test.go` | **Hard.** Every current OpenAPI component is named, and unequal normalized-name collisions stop generation. |
 | TypeScript generated-file accounting | `cmd/schema-gen/typescript_test.go`; `make freshness` | **Hard.** Every generated TypeScript source is known and byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
-| npm package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
+| Published package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
 ### Codegen freshness
 

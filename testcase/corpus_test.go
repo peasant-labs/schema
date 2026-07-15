@@ -24,6 +24,9 @@ var loadCasesYAML []byte
 //go:embed testdata/check_min_cases.yaml
 var checkMinCasesYAML []byte
 
+//go:embed testdata/validate_cases.yaml
+var validateCasesYAML []byte
+
 type checkMinInput struct {
 	Size    int `yaml:"size"`
 	Minimum int `yaml:"minimum"`
@@ -42,16 +45,38 @@ func validSubject() testcase.Case[string, bool] {
 	}
 }
 
-// mutatedSubject applies one field mutation to a fresh valid subject.
-func mutatedSubject(mutate func(*testcase.Case[string, bool])) testcase.Case[string, bool] {
-	c := validSubject()
-	mutate(&c)
-	return c
+type validateMutation string
+
+const (
+	validateUnmodified              validateMutation = "unmodified"
+	validateEmptyProvenanceRef      validateMutation = "empty-provenance-ref"
+	validateEmptyMutationDesc       validateMutation = "empty-mutation-description"
+	validateUnknownClassification   validateMutation = "unknown-classification"
+	validateUnknownProvenanceSource validateMutation = "unknown-provenance-source"
+)
+
+type validateInput struct {
+	Mutation validateMutation `yaml:"mutation"`
 }
 
-// validateCase is a dogfooded case ABOUT Case.Validate: its Input is the subject
-// case under test, its Expected is whether Validate should accept that subject.
-type validateCase = testcase.Case[testcase.Case[string, bool], bool]
+func subjectForMutation(t *testing.T, mutation validateMutation) testcase.Case[string, bool] {
+	t.Helper()
+	subject := validSubject()
+	switch mutation {
+	case validateUnmodified:
+	case validateEmptyProvenanceRef:
+		subject.Provenance.Ref = ""
+	case validateEmptyMutationDesc:
+		subject.Mutation.Description = ""
+	case validateUnknownClassification:
+		subject.Classification = "sometimes"
+	case validateUnknownProvenanceSource:
+		subject.Provenance.Source = "folklore"
+	default:
+		t.Fatalf("validate fixture selected unknown mutation %q", mutation)
+	}
+	return subject
+}
 
 // TestCheckMin_NegativeControl proves the minimum-size floor actually fires: a
 // corpus below the floor errors, a corpus at or above it does not.
@@ -74,51 +99,16 @@ func TestCheckMin_NegativeControl(t *testing.T) {
 // control on Case.Validate, dogfooded: the five subject cases are carried as a
 // testcase.Corpus that itself must pass RequireMin and Corpus.Validate.
 func TestCaseValidate_PopulatedPassesEmptyFieldFails(t *testing.T) {
-	corpus := testcase.Corpus[testcase.Case[string, bool], bool]{Cases: []validateCase{
-		{
-			Name:           "fully populated case passes",
-			Input:          validSubject(),
-			Expected:       true,
-			Classification: testcase.MustPass,
-			Provenance:     testcase.Provenance{Source: testcase.SourceManual, Ref: "a case with all four field-groups populated must pass Validate"},
-			Mutation:       testcase.Mutation{Description: "the unmodified valid subject case"},
-		},
-		{
-			Name:           "empty provenance ref fails",
-			Input:          mutatedSubject(func(c *testcase.Case[string, bool]) { c.Provenance.Ref = "" }),
-			Expected:       false,
-			Classification: testcase.MustFail,
-			Provenance:     testcase.Provenance{Source: testcase.SourceBoundary, Ref: "Validate must reject a case that cites no reason to exist"},
-			Mutation:       testcase.Mutation{Description: "cleared the subject's provenance ref"},
-		},
-		{
-			Name:           "empty mutation description fails",
-			Input:          mutatedSubject(func(c *testcase.Case[string, bool]) { c.Mutation.Description = "" }),
-			Expected:       false,
-			Classification: testcase.MustFail,
-			Provenance:     testcase.Provenance{Source: testcase.SourceBoundary, Ref: "Validate must reject a case with no change under test"},
-			Mutation:       testcase.Mutation{Description: "cleared the subject's mutation description"},
-		},
-		{
-			Name:           "out-of-set classification fails",
-			Input:          mutatedSubject(func(c *testcase.Case[string, bool]) { c.Classification = "sometimes" }),
-			Expected:       false,
-			Classification: testcase.MustFail,
-			Provenance:     testcase.Provenance{Source: testcase.SourceBoundary, Ref: "Validate must reject a classification outside must-pass/must-fail"},
-			Mutation:       testcase.Mutation{Description: "set the classification off the closed set"},
-		},
-		{
-			Name:           "invalid provenance source fails",
-			Input:          mutatedSubject(func(c *testcase.Case[string, bool]) { c.Provenance.Source = "folklore" }),
-			Expected:       false,
-			Classification: testcase.MustFail,
-			Provenance:     testcase.Provenance{Source: testcase.SourceBoundary, Ref: "Validate must reject a provenance source outside the closed set"},
-			Mutation:       testcase.Mutation{Description: "set the provenance source off the closed set"},
-		},
-	}}
+	corpus, err := testcase.LoadCorpus[validateInput, bool](validateCasesYAML)
+	if err != nil {
+		t.Fatalf("load validation matrix: %v", err)
+	}
 
 	// Row-count guard (dogfood): the one positive and all four field-failures.
 	assert.RequireMin(t, corpus, 5)
+	if len(corpus.Cases) != 5 {
+		t.Fatalf("validation matrix has %d rows, want exactly 5", len(corpus.Cases))
+	}
 	// The dogfood corpus is itself non-vacuous.
 	if err := corpus.Validate(); err != nil {
 		t.Fatalf("dogfood corpus is under-populated: %v", err)
@@ -129,7 +119,7 @@ func TestCaseValidate_PopulatedPassesEmptyFieldFails(t *testing.T) {
 		if want := mc.Classification == testcase.MustPass; want != mc.Expected {
 			t.Errorf("%s: classification %q disagrees with expected=%v", mc.Name, mc.Classification, mc.Expected)
 		}
-		gotOK := mc.Input.Validate() == nil
+		gotOK := subjectForMutation(t, mc.Input.Mutation).Validate() == nil
 		if gotOK != mc.Expected {
 			t.Errorf("%s: Case.Validate accepted=%v, want %v", mc.Name, gotOK, mc.Expected)
 		}

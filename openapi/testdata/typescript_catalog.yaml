@@ -1,3 +1,6 @@
+forbidden_components:
+  - Provider
+  - BestiaryHarness
 types:
   - go_name: AnnotationSummary
     disposition: catalog
@@ -620,4 +623,3 @@ types:
     disposition: catalog
     component: Visibility
     reason: public wire or domain contract type
-

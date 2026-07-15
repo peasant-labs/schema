@@ -138,23 +138,15 @@ func TestTypeScriptCatalogCompletenessAndCollisions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("find module root: %v", err)
 	}
-	specs := []struct {
-		surface string
-		path    string
-	}{
-		{"types", filepath.Join(root, "generated", "types-"+schema.TypesVersion+".json")},
-		{"local", filepath.Join(root, "generated", "peasantlocal-api-"+schema.PeasantLocalAPIVersion+".json")},
-		{"village", filepath.Join(root, "generated", "village-api-"+schema.VillageAPIVersion+".json")},
-	}
-	for _, spec := range specs {
-		got, err := loadSchemaAliases(spec.surface, spec.path)
+	for _, surface := range typeScriptSurfaces(root, filepath.Join(root, "typescript")) {
+		got, err := loadSchemaAliases(surface.name, surface.spec)
 		if err != nil {
-			t.Fatalf("load %s aliases: %v", spec.surface, err)
+			t.Fatalf("load %s aliases: %v", surface.name, err)
 		}
 		if _, err := deduplicateAliases(got); err != nil {
-			t.Fatalf("deduplicate %s aliases: %v", spec.surface, err)
+			t.Fatalf("deduplicate %s aliases: %v", surface.name, err)
 		}
-		if spec.surface == "types" && len(got) != len(openapi.TypeCatalogEntries()) {
+		if surface.name == "types" && len(got) != len(openapi.TypeCatalogEntries()) {
 			t.Fatalf("Types aliases = %d, want one per production descriptor (%d)", len(got), len(openapi.TypeCatalogEntries()))
 		}
 	}
@@ -205,15 +197,13 @@ func TestGeneratedTypeScriptFilesFullyAccounted(t *testing.T) {
 		t.Fatalf("find module root: %v", err)
 	}
 	sourceRoot := filepath.Join(root, "typescript", "src")
-	expected := []string{"fixtures/quality.ts", "index.ts"}
-	for _, surface := range typeScriptSurfaces(root, filepath.Join(root, "typescript")) {
-		for _, path := range []string{surface.rawOutput, surface.publicFile} {
-			relative, err := filepath.Rel(sourceRoot, path)
-			if err != nil {
-				t.Fatal(err)
-			}
-			expected = append(expected, filepath.ToSlash(relative))
+	var expected []string
+	for _, path := range typeScriptGeneratedFiles(root, filepath.Join(root, "typescript")) {
+		relative, err := filepath.Rel(sourceRoot, path)
+		if err != nil {
+			t.Fatal(err)
 		}
+		expected = append(expected, filepath.ToSlash(relative))
 	}
 	var actual []string
 	err = filepath.WalkDir(sourceRoot, func(path string, entry os.DirEntry, walkErr error) error {
@@ -262,10 +252,16 @@ func TestRenderQualityFixturesDeterministicAndComplete(t *testing.T) {
 	if !bytes.Equal(first, second) {
 		t.Fatal("quality TypeScript rendering is nondeterministic")
 	}
-	for _, needle := range []string{"resolved_typical", "resolved_minimal", "project_mix", "tokenRatios", "specQualityScore"} {
-		if !bytes.Contains(first, []byte(needle)) {
-			t.Errorf("quality TypeScript output missing %q", needle)
-		}
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := os.ReadFile(filepath.Join(root, "typescript", "src", "fixtures", "quality.ts"))
+	if err != nil {
+		t.Fatalf("read generated quality fixture module: %v", err)
+	}
+	if !bytes.Equal(first, generated) {
+		t.Fatal("generated quality fixture module differs from an exact production render")
 	}
 }
 

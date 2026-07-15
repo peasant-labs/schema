@@ -1,0 +1,50 @@
+cases:
+  - name: fully populated case passes
+    input: {mutation: unmodified}
+    expected: true
+    classification: must-pass
+    provenance:
+      source: manual
+      ref: a case with all four field-groups populated must pass Validate
+    mutation:
+      description: leaves the valid subject case unmodified
+
+  - name: empty provenance ref fails
+    input: {mutation: empty-provenance-ref}
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: Validate must reject a case that cites no reason to exist
+    mutation:
+      description: clears the subject's provenance ref
+
+  - name: empty mutation description fails
+    input: {mutation: empty-mutation-description}
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: Validate must reject a case with no change under test
+    mutation:
+      description: clears the subject's mutation description
+
+  - name: out-of-set classification fails
+    input: {mutation: unknown-classification}
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: Validate must reject a classification outside must-pass and must-fail
+    mutation:
+      description: sets the subject classification outside the closed set
+
+  - name: invalid provenance source fails
+    input: {mutation: unknown-provenance-source}
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: Validate must reject a provenance source outside the closed set
+    mutation:
+      description: sets the subject provenance source outside the closed set

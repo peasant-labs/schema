@@ -125,6 +125,20 @@ func typeScriptSurfaces(moduleRoot, packageRoot string) []typeScriptSurface {
 	}
 }
 
+// typeScriptGeneratedFiles returns every source file owned by TypeScript
+// generation. Keeping this inventory beside the production surface descriptors
+// makes freshness and accounting tests follow the generator automatically.
+func typeScriptGeneratedFiles(moduleRoot, packageRoot string) []string {
+	files := []string{
+		filepath.Join(packageRoot, "src", "index.ts"),
+		filepath.Join(packageRoot, "src", "fixtures", "quality.ts"),
+	}
+	for _, surface := range typeScriptSurfaces(moduleRoot, packageRoot) {
+		files = append(files, surface.rawOutput, surface.publicFile)
+	}
+	return files
+}
+
 func openAPITypescriptBinary(packageRoot string) (string, error) {
 	metadataPath := filepath.Join(packageRoot, "node_modules", "openapi-typescript", "package.json")
 	data, err := os.ReadFile(metadataPath)

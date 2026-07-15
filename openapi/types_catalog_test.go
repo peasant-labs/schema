@@ -20,7 +20,8 @@ import (
 var typeCatalogFixtures embed.FS
 
 type catalogFixture struct {
-	Types []catalogFixtureRow `yaml:"types"`
+	ForbiddenComponents []string            `yaml:"forbidden_components"`
+	Types               []catalogFixtureRow `yaml:"types"`
 }
 
 type catalogFixtureRow struct {
@@ -79,7 +80,18 @@ func TestTypesCatalogAccountsForEveryExportedRootType(t *testing.T) {
 		componentNames = append(componentNames, name)
 	}
 	assertSameStringSet(t, "production descriptors and emitted components", keys(descriptors), componentNames)
-	for _, forbidden := range []string{"Provider", "BestiaryHarness"} {
+	if len(fixture.ForbiddenComponents) == 0 {
+		t.Fatal("catalog fixture must name historical components that may not be reintroduced")
+	}
+	seenForbidden := map[string]struct{}{}
+	for _, forbidden := range fixture.ForbiddenComponents {
+		if strings.TrimSpace(forbidden) == "" {
+			t.Fatal("catalog fixture contains a blank forbidden component")
+		}
+		if _, duplicate := seenForbidden[forbidden]; duplicate {
+			t.Fatalf("catalog fixture repeats forbidden component %q", forbidden)
+		}
+		seenForbidden[forbidden] = struct{}{}
 		if _, leaked := spec.Components.Schemas[forbidden]; leaked {
 			t.Fatalf("Types spec leaked historical Harness name %q", forbidden)
 		}
