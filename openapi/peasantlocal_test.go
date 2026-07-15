@@ -20,11 +20,14 @@ type projectResolverContractFixture struct {
 		Method               string   `yaml:"method"`
 		OperationID          string   `yaml:"operation_id"`
 		QueryName            string   `yaml:"query_name"`
+		QueryType            string   `yaml:"query_type"`
 		ResponseStatus       string   `yaml:"response_status"`
 		MediaType            string   `yaml:"media_type"`
 		ResponseRef          string   `yaml:"response_ref"`
 		ResponseComponent    string   `yaml:"response_component"`
 		RequiredProperties   []string `yaml:"required_properties"`
+		ProjectProperty      string   `yaml:"project_property"`
+		ProjectType          string   `yaml:"project_type"`
 		ProjectHashProperty  string   `yaml:"project_hash_property"`
 		ProjectHashRef       string   `yaml:"project_hash_ref"`
 		ProjectHashComponent string   `yaml:"project_hash_component"`
@@ -134,7 +137,7 @@ func loadProjectResolverContractFixture(t *testing.T) projectResolverContractFix
 	if err := fixture.Mutations.Validate(); err != nil {
 		t.Fatal(err)
 	}
-	if err := fixture.Mutations.CheckMin(6); err != nil {
+	if err := fixture.Mutations.CheckMin(8); err != nil {
 		t.Fatal(err)
 	}
 	projectHash, err := schema.NewProjectHash(fixture.Contract.ExampleProjectHash)
@@ -198,7 +201,17 @@ func validateProjectResolverContract(document map[string]any, fixture projectRes
 	for _, candidate := range parameters {
 		parameter, ok := candidate.(map[string]any)
 		if ok && parameter["in"] == "query" && parameter["name"] == contract.QueryName {
-			foundQuery = parameter["required"] == true
+			if parameter["required"] != true {
+				return fmt.Errorf("project resolver contract: query parameter %q is optional; saved routes must supply an exact display identity", contract.QueryName)
+			}
+			querySchema, err := requiredMap(parameter, "schema", "resolver query "+contract.QueryName)
+			if err != nil {
+				return err
+			}
+			if querySchema["type"] != contract.QueryType {
+				return fmt.Errorf("project resolver contract: query parameter %q schema.type=%v, want %q; restore the string display-name contract", contract.QueryName, querySchema["type"], contract.QueryType)
+			}
+			foundQuery = true
 		}
 	}
 	if !foundQuery {
@@ -252,6 +265,13 @@ func validateProjectResolverContract(document map[string]any, fixture projectRes
 	if err != nil {
 		return err
 	}
+	projectProperty, err := requiredMap(properties, contract.ProjectProperty, contract.ResponseComponent+".properties")
+	if err != nil {
+		return err
+	}
+	if projectProperty["type"] != contract.ProjectType {
+		return fmt.Errorf("project resolver contract: response property %q type=%v, want %q; restore the string project display identity", contract.ProjectProperty, projectProperty["type"], contract.ProjectType)
+	}
 	hashProperty, err := requiredMap(properties, contract.ProjectHashProperty, contract.ResponseComponent+".properties")
 	if err != nil {
 		return err
@@ -297,6 +317,14 @@ func applyProjectResolverMutation(t *testing.T, document map[string]any, fixture
 				parameter["required"] = false
 			}
 		}
+	case "change-query-type":
+		for _, candidate := range operation["parameters"].([]any) {
+			parameter := candidate.(map[string]any)
+			if parameter["name"] == fixture.Contract.QueryName {
+				querySchema, _ := requiredMap(parameter, "schema", "query")
+				querySchema["type"] = mutation.Target
+			}
+		}
 	case "redirect-response":
 		responses, _ := requiredMap(operation, "responses", "operation")
 		response, _ := requiredMap(responses, fixture.Contract.ResponseStatus, "responses")
@@ -313,6 +341,10 @@ func applyProjectResolverMutation(t *testing.T, document map[string]any, fixture
 			}
 		}
 		resolver["required"] = filtered
+	case "change-project-type":
+		properties, _ := requiredMap(resolver, "properties", "resolver")
+		projectProperty, _ := requiredMap(properties, fixture.Contract.ProjectProperty, "properties")
+		projectProperty["type"] = mutation.Target
 	case "change-hash-pattern":
 		hashSchema, _ := requiredMap(schemas, fixture.Contract.ProjectHashComponent, "schemas")
 		hashSchema["pattern"] = mutation.Target

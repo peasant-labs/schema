@@ -46,3 +46,59 @@ mutations:
       classification: must-fail
       provenance: {source: requirement, ref: exact local API operation mapping}
       mutation: {description: redirects the review timeline route to the resolver operation}
+facade_mutations:
+  cases:
+    - name: removed_local_version_is_rejected
+      input: {kind: remove, namespace: value, name: PeasantLocalAPIVersion}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade exports}
+      mutation: {description: removes the local API version export}
+    - name: removed_paths_is_rejected
+      input: {kind: remove, namespace: type, name: paths}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade exports}
+      mutation: {description: removes the generated path map export}
+    - name: removed_operations_is_rejected
+      input: {kind: remove, namespace: type, name: operations}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade exports}
+      mutation: {description: removes the generated operation map export}
+    - name: unexpected_local_version_is_rejected
+      input: {kind: add, namespace: value, name: UnexpectedLocalVersion, target: '"0.3.0"'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact local API facade exports}
+      mutation: {description: adds an unaccounted version constant}
+    - name: unexpected_paths_is_rejected
+      input: {kind: add, namespace: type, name: LocalPaths, target: GeneratedPaths}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact local API facade exports}
+      mutation: {description: adds a second public path alias}
+    - name: unexpected_operations_is_rejected
+      input: {kind: add, namespace: type, name: LocalOperations, target: GeneratedOperations}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact local API facade exports}
+      mutation: {description: adds a second public operation alias}
+    - name: redirected_local_version_is_rejected
+      input: {kind: redirect, namespace: value, name: PeasantLocalAPIVersion, target: '"9.9.9"'}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade export targets}
+      mutation: {description: redirects the version constant to the wrong literal}
+    - name: redirected_paths_is_rejected
+      input: {kind: redirect, namespace: type, name: paths, target: GeneratedOperations}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade export targets}
+      mutation: {description: redirects paths to the operation map}
+    - name: redirected_operations_is_rejected
+      input: {kind: redirect, namespace: type, name: operations, target: GeneratedPaths}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API facade export targets}
+      mutation: {description: redirects operations to the path map}

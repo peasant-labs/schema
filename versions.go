@@ -18,13 +18,16 @@ const (
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
 	// Bumped to 0.3.0 (rc2 #118) when model + model.harness/model.model became
 	// required — a tightening of the publish contract (selective required arrays on
-	// SchemaPublishRequest + SchemaModelInfo). Bumped to 0.4.0 when
+	// operation-specific publish request + SchemaModelInfo). Bumped to 0.4.0 when
 	// PublishRequest.License + PullTranscriptInfo.License were added (additive
 	// optional field = minor bump). Bumped to 0.5.0 when the pull skip-gate surface
 	// (POST /api/v1/pull/transcripts/skip-gate) was added (additive = minor bump).
+	// Bumped to 0.6.0 when shared operation components adopted exact canonical
+	// Types schemas and the stricter publish HTTP body gained a distinct component
+	// identity instead of shadowing the canonical PublishRequest.
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.5.0"
+	VillageAPIVersion = "0.6.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git

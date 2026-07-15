@@ -71,7 +71,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc5` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.5.0` · peasant local API `0.3.0` · types `0.2.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.6.0` · peasant local API `0.3.0` · types `0.2.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -206,7 +206,7 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.5.0` |
+| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.6.0` |
 | **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.3.0` |
 | **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.2.0` |
 
@@ -265,7 +265,7 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
 Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`,
 PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0`, peasant local API `0.1.0` / `0.2.0`, and
 types `0.1.0`. The
-still-generated current versions (village API `0.5.0`, PublishRequest `0.5.0`,
+still-generated current versions (village API `0.6.0`, PublishRequest `0.6.0`,
 peasant local API `0.3.0`, types `0.2.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the

@@ -452,106 +452,6 @@ paths:
 components:
   schemas:
     AnnotationsPayload:
-      definitions:
-        SchemaAnnotationSummary:
-          properties:
-            annotatorKind:
-              $ref: '#/components/schemas/SchemaAnnotatorKind'
-            annotatorName:
-              type: string
-            confidence:
-              type:
-              - "null"
-              - number
-            contentHash:
-              type:
-              - "null"
-              - string
-            createdAt:
-              format: int64
-              type: integer
-            id:
-              type: string
-            isPrimary:
-              type: boolean
-            provenance:
-              $ref: '#/components/schemas/SchemaProvenance'
-            reason:
-              type:
-              - "null"
-              - string
-            supersededBy:
-              type:
-              - "null"
-              - string
-            targetAnnotationId:
-              type:
-              - "null"
-              - string
-            targetEntryEndIndex:
-              type:
-              - "null"
-              - integer
-            targetEntryIndex:
-              type:
-              - "null"
-              - integer
-            targetKind:
-              $ref: '#/components/schemas/SchemaTargetKind'
-            targetProjectHash:
-              type:
-              - "null"
-              - string
-            targetSessionId:
-              type:
-              - "null"
-              - string
-            typeId:
-              type: string
-            typeName:
-              type: string
-            value:
-              type: string
-          type: object
-        SchemaAnnotatorKind:
-          description: 'Type of entity that produced an annotation: human, agent (AI
-            model), or rule (automated classifier)'
-          enum:
-          - human
-          - agent
-          - rule
-          examples:
-          - human
-          - agent
-          - rule
-          title: Annotator Kind
-          type: string
-        SchemaProvenance:
-          properties:
-            details:
-              additionalProperties:
-                type: string
-              type: object
-            function:
-              type: string
-            method:
-              type: string
-            version:
-              type: string
-          type: object
-        SchemaTargetKind:
-          description: 'What is being annotated: session-level, entry-level (turn/tool
-            call), meta-annotation, or project-level'
-          enum:
-          - session
-          - entry
-          - annotation
-          - project
-          examples:
-          - session
-          - entry
-          title: Target Kind
-          type: string
       properties:
         annotations:
           items:
@@ -563,6 +463,10 @@ components:
           type: string
         id:
           type: string
+      required:
+      - axis
+      - id
+      - annotations
       type: object
     BestiaryHarness:
       description: AI coding tool or development environment
@@ -586,6 +490,8 @@ components:
           type: array
         type:
           type: string
+      required:
+      - type
       type: object
     DashboardPayload:
       properties:
@@ -608,6 +514,13 @@ components:
           type: integer
         totalTokens:
           type: integer
+      required:
+      - totalSessions
+      - totalTokens
+      - avgDurationMins
+      - harnessBreakdown
+      - avgTurnsPerSession
+      - acceptanceRate
       type: object
     QualityPayload:
       properties:
@@ -617,6 +530,8 @@ components:
           type:
           - array
           - "null"
+      required:
+      - sessions
       type: object
     SchemaActivityEdge:
       properties:
@@ -626,6 +541,10 @@ components:
           type: integer
         to:
           type: string
+      required:
+      - from
+      - to
+      - taskCount
       type: object
     SchemaAnnotationDatatype:
       description: Storage type for annotation values (maps to SQLite STRICT column
@@ -659,13 +578,17 @@ components:
         annotatorName:
           type: string
         confidence:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         contentHash:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         createdAt:
           format: int64
           type: integer
@@ -674,43 +597,69 @@ components:
         isPrimary:
           type: boolean
         provenance:
-          $ref: '#/components/schemas/SchemaProvenance'
+          anyOf:
+          - $ref: '#/components/schemas/SchemaProvenance'
+          - type: "null"
         reason:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         supersededBy:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         targetAnnotationId:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         targetEntryEndIndex:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         targetEntryIndex:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         targetKind:
           $ref: '#/components/schemas/SchemaTargetKind'
         targetProjectHash:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         targetSessionId:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         typeId:
           type: string
         typeName:
           type: string
         value:
           type: string
+      required:
+      - id
+      - targetKind
+      - isPrimary
+      - annotatorKind
+      - annotatorName
+      - typeId
+      - typeName
+      - value
+      - createdAt
       type: object
     SchemaAnnotationTypeSummary:
       properties:
@@ -729,15 +678,19 @@ components:
         id:
           type: string
         lowerIsBetter:
-          type:
-          - "null"
-          - boolean
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
         origin:
           $ref: '#/components/schemas/SchemaTypeOrigin'
         priorityOverride:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         scaleKind:
           $ref: '#/components/schemas/SchemaScaleKind'
         status:
@@ -748,6 +701,15 @@ components:
           $ref: '#/components/schemas/SchemaValueDomain'
         version:
           type: integer
+      required:
+      - typeId
+      - version
+      - displayName
+      - family
+      - class
+      - valueDomain
+      - status
+      - origin
       type: object
     SchemaAnnotatorKind:
       description: 'Type of entity that produced an annotation: human, agent (AI model),
@@ -769,9 +731,11 @@ components:
         branch:
           type: string
         costUsd:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         defaultBranch:
           type: string
         files:
@@ -843,6 +807,24 @@ components:
           type:
           - array
           - "null"
+      required:
+      - branch
+      - baseRef
+      - defaultBranch
+      - files
+      - slice
+      - newEdges
+      - removedEdges
+      - newNodes
+      - removedNodes
+      - violations
+      - work
+      - unrecordedCommits
+      - unusual
+      - frictions
+      - linesAdded
+      - linesRemoved
+      - outputTokens
       type: object
     SchemaChangeDiffPayload:
       properties:
@@ -859,13 +841,22 @@ components:
           - array
           - "null"
         oldPath:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         status:
           type: string
         truncated:
           type: boolean
+      required:
+      - branch
+      - file
+      - status
+      - binary
+      - truncated
+      - hunks
       type: object
     SchemaChangeSession:
       properties:
@@ -876,9 +867,11 @@ components:
         sessionId:
           type: string
         startMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         tasks:
           items:
             $ref: '#/components/schemas/SchemaTaskSummary'
@@ -887,6 +880,12 @@ components:
           - "null"
         title:
           type: string
+      required:
+      - sessionId
+      - title
+      - harness
+      - binding
+      - tasks
       type: object
     SchemaChangeSummary:
       properties:
@@ -901,17 +900,21 @@ components:
         filesChanged:
           type: integer
         lastWorkMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         mergeCommitHash:
           type: string
         merged:
           type: boolean
         mergedAtMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         newEdges:
           type: integer
         removedEdges:
@@ -923,11 +926,24 @@ components:
         taskCount:
           type: integer
         tipCommitMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         violations:
           type: integer
+      required:
+      - branch
+      - aheadCount
+      - behindCount
+      - filesChanged
+      - sessionCount
+      - taskCount
+      - newEdges
+      - removedEdges
+      - violations
+      - merged
       type: object
     SchemaChannelSubscription:
       properties:
@@ -937,6 +953,8 @@ components:
           type: string
         topic:
           type: string
+      required:
+      - topic
       type: object
     SchemaChildSessionRef:
       properties:
@@ -947,6 +965,9 @@ components:
         startTime:
           format: date-time
           type: string
+      required:
+      - id
+      - startTime
       type: object
     SchemaCommitRef:
       properties:
@@ -961,10 +982,15 @@ components:
         subject:
           type: string
         timeMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
       required:
+      - hash
+      - subject
+      - hasSession
       - sessionIds
       type: object
     SchemaCreateAnnotationRequest:
@@ -972,38 +998,55 @@ components:
         annotatorName:
           type: string
         confidence:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         isPrimary:
           type: boolean
         reason:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         sessionId:
           type: string
         targetAnnotationId:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         targetEntryEndIndex:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         targetEntryIndex:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         typeId:
           type: string
         value:
           type: string
+      required:
+      - sessionId
+      - typeId
+      - value
+      - isPrimary
       type: object
     SchemaCreateAnnotationResponse:
       properties:
         id:
           type: string
+      required:
+      - id
       type: object
     SchemaDayStats:
       properties:
@@ -1013,6 +1056,10 @@ components:
           type: integer
         tokens:
           type: integer
+      required:
+      - date
+      - tokens
+      - sessions
       type: object
     SchemaDiffHunk:
       properties:
@@ -1036,6 +1083,12 @@ components:
           type: string
         sessionTitle:
           type: string
+      required:
+      - oldStart
+      - oldLines
+      - newStart
+      - newLines
+      - lines
       type: object
     SchemaDiffLine:
       properties:
@@ -1043,6 +1096,9 @@ components:
           type: string
         text:
           type: string
+      required:
+      - kind
+      - text
       type: object
     SchemaEdgeViolation:
       properties:
@@ -1052,6 +1108,10 @@ components:
           type: string
         to:
           type: string
+      required:
+      - kind
+      - from
+      - to
       type: object
     SchemaEntryType:
       description: Classification of a single entry within an agent session transcript
@@ -1076,13 +1136,20 @@ components:
         linesRemoved:
           type: integer
         oldPath:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         path:
           type: string
         status:
           type: string
+      required:
+      - path
+      - status
+      - linesAdded
+      - linesRemoved
       type: object
     SchemaFrictionCluster:
       properties:
@@ -1096,11 +1163,19 @@ components:
           type: string
         sessions:
           type: integer
+      required:
+      - kind
+      - label
+      - file
+      - count
+      - sessions
       type: object
     SchemaHealthResponse:
       properties:
         status:
           type: string
+      required:
+      - status
       type: object
     SchemaMapEdge:
       properties:
@@ -1110,6 +1185,10 @@ components:
           type: string
         to:
           type: string
+      required:
+      - from
+      - to
+      - count
       type: object
     SchemaMapGraphPayload:
       properties:
@@ -1154,6 +1233,15 @@ components:
           type:
           - array
           - "null"
+      required:
+      - projectHash
+      - repoFound
+      - parsedLanguages
+      - nodes
+      - structureEdges
+      - activityEdges
+      - violations
+      - generatedAtMs
       type: object
     SchemaMapNode:
       properties:
@@ -1184,13 +1272,27 @@ components:
           type: integer
         touchCount:
           type: integer
+      required:
+      - id
+      - kind
+      - name
+      - layer
+      - order
+      - loc
+      - fileCount
+      - recordedFiles
+      - totalFiles
+      - touchCount
+      - effortDensity
       type: object
     SchemaMapNodeDetailPayload:
       properties:
         costUsd:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         dependsOn:
           items:
             type: string
@@ -1202,9 +1304,11 @@ components:
         language:
           type: string
         lastTouchMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         loc:
           type: integer
         path:
@@ -1239,6 +1343,20 @@ components:
           type:
           - array
           - "null"
+      required:
+      - path
+      - kind
+      - loc
+      - recordedFiles
+      - totalFiles
+      - sessionCount
+      - taskCount
+      - dependsOn
+      - usedBy
+      - shapedBy
+      - recentCommits
+      - retryLoops
+      - reEdits
       type: object
     SchemaMapSlice:
       properties:
@@ -1260,6 +1378,10 @@ components:
           type:
           - array
           - "null"
+      required:
+      - nodes
+      - structureEdges
+      - activityEdges
       type: object
     SchemaMockConfigResponse:
       properties:
@@ -1277,6 +1399,8 @@ components:
           items:
             type: string
           type: array
+      required:
+      - enabled
       type: object
     SchemaProjectHash:
       description: SHA-256 hex digest of the project's origin URL or local path
@@ -1305,13 +1429,17 @@ components:
           type:
           - array
           - "null"
+      required:
+      - projects
       type: object
     SchemaProjectSummary:
       properties:
         lastWorkMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         openChanges:
           type: integer
         project:
@@ -1324,6 +1452,13 @@ components:
           type: integer
         totalFiles:
           type: integer
+      required:
+      - projectHash
+      - project
+      - sessions
+      - recordedFiles
+      - totalFiles
+      - openChanges
       type: object
     SchemaProjectTasksPayload:
       properties:
@@ -1337,6 +1472,9 @@ components:
           type:
           - array
           - "null"
+      required:
+      - projectHash
+      - tasks
       type: object
     SchemaProvenance:
       properties:
@@ -1350,6 +1488,8 @@ components:
           type: string
         version:
           type: string
+      required:
+      - method
       type: object
     SchemaQualitySession:
       properties:
@@ -1405,6 +1545,29 @@ components:
           type: integer
         withinSessionReverts:
           type: integer
+      required:
+      - id
+      - date
+      - project
+      - totalTokens
+      - inputTokens
+      - outputTokens
+      - turnCount
+      - toolCalls
+      - durationMinutes
+      - scope
+      - title
+      - outcome
+      - filesTouched
+      - linesChanged
+      - retryLoops
+      - retryTokensWasted
+      - withinSessionReverts
+      - signalDensity
+      - specQualityScore
+      - explorationRatio
+      - scopeBreadth
+      - discoveryTurns
       type: object
     SchemaReviewListPayload:
       properties:
@@ -1427,6 +1590,8 @@ components:
             $ref: '#/components/schemas/SchemaTimelineSessionRef'
           type: array
       required:
+      - projectHash
+      - repoFound
       - changes
       - recentCommits
       - sessions
@@ -1466,6 +1631,9 @@ components:
           type:
           - array
           - "null"
+      required:
+      - query
+      - results
       type: object
     SchemaSearchResult:
       properties:
@@ -1484,6 +1652,13 @@ components:
           type: string
         snippet:
           type: string
+      required:
+      - sessionId
+      - project
+      - entryIndex
+      - role
+      - snippet
+      - score
       type: object
     SchemaSessionDetailPayload:
       properties:
@@ -1514,7 +1689,9 @@ components:
         schemaVersion:
           type: string
         scorecard:
-          $ref: '#/components/schemas/SchemaSessionScorecard'
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionScorecard'
+          - type: "null"
         source:
           type: string
         startTime:
@@ -1540,6 +1717,18 @@ components:
           - "null"
         workingDirectory:
           type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
       type: object
     SchemaSessionID:
       description: Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id}
@@ -1568,55 +1757,79 @@ components:
     SchemaSessionScorecard:
       properties:
         costTotalUsd:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         m2TokenOutcomeRatio:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         m4ConsecutiveErrorMax:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         m5ContextUtilizationPct:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         m6OutputSurvivalPct:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         m7SpecHasConstraints:
-          type:
-          - "null"
-          - boolean
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
         m7SpecHasExamples:
-          type:
-          - "null"
-          - boolean
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
         retryTokensWasted:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         signalDensity:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         specQualityScore:
-          type:
-          - "null"
-          - number
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
         totalTokens:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         withinSessionReverts:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
       type: object
     SchemaSessionSummary:
       properties:
@@ -1630,9 +1843,11 @@ components:
         outcome:
           type: string
         parentSessionId:
-          type:
-          - "null"
-          - string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         preview:
           type: string
         project:
@@ -1648,6 +1863,14 @@ components:
           type: integer
         turnCount:
           type: integer
+      required:
+      - id
+      - harness
+      - startTime
+      - durationMins
+      - totalTokens
+      - turnCount
+      - toolCallCount
       type: object
     SchemaSessionsPayload:
       properties:
@@ -1657,11 +1880,15 @@ components:
           type:
           - array
           - "null"
+      required:
+      - sessions
       type: object
     SchemaShutdownResponse:
       properties:
         status:
           type: string
+      required:
+      - status
       type: object
     SchemaStopReason:
       description: Reason why a session or turn ended (ACP-aligned)
@@ -1714,11 +1941,21 @@ components:
         sessionId:
           type: string
         startMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         title:
           type: string
+      required:
+      - sessionId
+      - entryIndex
+      - title
+      - editedFiles
+      - readCount
+      - retryLoop
+      - labels
       type: object
     SchemaTimelineSessionRef:
       properties:
@@ -1729,24 +1966,35 @@ components:
         sessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         startMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         title:
           type: string
+      required:
+      - sessionId
+      - title
+      - harness
+      - hasCommitBinding
       type: object
     SchemaToolCallDetail:
       properties:
         arguments:
           type: string
         durationMs:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         exitCode:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         filePath:
           type: string
         id:
@@ -1759,6 +2007,11 @@ components:
           type: string
         toolKind:
           $ref: '#/components/schemas/SchemaToolCallKind'
+      required:
+      - id
+      - name
+      - arguments
+      - result
       type: object
     SchemaToolCallKind:
       description: Classification of a tool call, aligned with ACP ToolCallUpdate.kind
@@ -1793,28 +2046,42 @@ components:
         index:
           type: integer
         parentIndex:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         role:
           $ref: '#/components/schemas/SchemaRole'
         stopReason:
-          $ref: '#/components/schemas/SchemaStopReason'
+          anyOf:
+          - $ref: '#/components/schemas/SchemaStopReason'
+          - type: "null"
         timestamp:
           format: date-time
           type: string
         tokensIn:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         tokensOut:
-          type:
-          - "null"
-          - integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         toolCalls:
           items:
             $ref: '#/components/schemas/SchemaToolCallDetail'
           type: array
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
       type: object
     SchemaTypeOrigin:
       description: 'Who created an annotation type: system (built-in), user (individual),
@@ -1840,6 +2107,11 @@ components:
         perProject:
           format: double
           type: number
+      required:
+      - kind
+      - label
+      - perChange
+      - perProject
       type: object
     SchemaValueDomain:
       properties:
@@ -1853,6 +2125,9 @@ components:
           items:
             type: string
           type: array
+      required:
+      - kind
+      - datatype
       type: object
     SchemaValueDomainKind:
       description: 'ISO 11179 value domain: enumerated (finite allowed set) or described
@@ -1880,6 +2155,8 @@ components:
           type: string
         version:
           type: string
+      required:
+      - type
       type: object
     SessionDetailPayload:
       properties:
@@ -1910,7 +2187,9 @@ components:
         schemaVersion:
           type: string
         scorecard:
-          $ref: '#/components/schemas/SchemaSessionScorecard'
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionScorecard'
+          - type: "null"
         source:
           type: string
         startTime:
@@ -1936,6 +2215,18 @@ components:
           - "null"
         workingDirectory:
           type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
       type: object
     TrendsPayload:
       properties:
@@ -1949,4 +2240,8 @@ components:
           type: integer
         totalTokens:
           type: integer
+      required:
+      - days
+      - totalTokens
+      - totalSessions
       type: object

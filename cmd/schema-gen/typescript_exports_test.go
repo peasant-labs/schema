@@ -88,17 +88,13 @@ func TestGeneratedPublicExportsHaveExactIdentity(t *testing.T) {
 	if string(typesSource) != wantTypes {
 		t.Fatalf("generated /types facade is not the exact deprecated root re-export\ngot:\n%s\nwant:\n%s", typesSource, wantTypes)
 	}
-	for _, surface := range []struct {
-		Name string
-		File string
-	}{
-		{Name: "local", File: "local-api.ts"},
-		{Name: "village", File: "village-api.ts"},
-	} {
-		source := readPublicFacade(t, filepath.Join(root, "typescript", "src", surface.File))
-		if err := validatePublicExports(source, expectedPublicExports(t, surface.Name, public, catalog, enums), public.Forbidden); err != nil {
-			t.Fatalf("generated /%s-api exports: %v", surface.Name, err)
-		}
+	localSource := readPublicFacade(t, filepath.Join(root, "typescript", "src", "local-api.ts"))
+	if err := validatePublicExports(localSource, expectedPublicExports(t, "local", public, catalog, enums), public.Forbidden); err != nil {
+		t.Fatalf("generated /local-api exports: %v", err)
+	}
+	villageSource := readPublicFacade(t, filepath.Join(root, "typescript", "src", "village-api.ts"))
+	if err := validatePublicExports(villageSource, expectedPublicExports(t, "village", public, catalog, enums), public.Forbidden); err != nil {
+		t.Fatalf("generated /village-api exports: %v", err)
 	}
 }
 

@@ -10,7 +10,7 @@ import type { operations as LocalOperations } from "@peasant-labs/schema/local-a
 import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
 import type { SessionEntry as CompatibilitySessionEntry } from "@peasant-labs/schema/types";
 import type { Case, Corpus } from "@peasant-labs/schema/testcase";
-import type { TimelineFixtureCorpus } from "@peasant-labs/schema/fixtures/timeline";
+import type { TimelineFixtureCase, TimelineFixtureCorpus } from "@peasant-labs/schema/fixtures/timeline";
 
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type LocalReviewListPayload = LocalOperations["listReviewChanges"]["responses"][200]["content"]["application/json"];
@@ -24,6 +24,7 @@ declare const entry: RootSessionEntry;
 declare const resolution: ProjectResolutionPayload;
 declare const timelineSession: TimelineSessionRef;
 declare const timelineFixtures: TimelineFixtureCorpus;
+declare const timelineFixture: TimelineFixtureCase;
 const testCase: Case<RootSessionEntry, SessionDetailPayload> = {
   name: "compile-only",
   input: entry,
@@ -40,3 +41,4 @@ void corpus;
 void resolution;
 void timelineSession;
 void timelineFixtures;
+void timelineFixture;

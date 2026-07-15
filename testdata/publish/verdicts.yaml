@@ -108,7 +108,7 @@ cases:
       error_contains: "missing properties: 'model'"
 
   # The whole top-level `model` object is omitted (other fields present) —
-  # SchemaPublishRequest.required includes model, so the root rejects.
+  # The operation-specific publish request required set includes model, so the root rejects.
   - name: "absent-model-object"
     body: |
       {"identity": {"sessionId": "99d59925-36bc-424c-a789-8be54d9702ba", "schemaVersion": 9},

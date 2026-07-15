@@ -89,7 +89,7 @@ func TestBuildVillageAPISpec_PullSkipGatePath(t *testing.T) {
 	}
 }
 
-// TestBuildVillageAPISpec_PublishRequestComponent verifies PublishRequest schema component.
+// TestBuildVillageAPISpec_PublishRequestComponent verifies the operation-specific publish body component.
 func TestBuildVillageAPISpec_PublishRequestComponent(t *testing.T) {
 	spec, err := specpkg.BuildVillageAPISpec()
 	if err != nil {
@@ -97,8 +97,11 @@ func TestBuildVillageAPISpec_PublishRequestComponent(t *testing.T) {
 	}
 
 	yamlStr := specYAML(t, spec)
-	if !strings.Contains(yamlStr, "PublishRequest") {
-		t.Errorf("village spec missing PublishRequest component; got:\n%s", yamlStr)
+	if !strings.Contains(yamlStr, "OpenapiTranscriptPublishRequest") {
+		t.Errorf("village spec missing operation-specific TranscriptPublishRequest component; got:\n%s", yamlStr)
+	}
+	if strings.Contains(yamlStr, "SchemaPublishRequest") {
+		t.Errorf("village spec shadows canonical PublishRequest with an operation component; got:\n%s", yamlStr)
 	}
 }
 

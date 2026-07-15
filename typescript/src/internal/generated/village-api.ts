@@ -188,11 +188,25 @@ export type components = {
          * @enum {string}
          */
         BestiaryHarness: "claude-code" | "gemini-cli" | "codex" | "opencode" | "cursor" | "antigravity";
+        OpenapiTranscriptPublishRequest: {
+            diagnostics?: Schema.DiagnosticsInfo;
+            entries?: Schema.SessionEntry[];
+            git?: Schema.GitContext;
+            identity?: Schema.SessionIdentity;
+            license?: Schema.License;
+            model: Schema.ModelInfo;
+            project?: Schema.ProjectContext;
+            quality?: Schema.QualityMetrics;
+            source?: Schema.SourceInfo;
+            stats?: Schema.SessionStats;
+            subagents?: Schema.SubagentRef[];
+            timestamp?: Schema.TimestampInfo;
+        };
         SchemaAnnotationManifestResponse: {
             /** @description Deterministic, order-independent digest over the hash set; a client computing the same digest over its local set knows nothing diverged. */
-            digest?: string;
+            digest: string;
             /** @description Hex-encoded SHA3-256 annotation content-hashes the village holds for the owner (sorted, de-duplicated). */
-            hashes?: string[];
+            hashes: string[];
         };
         /**
          * Annotator Kind
@@ -204,24 +218,24 @@ export type components = {
          */
         SchemaAnnotatorKind: "human" | "agent" | "rule";
         SchemaCommitInfo: {
-            authorEmail?: string;
-            authorName?: string;
+            authorEmail: string;
+            authorName: string;
             /** Format: int64 */
-            authorTime?: number;
+            authorTime: number;
             /** Format: int64 */
-            commitTime?: number;
-            hash?: string;
-            message?: string;
+            commitTime: number;
+            hash: string;
+            message: string;
         };
         SchemaDiagnosticEntry: {
-            errorType?: string;
-            location?: string;
-            message?: string;
-            remediation?: string;
+            errorType: string;
+            location: string;
+            message: string;
+            remediation: string;
         };
         SchemaDiagnosticsInfo: {
-            partial?: null | boolean;
-            warnings?: Schema.DiagnosticEntry[] | null;
+            partial?: (null | boolean) | null;
+            warnings: Schema.DiagnosticEntry[] | null;
         };
         /**
          * Entry Type
@@ -233,21 +247,21 @@ export type components = {
          */
         SchemaEntryType: "text" | "tool_use" | "tool_result" | "thinking" | "system" | "error" | "result";
         SchemaExchangeCodeRequest: {
-            code?: string;
-            state?: string;
+            code: string;
+            state: string;
         };
         SchemaExchangeCodeResponse: {
-            api_key?: string;
-            key_id?: string;
-            user_id?: string;
-            username?: string;
+            api_key: string;
+            key_id: string;
+            user_id: string;
+            username: string;
         };
         SchemaGitContext: {
-            branch?: null | string;
+            branch?: (null | string) | null;
             commits?: Schema.CommitInfo[];
-            remote?: null | string;
-            tracking?: null | string;
-            worktree?: null | string;
+            remote?: (null | string) | null;
+            tracking?: (null | string) | null;
+            worktree?: (null | string) | null;
         };
         /**
          * Host Slug
@@ -279,8 +293,8 @@ export type components = {
         };
         SchemaProjectContext: {
             filePath?: string;
-            hash?: Schema.ProjectHash;
-            name?: string;
+            hash: Schema.ProjectHash;
+            name: string;
         };
         /**
          * Project Hash
@@ -293,39 +307,25 @@ export type components = {
                 [key: string]: string;
             };
             function?: string;
-            method?: string;
+            method: string;
             version?: string;
         };
-        SchemaPublishRequest: {
-            diagnostics?: Schema.DiagnosticsInfo;
-            entries?: Schema.SessionEntry[];
-            git?: Schema.GitContext;
-            identity?: Schema.SessionIdentity;
-            license?: Schema.License;
-            model: Schema.ModelInfo;
-            project?: Schema.ProjectContext;
-            quality?: Schema.QualityMetrics;
-            source?: Schema.SourceInfo;
-            stats?: Schema.SessionStats;
-            subagents?: Schema.SubagentRef[];
-            timestamp?: Schema.TimestampInfo;
-        };
         SchemaPublishResponse: {
-            blobKey?: string;
+            blobKey: string;
             /** Format: int64 */
-            blobSizeBytes?: number;
-            created?: boolean;
+            blobSizeBytes: number;
+            created: boolean;
             /** Format: int64 */
-            publishedAt?: number;
-            transcriptId?: string;
+            publishedAt: number;
+            transcriptId: string;
             /** Format: int64 */
-            updatedAt?: number;
+            updatedAt: number;
         };
         SchemaPullAnnotation: {
             annotatorKind?: Schema.AnnotatorKind;
             annotatorName?: string;
-            authorUserId?: string;
-            authorUsername?: string;
+            authorUserId: string;
+            authorUsername: string;
             confidence?: null | number;
             contentHash?: null | string;
             /** Format: int64 */
@@ -346,96 +346,96 @@ export type components = {
             value?: string;
         };
         SchemaPullListResponse: {
-            limit?: number;
-            page?: number;
-            total?: number;
-            transcripts?: Schema.PullTranscriptInfo[] | null;
+            limit: number;
+            page: number;
+            total: number;
+            transcripts: Schema.PullTranscriptInfo[] | null;
         };
         SchemaPullSkipGateItem: {
             /** @description The client's own annotation content-hashes for this transcript (sorted, de-duplicated); compared as a set against the owner-scoped server set. */
-            annotationHashes?: string[];
+            annotationHashes: string[];
             /** @description Hex-encoded SHA3-256 served-blob content-hash the client currently holds for this transcript; compared by value against the server's stored hash. */
-            contentHash?: string;
+            contentHash: string;
             /** @description The id of a transcript the client holds and is asking about. */
-            transcriptId?: Schema.TranscriptID;
+            transcriptId: Schema.TranscriptID;
         };
         SchemaPullSkipGateRequest: {
             /** @description The per-transcript items the client is asking a currency question about (ordered by transcriptId, de-duplicated per-item annotation set). */
-            items?: Schema.PullSkipGateItem[];
+            items: Schema.PullSkipGateItem[];
         };
         SchemaPullSkipGateResponse: {
             /** @description Per-id currency answers, present only for pullable ids (non-pullable ids are withheld by omission); ordered by transcriptId. */
-            results?: Schema.PullSkipGateResult[];
+            results: Schema.PullSkipGateResult[];
         };
         SchemaPullSkipGateResult: {
             /** @description True when the owner-scoped server annotation set for this id equals the client's held set; false when it differs (missing or extra). */
-            annotationsCurrent?: boolean;
+            annotationsCurrent: boolean;
             /** @description True when the server's stored content-hash equals the client's held hash for this id; false when it has diverged or the server holds none. */
-            contentCurrent?: boolean;
+            contentCurrent: boolean;
             /** @description The transcript id this currency answer is for (always one the caller may pull). */
-            transcriptId?: Schema.TranscriptID;
+            transcriptId: Schema.TranscriptID;
         };
         SchemaPullTranscriptInfo: {
-            annotationCount?: number;
+            annotationCount: number;
             contentHash?: string;
             contractVersion?: string;
             harness?: Schema.Harness;
             license?: Schema.License;
             localId?: string;
-            ownerUserId?: string;
-            ownerUsername?: string;
+            ownerUserId: string;
+            ownerUsername: string;
             projectName?: string;
             /** Format: int64 */
-            publishedAt?: number;
+            publishedAt: number;
             title?: string;
-            transcriptId?: Schema.TranscriptID;
+            transcriptId: Schema.TranscriptID;
             /** Format: int64 */
-            updatedAt?: number;
-            visibility?: Schema.Visibility;
+            updatedAt: number;
+            visibility: Schema.Visibility;
         };
         SchemaQualityMetrics: {
-            computeVersion?: null | number;
-            computedAt?: null | number;
-            costCacheReadUsd?: null | number;
-            costCacheWriteUsd?: null | number;
-            costInputUsd?: null | number;
-            costModelId?: null | string;
-            costOutputUsd?: null | number;
-            costReasoningUsd?: null | number;
-            costTotalUsd?: null | number;
-            discoveryTurns?: null | number;
-            durationMinutes?: null | number;
-            explorationRatio?: null | number;
-            filesTouched?: null | number;
-            inputTokens?: null | number;
-            linesChanged?: null | number;
-            m2TokenOutcomeRatio?: null | number;
-            m3UniqueToolCount?: null | number;
-            m4ConsecutiveErrorMax?: null | number;
-            m4ErrorRecoveryCount?: null | number;
-            m5AvgMessageTokens?: null | number;
-            m5ContextUtilizationPct?: null | number;
-            m5PeakContextTokens?: null | number;
-            m6LinesSurvived?: null | number;
-            m6LinesTotal?: null | number;
-            m6OutputSurvivalPct?: null | number;
-            m7SpecHasConstraints?: null | boolean;
-            m7SpecHasExamples?: null | boolean;
-            m7SpecWordCount?: null | number;
-            outcome?: Schema.SessionOutcome;
-            outputTokens?: null | number;
-            retryLoops?: null | number;
-            retryTokensWasted?: null | number;
-            scope?: null | string;
-            scopeBreadth?: null | number;
-            signalDensity?: null | number;
-            specQualityScore?: null | number;
-            subagentCount?: null | number;
-            titleGenerated?: null | string;
-            toolCalls?: null | number;
-            totalTokens?: null | number;
-            turnCount?: null | number;
-            withinSessionReverts?: null | number;
+            computeVersion?: (null | number) | null;
+            computedAt?: (null | number) | null;
+            costCacheReadUsd?: (null | number) | null;
+            costCacheWriteUsd?: (null | number) | null;
+            costInputUsd?: (null | number) | null;
+            costModelId?: (null | string) | null;
+            costOutputUsd?: (null | number) | null;
+            costReasoningUsd?: (null | number) | null;
+            costTotalUsd?: (null | number) | null;
+            discoveryTurns?: (null | number) | null;
+            durationMinutes?: (null | number) | null;
+            explorationRatio?: (null | number) | null;
+            filesTouched?: (null | number) | null;
+            inputTokens?: (null | number) | null;
+            linesChanged?: (null | number) | null;
+            m2TokenOutcomeRatio?: (null | number) | null;
+            m3UniqueToolCount?: (null | number) | null;
+            m4ConsecutiveErrorMax?: (null | number) | null;
+            m4ErrorRecoveryCount?: (null | number) | null;
+            m5AvgMessageTokens?: (null | number) | null;
+            m5ContextUtilizationPct?: (null | number) | null;
+            m5PeakContextTokens?: (null | number) | null;
+            m6LinesSurvived?: (null | number) | null;
+            m6LinesTotal?: (null | number) | null;
+            m6OutputSurvivalPct?: (null | number) | null;
+            m7SpecHasConstraints?: (null | boolean) | null;
+            m7SpecHasExamples?: (null | boolean) | null;
+            m7SpecWordCount?: (null | number) | null;
+            outcome?: Schema.SessionOutcome | null;
+            outputTokens?: (null | number) | null;
+            retryLoops?: (null | number) | null;
+            retryTokensWasted?: (null | number) | null;
+            scope?: (null | string) | null;
+            scopeBreadth?: (null | number) | null;
+            signalDensity?: (null | number) | null;
+            specQualityScore?: (null | number) | null;
+            subagentCount?: (null | number) | null;
+            titleGenerated?: (null | string) | null;
+            toolCalls?: (null | number) | null;
+            totalTokens?: (null | number) | null;
+            turnCount?: (null | number) | null;
+            withinSessionReverts?: (null | number) | null;
         };
         /**
          * Role
@@ -446,40 +446,40 @@ export type components = {
          */
         SchemaRole: "user" | "assistant" | "tool" | "system";
         SchemaSchemaVersionResponse: {
-            annotationSchemaVersion?: string;
+            annotationSchemaVersion: string;
             minPullContractVersion?: string;
-            minPushContractVersion?: string;
+            minPushContractVersion: string;
             pullContractVersion?: string;
-            pushContractVersion?: string;
-            supportedTargetKinds?: string[] | null;
-            supportedTypeIds?: string[] | null;
+            pushContractVersion: string;
+            supportedTargetKinds: string[] | null;
+            supportedTypeIds: string[] | null;
         };
         SchemaSessionEntry: {
-            contentPreview?: null | string;
-            depth?: number;
-            entryId?: null | string;
-            entryIndex?: number;
-            entryType?: Schema.EntryType;
-            extra?: null | string;
-            harness?: Schema.Harness;
-            hasThinking?: boolean;
-            hasToolUse?: boolean;
-            isError?: boolean;
-            parentEntryId?: null | string;
-            parentIndex?: null | number;
-            partType?: null | string;
-            rawByteLength?: null | number;
-            role?: Schema.Role;
-            sessionId?: Schema.SessionID;
-            stopReason?: Schema.StopReason;
-            timestampMs?: null | number;
-            tokensIn?: null | number;
-            tokensOut?: null | number;
-            toolCallId?: null | string;
-            toolInput?: null | string;
-            toolKind?: Schema.ToolCallKind;
-            toolNamesCsv?: null | string;
-            toolOutput?: null | string;
+            contentPreview?: (null | string) | null;
+            depth: number;
+            entryId?: (null | string) | null;
+            entryIndex: number;
+            entryType: Schema.EntryType;
+            extra?: (null | string) | null;
+            harness: Schema.Harness;
+            hasThinking: boolean;
+            hasToolUse: boolean;
+            isError: boolean;
+            parentEntryId?: (null | string) | null;
+            parentIndex?: (null | number) | null;
+            partType?: (null | string) | null;
+            rawByteLength?: (null | number) | null;
+            role: Schema.Role;
+            sessionId: Schema.SessionID;
+            stopReason?: Schema.StopReason | null;
+            timestampMs?: (null | number) | null;
+            tokensIn?: (null | number) | null;
+            tokensOut?: (null | number) | null;
+            toolCallId?: (null | string) | null;
+            toolInput?: (null | string) | null;
+            toolKind?: Schema.ToolCallKind | null;
+            toolNamesCsv?: (null | string) | null;
+            toolOutput?: (null | string) | null;
         };
         /**
          * Session ID
@@ -492,9 +492,9 @@ export type components = {
          */
         SchemaSessionID: string;
         SchemaSessionIdentity: {
-            parentUuid?: Schema.SessionID;
-            schemaVersion?: number;
-            sessionId?: Schema.SessionID;
+            parentUuid?: Schema.SessionID | null;
+            schemaVersion: number;
+            sessionId: Schema.SessionID;
         };
         /**
          * Session Outcome
@@ -506,16 +506,16 @@ export type components = {
          */
         SchemaSessionOutcome: "resolved" | "partial" | "failed";
         SchemaSessionStats: {
-            cachedReadTokens?: null | number;
-            cachedWriteTokens?: null | number;
+            cachedReadTokens?: (null | number) | null;
+            cachedWriteTokens?: (null | number) | null;
             /** Format: int64 */
-            durationMs?: number;
-            subagentCount?: number;
-            thoughtTokens?: null | number;
-            tokensIn?: number;
-            tokensOut?: number;
-            toolCallCount?: number;
-            turnCount?: number;
+            durationMs: number;
+            subagentCount: number;
+            thoughtTokens?: (null | number) | null;
+            tokensIn: number;
+            tokensOut: number;
+            toolCallCount: number;
+            turnCount: number;
         };
         /**
          * Source Format
@@ -527,7 +527,7 @@ export type components = {
         SchemaSourceFormat: "jsonl" | "json";
         SchemaSourceInfo: {
             filePath?: string;
-            format?: Schema.SourceFormat;
+            format: Schema.SourceFormat;
         };
         /**
          * Stop Reason
@@ -538,8 +538,8 @@ export type components = {
          */
         SchemaStopReason: "end_turn" | "cancelled" | "max_tokens" | "max_turn_requests" | "refusal";
         SchemaSubagentRef: {
-            parentUuid?: Schema.SessionID;
-            sessionId?: Schema.SessionID;
+            parentUuid: Schema.SessionID;
+            sessionId: Schema.SessionID;
         };
         /**
          * Target Kind
@@ -551,10 +551,10 @@ export type components = {
         SchemaTargetKind: "session" | "entry" | "annotation" | "project";
         SchemaTimestampInfo: {
             /** Format: int64 */
-            end?: number;
-            ingested?: null | number;
+            end: number;
+            ingested?: (null | number) | null;
             /** Format: int64 */
-            start?: number;
+            start: number;
         };
         /**
          * Tool Call Kind
@@ -804,7 +804,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SchemaPublishRequest"];
+                "application/json": components["schemas"]["OpenapiTranscriptPublishRequest"];
             };
         };
         responses: {

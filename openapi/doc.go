@@ -51,7 +51,7 @@
 // The village ENFORCES incoming publish bodies (422 on schema violation) against a
 // standalone PublishRequest JSON Schema it vendors as
 // backend/internal/handler/openapispec/publish-request.schema.json. That schema is
-// produced by BuildPublishRequestSchema, which EXTRACTS the SchemaPublishRequest
+// produced by BuildPublishRequestSchema, which extracts the operation-specific publish body
 // component — with its full transitive $ref closure, bundled into "$defs" — out of
 // the village-api spec itself (JSON Schema 2020-12, the dialect the village's
 // santhosh-tekuri validator supports). Deriving the enforced schema FROM the

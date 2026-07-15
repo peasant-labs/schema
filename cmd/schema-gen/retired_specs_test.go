@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // retiredSpec is a released OpenAPI spec version that is NO LONGER generated (the
@@ -17,7 +20,7 @@ type retiredSpec struct {
 	// name is the version-stamped artifact base (no extension), e.g.
 	// "peasantlocal-api-0.1.0". The guard checks both the .json and .yaml copies
 	// in the committed spec dir (generated/).
-	name string
+	Name string `yaml:"name"`
 	// jsonSHA256 / yamlSHA256 are the lowercase-hex sha256 of the frozen .json /
 	// .yaml bytes, pinned from the KNOWN-GOOD source (NOT a possibly-mutated
 	// working tree):
@@ -26,22 +29,22 @@ type retiredSpec struct {
 	//   - village-api-0.1.0:      rev 9745a0b0^ — the last rev before the village
 	//     0.2.0 bump — which is the SAME source as the W4 restore, so the restored
 	//     file's hash equals this pinned constant BY CONSTRUCTION.
-	jsonSHA256 string
-	yamlSHA256 string
+	JSONSHA256 string `yaml:"json_sha256"`
+	YAMLSHA256 string `yaml:"yaml_sha256"`
 	// jsonOnly marks a retired artifact that has ONLY a .json copy and no .yaml
 	// sibling — the extracted publish-request JSON-Schema (publish-request-<v>.schema)
 	// is emitted JSON-only by the generator (it is a JSON Schema, not an OpenAPI
 	// spec doc), so freezing it must skip the .yaml present/hash check. yamlSHA256
 	// is left empty for such entries.
-	jsonOnly bool
+	JSONOnly bool `yaml:"json_only"`
 }
 
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
 // released-versions-immutability guard.
 //
 // This registry covers RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.3.0, village-api-0.5.0, types-0.2.0,
-// publish-request-0.4.0) are deliberately EXCLUDED — they stay under the
+// (peasantlocal-api-0.3.0, village-api-0.6.0, types-0.2.0,
+// publish-request-0.6.0) are deliberately EXCLUDED — they stay under the
 // codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
 // them from the Go source on every run. Pinning a current version's hash here would
 // false-fail `make check` on every legitimate regen. The partition key is simply
@@ -53,68 +56,36 @@ type retiredSpec struct {
 // window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
 // (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
 // here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). The
-// 0.3.0 village-api trio (village-api-0.3.0 json+yaml + publish-request-0.3.0.schema
-// json-only) was frozen here when VillageAPIVersion bumped to 0.4.0 (added the
-// optional top-level license enum). The 0.4.0 village-api trio was frozen here when
-// VillageAPIVersion bumped to 0.5.0 (added the pull skip-gate surface).
-var retiredSpecRegistry = []retiredSpec{
-	{
-		name:       "types-0.1.0",
-		jsonSHA256: "91b80c69b5aa7fa68f04e9ad1536089eae1908e5ea0db8246dc7b603661f2f83",
-		yamlSHA256: "3f876b6b2a3606dda7b6b79b9f5b7534db7bb8fe16ac1f5512f2e235730e1a64",
-	},
-	{
-		name:       "peasantlocal-api-0.1.0",
-		jsonSHA256: "40b31eb6816a96c1283b2854e76d94936198b56c6ee78f16f02d774566791aee",
-		yamlSHA256: "8c147003402e78f5a964135a689247c4876a2a980fcbd3be2c2bf6a553ce1b23",
-	},
-	{
-		name:       "peasantlocal-api-0.2.0",
-		jsonSHA256: "1d19fdb4a776e72153af2e0517ca32bbd8f239b99b9e6bc6a21e98ebb95b9743",
-		yamlSHA256: "fce12cf8a5211ca8318ff49f38a37ddcb8db5746734a5878cd6ec99a707c3fbe",
-	},
-	{
-		name:       "village-api-0.1.0",
-		jsonSHA256: "114ceda1e4f6a22f1d770b0eb7964d6d4c32b0855b339b1892a2f75a88660c6d",
-		yamlSHA256: "6e9710cdad192a7ba43355ca92317f2b994e009d7a288fa7d3b49ab11a0133f1",
-	},
-	// --- 0.2.0 village-api trio: frozen at the 0.3.0 bump (rc2 #118) ---
-	{
-		name:       "village-api-0.2.0",
-		jsonSHA256: "39c89136901ee843daabd8cd25681541705d2e72b98e434c16cbe5aececa36ac",
-		yamlSHA256: "8036e5dcc74f557561adea6ca838627bcf82c901a285107a17ad8d5300826aaa",
-	},
-	{
-		// publish-request schema is JSON-only (a JSON Schema, not an OpenAPI doc),
-		// so the file is publish-request-0.2.0.schema.json with no .yaml sibling.
-		name:       "publish-request-0.2.0.schema",
-		jsonSHA256: "2f55f5472ce1a0604ccc3fa41219ed9096a8845f0d84bc6ea5b607986a4f2657",
-		jsonOnly:   true,
-	},
-	// --- 0.3.0 village-api trio: frozen at the 0.4.0 bump (added the license enum) ---
-	{
-		name:       "village-api-0.3.0",
-		jsonSHA256: "3a4a4b5fb893247946dcf1b2ac5c99a30b437fe5070cf2aa54ecc4ff7d2f9344",
-		yamlSHA256: "a3ed38c9f7a4e01890eb5ab2186c4945a83174a08d15cf08b45fc4ddc033de97",
-	},
-	{
-		// json-only, like publish-request-0.2.0.schema above.
-		name:       "publish-request-0.3.0.schema",
-		jsonSHA256: "06eb63fde21cd6b0a2811ff48c3c3fcce7116d14aee9e66afd30f80f14af7285",
-		jsonOnly:   true,
-	},
-	// --- 0.4.0 village-api trio: frozen at the 0.5.0 bump (added the pull skip-gate surface) ---
-	{
-		name:       "village-api-0.4.0",
-		jsonSHA256: "eab04e0813d220e681dcd79ac7b33e997bae56a5b0138d29e536c0f692ed17b0",
-		yamlSHA256: "76dbefd2c8b3372938f56a771b3e5836e79647152cf885014c8c15ea79c12037",
-	},
-	{
-		// json-only, like publish-request-0.2.0.schema above.
-		name:       "publish-request-0.4.0.schema",
-		jsonSHA256: "bb303091a1996c4fdbb25df0c5e49f56d1571c47b04378506ec5e5ad9581b8eb",
-		jsonOnly:   true,
-	},
+// Each row now lives in testdata/retired_specs.yaml so adding a newly frozen
+// version extends the fixture rather than an inline test matrix.
+func loadRetiredSpecRegistry(t *testing.T, root string) []retiredSpec {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))
+	if err != nil {
+		t.Fatalf("read retired spec registry fixture: %v", err)
+	}
+	var fixture struct {
+		Specs []retiredSpec `yaml:"specs"`
+	}
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatalf("decode retired spec registry fixture: %v", err)
+	}
+	if len(fixture.Specs) == 0 {
+		t.Fatal("retired spec registry fixture is empty: register every frozen version")
+	}
+	seen := make(map[string]struct{}, len(fixture.Specs))
+	for _, spec := range fixture.Specs {
+		if spec.Name == "" || spec.JSONSHA256 == "" || (!spec.JSONOnly && spec.YAMLSHA256 == "") {
+			t.Fatalf("retired spec registry row %q is incomplete; provide every required frozen hash", spec.Name)
+		}
+		if _, duplicate := seen[spec.Name]; duplicate {
+			t.Fatalf("retired spec registry repeats %q", spec.Name)
+		}
+		seen[spec.Name] = struct{}{}
+	}
+	return fixture.Specs
 }
 
 // TestRetiredSpecsImmutable is the generic released-versions-immutability guard. It
@@ -134,17 +105,15 @@ func TestRetiredSpecsImmutable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("find module root: %v", err)
 	}
-	if len(retiredSpecRegistry) == 0 {
-		t.Fatal("retiredSpecRegistry is empty: every newly-retired version MUST be registered the moment it is frozen (register-at-freeze-time), else it is mutable-and-unguarded")
-	}
+	retiredSpecRegistry := loadRetiredSpecRegistry(t, root)
 
 	for _, dir := range committedSpecDirs(root) {
 		for _, rs := range retiredSpecRegistry {
-			assertFrozen(t, filepath.Join(dir, rs.name+".json"), rs.jsonSHA256)
+			assertFrozen(t, filepath.Join(dir, rs.Name+".json"), rs.JSONSHA256)
 			// JSON-only artifacts (the extracted publish-request schema) have no
 			// .yaml sibling — skip the yaml present/hash check for them.
-			if !rs.jsonOnly {
-				assertFrozen(t, filepath.Join(dir, rs.name+".yaml"), rs.yamlSHA256)
+			if !rs.JSONOnly {
+				assertFrozen(t, filepath.Join(dir, rs.Name+".yaml"), rs.YAMLSHA256)
 			}
 		}
 	}

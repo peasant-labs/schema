@@ -12,7 +12,7 @@ package schema
 // current village handler — both CLI and village must update together.
 //
 // rc2 (#118): Model carries required:"true" so swaggest emits a
-// SchemaPublishRequest.required:["model"] array — a publish body with no model
+// The Village operation-specific publish component requires model, so a body with no model
 // object is rejected at the root. Metadata only (changes the generated schema's
 // `required`, not the Go wire shape).
 type PublishRequest struct {
@@ -31,7 +31,7 @@ type PublishRequest struct {
 	// (CC0-1.0 / CC-BY-4.0 / CC-BY-SA-4.0). Optional — omitempty ⇒ a publish with no
 	// license stores NULL (legacy/un-set). The village persists it to
 	// transcripts.license_id; the vendored schema enum makes an invalid value a
-	// documented schema-422. NOT `required` (keeps SchemaPublishRequest.required = [model]).
+	// documented schema-422. NOT `required` (keeps the Village publish body required set at [model]).
 	License License `json:"license,omitempty"`
 }
 

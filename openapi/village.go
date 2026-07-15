@@ -8,6 +8,12 @@ import (
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
+// TranscriptPublishRequest is the Village publish operation's HTTP body.
+// Its validation-requiredness is intentionally stricter than the canonical
+// schema.PublishRequest Go wire shape, so it has a distinct operation-only
+// OpenAPI identity and can never shadow the canonical language-binding type.
+type TranscriptPublishRequest schema.PublishRequest
+
 // BuildVillageAPISpec builds an OpenAPI 3.1 specification for the Village API v1.1.
 // It includes POST /api/v1/transcripts/publish with PublishRequest/PublishResponse,
 // GET /api/v1/auth/cli/login and POST /api/v1/auth/cli/exchange for CLI authentication,
@@ -30,7 +36,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new publish operation: %w", err)
 	}
-	oc.AddReqStructure(new(schema.PublishRequest))
+	oc.AddReqStructure(new(TranscriptPublishRequest))
 	oc.AddRespStructure(new(schema.PublishResponse))
 	oc.SetDescription("Publish a transcript with session entries to the village.")
 	oc.SetID("publishTranscript")
@@ -218,6 +224,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	AddVillageExamples(r.Spec)
+	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
+		return nil, fmt.Errorf("harmonize Village API shared components: %w", err)
+	}
 
 	// TODO(annotation): register annotation components for the village push format.
 	//   - What: add AnnotationSummary, AnnotationTypeSummary, Provenance, ValueDomain

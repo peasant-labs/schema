@@ -284,9 +284,9 @@ export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
         AnnotationsPayload: {
-            annotations?: Schema.AnnotationSummary[] | null;
-            axis?: string;
-            id?: string;
+            annotations: Schema.AnnotationSummary[] | null;
+            axis: string;
+            id: string;
         };
         /**
          * Harness
@@ -298,28 +298,28 @@ export type components = {
         BestiaryHarness: "claude-code" | "gemini-cli" | "codex" | "opencode" | "cursor" | "antigravity";
         ClientMessage: {
             channels?: Schema.ChannelSubscription[];
-            type?: string;
+            type: string;
         };
         DashboardPayload: {
             /** Format: double */
-            acceptanceRate?: number;
+            acceptanceRate: number;
             /** Format: double */
-            avgDurationMins?: number;
+            avgDurationMins: number;
             /** Format: double */
-            avgTurnsPerSession?: number;
-            harnessBreakdown?: {
+            avgTurnsPerSession: number;
+            harnessBreakdown: {
                 [key: string]: number;
             } | null;
-            totalSessions?: number;
-            totalTokens?: number;
+            totalSessions: number;
+            totalTokens: number;
         };
         QualityPayload: {
-            sessions?: Schema.QualitySession[] | null;
+            sessions: Schema.QualitySession[] | null;
         };
         SchemaActivityEdge: {
-            from?: string;
-            taskCount?: number;
-            to?: string;
+            from: string;
+            taskCount: number;
+            to: string;
         };
         /**
          * Annotation Datatype
@@ -338,42 +338,42 @@ export type components = {
          */
         SchemaAnnotationStatus: "proposed" | "active" | "deprecated" | "retired";
         SchemaAnnotationSummary: {
-            annotatorKind?: Schema.AnnotatorKind;
-            annotatorName?: string;
-            confidence?: null | number;
-            contentHash?: null | string;
+            annotatorKind: Schema.AnnotatorKind;
+            annotatorName: string;
+            confidence?: (null | number) | null;
+            contentHash?: (null | string) | null;
             /** Format: int64 */
-            createdAt?: number;
-            id?: string;
-            isPrimary?: boolean;
-            provenance?: Schema.Provenance;
-            reason?: null | string;
-            supersededBy?: null | string;
-            targetAnnotationId?: null | string;
-            targetEntryEndIndex?: null | number;
-            targetEntryIndex?: null | number;
-            targetKind?: Schema.TargetKind;
-            targetProjectHash?: null | string;
-            targetSessionId?: null | string;
-            typeId?: string;
-            typeName?: string;
-            value?: string;
+            createdAt: number;
+            id: string;
+            isPrimary: boolean;
+            provenance?: Schema.Provenance | null;
+            reason?: (null | string) | null;
+            supersededBy?: (null | string) | null;
+            targetAnnotationId?: (null | string) | null;
+            targetEntryEndIndex?: (null | number) | null;
+            targetEntryIndex?: (null | number) | null;
+            targetKind: Schema.TargetKind;
+            targetProjectHash?: (null | string) | null;
+            targetSessionId?: (null | string) | null;
+            typeId: string;
+            typeName: string;
+            value: string;
         };
         SchemaAnnotationTypeSummary: {
             allowedTargetKinds?: Schema.TargetKind[];
-            class?: string;
+            class: string;
             description?: string;
-            displayName?: string;
-            family?: string;
+            displayName: string;
+            family: string;
             id?: string;
-            lowerIsBetter?: null | boolean;
-            origin?: Schema.TypeOrigin;
-            priorityOverride?: null | number;
+            lowerIsBetter?: (null | boolean) | null;
+            origin: Schema.TypeOrigin;
+            priorityOverride?: (null | number) | null;
             scaleKind?: Schema.ScaleKind;
-            status?: Schema.AnnotationStatus;
-            typeId?: string;
-            valueDomain?: Schema.ValueDomain;
-            version?: number;
+            status: Schema.AnnotationStatus;
+            typeId: string;
+            valueDomain: Schema.ValueDomain;
+            version: number;
         };
         /**
          * Annotator Kind
@@ -385,117 +385,117 @@ export type components = {
          */
         SchemaAnnotatorKind: "human" | "agent" | "rule";
         SchemaChangeDetailPayload: {
-            baseRef?: string;
-            branch?: string;
-            costUsd?: null | number;
-            defaultBranch?: string;
-            files?: Schema.FileChange[] | null;
-            frictions?: Schema.FrictionCluster[] | null;
-            linesAdded?: number;
-            linesRemoved?: number;
-            newEdges?: Schema.MapEdge[] | null;
-            newNodes?: string[] | null;
+            baseRef: string;
+            branch: string;
+            costUsd?: (null | number) | null;
+            defaultBranch: string;
+            files: Schema.FileChange[] | null;
+            frictions: Schema.FrictionCluster[] | null;
+            linesAdded: number;
+            linesRemoved: number;
+            newEdges: Schema.MapEdge[] | null;
+            newNodes: string[] | null;
             /** Format: int64 */
-            outputTokens?: number;
-            removedEdges?: Schema.MapEdge[] | null;
-            removedNodes?: string[] | null;
-            slice?: Schema.MapSlice;
-            unrecordedCommits?: Schema.CommitRef[] | null;
-            unusual?: Schema.UnusualSignal[] | null;
-            violations?: Schema.EdgeViolation[] | null;
-            work?: Schema.ChangeSession[] | null;
+            outputTokens: number;
+            removedEdges: Schema.MapEdge[] | null;
+            removedNodes: string[] | null;
+            slice: Schema.MapSlice;
+            unrecordedCommits: Schema.CommitRef[] | null;
+            unusual: Schema.UnusualSignal[] | null;
+            violations: Schema.EdgeViolation[] | null;
+            work: Schema.ChangeSession[] | null;
         };
         SchemaChangeDiffPayload: {
-            binary?: boolean;
-            branch?: string;
-            file?: string;
-            hunks?: Schema.DiffHunk[] | null;
-            oldPath?: null | string;
-            status?: string;
-            truncated?: boolean;
+            binary: boolean;
+            branch: string;
+            file: string;
+            hunks: Schema.DiffHunk[] | null;
+            oldPath?: (null | string) | null;
+            status: string;
+            truncated: boolean;
         };
         SchemaChangeSession: {
-            binding?: string;
-            harness?: string;
-            sessionId?: string;
-            startMs?: null | number;
-            tasks?: Schema.TaskSummary[] | null;
-            title?: string;
+            binding: string;
+            harness: string;
+            sessionId: string;
+            startMs?: (null | number) | null;
+            tasks: Schema.TaskSummary[] | null;
+            title: string;
         };
         SchemaChangeSummary: {
-            aheadCount?: number;
+            aheadCount: number;
             baseHash?: string;
-            behindCount?: number;
-            branch?: string;
-            filesChanged?: number;
-            lastWorkMs?: null | number;
+            behindCount: number;
+            branch: string;
+            filesChanged: number;
+            lastWorkMs?: (null | number) | null;
             mergeCommitHash?: string;
-            merged?: boolean;
-            mergedAtMs?: null | number;
-            newEdges?: number;
-            removedEdges?: number;
+            merged: boolean;
+            mergedAtMs?: (null | number) | null;
+            newEdges: number;
+            removedEdges: number;
             reverted?: boolean;
-            sessionCount?: number;
-            taskCount?: number;
-            tipCommitMs?: null | number;
-            violations?: number;
+            sessionCount: number;
+            taskCount: number;
+            tipCommitMs?: (null | number) | null;
+            violations: number;
         };
         SchemaChannelSubscription: {
             axis?: string;
             id?: string;
-            topic?: string;
+            topic: string;
         };
         SchemaChildSessionRef: {
-            id?: string;
+            id: string;
             project?: string;
             /** Format: date-time */
-            startTime?: string;
+            startTime: string;
         };
         SchemaCommitRef: {
-            hasSession?: boolean;
-            hash?: string;
+            hasSession: boolean;
+            hash: string;
             sessionIds: Schema.SessionID[];
-            subject?: string;
-            timeMs?: null | number;
+            subject: string;
+            timeMs?: (null | number) | null;
         };
         SchemaCreateAnnotationRequest: {
             annotatorName?: string;
-            confidence?: null | number;
-            isPrimary?: boolean;
-            reason?: null | string;
-            sessionId?: string;
-            targetAnnotationId?: null | string;
-            targetEntryEndIndex?: null | number;
-            targetEntryIndex?: null | number;
-            typeId?: string;
-            value?: string;
+            confidence?: (null | number) | null;
+            isPrimary: boolean;
+            reason?: (null | string) | null;
+            sessionId: string;
+            targetAnnotationId?: (null | string) | null;
+            targetEntryEndIndex?: (null | number) | null;
+            targetEntryIndex?: (null | number) | null;
+            typeId: string;
+            value: string;
         };
         SchemaCreateAnnotationResponse: {
-            id?: string;
+            id: string;
         };
         SchemaDayStats: {
-            date?: string;
-            sessions?: number;
-            tokens?: number;
+            date: string;
+            sessions: number;
+            tokens: number;
         };
         SchemaDiffHunk: {
             header?: string;
-            lines?: Schema.DiffLine[] | null;
-            newLines?: number;
-            newStart?: number;
-            oldLines?: number;
-            oldStart?: number;
+            lines: Schema.DiffLine[] | null;
+            newLines: number;
+            newStart: number;
+            oldLines: number;
+            oldStart: number;
             sessionId?: string;
             sessionTitle?: string;
         };
         SchemaDiffLine: {
-            kind?: string;
-            text?: string;
+            kind: string;
+            text: string;
         };
         SchemaEdgeViolation: {
-            from?: string;
-            kind?: string;
-            to?: string;
+            from: string;
+            kind: string;
+            to: string;
         };
         /**
          * Entry Type
@@ -507,82 +507,82 @@ export type components = {
          */
         SchemaEntryType: "text" | "tool_use" | "tool_result" | "thinking" | "system" | "error" | "result";
         SchemaFileChange: {
-            linesAdded?: number;
-            linesRemoved?: number;
-            oldPath?: null | string;
-            path?: string;
-            status?: string;
+            linesAdded: number;
+            linesRemoved: number;
+            oldPath?: (null | string) | null;
+            path: string;
+            status: string;
         };
         SchemaFrictionCluster: {
-            count?: number;
-            file?: string;
-            kind?: string;
-            label?: string;
-            sessions?: number;
+            count: number;
+            file: string;
+            kind: string;
+            label: string;
+            sessions: number;
         };
         SchemaHealthResponse: {
-            status?: string;
+            status: string;
         };
         SchemaMapEdge: {
-            count?: number;
-            from?: string;
-            to?: string;
+            count: number;
+            from: string;
+            to: string;
         };
         SchemaMapGraphPayload: {
-            activityEdges?: Schema.ActivityEdge[] | null;
+            activityEdges: Schema.ActivityEdge[] | null;
             atCommit?: string;
             /** Format: int64 */
-            generatedAtMs?: number;
-            nodes?: Schema.MapNode[] | null;
-            parsedLanguages?: string[] | null;
-            projectHash?: Schema.ProjectHash;
-            repoFound?: boolean;
+            generatedAtMs: number;
+            nodes: Schema.MapNode[] | null;
+            parsedLanguages: string[] | null;
+            projectHash: Schema.ProjectHash;
+            repoFound: boolean;
             repoPath?: string;
-            structureEdges?: Schema.MapEdge[] | null;
-            violations?: Schema.EdgeViolation[] | null;
+            structureEdges: Schema.MapEdge[] | null;
+            violations: Schema.EdgeViolation[] | null;
         };
         SchemaMapNode: {
             /** Format: double */
-            effortDensity?: number;
-            fileCount?: number;
-            id?: string;
-            kind?: string;
+            effortDensity: number;
+            fileCount: number;
+            id: string;
+            kind: string;
             language?: string;
-            layer?: number;
-            loc?: number;
-            name?: string;
-            order?: number;
+            layer: number;
+            loc: number;
+            name: string;
+            order: number;
             parent?: string;
-            recordedFiles?: number;
-            totalFiles?: number;
-            touchCount?: number;
+            recordedFiles: number;
+            totalFiles: number;
+            touchCount: number;
         };
         SchemaMapNodeDetailPayload: {
-            costUsd?: null | number;
-            dependsOn?: string[] | null;
-            kind?: string;
+            costUsd?: (null | number) | null;
+            dependsOn: string[] | null;
+            kind: string;
             language?: string;
-            lastTouchMs?: null | number;
-            loc?: number;
-            path?: string;
-            reEdits?: number;
-            recentCommits?: Schema.CommitRef[] | null;
-            recordedFiles?: number;
-            retryLoops?: number;
-            sessionCount?: number;
-            shapedBy?: Schema.TaskSummary[] | null;
-            taskCount?: number;
-            totalFiles?: number;
-            usedBy?: string[] | null;
+            lastTouchMs?: (null | number) | null;
+            loc: number;
+            path: string;
+            reEdits: number;
+            recentCommits: Schema.CommitRef[] | null;
+            recordedFiles: number;
+            retryLoops: number;
+            sessionCount: number;
+            shapedBy: Schema.TaskSummary[] | null;
+            taskCount: number;
+            totalFiles: number;
+            usedBy: string[] | null;
         };
         SchemaMapSlice: {
-            activityEdges?: Schema.ActivityEdge[] | null;
-            nodes?: Schema.MapNode[] | null;
-            structureEdges?: Schema.MapEdge[] | null;
+            activityEdges: Schema.ActivityEdge[] | null;
+            nodes: Schema.MapNode[] | null;
+            structureEdges: Schema.MapEdge[] | null;
         };
         SchemaMockConfigResponse: {
             api?: string[];
-            enabled?: boolean;
+            enabled: boolean;
             tui?: string[];
             web?: string[];
         };
@@ -597,65 +597,65 @@ export type components = {
             projectHash: Schema.ProjectHash;
         };
         SchemaProjectSummariesPayload: {
-            projects?: Schema.ProjectSummary[] | null;
+            projects: Schema.ProjectSummary[] | null;
         };
         SchemaProjectSummary: {
-            lastWorkMs?: null | number;
-            openChanges?: number;
-            project?: string;
-            projectHash?: Schema.ProjectHash;
-            recordedFiles?: number;
-            sessions?: number;
-            totalFiles?: number;
+            lastWorkMs?: (null | number) | null;
+            openChanges: number;
+            project: string;
+            projectHash: Schema.ProjectHash;
+            recordedFiles: number;
+            sessions: number;
+            totalFiles: number;
         };
         SchemaProjectTasksPayload: {
             fileFilter?: string;
-            projectHash?: Schema.ProjectHash;
-            tasks?: Schema.TaskSummary[] | null;
+            projectHash: Schema.ProjectHash;
+            tasks: Schema.TaskSummary[] | null;
         };
         SchemaProvenance: {
             details?: {
                 [key: string]: string;
             };
             function?: string;
-            method?: string;
+            method: string;
             version?: string;
         };
         SchemaQualitySession: {
-            date?: string;
-            discoveryTurns?: number;
+            date: string;
+            discoveryTurns: number;
             /** Format: double */
-            durationMinutes?: number;
+            durationMinutes: number;
             effectiveAnnotations?: Schema.AnnotationSummary[];
             /** Format: double */
-            explorationRatio?: number;
-            filesTouched?: number;
-            id?: string;
-            inputTokens?: number;
-            linesChanged?: number;
-            outcome?: string;
-            outputTokens?: number;
-            project?: string;
-            retryLoops?: number;
-            retryTokensWasted?: number;
-            scope?: string;
-            scopeBreadth?: number;
+            explorationRatio: number;
+            filesTouched: number;
+            id: string;
+            inputTokens: number;
+            linesChanged: number;
+            outcome: string;
+            outputTokens: number;
+            project: string;
+            retryLoops: number;
+            retryTokensWasted: number;
+            scope: string;
+            scopeBreadth: number;
             /** Format: double */
-            signalDensity?: number;
+            signalDensity: number;
             /** Format: double */
-            specQualityScore?: number;
-            title?: string;
-            toolCalls?: number;
-            totalTokens?: number;
-            turnCount?: number;
-            withinSessionReverts?: number;
+            specQualityScore: number;
+            title: string;
+            toolCalls: number;
+            totalTokens: number;
+            turnCount: number;
+            withinSessionReverts: number;
         };
         SchemaReviewListPayload: {
             changes: Schema.ChangeSummary[];
             defaultBranch?: string;
-            projectHash?: Schema.ProjectHash;
+            projectHash: Schema.ProjectHash;
             recentCommits: Schema.CommitRef[];
-            repoFound?: boolean;
+            repoFound: boolean;
             sessions: Schema.TimelineSessionRef[];
         };
         /**
@@ -676,44 +676,44 @@ export type components = {
          */
         SchemaScaleKind: "nominal" | "ordinal" | "continuous";
         SchemaSearchPayload: {
-            query?: string;
-            results?: Schema.SearchResult[] | null;
+            query: string;
+            results: Schema.SearchResult[] | null;
         };
         SchemaSearchResult: {
-            entryIndex?: number;
-            project?: string;
+            entryIndex: number;
+            project: string;
             projectHash?: Schema.ProjectHash;
-            role?: string;
+            role: string;
             /** Format: double */
-            score?: number;
-            sessionId?: string;
-            snippet?: string;
+            score: number;
+            sessionId: string;
+            snippet: string;
         };
         SchemaSessionDetailPayload: {
             childSessions?: Schema.ChildSessionRef[];
             /** Format: double */
-            durationMins?: number;
+            durationMins: number;
             /** Format: date-time */
-            endTime?: string;
+            endTime: string;
             gitBranch?: string;
             gitRemote?: string;
-            harness?: Schema.Harness;
-            id?: string;
+            harness: Schema.Harness;
+            id: string;
             model?: string;
             outcome?: Schema.SessionOutcome;
             project?: string;
             schemaVersion?: string;
-            scorecard?: Schema.SessionScorecard;
+            scorecard?: Schema.SessionScorecard | null;
             source?: string;
             /** Format: date-time */
-            startTime?: string;
+            startTime: string;
             status?: string;
-            tokensIn?: number;
-            tokensOut?: number;
-            toolCallCount?: number;
-            totalTokens?: number;
-            turnCount?: number;
-            turns?: Schema.TurnDetail[] | null;
+            tokensIn: number;
+            tokensOut: number;
+            toolCallCount: number;
+            totalTokens: number;
+            turnCount: number;
+            turns: Schema.TurnDetail[] | null;
             workingDirectory?: string;
         };
         /**
@@ -736,41 +736,41 @@ export type components = {
          */
         SchemaSessionOutcome: "resolved" | "partial" | "failed";
         SchemaSessionScorecard: {
-            costTotalUsd?: null | number;
-            m2TokenOutcomeRatio?: null | number;
-            m4ConsecutiveErrorMax?: null | number;
-            m5ContextUtilizationPct?: null | number;
-            m6OutputSurvivalPct?: null | number;
-            m7SpecHasConstraints?: null | boolean;
-            m7SpecHasExamples?: null | boolean;
+            costTotalUsd?: (null | number) | null;
+            m2TokenOutcomeRatio?: (null | number) | null;
+            m4ConsecutiveErrorMax?: (null | number) | null;
+            m5ContextUtilizationPct?: (null | number) | null;
+            m6OutputSurvivalPct?: (null | number) | null;
+            m7SpecHasConstraints?: (null | boolean) | null;
+            m7SpecHasExamples?: (null | boolean) | null;
             outcome?: Schema.SessionOutcome;
-            retryTokensWasted?: null | number;
-            signalDensity?: null | number;
-            specQualityScore?: null | number;
-            totalTokens?: null | number;
-            withinSessionReverts?: null | number;
+            retryTokensWasted?: (null | number) | null;
+            signalDensity?: (null | number) | null;
+            specQualityScore?: (null | number) | null;
+            totalTokens?: (null | number) | null;
+            withinSessionReverts?: (null | number) | null;
         };
         SchemaSessionSummary: {
             /** Format: double */
-            durationMins?: number;
-            harness?: Schema.Harness;
-            id?: string;
+            durationMins: number;
+            harness: Schema.Harness;
+            id: string;
             outcome?: string;
-            parentSessionId?: null | string;
+            parentSessionId?: (null | string) | null;
             preview?: string;
             project?: string;
             projectHash?: Schema.ProjectHash;
             /** Format: date-time */
-            startTime?: string;
-            toolCallCount?: number;
-            totalTokens?: number;
-            turnCount?: number;
+            startTime: string;
+            toolCallCount: number;
+            totalTokens: number;
+            turnCount: number;
         };
         SchemaSessionsPayload: {
-            sessions?: Schema.SessionSummary[] | null;
+            sessions: Schema.SessionSummary[] | null;
         };
         SchemaShutdownResponse: {
-            status?: string;
+            status: string;
         };
         /**
          * Stop Reason
@@ -789,32 +789,32 @@ export type components = {
          */
         SchemaTargetKind: "session" | "entry" | "annotation" | "project";
         SchemaTaskSummary: {
-            editedFiles?: string[] | null;
-            entryIndex?: number;
-            labels?: string[] | null;
+            editedFiles: string[] | null;
+            entryIndex: number;
+            labels: string[] | null;
             outcome?: string;
-            readCount?: number;
-            retryLoop?: boolean;
-            sessionId?: string;
-            startMs?: null | number;
-            title?: string;
+            readCount: number;
+            retryLoop: boolean;
+            sessionId: string;
+            startMs?: (null | number) | null;
+            title: string;
         };
         SchemaTimelineSessionRef: {
-            harness?: Schema.Harness;
-            hasCommitBinding?: boolean;
-            sessionId?: Schema.SessionID;
-            startMs?: null | number;
-            title?: string;
+            harness: Schema.Harness;
+            hasCommitBinding: boolean;
+            sessionId: Schema.SessionID;
+            startMs?: (null | number) | null;
+            title: string;
         };
         SchemaToolCallDetail: {
-            arguments?: string;
-            durationMs?: null | number;
-            exitCode?: null | number;
+            arguments: string;
+            durationMs?: (null | number) | null;
+            exitCode?: (null | number) | null;
             filePath?: string;
-            id?: string;
+            id: string;
             isError?: boolean;
-            name?: string;
-            result?: string;
+            name: string;
+            result: string;
             toolKind?: Schema.ToolCallKind;
         };
         /**
@@ -828,18 +828,18 @@ export type components = {
         SchemaToolCallKind: "read" | "edit" | "delete" | "move" | "search" | "execute" | "think" | "fetch" | "other";
         SchemaTurnDetail: {
             agentName?: string;
-            content?: string;
-            depth?: number;
+            content: string;
+            depth: number;
             entryType?: Schema.EntryType;
             hasThinking?: boolean;
-            index?: number;
-            parentIndex?: null | number;
-            role?: Schema.Role;
-            stopReason?: Schema.StopReason;
+            index: number;
+            parentIndex?: (null | number) | null;
+            role: Schema.Role;
+            stopReason?: Schema.StopReason | null;
             /** Format: date-time */
-            timestamp?: string;
-            tokensIn?: null | number;
-            tokensOut?: null | number;
+            timestamp: string;
+            tokensIn?: (null | number) | null;
+            tokensOut?: (null | number) | null;
             toolCalls?: Schema.ToolCallDetail[];
         };
         /**
@@ -851,17 +851,17 @@ export type components = {
          */
         SchemaTypeOrigin: "system" | "user" | "group";
         SchemaUnusualSignal: {
-            kind?: string;
-            label?: string;
+            kind: string;
+            label: string;
             /** Format: double */
-            perChange?: number;
+            perChange: number;
             /** Format: double */
-            perProject?: number;
+            perProject: number;
         };
         SchemaValueDomain: {
             constraintSpec?: string;
-            datatype?: Schema.AnnotationDatatype;
-            kind?: Schema.ValueDomainKind;
+            datatype: Schema.AnnotationDatatype;
+            kind: Schema.ValueDomainKind;
             permissibleValues?: string[];
         };
         /**
@@ -878,40 +878,40 @@ export type components = {
             id?: string;
             message?: string;
             topic?: string;
-            type?: string;
+            type: string;
             version?: string;
         };
         SessionDetailPayload: {
             childSessions?: Schema.ChildSessionRef[];
             /** Format: double */
-            durationMins?: number;
+            durationMins: number;
             /** Format: date-time */
-            endTime?: string;
+            endTime: string;
             gitBranch?: string;
             gitRemote?: string;
-            harness?: Schema.Harness;
-            id?: string;
+            harness: Schema.Harness;
+            id: string;
             model?: string;
             outcome?: Schema.SessionOutcome;
             project?: string;
             schemaVersion?: string;
-            scorecard?: Schema.SessionScorecard;
+            scorecard?: Schema.SessionScorecard | null;
             source?: string;
             /** Format: date-time */
-            startTime?: string;
+            startTime: string;
             status?: string;
-            tokensIn?: number;
-            tokensOut?: number;
-            toolCallCount?: number;
-            totalTokens?: number;
-            turnCount?: number;
-            turns?: Schema.TurnDetail[] | null;
+            tokensIn: number;
+            tokensOut: number;
+            toolCallCount: number;
+            totalTokens: number;
+            turnCount: number;
+            turns: Schema.TurnDetail[] | null;
             workingDirectory?: string;
         };
         TrendsPayload: {
-            days?: Schema.DayStats[] | null;
-            totalSessions?: number;
-            totalTokens?: number;
+            days: Schema.DayStats[] | null;
+            totalSessions: number;
+            totalTokens: number;
         };
     };
     responses: never;

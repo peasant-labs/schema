@@ -18,12 +18,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   generated quality data rather than parsing repository-relative YAML.
 - Normalized timeline session identities, authoritative many-to-many commit
   bindings, and explicit project resolution in Peasant Local API 0.3.0. The
-  canonical 16-family relationship corpus and exact identity manifest are
-  available to Go and TypeScript consumers through schema-owned typed fixture
-  loaders.
+  canonical 16-family relationship corpus is available to Go and TypeScript
+  consumers through schema-owned typed fixture loaders. Its exact-identity
+  mutation oracle remains schema-repo test infrastructure and is not published.
 
 ### Changed
 
+- Village API `0.6.0` gives the stricter publish HTTP body its own
+  `OpenapiTranscriptPublishRequest` component identity and uses exact canonical
+  Types schemas for every same-name shared operation component. Released `0.5.0`
+  artifacts remain byte-frozen.
+- Publish request schema compilation is lazy and thread-safe so a newly bumped
+  Village API version can generate its embedded schema before that artifact
+  exists. Runtime validation still compiles the exact embedded bytes on first use.
 - `testcase.LoadCorpus` now rejects unknown fields, duplicate case names, and
   trailing YAML documents. The quality fixture loader now models the complete
   variation catalog and rejects unknown fields, duplicate names, and trailing

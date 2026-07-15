@@ -24,116 +24,80 @@ type TimelineFixtureExpected struct {
 	ErrorContains string `json:"errorContains,omitempty" yaml:"error_contains"`
 }
 
-// TimelineFixtureCorpus is the project Git timeline validation corpus.
-type TimelineFixtureCorpus = testcase.Corpus[TimelineFixtureInput, TimelineFixtureExpected]
-
-// TimelineFixtureManifestEntry pins one canonical behavioral family to its
-// exact case name and expected classification.
-type TimelineFixtureManifestEntry struct {
+// TimelineFixtureCase is one public relationship case. Family is the stable
+// behavioral identity; Name remains the executable testcase identity.
+type TimelineFixtureCase struct {
 	Family         string                  `json:"family" yaml:"family"`
 	Name           string                  `json:"name" yaml:"name"`
+	Input          TimelineFixtureInput    `json:"input" yaml:"input"`
+	Expected       TimelineFixtureExpected `json:"expected" yaml:"expected"`
 	Classification testcase.Classification `json:"classification" yaml:"classification"`
+	Provenance     testcase.Provenance     `json:"provenance" yaml:"provenance"`
+	Mutation       testcase.Mutation       `json:"mutation" yaml:"mutation"`
 }
 
-// TimelineManifestMutationInput describes a count-preserving manifest mutation.
-type TimelineManifestMutationInput struct {
-	Kind                      string                  `json:"kind" yaml:"kind"`
-	Target                    string                  `json:"target" yaml:"target"`
-	ReplacementName           string                  `json:"replacementName" yaml:"replacement_name"`
-	ReplacementClassification testcase.Classification `json:"replacementClassification" yaml:"replacement_classification"`
+// TimelineFixtureCorpus is the project Git timeline validation corpus.
+type TimelineFixtureCorpus struct {
+	Cases []TimelineFixtureCase `json:"cases" yaml:"cases"`
 }
 
-// TimelineManifestMutationCorpus proves that exact family identity survives
-// count-preserving renames and replacements.
-type TimelineManifestMutationCorpus = testcase.Corpus[TimelineManifestMutationInput, bool]
-
-// TimelineFixtureManifest is the independent identity oracle for the corpus.
-type TimelineFixtureManifest struct {
-	Cases     []TimelineFixtureManifestEntry `json:"cases" yaml:"cases"`
-	Mutations TimelineManifestMutationCorpus `json:"mutations" yaml:"mutations"`
+// CheckMin rejects a timeline corpus smaller than the required behavioral floor.
+func (c TimelineFixtureCorpus) CheckMin(minimum int) error {
+	if len(c.Cases) < minimum {
+		return fmt.Errorf("timeline corpus has %d cases, want at least %d", len(c.Cases), minimum)
+	}
+	return nil
 }
 
-// LoadTimelineFixtures parses and validates the shared timeline corpus.
+// LoadTimelineFixtures parses and validates the shared public timeline corpus.
 func LoadTimelineFixtures() (TimelineFixtureCorpus, error) {
-	fixtures, err := testcase.LoadCorpus[TimelineFixtureInput, TimelineFixtureExpected](TimelineYAML)
-	if err != nil {
-		return TimelineFixtureCorpus{}, fmt.Errorf("load timeline fixtures: %w", err)
+	var fixtures TimelineFixtureCorpus
+	decoder := yaml.NewDecoder(bytes.NewReader(TimelineYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixtures); err != nil {
+		return TimelineFixtureCorpus{}, fmt.Errorf("load timeline fixtures: decode document: %w", err)
 	}
-	manifest, err := LoadTimelineFixtureManifest()
-	if err != nil {
-		return TimelineFixtureCorpus{}, err
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return TimelineFixtureCorpus{}, fmt.Errorf("load timeline fixtures: decode trailing document: %w", err)
+		}
+		return TimelineFixtureCorpus{}, fmt.Errorf("load timeline fixtures: multiple YAML documents are not allowed")
 	}
-	if err := validateTimelineFixtures(fixtures, manifest); err != nil {
+	if err := validateTimelineFixtures(fixtures); err != nil {
 		return TimelineFixtureCorpus{}, err
 	}
 	return fixtures, nil
 }
 
-// LoadTimelineFixtureManifest parses and validates the exact timeline family manifest.
-func LoadTimelineFixtureManifest() (TimelineFixtureManifest, error) {
-	var manifest TimelineFixtureManifest
-	decoder := yaml.NewDecoder(bytes.NewReader(TimelineManifestYAML))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&manifest); err != nil {
-		return TimelineFixtureManifest{}, fmt.Errorf("load timeline fixture manifest: decode document: %w", err)
-	}
-	var trailing any
-	if err := decoder.Decode(&trailing); err != io.EOF {
-		if err != nil {
-			return TimelineFixtureManifest{}, fmt.Errorf("load timeline fixture manifest: decode trailing document: %w", err)
-		}
-		return TimelineFixtureManifest{}, fmt.Errorf("load timeline fixture manifest: multiple YAML documents are not allowed")
-	}
-	if err := validateTimelineFixtureManifest(manifest); err != nil {
-		return TimelineFixtureManifest{}, err
-	}
-	return manifest, nil
-}
-
-func validateTimelineFixtureManifest(manifest TimelineFixtureManifest) error {
-	if len(manifest.Cases) != timelineFixtureCaseCount {
-		return fmt.Errorf("load timeline fixture manifest: has %d families, want exactly %d", len(manifest.Cases), timelineFixtureCaseCount)
-	}
-	families := make(map[string]struct{}, len(manifest.Cases))
-	names := make(map[string]struct{}, len(manifest.Cases))
-	for index, entry := range manifest.Cases {
-		if strings.TrimSpace(entry.Family) == "" || strings.TrimSpace(entry.Name) == "" {
-			return fmt.Errorf("load timeline fixture manifest: entry %d has an empty family or name; identify every canonical behavior explicitly", index)
-		}
-		if !entry.Classification.IsValid() {
-			return fmt.Errorf("load timeline fixture manifest: family %q has invalid classification %q; use a value from testcase.AllClassifications", entry.Family, entry.Classification)
-		}
-		if _, duplicate := families[entry.Family]; duplicate {
-			return fmt.Errorf("load timeline fixture manifest: duplicate family %q; each behavior must have one identity", entry.Family)
-		}
-		if _, duplicate := names[entry.Name]; duplicate {
-			return fmt.Errorf("load timeline fixture manifest: duplicate case name %q; each behavior must have one case", entry.Name)
-		}
-		families[entry.Family] = struct{}{}
-		names[entry.Name] = struct{}{}
-	}
-	if err := manifest.Mutations.Validate(); err != nil {
-		return fmt.Errorf("load timeline fixture manifest: validate mutation corpus: %w", err)
-	}
-	if len(manifest.Mutations.Cases) != 2 {
-		return fmt.Errorf("load timeline fixture manifest: mutation corpus has %d cases, want exactly 2 count-preserving proofs", len(manifest.Mutations.Cases))
-	}
-	return nil
-}
-
-func validateTimelineFixtures(fixtures TimelineFixtureCorpus, manifest TimelineFixtureManifest) error {
+func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
 	if err := fixtures.CheckMin(timelineFixtureCaseCount); err != nil {
 		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
 	if len(fixtures.Cases) != timelineFixtureCaseCount {
 		return fmt.Errorf("load timeline fixtures: corpus has %d cases, want exactly %d canonical relationship cases", len(fixtures.Cases), timelineFixtureCaseCount)
 	}
+	generic := testcase.Corpus[TimelineFixtureInput, TimelineFixtureExpected]{
+		Cases: make([]testcase.Case[TimelineFixtureInput, TimelineFixtureExpected], len(fixtures.Cases)),
+	}
+	families := make(map[string]struct{}, len(fixtures.Cases))
 	passCount, failCount := 0, 0
 	for index, fixture := range fixtures.Cases {
-		identity := manifest.Cases[index]
-		if fixture.Name != identity.Name || fixture.Classification != identity.Classification {
-			return fmt.Errorf("load timeline fixtures: case %d identity=(%q,%q), want manifest identity=(%q,%q) for family %q; restore the canonical case rather than substituting a filler", index, fixture.Name, fixture.Classification, identity.Name, identity.Classification, identity.Family)
+		generic.Cases[index] = testcase.Case[TimelineFixtureInput, TimelineFixtureExpected]{
+			Name:           fixture.Name,
+			Input:          fixture.Input,
+			Expected:       fixture.Expected,
+			Classification: fixture.Classification,
+			Provenance:     fixture.Provenance,
+			Mutation:       fixture.Mutation,
 		}
+		if strings.TrimSpace(fixture.Family) == "" {
+			return fmt.Errorf("load timeline fixtures: case %q has an empty family; identify the behavior this row protects", fixture.Name)
+		}
+		if _, duplicate := families[fixture.Family]; duplicate {
+			return fmt.Errorf("load timeline fixtures: duplicate family %q; each canonical behavior must have one row", fixture.Family)
+		}
+		families[fixture.Family] = struct{}{}
 		if len(fixture.Input.Sessions) == 0 && len(fixture.Input.Commits) == 0 {
 			return fmt.Errorf("load timeline fixtures: case %q has no sessions or commits; add relationship data so the case cannot pass vacuously", fixture.Name)
 		}
@@ -149,6 +113,9 @@ func validateTimelineFixtures(fixtures TimelineFixtureCorpus, manifest TimelineF
 				return fmt.Errorf("load timeline fixtures: must-fail case %q has no error_contains; name the validation failure the mutation must trigger", fixture.Name)
 			}
 		}
+	}
+	if err := generic.Validate(); err != nil {
+		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
 	if passCount != 5 || failCount != 11 {
 		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 5 and 11", passCount, failCount)

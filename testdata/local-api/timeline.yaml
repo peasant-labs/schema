@@ -1,5 +1,6 @@
 cases:
-  - name: many_to_many_bindings
+  - family: many-to-many-bindings
+    name: many_to_many_bindings
     input:
       sessions:
         - {sessionId: session-a, title: first task, harness: claude-code, startMs: 2000, hasCommitBinding: true}
@@ -11,7 +12,8 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: authoritative many-to-many commit bindings}
     mutation: {description: binds two sessions to one commit and one session to two commits}
-  - name: session_not_linked_to_commit
+  - family: unattached-session
+    name: session_not_linked_to_commit
     input:
       sessions:
         - {sessionId: session-unlinked, title: exploration, harness: opencode, startMs: 3000, hasCommitBinding: false}
@@ -21,7 +23,8 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: unattached sessions remain discoverable}
     mutation: {description: includes a visible session with no commit association}
-  - name: binding_outside_default_branch_window
+  - family: binding-outside-window
+    name: binding_outside_default_branch_window
     input:
       sessions:
         - {sessionId: session-old, title: older recorded work, harness: claude-code, hasCommitBinding: true}
@@ -31,7 +34,8 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: complete binding truth exceeds bounded commit window}
     mutation: {description: keeps binding truth when the associated commit is outside the returned window}
-  - name: binding_on_non_default_branch
+  - family: non-default-branch-binding
+    name: binding_on_non_default_branch
     input:
       sessions:
         - {sessionId: session-branch, title: branch work, harness: codex, hasCommitBinding: true}
@@ -40,7 +44,8 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: branch bindings are authoritative without inference}
     mutation: {description: keeps binding truth when no default-branch commit is visible}
-  - name: stable_equal_timestamp_and_missing_timestamp_order
+  - family: stable-session-order
+    name: stable_equal_timestamp_and_missing_timestamp_order
     input:
       sessions:
         - {sessionId: session-a, title: first tie, harness: claude-code, startMs: 4000, hasCommitBinding: false}
@@ -51,7 +56,8 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: deterministic session timeline ordering}
     mutation: {description: combines timestamp ties and a missing timestamp in canonical order}
-  - name: newer_timestamp_must_precede_older
+  - family: descending-timestamp-order
+    name: newer_timestamp_must_precede_older
     input:
       sessions:
         - {sessionId: session-old, title: older, harness: claude-code, startMs: 1000, hasCommitBinding: false}
@@ -61,7 +67,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: descending known start timestamp order}
     mutation: {description: places a newer timestamp after an older timestamp}
-  - name: equal_timestamp_uses_session_identity_tiebreak
+  - family: equal-timestamp-tiebreak
+    name: equal_timestamp_uses_session_identity_tiebreak
     input:
       sessions:
         - {sessionId: session-b, title: second, harness: codex, startMs: 3000, hasCommitBinding: false}
@@ -71,7 +78,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: stable equal-timestamp tie break}
     mutation: {description: reverses session identity order for equal timestamps}
-  - name: missing_timestamp_follows_known_timestamp
+  - family: missing-timestamp-order
+    name: missing_timestamp_follows_known_timestamp
     input:
       sessions:
         - {sessionId: session-unknown, title: unknown, harness: opencode, hasCommitBinding: false}
@@ -81,7 +89,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: missing timestamps sort after known timestamps}
     mutation: {description: places a missing timestamp before a known timestamp}
-  - name: boolean_mirror_mismatch
+  - family: compatibility-boolean
+    name: boolean_mirror_mismatch
     input:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
@@ -91,7 +100,8 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: compatibility boolean mirrors authoritative bindings}
     mutation: {description: clears hasSession while retaining a session binding}
-  - name: visible_reference_requires_complete_binding_truth
+  - family: complete-binding-truth
+    name: visible_reference_requires_complete_binding_truth
     input:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: false}
@@ -101,7 +111,8 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: visible binding proves complete session binding truth}
     mutation: {description: marks a visibly bound session as having no authoritative binding}
-  - name: unknown_session_reference
+  - family: known-session-reference
+    name: unknown_session_reference
     input:
       sessions: []
       commits:
@@ -110,7 +121,8 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: commit bindings reference normalized session identities}
     mutation: {description: points a commit binding at a session absent from the session catalog}
-  - name: duplicate_session_identity
+  - family: unique-session-identity
+    name: duplicate_session_identity
     input:
       sessions:
         - {sessionId: session-a, title: first, harness: claude-code, hasCommitBinding: false}
@@ -120,7 +132,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: normalized session identity uniqueness}
     mutation: {description: repeats one session identity in the session catalog}
-  - name: duplicate_binding
+  - family: unique-commit-binding
+    name: duplicate_binding
     input:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
@@ -130,7 +143,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: commit binding set uniqueness}
     mutation: {description: repeats one session identity in a commit binding list}
-  - name: null_commit_bindings
+  - family: non-null-commit-bindings
+    name: null_commit_bindings
     input:
       sessions: []
       commits:
@@ -139,7 +153,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: non-null commit binding arrays}
     mutation: {description: omits the required sessionIds array from a commit}
-  - name: unknown_timeline_harness
+  - family: known-harness
+    name: unknown_timeline_harness
     input:
       sessions:
         - {sessionId: session-a, title: work, harness: unknown-harness, hasCommitBinding: false}
@@ -148,7 +163,8 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: timeline sessions use the canonical harness closed set}
     mutation: {description: replaces a known harness with an unknown harness token}
-  - name: noncanonical_binding_order
+  - family: canonical-binding-order
+    name: noncanonical_binding_order
     input:
       sessions:
         - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}

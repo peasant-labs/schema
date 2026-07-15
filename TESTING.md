@@ -126,14 +126,15 @@ document, then renders immutable TypeScript constants and clone-returning
 accessors. TypeScript tests cover the five sessions, the named set, and the full
 variation catalog.
 
-The project timeline corpus uses the same schema-owned path. The Go
-`LoadTimelineFixtures` first validates the exact 16-family `testcase.Corpus`,
-its 5 accepted and 11 rejected relationship cases, and its independent
-family/name/classification manifest. Count-preserving rename and replacement
-mutations prove that exact identity rather than count alone is enforced.
-Generation then emits the corpus, manifest, and clone-returning
-`/fixtures/timeline` accessors, so TypeScript consumers never reparse repository
-YAML or redefine the session-to-commit relationship contract.
+The project timeline corpus uses the same schema-owned path. Each row in
+`timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`
+validates exactly 16 families with 5 accepted and 11 rejected relationship
+cases. A separate schema-repo-only oracle and count-preserving rename and
+replacement mutations prove the public corpus has the exact intended identities;
+that review scaffolding is not generated or published. Generation emits only the
+typed corpus and clone-returning `/fixtures/timeline` accessor, so TypeScript
+consumers never reparse repository YAML or redefine the session-to-commit
+relationship contract.
 
 ### Retired-version immutability
 

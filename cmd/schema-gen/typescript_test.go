@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -21,6 +23,14 @@ type enumCatalogFixture struct {
 		Members   []typeScriptEnumMember `yaml:"members"`
 		AllValues []string               `yaml:"all_values"`
 	} `yaml:"enums"`
+}
+
+type apiComponentIdentityMutation struct {
+	Surface     string `yaml:"surface"`
+	Component   string `yaml:"component"`
+	Kind        string `yaml:"kind"`
+	Target      string `yaml:"target"`
+	Replacement string `yaml:"replacement"`
 }
 
 func TestTypeScriptRuntimeEnumsMatchExactFixture(t *testing.T) {
@@ -157,6 +167,114 @@ func TestTypeScriptCollisionFailsClosedOnUnequalSchemas(t *testing.T) {
 	}
 }
 
+func TestCanonicalizeAPIOperationReferencesRejectsUnequalCanonicalCopies(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "api_component_identity.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	matrix, err := testcase.LoadCorpus[apiComponentIdentityMutation, bool](data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matrix.Cases) != 2 {
+		t.Fatalf("API component identity fixture has %d rows, want exactly 2", len(matrix.Cases))
+	}
+	surfaces := typeScriptSurfaces(root, filepath.Join(root, "typescript"))
+	rootAliases, err := loadSchemaAliases(surfaces[0].name, surfaces[0].spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range matrix.Cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			surface, ok := typeScriptSurfaceByName(surfaces, tc.Input.Surface)
+			if !ok {
+				t.Fatalf("unknown TypeScript surface %q; use a surface from typeScriptSurfaces", tc.Input.Surface)
+			}
+			aliases, err := loadSchemaAliases(surface.name, surface.spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := mutateAPIComponentAlias(aliases, tc.Input); err != nil {
+				t.Fatal(err)
+			}
+			raw, err := os.ReadFile(surface.rawOutput)
+			if err != nil {
+				t.Fatal(err)
+			}
+			surface.rawOutput = filepath.Join(t.TempDir(), filepath.Base(surface.rawOutput))
+			if err := os.WriteFile(surface.rawOutput, raw, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			err = canonicalizeAPIOperationReferences(surface, aliases, rootAliases)
+			accepted := err == nil
+			if accepted != tc.Expected {
+				t.Fatalf("accepted=%v, want %v", accepted, tc.Expected)
+			}
+			if err != nil && (!strings.Contains(err.Error(), tc.Input.Component) || !strings.Contains(err.Error(), "schema is unequal")) {
+				t.Fatalf("production canonicalization error is not actionable for %s: %v", tc.Input.Component, err)
+			}
+		})
+	}
+}
+
+func typeScriptSurfaceByName(surfaces []typeScriptSurface, name string) (typeScriptSurface, bool) {
+	for _, surface := range surfaces {
+		if surface.name == name {
+			return surface, true
+		}
+	}
+	return typeScriptSurface{}, false
+}
+
+func mutateAPIComponentAlias(aliases []schemaAlias, mutation apiComponentIdentityMutation) error {
+	for index := range aliases {
+		if aliases[index].RawName != mutation.Component {
+			continue
+		}
+		var document map[string]any
+		if err := json.Unmarshal(aliases[index].Canonical, &document); err != nil {
+			return fmt.Errorf("decode canonical API component %s: %w", mutation.Component, err)
+		}
+		switch mutation.Kind {
+		case "change-property-type":
+			properties, ok := document["properties"].(map[string]any)
+			if !ok {
+				return fmt.Errorf("API component %s has no properties object", mutation.Component)
+			}
+			property, ok := properties[mutation.Target].(map[string]any)
+			if !ok {
+				return fmt.Errorf("API component %s has no property %s", mutation.Component, mutation.Target)
+			}
+			property["type"] = mutation.Replacement
+		case "drop-required":
+			required, ok := document["required"].([]any)
+			if !ok {
+				return fmt.Errorf("API component %s has no required array", mutation.Component)
+			}
+			filtered := make([]any, 0, len(required))
+			for _, field := range required {
+				if field != mutation.Target {
+					filtered = append(filtered, field)
+				}
+			}
+			document["required"] = filtered
+		default:
+			return fmt.Errorf("unknown API component mutation %q", mutation.Kind)
+		}
+		canonical, err := json.Marshal(document)
+		if err != nil {
+			return fmt.Errorf("encode mutated API component %s: %w", mutation.Component, err)
+		}
+		aliases[index].Canonical = canonical
+		return nil
+	}
+	return fmt.Errorf("API component mutation target %s does not exist", mutation.Component)
+}
+
 func TestGeneratedTypeScriptFilesFullyAccounted(t *testing.T) {
 	root, err := findModuleRoot()
 	if err != nil {
@@ -240,15 +358,11 @@ func TestRenderTimelineFixturesDeterministicAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	manifest, err := schema.LoadTimelineFixtureManifest()
-	if err != nil {
-		t.Fatal(err)
-	}
-	first, err := renderTimelineFixtures(fixtures, manifest)
+	first, err := renderTimelineFixtures(fixtures)
 	if err != nil {
 		t.Fatalf("first render: %v", err)
 	}
-	second, err := renderTimelineFixtures(fixtures, manifest)
+	second, err := renderTimelineFixtures(fixtures)
 	if err != nil {
 		t.Fatalf("second render: %v", err)
 	}

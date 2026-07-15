@@ -263,6 +263,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			fixDefinitionRefs(schemaMap)
 		}
 	}
+	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
+		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
+	}
 
 	return r.Spec, nil
 }

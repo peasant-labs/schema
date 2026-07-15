@@ -1,0 +1,22 @@
+cases:
+  - name: unequal_same_name_copy_is_rejected
+    input:
+      surface: local
+      component: SchemaProjectResolutionPayload
+      kind: change-property-type
+      target: project
+      replacement: integer
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: API aliases may use canonical root names only when schemas are exactly equal}
+    mutation: {description: changes a same-name API response property without renaming the component}
+  - name: dropped_required_field_projection_is_rejected
+    input:
+      surface: local
+      component: SchemaReviewListPayload
+      kind: drop-required
+      target: sessions
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: operation references must preserve canonical root requiredness exactly}
+    mutation: {description: removes one required field while retaining the canonical component name}

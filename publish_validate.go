@@ -3,6 +3,7 @@ package schema
 import (
 	"bytes"
 	"encoding/json"
+	"sync"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 )
@@ -13,11 +14,12 @@ import (
 const publishRequestSchemaURL = "publish-request.schema.json"
 
 var (
-	publishRequestSchema    *jsonschema.Schema
-	publishRequestSchemaErr error
+	publishRequestSchema     *jsonschema.Schema
+	publishRequestSchemaErr  error
+	publishRequestSchemaOnce sync.Once
 )
 
-// init compiles the SINGLE BYTE-SOURCE PublishRequest JSON-Schema returned by the
+// compilePublishRequestSchema compiles the SINGLE BYTE-SOURCE PublishRequest JSON-Schema returned by the
 // version-aware accessor PublishRequestSchemaJSON() — the generated artifact
 // committed under generated/publish-request-<VillageAPIVersion>.schema.json,
 // extracted from the Village API spec by openapi.BuildPublishRequestSchema. It
@@ -32,7 +34,7 @@ var (
 // lockstep with no embed path to hand-edit, structurally eliminating the staleness
 // class #118's embed-guard test must police (TestPublishRequestSchemaJSON_IDMatchesVersion
 // keeps a defense-in-depth $id assertion).
-func init() {
+func compilePublishRequestSchema() {
 	compiler := jsonschema.NewCompiler()
 	if err := compiler.AddResource(publishRequestSchemaURL, bytes.NewReader(PublishRequestSchemaJSON())); err != nil {
 		publishRequestSchemaErr = err
@@ -48,8 +50,9 @@ func init() {
 // its harness/model fields missing (e.g. "missing properties: 'model'"/'harness'),
 // or not valid JSON — and the caller must reject it (the village maps this to HTTP
 // 422). It returns nil for a conforming body, or the compile error if the embedded
-// schema failed to compile at init.
+// schema fails to compile on first use.
 func ValidatePublishRequest(data []byte) error {
+	publishRequestSchemaOnce.Do(compilePublishRequestSchema)
 	if publishRequestSchemaErr != nil {
 		return publishRequestSchemaErr
 	}

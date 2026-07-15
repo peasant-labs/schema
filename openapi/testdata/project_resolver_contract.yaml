@@ -3,11 +3,14 @@ contract:
   method: get
   operation_id: resolveProject
   query_name: name
+  query_type: string
   response_status: "200"
   media_type: application/json
   response_ref: "#/components/schemas/SchemaProjectResolutionPayload"
   response_component: SchemaProjectResolutionPayload
   required_properties: [project, projectHash]
+  project_property: project
+  project_type: string
   project_hash_property: projectHash
   project_hash_ref: "#/components/schemas/SchemaProjectHash"
   project_hash_component: SchemaProjectHash
@@ -35,6 +38,12 @@ mutations:
       classification: must-fail
       provenance: {source: requirement, ref: saved routes require an exact project display identity}
       mutation: {description: makes the name query optional}
+    - name: non_string_name_query_is_rejected
+      input: {kind: change-query-type, target: integer}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: saved project routes resolve a string display identity}
+      mutation: {description: changes the required project name query from string to integer}
     - name: redirected_response_is_rejected
       input: {kind: redirect-response, target: "#/components/schemas/SchemaProjectSummariesPayload"}
       expected: false
@@ -47,6 +56,12 @@ mutations:
       classification: must-fail
       provenance: {source: boundary, ref: resolver responses always carry canonical project identity}
       mutation: {description: removes projectHash from the response required set}
+    - name: non_string_project_name_is_rejected
+      input: {kind: change-project-type, target: integer}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: resolver responses carry a string project display identity}
+      mutation: {description: changes the response project property from string to integer}
     - name: loosened_hash_pattern_is_rejected
       input: {kind: change-hash-pattern, target: ".+"}
       expected: false

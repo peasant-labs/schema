@@ -27,7 +27,8 @@ type localAPISurfaceFixture struct {
 		APIComponent string `yaml:"api_component"`
 		RootType     string `yaml:"root_type"`
 	} `yaml:"canonical_references"`
-	Mutations testcase.Corpus[localAPISurfaceMutation, bool] `yaml:"mutations"`
+	Mutations       testcase.Corpus[localAPISurfaceMutation, bool]   `yaml:"mutations"`
+	FacadeMutations testcase.Corpus[publicExportMutationInput, bool] `yaml:"facade_mutations"`
 }
 
 type localAPIOperationIdentity struct {
@@ -123,6 +124,26 @@ func TestPeasantLocalGeneratedSurfaceMutationProof(t *testing.T) {
 	}
 }
 
+func TestPeasantLocalFacadeExportMutationProof(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := loadLocalAPISurfaceFixture(t, root)
+	source := readPublicFacade(t, filepath.Join(root, "typescript", "src", "local-api.ts"))
+	expected := make(map[string]string, len(fixture.Exports))
+	for _, entry := range fixture.Exports {
+		expected[entry.Namespace+":"+entry.Name] = entry.Target
+	}
+	for _, mutation := range fixture.FacadeMutations.Cases {
+		mutated := mutatePublicExports(t, source, mutation.Input)
+		accepted := validatePublicExports(mutated, expected, nil) == nil
+		if accepted != mutation.Expected {
+			t.Fatalf("%s: accepted=%v, want %v", mutation.Name, accepted, mutation.Expected)
+		}
+	}
+}
+
 func loadLocalAPISurfaceFixture(t *testing.T, root string) localAPISurfaceFixture {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "local_api_surface.yaml"))
@@ -139,6 +160,15 @@ func loadLocalAPISurfaceFixture(t *testing.T, root string) localAPISurfaceFixtur
 		t.Fatal(err)
 	}
 	if err := fixture.Mutations.CheckMin(3); err != nil {
+		t.Fatal(err)
+	}
+	if err := fixture.FacadeMutations.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if len(fixture.FacadeMutations.Cases) != 9 {
+		t.Fatalf("local facade mutation fixture has %d rows, want exactly 9", len(fixture.FacadeMutations.Cases))
+	}
+	if err := fixture.FacadeMutations.CheckMin(9); err != nil {
 		t.Fatal(err)
 	}
 	return fixture

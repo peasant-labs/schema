@@ -113,11 +113,7 @@ func generateTypeScript(moduleRoot string) error {
 	if err != nil {
 		return fmt.Errorf("generate TypeScript timeline fixtures: canonical Go loader rejected testdata/local-api/timeline.yaml: %w", err)
 	}
-	timelineManifest, err := schema.LoadTimelineFixtureManifest()
-	if err != nil {
-		return fmt.Errorf("generate TypeScript timeline fixtures: canonical Go loader rejected testdata/local-api/timeline_manifest.yaml: %w", err)
-	}
-	timeline, err := renderTimelineFixtures(timelineFixtures, timelineManifest)
+	timeline, err := renderTimelineFixtures(timelineFixtures)
 	if err != nil {
 		return err
 	}
@@ -275,9 +271,25 @@ func normalizeSchemaRefs(surface string, value any) {
 }
 
 func canonicalizeAPIOperationReferences(surface typeScriptSurface, aliases, rootAliases []schemaAlias) error {
-	rootNames := make(map[string]struct{}, len(rootAliases))
+	rootByName := make(map[string]schemaAlias, len(rootAliases))
 	for _, alias := range rootAliases {
-		rootNames[alias.Name] = struct{}{}
+		if prior, duplicate := rootByName[alias.Name]; duplicate {
+			if !bytes.Equal(prior.Canonical, alias.Canonical) {
+				return fmt.Errorf("canonicalize %s operation references: canonical root type %q has unequal component definitions %q and %q; generation cannot choose a trustworthy public identity; remove the duplicate or make the schemas exactly equal", surface.name, alias.Name, prior.RawName, alias.RawName)
+			}
+			continue
+		}
+		rootByName[alias.Name] = alias
+	}
+	for _, alias := range aliases {
+		rootName := canonicalTypeScriptName(surface.name, alias.RawName)
+		root, exists := rootByName[rootName]
+		if !exists {
+			continue
+		}
+		if !bytes.Equal(alias.Canonical, root.Canonical) {
+			return fmt.Errorf("canonicalize %s operation references: API component %q normalizes to canonical root type %q but its schema is unequal during TypeScript generation; rewriting it would misrepresent the HTTP contract; rename an operation-specific body or make the component exactly equal to root component %q", surface.name, alias.RawName, rootName, root.RawName)
+		}
 	}
 	data, err := os.ReadFile(surface.rawOutput)
 	if err != nil {
@@ -291,13 +303,7 @@ func canonicalizeAPIOperationReferences(surface typeScriptSurface, aliases, root
 	source = strings.Replace(source, headerEnd, headerEnd+"import type * as Schema from \"../../index.js\";\n\n", 1)
 	for _, alias := range aliases {
 		rootName := canonicalTypeScriptName(surface.name, alias.RawName)
-		if _, exists := rootNames[rootName]; !exists {
-			continue
-		}
-		// Publish validation deliberately has operation-specific requiredness.
-		// It remains internal to the publishTranscript operation rather than
-		// shadowing the canonical root PublishRequest type.
-		if surface.name == "village" && rootName == "PublishRequest" {
+		if _, exists := rootByName[rootName]; !exists {
 			continue
 		}
 		from := fmt.Sprintf("components[\"schemas\"][%q]", alias.RawName)
@@ -577,42 +583,26 @@ func renderQualityFixtures(fixtures *schema.QualityFixtures) ([]byte, error) {
 	return []byte(out.String()), nil
 }
 
-func renderTimelineFixtures(fixtures schema.TimelineFixtureCorpus, manifest schema.TimelineFixtureManifest) ([]byte, error) {
+func renderTimelineFixtures(fixtures schema.TimelineFixtureCorpus) ([]byte, error) {
 	payload, err := json.MarshalIndent(fixtures, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal timeline fixtures for TypeScript: %w", err)
-	}
-	manifestPayload, err := json.MarshalIndent(manifest, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("marshal timeline fixture manifest for TypeScript: %w", err)
 	}
 
 	var out strings.Builder
 	out.WriteString(generatedTypeScriptHead)
 	out.WriteString("import type { CommitRef, SessionID, TimelineSessionRef } from \"../index.js\";\n")
-	out.WriteString("import { validateCorpus, type Case, type Classification, type Corpus } from \"../testcase.js\";\n\n")
+	out.WriteString("import type { Case } from \"../testcase.js\";\n\n")
 	out.WriteString("export type TimelineFixtureSessionInput = Omit<TimelineSessionRef, \"harness\"> & { harness: string };\n")
 	out.WriteString("export type TimelineFixtureCommitInput = Omit<CommitRef, \"sessionIds\"> & { sessionIds: SessionID[] | null };\n\n")
 	out.WriteString("export interface TimelineFixtureInput {\n  sessions: TimelineFixtureSessionInput[];\n  commits: TimelineFixtureCommitInput[];\n}\n\n")
 	out.WriteString("export interface TimelineFixtureExpected {\n  errorContains?: string;\n}\n\n")
-	out.WriteString("export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected>;\n")
-	out.WriteString("export type TimelineFixtureCorpus = Corpus<TimelineFixtureInput, TimelineFixtureExpected>;\n\n")
-	out.WriteString("export interface TimelineFixtureManifestEntry {\n  family: string;\n  name: string;\n  classification: Classification;\n}\n\n")
-	out.WriteString("export interface TimelineManifestMutationInput {\n  kind: string;\n  target: string;\n  replacementName: string;\n  replacementClassification: Classification;\n}\n\n")
-	out.WriteString("export type TimelineManifestMutationCorpus = Corpus<TimelineManifestMutationInput, boolean>;\n\n")
-	out.WriteString("export interface TimelineFixtureManifest {\n  cases: TimelineFixtureManifestEntry[];\n  mutations: TimelineManifestMutationCorpus;\n}\n\n")
+	out.WriteString("export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected> & { family: string };\n")
+	out.WriteString("export interface TimelineFixtureCorpus { cases: TimelineFixtureCase[]; }\n\n")
 	out.WriteString("const canonicalTimelineFixtures: TimelineFixtureCorpus = ")
 	out.Write(payload)
 	out.WriteString(";\n\n")
-	out.WriteString("const canonicalTimelineFixtureManifest: TimelineFixtureManifest = ")
-	out.Write(manifestPayload)
-	out.WriteString(";\n\n")
 	out.WriteString("export function loadTimelineFixtures(): TimelineFixtureCorpus { return structuredClone(canonicalTimelineFixtures); }\n")
-	out.WriteString("export function loadTimelineFixtureManifest(): TimelineFixtureManifest { return structuredClone(canonicalTimelineFixtureManifest); }\n\n")
-	out.WriteString("export function validateTimelineFixtureIdentity(fixtures: TimelineFixtureCorpus, manifest: TimelineFixtureManifest): Error | undefined {\n")
-	out.WriteString("  const corpusError = validateCorpus(fixtures);\n  if (corpusError !== undefined) return corpusError;\n")
-	out.WriteString("  if (fixtures.cases.length !== manifest.cases.length) return new Error(`timeline corpus has ${fixtures.cases.length} cases, want exact manifest count ${manifest.cases.length}`);\n")
-	out.WriteString("  for (const [index, fixture] of fixtures.cases.entries()) {\n    const identity = manifest.cases[index];\n    if (identity === undefined || fixture.name !== identity.name || fixture.classification !== identity.classification) return new Error(`timeline case ${index} identity does not match canonical family manifest`);\n  }\n  return undefined;\n}\n")
 	return []byte(out.String()), nil
 }
 
