@@ -3,6 +3,16 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0-rc5] - 2026-07-14
+
+Fixture-contract correction with no OpenAPI wire-shape change.
+
+### Changed
+
+- The canonical git remote redaction example now records `maximum` as the rule's minimum firing
+  level while retaining the semantic `project` category. Consumers can distinguish activation
+  policy from category without introducing a second project-identity vocabulary.
+
 ## [v0.1.0-rc4] - 2026-07-10
 
 Additive contract change: the pull skip-gate surface. The Village API spec bumps to **0.5.0**
