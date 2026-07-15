@@ -53,3 +53,9 @@ var RedactionsYAML []byte
 //
 //go:embed testdata/local-api/timeline.yaml
 var TimelineYAML []byte
+
+// TimelineManifestYAML is the exact family/name/classification identity and
+// mutation-proof manifest for the project timeline corpus.
+//
+//go:embed testdata/local-api/timeline_manifest.yaml
+var TimelineManifestYAML []byte

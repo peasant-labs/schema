@@ -55,11 +55,16 @@ const (
 	MustFail Classification = "must-fail"
 )
 
+// AllClassifications is the canonical ordered closed set used by generators
+// and boundary validators.
+var AllClassifications = []Classification{MustPass, MustFail}
+
 // IsValid reports whether the classification is one of the known members.
 func (c Classification) IsValid() bool {
-	switch c {
-	case MustPass, MustFail:
-		return true
+	for _, known := range AllClassifications {
+		if c == known {
+			return true
+		}
 	}
 	return false
 }
@@ -83,11 +88,22 @@ const (
 	SourceManual ProvenanceSource = "manual"
 )
 
+// AllProvenanceSources is the canonical ordered closed set used by generators
+// and boundary validators.
+var AllProvenanceSources = []ProvenanceSource{
+	SourceRequirement,
+	SourceBug,
+	SourceEnum,
+	SourceBoundary,
+	SourceManual,
+}
+
 // IsValid reports whether the provenance source is one of the known members.
 func (s ProvenanceSource) IsValid() bool {
-	switch s {
-	case SourceRequirement, SourceBug, SourceEnum, SourceBoundary, SourceManual:
-		return true
+	for _, known := range AllProvenanceSources {
+		if s == known {
+			return true
+		}
 	}
 	return false
 }

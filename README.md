@@ -323,18 +323,18 @@ The `typescript/` directory is the source of the future
 
 - the package root is the canonical Types 0.2 projection of the complete public
   Go wire/domain catalog, including Go-shaped runtime closed sets and guards;
-- `/types` projects that same canonical catalog, while `/local-api` and
-  `/village-api` remain operation-specific document views;
-- `/testcase` mirrors the pure Go testcase model and strict YAML loader;
+- `/types` is a deprecated pure re-export of the package root, while
+  `/local-api` and `/village-api` export only version constants plus endpoint
+  path/operation maps that reference canonical root payloads;
+- `/testcase` combines a Go-generated model and closed sets with a handwritten
+  strict YAML decoder;
 - `/fixtures/quality` and `/fixtures/timeline` provide generated typed data
   loaded and validated by Go at generation time.
 
-Raw OpenAPI `components`, `paths`, and `operations` maps are generated internal
-inputs, not the primary public API. Canonical Types names preserve their Go
-identity; operation-document reflection prefixes are normalized only in those
-projections. A normalized-name collision is coalesced only when the two
-canonical schemas are equivalent after their component references are
-normalized; any real difference fails generation with both sources named.
+Raw OpenAPI component maps are generated internal inputs, not a public domain
+namespace. Canonical Types names preserve their Go identity. API operations
+import those root types; a genuinely operation-specific validation projection
+stays unnamed outside its operation rather than shadowing a canonical Go name.
 
 The package version is `0.0.0-development` until a separate release change
 enables publication. Its eventual version follows the schema module release tag,

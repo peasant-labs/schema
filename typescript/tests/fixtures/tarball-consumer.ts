@@ -5,10 +5,12 @@ import {
   isRole,
   type SchemaVersionResponse,
   type PushContractVersion,
+  type DashboardPayload,
+  type PublishRequest,
   type SessionDetailPayload,
 } from "@peasant-labs/schema";
-import type { DashboardPayload } from "@peasant-labs/schema/local-api";
-import type { PublishRequest } from "@peasant-labs/schema/village-api";
+import type { operations as LocalOperations } from "@peasant-labs/schema/local-api";
+import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
 import type { UnifiedMetadata } from "@peasant-labs/schema/types";
 import { Classification, type Corpus } from "@peasant-labs/schema/testcase";
 import { loadQualityFixtures } from "@peasant-labs/schema/fixtures";
@@ -18,6 +20,8 @@ import { loadTimelineFixtures } from "@peasant-labs/schema/fixtures/timeline";
 declare const detail: SessionDetailPayload;
 declare const dashboard: DashboardPayload;
 declare const publish: PublishRequest;
+declare const localOperations: LocalOperations;
+declare const villageOperations: VillageOperations;
 declare const metadata: UnifiedMetadata;
 declare const versionResponse: SchemaVersionResponse;
 declare const pushContractVersion: PushContractVersion;
@@ -26,4 +30,4 @@ const corpus: Corpus<string, boolean> = { cases: [] };
 const fixtures = loadQualityFixtures();
 const timelineFixtures = loadTimelineFixtures();
 
-void [MetadataSchemaVersion, TypesVersion, isRole(role), detail, dashboard, publish, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures];
+void [MetadataSchemaVersion, TypesVersion, isRole(role), detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures];

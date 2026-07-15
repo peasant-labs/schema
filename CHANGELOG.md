@@ -18,8 +18,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   generated quality data rather than parsing repository-relative YAML.
 - Normalized timeline session identities, authoritative many-to-many commit
   bindings, and explicit project resolution in Peasant Local API 0.3.0. The
-  canonical 14-case relationship corpus is available to Go and TypeScript
-  consumers through schema-owned typed fixture loaders.
+  canonical 16-family relationship corpus and exact identity manifest are
+  available to Go and TypeScript consumers through schema-owned typed fixture
+  loaders.
 
 ### Changed
 
@@ -30,6 +31,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `@peasant-labs/types` is documented as deprecated. New TypeScript consumers
   use the schema-owned generated package instead of extending the handwritten
   port.
+- The package root is the sole TypeScript domain namespace. `/types` is a
+  compatibility re-export, while `/local-api` and `/village-api` expose only
+  version constants and endpoint path/operation maps that use root payloads.
+- Testcase closed sets, model interfaces, and validation helpers are generated
+  from the Go `testcase` package; handwritten TypeScript owns YAML decoding only.
 
 ## [v0.1.0-rc5] - 2026-07-14
 

@@ -39,7 +39,7 @@ func (k MapNodeKind) IsValid() bool {
 // MapGraphPayload is the full map graph for one project, served by
 // GET /api/v1/map/{projectHash}.
 type MapGraphPayload struct {
-	ProjectHash     string          `json:"projectHash"`
+	ProjectHash     ProjectHash     `json:"projectHash"`
 	RepoFound       bool            `json:"repoFound"` // canonical_cwd resolved to a git repo
 	RepoPath        string          `json:"repoPath,omitempty"`
 	ParsedLanguages []string        `json:"parsedLanguages"` // e.g. ["go","typescript"]; empty => activity-only
@@ -53,7 +53,7 @@ type MapGraphPayload struct {
 
 // NewMapGraphPayload returns a MapGraphPayload with all slices initialized
 // to empty (never-nil marshal guarantee).
-func NewMapGraphPayload(projectHash string) *MapGraphPayload {
+func NewMapGraphPayload(projectHash ProjectHash) *MapGraphPayload {
 	return &MapGraphPayload{
 		ProjectHash:     projectHash,
 		ParsedLanguages: []string{},
@@ -190,11 +190,13 @@ func NewTaskSummary(sessionID string, entryIndex int) TaskSummary {
 
 // CommitRef is lightweight commit metadata for time strips and rail panels.
 type CommitRef struct {
-	Hash       string      `json:"hash" yaml:"hash"`
-	Subject    string      `json:"subject" yaml:"subject"`
-	TimeMs     *int64      `json:"timeMs,omitempty" yaml:"timeMs,omitempty"`
-	HasSession bool        `json:"hasSession" yaml:"hasSession"` // compatibility mirror of len(SessionIDs) > 0
-	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds"` // authoritative session_commits bindings
+	Hash       string `json:"hash" yaml:"hash"`
+	Subject    string `json:"subject" yaml:"subject"`
+	TimeMs     *int64 `json:"timeMs,omitempty" yaml:"timeMs,omitempty"`
+	HasSession bool   `json:"hasSession" yaml:"hasSession"` // compatibility mirror of len(SessionIDs) > 0
+	// SessionIDs names authoritative session_commits bindings in the same
+	// strictly increasing rank order as ReviewListPayload.Sessions.
+	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
 }
 
 // NewCommitRef returns commit metadata with a non-nil session ID array.
@@ -207,14 +209,14 @@ func NewCommitRef(hash, subject string) CommitRef {
 // ProjectTasksPayload backs the Tasks lens, served by
 // GET /api/v1/map/{projectHash}/tasks?file=<path>.
 type ProjectTasksPayload struct {
-	ProjectHash string        `json:"projectHash"`
+	ProjectHash ProjectHash   `json:"projectHash"`
 	Tasks       []TaskSummary `json:"tasks"` // reverse-chronological, cap 500
 	FileFilter  string        `json:"fileFilter,omitempty"`
 }
 
 // NewProjectTasksPayload returns a ProjectTasksPayload with all slices
 // initialized to empty (never-nil marshal guarantee).
-func NewProjectTasksPayload(projectHash string) *ProjectTasksPayload {
+func NewProjectTasksPayload(projectHash ProjectHash) *ProjectTasksPayload {
 	return &ProjectTasksPayload{
 		ProjectHash: projectHash,
 		Tasks:       []TaskSummary{},
@@ -238,21 +240,21 @@ func NewProjectSummariesPayload() *ProjectSummariesPayload {
 // ProjectSummary is one row of the home picker: a project with its recorded
 // stats (sessions · recorded coverage · last work · open changes).
 type ProjectSummary struct {
-	ProjectHash   string `json:"projectHash"`
-	Project       string `json:"project"`       // display name (canonical cwd, else the hash)
-	Sessions      int    `json:"sessions"`      // recorded session count
-	RecordedFiles int    `json:"recordedFiles"` // coverage numerator (same rule as MapNode)
-	TotalFiles    int    `json:"totalFiles"`    // coverage denominator
-	LastWorkMs    *int64 `json:"lastWorkMs,omitempty"`
-	OpenChanges   int    `json:"openChanges"` // local non-default branches not merged (0 when no repo)
+	ProjectHash   ProjectHash `json:"projectHash"`
+	Project       string      `json:"project"`       // display name (canonical cwd, else the hash)
+	Sessions      int         `json:"sessions"`      // recorded session count
+	RecordedFiles int         `json:"recordedFiles"` // coverage numerator (same rule as MapNode)
+	TotalFiles    int         `json:"totalFiles"`    // coverage denominator
+	LastWorkMs    *int64      `json:"lastWorkMs,omitempty"`
+	OpenChanges   int         `json:"openChanges"` // local non-default branches not merged (0 when no repo)
 }
 
 // ProjectResolutionPayload resolves one explicitly requested project display
 // identity to its opaque hash without enumerating sibling projects. It exists
 // for stable deep links when discovery lists are narrowed by user selection.
 type ProjectResolutionPayload struct {
-	Project     string `json:"project"`
-	ProjectHash string `json:"projectHash"`
+	Project     string      `json:"project" required:"true"`
+	ProjectHash ProjectHash `json:"projectHash" required:"true"`
 }
 
 // --- Review ---
@@ -260,12 +262,12 @@ type ProjectResolutionPayload struct {
 // ReviewListPayload lists a project's changes, served by
 // GET /api/v1/review/{projectHash}.
 type ReviewListPayload struct {
-	ProjectHash   string               `json:"projectHash"`
+	ProjectHash   ProjectHash          `json:"projectHash"`
 	RepoFound     bool                 `json:"repoFound"`
 	DefaultBranch string               `json:"defaultBranch,omitempty"`
-	Changes       []ChangeSummary      `json:"changes"`       // open first, then merged
-	RecentCommits []CommitRef          `json:"recentCommits"` // default-branch, cap 200 (time strip)
-	Sessions      []TimelineSessionRef `json:"sessions"`      // complete visible project timeline identities, including sessions not linked to displayed commits
+	Changes       []ChangeSummary      `json:"changes" required:"true" nullable:"false"`       // open first, then merged
+	RecentCommits []CommitRef          `json:"recentCommits" required:"true" nullable:"false"` // default-branch, cap 200 (time strip)
+	Sessions      []TimelineSessionRef `json:"sessions" required:"true" nullable:"false"`      // complete visible project timeline identities, including sessions not linked to displayed commits
 }
 
 // TimelineSessionRef is identity and display metadata for a recorded session
@@ -285,7 +287,7 @@ type TimelineSessionRef struct {
 
 // NewReviewListPayload returns a ReviewListPayload with all slices
 // initialized to empty (never-nil marshal guarantee).
-func NewReviewListPayload(projectHash string) *ReviewListPayload {
+func NewReviewListPayload(projectHash ProjectHash) *ReviewListPayload {
 	return &ReviewListPayload{
 		ProjectHash:   projectHash,
 		Changes:       []ChangeSummary{},
@@ -297,10 +299,18 @@ func NewReviewListPayload(projectHash string) *ReviewListPayload {
 // Validate checks the normalized timeline relationship and compatibility
 // invariants. It does not infer candidate or temporal associations.
 func (p ReviewListPayload) Validate() error {
+	if err := p.ProjectHash.Validate(); err != nil {
+		return fmt.Errorf("review list validation: projectHash is invalid: %w; resolve the canonical project identity before serving the payload", err)
+	}
 	if p.Changes == nil || p.RecentCommits == nil || p.Sessions == nil {
 		return fmt.Errorf("review list validation: changes, recentCommits, and sessions must be arrays; initialize the payload with NewReviewListPayload before serving it")
 	}
 	knownSessions := make(map[SessionID]TimelineSessionRef, len(p.Sessions))
+	sessionRanks := make(map[SessionID]int, len(p.Sessions))
+	knownHarnesses := make(map[Harness]struct{})
+	for _, harness := range Harnesses() {
+		knownHarnesses[harness] = struct{}{}
+	}
 	for index, session := range p.Sessions {
 		if session.SessionID == "" {
 			return fmt.Errorf("review list validation: timeline session has an empty sessionId; producers must emit a stable session identity")
@@ -308,7 +318,11 @@ func (p ReviewListPayload) Validate() error {
 		if _, exists := knownSessions[session.SessionID]; exists {
 			return fmt.Errorf("review list validation: duplicate timeline session %q; normalize sessions by sessionId before serving the payload", session.SessionID)
 		}
+		if _, known := knownHarnesses[session.Harness]; !known {
+			return fmt.Errorf("review list validation: timeline session %q at index %d has unknown harness %q; use one of schema.Harnesses() before serving the payload", session.SessionID, index, session.Harness)
+		}
 		knownSessions[session.SessionID] = session
+		sessionRanks[session.SessionID] = index
 		if index > 0 {
 			previous := p.Sessions[index-1]
 			outOfOrder := false
@@ -325,7 +339,7 @@ func (p ReviewListPayload) Validate() error {
 			}
 		}
 	}
-	for _, commit := range p.RecentCommits {
+	for commitIndex, commit := range p.RecentCommits {
 		if commit.SessionIDs == nil {
 			return fmt.Errorf("review list validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
 		}
@@ -333,7 +347,8 @@ func (p ReviewListPayload) Validate() error {
 			return fmt.Errorf("review list validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", commit.Hash, commit.HasSession, len(commit.SessionIDs))
 		}
 		seen := make(map[SessionID]bool, len(commit.SessionIDs))
-		for _, sessionID := range commit.SessionIDs {
+		previousRank := -1
+		for bindingIndex, sessionID := range commit.SessionIDs {
 			if seen[sessionID] {
 				return fmt.Errorf("review list validation: commit %q repeats sessionId %q; deduplicate bindings before serving the payload", commit.Hash, sessionID)
 			}
@@ -345,6 +360,11 @@ func (p ReviewListPayload) Validate() error {
 			if !session.HasCommitBinding {
 				return fmt.Errorf("review list validation: commit %q references sessionId %q but that session has hasCommitBinding=false; set hasCommitBinding=true because a visible commit reference proves an authoritative binding", commit.Hash, sessionID)
 			}
+			rank := sessionRanks[sessionID]
+			if rank <= previousRank {
+				return fmt.Errorf("review list validation: commit %q at index %d has noncanonical sessionIds order at binding %d; order every binding by the strictly increasing rank of ReviewListPayload.Sessions", commit.Hash, commitIndex, bindingIndex)
+			}
+			previousRank = rank
 		}
 	}
 	return nil

@@ -237,7 +237,7 @@ export type components = {
         CommitRef: {
             hasSession: boolean;
             hash: string;
-            sessionIds: components["schemas"]["SessionID"][] | null;
+            sessionIds: components["schemas"]["SessionID"][];
             subject: string;
             timeMs?: (null | number) | null;
         };
@@ -331,7 +331,7 @@ export type components = {
             familiarityPct: number;
             files: components["schemas"]["FileFamiliarity"][] | null;
             freshnessDays: (null | number) | null;
-            projectHash: string;
+            projectHash: components["schemas"]["ProjectHash"];
             suggestions: components["schemas"]["ReviewSuggestion"][] | null;
             trails: components["schemas"]["WalkthroughTrail"][] | null;
             unexploredCount: number;
@@ -406,7 +406,7 @@ export type components = {
             generatedAtMs: number;
             nodes: components["schemas"]["MapNode"][] | null;
             parsedLanguages: string[] | null;
-            projectHash: string;
+            projectHash: components["schemas"]["ProjectHash"];
             repoFound: boolean;
             repoPath?: string;
             structureEdges: components["schemas"]["MapEdge"][] | null;
@@ -486,7 +486,7 @@ export type components = {
         ProjectHash: string;
         ProjectResolutionPayload: {
             project: string;
-            projectHash: string;
+            projectHash: components["schemas"]["ProjectHash"];
         };
         ProjectSummariesPayload: {
             projects: components["schemas"]["ProjectSummary"][] | null;
@@ -495,14 +495,14 @@ export type components = {
             lastWorkMs?: (null | number) | null;
             openChanges: number;
             project: string;
-            projectHash: string;
+            projectHash: components["schemas"]["ProjectHash"];
             recordedFiles: number;
             sessions: number;
             totalFiles: number;
         };
         ProjectTasksPayload: {
             fileFilter?: string;
-            projectHash: string;
+            projectHash: components["schemas"]["ProjectHash"];
             tasks: components["schemas"]["TaskSummary"][] | null;
         };
         Provenance: {
@@ -694,12 +694,12 @@ export type components = {
             rule_set_version?: string;
         };
         ReviewListPayload: {
-            changes: components["schemas"]["ChangeSummary"][] | null;
+            changes: components["schemas"]["ChangeSummary"][];
             defaultBranch?: string;
-            projectHash: string;
-            recentCommits: components["schemas"]["CommitRef"][] | null;
+            projectHash: components["schemas"]["ProjectHash"];
+            recentCommits: components["schemas"]["CommitRef"][];
             repoFound: boolean;
-            sessions: components["schemas"]["TimelineSessionRef"][] | null;
+            sessions: components["schemas"]["TimelineSessionRef"][];
         };
         ReviewSuggestion: {
             daysSince: number;
@@ -740,7 +740,7 @@ export type components = {
         SearchResult: {
             entryIndex: number;
             project: string;
-            projectHash?: string;
+            projectHash?: components["schemas"]["ProjectHash"];
             role: string;
             /** Format: double */
             score: number;
@@ -870,7 +870,7 @@ export type components = {
             parentSessionId?: (null | string) | null;
             preview?: string;
             project?: string;
-            projectHash?: string;
+            projectHash?: components["schemas"]["ProjectHash"];
             /** Format: date-time */
             startTime: string;
             toolCallCount: number;

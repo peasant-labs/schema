@@ -112,8 +112,8 @@ func TestTypesCatalogPreservesGoJSONRequiredness(t *testing.T) {
 	if err := fixture.Validate(); err != nil {
 		t.Fatalf("validate requiredness fixture: %v", err)
 	}
-	if len(fixture.Cases) != 5 {
-		t.Fatalf("requiredness fixture has %d rows, want exactly 5 representative structures", len(fixture.Cases))
+	if len(fixture.Cases) != 8 {
+		t.Fatalf("requiredness fixture has %d rows, want exactly 8 representative structures", len(fixture.Cases))
 	}
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {

@@ -139,3 +139,23 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: non-null commit binding arrays}
     mutation: {description: omits the required sessionIds array from a commit}
+  - name: unknown_timeline_harness
+    input:
+      sessions:
+        - {sessionId: session-a, title: work, harness: unknown-harness, hasCommitBinding: false}
+      commits: []
+    expected: {error_contains: unknown harness}
+    classification: must-fail
+    provenance: {source: boundary, ref: timeline sessions use the canonical harness closed set}
+    mutation: {description: replaces a known harness with an unknown harness token}
+  - name: noncanonical_binding_order
+    input:
+      sessions:
+        - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}
+        - {sessionId: session-b, title: second, harness: codex, startMs: 1000, hasCommitBinding: true}
+      commits:
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-b, session-a]}
+    expected: {error_contains: noncanonical sessionIds order}
+    classification: must-fail
+    provenance: {source: boundary, ref: commit bindings follow normalized timeline session rank}
+    mutation: {description: reverses two valid bindings relative to the canonical session order}

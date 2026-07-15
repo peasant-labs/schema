@@ -133,8 +133,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -161,8 +161,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -188,8 +188,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -245,8 +245,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -273,8 +273,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -309,8 +309,8 @@ paths:
         name: projectHash
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaProjectHash'
           description: Opaque project hash
-          type: string
       responses:
         "200":
           content:
@@ -957,15 +957,15 @@ components:
         sessionIds:
           items:
             $ref: '#/components/schemas/SchemaSessionID'
-          type:
-          - array
-          - "null"
+          type: array
         subject:
           type: string
         timeMs:
           type:
           - "null"
           - integer
+      required:
+      - sessionIds
       type: object
     SchemaCreateAnnotationRequest:
       properties:
@@ -1137,7 +1137,7 @@ components:
           - array
           - "null"
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         repoFound:
           type: boolean
         repoPath:
@@ -1278,12 +1278,24 @@ components:
             type: string
           type: array
       type: object
+    SchemaProjectHash:
+      description: SHA-256 hex digest of the project's origin URL or local path
+      examples:
+      - a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0-9a-f]{64}$
+      title: Project Hash
+      type: string
     SchemaProjectResolutionPayload:
       properties:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
+      required:
+      - project
+      - projectHash
       type: object
     SchemaProjectSummariesPayload:
       properties:
@@ -1305,7 +1317,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         recordedFiles:
           type: integer
         sessions:
@@ -1318,7 +1330,7 @@ components:
         fileFilter:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         tasks:
           items:
             $ref: '#/components/schemas/SchemaTaskSummary'
@@ -1399,27 +1411,25 @@ components:
         changes:
           items:
             $ref: '#/components/schemas/SchemaChangeSummary'
-          type:
-          - array
-          - "null"
+          type: array
         defaultBranch:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         recentCommits:
           items:
             $ref: '#/components/schemas/SchemaCommitRef'
-          type:
-          - array
-          - "null"
+          type: array
         repoFound:
           type: boolean
         sessions:
           items:
             $ref: '#/components/schemas/SchemaTimelineSessionRef'
-          type:
-          - array
-          - "null"
+          type: array
+      required:
+      - changes
+      - recentCommits
+      - sessions
       type: object
     SchemaRole:
       description: Sender role of a message turn
@@ -1464,7 +1474,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         role:
           type: string
         score:
@@ -1628,7 +1638,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/SchemaProjectHash'
         startTime:
           format: date-time
           type: string

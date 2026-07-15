@@ -29,9 +29,9 @@ type SessionSummary struct {
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
-	ProjectHash     string  `json:"projectHash,omitempty"`
-	Outcome         string  `json:"outcome,omitempty"`
-	ParentSessionID *string `json:"parentSessionId,omitempty"`
+	ProjectHash     ProjectHash `json:"projectHash,omitempty"`
+	Outcome         string      `json:"outcome,omitempty"`
+	ParentSessionID *string     `json:"parentSessionId,omitempty"`
 	// Preview is the raw first user message of the session, sourced from the
 	// already-redacted indexed transcript (session_entries.content_preview). It
 	// is redaction-safe by construction. Empty when the session has no indexed
@@ -276,7 +276,7 @@ type ReviewSuggestion struct {
 
 // FamiliarityPayload is the data sent on the project_familiarity WebSocket channel.
 type FamiliarityPayload struct {
-	ProjectHash     string             `json:"projectHash"`
+	ProjectHash     ProjectHash        `json:"projectHash"`
 	FamiliarityPct  float64            `json:"familiarityPct"`  // % of source files engaged
 	UnexploredCount int                `json:"unexploredCount"` // source files with 0 engagement
 	FreshnessDays   *int               `json:"freshnessDays"`   // days since last learning session

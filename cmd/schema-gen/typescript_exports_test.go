@@ -83,9 +83,22 @@ func TestGeneratedPublicExportsHaveExactIdentity(t *testing.T) {
 		t.Fatalf("generated package root exports: %v", err)
 	}
 
+	wantTypes := generatedTypeScriptHead + "/** @deprecated Import canonical domain types from the package root. */\nexport * from \"./index.js\";\n"
 	typesSource := readPublicFacade(t, filepath.Join(root, "typescript", "src", "types.ts"))
-	if err := validatePublicExports(typesSource, expectedPublicExports(t, "types", public, catalog, enums), public.Forbidden); err != nil {
-		t.Fatalf("generated /types exports: %v", err)
+	if string(typesSource) != wantTypes {
+		t.Fatalf("generated /types facade is not the exact deprecated root re-export\ngot:\n%s\nwant:\n%s", typesSource, wantTypes)
+	}
+	for _, surface := range []struct {
+		Name string
+		File string
+	}{
+		{Name: "local", File: "local-api.ts"},
+		{Name: "village", File: "village-api.ts"},
+	} {
+		source := readPublicFacade(t, filepath.Join(root, "typescript", "src", surface.File))
+		if err := validatePublicExports(source, expectedPublicExports(t, surface.Name, public, catalog, enums), public.Forbidden); err != nil {
+			t.Fatalf("generated /%s-api exports: %v", surface.Name, err)
+		}
 	}
 }
 
@@ -149,21 +162,25 @@ func expectedPublicExports(t *testing.T, surface string, public publicExportFixt
 	t.Helper()
 	expected := map[string]string{}
 	runtimeNames := map[string]struct{}{}
-	for _, enum := range enums.Enums {
-		runtimeNames[enum.Name] = struct{}{}
-		addExpectedExport(t, expected, "value", enum.Name, "runtime-enum:"+enum.Name)
-		addExpectedExport(t, expected, "type", enum.Name, "runtime-enum:"+enum.Name)
-		addExpectedExport(t, expected, "value", enum.AllName, "runtime-values:"+enum.Name)
-		addExpectedExport(t, expected, "function", "is"+enum.Name, "runtime-guard:"+enum.Name)
+	if surface == "root" {
+		for _, enum := range enums.Enums {
+			runtimeNames[enum.Name] = struct{}{}
+			addExpectedExport(t, expected, "value", enum.Name, "runtime-enum:"+enum.Name)
+			addExpectedExport(t, expected, "type", enum.Name, "runtime-enum:"+enum.Name)
+			addExpectedExport(t, expected, "value", enum.AllName, "runtime-values:"+enum.Name)
+			addExpectedExport(t, expected, "function", "is"+enum.Name, "runtime-guard:"+enum.Name)
+		}
 	}
-	for _, entry := range catalog.Types {
-		if entry.Disposition != "catalog" {
-			continue
+	if surface == "root" {
+		for _, entry := range catalog.Types {
+			if entry.Disposition != "catalog" {
+				continue
+			}
+			if _, runtime := runtimeNames[entry.Component]; runtime {
+				continue
+			}
+			addExpectedExport(t, expected, "type", entry.GoName, "schema:"+entry.Component)
 		}
-		if _, runtime := runtimeNames[entry.Component]; runtime {
-			continue
-		}
-		addExpectedExport(t, expected, "type", entry.GoName, "schema:"+entry.Component)
 	}
 	for _, alias := range public.Aliases {
 		validatePublicFixtureSurfaces(t, alias.Name, alias.Surfaces)
@@ -188,7 +205,7 @@ func validatePublicFixtureSurfaces(t *testing.T, name string, surfaces []string)
 	seen := map[string]struct{}{}
 	for _, surface := range surfaces {
 		switch surface {
-		case "root", "types":
+		case "root", "local", "village":
 		default:
 			t.Fatalf("public export fixture %s has unknown surface %q", name, surface)
 		}

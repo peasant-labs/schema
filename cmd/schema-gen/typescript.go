@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	schema "github.com/peasant-labs/schema"
+	"github.com/peasant-labs/schema/testcase"
 )
 
 const (
@@ -55,15 +56,22 @@ func generateTypeScript(moduleRoot string) error {
 		}
 	}
 
-	var typesAliases []schemaAlias
+	aliasesBySurface := make(map[string][]schemaAlias, len(surfaces))
 	for _, surface := range surfaces {
 		aliases, err := loadSchemaAliases(surface.name, surface.spec)
 		if err != nil {
 			return err
 		}
-		if surface.name == "types" {
-			typesAliases = aliases
+		aliasesBySurface[surface.name] = aliases
+	}
+	typesAliases := aliasesBySurface["types"]
+	for _, surface := range surfaces {
+		if surface.name != "types" {
+			if err := canonicalizeAPIOperationReferences(surface, aliasesBySurface[surface.name], typesAliases); err != nil {
+				return err
+			}
 		}
+		aliases := aliasesBySurface[surface.name]
 		facade, err := renderSurfaceFacade(surface, aliases)
 		if err != nil {
 			return err
@@ -78,6 +86,14 @@ func generateTypeScript(moduleRoot string) error {
 		return err
 	}
 	if err := writeGeneratedFile(filepath.Join(packageRoot, "src", "index.ts"), root); err != nil {
+		return err
+	}
+
+	testcaseModel, err := renderTestcaseModel()
+	if err != nil {
+		return err
+	}
+	if err := writeGeneratedFile(filepath.Join(packageRoot, "src", "internal", "generated", "testcase.ts"), testcaseModel); err != nil {
 		return err
 	}
 
@@ -97,7 +113,11 @@ func generateTypeScript(moduleRoot string) error {
 	if err != nil {
 		return fmt.Errorf("generate TypeScript timeline fixtures: canonical Go loader rejected testdata/local-api/timeline.yaml: %w", err)
 	}
-	timeline, err := renderTimelineFixtures(timelineFixtures)
+	timelineManifest, err := schema.LoadTimelineFixtureManifest()
+	if err != nil {
+		return fmt.Errorf("generate TypeScript timeline fixtures: canonical Go loader rejected testdata/local-api/timeline_manifest.yaml: %w", err)
+	}
+	timeline, err := renderTimelineFixtures(timelineFixtures, timelineManifest)
 	if err != nil {
 		return err
 	}
@@ -143,6 +163,7 @@ func typeScriptSurfaces(moduleRoot, packageRoot string) []typeScriptSurface {
 func typeScriptGeneratedFiles(moduleRoot, packageRoot string) []string {
 	files := []string{
 		filepath.Join(packageRoot, "src", "index.ts"),
+		filepath.Join(packageRoot, "src", "internal", "generated", "testcase.ts"),
 		filepath.Join(packageRoot, "src", "fixtures", "quality.ts"),
 		filepath.Join(packageRoot, "src", "fixtures", "timeline.ts"),
 	}
@@ -253,42 +274,63 @@ func normalizeSchemaRefs(surface string, value any) {
 	}
 }
 
-func renderSurfaceFacade(surface typeScriptSurface, aliases []schemaAlias) ([]byte, error) {
-	unique, err := deduplicateAliases(aliases)
+func canonicalizeAPIOperationReferences(surface typeScriptSurface, aliases, rootAliases []schemaAlias) error {
+	rootNames := make(map[string]struct{}, len(rootAliases))
+	for _, alias := range rootAliases {
+		rootNames[alias.Name] = struct{}{}
+	}
+	data, err := os.ReadFile(surface.rawOutput)
 	if err != nil {
-		return nil, fmt.Errorf("generate %s named TypeScript exports: %w", surface.name, err)
+		return fmt.Errorf("read generated %s operation types: %w", surface.name, err)
+	}
+	source := string(data)
+	headerEnd := " */\n\n"
+	if !strings.Contains(source, headerEnd) {
+		return fmt.Errorf("generated %s operation types at %s have an unrecognized openapi-typescript header; cannot attach canonical root imports", surface.name, surface.rawOutput)
+	}
+	source = strings.Replace(source, headerEnd, headerEnd+"import type * as Schema from \"../../index.js\";\n\n", 1)
+	for _, alias := range aliases {
+		rootName := canonicalTypeScriptName(surface.name, alias.RawName)
+		if _, exists := rootNames[rootName]; !exists {
+			continue
+		}
+		// Publish validation deliberately has operation-specific requiredness.
+		// It remains internal to the publishTranscript operation rather than
+		// shadowing the canonical root PublishRequest type.
+		if surface.name == "village" && rootName == "PublishRequest" {
+			continue
+		}
+		from := fmt.Sprintf("components[\"schemas\"][%q]", alias.RawName)
+		to := "Schema." + rootName
+		source = strings.ReplaceAll(source, from, to)
+	}
+	if surface.name == "local" {
+		// swaggest emits constrained path scalars inline. Restore the branded
+		// root identity in every operation parameter before publication.
+		source = strings.ReplaceAll(source, "projectHash: string;", "projectHash: Schema.ProjectHash;")
+	}
+	if strings.Contains(source, "export type ") && strings.Contains(source, "components[\"schemas\"][\"SchemaProjectResolutionPayload\"]") {
+		return fmt.Errorf("generated %s operation types still reference a duplicate ProjectResolutionPayload dialect; map the operation to the canonical root type", surface.name)
+	}
+	return writeGeneratedFile(surface.rawOutput, []byte(source))
+}
+
+func renderSurfaceFacade(surface typeScriptSurface, _ []schemaAlias) ([]byte, error) {
+	if surface.name == "types" {
+		return []byte(generatedTypeScriptHead + "/** @deprecated Import canonical domain types from the package root. */\nexport * from \"./index.js\";\n"), nil
+	}
+	var generatedModule string
+	if surface.name == "local" {
+		generatedModule = "local-api"
+	} else {
+		generatedModule = "village-api"
 	}
 	var out strings.Builder
 	out.WriteString(generatedTypeScriptHead)
-	out.WriteString("import type { components } from \"./internal/generated/")
-	if surface.name == "local" {
-		out.WriteString("local-api")
-	} else if surface.name == "village" {
-		out.WriteString("village-api")
-	} else {
-		out.WriteString("types")
-	}
-	out.WriteString(".js\";\n\n")
+	fmt.Fprintf(&out, "import type { paths as GeneratedPaths, operations as GeneratedOperations } from \"./internal/generated/%s.js\";\n\n", generatedModule)
 	fmt.Fprintf(&out, "export const %s = %q as const;\n\n", surface.versionVar, surface.version)
-	enums, err := typeScriptEnums()
-	if err != nil {
-		return nil, err
-	}
-	enumNames := enumNameSet(enums)
-	for _, alias := range unique {
-		if surface.name == "types" {
-			if _, runtimeEnum := enumNames[alias.Name]; runtimeEnum {
-				continue
-			}
-		}
-		fmt.Fprintf(&out, "export type %s = components[\"schemas\"][%q];\n", alias.Name, alias.RawName)
-	}
-	if surface.name == "types" {
-		renderGoParityExports(&out)
-		if err := renderRuntimeEnums(&out, enums); err != nil {
-			return nil, err
-		}
-	}
+	out.WriteString("export type paths = GeneratedPaths;\n")
+	out.WriteString("export type operations = GeneratedOperations;\n")
 	return []byte(out.String()), nil
 }
 
@@ -364,6 +406,98 @@ func renderRuntimeEnums(out *strings.Builder, enums []typeScriptEnum) error {
 		out.WriteString("}\n")
 	}
 	return nil
+}
+
+func renderTestcaseModel() ([]byte, error) {
+	var out strings.Builder
+	out.WriteString(generatedTypeScriptHead)
+	writeClosedSet := func(typeName string, values []string) error {
+		fmt.Fprintf(&out, "export const %s = Object.freeze({\n", typeName)
+		for _, value := range values {
+			encoded, err := json.Marshal(value)
+			if err != nil {
+				return fmt.Errorf("encode testcase %s value %q: %w", typeName, value, err)
+			}
+			fmt.Fprintf(&out, "  %s: %s,\n", enumMemberName(typeName, value), encoded)
+		}
+		out.WriteString("} as const);\n")
+		fmt.Fprintf(&out, "export type %s = (typeof %s)[keyof typeof %s];\n", typeName, typeName, typeName)
+		fmt.Fprintf(&out, "export const All%ss = Object.freeze(Object.values(%s)) as readonly %s[];\n", typeName, typeName, typeName)
+		fmt.Fprintf(&out, "export function is%s(value: unknown): value is %s {\n", typeName, typeName)
+		fmt.Fprintf(&out, "  return typeof value === \"string\" && (All%ss as readonly string[]).includes(value);\n", typeName)
+		out.WriteString("}\n\n")
+		return nil
+	}
+	classifications := make([]string, len(testcase.AllClassifications))
+	for index, value := range testcase.AllClassifications {
+		classifications[index] = value.String()
+	}
+	if err := writeClosedSet("Classification", classifications); err != nil {
+		return nil, err
+	}
+	sources := make([]string, len(testcase.AllProvenanceSources))
+	for index, value := range testcase.AllProvenanceSources {
+		sources[index] = value.String()
+	}
+	if err := writeClosedSet("ProvenanceSource", sources); err != nil {
+		return nil, err
+	}
+
+	provenanceType := reflect.TypeFor[testcase.Provenance]()
+	mutationType := reflect.TypeFor[testcase.Mutation]()
+	caseType := reflect.TypeFor[testcase.Case[any, any]]()
+	corpusType := reflect.TypeFor[testcase.Corpus[any, any]]()
+	jsonName := func(structType reflect.Type, fieldName string) (string, error) {
+		field, ok := structType.FieldByName(fieldName)
+		if !ok {
+			return "", fmt.Errorf("generate testcase TypeScript model: Go field %s.%s is missing", structType.Name(), fieldName)
+		}
+		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if name == "" || name == "-" {
+			return "", fmt.Errorf("generate testcase TypeScript model: Go field %s.%s has unusable json tag %q", structType.Name(), fieldName, field.Tag.Get("json"))
+		}
+		return name, nil
+	}
+	provenanceSource, err := jsonName(provenanceType, "Source")
+	if err != nil {
+		return nil, err
+	}
+	provenanceRef, err := jsonName(provenanceType, "Ref")
+	if err != nil {
+		return nil, err
+	}
+	mutationDescription, err := jsonName(mutationType, "Description")
+	if err != nil {
+		return nil, err
+	}
+	caseFields := make(map[string]string)
+	for _, field := range []string{"Name", "Input", "Expected", "Classification", "Provenance", "Mutation"} {
+		caseFields[field], err = jsonName(caseType, field)
+		if err != nil {
+			return nil, err
+		}
+	}
+	corpusCases, err := jsonName(corpusType, "Cases")
+	if err != nil {
+		return nil, err
+	}
+	fmt.Fprintf(&out, "export interface Provenance {\n  %s: ProvenanceSource;\n  %s: string;\n}\n\n", provenanceSource, provenanceRef)
+	fmt.Fprintf(&out, "export interface Mutation {\n  %s: string;\n}\n\n", mutationDescription)
+	fmt.Fprintf(&out, "export interface Case<I, E> {\n  %s: string;\n  %s: I;\n  %s: E;\n  %s: Classification;\n  %s: Provenance;\n  %s: Mutation;\n}\n\n", caseFields["Name"], caseFields["Input"], caseFields["Expected"], caseFields["Classification"], caseFields["Provenance"], caseFields["Mutation"])
+	fmt.Fprintf(&out, "export interface Corpus<I, E> {\n  %s: Case<I, E>[];\n}\n\n", corpusCases)
+	out.WriteString("export function checkMin<I, E>(corpus: Corpus<I, E>, minimum: number): Error | undefined {\n")
+	out.WriteString("  if (!Number.isSafeInteger(minimum) || minimum < 0) return new Error(`minimum must be a non-negative safe integer, got ${String(minimum)}`);\n")
+	out.WriteString("  if (corpus.cases.length < minimum) return new Error(`corpus has ${corpus.cases.length} case(s), want at least ${minimum}`);\n  return undefined;\n}\n\n")
+	out.WriteString("export function validateCase<I, E>(testCase: Case<I, E>): Error | undefined {\n")
+	out.WriteString("  const path = `case ${JSON.stringify(testCase.name)}`;\n")
+	out.WriteString("  if (testCase.name.trim() === \"\") return new Error(`${path}: name is empty`);\n")
+	out.WriteString("  if (!isClassification(testCase.classification)) return new Error(`${path}: classification ${JSON.stringify(testCase.classification)} is not one of ${AllClassifications.join(\"/\")}`);\n")
+	out.WriteString("  if (!isProvenanceSource(testCase.provenance.source)) return new Error(`${path}: provenance source ${JSON.stringify(testCase.provenance.source)} is not a known source`);\n")
+	out.WriteString("  if (testCase.provenance.ref.trim() === \"\") return new Error(`${path}: provenance ref is empty (a case must cite why it exists)`);\n")
+	out.WriteString("  if (testCase.mutation.description.trim() === \"\") return new Error(`${path}: mutation description is empty (a case must describe the change under test)`);\n  return undefined;\n}\n\n")
+	out.WriteString("export function validateCorpus<I, E>(corpus: Corpus<I, E>): Error | undefined {\n  const names = new Set<string>();\n")
+	out.WriteString("  for (const [index, testCase] of corpus.cases.entries()) {\n    if (names.has(testCase.name)) return new Error(`corpus case ${index}: duplicate case name ${JSON.stringify(testCase.name)}`);\n    names.add(testCase.name);\n    const error = validateCase(testCase);\n    if (error !== undefined) return new Error(`corpus case ${index}: ${error.message}`, { cause: error });\n  }\n  return undefined;\n}\n")
+	return []byte(out.String()), nil
 }
 
 func deduplicateAliases(aliases []schemaAlias) ([]schemaAlias, error) {
@@ -443,24 +577,42 @@ func renderQualityFixtures(fixtures *schema.QualityFixtures) ([]byte, error) {
 	return []byte(out.String()), nil
 }
 
-func renderTimelineFixtures(fixtures schema.TimelineFixtureCorpus) ([]byte, error) {
+func renderTimelineFixtures(fixtures schema.TimelineFixtureCorpus, manifest schema.TimelineFixtureManifest) ([]byte, error) {
 	payload, err := json.MarshalIndent(fixtures, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("marshal timeline fixtures for TypeScript: %w", err)
 	}
+	manifestPayload, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("marshal timeline fixture manifest for TypeScript: %w", err)
+	}
 
 	var out strings.Builder
 	out.WriteString(generatedTypeScriptHead)
-	out.WriteString("import type { CommitRef, TimelineSessionRef } from \"../index.js\";\n")
-	out.WriteString("import type { Case, Corpus } from \"../testcase.js\";\n\n")
-	out.WriteString("export interface TimelineFixtureInput {\n  sessions: TimelineSessionRef[];\n  commits: CommitRef[];\n}\n\n")
+	out.WriteString("import type { CommitRef, SessionID, TimelineSessionRef } from \"../index.js\";\n")
+	out.WriteString("import { validateCorpus, type Case, type Classification, type Corpus } from \"../testcase.js\";\n\n")
+	out.WriteString("export type TimelineFixtureSessionInput = Omit<TimelineSessionRef, \"harness\"> & { harness: string };\n")
+	out.WriteString("export type TimelineFixtureCommitInput = Omit<CommitRef, \"sessionIds\"> & { sessionIds: SessionID[] | null };\n\n")
+	out.WriteString("export interface TimelineFixtureInput {\n  sessions: TimelineFixtureSessionInput[];\n  commits: TimelineFixtureCommitInput[];\n}\n\n")
 	out.WriteString("export interface TimelineFixtureExpected {\n  errorContains?: string;\n}\n\n")
 	out.WriteString("export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected>;\n")
 	out.WriteString("export type TimelineFixtureCorpus = Corpus<TimelineFixtureInput, TimelineFixtureExpected>;\n\n")
+	out.WriteString("export interface TimelineFixtureManifestEntry {\n  family: string;\n  name: string;\n  classification: Classification;\n}\n\n")
+	out.WriteString("export interface TimelineManifestMutationInput {\n  kind: string;\n  target: string;\n  replacementName: string;\n  replacementClassification: Classification;\n}\n\n")
+	out.WriteString("export type TimelineManifestMutationCorpus = Corpus<TimelineManifestMutationInput, boolean>;\n\n")
+	out.WriteString("export interface TimelineFixtureManifest {\n  cases: TimelineFixtureManifestEntry[];\n  mutations: TimelineManifestMutationCorpus;\n}\n\n")
 	out.WriteString("const canonicalTimelineFixtures: TimelineFixtureCorpus = ")
 	out.Write(payload)
 	out.WriteString(";\n\n")
+	out.WriteString("const canonicalTimelineFixtureManifest: TimelineFixtureManifest = ")
+	out.Write(manifestPayload)
+	out.WriteString(";\n\n")
 	out.WriteString("export function loadTimelineFixtures(): TimelineFixtureCorpus { return structuredClone(canonicalTimelineFixtures); }\n")
+	out.WriteString("export function loadTimelineFixtureManifest(): TimelineFixtureManifest { return structuredClone(canonicalTimelineFixtureManifest); }\n\n")
+	out.WriteString("export function validateTimelineFixtureIdentity(fixtures: TimelineFixtureCorpus, manifest: TimelineFixtureManifest): Error | undefined {\n")
+	out.WriteString("  const corpusError = validateCorpus(fixtures);\n  if (corpusError !== undefined) return corpusError;\n")
+	out.WriteString("  if (fixtures.cases.length !== manifest.cases.length) return new Error(`timeline corpus has ${fixtures.cases.length} cases, want exact manifest count ${manifest.cases.length}`);\n")
+	out.WriteString("  for (const [index, fixture] of fixtures.cases.entries()) {\n    const identity = manifest.cases[index];\n    if (identity === undefined || fixture.name !== identity.name || fixture.classification !== identity.classification) return new Error(`timeline case ${index} identity does not match canonical family manifest`);\n  }\n  return undefined;\n}\n")
 	return []byte(out.String()), nil
 }
 

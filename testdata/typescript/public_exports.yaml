@@ -1,20 +1,26 @@
 aliases:
   - name: PushContractVersion
     target: ContractVersion
-    surfaces: [root, types]
+    surfaces: [root]
+  - name: paths
+    target: GeneratedPaths
+    surfaces: [local, village]
+  - name: operations
+    target: GeneratedOperations
+    surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
     value: 0.5.0
-    surfaces: [root]
+    surfaces: [root, village]
   - name: PeasantLocalAPIVersion
     value: 0.3.0
-    surfaces: [root]
+    surfaces: [root, local]
   - name: TypesVersion
     value: 0.2.0
-    surfaces: [root, types]
+    surfaces: [root]
   - name: MetadataSchemaVersion
     value: "9"
-    surfaces: [root, types]
+    surfaces: [root]
 forbidden:
   - Provider
   - BestiaryHarness

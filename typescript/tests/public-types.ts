@@ -2,27 +2,29 @@ import type {
   PublishRequest,
   ProjectResolutionPayload,
   ReviewListPayload,
+  SessionEntry as RootSessionEntry,
   SessionDetailPayload,
   TimelineSessionRef,
 } from "@peasant-labs/schema";
-import type { ReviewListPayload as LocalReviewListPayload } from "@peasant-labs/schema/local-api";
-import type { PublishRequest as VillagePublishRequest } from "@peasant-labs/schema/village-api";
-import type { SessionEntry } from "@peasant-labs/schema/types";
+import type { operations as LocalOperations } from "@peasant-labs/schema/local-api";
+import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
+import type { SessionEntry as CompatibilitySessionEntry } from "@peasant-labs/schema/types";
 import type { Case, Corpus } from "@peasant-labs/schema/testcase";
 import type { TimelineFixtureCorpus } from "@peasant-labs/schema/fixtures/timeline";
 
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-// Root types mirror Go JSON presence. Operation-specific projections retain
-// their API-policy requiredness and therefore need not be structurally exact.
-const reviewProjectionIsDistinct: Same<ReviewListPayload, LocalReviewListPayload> = false;
-const publishProjectionIsDistinct: Same<PublishRequest, VillagePublishRequest> = false;
+type LocalReviewListPayload = LocalOperations["listReviewChanges"]["responses"][200]["content"]["application/json"];
+type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["application/json"];
+const reviewOperationUsesCanonicalRoot: Same<ReviewListPayload, LocalReviewListPayload> = true;
+const compatibilitySubpathUsesCanonicalRoot: Same<RootSessionEntry, CompatibilitySessionEntry> = true;
+declare const publishOperationRequest: VillagePublishRequest;
 
 declare const detail: SessionDetailPayload;
-declare const entry: SessionEntry;
+declare const entry: RootSessionEntry;
 declare const resolution: ProjectResolutionPayload;
 declare const timelineSession: TimelineSessionRef;
 declare const timelineFixtures: TimelineFixtureCorpus;
-const testCase: Case<SessionEntry, SessionDetailPayload> = {
+const testCase: Case<RootSessionEntry, SessionDetailPayload> = {
   name: "compile-only",
   input: entry,
   expected: detail,
@@ -30,9 +32,10 @@ const testCase: Case<SessionEntry, SessionDetailPayload> = {
   provenance: { source: "manual", ref: "public type smoke" },
   mutation: { description: "imports public package types" },
 };
-const corpus: Corpus<SessionEntry, SessionDetailPayload> = { cases: [testCase] };
-void reviewProjectionIsDistinct;
-void publishProjectionIsDistinct;
+const corpus: Corpus<RootSessionEntry, SessionDetailPayload> = { cases: [testCase] };
+void reviewOperationUsesCanonicalRoot;
+void compatibilitySubpathUsesCanonicalRoot;
+void publishOperationRequest;
 void corpus;
 void resolution;
 void timelineSession;

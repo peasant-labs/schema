@@ -3,6 +3,8 @@
  * Do not make direct changes to the file.
  */
 
+import type * as Schema from "../../index.js";
+
 export type paths = {
     "/api/v1/annotation-types": {
         parameters: {
@@ -282,7 +284,7 @@ export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
         AnnotationsPayload: {
-            annotations?: components["schemas"]["SchemaAnnotationSummary"][] | null;
+            annotations?: Schema.AnnotationSummary[] | null;
             axis?: string;
             id?: string;
         };
@@ -295,7 +297,7 @@ export type components = {
          */
         BestiaryHarness: "claude-code" | "gemini-cli" | "codex" | "opencode" | "cursor" | "antigravity";
         ClientMessage: {
-            channels?: components["schemas"]["SchemaChannelSubscription"][];
+            channels?: Schema.ChannelSubscription[];
             type?: string;
         };
         DashboardPayload: {
@@ -312,7 +314,7 @@ export type components = {
             totalTokens?: number;
         };
         QualityPayload: {
-            sessions?: components["schemas"]["SchemaQualitySession"][] | null;
+            sessions?: Schema.QualitySession[] | null;
         };
         SchemaActivityEdge: {
             from?: string;
@@ -336,7 +338,7 @@ export type components = {
          */
         SchemaAnnotationStatus: "proposed" | "active" | "deprecated" | "retired";
         SchemaAnnotationSummary: {
-            annotatorKind?: components["schemas"]["SchemaAnnotatorKind"];
+            annotatorKind?: Schema.AnnotatorKind;
             annotatorName?: string;
             confidence?: null | number;
             contentHash?: null | string;
@@ -344,13 +346,13 @@ export type components = {
             createdAt?: number;
             id?: string;
             isPrimary?: boolean;
-            provenance?: components["schemas"]["SchemaProvenance"];
+            provenance?: Schema.Provenance;
             reason?: null | string;
             supersededBy?: null | string;
             targetAnnotationId?: null | string;
             targetEntryEndIndex?: null | number;
             targetEntryIndex?: null | number;
-            targetKind?: components["schemas"]["SchemaTargetKind"];
+            targetKind?: Schema.TargetKind;
             targetProjectHash?: null | string;
             targetSessionId?: null | string;
             typeId?: string;
@@ -358,19 +360,19 @@ export type components = {
             value?: string;
         };
         SchemaAnnotationTypeSummary: {
-            allowedTargetKinds?: components["schemas"]["SchemaTargetKind"][];
+            allowedTargetKinds?: Schema.TargetKind[];
             class?: string;
             description?: string;
             displayName?: string;
             family?: string;
             id?: string;
             lowerIsBetter?: null | boolean;
-            origin?: components["schemas"]["SchemaTypeOrigin"];
+            origin?: Schema.TypeOrigin;
             priorityOverride?: null | number;
-            scaleKind?: components["schemas"]["SchemaScaleKind"];
-            status?: components["schemas"]["SchemaAnnotationStatus"];
+            scaleKind?: Schema.ScaleKind;
+            status?: Schema.AnnotationStatus;
             typeId?: string;
-            valueDomain?: components["schemas"]["SchemaValueDomain"];
+            valueDomain?: Schema.ValueDomain;
             version?: number;
         };
         /**
@@ -387,27 +389,27 @@ export type components = {
             branch?: string;
             costUsd?: null | number;
             defaultBranch?: string;
-            files?: components["schemas"]["SchemaFileChange"][] | null;
-            frictions?: components["schemas"]["SchemaFrictionCluster"][] | null;
+            files?: Schema.FileChange[] | null;
+            frictions?: Schema.FrictionCluster[] | null;
             linesAdded?: number;
             linesRemoved?: number;
-            newEdges?: components["schemas"]["SchemaMapEdge"][] | null;
+            newEdges?: Schema.MapEdge[] | null;
             newNodes?: string[] | null;
             /** Format: int64 */
             outputTokens?: number;
-            removedEdges?: components["schemas"]["SchemaMapEdge"][] | null;
+            removedEdges?: Schema.MapEdge[] | null;
             removedNodes?: string[] | null;
-            slice?: components["schemas"]["SchemaMapSlice"];
-            unrecordedCommits?: components["schemas"]["SchemaCommitRef"][] | null;
-            unusual?: components["schemas"]["SchemaUnusualSignal"][] | null;
-            violations?: components["schemas"]["SchemaEdgeViolation"][] | null;
-            work?: components["schemas"]["SchemaChangeSession"][] | null;
+            slice?: Schema.MapSlice;
+            unrecordedCommits?: Schema.CommitRef[] | null;
+            unusual?: Schema.UnusualSignal[] | null;
+            violations?: Schema.EdgeViolation[] | null;
+            work?: Schema.ChangeSession[] | null;
         };
         SchemaChangeDiffPayload: {
             binary?: boolean;
             branch?: string;
             file?: string;
-            hunks?: components["schemas"]["SchemaDiffHunk"][] | null;
+            hunks?: Schema.DiffHunk[] | null;
             oldPath?: null | string;
             status?: string;
             truncated?: boolean;
@@ -417,7 +419,7 @@ export type components = {
             harness?: string;
             sessionId?: string;
             startMs?: null | number;
-            tasks?: components["schemas"]["SchemaTaskSummary"][] | null;
+            tasks?: Schema.TaskSummary[] | null;
             title?: string;
         };
         SchemaChangeSummary: {
@@ -452,7 +454,7 @@ export type components = {
         SchemaCommitRef: {
             hasSession?: boolean;
             hash?: string;
-            sessionIds?: components["schemas"]["SchemaSessionID"][] | null;
+            sessionIds: Schema.SessionID[];
             subject?: string;
             timeMs?: null | number;
         };
@@ -478,7 +480,7 @@ export type components = {
         };
         SchemaDiffHunk: {
             header?: string;
-            lines?: components["schemas"]["SchemaDiffLine"][] | null;
+            lines?: Schema.DiffLine[] | null;
             newLines?: number;
             newStart?: number;
             oldLines?: number;
@@ -527,17 +529,17 @@ export type components = {
             to?: string;
         };
         SchemaMapGraphPayload: {
-            activityEdges?: components["schemas"]["SchemaActivityEdge"][] | null;
+            activityEdges?: Schema.ActivityEdge[] | null;
             atCommit?: string;
             /** Format: int64 */
             generatedAtMs?: number;
-            nodes?: components["schemas"]["SchemaMapNode"][] | null;
+            nodes?: Schema.MapNode[] | null;
             parsedLanguages?: string[] | null;
-            projectHash?: string;
+            projectHash?: Schema.ProjectHash;
             repoFound?: boolean;
             repoPath?: string;
-            structureEdges?: components["schemas"]["SchemaMapEdge"][] | null;
-            violations?: components["schemas"]["SchemaEdgeViolation"][] | null;
+            structureEdges?: Schema.MapEdge[] | null;
+            violations?: Schema.EdgeViolation[] | null;
         };
         SchemaMapNode: {
             /** Format: double */
@@ -564,19 +566,19 @@ export type components = {
             loc?: number;
             path?: string;
             reEdits?: number;
-            recentCommits?: components["schemas"]["SchemaCommitRef"][] | null;
+            recentCommits?: Schema.CommitRef[] | null;
             recordedFiles?: number;
             retryLoops?: number;
             sessionCount?: number;
-            shapedBy?: components["schemas"]["SchemaTaskSummary"][] | null;
+            shapedBy?: Schema.TaskSummary[] | null;
             taskCount?: number;
             totalFiles?: number;
             usedBy?: string[] | null;
         };
         SchemaMapSlice: {
-            activityEdges?: components["schemas"]["SchemaActivityEdge"][] | null;
-            nodes?: components["schemas"]["SchemaMapNode"][] | null;
-            structureEdges?: components["schemas"]["SchemaMapEdge"][] | null;
+            activityEdges?: Schema.ActivityEdge[] | null;
+            nodes?: Schema.MapNode[] | null;
+            structureEdges?: Schema.MapEdge[] | null;
         };
         SchemaMockConfigResponse: {
             api?: string[];
@@ -584,26 +586,32 @@ export type components = {
             tui?: string[];
             web?: string[];
         };
+        /**
+         * Project Hash
+         * @description SHA-256 hex digest of the project's origin URL or local path
+         * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+         */
+        SchemaProjectHash: string;
         SchemaProjectResolutionPayload: {
-            project?: string;
-            projectHash?: string;
+            project: string;
+            projectHash: Schema.ProjectHash;
         };
         SchemaProjectSummariesPayload: {
-            projects?: components["schemas"]["SchemaProjectSummary"][] | null;
+            projects?: Schema.ProjectSummary[] | null;
         };
         SchemaProjectSummary: {
             lastWorkMs?: null | number;
             openChanges?: number;
             project?: string;
-            projectHash?: string;
+            projectHash?: Schema.ProjectHash;
             recordedFiles?: number;
             sessions?: number;
             totalFiles?: number;
         };
         SchemaProjectTasksPayload: {
             fileFilter?: string;
-            projectHash?: string;
-            tasks?: components["schemas"]["SchemaTaskSummary"][] | null;
+            projectHash?: Schema.ProjectHash;
+            tasks?: Schema.TaskSummary[] | null;
         };
         SchemaProvenance: {
             details?: {
@@ -618,7 +626,7 @@ export type components = {
             discoveryTurns?: number;
             /** Format: double */
             durationMinutes?: number;
-            effectiveAnnotations?: components["schemas"]["SchemaAnnotationSummary"][];
+            effectiveAnnotations?: Schema.AnnotationSummary[];
             /** Format: double */
             explorationRatio?: number;
             filesTouched?: number;
@@ -643,12 +651,12 @@ export type components = {
             withinSessionReverts?: number;
         };
         SchemaReviewListPayload: {
-            changes?: components["schemas"]["SchemaChangeSummary"][] | null;
+            changes: Schema.ChangeSummary[];
             defaultBranch?: string;
-            projectHash?: string;
-            recentCommits?: components["schemas"]["SchemaCommitRef"][] | null;
+            projectHash?: Schema.ProjectHash;
+            recentCommits: Schema.CommitRef[];
             repoFound?: boolean;
-            sessions?: components["schemas"]["SchemaTimelineSessionRef"][] | null;
+            sessions: Schema.TimelineSessionRef[];
         };
         /**
          * Role
@@ -669,12 +677,12 @@ export type components = {
         SchemaScaleKind: "nominal" | "ordinal" | "continuous";
         SchemaSearchPayload: {
             query?: string;
-            results?: components["schemas"]["SchemaSearchResult"][] | null;
+            results?: Schema.SearchResult[] | null;
         };
         SchemaSearchResult: {
             entryIndex?: number;
             project?: string;
-            projectHash?: string;
+            projectHash?: Schema.ProjectHash;
             role?: string;
             /** Format: double */
             score?: number;
@@ -682,20 +690,20 @@ export type components = {
             snippet?: string;
         };
         SchemaSessionDetailPayload: {
-            childSessions?: components["schemas"]["SchemaChildSessionRef"][];
+            childSessions?: Schema.ChildSessionRef[];
             /** Format: double */
             durationMins?: number;
             /** Format: date-time */
             endTime?: string;
             gitBranch?: string;
             gitRemote?: string;
-            harness?: components["schemas"]["BestiaryHarness"];
+            harness?: Schema.Harness;
             id?: string;
             model?: string;
-            outcome?: components["schemas"]["SchemaSessionOutcome"];
+            outcome?: Schema.SessionOutcome;
             project?: string;
             schemaVersion?: string;
-            scorecard?: components["schemas"]["SchemaSessionScorecard"];
+            scorecard?: Schema.SessionScorecard;
             source?: string;
             /** Format: date-time */
             startTime?: string;
@@ -705,7 +713,7 @@ export type components = {
             toolCallCount?: number;
             totalTokens?: number;
             turnCount?: number;
-            turns?: components["schemas"]["SchemaTurnDetail"][] | null;
+            turns?: Schema.TurnDetail[] | null;
             workingDirectory?: string;
         };
         /**
@@ -735,7 +743,7 @@ export type components = {
             m6OutputSurvivalPct?: null | number;
             m7SpecHasConstraints?: null | boolean;
             m7SpecHasExamples?: null | boolean;
-            outcome?: components["schemas"]["SchemaSessionOutcome"];
+            outcome?: Schema.SessionOutcome;
             retryTokensWasted?: null | number;
             signalDensity?: null | number;
             specQualityScore?: null | number;
@@ -745,13 +753,13 @@ export type components = {
         SchemaSessionSummary: {
             /** Format: double */
             durationMins?: number;
-            harness?: components["schemas"]["BestiaryHarness"];
+            harness?: Schema.Harness;
             id?: string;
             outcome?: string;
             parentSessionId?: null | string;
             preview?: string;
             project?: string;
-            projectHash?: string;
+            projectHash?: Schema.ProjectHash;
             /** Format: date-time */
             startTime?: string;
             toolCallCount?: number;
@@ -759,7 +767,7 @@ export type components = {
             turnCount?: number;
         };
         SchemaSessionsPayload: {
-            sessions?: components["schemas"]["SchemaSessionSummary"][] | null;
+            sessions?: Schema.SessionSummary[] | null;
         };
         SchemaShutdownResponse: {
             status?: string;
@@ -792,9 +800,9 @@ export type components = {
             title?: string;
         };
         SchemaTimelineSessionRef: {
-            harness?: components["schemas"]["BestiaryHarness"];
+            harness?: Schema.Harness;
             hasCommitBinding?: boolean;
-            sessionId?: components["schemas"]["SchemaSessionID"];
+            sessionId?: Schema.SessionID;
             startMs?: null | number;
             title?: string;
         };
@@ -807,7 +815,7 @@ export type components = {
             isError?: boolean;
             name?: string;
             result?: string;
-            toolKind?: components["schemas"]["SchemaToolCallKind"];
+            toolKind?: Schema.ToolCallKind;
         };
         /**
          * Tool Call Kind
@@ -822,17 +830,17 @@ export type components = {
             agentName?: string;
             content?: string;
             depth?: number;
-            entryType?: components["schemas"]["SchemaEntryType"];
+            entryType?: Schema.EntryType;
             hasThinking?: boolean;
             index?: number;
             parentIndex?: null | number;
-            role?: components["schemas"]["SchemaRole"];
-            stopReason?: components["schemas"]["SchemaStopReason"];
+            role?: Schema.Role;
+            stopReason?: Schema.StopReason;
             /** Format: date-time */
             timestamp?: string;
             tokensIn?: null | number;
             tokensOut?: null | number;
-            toolCalls?: components["schemas"]["SchemaToolCallDetail"][];
+            toolCalls?: Schema.ToolCallDetail[];
         };
         /**
          * Type Origin
@@ -852,8 +860,8 @@ export type components = {
         };
         SchemaValueDomain: {
             constraintSpec?: string;
-            datatype?: components["schemas"]["SchemaAnnotationDatatype"];
-            kind?: components["schemas"]["SchemaValueDomainKind"];
+            datatype?: Schema.AnnotationDatatype;
+            kind?: Schema.ValueDomainKind;
             permissibleValues?: string[];
         };
         /**
@@ -874,20 +882,20 @@ export type components = {
             version?: string;
         };
         SessionDetailPayload: {
-            childSessions?: components["schemas"]["SchemaChildSessionRef"][];
+            childSessions?: Schema.ChildSessionRef[];
             /** Format: double */
             durationMins?: number;
             /** Format: date-time */
             endTime?: string;
             gitBranch?: string;
             gitRemote?: string;
-            harness?: components["schemas"]["BestiaryHarness"];
+            harness?: Schema.Harness;
             id?: string;
             model?: string;
-            outcome?: components["schemas"]["SchemaSessionOutcome"];
+            outcome?: Schema.SessionOutcome;
             project?: string;
             schemaVersion?: string;
-            scorecard?: components["schemas"]["SchemaSessionScorecard"];
+            scorecard?: Schema.SessionScorecard;
             source?: string;
             /** Format: date-time */
             startTime?: string;
@@ -897,11 +905,11 @@ export type components = {
             toolCallCount?: number;
             totalTokens?: number;
             turnCount?: number;
-            turns?: components["schemas"]["SchemaTurnDetail"][] | null;
+            turns?: Schema.TurnDetail[] | null;
             workingDirectory?: string;
         };
         TrendsPayload: {
-            days?: components["schemas"]["SchemaDayStats"][] | null;
+            days?: Schema.DayStats[] | null;
             totalSessions?: number;
             totalTokens?: number;
         };
@@ -934,7 +942,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaAnnotationTypeSummary"][];
+                    "application/json": null | Schema.AnnotationTypeSummary[];
                 };
             };
         };
@@ -957,7 +965,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaAnnotationSummary"][];
+                    "application/json": null | Schema.AnnotationSummary[];
                 };
             };
         };
@@ -971,7 +979,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SchemaCreateAnnotationRequest"];
+                "application/json": Schema.CreateAnnotationRequest;
             };
         };
         responses: {
@@ -981,7 +989,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaCreateAnnotationResponse"];
+                    "application/json": Schema.CreateAnnotationResponse;
                 };
             };
         };
@@ -1001,7 +1009,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaMockConfigResponse"];
+                    "application/json": Schema.MockConfigResponse;
                 };
             };
         };
@@ -1021,7 +1029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaHealthResponse"];
+                    "application/json": Schema.HealthResponse;
                 };
             };
         };
@@ -1035,7 +1043,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1047,7 +1055,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaMapGraphPayload"];
+                    "application/json": Schema.MapGraphPayload;
                 };
             };
         };
@@ -1061,7 +1069,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1073,7 +1081,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaMapNodeDetailPayload"];
+                    "application/json": Schema.MapNodeDetailPayload;
                 };
             };
         };
@@ -1087,7 +1095,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1099,7 +1107,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaProjectTasksPayload"];
+                    "application/json": Schema.ProjectTasksPayload;
                 };
             };
         };
@@ -1122,7 +1130,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaProjectResolutionPayload"];
+                    "application/json": Schema.ProjectResolutionPayload;
                 };
             };
         };
@@ -1142,7 +1150,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaProjectSummariesPayload"];
+                    "application/json": Schema.ProjectSummariesPayload;
                 };
             };
         };
@@ -1153,7 +1161,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1165,7 +1173,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaReviewListPayload"];
+                    "application/json": Schema.ReviewListPayload;
                 };
             };
         };
@@ -1179,7 +1187,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1191,7 +1199,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaChangeDetailPayload"];
+                    "application/json": Schema.ChangeDetailPayload;
                 };
             };
         };
@@ -1207,7 +1215,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Opaque project hash */
-                projectHash: string;
+                projectHash: Schema.ProjectHash;
             };
             cookie?: never;
         };
@@ -1219,7 +1227,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaChangeDiffPayload"];
+                    "application/json": Schema.ChangeDiffPayload;
                 };
             };
         };
@@ -1244,7 +1252,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSearchPayload"];
+                    "application/json": Schema.SearchPayload;
                 };
             };
         };
@@ -1264,7 +1272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSessionsPayload"];
+                    "application/json": Schema.SessionsPayload;
                 };
             };
         };
@@ -1286,7 +1294,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSessionDetailPayload"];
+                    "application/json": Schema.SessionDetailPayload;
                 };
             };
         };
@@ -1306,7 +1314,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaShutdownResponse"];
+                    "application/json": Schema.ShutdownResponse;
                 };
             };
         };

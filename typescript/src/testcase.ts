@@ -1,45 +1,28 @@
 import { parseAllDocuments } from "yaml";
+import {
+  Classification,
+  ProvenanceSource,
+  isClassification,
+  isProvenanceSource,
+  validateCorpus,
+  type Case,
+  type Corpus,
+  type Mutation,
+  type Provenance,
+} from "./internal/generated/testcase.js";
 
-export const Classification = {
-  MustPass: "must-pass",
-  MustFail: "must-fail",
-} as const;
-
-export type Classification = (typeof Classification)[keyof typeof Classification];
-export const AllClassifications = Object.freeze(Object.values(Classification)) as readonly Classification[];
-
-export const ProvenanceSource = {
-  Requirement: "requirement",
-  Bug: "bug",
-  Enum: "enum",
-  Boundary: "boundary",
-  Manual: "manual",
-} as const;
-
-export type ProvenanceSource = (typeof ProvenanceSource)[keyof typeof ProvenanceSource];
-export const AllProvenanceSources = Object.freeze(Object.values(ProvenanceSource)) as readonly ProvenanceSource[];
-
-export interface Provenance {
-  source: ProvenanceSource;
-  ref: string;
-}
-
-export interface Mutation {
-  description: string;
-}
-
-export interface Case<I, E> {
-  name: string;
-  input: I;
-  expected: E;
-  classification: Classification;
-  provenance: Provenance;
-  mutation: Mutation;
-}
-
-export interface Corpus<I, E> {
-  cases: Case<I, E>[];
-}
+export {
+  AllClassifications,
+  AllProvenanceSources,
+  Classification,
+  ProvenanceSource,
+  checkMin,
+  isClassification,
+  isProvenanceSource,
+  validateCase,
+  validateCorpus,
+} from "./internal/generated/testcase.js";
+export type { Case, Corpus, Mutation, Provenance } from "./internal/generated/testcase.js";
 
 export interface CorpusDecoders<I, E> {
   decodeInput(value: unknown, path: string): I;
@@ -54,59 +37,6 @@ export class CorpusError extends Error {
     this.name = "CorpusError";
     this.path = path;
   }
-}
-
-export function isClassification(value: unknown): value is Classification {
-  return value === Classification.MustPass || value === Classification.MustFail;
-}
-
-export function isProvenanceSource(value: unknown): value is ProvenanceSource {
-  return Object.values(ProvenanceSource).some((source) => source === value);
-}
-
-export function checkMin<I, E>(corpus: Corpus<I, E>, minimum: number): Error | undefined {
-  if (!Number.isSafeInteger(minimum) || minimum < 0) {
-    return new Error(`minimum must be a non-negative safe integer, got ${String(minimum)}`);
-  }
-  if (corpus.cases.length < minimum) {
-    return new Error(`corpus has ${corpus.cases.length} case(s), want at least ${minimum}`);
-  }
-  return undefined;
-}
-
-export function validateCase<I, E>(testCase: Case<I, E>): Error | undefined {
-  const path = `case ${JSON.stringify(testCase.name)}`;
-  if (testCase.name.trim() === "") {
-    return new Error(`${path}: name is empty`);
-  }
-  if (!isClassification(testCase.classification)) {
-    return new Error(`${path}: classification ${JSON.stringify(testCase.classification)} is not one of must-pass/must-fail`);
-  }
-  if (!isProvenanceSource(testCase.provenance.source)) {
-    return new Error(`${path}: provenance source ${JSON.stringify(testCase.provenance.source)} is not a known source`);
-  }
-  if (testCase.provenance.ref.trim() === "") {
-    return new Error(`${path}: provenance ref is empty (a case must cite why it exists)`);
-  }
-  if (testCase.mutation.description.trim() === "") {
-    return new Error(`${path}: mutation description is empty (a case must describe the change under test)`);
-  }
-  return undefined;
-}
-
-export function validateCorpus<I, E>(corpus: Corpus<I, E>): Error | undefined {
-  const names = new Set<string>();
-  for (const [index, testCase] of corpus.cases.entries()) {
-    if (names.has(testCase.name)) {
-      return new Error(`corpus case ${index}: duplicate case name ${JSON.stringify(testCase.name)}`);
-    }
-    names.add(testCase.name);
-    const err = validateCase(testCase);
-    if (err !== undefined) {
-      return new Error(`corpus case ${index}: ${err.message}`, { cause: err });
-    }
-  }
-  return undefined;
 }
 
 export function loadCorpus<I, E>(source: string, decoders: CorpusDecoders<I, E>): Corpus<I, E> {

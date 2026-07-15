@@ -1160,10 +1160,7 @@
             "items": {
               "$ref": "#/components/schemas/SessionID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "subject": {
             "type": "string"
@@ -1590,7 +1587,7 @@
             ]
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "suggestions": {
             "items": {
@@ -1927,7 +1924,7 @@
             ]
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "repoFound": {
             "type": "boolean"
@@ -2281,7 +2278,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           }
         },
         "required": [
@@ -2329,7 +2326,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "recordedFiles": {
             "type": "integer"
@@ -2357,7 +2354,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "tasks": {
             "items": {
@@ -3470,25 +3467,19 @@
             "items": {
               "$ref": "#/components/schemas/ChangeSummary"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "defaultBranch": {
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "recentCommits": {
             "items": {
               "$ref": "#/components/schemas/CommitRef"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "repoFound": {
             "type": "boolean"
@@ -3497,10 +3488,7 @@
             "items": {
               "$ref": "#/components/schemas/TimelineSessionRef"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -3640,7 +3628,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "role": {
             "type": "string"
@@ -4364,7 +4352,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "startTime": {
             "format": "date-time",

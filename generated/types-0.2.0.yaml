@@ -734,9 +734,7 @@ components:
         sessionIds:
           items:
             $ref: '#/components/schemas/SessionID'
-          type:
-          - array
-          - "null"
+          type: array
         subject:
           type: string
         timeMs:
@@ -1009,7 +1007,7 @@ components:
             - integer
           - type: "null"
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         suggestions:
           items:
             $ref: '#/components/schemas/ReviewSuggestion'
@@ -1227,7 +1225,7 @@ components:
           - array
           - "null"
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         repoFound:
           type: boolean
         repoPath:
@@ -1470,7 +1468,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
       required:
       - project
       - projectHash
@@ -1499,7 +1497,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         recordedFiles:
           type: integer
         sessions:
@@ -1519,7 +1517,7 @@ components:
         fileFilter:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         tasks:
           items:
             $ref: '#/components/schemas/TaskSummary'
@@ -2171,27 +2169,21 @@ components:
         changes:
           items:
             $ref: '#/components/schemas/ChangeSummary'
-          type:
-          - array
-          - "null"
+          type: array
         defaultBranch:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         recentCommits:
           items:
             $ref: '#/components/schemas/CommitRef'
-          type:
-          - array
-          - "null"
+          type: array
         repoFound:
           type: boolean
         sessions:
           items:
             $ref: '#/components/schemas/TimelineSessionRef'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - projectHash
       - repoFound
@@ -2292,7 +2284,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         role:
           type: string
         score:
@@ -2699,7 +2691,7 @@ components:
         project:
           type: string
         projectHash:
-          type: string
+          $ref: '#/components/schemas/ProjectHash'
         startTime:
           format: date-time
           type: string

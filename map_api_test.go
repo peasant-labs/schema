@@ -6,8 +6,10 @@ import (
 	"testing"
 )
 
+const testProjectHash ProjectHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
 func TestNewReviewListPayload_TimelineCollectionsMarshalAsArrays(t *testing.T) {
-	b, err := json.Marshal(NewReviewListPayload("project"))
+	b, err := json.Marshal(NewReviewListPayload(testProjectHash))
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}

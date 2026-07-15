@@ -588,6 +588,18 @@ types:
   - go_name: TimelineFixtureInput
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: TimelineFixtureManifest
+    disposition: fixture-only
+    reason: exact timeline family identity manifest exported with the fixture corpus
+  - go_name: TimelineFixtureManifestEntry
+    disposition: fixture-only
+    reason: one family and case identity row in the timeline fixture manifest
+  - go_name: TimelineManifestMutationCorpus
+    disposition: fixture-only
+    reason: count-preserving timeline manifest mutation proofs
+  - go_name: TimelineManifestMutationInput
+    disposition: fixture-only
+    reason: one count-preserving timeline manifest mutation
   - go_name: EntryType
     disposition: catalog
     component: EntryType

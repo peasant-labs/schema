@@ -240,11 +240,15 @@ func TestRenderTimelineFixturesDeterministicAndComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	first, err := renderTimelineFixtures(fixtures)
+	manifest, err := schema.LoadTimelineFixtureManifest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	first, err := renderTimelineFixtures(fixtures, manifest)
 	if err != nil {
 		t.Fatalf("first render: %v", err)
 	}
-	second, err := renderTimelineFixtures(fixtures)
+	second, err := renderTimelineFixtures(fixtures, manifest)
 	if err != nil {
 		t.Fatalf("second render: %v", err)
 	}
@@ -261,5 +265,30 @@ func TestRenderTimelineFixturesDeterministicAndComplete(t *testing.T) {
 	}
 	if !bytes.Equal(first, generated) {
 		t.Fatal("generated timeline fixture module differs from an exact production render")
+	}
+}
+
+func TestRenderTestcaseModelDeterministicAndComplete(t *testing.T) {
+	first, err := renderTestcaseModel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := renderTestcaseModel()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatal("testcase TypeScript rendering is nondeterministic")
+	}
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated, err := os.ReadFile(filepath.Join(root, "typescript", "src", "internal", "generated", "testcase.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, generated) {
+		t.Fatal("generated testcase model differs from exact Go-derived production render")
 	}
 }

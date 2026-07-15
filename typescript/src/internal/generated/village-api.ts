@@ -3,6 +3,8 @@
  * Do not make direct changes to the file.
  */
 
+import type * as Schema from "../../index.js";
+
 export type paths = {
     "/api/v1/annotations/manifest": {
         parameters: {
@@ -219,7 +221,7 @@ export type components = {
         };
         SchemaDiagnosticsInfo: {
             partial?: null | boolean;
-            warnings?: components["schemas"]["SchemaDiagnosticEntry"][] | null;
+            warnings?: Schema.DiagnosticEntry[] | null;
         };
         /**
          * Entry Type
@@ -242,7 +244,7 @@ export type components = {
         };
         SchemaGitContext: {
             branch?: null | string;
-            commits?: components["schemas"]["SchemaCommitInfo"][];
+            commits?: Schema.CommitInfo[];
             remote?: null | string;
             tracking?: null | string;
             worktree?: null | string;
@@ -270,14 +272,14 @@ export type components = {
          */
         SchemaModelID: string;
         SchemaModelInfo: {
-            harness: components["schemas"]["BestiaryHarness"];
-            hostSlug?: components["schemas"]["SchemaHostSlug"];
-            model: components["schemas"]["SchemaModelID"];
+            harness: Schema.Harness;
+            hostSlug?: Schema.HostSlug;
+            model: Schema.ModelID;
             version?: string;
         };
         SchemaProjectContext: {
             filePath?: string;
-            hash?: components["schemas"]["SchemaProjectHash"];
+            hash?: Schema.ProjectHash;
             name?: string;
         };
         /**
@@ -295,18 +297,18 @@ export type components = {
             version?: string;
         };
         SchemaPublishRequest: {
-            diagnostics?: components["schemas"]["SchemaDiagnosticsInfo"];
-            entries?: components["schemas"]["SchemaSessionEntry"][];
-            git?: components["schemas"]["SchemaGitContext"];
-            identity?: components["schemas"]["SchemaSessionIdentity"];
-            license?: components["schemas"]["SchemaLicense"];
-            model: components["schemas"]["SchemaModelInfo"];
-            project?: components["schemas"]["SchemaProjectContext"];
-            quality?: components["schemas"]["SchemaQualityMetrics"];
-            source?: components["schemas"]["SchemaSourceInfo"];
-            stats?: components["schemas"]["SchemaSessionStats"];
-            subagents?: components["schemas"]["SchemaSubagentRef"][];
-            timestamp?: components["schemas"]["SchemaTimestampInfo"];
+            diagnostics?: Schema.DiagnosticsInfo;
+            entries?: Schema.SessionEntry[];
+            git?: Schema.GitContext;
+            identity?: Schema.SessionIdentity;
+            license?: Schema.License;
+            model: Schema.ModelInfo;
+            project?: Schema.ProjectContext;
+            quality?: Schema.QualityMetrics;
+            source?: Schema.SourceInfo;
+            stats?: Schema.SessionStats;
+            subagents?: Schema.SubagentRef[];
+            timestamp?: Schema.TimestampInfo;
         };
         SchemaPublishResponse: {
             blobKey?: string;
@@ -320,7 +322,7 @@ export type components = {
             updatedAt?: number;
         };
         SchemaPullAnnotation: {
-            annotatorKind?: components["schemas"]["SchemaAnnotatorKind"];
+            annotatorKind?: Schema.AnnotatorKind;
             annotatorName?: string;
             authorUserId?: string;
             authorUsername?: string;
@@ -330,13 +332,13 @@ export type components = {
             createdAt?: number;
             id?: string;
             isPrimary?: boolean;
-            provenance?: components["schemas"]["SchemaProvenance"];
+            provenance?: Schema.Provenance;
             reason?: null | string;
             supersededBy?: null | string;
             targetAnnotationId?: null | string;
             targetEntryEndIndex?: null | number;
             targetEntryIndex?: null | number;
-            targetKind?: components["schemas"]["SchemaTargetKind"];
+            targetKind?: Schema.TargetKind;
             targetProjectHash?: null | string;
             targetSessionId?: null | string;
             typeId?: string;
@@ -347,7 +349,7 @@ export type components = {
             limit?: number;
             page?: number;
             total?: number;
-            transcripts?: components["schemas"]["SchemaPullTranscriptInfo"][] | null;
+            transcripts?: Schema.PullTranscriptInfo[] | null;
         };
         SchemaPullSkipGateItem: {
             /** @description The client's own annotation content-hashes for this transcript (sorted, de-duplicated); compared as a set against the owner-scoped server set. */
@@ -355,15 +357,15 @@ export type components = {
             /** @description Hex-encoded SHA3-256 served-blob content-hash the client currently holds for this transcript; compared by value against the server's stored hash. */
             contentHash?: string;
             /** @description The id of a transcript the client holds and is asking about. */
-            transcriptId?: components["schemas"]["SchemaTranscriptID"];
+            transcriptId?: Schema.TranscriptID;
         };
         SchemaPullSkipGateRequest: {
             /** @description The per-transcript items the client is asking a currency question about (ordered by transcriptId, de-duplicated per-item annotation set). */
-            items?: components["schemas"]["SchemaPullSkipGateItem"][];
+            items?: Schema.PullSkipGateItem[];
         };
         SchemaPullSkipGateResponse: {
             /** @description Per-id currency answers, present only for pullable ids (non-pullable ids are withheld by omission); ordered by transcriptId. */
-            results?: components["schemas"]["SchemaPullSkipGateResult"][];
+            results?: Schema.PullSkipGateResult[];
         };
         SchemaPullSkipGateResult: {
             /** @description True when the owner-scoped server annotation set for this id equals the client's held set; false when it differs (missing or extra). */
@@ -371,14 +373,14 @@ export type components = {
             /** @description True when the server's stored content-hash equals the client's held hash for this id; false when it has diverged or the server holds none. */
             contentCurrent?: boolean;
             /** @description The transcript id this currency answer is for (always one the caller may pull). */
-            transcriptId?: components["schemas"]["SchemaTranscriptID"];
+            transcriptId?: Schema.TranscriptID;
         };
         SchemaPullTranscriptInfo: {
             annotationCount?: number;
             contentHash?: string;
             contractVersion?: string;
-            harness?: components["schemas"]["BestiaryHarness"];
-            license?: components["schemas"]["SchemaLicense"];
+            harness?: Schema.Harness;
+            license?: Schema.License;
             localId?: string;
             ownerUserId?: string;
             ownerUsername?: string;
@@ -386,10 +388,10 @@ export type components = {
             /** Format: int64 */
             publishedAt?: number;
             title?: string;
-            transcriptId?: components["schemas"]["SchemaTranscriptID"];
+            transcriptId?: Schema.TranscriptID;
             /** Format: int64 */
             updatedAt?: number;
-            visibility?: components["schemas"]["SchemaVisibility"];
+            visibility?: Schema.Visibility;
         };
         SchemaQualityMetrics: {
             computeVersion?: null | number;
@@ -420,7 +422,7 @@ export type components = {
             m7SpecHasConstraints?: null | boolean;
             m7SpecHasExamples?: null | boolean;
             m7SpecWordCount?: null | number;
-            outcome?: components["schemas"]["SchemaSessionOutcome"];
+            outcome?: Schema.SessionOutcome;
             outputTokens?: null | number;
             retryLoops?: null | number;
             retryTokensWasted?: null | number;
@@ -457,9 +459,9 @@ export type components = {
             depth?: number;
             entryId?: null | string;
             entryIndex?: number;
-            entryType?: components["schemas"]["SchemaEntryType"];
+            entryType?: Schema.EntryType;
             extra?: null | string;
-            harness?: components["schemas"]["BestiaryHarness"];
+            harness?: Schema.Harness;
             hasThinking?: boolean;
             hasToolUse?: boolean;
             isError?: boolean;
@@ -467,15 +469,15 @@ export type components = {
             parentIndex?: null | number;
             partType?: null | string;
             rawByteLength?: null | number;
-            role?: components["schemas"]["SchemaRole"];
-            sessionId?: components["schemas"]["SchemaSessionID"];
-            stopReason?: components["schemas"]["SchemaStopReason"];
+            role?: Schema.Role;
+            sessionId?: Schema.SessionID;
+            stopReason?: Schema.StopReason;
             timestampMs?: null | number;
             tokensIn?: null | number;
             tokensOut?: null | number;
             toolCallId?: null | string;
             toolInput?: null | string;
-            toolKind?: components["schemas"]["SchemaToolCallKind"];
+            toolKind?: Schema.ToolCallKind;
             toolNamesCsv?: null | string;
             toolOutput?: null | string;
         };
@@ -490,9 +492,9 @@ export type components = {
          */
         SchemaSessionID: string;
         SchemaSessionIdentity: {
-            parentUuid?: components["schemas"]["SchemaSessionID"];
+            parentUuid?: Schema.SessionID;
             schemaVersion?: number;
-            sessionId?: components["schemas"]["SchemaSessionID"];
+            sessionId?: Schema.SessionID;
         };
         /**
          * Session Outcome
@@ -525,7 +527,7 @@ export type components = {
         SchemaSourceFormat: "jsonl" | "json";
         SchemaSourceInfo: {
             filePath?: string;
-            format?: components["schemas"]["SchemaSourceFormat"];
+            format?: Schema.SourceFormat;
         };
         /**
          * Stop Reason
@@ -536,8 +538,8 @@ export type components = {
          */
         SchemaStopReason: "end_turn" | "cancelled" | "max_tokens" | "max_turn_requests" | "refusal";
         SchemaSubagentRef: {
-            parentUuid?: components["schemas"]["SchemaSessionID"];
-            sessionId?: components["schemas"]["SchemaSessionID"];
+            parentUuid?: Schema.SessionID;
+            sessionId?: Schema.SessionID;
         };
         /**
          * Target Kind
@@ -610,7 +612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaAnnotationManifestResponse"];
+                    "application/json": Schema.AnnotationManifestResponse;
                 };
             };
         };
@@ -624,7 +626,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SchemaExchangeCodeRequest"];
+                "application/json": Schema.ExchangeCodeRequest;
             };
         };
         responses: {
@@ -634,7 +636,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaExchangeCodeResponse"];
+                    "application/json": Schema.ExchangeCodeResponse;
                 };
             };
         };
@@ -680,7 +682,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullListResponse"];
+                    "application/json": Schema.PullListResponse;
                 };
             };
         };
@@ -694,7 +696,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SchemaPullSkipGateRequest"];
+                "application/json": Schema.PullSkipGateRequest;
             };
         };
         responses: {
@@ -704,7 +706,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullSkipGateResponse"];
+                    "application/json": Schema.PullSkipGateResponse;
                 };
             };
         };
@@ -726,7 +728,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullTranscriptInfo"];
+                    "application/json": Schema.PullTranscriptInfo;
                 };
             };
         };
@@ -748,7 +750,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaPullAnnotation"][];
+                    "application/json": null | Schema.PullAnnotation[];
                 };
             };
         };
@@ -788,7 +790,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSchemaVersionResponse"];
+                    "application/json": Schema.SchemaVersionResponse;
                 };
             };
         };
@@ -812,7 +814,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPublishResponse"];
+                    "application/json": Schema.PublishResponse;
                 };
             };
         };

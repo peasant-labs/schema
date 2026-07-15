@@ -54,3 +54,36 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
     mutation: {description: contrasts the required topic with topic-specific selectors}
+  - name: review timeline payload
+    input:
+      component: ReviewListPayload
+      required: [projectHash, changes, recentCommits, sessions]
+      optional: [defaultBranch]
+      nullable: []
+      nonnullable: [changes, recentCommits, sessions]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: timeline collections are required non-null arrays}
+    mutation: {description: contrasts required timeline arrays with the optional default branch label}
+  - name: commit session bindings
+    input:
+      component: CommitRef
+      required: [hash, subject, hasSession, sessionIds]
+      optional: [timeMs]
+      nullable: [timeMs]
+      nonnullable: [sessionIds]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: authoritative commit bindings are a required non-null array}
+    mutation: {description: contrasts required binding identity with an optional commit timestamp}
+  - name: project resolution payload
+    input:
+      component: ProjectResolutionPayload
+      required: [project, projectHash]
+      optional: []
+      nullable: []
+      nonnullable: [project, projectHash]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: resolver responses always carry display and canonical identities}
+    mutation: {description: pins both resolver fields as required non-null values}

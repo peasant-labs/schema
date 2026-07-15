@@ -206,8 +206,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -249,8 +249,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -291,8 +291,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -378,8 +378,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -421,8 +421,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -474,8 +474,8 @@
             "description": "Opaque project hash",
             "required": true,
             "schema": {
-              "description": "Opaque project hash",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaProjectHash",
+              "description": "Opaque project hash"
             }
           }
         ],
@@ -1426,10 +1426,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaSessionID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "subject": {
             "type": "string"
@@ -1441,6 +1438,9 @@
             ]
           }
         },
+        "required": [
+          "sessionIds"
+        ],
         "type": "object"
       },
       "SchemaCreateAnnotationRequest": {
@@ -1696,7 +1696,7 @@
             ]
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "repoFound": {
             "type": "boolean"
@@ -1911,15 +1911,30 @@
         },
         "type": "object"
       },
+      "SchemaProjectHash": {
+        "description": "SHA-256 hex digest of the project's origin URL or local path",
+        "examples": [
+          "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        ],
+        "maxLength": 64,
+        "minLength": 64,
+        "pattern": "^[0-9a-f]{64}$",
+        "title": "Project Hash",
+        "type": "string"
+      },
       "SchemaProjectResolutionPayload": {
         "properties": {
           "project": {
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           }
         },
+        "required": [
+          "project",
+          "projectHash"
+        ],
         "type": "object"
       },
       "SchemaProjectSummariesPayload": {
@@ -1951,7 +1966,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "recordedFiles": {
             "type": "integer"
@@ -1971,7 +1986,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "tasks": {
             "items": {
@@ -2092,25 +2107,19 @@
             "items": {
               "$ref": "#/components/schemas/SchemaChangeSummary"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "defaultBranch": {
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "recentCommits": {
             "items": {
               "$ref": "#/components/schemas/SchemaCommitRef"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "repoFound": {
             "type": "boolean"
@@ -2119,12 +2128,14 @@
             "items": {
               "$ref": "#/components/schemas/SchemaTimelineSessionRef"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
+        "required": [
+          "changes",
+          "recentCommits",
+          "sessions"
+        ],
         "type": "object"
       },
       "SchemaRole": {
@@ -2183,7 +2194,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "role": {
             "type": "string"
@@ -2420,7 +2431,7 @@
             "type": "string"
           },
           "projectHash": {
-            "type": "string"
+            "$ref": "#/components/schemas/SchemaProjectHash"
           },
           "startTime": {
             "format": "date-time",
