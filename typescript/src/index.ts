@@ -116,13 +116,22 @@ const projectHashPattern = /^[0-9a-f]{64}$/;
 
 function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
   if (!isProjectHash(value)) {
-    let rendered: string;
-    try {
-      rendered = JSON.stringify(value) ?? String(value);
-    } catch {
-      rendered = String(value);
-    }
+    const rendered = renderProjectHashInput(value);
     throw new TypeError("ProjectHash validation failed for " + rendered + " at @peasant-labs/schema ProjectHash during " + operation + ": the value is not a 64-character lowercase hexadecimal string; callers cannot use it as a canonical project identity; pass the lowercase SHA-256 hex digest of the project origin URL or local path.");
+  }
+}
+
+function renderProjectHashInput(value: unknown): string {
+  try {
+    const json = JSON.stringify(value);
+    if (json !== undefined) return json;
+  } catch {
+    // Fall through to String for values whose JSON hooks throw.
+  }
+  try {
+    return String(value);
+  } catch {
+    return "<unrenderable value>";
   }
 }
 

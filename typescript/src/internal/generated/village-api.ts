@@ -339,7 +339,7 @@ export type components = {
             targetEntryEndIndex?: null | number;
             targetEntryIndex?: null | number;
             targetKind?: Schema.TargetKind;
-            targetProjectHash?: null | Schema.ProjectHash;
+            targetProjectHash?: Schema.ProjectHash;
             targetSessionId?: null | string;
             typeId?: string;
             typeName?: string;

@@ -91,9 +91,7 @@ components:
           type: boolean
         projectHash:
           anyOf:
-          - type:
-            - "null"
-            - string
+          - $ref: '#/components/schemas/ProjectHash'
           - type: "null"
         provenance:
           anyOf:
@@ -249,9 +247,7 @@ components:
           $ref: '#/components/schemas/TargetKind'
         targetProjectHash:
           anyOf:
-          - type:
-            - "null"
-            - string
+          - $ref: '#/components/schemas/ProjectHash'
           - type: "null"
         targetSessionId:
           anyOf:
@@ -1660,9 +1656,7 @@ components:
         targetKind:
           $ref: '#/components/schemas/TargetKind'
         targetProjectHash:
-          type:
-          - "null"
-          - string
+          $ref: '#/components/schemas/ProjectHash'
         targetSessionId:
           type:
           - "null"

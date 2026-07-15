@@ -634,9 +634,7 @@ components:
           $ref: '#/components/schemas/SchemaTargetKind'
         targetProjectHash:
           anyOf:
-          - type:
-            - "null"
-            - string
+          - $ref: '#/components/schemas/SchemaProjectHash'
           - type: "null"
         targetSessionId:
           anyOf:

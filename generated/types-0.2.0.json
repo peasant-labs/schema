@@ -136,10 +136,7 @@
           "projectHash": {
             "anyOf": [
               {
-                "type": [
-                  "null",
-                  "string"
-                ]
+                "$ref": "#/components/schemas/ProjectHash"
               },
               {
                 "type": "null"
@@ -416,10 +413,7 @@
           "targetProjectHash": {
             "anyOf": [
               {
-                "type": [
-                  "null",
-                  "string"
-                ]
+                "$ref": "#/components/schemas/ProjectHash"
               },
               {
                 "type": "null"
@@ -2566,10 +2560,7 @@
             "$ref": "#/components/schemas/TargetKind"
           },
           "targetProjectHash": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "$ref": "#/components/schemas/ProjectHash"
           },
           "targetSessionId": {
             "type": [

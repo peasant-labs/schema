@@ -1,0 +1,55 @@
+cases:
+  - name: undefined value
+    input: {kind: undefined}
+    expected: undefined
+    classification: must-fail
+    provenance: {source: boundary, ref: unknown trust-boundary values may be undefined}
+    mutation: {description: supplies undefined instead of a string}
+  - name: null value
+    input: {kind: "null"}
+    expected: "null"
+    classification: must-fail
+    provenance: {source: boundary, ref: nullable wire values must not become project identities}
+    mutation: {description: supplies null instead of a string}
+  - name: numeric value
+    input: {kind: number}
+    expected: "42"
+    classification: must-fail
+    provenance: {source: boundary, ref: numbers are not ProjectHash values}
+    mutation: {description: supplies the number 42 instead of a string}
+  - name: plain object
+    input: {kind: object}
+    expected: "{}"
+    classification: must-fail
+    provenance: {source: boundary, ref: object wire values must render without escaping the owned error}
+    mutation: {description: supplies an empty object instead of a string}
+  - name: array value
+    input: {kind: array}
+    expected: "[]"
+    classification: must-fail
+    provenance: {source: boundary, ref: array wire values must render without becoming strings}
+    mutation: {description: supplies an empty array instead of a string}
+  - name: bigint value
+    input: {kind: bigint}
+    expected: "42"
+    classification: must-fail
+    provenance: {source: boundary, ref: JSON serialization failures fall back to guarded string rendering}
+    mutation: {description: supplies a bigint that JSON.stringify rejects}
+  - name: symbol value
+    input: {kind: symbol}
+    expected: Symbol(project-hash)
+    classification: must-fail
+    provenance: {source: boundary, ref: values omitted by JSON serialization fall back to string rendering}
+    mutation: {description: supplies a symbol that JSON.stringify returns undefined for}
+  - name: throwing JSON hook
+    input: {kind: throwing-json}
+    expected: "[object Object]"
+    classification: must-fail
+    provenance: {source: boundary, ref: a throwing toJSON hook cannot replace the schema-owned error}
+    mutation: {description: adds a toJSON hook that throws before default string rendering succeeds}
+  - name: unrenderable hostile object
+    input: {kind: throwing-json-and-string}
+    expected: <unrenderable value>
+    classification: must-fail
+    provenance: {source: boundary, ref: hostile objects cannot escape ProjectHash validation error ownership}
+    mutation: {description: makes both toJSON and toString throw}

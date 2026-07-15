@@ -1,0 +1,13 @@
+cases:
+  - name: unknown case field
+    input: add-unknown-field
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash location fixtures reject unrecognized schema}
+    mutation: {description: adds an unknown key to the first location case}
+  - name: multiple YAML documents
+    input: add-document
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash location fixtures are one-document contracts}
+    mutation: {description: appends a second YAML document}

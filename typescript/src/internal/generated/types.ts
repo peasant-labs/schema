@@ -42,7 +42,7 @@ export type components = {
             contentHash: string;
             entryTarget?: components["schemas"]["AnnotationEntryTarget"] | null;
             isPrimary: boolean;
-            projectHash?: (null | components["schemas"]["ProjectHash"]) | null;
+            projectHash?: components["schemas"]["ProjectHash"] | null;
             provenance?: components["schemas"]["Provenance"] | null;
             reason?: (null | string) | null;
             sessionId?: (null | string) | null;
@@ -91,7 +91,7 @@ export type components = {
             targetEntryEndIndex?: (null | number) | null;
             targetEntryIndex?: (null | number) | null;
             targetKind: components["schemas"]["TargetKind"];
-            targetProjectHash?: (null | components["schemas"]["ProjectHash"]) | null;
+            targetProjectHash?: components["schemas"]["ProjectHash"] | null;
             targetSessionId?: (null | string) | null;
             typeId: string;
             typeName: string;
@@ -559,7 +559,7 @@ export type components = {
             targetEntryEndIndex?: null | number;
             targetEntryIndex?: null | number;
             targetKind?: components["schemas"]["TargetKind"];
-            targetProjectHash?: null | components["schemas"]["ProjectHash"];
+            targetProjectHash?: components["schemas"]["ProjectHash"];
             targetSessionId?: null | string;
             typeId?: string;
             typeName?: string;

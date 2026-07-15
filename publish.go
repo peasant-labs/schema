@@ -53,7 +53,7 @@ type AnnotationPushItem struct {
 	SessionID     *string                `json:"sessionId,omitempty"`
 	EntryTarget   *AnnotationEntryTarget `json:"entryTarget,omitempty"`
 	AnnotationID  *string                `json:"annotationId,omitempty"`
-	ProjectHash   *string                `json:"projectHash,omitempty"`
+	ProjectHash   *ProjectHash           `json:"projectHash,omitempty"`
 	TypeID        string                 `json:"typeId"`
 	Value         string                 `json:"value"`
 	IsPrimary     bool                   `json:"isPrimary"`

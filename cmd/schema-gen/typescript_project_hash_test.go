@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -74,58 +75,110 @@ func TestProjectHashFixtureMutationIsRejected(t *testing.T) {
 	}
 }
 
-func TestGeneratedTypeScriptProjectHashIdentity(t *testing.T) {
+func TestGeneratedProjectHashLocationAssertionsMatchStrictFixture(t *testing.T) {
 	root, err := findModuleRoot()
 	if err != nil {
 		t.Fatal(err)
 	}
-	read := func(relative string) string {
-		t.Helper()
-		data, err := os.ReadFile(filepath.Join(root, relative))
-		if err != nil {
-			t.Fatalf("read %s: %v", relative, err)
-		}
-		return string(data)
+	locations, err := loadProjectHashLocations(root)
+	if err != nil {
+		t.Fatal(err)
 	}
+	want, err := renderProjectHashLocationAssertions(locations)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(root, "typescript", "tests", "project-hash-locations.ts")
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("generated ProjectHash location assertions drifted from strict fixture; regenerate %s with `go run ./cmd/schema-gen`", path)
+	}
+}
 
-	rawTypes := read("typescript/src/internal/generated/types.ts")
-	for _, required := range []string{
-		`declare const projectHashBrand: unique symbol;`,
-		`type CanonicalProjectHash = string & { readonly [projectHashBrand]: "ProjectHash" };`,
-		`ProjectHash: CanonicalProjectHash;`,
-		`projectHash?: (null | components["schemas"]["ProjectHash"]) | null;`,
-		`targetProjectHash?: (null | components["schemas"]["ProjectHash"]) | null;`,
-	} {
-		if !strings.Contains(rawTypes, required) {
-			t.Errorf("generated root Types catalog is missing branded identity fragment %q", required)
-		}
+func TestProjectHashLocationExpectationMutationFailsClosed(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if projectHashPropertyPattern.MatchString(rawTypes) {
-		t.Error("generated root Types catalog retains a plain projectHash property")
+	locations, err := loadProjectHashLocations(root)
+	if err != nil {
+		t.Fatal(err)
 	}
+	mutated := locations
+	mutated.Cases = append([]testcase.Case[projectHashLocation, string](nil), locations.Cases...)
+	mutated.Cases[0].Expected = "string"
+	if err := validateProjectHashLocations("mutated ProjectHash locations", mutated); err == nil {
+		t.Fatal("ProjectHash location validator accepted a canonical location mutated to plain string")
+	}
+}
 
-	rootFacade := read("typescript/src/index.ts")
-	for _, required := range []string{
-		`export type ProjectHash = TypesComponents["schemas"]["ProjectHash"];`,
-		`export function isProjectHash(value: unknown): value is ProjectHash {`,
-		`export function validateProjectHash(value: unknown): asserts value is ProjectHash {`,
-		`export function newProjectHash(raw: string): ProjectHash {`,
-	} {
-		if !strings.Contains(rootFacade, required) {
-			t.Errorf("generated package root is missing ProjectHash API fragment %q", required)
+func TestProjectHashLocationLoaderMutationsFailStrictly(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	source, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "project_hash_locations.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutationData, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "project_hash_location_loader_mutations.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mutations, err := testcase.LoadCorpus[string, bool](mutationData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(mutations.Cases) != 2 {
+		t.Fatalf("ProjectHash location loader mutation fixture rows=%d, want exactly 2", len(mutations.Cases))
+	}
+	for _, testCase := range mutations.Cases {
+		mutated := string(source)
+		switch testCase.Input {
+		case "add-unknown-field":
+			mutated = strings.Replace(mutated, "    expected: ProjectHash\n", "    expected: ProjectHash\n    unexpected: true\n", 1)
+		case "add-document":
+			mutated += "\n---\ncases: []\n"
+		default:
+			t.Fatalf("ProjectHash location loader mutation fixture selected unknown kind %q", testCase.Input)
+		}
+		_, err := testcase.LoadCorpus[projectHashLocation, string]([]byte(mutated))
+		accepted := err == nil
+		if accepted != testCase.Expected {
+			t.Fatalf("%s: accepted=%v, want %v", testCase.Name, accepted, testCase.Expected)
 		}
 	}
+}
 
-	for _, relative := range []string{
-		"typescript/src/internal/generated/local-api.ts",
-		"typescript/src/internal/generated/village-api.ts",
-	} {
-		source := read(relative)
-		if projectHashPropertyPattern.MatchString(source) {
-			t.Errorf("%s retains a plain projectHash operation field", relative)
-		}
-		if !strings.Contains(source, "Schema.ProjectHash") {
-			t.Errorf("%s has no canonical root ProjectHash reference", relative)
-		}
+func TestCanonicalProjectHashBrandDoesNotRewriteSameSpellingProperties(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "types.ts")
+	source := "/**\n * generated fixture\n */\n\n" +
+		"export type components = { schemas: {\n" +
+		"        ProjectHash: string;\n" +
+		"        SameSpellingUnconstrained: { projectHash: string; targetProjectHash?: string };\n" +
+		"} };\n"
+	if err := os.WriteFile(path, []byte(source), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	aliases := []schemaAlias{{Name: "ProjectHash", RawName: "ProjectHash", Surface: "types", Canonical: []byte(`{"type":"string"}`)}}
+	if err := canonicalizeRootProjectHashIdentity(path, aliases); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "/**\n * generated fixture\n */\n\n" +
+		"declare const projectHashBrand: unique symbol;\n" +
+		"type CanonicalProjectHash = string & { readonly [projectHashBrand]: \"ProjectHash\" };\n\n" +
+		"export type components = { schemas: {\n" +
+		"        ProjectHash: CanonicalProjectHash;\n" +
+		"        SameSpellingUnconstrained: { projectHash: string; targetProjectHash?: string };\n" +
+		"} };\n"
+	if string(got) != want {
+		t.Fatalf("canonical ProjectHash branding changed an unrelated same-spelling property\ngot:\n%s\nwant:\n%s", got, want)
 	}
 }

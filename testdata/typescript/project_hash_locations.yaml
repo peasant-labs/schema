@@ -1,0 +1,37 @@
+cases:
+  - name: root annotation push payload
+    input: root-annotation-push
+    expected: ProjectHash
+    classification: must-pass
+    provenance: {source: requirement, ref: canonical root payload project identities use the nominal type}
+    mutation: {description: selects the nullable projectHash field on AnnotationPushItem}
+  - name: local path parameter
+    input: local-path
+    expected: ProjectHash
+    classification: must-pass
+    provenance: {source: requirement, ref: Local API project path parameters reuse the canonical root identity}
+    mutation: {description: selects listReviewChanges path projectHash}
+  - name: local response payload
+    input: local-response
+    expected: ProjectHash
+    classification: must-pass
+    provenance: {source: requirement, ref: Local API project resolution returns the canonical root identity}
+    mutation: {description: selects resolveProject response projectHash}
+  - name: village publish request
+    input: village-request
+    expected: ProjectHash
+    classification: must-pass
+    provenance: {source: requirement, ref: Village publish requests reuse canonical ProjectContext}
+    mutation: {description: selects the publish request project hash}
+  - name: village pull response
+    input: village-response
+    expected: ProjectHash
+    classification: must-pass
+    provenance: {source: requirement, ref: Village pull annotation responses reuse canonical AnnotationSummary}
+    mutation: {description: selects nullable targetProjectHash on the pull response item}
+  - name: unrelated same-spelling property
+    input: same-spelling-string
+    expected: string
+    classification: must-pass
+    provenance: {source: boundary, ref: property spelling alone must never confer nominal identity}
+    mutation: {description: selects an unconstrained projectHash property outside the schema catalog}

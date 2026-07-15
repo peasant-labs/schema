@@ -663,9 +663,7 @@ components:
         targetKind:
           $ref: '#/components/schemas/SchemaTargetKind'
         targetProjectHash:
-          type:
-          - "null"
-          - string
+          $ref: '#/components/schemas/SchemaProjectHash'
         targetSessionId:
           type:
           - "null"

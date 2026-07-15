@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -66,7 +65,7 @@ func generateTypeScript(moduleRoot string) error {
 		aliasesBySurface[surface.name] = aliases
 	}
 	typesAliases := aliasesBySurface["types"]
-	if err := canonicalizeRootProjectHashIdentity(surfaces[0].rawOutput); err != nil {
+	if err := canonicalizeRootProjectHashIdentity(surfaces[0].rawOutput, typesAliases); err != nil {
 		return err
 	}
 	for _, surface := range surfaces {
@@ -90,6 +89,18 @@ func generateTypeScript(moduleRoot string) error {
 		return err
 	}
 	if err := writeGeneratedFile(filepath.Join(packageRoot, "src", "index.ts"), root); err != nil {
+		return err
+	}
+
+	projectHashLocations, err := loadProjectHashLocations(moduleRoot)
+	if err != nil {
+		return err
+	}
+	locationAssertions, err := renderProjectHashLocationAssertions(projectHashLocations)
+	if err != nil {
+		return err
+	}
+	if err := writeGeneratedFile(filepath.Join(packageRoot, "tests", "project-hash-locations.ts"), locationAssertions); err != nil {
 		return err
 	}
 
@@ -128,14 +139,28 @@ func generateTypeScript(moduleRoot string) error {
 	return nil
 }
 
-var projectHashPropertyPattern = regexp.MustCompile(`(?m)^(\s+(?:projectHash|targetProjectHash)(?:\?)?: )([^;\n]*\bstring\b[^;\n]*);$`)
-
 // canonicalizeRootProjectHashIdentity refines the structural OpenAPI output
 // after generation. OpenAPI can describe the ProjectHash constraints, but it
-// cannot express TypeScript nominal identity. Keeping the private brand in the
-// raw catalog makes every public payload that references ProjectHash carry the
-// same identity while the package root remains the sole domain namespace.
-func canonicalizeRootProjectHashIdentity(path string) error {
+// cannot express TypeScript nominal identity. Only the canonical ProjectHash
+// component receives the private brand. Payload and operation fields carry it
+// through their schema references, never through property-name inference.
+func canonicalizeRootProjectHashIdentity(path string, aliases []schemaAlias) error {
+	var projectHash schemaAlias
+	found := false
+	for _, alias := range aliases {
+		if alias.Name != "ProjectHash" {
+			continue
+		}
+		if found {
+			return fmt.Errorf("canonicalize root ProjectHash identity: root schema catalog defines ProjectHash more than once (%q and %q); generation cannot choose a trustworthy nominal identity", projectHash.RawName, alias.RawName)
+		}
+		projectHash = alias
+		found = true
+	}
+	if !found {
+		return fmt.Errorf("canonicalize root ProjectHash identity: root schema catalog has no canonical ProjectHash component; add schema.ProjectHash to the Types catalog before generating TypeScript")
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("read generated root TypeScript catalog for ProjectHash canonicalization: %w", err)
@@ -147,22 +172,13 @@ func canonicalizeRootProjectHashIdentity(path string) error {
 	}
 	brand := "declare const projectHashBrand: unique symbol;\ntype CanonicalProjectHash = string & { readonly [projectHashBrand]: \"ProjectHash\" };\n\n"
 	source = strings.Replace(source, headerEnd, headerEnd+brand, 1)
-	const component = "        ProjectHash: string;"
+	component := fmt.Sprintf("        %s: string;", projectHash.RawName)
 	if count := strings.Count(source, component); count != 1 {
-		return fmt.Errorf("generated root TypeScript catalog at %s contains %d plain ProjectHash component declarations, want exactly 1 before nominal canonicalization; inspect the generated Types schema before publishing", path, count)
+		return fmt.Errorf("generated root TypeScript catalog at %s contains %d plain declarations for canonical ProjectHash component %q, want exactly 1 before nominal canonicalization; inspect the generated Types schema before publishing", path, count, projectHash.RawName)
 	}
-	source = strings.Replace(source, component, "        ProjectHash: CanonicalProjectHash;", 1)
-	source = rewriteProjectHashProperties(source, `components["schemas"]["ProjectHash"]`)
-	if projectHashPropertyPattern.MatchString(source) {
-		return fmt.Errorf("generated root TypeScript catalog at %s still contains an unbranded projectHash or targetProjectHash property after nominal canonicalization; add the new openapi-typescript shape to rewriteProjectHashProperties before publishing", path)
-	}
+	brandedComponent := fmt.Sprintf("        %s: CanonicalProjectHash;", projectHash.RawName)
+	source = strings.Replace(source, component, brandedComponent, 1)
 	return writeGeneratedFile(path, []byte(source))
-}
-
-func rewriteProjectHashProperties(source, replacement string) string {
-	return projectHashPropertyPattern.ReplaceAllStringFunc(source, func(line string) string {
-		return strings.Replace(line, "string", replacement, 1)
-	})
 }
 
 func typeScriptSurfaces(moduleRoot, packageRoot string) []typeScriptSurface {
@@ -203,11 +219,106 @@ func typeScriptGeneratedFiles(moduleRoot, packageRoot string) []string {
 		filepath.Join(packageRoot, "src", "internal", "generated", "testcase.ts"),
 		filepath.Join(packageRoot, "src", "fixtures", "quality.ts"),
 		filepath.Join(packageRoot, "src", "fixtures", "timeline.ts"),
+		filepath.Join(packageRoot, "tests", "project-hash-locations.ts"),
 	}
 	for _, surface := range typeScriptSurfaces(moduleRoot, packageRoot) {
 		files = append(files, surface.rawOutput, surface.publicFile)
 	}
 	return files
+}
+
+type projectHashLocation string
+
+const (
+	projectHashRootAnnotationPush projectHashLocation = "root-annotation-push"
+	projectHashLocalPath          projectHashLocation = "local-path"
+	projectHashLocalResponse      projectHashLocation = "local-response"
+	projectHashVillageRequest     projectHashLocation = "village-request"
+	projectHashVillageResponse    projectHashLocation = "village-response"
+	projectHashSameSpellingString projectHashLocation = "same-spelling-string"
+	projectHashLocationCount                          = 6
+)
+
+func loadProjectHashLocations(moduleRoot string) (testcase.Corpus[projectHashLocation, string], error) {
+	path := filepath.Join(moduleRoot, "testdata", "typescript", "project_hash_locations.yaml")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return testcase.Corpus[projectHashLocation, string]{}, fmt.Errorf("read TypeScript ProjectHash location fixture %s: %w", path, err)
+	}
+	locations, err := testcase.LoadCorpus[projectHashLocation, string](data)
+	if err != nil {
+		return testcase.Corpus[projectHashLocation, string]{}, fmt.Errorf("strictly decode typed TypeScript ProjectHash location fixture %s: %w", path, err)
+	}
+	if err := validateProjectHashLocations(path, locations); err != nil {
+		return testcase.Corpus[projectHashLocation, string]{}, err
+	}
+	return locations, nil
+}
+
+func validateProjectHashLocations(path string, locations testcase.Corpus[projectHashLocation, string]) error {
+	if len(locations.Cases) != projectHashLocationCount {
+		return fmt.Errorf("TypeScript ProjectHash location fixture %s has %d cases, want exactly %d", path, len(locations.Cases), projectHashLocationCount)
+	}
+	seen := make(map[projectHashLocation]string, len(locations.Cases))
+	for _, testCase := range locations.Cases {
+		if prior, duplicate := seen[testCase.Input]; duplicate {
+			return fmt.Errorf("TypeScript ProjectHash location fixture %s cases %q and %q repeat location %q", path, prior, testCase.Name, testCase.Input)
+		}
+		seen[testCase.Input] = testCase.Name
+		_, expected, err := projectHashLocationAssertion(testCase.Input)
+		if err != nil {
+			return fmt.Errorf("TypeScript ProjectHash location fixture %s case %q: %w", path, testCase.Name, err)
+		}
+		if testCase.Expected != expected {
+			return fmt.Errorf("TypeScript ProjectHash location fixture %s case %q expects %q, canonical location %q requires %q", path, testCase.Name, testCase.Expected, testCase.Input, expected)
+		}
+	}
+	return nil
+}
+
+func projectHashLocationAssertion(location projectHashLocation) (actual, expected string, err error) {
+	switch location {
+	case projectHashRootAnnotationPush:
+		return `Exclude<AnnotationPushItem["projectHash"], null | undefined>`, "ProjectHash", nil
+	case projectHashLocalPath:
+		return `LocalOperations["listReviewChanges"]["parameters"]["path"]["projectHash"]`, "ProjectHash", nil
+	case projectHashLocalResponse:
+		return `LocalOperations["resolveProject"]["responses"][200]["content"]["application/json"]["projectHash"]`, "ProjectHash", nil
+	case projectHashVillageRequest:
+		return `NonNullable<VillagePublishRequest["project"]>["hash"]`, "ProjectHash", nil
+	case projectHashVillageResponse:
+		return `Exclude<VillagePullAnnotation["targetProjectHash"], null | undefined>`, "ProjectHash", nil
+	case projectHashSameSpellingString:
+		return `SameSpellingUnconstrained["projectHash"]`, "string", nil
+	default:
+		return "", "", fmt.Errorf("unknown ProjectHash location %q; use one of the generator-owned location constants", location)
+	}
+}
+
+func renderProjectHashLocationAssertions(locations testcase.Corpus[projectHashLocation, string]) ([]byte, error) {
+	var out strings.Builder
+	out.WriteString(generatedTypeScriptHead)
+	out.WriteString(`import type { AnnotationPushItem, ProjectHash } from "@peasant-labs/schema";
+import type { operations as LocalOperations } from "@peasant-labs/schema/local-api";
+import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
+
+type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["application/json"];
+type VillagePullAnnotations = VillageOperations["getPullTranscriptAnnotations"]["responses"][200]["content"]["application/json"];
+type VillagePullAnnotation = NonNullable<VillagePullAnnotations>[number];
+interface SameSpellingUnconstrained { projectHash: string; targetProjectHash?: string }
+
+`)
+	for index, testCase := range locations.Cases {
+		actual, expected, err := projectHashLocationAssertion(testCase.Input)
+		if err != nil {
+			return nil, err
+		}
+		name := fmt.Sprintf("projectHashLocation%d", index+1)
+		fmt.Fprintf(&out, "const %s: Same<%s, %s> = true;\n", name, actual, expected)
+		fmt.Fprintf(&out, "void %s;\n", name)
+	}
+	return []byte(out.String()), nil
 }
 
 func openAPITypescriptBinary(packageRoot string) (string, error) {
@@ -351,13 +462,6 @@ func canonicalizeAPIOperationReferences(surface typeScriptSurface, aliases, root
 		to := "Schema." + rootName
 		source = strings.ReplaceAll(source, from, to)
 	}
-	// swaggest emits some constrained fields and path scalars inline. Restore
-	// the branded root identity only after every same-named component above has
-	// passed the exact schema-equality gate.
-	source = rewriteProjectHashProperties(source, "Schema.ProjectHash")
-	if projectHashPropertyPattern.MatchString(source) {
-		return fmt.Errorf("generated %s operation types at %s still contain an unbranded projectHash or targetProjectHash property after canonicalization; add the new openapi-typescript shape to rewriteProjectHashProperties before publishing", surface.name, surface.rawOutput)
-	}
 	if strings.Contains(source, "export type ") && strings.Contains(source, "components[\"schemas\"][\"SchemaProjectResolutionPayload\"]") {
 		return fmt.Errorf("generated %s operation types still reference a duplicate ProjectResolutionPayload dialect; map the operation to the canonical root type", surface.name)
 	}
@@ -421,13 +525,22 @@ const projectHashPattern = /^[0-9a-f]{64}$/;
 
 function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
   if (!isProjectHash(value)) {
-    let rendered: string;
-    try {
-      rendered = JSON.stringify(value) ?? String(value);
-    } catch {
-      rendered = String(value);
-    }
+    const rendered = renderProjectHashInput(value);
     throw new TypeError("ProjectHash validation failed for " + rendered + " at @peasant-labs/schema ProjectHash during " + operation + ": the value is not a 64-character lowercase hexadecimal string; callers cannot use it as a canonical project identity; pass the lowercase SHA-256 hex digest of the project origin URL or local path.");
+  }
+}
+
+function renderProjectHashInput(value: unknown): string {
+  try {
+    const json = JSON.stringify(value);
+    if (json !== undefined) return json;
+  } catch {
+    // Fall through to String for values whose JSON hooks throw.
+  }
+  try {
+    return String(value);
+  } catch {
+    return "<unrenderable value>";
   }
 }
 

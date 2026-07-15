@@ -61,10 +61,10 @@ test:
 # surfaces any newly-emitted untracked file to `git diff --exit-code`.
 freshness: typescript-deps
 	$(GO) run ./cmd/schema-gen
-	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/
-	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/; then \
+	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts
+	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts; then \
 		echo "generated artifacts drifted from the Go source — run 'make schema' and commit the result."; \
-		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/; \
+		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts; \
 		exit 1; \
 	fi
 

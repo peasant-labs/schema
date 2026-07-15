@@ -979,10 +979,7 @@
           "targetProjectHash": {
             "anyOf": [
               {
-                "type": [
-                  "null",
-                  "string"
-                ]
+                "$ref": "#/components/schemas/SchemaProjectHash"
               },
               {
                 "type": "null"
