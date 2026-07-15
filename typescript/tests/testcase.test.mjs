@@ -4,6 +4,8 @@ import test from "node:test";
 
 import {
   Classification,
+  AllClassifications,
+  AllProvenanceSources,
   ProvenanceSource,
   checkMin,
   loadCorpus,
@@ -11,6 +13,8 @@ import {
 } from "../dist/testcase.js";
 
 const matrixSource = await readFile(new URL("../../testcase/testdata/load_cases.yaml", import.meta.url), "utf8");
+const minimumMatrixSource = await readFile(new URL("../../testcase/testdata/check_min_cases.yaml", import.meta.url), "utf8");
+const decoderCaseSource = await readFile(new URL("./fixtures/decoder-case.yaml", import.meta.url), "utf8");
 
 const stringDecoder = (value, path) => {
   if (typeof value !== "string") throw new Error(`${path}: must be a string`);
@@ -26,8 +30,8 @@ test("TypeScript and Go share the strict loader matrix", async (t) => {
     decodeInput: stringDecoder,
     decodeExpected: booleanDecoder,
   });
-  assert.equal(matrix.cases.length, 12);
-  assert.equal(checkMin(matrix, 12), undefined);
+  assert.equal(matrix.cases.length, 14);
+  assert.equal(checkMin(matrix, 14), undefined);
   assert.equal(validateCorpus(matrix), undefined);
 
   for (const testCase of matrix.cases) {
@@ -46,28 +50,32 @@ test("TypeScript and Go share the strict loader matrix", async (t) => {
   }
 });
 
+test("TypeScript and Go share minimum-size boundaries", () => {
+  const matrix = loadCorpus(minimumMatrixSource, {
+    decodeInput(value, path) {
+      if (typeof value !== "object" || value === null || Array.isArray(value)) throw new Error(`${path}: must be a mapping`);
+      if (typeof value.size !== "number" || typeof value.minimum !== "number") throw new Error(`${path}: size and minimum must be numbers`);
+      return { size: value.size, minimum: value.minimum };
+    },
+    decodeExpected: booleanDecoder,
+  });
+  assert.equal(matrix.cases.length, 4);
+  for (const testCase of matrix.cases) {
+    const corpus = { cases: Array.from({ length: testCase.input.size }, () => ({})) };
+    assert.equal(checkMin(corpus, testCase.input.minimum) === undefined, testCase.expected, testCase.name);
+  }
+});
+
 test("closed testcase values mirror Go", () => {
   assert.deepEqual(Object.values(Classification), ["must-pass", "must-fail"]);
+  assert.deepEqual(AllClassifications, ["must-pass", "must-fail"]);
   assert.deepEqual(Object.values(ProvenanceSource), ["requirement", "bug", "enum", "boundary", "manual"]);
+  assert.deepEqual(AllProvenanceSources, ["requirement", "bug", "enum", "boundary", "manual"]);
 });
 
 test("generic decoders own the input and expected boundary", () => {
-  const source = `
-cases:
-  - name: strict input
-    input:
-      value: accepted
-      surprise: rejected
-    expected: true
-    classification: must-pass
-    provenance:
-      source: boundary
-      ref: decoder boundary
-    mutation:
-      description: adds an unknown input key
-`;
   assert.throws(
-    () => loadCorpus(source, {
+    () => loadCorpus(decoderCaseSource, {
       decodeInput(value, path) {
         assert.equal(typeof value, "object");
         const keys = Object.keys(value);

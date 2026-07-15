@@ -8,8 +8,7 @@ const fixture = parse(await readFile(new URL("../tests/fixtures/package-files.ya
 assert.deepEqual(Object.keys(fixture), ["files"]);
 assert.ok(Array.isArray(fixture.files));
 
-const packed = JSON.parse(execFileSync("npm", ["pack", "--json", "--dry-run"], { encoding: "utf8" }));
-assert.equal(packed.length, 1);
-const actual = packed[0].files.map((entry) => entry.path).sort();
+const packed = JSON.parse(execFileSync("pnpm", ["pack", "--json", "--dry-run"], { encoding: "utf8" }));
+const actual = packed.files.map((entry) => entry.path).sort();
 const expected = [...fixture.files].sort();
 assert.deepEqual(actual, expected, "packed package contents differ from the audited fixture");

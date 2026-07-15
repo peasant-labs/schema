@@ -7,12 +7,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
-- An unpublished `@peasant-labs/schema` TypeScript package generated from every
-  current OpenAPI catalog. It mirrors the Go module with named root exports and
+- An unpublished `@peasant-labs/schema` TypeScript package whose root is generated
+  from the comprehensive Types 0.2 Go catalog. It mirrors the Go module with
+  named wire types, runtime closed sets, frozen registries and guards, plus
   `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`, and
   `/fixtures/quality` subpaths. The package remains at
-  `0.0.0-development`; no npm publication workflow is enabled.
-- Cross-language testcase corpus helpers and typed quality-fixture accessors.
+  `0.0.0-development`; no publication workflow is enabled.
+- Cross-language testcase corpus helpers and Go-shaped typed quality-fixture accessors.
   The Go and TypeScript loaders share strict YAML cases, and consumers read
   generated quality data rather than parsing repository-relative YAML.
 

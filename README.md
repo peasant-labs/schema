@@ -318,18 +318,20 @@ synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fir
 ### TypeScript bindings
 
 The `typescript/` directory is the source of the future
-`@peasant-labs/schema` npm package. It mirrors the Go contract architecture:
+`@peasant-labs/schema` package. It mirrors the Go contract architecture:
 
-- the package root provides ergonomic named wire types from all current specs;
-- `/local-api`, `/village-api`, and `/types` expose their corresponding
-  catalogs;
+- the package root is the canonical Types 0.2 projection of the complete public
+  Go wire/domain catalog, including Go-shaped runtime closed sets and guards;
+- `/types` projects that same canonical catalog, while `/local-api` and
+  `/village-api` remain operation-specific document views;
 - `/testcase` mirrors the pure Go testcase model and strict YAML loader;
 - `/fixtures/quality` provides generated typed data loaded and validated by Go
   at generation time.
 
 Raw OpenAPI `components`, `paths`, and `operations` maps are generated internal
-inputs, not the primary public API. Component names drop only the reflection
-prefix `Schema`. A normalized-name collision is coalesced only when the two
+inputs, not the primary public API. Canonical Types names preserve their Go
+identity; operation-document reflection prefixes are normalized only in those
+projections. A normalized-name collision is coalesced only when the two
 canonical schemas are equivalent after their component references are
 normalized; any real difference fails generation with both sources named.
 
@@ -360,10 +362,10 @@ nix develop           # drops you into the Go 1.26 dev shell
 ```
 
 Inside the shell (`go`, `gopls`, `golangci-lint`, `oasdiff`, `go-apidiff`, `vacuum`,
-`actionlint`, Node, npm, ... on `PATH`):
+`actionlint`, Node, pnpm, ... on `PATH`):
 
 ```bash
-npm ci --prefix typescript --ignore-scripts # install the exact locked generator/toolchain
+pnpm --dir typescript install --frozen-lockfile --ignore-scripts # install the exact locked generator/toolchain
 make check                            # Go + TypeScript generation, tests, and package gates
                                       #   (incl. leaf-audit, freshness, immutability, and the synthetic-break tests)
 make gates BASE_REF=origin/develop    # breaking-change gates vs a base ref (oasdiff + go-apidiff + vacuum)
@@ -373,7 +375,7 @@ nix build                             # hermetic buildGoModule (cmd/schema-gen +
 
 The Go test packages remain runnable with a bare Go toolchain. Full `make check`
 also needs the locked Node dependencies because freshness regenerates the
-TypeScript package. If they are absent, the gate names the exact `npm ci`
+TypeScript package. If they are absent, the gate names the exact `pnpm install`
 command. After any change to the Go schema source, regenerate and commit both
 `generated/` and the generated TypeScript sources; freshness enforces
 byte-identity.

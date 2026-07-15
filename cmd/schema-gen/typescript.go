@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -36,32 +37,7 @@ type schemaAlias struct {
 
 func generateTypeScript(moduleRoot string) error {
 	packageRoot := filepath.Join(moduleRoot, "typescript")
-	surfaces := []typeScriptSurface{
-		{
-			name:       "types",
-			version:    schema.TypesVersion,
-			spec:       filepath.Join(moduleRoot, "generated", "types-"+schema.TypesVersion+".json"),
-			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "types.ts"),
-			publicFile: filepath.Join(packageRoot, "src", "types.ts"),
-			versionVar: "typesVersion",
-		},
-		{
-			name:       "local",
-			version:    schema.PeasantLocalAPIVersion,
-			spec:       filepath.Join(moduleRoot, "generated", "peasantlocal-api-"+schema.PeasantLocalAPIVersion+".json"),
-			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "local-api.ts"),
-			publicFile: filepath.Join(packageRoot, "src", "local-api.ts"),
-			versionVar: "peasantLocalApiVersion",
-		},
-		{
-			name:       "village",
-			version:    schema.VillageAPIVersion,
-			spec:       filepath.Join(moduleRoot, "generated", "village-api-"+schema.VillageAPIVersion+".json"),
-			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "village-api.ts"),
-			publicFile: filepath.Join(packageRoot, "src", "village-api.ts"),
-			versionVar: "villageAPIVersion",
-		},
-	}
+	surfaces := typeScriptSurfaces(moduleRoot, packageRoot)
 
 	tool, err := openAPITypescriptBinary(packageRoot)
 	if err != nil {
@@ -79,15 +55,15 @@ func generateTypeScript(moduleRoot string) error {
 		}
 	}
 
-	aliasesBySurface := make(map[string][]schemaAlias, len(surfaces))
-	var allAliases []schemaAlias
+	var typesAliases []schemaAlias
 	for _, surface := range surfaces {
 		aliases, err := loadSchemaAliases(surface.name, surface.spec)
 		if err != nil {
 			return err
 		}
-		aliasesBySurface[surface.name] = aliases
-		allAliases = append(allAliases, aliases...)
+		if surface.name == "types" {
+			typesAliases = aliases
+		}
 		facade, err := renderSurfaceFacade(surface, aliases)
 		if err != nil {
 			return err
@@ -97,7 +73,7 @@ func generateTypeScript(moduleRoot string) error {
 		}
 	}
 
-	root, err := renderRootFacade(allAliases)
+	root, err := renderRootFacade(typesAliases)
 	if err != nil {
 		return err
 	}
@@ -120,11 +96,40 @@ func generateTypeScript(moduleRoot string) error {
 	return nil
 }
 
+func typeScriptSurfaces(moduleRoot, packageRoot string) []typeScriptSurface {
+	return []typeScriptSurface{
+		{
+			name:       "types",
+			version:    schema.TypesVersion,
+			spec:       filepath.Join(moduleRoot, "generated", "types-"+schema.TypesVersion+".json"),
+			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "types.ts"),
+			publicFile: filepath.Join(packageRoot, "src", "types.ts"),
+			versionVar: "TypesVersion",
+		},
+		{
+			name:       "local",
+			version:    schema.PeasantLocalAPIVersion,
+			spec:       filepath.Join(moduleRoot, "generated", "peasantlocal-api-"+schema.PeasantLocalAPIVersion+".json"),
+			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "local-api.ts"),
+			publicFile: filepath.Join(packageRoot, "src", "local-api.ts"),
+			versionVar: "PeasantLocalAPIVersion",
+		},
+		{
+			name:       "village",
+			version:    schema.VillageAPIVersion,
+			spec:       filepath.Join(moduleRoot, "generated", "village-api-"+schema.VillageAPIVersion+".json"),
+			rawOutput:  filepath.Join(packageRoot, "src", "internal", "generated", "village-api.ts"),
+			publicFile: filepath.Join(packageRoot, "src", "village-api.ts"),
+			versionVar: "VillageAPIVersion",
+		},
+	}
+}
+
 func openAPITypescriptBinary(packageRoot string) (string, error) {
 	metadataPath := filepath.Join(packageRoot, "node_modules", "openapi-typescript", "package.json")
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
-		return "", fmt.Errorf("TypeScript generation requires openapi-typescript %s at %s: %w; run `npm ci --prefix typescript` from the module root", openAPITypescriptVersion, metadataPath, err)
+		return "", fmt.Errorf("TypeScript generation requires openapi-typescript %s at %s: %w; run `pnpm --dir typescript install --frozen-lockfile --ignore-scripts` from the module root", openAPITypescriptVersion, metadataPath, err)
 	}
 	var metadata struct {
 		Version string `json:"version"`
@@ -133,11 +138,11 @@ func openAPITypescriptBinary(packageRoot string) (string, error) {
 		return "", fmt.Errorf("read openapi-typescript version from %s: %w", metadataPath, err)
 	}
 	if metadata.Version != openAPITypescriptVersion {
-		return "", fmt.Errorf("TypeScript generation requires openapi-typescript %s, found %s at %s; run `npm ci --prefix typescript` to restore the lockfile", openAPITypescriptVersion, metadata.Version, metadataPath)
+		return "", fmt.Errorf("TypeScript generation requires openapi-typescript %s, found %s at %s; run `pnpm --dir typescript install --frozen-lockfile --ignore-scripts` to restore the lockfile", openAPITypescriptVersion, metadata.Version, metadataPath)
 	}
 	binary := filepath.Join(packageRoot, "node_modules", ".bin", "openapi-typescript")
 	if _, err := os.Stat(binary); err != nil {
-		return "", fmt.Errorf("TypeScript generation cannot find %s: %w; run `npm ci --prefix typescript` from the module root", binary, err)
+		return "", fmt.Errorf("TypeScript generation cannot find %s: %w; run `pnpm --dir typescript install --frozen-lockfile --ignore-scripts` from the module root", binary, err)
 	}
 	return binary, nil
 }
@@ -161,11 +166,11 @@ func loadSchemaAliases(surface, specPath string) ([]schemaAlias, error) {
 
 	aliases := make([]schemaAlias, 0, len(spec.Components.Schemas))
 	for rawName, rawSchema := range spec.Components.Schemas {
-		name := strings.TrimPrefix(rawName, "Schema")
+		name := canonicalTypeScriptName(surface, rawName)
 		if name == "" {
 			return nil, fmt.Errorf("%s schema %q normalizes to an empty TypeScript name", surface, rawName)
 		}
-		canonical, err := canonicalSchema(rawSchema)
+		canonical, err := canonicalSchema(surface, rawSchema)
 		if err != nil {
 			return nil, fmt.Errorf("canonicalize %s schema %q: %w", surface, rawName, err)
 		}
@@ -180,16 +185,26 @@ func loadSchemaAliases(surface, specPath string) ([]schemaAlias, error) {
 	return aliases, nil
 }
 
-func canonicalSchema(raw json.RawMessage) ([]byte, error) {
+func canonicalTypeScriptName(surface, name string) string {
+	if surface != "types" {
+		name = strings.TrimPrefix(name, "Schema")
+	}
+	if name == "BestiaryHarness" || name == "Provider" {
+		return "Harness"
+	}
+	return name
+}
+
+func canonicalSchema(surface string, raw json.RawMessage) ([]byte, error) {
 	var value any
 	if err := json.Unmarshal(raw, &value); err != nil {
 		return nil, err
 	}
-	normalizeSchemaRefs(value)
+	normalizeSchemaRefs(surface, value)
 	return json.Marshal(value)
 }
 
-func normalizeSchemaRefs(value any) {
+func normalizeSchemaRefs(surface string, value any) {
 	switch value := value.(type) {
 	case map[string]any:
 		for key, child := range value {
@@ -197,16 +212,16 @@ func normalizeSchemaRefs(value any) {
 				if ref, ok := child.(string); ok {
 					const prefix = "#/components/schemas/"
 					if strings.HasPrefix(ref, prefix) {
-						value[key] = prefix + strings.TrimPrefix(strings.TrimPrefix(ref, prefix), "Schema")
+						value[key] = prefix + canonicalTypeScriptName(surface, strings.TrimPrefix(ref, prefix))
 					}
 				}
 				continue
 			}
-			normalizeSchemaRefs(child)
+			normalizeSchemaRefs(surface, child)
 		}
 	case []any:
 		for _, child := range value {
-			normalizeSchemaRefs(child)
+			normalizeSchemaRefs(surface, child)
 		}
 	}
 }
@@ -228,8 +243,23 @@ func renderSurfaceFacade(surface typeScriptSurface, aliases []schemaAlias) ([]by
 	}
 	out.WriteString(".js\";\n\n")
 	fmt.Fprintf(&out, "export const %s = %q as const;\n\n", surface.versionVar, surface.version)
+	enums, err := typeScriptEnums()
+	if err != nil {
+		return nil, err
+	}
+	enumNames := enumNameSet(enums)
 	for _, alias := range unique {
+		if surface.name == "types" {
+			if _, runtimeEnum := enumNames[alias.Name]; runtimeEnum {
+				continue
+			}
+		}
 		fmt.Fprintf(&out, "export type %s = components[\"schemas\"][%q];\n", alias.Name, alias.RawName)
+	}
+	if surface.name == "types" {
+		if err := renderRuntimeEnums(&out, enums); err != nil {
+			return nil, err
+		}
 	}
 	return []byte(out.String()), nil
 }
@@ -242,13 +272,64 @@ func renderRootFacade(aliases []schemaAlias) ([]byte, error) {
 	var out strings.Builder
 	out.WriteString(generatedTypeScriptHead)
 	out.WriteString("import type { components as TypesComponents } from \"./internal/generated/types.js\";\n")
-	out.WriteString("import type { components as LocalComponents } from \"./internal/generated/local-api.js\";\n")
-	out.WriteString("import type { components as VillageComponents } from \"./internal/generated/village-api.js\";\n\n")
-	componentName := map[string]string{"types": "TypesComponents", "local": "LocalComponents", "village": "VillageComponents"}
+	out.WriteString("\n")
+	fmt.Fprintf(&out, "export const VillageAPIVersion = %q as const;\n", schema.VillageAPIVersion)
+	fmt.Fprintf(&out, "export const PeasantLocalAPIVersion = %q as const;\n", schema.PeasantLocalAPIVersion)
+	fmt.Fprintf(&out, "export const TypesVersion = %q as const;\n\n", schema.TypesVersion)
+	enums, err := typeScriptEnums()
+	if err != nil {
+		return nil, err
+	}
+	enumNames := enumNameSet(enums)
 	for _, alias := range unique {
-		fmt.Fprintf(&out, "export type %s = %s[\"schemas\"][%q];\n", alias.Name, componentName[alias.Surface], alias.RawName)
+		if _, runtimeEnum := enumNames[alias.Name]; runtimeEnum {
+			continue
+		}
+		fmt.Fprintf(&out, "export type %s = TypesComponents[\"schemas\"][%q];\n", alias.Name, alias.RawName)
+	}
+	if err := renderRuntimeEnums(&out, enums); err != nil {
+		return nil, err
 	}
 	return []byte(out.String()), nil
+}
+
+func enumNameSet(enums []typeScriptEnum) map[string]struct{} {
+	out := make(map[string]struct{}, len(enums))
+	for _, enum := range enums {
+		out[enum.Name] = struct{}{}
+	}
+	return out
+}
+
+func renderRuntimeEnums(out *strings.Builder, enums []typeScriptEnum) error {
+	for _, enum := range enums {
+		out.WriteString("\nexport const ")
+		out.WriteString(enum.Name)
+		out.WriteString(" = Object.freeze({\n")
+		byValue := make(map[string]string, len(enum.Members))
+		for _, member := range enum.Members {
+			encoded, err := json.Marshal(member.Value)
+			if err != nil {
+				return fmt.Errorf("encode TypeScript enum %s.%s: %w", enum.Name, member.Name, err)
+			}
+			fmt.Fprintf(out, "  %s: %s,\n", member.Name, encoded)
+			byValue[member.Value] = member.Name
+		}
+		out.WriteString("} as const);\n")
+		fmt.Fprintf(out, "export type %s = (typeof %s)[keyof typeof %s];\n", enum.Name, enum.Name, enum.Name)
+		fmt.Fprintf(out, "export const %s = Object.freeze([", enum.AllName)
+		for i, value := range enum.All {
+			if i > 0 {
+				out.WriteString(", ")
+			}
+			fmt.Fprintf(out, "%s.%s", enum.Name, byValue[value])
+		}
+		fmt.Fprintf(out, "] as const satisfies readonly %s[]);\n", enum.Name)
+		fmt.Fprintf(out, "export function is%s(value: unknown): value is %s {\n", enum.Name, enum.Name)
+		fmt.Fprintf(out, "  return typeof value === \"string\" && (Object.values(%s) as readonly string[]).includes(value);\n", enum.Name)
+		out.WriteString("}\n")
+	}
+	return nil
 }
 
 func deduplicateAliases(aliases []schemaAlias) ([]schemaAlias, error) {
@@ -272,48 +353,108 @@ func deduplicateAliases(aliases []schemaAlias) ([]schemaAlias, error) {
 }
 
 func renderQualityFixtures(fixtures *schema.QualityFixtures) ([]byte, error) {
-	sessions, err := json.MarshalIndent(fixtures.Sessions, "", "  ")
+	payload, err := json.MarshalIndent(fixtures, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("marshal quality session fixtures for TypeScript: %w", err)
-	}
-	sets, err := json.MarshalIndent(fixtures.Sets, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("marshal quality fixture sets for TypeScript: %w", err)
-	}
-	variations, err := json.MarshalIndent(fixtures.Variations, "", "  ")
-	if err != nil {
-		return nil, fmt.Errorf("marshal quality variations for TypeScript: %w", err)
+		return nil, fmt.Errorf("marshal quality fixtures for TypeScript: %w", err)
 	}
 
 	var out strings.Builder
 	out.WriteString(generatedTypeScriptHead)
-	out.WriteString("import type { QualitySession } from \"../local-api.js\";\n\n")
-	out.WriteString("export const qualitySessions = ")
-	out.Write(sessions)
-	out.WriteString(" as const satisfies readonly QualitySessionFixture[];\n\n")
-	out.WriteString("export const qualityFixtureSets = ")
-	out.Write(sets)
-	out.WriteString(" as const;\n\n")
-	out.WriteString("export const qualityVariations = ")
-	out.Write(variations)
-	out.WriteString(" as const;\n\n")
-	out.WriteString("export type QualityFixtureName = (typeof qualitySessions)[number][\"name\"];\n")
-	out.WriteString("export type QualityFixtureSetName = (typeof qualityFixtureSets)[number][\"name\"];\n")
-	out.WriteString("export type QualitySessionFixture = QualitySession & { readonly name: string };\n")
-	out.WriteString("export type QualityFixtureSet = (typeof qualityFixtureSets)[number];\n\n")
-	out.WriteString("export function qualityFixture(name: QualityFixtureName): QualitySessionFixture {\n")
-	out.WriteString("  const fixture = qualitySessions.find((candidate) => candidate.name === name);\n")
-	out.WriteString("  if (fixture === undefined) throw new Error(`unknown quality fixture ${JSON.stringify(name)}`);\n")
-	out.WriteString("  return { ...fixture };\n}\n\n")
-	out.WriteString("export function qualityFixtures(names: readonly QualityFixtureName[]): QualitySessionFixture[] {\n")
-	out.WriteString("  return names.map(qualityFixture);\n}\n\n")
-	out.WriteString("export function qualityFixtureSet(name: QualityFixtureSetName): QualitySessionFixture[] {\n")
-	out.WriteString("  const fixtureSet = qualityFixtureSets.find((candidate) => candidate.name === name);\n")
-	out.WriteString("  if (fixtureSet === undefined) throw new Error(`unknown quality fixture set ${JSON.stringify(name)}`);\n")
-	out.WriteString("  return qualityFixtures(fixtureSet.cases);\n}\n\n")
-	out.WriteString("export function allQualityFixtures(): QualitySessionFixture[] {\n")
-	out.WriteString("  return qualitySessions.map((fixture) => ({ ...fixture }));\n}\n")
+	out.WriteString("import type { QualitySession } from \"../index.js\";\n\n")
+
+	writeClosedSet := func(typeName string, values []string) {
+		fmt.Fprintf(&out, "export const %s = Object.freeze({\n", typeName)
+		for _, value := range values {
+			fmt.Fprintf(&out, "  %s: %q,\n", enumMemberName(typeName, value), value)
+		}
+		out.WriteString("} as const);\n")
+		fmt.Fprintf(&out, "export type %s = (typeof %s)[keyof typeof %s];\n", typeName, typeName, typeName)
+		fmt.Fprintf(&out, "export const All%ss = Object.freeze(Object.values(%s)) as readonly %s[];\n\n", strings.TrimSuffix(typeName, "Name")+"Name", typeName, typeName)
+	}
+	sessionNames := make([]string, len(fixtures.Sessions))
+	for i, fixture := range fixtures.Sessions {
+		sessionNames[i] = string(fixture.Name)
+	}
+	setNames := make([]string, len(fixtures.Sets))
+	for i, fixture := range fixtures.Sets {
+		setNames[i] = string(fixture.Name)
+	}
+	writeClosedSet("QualityFixtureName", sessionNames)
+	writeClosedSet("QualityFixtureSetName", setNames)
+
+	for _, fixtureType := range []reflect.Type{
+		reflect.TypeFor[schema.QualityStringVariation](), reflect.TypeFor[schema.QualityRatioVariation](),
+		reflect.TypeFor[schema.QualityMetricVariation](), reflect.TypeFor[schema.QualityMetricVariations](),
+		reflect.TypeFor[schema.QualityVariations](), reflect.TypeFor[schema.QualitySessionFixture](),
+		reflect.TypeFor[schema.QualityFixtureSet](), reflect.TypeFor[schema.QualityFixtures](),
+	} {
+		if err := renderTypeScriptInterface(&out, fixtureType); err != nil {
+			return nil, err
+		}
+	}
+
+	out.WriteString("const canonicalQualityFixtures: QualityFixtures = ")
+	out.Write(payload)
+	out.WriteString(";\n\n")
+	out.WriteString("export function loadQualityFixtures(): QualityFixtures { return structuredClone(canonicalQualityFixtures); }\n\n")
+	out.WriteString("export function sessionByName(fixtures: QualityFixtures, name: QualityFixtureName): QualitySessionFixture | undefined {\n")
+	out.WriteString("  const fixture = fixtures.sessions.find((candidate) => candidate.name === name);\n  return fixture === undefined ? undefined : structuredClone(fixture);\n}\n\n")
+	out.WriteString("export function setByName(fixtures: QualityFixtures, name: QualityFixtureSetName): QualityFixtureSet | undefined {\n")
+	out.WriteString("  const fixture = fixtures.sets.find((candidate) => candidate.name === name);\n  return fixture === undefined ? undefined : structuredClone(fixture);\n}\n\n")
+	out.WriteString("export function toQualitySession(fixture: QualitySessionFixture): QualitySession {\n  const { name: _name, ...session } = fixture;\n  return structuredClone(session);\n}\n\n")
+	out.WriteString("export function qualitySessions(fixtures: QualityFixtures): QualitySession[] { return fixtures.sessions.map(toQualitySession); }\n\n")
+	out.WriteString("export function qualitySessionsForSet(fixtures: QualityFixtures, name: QualityFixtureSetName): QualitySession[] {\n")
+	out.WriteString("  const fixtureSet = setByName(fixtures, name);\n  if (fixtureSet === undefined) throw new Error(`unknown quality fixture set ${JSON.stringify(name)}`);\n")
+	out.WriteString("  return fixtureSet.cases.map((caseName) => {\n    const fixture = sessionByName(fixtures, caseName);\n    if (fixture === undefined) throw new Error(`quality fixture set ${JSON.stringify(name)} references unknown case ${JSON.stringify(caseName)}`);\n    return toQualitySession(fixture);\n  });\n}\n")
 	return []byte(out.String()), nil
+}
+
+func renderTypeScriptInterface(out *strings.Builder, fixtureType reflect.Type) error {
+	fmt.Fprintf(out, "export interface %s {\n", fixtureType.Name())
+	for i := 0; i < fixtureType.NumField(); i++ {
+		field := fixtureType.Field(i)
+		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if name == "" {
+			name = strings.Split(field.Tag.Get("yaml"), ",")[0]
+		}
+		typeName, err := typeScriptFixtureType(field.Type)
+		if err != nil {
+			return fmt.Errorf("render TypeScript fixture field %s.%s: %w", fixtureType.Name(), field.Name, err)
+		}
+		fmt.Fprintf(out, "  %s: %s;\n", name, typeName)
+	}
+	out.WriteString("}\n\n")
+	return nil
+}
+
+func typeScriptFixtureType(goType reflect.Type) (string, error) {
+	if goType.Name() != "" {
+		switch goType.Kind() {
+		case reflect.String:
+			if strings.HasPrefix(goType.Name(), "QualityFixture") {
+				return goType.Name(), nil
+			}
+			return "string", nil
+		case reflect.Struct:
+			return goType.Name(), nil
+		}
+	}
+	switch goType.Kind() {
+	case reflect.String:
+		return "string", nil
+	case reflect.Int, reflect.Int64, reflect.Float64:
+		return "number", nil
+	case reflect.Slice:
+		element, err := typeScriptFixtureType(goType.Elem())
+		if err != nil {
+			return "", err
+		}
+		return element + "[]", nil
+	case reflect.Struct:
+		return goType.Name(), nil
+	default:
+		return "", fmt.Errorf("unsupported Go kind %s", goType)
+	}
 }
 
 func writeGeneratedFile(path string, data []byte) error {

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,9 +40,9 @@ var allQualityFixtureSetNames = []QualityFixtureSetName{
 
 // QualityFixtures is the parsed testdata/quality/sessions.yaml corpus.
 type QualityFixtures struct {
-	Sessions   []QualitySessionFixture `yaml:"quality_sessions"`
-	Sets       []QualityFixtureSet     `yaml:"quality_fixture_sets"`
-	Variations QualityVariations       `yaml:"quality_variations"`
+	Sessions   []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
+	Sets       []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
+	Variations QualityVariations       `json:"variations" yaml:"quality_variations"`
 }
 
 // QualityVariations is the reusable combinatorial input catalog carried by the
@@ -111,8 +113,12 @@ type QualityFixtureSet struct {
 
 // LoadQualityFixtures parses QualitySessionsYAML into structured fixtures.
 func LoadQualityFixtures() (*QualityFixtures, error) {
+	return loadQualityFixtures(QualitySessionsYAML)
+}
+
+func loadQualityFixtures(data []byte) (*QualityFixtures, error) {
 	var f QualityFixtures
-	decoder := yaml.NewDecoder(bytes.NewReader(QualitySessionsYAML))
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&f); err != nil {
 		return nil, fmt.Errorf("load quality fixtures: decode document: %w", err)
@@ -239,16 +245,91 @@ func (f *QualityFixtures) validate() error {
 			return fmt.Errorf("quality fixture corpus has unregistered set %q", set.Name)
 		}
 		setNames[set.Name] = struct{}{}
+		setCases := map[QualityFixtureName]struct{}{}
 		for _, caseName := range set.Cases {
 			if _, ok := sessionNames[caseName]; !ok {
 				return fmt.Errorf("quality fixture set %q references unknown case %q", set.Name, caseName)
 			}
+			if _, duplicate := setCases[caseName]; duplicate {
+				return fmt.Errorf("quality fixture set %q repeats case %q", set.Name, caseName)
+			}
+			setCases[caseName] = struct{}{}
 		}
 	}
 	for _, name := range allQualityFixtureSetNames {
 		if _, ok := setNames[name]; !ok {
 			return fmt.Errorf("quality fixture corpus missing set %q", name)
 		}
+	}
+	return f.Variations.validate()
+}
+
+func (v QualityVariations) validate() error {
+	for name, values := range map[string][]QualityStringVariation{
+		"outcomes": v.Outcomes, "projects": v.Projects, "scopes": v.Scopes, "taskTitles": v.TaskTitles,
+	} {
+		if len(values) == 0 {
+			return fmt.Errorf("quality variations arm %s is empty", name)
+		}
+		seen := map[string]struct{}{}
+		for _, value := range values {
+			if _, duplicate := seen[value.Value]; duplicate {
+				return fmt.Errorf("quality variations arm %s repeats value %q", name, value.Value)
+			}
+			seen[value.Value] = struct{}{}
+		}
+	}
+	if err := validateRatioVariations("tokenRatios", v.TokenRatios); err != nil {
+		return err
+	}
+	for name, values := range map[string][]QualityMetricVariation{
+		"retryLoops": v.Metrics.RetryLoops, "signalDensity": v.Metrics.SignalDensity,
+		"specQualityScore": v.Metrics.SpecQualityScore, "filesTouched": v.Metrics.FilesTouched,
+		"linesChanged": v.Metrics.LinesChanged,
+	} {
+		if err := validateMetricVariations(name, values); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateRatioVariations(name string, values []QualityRatioVariation) error {
+	if len(values) == 0 {
+		return fmt.Errorf("quality variations arm %s is empty", name)
+	}
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		if strings.TrimSpace(value.Name) == "" {
+			return fmt.Errorf("quality variations arm %s has a blank name", name)
+		}
+		if _, duplicate := seen[value.Name]; duplicate {
+			return fmt.Errorf("quality variations arm %s repeats name %q", name, value.Name)
+		}
+		if math.IsNaN(value.InputRatio) || math.IsInf(value.InputRatio, 0) {
+			return fmt.Errorf("quality variations arm %s name %q has a non-finite ratio", name, value.Name)
+		}
+		seen[value.Name] = struct{}{}
+	}
+	return nil
+}
+
+func validateMetricVariations(name string, values []QualityMetricVariation) error {
+	if len(values) == 0 {
+		return fmt.Errorf("quality variations arm %s is empty", name)
+	}
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		if strings.TrimSpace(value.Name) == "" {
+			return fmt.Errorf("quality variations arm %s has a blank name", name)
+		}
+		if _, duplicate := seen[value.Name]; duplicate {
+			return fmt.Errorf("quality variations arm %s repeats name %q", name, value.Name)
+		}
+		if math.IsNaN(value.Value) || math.IsInf(value.Value, 0) {
+			return fmt.Errorf("quality variations arm %s name %q has a non-finite value", name, value.Name)
+		}
+		seen[value.Name] = struct{}{}
 	}
 	return nil
 }

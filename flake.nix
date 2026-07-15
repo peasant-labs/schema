@@ -67,6 +67,7 @@
       # only bound inside mkOutputs); they are appended to devShell.packages.
       devTools = pkgs: with pkgs; [
         nodejs_24 # TypeScript bindings generator, typecheck, tests, and package gates
+        pnpm # Locked TypeScript dependency installation and package lifecycle
         gopls # LSP
         gotools # goimports, godoc, etc.
         go-tools # staticcheck

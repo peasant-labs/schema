@@ -32,5 +32,7 @@ const (
 	PeasantLocalAPIVersion = "0.2.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
-	TypesVersion = "0.1.0"
+	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
+	// cross-language contract surface instead of a small set of seed types.
+	TypesVersion = "0.2.0"
 )

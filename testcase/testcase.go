@@ -39,6 +39,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -157,6 +158,9 @@ func LoadCorpus[I any, E any](data []byte) (Corpus[I, E], error) {
 // *testing.T wrapper and its own negative-control test share a single source of
 // truth instead of re-deriving the floor.
 func (c Corpus[I, E]) CheckMin(n int) error {
+	if n < 0 {
+		return fmt.Errorf("minimum must be non-negative, got %d", n)
+	}
 	if len(c.Cases) < n {
 		return fmt.Errorf("corpus has %d case(s), want at least %d", len(c.Cases), n)
 	}
@@ -169,7 +173,7 @@ func (c Corpus[I, E]) CheckMin(n int) error {
 // changes). An empty ref or description is treated as a vacuous case and
 // rejected.
 func (c Case[I, E]) Validate() error {
-	if c.Name == "" {
+	if strings.TrimSpace(c.Name) == "" {
 		return fmt.Errorf("case name is empty")
 	}
 	if !c.Classification.IsValid() {
@@ -178,10 +182,10 @@ func (c Case[I, E]) Validate() error {
 	if !c.Provenance.Source.IsValid() {
 		return fmt.Errorf("case %q: provenance source %q is not a known source", c.Name, c.Provenance.Source)
 	}
-	if c.Provenance.Ref == "" {
+	if strings.TrimSpace(c.Provenance.Ref) == "" {
 		return fmt.Errorf("case %q: provenance ref is empty (a case must cite why it exists)", c.Name)
 	}
-	if c.Mutation.Description == "" {
+	if strings.TrimSpace(c.Mutation.Description) == "" {
 		return fmt.Errorf("case %q: mutation description is empty (a case must describe the change under test)", c.Name)
 	}
 	return nil

@@ -104,7 +104,7 @@ tracked artifact outside the shared artifact map, which the Go test (iterating t
 map) could not see.
 
 The same command regenerates the TypeScript catalogs with the exact
-`openapi-typescript` version pinned in `typescript/package-lock.json`, then diffs
+`openapi-typescript` version pinned in `typescript/pnpm-lock.yaml`, then diffs
 the generated named facades, raw internal catalogs, and typed quality module.
 `TestGeneratedTypeScriptFilesFullyAccounted` independently asserts that no
 generated `.ts` file sits outside the known artifact set.

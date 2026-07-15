@@ -21,8 +21,8 @@ type retiredSpec struct {
 	// jsonSHA256 / yamlSHA256 are the lowercase-hex sha256 of the frozen .json /
 	// .yaml bytes, pinned from the KNOWN-GOOD source (NOT a possibly-mutated
 	// working tree):
-	//   - peasantlocal-api-0.1.0: github/develop's committed copy (what SLICE-2
-	//     froze when it bumped the live version to 0.2.0).
+	//   - peasantlocal-api-0.1.0: github/develop's committed copy from immediately
+	//     before the live version was bumped to 0.2.0.
 	//   - village-api-0.1.0:      rev 9745a0b0^ — the last rev before the village
 	//     0.2.0 bump — which is the SAME source as the W4 restore, so the restored
 	//     file's hash equals this pinned constant BY CONSTRUCTION.
@@ -58,6 +58,11 @@ type retiredSpec struct {
 // optional top-level license enum). The 0.4.0 village-api trio was frozen here when
 // VillageAPIVersion bumped to 0.5.0 (added the pull skip-gate surface).
 var retiredSpecRegistry = []retiredSpec{
+	{
+		name:       "types-0.1.0",
+		jsonSHA256: "91b80c69b5aa7fa68f04e9ad1536089eae1908e5ea0db8246dc7b603661f2f83",
+		yamlSHA256: "3f876b6b2a3606dda7b6b79b9f5b7534db7bb8fe16ac1f5512f2e235730e1a64",
+	},
 	{
 		name:       "peasantlocal-api-0.1.0",
 		jsonSHA256: "40b31eb6816a96c1283b2854e76d94936198b56c6ee78f16f02d774566791aee",

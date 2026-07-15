@@ -1,0 +1,56 @@
+cases:
+  - name: session detail payload
+    input:
+      component: SessionDetailPayload
+      required: [id, harness, turns]
+      optional: [schemaVersion, scorecard]
+      nullable: [scorecard]
+      nonnullable: [schemaVersion]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
+    mutation: {description: contrasts required identity and turn fields with optional push and score fields}
+  - name: unified metadata
+    input:
+      component: UnifiedMetadata
+      required: [schemaVersion, parentUuid, diagnostics]
+      optional: [cwd, derivedAt]
+      nullable: [parentUuid, derivedAt]
+      nonnullable: [cwd]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
+    mutation: {description: covers a required nullable pointer and optional metadata fields}
+  - name: publish request
+    input:
+      component: PublishRequest
+      required: [identity, model, diagnostics]
+      optional: [quality, license]
+      nullable: [quality]
+      nonnullable: [license]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
+    mutation: {description: contrasts required composites with optional publication fields}
+  - name: transcript content
+    input:
+      component: TranscriptContent
+      required: [contractVersion, kind]
+      optional: [sessionDetail]
+      nullable: [sessionDetail]
+      nonnullable: [kind]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
+    mutation: {description: contrasts envelope discriminators with optional payload content}
+  - name: channel subscription
+    input:
+      component: ChannelSubscription
+      required: [topic]
+      optional: [id, axis]
+      nullable: []
+      nonnullable: [topic, id, axis]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
+    mutation: {description: contrasts the required topic with topic-specific selectors}

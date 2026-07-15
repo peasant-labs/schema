@@ -9,7 +9,129 @@ import (
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
+	"github.com/peasant-labs/schema/openapi"
+	"github.com/peasant-labs/schema/testcase"
+	"gopkg.in/yaml.v3"
 )
+
+type enumCatalogFixture struct {
+	Enums []struct {
+		Name      string                 `yaml:"name"`
+		AllName   string                 `yaml:"all_name"`
+		Members   []typeScriptEnumMember `yaml:"members"`
+		AllValues []string               `yaml:"all_values"`
+	} `yaml:"enums"`
+}
+
+func TestTypeScriptRuntimeEnumsMatchExactFixture(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatalf("find module root: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "enums.yaml"))
+	if err != nil {
+		t.Fatalf("read enum fixture: %v", err)
+	}
+	var fixture enumCatalogFixture
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatalf("decode enum fixture: %v", err)
+	}
+	descriptors, err := typeScriptEnums()
+	if err != nil {
+		t.Fatalf("build production enum descriptors: %v", err)
+	}
+	if len(fixture.Enums) != len(descriptors) {
+		t.Fatalf("enum fixture rows=%d, descriptors=%d", len(fixture.Enums), len(descriptors))
+	}
+	for i, descriptor := range descriptors {
+		row := fixture.Enums[i]
+		if row.Name != descriptor.Name || row.AllName != descriptor.AllName {
+			t.Fatalf("enum row %d identity=(%s,%s), want (%s,%s)", i, row.Name, row.AllName, descriptor.Name, descriptor.AllName)
+		}
+		if !equalEnumMembers(row.Members, descriptor.Members) || strings.Join(row.AllValues, "\x00") != strings.Join(descriptor.All, "\x00") {
+			t.Fatalf("enum %s mapping differs from exact YAML catalog", descriptor.Name)
+		}
+	}
+}
+
+func TestGeneratedRootUsesCanonicalPublicNames(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "public_names.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Required  []string `yaml:"required"`
+		Forbidden []string `yaml:"forbidden"`
+	}
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatal(err)
+	}
+	generated, err := os.ReadFile(filepath.Join(root, "typescript", "src", "index.ts"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range fixture.Required {
+		if !bytes.Contains(generated, []byte(" "+name+" ")) {
+			t.Errorf("generated root missing canonical public name %s", name)
+		}
+	}
+	for _, name := range fixture.Forbidden {
+		if bytes.Contains(generated, []byte(" "+name+" ")) {
+			t.Errorf("generated root leaked forbidden public name %s", name)
+		}
+	}
+}
+
+func TestWorkflowCoversEveryTypeScriptFixtureFamily(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "workflow_paths.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		RequiredPaths []string `yaml:"required_paths"`
+	}
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatal(err)
+	}
+	if len(fixture.RequiredPaths) != 3 {
+		t.Fatalf("workflow path fixture has %d rows, want 3", len(fixture.RequiredPaths))
+	}
+	workflow, err := os.ReadFile(filepath.Join(root, ".github", "workflows", "tests.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range fixture.RequiredPaths {
+		if got := bytes.Count(workflow, []byte("- \""+path+"\"")); got != 2 {
+			t.Errorf("workflow path %q occurs %d times, want once in pull_request and once in push", path, got)
+		}
+	}
+}
+
+func equalEnumMembers(a, b []typeScriptEnumMember) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
 
 func TestTypeScriptCatalogCompletenessAndCollisions(t *testing.T) {
 	root, err := findModuleRoot()
@@ -24,38 +146,56 @@ func TestTypeScriptCatalogCompletenessAndCollisions(t *testing.T) {
 		{"local", filepath.Join(root, "generated", "peasantlocal-api-"+schema.PeasantLocalAPIVersion+".json")},
 		{"village", filepath.Join(root, "generated", "village-api-"+schema.VillageAPIVersion+".json")},
 	}
-	var aliases []schemaAlias
 	for _, spec := range specs {
 		got, err := loadSchemaAliases(spec.surface, spec.path)
 		if err != nil {
 			t.Fatalf("load %s aliases: %v", spec.surface, err)
 		}
-		aliases = append(aliases, got...)
-	}
-	if len(aliases) != 119 {
-		t.Fatalf("raw component occurrence count = %d, want 119", len(aliases))
-	}
-	unique, err := deduplicateAliases(aliases)
-	if err != nil {
-		t.Fatalf("deduplicate current aliases: %v", err)
-	}
-	if len(unique) != 97 {
-		t.Fatalf("named root export count = %d, want 97", len(unique))
+		if _, err := deduplicateAliases(got); err != nil {
+			t.Fatalf("deduplicate %s aliases: %v", spec.surface, err)
+		}
+		if spec.surface == "types" && len(got) != len(openapi.TypeCatalogEntries()) {
+			t.Fatalf("Types aliases = %d, want one per production descriptor (%d)", len(got), len(openapi.TypeCatalogEntries()))
+		}
 	}
 }
 
 func TestTypeScriptCollisionFailsClosedOnUnequalSchemas(t *testing.T) {
-	canonical := []byte(`{"type":"string"}`)
-	aliases := []schemaAlias{
-		{Name: "Example", RawName: "SchemaExample", Surface: "village", Canonical: canonical},
-		{Name: "Example", RawName: "Example", Surface: "types", Canonical: []byte(`{"type":"integer"}`)},
+	type collisionInput struct {
+		Name         string `yaml:"name"`
+		FirstSchema  string `yaml:"first_schema"`
+		SecondSchema string `yaml:"second_schema"`
 	}
-	_, err := deduplicateAliases(aliases)
-	if err == nil {
-		t.Fatal("deduplicateAliases accepted unequal schemas with the same normalized name")
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatal(err)
 	}
-	if !strings.Contains(err.Error(), "Example") || !strings.Contains(err.Error(), "unequal canonical schemas") {
-		t.Fatalf("collision error is not actionable: %v", err)
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "collision_cases.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	matrix, err := testcase.LoadCorpus[collisionInput, bool](data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := matrix.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if len(matrix.Cases) != 2 {
+		t.Fatalf("collision corpus has %d rows, want 2", len(matrix.Cases))
+	}
+	for _, tc := range matrix.Cases {
+		aliases := []schemaAlias{
+			{Name: tc.Input.Name, RawName: "Schema" + tc.Input.Name, Surface: "village", Canonical: []byte(tc.Input.FirstSchema)},
+			{Name: tc.Input.Name, RawName: tc.Input.Name, Surface: "types", Canonical: []byte(tc.Input.SecondSchema)},
+		}
+		_, err := deduplicateAliases(aliases)
+		if got := err == nil; got != tc.Expected {
+			t.Fatalf("%s: accepted=%v, want %v", tc.Name, got, tc.Expected)
+		}
+		if err != nil && (!strings.Contains(err.Error(), tc.Input.Name) || !strings.Contains(err.Error(), "unequal canonical schemas")) {
+			t.Fatalf("%s: collision error is not actionable: %v", tc.Name, err)
+		}
 	}
 }
 
@@ -65,15 +205,15 @@ func TestGeneratedTypeScriptFilesFullyAccounted(t *testing.T) {
 		t.Fatalf("find module root: %v", err)
 	}
 	sourceRoot := filepath.Join(root, "typescript", "src")
-	expected := []string{
-		"fixtures/quality.ts",
-		"index.ts",
-		"internal/generated/local-api.ts",
-		"internal/generated/types.ts",
-		"internal/generated/village-api.ts",
-		"local-api.ts",
-		"types.ts",
-		"village-api.ts",
+	expected := []string{"fixtures/quality.ts", "index.ts"}
+	for _, surface := range typeScriptSurfaces(root, filepath.Join(root, "typescript")) {
+		for _, path := range []string{surface.rawOutput, surface.publicFile} {
+			relative, err := filepath.Rel(sourceRoot, path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expected = append(expected, filepath.ToSlash(relative))
+		}
 	}
 	var actual []string
 	err = filepath.WalkDir(sourceRoot, func(path string, entry os.DirEntry, walkErr error) error {

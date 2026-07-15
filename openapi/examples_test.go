@@ -214,7 +214,7 @@ func TestBuildTypesSpec_HasSchemaExamples(t *testing.T) {
 		component   string
 		wantExample string
 	}{
-		{"Provider", "claude-code"},
+		{"Harness", "claude-code"},
 		{"Role", "user"},
 		{"Visibility", "public"},
 	}

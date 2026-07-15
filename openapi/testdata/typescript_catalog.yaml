@@ -1,0 +1,623 @@
+types:
+  - go_name: AnnotationSummary
+    disposition: catalog
+    component: AnnotationSummary
+    reason: public wire or domain contract type
+  - go_name: AnnotationTypeSummary
+    disposition: catalog
+    component: AnnotationTypeSummary
+    reason: public wire or domain contract type
+  - go_name: AnnotatorSummary
+    disposition: catalog
+    component: AnnotatorSummary
+    reason: public wire or domain contract type
+  - go_name: BatchCreateAnnotationsErrorResponse
+    disposition: catalog
+    component: BatchCreateAnnotationsErrorResponse
+    reason: public wire or domain contract type
+  - go_name: BatchCreateAnnotationsRequest
+    disposition: catalog
+    component: BatchCreateAnnotationsRequest
+    reason: public wire or domain contract type
+  - go_name: BatchCreateAnnotationsResponse
+    disposition: catalog
+    component: BatchCreateAnnotationsResponse
+    reason: public wire or domain contract type
+  - go_name: Provenance
+    disposition: catalog
+    component: Provenance
+    reason: public wire or domain contract type
+  - go_name: TaxonomyFamilyNode
+    disposition: catalog
+    component: TaxonomyFamilyNode
+    reason: public wire or domain contract type
+  - go_name: TaxonomyNode
+    disposition: catalog
+    component: TaxonomyNode
+    reason: public wire or domain contract type
+  - go_name: ValueDomain
+    disposition: catalog
+    component: ValueDomain
+    reason: public wire or domain contract type
+  - go_name: AnnotationDatatype
+    disposition: catalog
+    component: AnnotationDatatype
+    reason: public wire or domain contract type
+  - go_name: AnnotationStatus
+    disposition: catalog
+    component: AnnotationStatus
+    reason: public wire or domain contract type
+  - go_name: AnnotatorKind
+    disposition: catalog
+    component: AnnotatorKind
+    reason: public wire or domain contract type
+  - go_name: ScaleKind
+    disposition: catalog
+    component: ScaleKind
+    reason: public wire or domain contract type
+  - go_name: TargetKind
+    disposition: catalog
+    component: TargetKind
+    reason: public wire or domain contract type
+  - go_name: TypeOrigin
+    disposition: catalog
+    component: TypeOrigin
+    reason: public wire or domain contract type
+  - go_name: ValueDomainKind
+    disposition: catalog
+    component: ValueDomainKind
+    reason: public wire or domain contract type
+  - go_name: AnnotationManifestResponse
+    disposition: catalog
+    component: AnnotationManifestResponse
+    reason: public wire or domain contract type
+  - go_name: AnnotationRegistry
+    disposition: runtime-only
+    reason: Go registry or service type, not a wire contract
+  - go_name: AnnotationTypeReader
+    disposition: runtime-only
+    reason: Go registry or service type, not a wire contract
+  - go_name: TypeDefinition
+    disposition: runtime-only
+    reason: Go registry or service type, not a wire contract
+  - go_name: TypeDependency
+    disposition: runtime-only
+    reason: Go registry or service type, not a wire contract
+  - go_name: TypeFilter
+    disposition: runtime-only
+    reason: Go registry or service type, not a wire contract
+  - go_name: CLILoginQuery
+    disposition: catalog
+    component: CLILoginQuery
+    reason: public wire or domain contract type
+  - go_name: ExchangeCodeRequest
+    disposition: catalog
+    component: ExchangeCodeRequest
+    reason: public wire or domain contract type
+  - go_name: ExchangeCodeResponse
+    disposition: catalog
+    component: ExchangeCodeResponse
+    reason: public wire or domain contract type
+  - go_name: BuiltinCommand
+    disposition: catalog
+    component: BuiltinCommand
+    reason: public wire or domain contract type
+  - go_name: SessionEntry
+    disposition: catalog
+    component: SessionEntry
+    reason: public wire or domain contract type
+  - go_name: SessionIdentity
+    disposition: catalog
+    component: SessionIdentity
+    reason: public wire or domain contract type
+  - go_name: AnnotationAxis
+    disposition: catalog
+    component: AnnotationAxis
+    reason: public wire or domain contract type
+  - go_name: AnnotationsPayload
+    disposition: catalog
+    component: AnnotationsPayload
+    reason: public wire or domain contract type
+  - go_name: ChannelSubscription
+    disposition: catalog
+    component: ChannelSubscription
+    reason: public wire or domain contract type
+  - go_name: ChannelTopic
+    disposition: catalog
+    component: ChannelTopic
+    reason: public wire or domain contract type
+  - go_name: ChildSessionRef
+    disposition: catalog
+    component: ChildSessionRef
+    reason: public wire or domain contract type
+  - go_name: ClientMessage
+    disposition: catalog
+    component: ClientMessage
+    reason: public wire or domain contract type
+  - go_name: CreateAnnotationRequest
+    disposition: catalog
+    component: CreateAnnotationRequest
+    reason: public wire or domain contract type
+  - go_name: CreateAnnotationResponse
+    disposition: catalog
+    component: CreateAnnotationResponse
+    reason: public wire or domain contract type
+  - go_name: DashboardPayload
+    disposition: catalog
+    component: DashboardPayload
+    reason: public wire or domain contract type
+  - go_name: DayStats
+    disposition: catalog
+    component: DayStats
+    reason: public wire or domain contract type
+  - go_name: DecayLevel
+    disposition: catalog
+    component: DecayLevel
+    reason: public wire or domain contract type
+  - go_name: FamiliarityPayload
+    disposition: catalog
+    component: FamiliarityPayload
+    reason: public wire or domain contract type
+  - go_name: FileFamiliarity
+    disposition: catalog
+    component: FileFamiliarity
+    reason: public wire or domain contract type
+  - go_name: HealthResponse
+    disposition: catalog
+    component: HealthResponse
+    reason: public wire or domain contract type
+  - go_name: InteractionType
+    disposition: catalog
+    component: InteractionType
+    reason: public wire or domain contract type
+  - go_name: MessageType
+    disposition: catalog
+    component: MessageType
+    reason: public wire or domain contract type
+  - go_name: MockConfigResponse
+    disposition: catalog
+    component: MockConfigResponse
+    reason: public wire or domain contract type
+  - go_name: QualityPayload
+    disposition: catalog
+    component: QualityPayload
+    reason: public wire or domain contract type
+  - go_name: QualitySession
+    disposition: catalog
+    component: QualitySession
+    reason: public wire or domain contract type
+  - go_name: ReviewSuggestion
+    disposition: catalog
+    component: ReviewSuggestion
+    reason: public wire or domain contract type
+  - go_name: ServerMessage
+    disposition: catalog
+    component: ServerMessage
+    reason: public wire or domain contract type
+  - go_name: SessionDetailPayload
+    disposition: catalog
+    component: SessionDetailPayload
+    reason: public wire or domain contract type
+  - go_name: SessionScorecard
+    disposition: catalog
+    component: SessionScorecard
+    reason: public wire or domain contract type
+  - go_name: SessionSummary
+    disposition: catalog
+    component: SessionSummary
+    reason: public wire or domain contract type
+  - go_name: SessionsPayload
+    disposition: catalog
+    component: SessionsPayload
+    reason: public wire or domain contract type
+  - go_name: ShutdownResponse
+    disposition: catalog
+    component: ShutdownResponse
+    reason: public wire or domain contract type
+  - go_name: ToolCallDetail
+    disposition: catalog
+    component: ToolCallDetail
+    reason: public wire or domain contract type
+  - go_name: TrendsPayload
+    disposition: catalog
+    component: TrendsPayload
+    reason: public wire or domain contract type
+  - go_name: TurnDetail
+    disposition: catalog
+    component: TurnDetail
+    reason: public wire or domain contract type
+  - go_name: WalkthroughStep
+    disposition: catalog
+    component: WalkthroughStep
+    reason: public wire or domain contract type
+  - go_name: WalkthroughTrail
+    disposition: catalog
+    component: WalkthroughTrail
+    reason: public wire or domain contract type
+  - go_name: ActivityEdge
+    disposition: catalog
+    component: ActivityEdge
+    reason: public wire or domain contract type
+  - go_name: ChangeBinding
+    disposition: catalog
+    component: ChangeBinding
+    reason: public wire or domain contract type
+  - go_name: ChangeDetailPayload
+    disposition: catalog
+    component: ChangeDetailPayload
+    reason: public wire or domain contract type
+  - go_name: ChangeDiffPayload
+    disposition: catalog
+    component: ChangeDiffPayload
+    reason: public wire or domain contract type
+  - go_name: ChangeSession
+    disposition: catalog
+    component: ChangeSession
+    reason: public wire or domain contract type
+  - go_name: ChangeSummary
+    disposition: catalog
+    component: ChangeSummary
+    reason: public wire or domain contract type
+  - go_name: CommitRef
+    disposition: catalog
+    component: CommitRef
+    reason: public wire or domain contract type
+  - go_name: DiffHunk
+    disposition: catalog
+    component: DiffHunk
+    reason: public wire or domain contract type
+  - go_name: DiffLine
+    disposition: catalog
+    component: DiffLine
+    reason: public wire or domain contract type
+  - go_name: EdgeViolation
+    disposition: catalog
+    component: EdgeViolation
+    reason: public wire or domain contract type
+  - go_name: EdgeViolationKind
+    disposition: catalog
+    component: EdgeViolationKind
+    reason: public wire or domain contract type
+  - go_name: FileChange
+    disposition: catalog
+    component: FileChange
+    reason: public wire or domain contract type
+  - go_name: FrictionCluster
+    disposition: catalog
+    component: FrictionCluster
+    reason: public wire or domain contract type
+  - go_name: MapEdge
+    disposition: catalog
+    component: MapEdge
+    reason: public wire or domain contract type
+  - go_name: MapGraphPayload
+    disposition: catalog
+    component: MapGraphPayload
+    reason: public wire or domain contract type
+  - go_name: MapNode
+    disposition: catalog
+    component: MapNode
+    reason: public wire or domain contract type
+  - go_name: MapNodeDetailPayload
+    disposition: catalog
+    component: MapNodeDetailPayload
+    reason: public wire or domain contract type
+  - go_name: MapNodeKind
+    disposition: catalog
+    component: MapNodeKind
+    reason: public wire or domain contract type
+  - go_name: MapSlice
+    disposition: catalog
+    component: MapSlice
+    reason: public wire or domain contract type
+  - go_name: ProjectSummariesPayload
+    disposition: catalog
+    component: ProjectSummariesPayload
+    reason: public wire or domain contract type
+  - go_name: ProjectSummary
+    disposition: catalog
+    component: ProjectSummary
+    reason: public wire or domain contract type
+  - go_name: ProjectTasksPayload
+    disposition: catalog
+    component: ProjectTasksPayload
+    reason: public wire or domain contract type
+  - go_name: ReviewListPayload
+    disposition: catalog
+    component: ReviewListPayload
+    reason: public wire or domain contract type
+  - go_name: TaskSummary
+    disposition: catalog
+    component: TaskSummary
+    reason: public wire or domain contract type
+  - go_name: UnusualSignal
+    disposition: catalog
+    component: UnusualSignal
+    reason: public wire or domain contract type
+  - go_name: CommitInfo
+    disposition: catalog
+    component: CommitInfo
+    reason: public wire or domain contract type
+  - go_name: DiagnosticEntry
+    disposition: catalog
+    component: DiagnosticEntry
+    reason: public wire or domain contract type
+  - go_name: DiagnosticsInfo
+    disposition: catalog
+    component: DiagnosticsInfo
+    reason: public wire or domain contract type
+  - go_name: GitContext
+    disposition: catalog
+    component: GitContext
+    reason: public wire or domain contract type
+  - go_name: ProjectContext
+    disposition: catalog
+    component: ProjectContext
+    reason: public wire or domain contract type
+  - go_name: RedactionInfo
+    disposition: catalog
+    component: RedactionInfo
+    reason: public wire or domain contract type
+  - go_name: SessionStats
+    disposition: catalog
+    component: SessionStats
+    reason: public wire or domain contract type
+  - go_name: SourceInfo
+    disposition: catalog
+    component: SourceInfo
+    reason: public wire or domain contract type
+  - go_name: SubagentRef
+    disposition: catalog
+    component: SubagentRef
+    reason: public wire or domain contract type
+  - go_name: TimestampInfo
+    disposition: catalog
+    component: TimestampInfo
+    reason: public wire or domain contract type
+  - go_name: UnifiedMetadata
+    disposition: catalog
+    component: UnifiedMetadata
+    reason: public wire or domain contract type
+  - go_name: ModelInfo
+    disposition: catalog
+    component: ModelInfo
+    reason: public wire or domain contract type
+  - go_name: AnnotationEntryTarget
+    disposition: catalog
+    component: AnnotationEntryTarget
+    reason: public wire or domain contract type
+  - go_name: AnnotationPushItem
+    disposition: catalog
+    component: AnnotationPushItem
+    reason: public wire or domain contract type
+  - go_name: AnnotationPushRequest
+    disposition: catalog
+    component: AnnotationPushRequest
+    reason: public wire or domain contract type
+  - go_name: AnnotationPushResponse
+    disposition: catalog
+    component: AnnotationPushResponse
+    reason: public wire or domain contract type
+  - go_name: AnnotationPushResult
+    disposition: catalog
+    component: AnnotationPushResult
+    reason: public wire or domain contract type
+  - go_name: AnnotationPushStatus
+    disposition: catalog
+    component: AnnotationPushStatus
+    reason: public wire or domain contract type
+  - go_name: PublishRequest
+    disposition: catalog
+    component: PublishRequest
+    reason: public wire or domain contract type
+  - go_name: PublishResponse
+    disposition: catalog
+    component: PublishResponse
+    reason: public wire or domain contract type
+  - go_name: SchemaVersionResponse
+    disposition: catalog
+    component: SchemaVersionResponse
+    reason: public wire or domain contract type
+  - go_name: PullAnnotation
+    disposition: catalog
+    component: PullAnnotation
+    reason: public wire or domain contract type
+  - go_name: PullListResponse
+    disposition: catalog
+    component: PullListResponse
+    reason: public wire or domain contract type
+  - go_name: PullTranscriptInfo
+    disposition: catalog
+    component: PullTranscriptInfo
+    reason: public wire or domain contract type
+  - go_name: TranscriptID
+    disposition: catalog
+    component: TranscriptID
+    reason: public wire or domain contract type
+  - go_name: PullSkipGateItem
+    disposition: catalog
+    component: PullSkipGateItem
+    reason: public wire or domain contract type
+  - go_name: PullSkipGateRequest
+    disposition: catalog
+    component: PullSkipGateRequest
+    reason: public wire or domain contract type
+  - go_name: PullSkipGateResponse
+    disposition: catalog
+    component: PullSkipGateResponse
+    reason: public wire or domain contract type
+  - go_name: PullSkipGateResult
+    disposition: catalog
+    component: PullSkipGateResult
+    reason: public wire or domain contract type
+  - go_name: ContentKind
+    disposition: catalog
+    component: ContentKind
+    reason: public wire or domain contract type
+  - go_name: ContractVersion
+    disposition: catalog
+    component: ContractVersion
+    reason: public wire or domain contract type
+  - go_name: PushContractVersion
+    disposition: alias
+    component: ContractVersion
+    reason: public alias of ContractVersion
+  - go_name: TranscriptContent
+    disposition: catalog
+    component: TranscriptContent
+    reason: public wire or domain contract type
+  - go_name: QualityMetrics
+    disposition: catalog
+    component: QualityMetrics
+    reason: public wire or domain contract type
+  - go_name: RedactionExample
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: RedactionFixtureLevel
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SearchPayload
+    disposition: catalog
+    component: SearchPayload
+    reason: public wire or domain contract type
+  - go_name: SearchResult
+    disposition: catalog
+    component: SearchResult
+    reason: public wire or domain contract type
+  - go_name: AnnotationFixtureSummary
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: AnnotationFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SubscriptionValidationCase
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PublishVerdictCase
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PublishVerdictExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PublishVerdictFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: IDCasing
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: InvalidRefCategory
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: InvalidRefSubcase
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: NegativeLookalike
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PullRefFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PullRefValues
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PullStatusFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: PullStatusMapping
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: RefCase
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: RefForm
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: ValidGenExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: ValidGeneration
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityFixtureName
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityFixtureSet
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityFixtureSetName
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityMetricVariation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityMetricVariations
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityRatioVariation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualitySessionFixture
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityStringVariation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: QualityVariations
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: EntryType
+    disposition: catalog
+    component: EntryType
+    reason: public wire or domain contract type
+  - go_name: Harness
+    disposition: catalog
+    component: Harness
+    reason: public wire or domain contract type
+  - go_name: HostSlug
+    disposition: catalog
+    component: HostSlug
+    reason: public wire or domain contract type
+  - go_name: License
+    disposition: catalog
+    component: License
+    reason: public wire or domain contract type
+  - go_name: ModelID
+    disposition: catalog
+    component: ModelID
+    reason: public wire or domain contract type
+  - go_name: ProjectHash
+    disposition: catalog
+    component: ProjectHash
+    reason: public wire or domain contract type
+  - go_name: Role
+    disposition: catalog
+    component: Role
+    reason: public wire or domain contract type
+  - go_name: SessionID
+    disposition: catalog
+    component: SessionID
+    reason: public wire or domain contract type
+  - go_name: SessionOutcome
+    disposition: catalog
+    component: SessionOutcome
+    reason: public wire or domain contract type
+  - go_name: SourceFormat
+    disposition: catalog
+    component: SourceFormat
+    reason: public wire or domain contract type
+  - go_name: StopReason
+    disposition: catalog
+    component: StopReason
+    reason: public wire or domain contract type
+  - go_name: ToolCallKind
+    disposition: catalog
+    component: ToolCallKind
+    reason: public wire or domain contract type
+  - go_name: Visibility
+    disposition: catalog
+    component: Visibility
+    reason: public wire or domain contract type
+

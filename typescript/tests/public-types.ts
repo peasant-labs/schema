@@ -9,8 +9,10 @@ import type { SessionEntry } from "@peasant-labs/schema/types";
 import type { Case, Corpus } from "@peasant-labs/schema/testcase";
 
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-const reviewMatches: Same<ReviewListPayload, LocalReviewListPayload> = true;
-const publishMatches: Same<PublishRequest, VillagePublishRequest> = true;
+// Root types mirror Go JSON presence. Operation-specific projections retain
+// their API-policy requiredness and therefore need not be structurally exact.
+const reviewProjectionIsDistinct: Same<ReviewListPayload, LocalReviewListPayload> = false;
+const publishProjectionIsDistinct: Same<PublishRequest, VillagePublishRequest> = false;
 
 declare const detail: SessionDetailPayload;
 declare const entry: SessionEntry;
@@ -23,6 +25,6 @@ const testCase: Case<SessionEntry, SessionDetailPayload> = {
   mutation: { description: "imports public package types" },
 };
 const corpus: Corpus<SessionEntry, SessionDetailPayload> = { cases: [testCase] };
-void reviewMatches;
-void publishMatches;
+void reviewProjectionIsDistinct;
+void publishProjectionIsDistinct;
 void corpus;

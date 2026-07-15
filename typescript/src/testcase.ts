@@ -6,6 +6,7 @@ export const Classification = {
 } as const;
 
 export type Classification = (typeof Classification)[keyof typeof Classification];
+export const AllClassifications = Object.freeze(Object.values(Classification)) as readonly Classification[];
 
 export const ProvenanceSource = {
   Requirement: "requirement",
@@ -16,6 +17,7 @@ export const ProvenanceSource = {
 } as const;
 
 export type ProvenanceSource = (typeof ProvenanceSource)[keyof typeof ProvenanceSource];
+export const AllProvenanceSources = Object.freeze(Object.values(ProvenanceSource)) as readonly ProvenanceSource[];
 
 export interface Provenance {
   source: ProvenanceSource;

@@ -1,0 +1,10 @@
+required:
+  - Harness
+  - SchemaVersionResponse
+  - VillageAPIVersion
+  - PeasantLocalAPIVersion
+  - TypesVersion
+forbidden:
+  - Provider
+  - BestiaryHarness
+  - VersionResponse

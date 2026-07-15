@@ -210,3 +210,31 @@ cases:
       ref: unique case names
     mutation:
       description: duplicates a case name
+
+  - name: whitespace-only case metadata
+    input: |
+      cases:
+        - name: "   "
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance: {source: manual, ref: "   "}
+          mutation: {description: "   "}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: non-vacuous case metadata}
+    mutation: {description: replaces required metadata with whitespace}
+
+  - name: padded nonempty case metadata
+    input: |
+      cases:
+        - name: " accepted "
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance: {source: manual, ref: " cited reason "}
+          mutation: {description: " exercises padding "}
+    expected: true
+    classification: must-pass
+    provenance: {source: boundary, ref: non-vacuous case metadata}
+    mutation: {description: preserves nonempty metadata surrounded by whitespace}

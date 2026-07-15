@@ -13,15 +13,15 @@ schema: typescript-deps
 
 typescript-deps:
 	@if [ ! -x typescript/node_modules/.bin/openapi-typescript ]; then \
-		echo "TypeScript dependencies are missing; run 'npm ci --prefix typescript' from the module root."; \
+		echo "TypeScript dependencies are missing; run 'pnpm --dir typescript install --frozen-lockfile --ignore-scripts' from the module root."; \
 		exit 1; \
 	fi
 
 typescript-check: typescript-deps
-	npm --prefix typescript run typecheck
-	npm --prefix typescript test
-	npm --prefix typescript run package:audit
-	npm --prefix typescript run package:smoke
+	pnpm --dir typescript run typecheck
+	pnpm --dir typescript test
+	pnpm --dir typescript run package:audit
+	pnpm --dir typescript run package:smoke
 
 # gofmt gate: fail (non-zero) if any file needs formatting.
 fmt:

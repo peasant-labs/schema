@@ -1,19 +1,24 @@
 # @peasant-labs/schema
 
 Generated TypeScript bindings for the canonical `github.com/peasant-labs/schema`
-wire contract. The package exposes named types from the current Village API,
-Peasant local API, and shared type-catalog specs, plus schema-owned testcase and
-quality-fixture helpers.
+wire contract. The package root mirrors the complete canonical Go Types catalog,
+including runtime closed-set objects, frozen `All*` collections, and `is*`
+guards. Operation-policy views remain available under `/local-api` and
+`/village-api`, alongside schema-owned testcase and quality-fixture helpers.
 
 This package is not published yet. Its development version is
 `0.0.0-development`; a published package version will follow the schema module
 release tag, not an individual OpenAPI document version.
 
 ```ts
-import type { SessionDetailPayload } from "@peasant-labs/schema";
+import { Role, isRole, type SessionDetailPayload } from "@peasant-labs/schema";
 import type { ReviewListPayload } from "@peasant-labs/schema/local-api";
 import { loadCorpus } from "@peasant-labs/schema/testcase";
-import { qualitySessions } from "@peasant-labs/schema/fixtures/quality";
+import { loadQualityFixtures, qualitySessions } from "@peasant-labs/schema/fixtures/quality";
+
+const fixtures = loadQualityFixtures();
+qualitySessions(fixtures);
+isRole(Role.User);
 ```
 
 The raw OpenAPI `components` and `paths` maps are generator internals. Consumers

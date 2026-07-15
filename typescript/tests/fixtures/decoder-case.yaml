@@ -1,0 +1,12 @@
+cases:
+  - name: strict input
+    input:
+      value: accepted
+      surprise: rejected
+    expected: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: decoder boundary
+    mutation:
+      description: adds an unknown input key

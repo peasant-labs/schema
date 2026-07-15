@@ -1,0 +1,19 @@
+cases:
+  - name: equal schemas share a public name
+    input:
+      name: Example
+      first_schema: '{"type":"string"}'
+      second_schema: '{"type":"string"}'
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: identical schema aliases may deduplicate}
+    mutation: {description: presents byte-identical canonical schemas from two document views}
+  - name: unequal schemas cannot share a public name
+    input:
+      name: Example
+      first_schema: '{"type":"string"}'
+      second_schema: '{"type":"integer"}'
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: public TypeScript names fail closed on structural collision}
+    mutation: {description: changes the second schema type while retaining the same public name}

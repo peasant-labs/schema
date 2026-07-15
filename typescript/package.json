@@ -43,10 +43,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "npm run build && tsc --noEmit -p tsconfig.test.json",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "package:audit": "npm run build && node scripts/package-audit.mjs",
-    "package:smoke": "npm run build && node scripts/package-smoke.mjs"
+    "typecheck": "pnpm run build && tsc --noEmit -p tsconfig.test.json",
+    "test": "pnpm run build && node --test tests/*.test.mjs",
+    "package:audit": "pnpm run build && node scripts/package-audit.mjs",
+    "package:smoke": "pnpm run build && node scripts/package-smoke.mjs"
   },
   "dependencies": {
     "yaml": "2.9.0"
@@ -59,7 +59,7 @@
   "engines": {
     "node": ">=24"
   },
-  "packageManager": "npm@11.12.1",
+  "packageManager": "pnpm@11.5.3",
   "publishConfig": {
     "access": "public"
   }

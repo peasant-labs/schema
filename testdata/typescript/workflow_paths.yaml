@@ -1,0 +1,4 @@
+required_paths:
+  - typescript/**
+  - testcase/testdata/**
+  - testdata/**

@@ -21,6 +21,14 @@ var exampleCorpusYAML []byte
 //go:embed testdata/load_cases.yaml
 var loadCasesYAML []byte
 
+//go:embed testdata/check_min_cases.yaml
+var checkMinCasesYAML []byte
+
+type checkMinInput struct {
+	Size    int `yaml:"size"`
+	Minimum int `yaml:"minimum"`
+}
+
 // validSubject returns a fully-populated Case that Case.Validate must accept: the
 // baseline the field-failure cases below each mutate one field of.
 func validSubject() testcase.Case[string, bool] {
@@ -48,21 +56,18 @@ type validateCase = testcase.Case[testcase.Case[string, bool], bool]
 // TestCheckMin_NegativeControl proves the minimum-size floor actually fires: a
 // corpus below the floor errors, a corpus at or above it does not.
 func TestCheckMin_NegativeControl(t *testing.T) {
-	one := testcase.Corpus[string, bool]{Cases: make([]testcase.Case[string, bool], 1)}
-	if err := one.CheckMin(2); err == nil {
-		t.Fatal("CheckMin(2) on a 1-case corpus returned nil; the size floor does not fire")
+	matrix, err := testcase.LoadCorpus[checkMinInput, bool](checkMinCasesYAML)
+	if err != nil {
+		t.Fatalf("load minimum matrix: %v", err)
 	}
-	if err := one.CheckMin(1); err != nil {
-		t.Errorf("CheckMin(1) on a 1-case corpus errored: %v", err)
+	assert.RequireMin(t, matrix, 4)
+	assert.RequireValid(t, matrix)
+	for _, tc := range matrix.Cases {
+		corpus := testcase.Corpus[string, bool]{Cases: make([]testcase.Case[string, bool], tc.Input.Size)}
+		if got := corpus.CheckMin(tc.Input.Minimum) == nil; got != tc.Expected {
+			t.Errorf("%s: accepted=%v, want %v", tc.Name, got, tc.Expected)
+		}
 	}
-
-	var empty testcase.Corpus[string, bool]
-	if err := empty.CheckMin(1); err == nil {
-		t.Fatal("CheckMin(1) on an empty corpus returned nil; the size floor does not fire")
-	}
-
-	// The loud wrapper agrees with the pure guard on the satisfied path.
-	assert.RequireMin(t, one, 1)
 }
 
 // TestCaseValidate_PopulatedPassesEmptyFieldFails is the positive+negative
@@ -179,10 +184,10 @@ func TestLoadCorpus_StrictSharedCases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadCorpus(testdata/load_cases.yaml): %v", err)
 	}
-	assert.RequireMin(t, matrix, 12)
+	assert.RequireMin(t, matrix, 14)
 	assert.RequireValid(t, matrix)
-	if len(matrix.Cases) != 12 {
-		t.Fatalf("strict loader matrix has %d cases, want 12", len(matrix.Cases))
+	if len(matrix.Cases) != 14 {
+		t.Fatalf("strict loader matrix has %d cases, want 14", len(matrix.Cases))
 	}
 
 	for _, testCase := range matrix.Cases {

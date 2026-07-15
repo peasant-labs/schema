@@ -116,7 +116,7 @@ and `TestCodegenFreshness_SpecsMatchSource`) fails on drift, and the fix it name
 is always regenerate then commit.
 
 Install the locked TypeScript development toolchain with
-`npm ci --prefix typescript --ignore-scripts` before regenerating.
+`pnpm --dir typescript install --frozen-lockfile --ignore-scripts` before regenerating.
 
 ## Gates
 
