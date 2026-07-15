@@ -11,10 +11,9 @@ package schema
 // update to send this nested structure. This is NOT backward-compatible with the
 // current village handler — both CLI and village must update together.
 //
-// rc2 (#118): Model carries required:"true" so swaggest emits a
-// The Village operation-specific publish component requires model, so a body with no model
-// object is rejected at the root. Metadata only (changes the generated schema's
-// `required`, not the Go wire shape).
+// The Village operation-specific publish component requires model, so a body
+// without it is rejected; this changes generated validation requiredness, not
+// the canonical Go wire shape.
 type PublishRequest struct {
 	Identity    SessionIdentity `json:"identity"`
 	Model       ModelInfo       `json:"model" required:"true"`

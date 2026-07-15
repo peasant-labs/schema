@@ -14,11 +14,10 @@ import (
 // OpenAPI identity and can never shadow the canonical language-binding type.
 type TranscriptPublishRequest schema.PublishRequest
 
-// BuildVillageAPISpec builds an OpenAPI 3.1 specification for the Village API v1.1.
-// It includes POST /api/v1/transcripts/publish with PublishRequest/PublishResponse,
-// GET /api/v1/auth/cli/login and POST /api/v1/auth/cli/exchange for CLI authentication,
-// and registers all content-layer types (SessionEntry, ToolCallKind, StopReason, Visibility)
-// as reusable components.
+// BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
+// Village API. It describes transcript publishing, CLI authentication,
+// annotation registry and manifest synchronization, schema negotiation, and
+// group-scoped transcript discovery and pull operations.
 func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -28,8 +27,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		// truth) so a doc-surface semver bump is a one-line edit in artifacts.go,
 		// never a literal retyped here. See the package doc for the policy.
 		WithVersion(VillageAPIVersion).
-		WithDescription("API for publishing AI agent session transcripts to the data-leverage village. " +
-			"v1.1 adds content-layer types (SessionEntry with ToolCallKind, StopReason, Visibility).")
+		WithDescription("Village API for transcript publishing, CLI authentication, annotation registry " +
+			"and manifest synchronization, schema negotiation, and group-scoped transcript discovery, " +
+			"content, annotations, and currency checks.")
 
 	// POST /api/v1/transcripts/publish — PublishRequest in, PublishResponse out.
 	oc, err := r.NewOperationContext(http.MethodPost, "/api/v1/transcripts/publish")

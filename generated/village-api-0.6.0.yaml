@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  description: API for publishing AI agent session transcripts to the data-leverage
-    village. v1.1 adds content-layer types (SessionEntry with ToolCallKind, StopReason,
-    Visibility).
+  description: Village API for transcript publishing, CLI authentication, annotation
+    registry and manifest synchronization, schema negotiation, and group-scoped transcript
+    discovery, content, annotations, and currency checks.
   title: Transcript Publish API
   version: 0.6.0
 paths:
