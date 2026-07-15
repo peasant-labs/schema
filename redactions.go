@@ -8,9 +8,11 @@ import "gopkg.in/yaml.v3"
 // can construct a redactor at the exact firing level via
 // redact.RedactionLevel(string(level)) with no translation table.
 //
-// Firing semantics (pkg/redact/redactor.go isActiveCategory):
-//   - secrets, paths → fire at Minimal and above (unconditional)
-//   - pii, project   → fire at Standard and above
+// Default firing semantics are category-based, but the engine may give an
+// individual rule a stricter minimum:
+//   - secrets, paths -> fire at Minimal and above (unconditional)
+//   - pii, project   -> normally fire at Standard and above
+//   - selected project rules may require Maximum
 //
 // The fixture stores the MINIMUM level at which each case's rule fires so the
 // conformance test exercises the narrowest level that still triggers the rule
@@ -20,9 +22,9 @@ type RedactionFixtureLevel string
 const (
 	// RedactionLevelMinimal redacts only secrets and paths.
 	RedactionLevelMinimal RedactionFixtureLevel = "minimal"
-	// RedactionLevelStandard adds PII and project-identity redaction.
+	// RedactionLevelStandard adds PII and most project-identity redaction.
 	RedactionLevelStandard RedactionFixtureLevel = "standard"
-	// RedactionLevelMaximum adds AST anonymization + entropy detection.
+	// RedactionLevelMaximum adds stricter project rules, AST anonymization, and entropy detection.
 	RedactionLevelMaximum RedactionFixtureLevel = "maximum"
 )
 
@@ -126,7 +128,7 @@ var RedactionExamples = []RedactionExample{
 		Name:                "git_remote_url",
 		RuleID:              "git_remote_https",
 		Category:            "project",
-		Level:               RedactionLevelStandard,
+		Level:               RedactionLevelMaximum,
 		OriginalText:        "https://github.com/acme-corp/internal-api",
 		RedactedReplacement: "<PROJECT_URL>",
 		Confidence:          61,

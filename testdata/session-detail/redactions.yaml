@@ -56,7 +56,7 @@ redactions:
   - name: git_remote_url
     ruleId: git_remote_https
     category: project
-    level: standard
+    level: maximum
     originalText: https://github.com/acme-corp/internal-api
     redactedReplacement: <PROJECT_URL>
     confidence: 61
