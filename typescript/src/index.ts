@@ -107,6 +107,9 @@ export type ValueDomain = TypesComponents["schemas"]["ValueDomain"];
 export type WalkthroughStep = TypesComponents["schemas"]["WalkthroughStep"];
 export type WalkthroughTrail = TypesComponents["schemas"]["WalkthroughTrail"];
 
+export type PushContractVersion = ContractVersion;
+export const MetadataSchemaVersion = 9 as const;
+
 export const AnnotationAxis = Object.freeze({
   Type: "type",
   Session: "session",

@@ -18,8 +18,8 @@
 //     schema, each case naming its Classification (must-pass or must-fail), its
 //     Provenance (source category plus a concrete ref), and the Mutation under
 //     test;
-//   - load it with LoadCorpus[I, E];
-//   - assert every case is non-vacuous with Corpus.Validate;
+//   - load and boundary-validate it with LoadCorpus[I, E];
+//   - use Corpus.Validate directly for a corpus assembled programmatically;
 //   - guard coverage: assert.RequireMin for a growable floor, or an exact
 //     "len == N" control (catching a drop or a stray add) plus a lean value-based
 //     coverage assertion (catching a count-preserving swap that drops a real case
@@ -127,9 +127,11 @@ type Corpus[I any, E any] struct {
 	Cases []Case[I, E] `yaml:"cases"`
 }
 
-// LoadCorpus parses a YAML corpus document into a typed Corpus. It is pure: it
-// returns an error rather than failing a test, mirroring the module's production
-// fixture loaders so this package stays free of the testing dependency.
+// LoadCorpus parses and validates a YAML corpus document into a typed Corpus. It
+// is pure: it returns an error rather than failing a test, mirroring the module's
+// production fixture loaders so this package stays free of the testing
+// dependency. Programmatically assembled corpora can call Corpus.Validate
+// directly.
 func LoadCorpus[I any, E any](data []byte) (Corpus[I, E], error) {
 	var c Corpus[I, E]
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
@@ -144,6 +146,9 @@ func LoadCorpus[I any, E any](data []byte) (Corpus[I, E], error) {
 			return Corpus[I, E]{}, fmt.Errorf("decode trailing corpus document: %w", err)
 		}
 		return Corpus[I, E]{}, fmt.Errorf("decode corpus document: multiple YAML documents are not allowed")
+	}
+	if err := c.Validate(); err != nil {
+		return Corpus[I, E]{}, fmt.Errorf("validate corpus document: %w", err)
 	}
 	return c, nil
 }

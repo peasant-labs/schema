@@ -211,19 +211,47 @@ cases:
     mutation:
       description: duplicates a case name
 
-  - name: whitespace-only case metadata
+  - name: whitespace-only case name
     input: |
       cases:
         - name: "   "
           input: alpha
           expected: true
           classification: must-pass
+          provenance: {source: manual, ref: cited reason}
+          mutation: {description: exercises the case-name guard}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: non-vacuous case name}
+    mutation: {description: replaces only the required case name with whitespace}
+
+  - name: whitespace-only provenance reference
+    input: |
+      cases:
+        - name: accepted
+          input: alpha
+          expected: true
+          classification: must-pass
           provenance: {source: manual, ref: "   "}
+          mutation: {description: exercises the provenance-reference guard}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: non-vacuous provenance reference}
+    mutation: {description: replaces only the required provenance reference with whitespace}
+
+  - name: whitespace-only mutation description
+    input: |
+      cases:
+        - name: accepted
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance: {source: manual, ref: cited reason}
           mutation: {description: "   "}
     expected: false
     classification: must-fail
-    provenance: {source: boundary, ref: non-vacuous case metadata}
-    mutation: {description: replaces required metadata with whitespace}
+    provenance: {source: boundary, ref: non-vacuous mutation description}
+    mutation: {description: replaces only the required mutation description with whitespace}
 
   - name: padded nonempty case metadata
     input: |

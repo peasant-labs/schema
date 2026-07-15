@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 import { parse } from "yaml";
 
@@ -15,29 +15,46 @@ const temp = await mkdtemp(join(tmpdir(), "peasant-labs-schema-package-"));
 try {
   const packed = JSON.parse(execFileSync("pnpm", ["pack", "--json", "--pack-destination", temp], { encoding: "utf8" }));
   const tarball = packed.filename;
-  await writeFile(join(temp, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
-  const storeDir = process.env.PNPM_STORE_DIR ?? execFileSync("pnpm", ["store", "path", "--silent"], { encoding: "utf8" }).trim();
-  execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, tarball], {
-    cwd: temp,
-    stdio: "inherit",
-  });
-  const probe = fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`).join("\n");
-  await writeFile(join(temp, "probe.mjs"), `${probe}\n`);
-  execFileSync(process.execPath, [join(temp, "probe.mjs")], { cwd: temp, stdio: "inherit" });
-
+  const packageRoot = fileURLToPath(new URL("..", import.meta.url));
+  const packageManifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const compilerSpecifier = `typescript@${packageManifest.devDependencies.typescript}`;
   const tsconfig = {
     compilerOptions: { strict: true, noEmit: true, target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext" },
     include: ["consumer.ts"],
   };
-  await writeFile(join(temp, "tsconfig.json"), JSON.stringify(tsconfig));
-  await writeFile(join(temp, "consumer.ts"), await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8"));
-  const tsc = new URL("../node_modules/.bin/tsc", import.meta.url).pathname;
-  execFileSync(tsc, ["--project", join(temp, "tsconfig.json")], { cwd: temp, stdio: "inherit" });
 
-  await writeFile(join(temp, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));
-  const invalid = spawnSync(tsc, ["--project", join(temp, "tsconfig.json")], { cwd: temp, encoding: "utf8" });
-  assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
-  assert.match(`${invalid.stdout}\n${invalid.stderr}`, /unknown-role|not assignable/, "invalid enum failure did not explain the rejected value");
+  for (let run = 1; run <= 2; run += 1) {
+    const runRoot = join(temp, `run-${run}`);
+    const storeDir = join(runRoot, "store");
+    const modulesDir = join(runRoot, "modules");
+    const virtualStoreDir = join(runRoot, "virtual-store");
+    const consumerDir = join(runRoot, "consumer");
+    await mkdir(consumerDir, { recursive: true });
+
+    execFileSync("pnpm", ["fetch", "--frozen-lockfile", "--ignore-scripts", "--store-dir", storeDir, "--modules-dir", modulesDir, "--virtual-store-dir", virtualStoreDir], {
+      cwd: packageRoot,
+      stdio: "inherit",
+    });
+    await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
+    execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, tarball], {
+      cwd: consumerDir,
+      stdio: "inherit",
+    });
+
+    const probe = fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`).join("\n");
+    await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
+    execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });
+
+    await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
+    await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8"));
+    const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
+    execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
+
+    await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));
+    const invalid = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
+    assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
+    assert.match(`${invalid.stdout}\n${invalid.stderr}`, /unknown-role|not assignable/, "invalid enum failure did not explain the rejected value");
+  }
 } finally {
   await rm(temp, { recursive: true, force: true });
 }

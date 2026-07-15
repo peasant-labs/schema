@@ -1,8 +1,10 @@
 import {
+  MetadataSchemaVersion,
   Role,
   TypesVersion,
   isRole,
   type SchemaVersionResponse,
+  type PushContractVersion,
   type SessionDetailPayload,
 } from "@peasant-labs/schema";
 import type { DashboardPayload } from "@peasant-labs/schema/local-api";
@@ -17,8 +19,9 @@ declare const dashboard: DashboardPayload;
 declare const publish: PublishRequest;
 declare const metadata: UnifiedMetadata;
 declare const versionResponse: SchemaVersionResponse;
+declare const pushContractVersion: PushContractVersion;
 const role: Role = Role.User;
 const corpus: Corpus<string, boolean> = { cases: [] };
 const fixtures = loadQualityFixtures();
 
-void [TypesVersion, isRole(role), detail, dashboard, publish, metadata, versionResponse, corpus, Classification.MustPass, qualitySessions(fixtures)];
+void [MetadataSchemaVersion, TypesVersion, isRole(role), detail, dashboard, publish, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures)];

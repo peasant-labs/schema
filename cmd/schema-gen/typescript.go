@@ -271,6 +271,7 @@ func renderSurfaceFacade(surface typeScriptSurface, aliases []schemaAlias) ([]by
 		fmt.Fprintf(&out, "export type %s = components[\"schemas\"][%q];\n", alias.Name, alias.RawName)
 	}
 	if surface.name == "types" {
+		renderGoParityExports(&out)
 		if err := renderRuntimeEnums(&out, enums); err != nil {
 			return nil, err
 		}
@@ -301,10 +302,16 @@ func renderRootFacade(aliases []schemaAlias) ([]byte, error) {
 		}
 		fmt.Fprintf(&out, "export type %s = TypesComponents[\"schemas\"][%q];\n", alias.Name, alias.RawName)
 	}
+	renderGoParityExports(&out)
 	if err := renderRuntimeEnums(&out, enums); err != nil {
 		return nil, err
 	}
 	return []byte(out.String()), nil
+}
+
+func renderGoParityExports(out *strings.Builder) {
+	out.WriteString("\nexport type PushContractVersion = ContractVersion;\n")
+	fmt.Fprintf(out, "export const MetadataSchemaVersion = %d as const;\n", schema.MetadataSchemaVersion)
 }
 
 func enumNameSet(enums []typeScriptEnum) map[string]struct{} {

@@ -294,8 +294,9 @@ metadata keeps every case both traceable and non-vacuous.
   pointer (a requirement id, a bug link, an enum name); `description` names the
   one change under test. For a must-fail case that change is the mutation that
   makes a valid input invalid, so a negative case is never vacuous.
-- **Pure loader + pure validators.** `LoadCorpus[I, E]` unmarshals the YAML and
-  returns an error rather than failing a test. `Case.Validate` / `Corpus.Validate`
+- **Pure loader + pure validators.** `LoadCorpus[I, E]` unmarshals and validates
+  the YAML, returning an error rather than failing a test. `Case.Validate` /
+  `Corpus.Validate` remain available for programmatically assembled corpora and
   reject a vacuous case: an out-of-set classification or provenance source, an
   empty `ref`, or an empty mutation `description`. `CheckMin(n)` is the pure
   minimum-size floor (`len >= n`), so a corpus may grow without tripping it.

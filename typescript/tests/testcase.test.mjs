@@ -30,8 +30,8 @@ test("TypeScript and Go share the strict loader matrix", async (t) => {
     decodeInput: stringDecoder,
     decodeExpected: booleanDecoder,
   });
-  assert.equal(matrix.cases.length, 14);
-  assert.equal(checkMin(matrix, 14), undefined);
+  assert.equal(matrix.cases.length, 16);
+  assert.equal(checkMin(matrix, 16), undefined);
   assert.equal(validateCorpus(matrix), undefined);
 
   for (const testCase of matrix.cases) {

@@ -174,18 +174,15 @@ func TestLoadCorpus_StrictSharedCases(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadCorpus(testdata/load_cases.yaml): %v", err)
 	}
-	assert.RequireMin(t, matrix, 14)
+	assert.RequireMin(t, matrix, 16)
 	assert.RequireValid(t, matrix)
-	if len(matrix.Cases) != 14 {
-		t.Fatalf("strict loader matrix has %d cases, want 14", len(matrix.Cases))
+	if len(matrix.Cases) != 16 {
+		t.Fatalf("strict loader matrix has %d cases, want 16", len(matrix.Cases))
 	}
 
 	for _, testCase := range matrix.Cases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			loaded, err := testcase.LoadCorpus[string, bool]([]byte(testCase.Input))
-			if err == nil {
-				err = loaded.Validate()
-			}
+			_, err := testcase.LoadCorpus[string, bool]([]byte(testCase.Input))
 			if got := err == nil; got != testCase.Expected {
 				t.Fatalf("accepted=%v, want %v (error: %v)", got, testCase.Expected, err)
 			}

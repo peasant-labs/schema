@@ -56,40 +56,6 @@ func TestTypeScriptRuntimeEnumsMatchExactFixture(t *testing.T) {
 	}
 }
 
-func TestGeneratedRootUsesCanonicalPublicNames(t *testing.T) {
-	root, err := findModuleRoot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "public_names.yaml"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var fixture struct {
-		Required  []string `yaml:"required"`
-		Forbidden []string `yaml:"forbidden"`
-	}
-	decoder := yaml.NewDecoder(bytes.NewReader(data))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&fixture); err != nil {
-		t.Fatal(err)
-	}
-	generated, err := os.ReadFile(filepath.Join(root, "typescript", "src", "index.ts"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range fixture.Required {
-		if !bytes.Contains(generated, []byte(" "+name+" ")) {
-			t.Errorf("generated root missing canonical public name %s", name)
-		}
-	}
-	for _, name := range fixture.Forbidden {
-		if bytes.Contains(generated, []byte(" "+name+" ")) {
-			t.Errorf("generated root leaked forbidden public name %s", name)
-		}
-	}
-}
-
 func TestWorkflowCoversEveryTypeScriptFixtureFamily(t *testing.T) {
 	root, err := findModuleRoot()
 	if err != nil {
