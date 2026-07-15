@@ -18,6 +18,9 @@ import (
 //go:embed testdata/example.yaml
 var exampleCorpusYAML []byte
 
+//go:embed testdata/load_cases.yaml
+var loadCasesYAML []byte
+
 // validSubject returns a fully-populated Case that Case.Validate must accept: the
 // baseline the field-failure cases below each mutate one field of.
 func validSubject() testcase.Case[string, bool] {
@@ -168,5 +171,29 @@ func TestCorpusFixture_AllFourCriteriaPopulated(t *testing.T) {
 	})}
 	if err := bad.Validate(); err == nil {
 		t.Fatal("Corpus.Validate accepted a corpus containing an empty provenance ref")
+	}
+}
+
+func TestLoadCorpus_StrictSharedCases(t *testing.T) {
+	matrix, err := testcase.LoadCorpus[string, bool](loadCasesYAML)
+	if err != nil {
+		t.Fatalf("LoadCorpus(testdata/load_cases.yaml): %v", err)
+	}
+	assert.RequireMin(t, matrix, 12)
+	assert.RequireValid(t, matrix)
+	if len(matrix.Cases) != 12 {
+		t.Fatalf("strict loader matrix has %d cases, want 12", len(matrix.Cases))
+	}
+
+	for _, testCase := range matrix.Cases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			loaded, err := testcase.LoadCorpus[string, bool]([]byte(testCase.Input))
+			if err == nil {
+				err = loaded.Validate()
+			}
+			if got := err == nil; got != testCase.Expected {
+				t.Fatalf("accepted=%v, want %v (error: %v)", got, testCase.Expected, err)
+			}
+		})
 	}
 }

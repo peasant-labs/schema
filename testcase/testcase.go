@@ -36,7 +36,9 @@
 package testcase
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 
 	"gopkg.in/yaml.v3"
 )
@@ -129,8 +131,18 @@ type Corpus[I any, E any] struct {
 // fixture loaders so this package stays free of the testing dependency.
 func LoadCorpus[I any, E any](data []byte) (Corpus[I, E], error) {
 	var c Corpus[I, E]
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return Corpus[I, E]{}, err
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&c); err != nil {
+		return Corpus[I, E]{}, fmt.Errorf("decode corpus document: %w", err)
+	}
+
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return Corpus[I, E]{}, fmt.Errorf("decode trailing corpus document: %w", err)
+		}
+		return Corpus[I, E]{}, fmt.Errorf("decode corpus document: multiple YAML documents are not allowed")
 	}
 	return c, nil
 }
@@ -157,6 +169,9 @@ func (c Corpus[I, E]) CheckMin(n int) error {
 // changes). An empty ref or description is treated as a vacuous case and
 // rejected.
 func (c Case[I, E]) Validate() error {
+	if c.Name == "" {
+		return fmt.Errorf("case name is empty")
+	}
 	if !c.Classification.IsValid() {
 		return fmt.Errorf("case %q: classification %q is not one of must-pass/must-fail", c.Name, c.Classification)
 	}
@@ -175,7 +190,12 @@ func (c Case[I, E]) Validate() error {
 // Validate runs Case.Validate over every case, returning the first failure with
 // the offending case's index for locality.
 func (c Corpus[I, E]) Validate() error {
+	names := make(map[string]struct{}, len(c.Cases))
 	for i := range c.Cases {
+		if _, exists := names[c.Cases[i].Name]; exists {
+			return fmt.Errorf("corpus case %d: duplicate case name %q", i, c.Cases[i].Name)
+		}
+		names[c.Cases[i].Name] = struct{}{}
 		if err := c.Cases[i].Validate(); err != nil {
 			return fmt.Errorf("corpus case %d: %w", i, err)
 		}

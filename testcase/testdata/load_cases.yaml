@@ -1,0 +1,212 @@
+cases:
+  - name: valid single document
+    input: |
+      cases:
+        - name: accepted
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: requirement
+            ref: testcase parity
+          mutation:
+            description: leaves the valid document unchanged
+    expected: true
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: strict cross-language loader
+    mutation:
+      description: uses exactly one fully populated document
+
+  - name: unknown corpus key
+    input: |
+      cases: []
+      surprise: true
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: strict corpus envelope
+    mutation:
+      description: adds an unknown top-level key
+
+  - name: unknown case key
+    input: |
+      cases:
+        - name: rejected
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: manual
+            ref: strict case envelope
+          mutation:
+            description: adds an unknown case key
+          surprise: true
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: strict case envelope
+    mutation:
+      description: adds an unknown key to a case
+
+  - name: unknown provenance key
+    input: |
+      cases:
+        - name: rejected
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: manual
+            ref: strict provenance envelope
+            surprise: true
+          mutation:
+            description: adds an unknown provenance key
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: strict provenance envelope
+    mutation:
+      description: adds an unknown key to provenance
+
+  - name: unknown mutation key
+    input: |
+      cases:
+        - name: rejected
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: manual
+            ref: strict mutation envelope
+          mutation:
+            description: adds an unknown mutation key
+            surprise: true
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: strict mutation envelope
+    mutation:
+      description: adds an unknown key to mutation
+
+  - name: duplicate mapping key
+    input: |
+      cases: []
+      cases: []
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unique YAML keys
+    mutation:
+      description: repeats the cases mapping key
+
+  - name: trailing nonempty document
+    input: |
+      cases: []
+      ---
+      cases: []
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: exactly one YAML document
+    mutation:
+      description: appends a second nonempty YAML document
+
+  - name: trailing empty document
+    input: |
+      cases: []
+      ---
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: exactly one YAML document
+    mutation:
+      description: appends an empty YAML document marker
+
+  - name: malformed YAML
+    input: |
+      cases: [
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: valid YAML syntax
+    mutation:
+      description: leaves an unterminated sequence
+
+  - name: invalid classification
+    input: |
+      cases:
+        - name: rejected
+          input: alpha
+          expected: true
+          classification: sometimes
+          provenance:
+            source: manual
+            ref: closed classification
+          mutation:
+            description: changes classification off the closed set
+    expected: false
+    classification: must-fail
+    provenance:
+      source: enum
+      ref: Classification
+    mutation:
+      description: changes the nested classification off the closed set
+
+  - name: invalid provenance source
+    input: |
+      cases:
+        - name: rejected
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: folklore
+            ref: closed provenance source
+          mutation:
+            description: changes provenance source off the closed set
+    expected: false
+    classification: must-fail
+    provenance:
+      source: enum
+      ref: ProvenanceSource
+    mutation:
+      description: changes the nested provenance source off the closed set
+
+  - name: duplicate case name
+    input: |
+      cases:
+        - name: repeated
+          input: alpha
+          expected: true
+          classification: must-pass
+          provenance:
+            source: manual
+            ref: unique case names
+          mutation:
+            description: first case
+        - name: repeated
+          input: beta
+          expected: false
+          classification: must-fail
+          provenance:
+            source: manual
+            ref: unique case names
+          mutation:
+            description: repeats the first case name
+    expected: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unique case names
+    mutation:
+      description: duplicates a case name

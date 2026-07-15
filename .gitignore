@@ -8,6 +8,12 @@
 # HTML under docs/api is build output and is NOT committed.
 /docs/api/
 
+# TypeScript package dependency, build, and package-smoke output.
+/typescript/node_modules/
+/typescript/dist/
+/typescript/.test-dist/
+/typescript/*.tgz
+
 #==================================
 # Golang Gitignore Template
 # If you prefer the allow list template instead of the deny list, see community template:

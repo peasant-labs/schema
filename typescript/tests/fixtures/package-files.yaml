@@ -1,0 +1,24 @@
+files:
+  - LICENSE
+  - README.md
+  - dist/fixtures.d.ts
+  - dist/fixtures.js
+  - dist/fixtures/quality.d.ts
+  - dist/fixtures/quality.js
+  - dist/index.d.ts
+  - dist/index.js
+  - dist/internal/generated/local-api.d.ts
+  - dist/internal/generated/local-api.js
+  - dist/internal/generated/types.d.ts
+  - dist/internal/generated/types.js
+  - dist/internal/generated/village-api.d.ts
+  - dist/internal/generated/village-api.js
+  - dist/local-api.d.ts
+  - dist/local-api.js
+  - dist/testcase.d.ts
+  - dist/testcase.js
+  - dist/types.d.ts
+  - dist/types.js
+  - dist/village-api.d.ts
+  - dist/village-api.js
+  - package.json

@@ -1,0 +1,81 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+import {
+  Classification,
+  ProvenanceSource,
+  checkMin,
+  loadCorpus,
+  validateCorpus,
+} from "../dist/testcase.js";
+
+const matrixSource = await readFile(new URL("../../testcase/testdata/load_cases.yaml", import.meta.url), "utf8");
+
+const stringDecoder = (value, path) => {
+  if (typeof value !== "string") throw new Error(`${path}: must be a string`);
+  return value;
+};
+const booleanDecoder = (value, path) => {
+  if (typeof value !== "boolean") throw new Error(`${path}: must be a boolean`);
+  return value;
+};
+
+test("TypeScript and Go share the strict loader matrix", async (t) => {
+  const matrix = loadCorpus(matrixSource, {
+    decodeInput: stringDecoder,
+    decodeExpected: booleanDecoder,
+  });
+  assert.equal(matrix.cases.length, 12);
+  assert.equal(checkMin(matrix, 12), undefined);
+  assert.equal(validateCorpus(matrix), undefined);
+
+  for (const testCase of matrix.cases) {
+    await t.test(testCase.name, () => {
+      let accepted = true;
+      try {
+        loadCorpus(testCase.input, {
+          decodeInput: stringDecoder,
+          decodeExpected: booleanDecoder,
+        });
+      } catch {
+        accepted = false;
+      }
+      assert.equal(accepted, testCase.expected);
+    });
+  }
+});
+
+test("closed testcase values mirror Go", () => {
+  assert.deepEqual(Object.values(Classification), ["must-pass", "must-fail"]);
+  assert.deepEqual(Object.values(ProvenanceSource), ["requirement", "bug", "enum", "boundary", "manual"]);
+});
+
+test("generic decoders own the input and expected boundary", () => {
+  const source = `
+cases:
+  - name: strict input
+    input:
+      value: accepted
+      surprise: rejected
+    expected: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: decoder boundary
+    mutation:
+      description: adds an unknown input key
+`;
+  assert.throws(
+    () => loadCorpus(source, {
+      decodeInput(value, path) {
+        assert.equal(typeof value, "object");
+        const keys = Object.keys(value);
+        if (keys.some((key) => key !== "value")) throw new Error(`${path}: unknown input key`);
+        return value.value;
+      },
+      decodeExpected: booleanDecoder,
+    }),
+    /unknown input key/,
+  );
+});

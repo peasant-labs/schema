@@ -1,0 +1,66 @@
+{
+  "name": "@peasant-labs/schema",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Generated TypeScript bindings for the peasant-labs schema contract",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./local-api": {
+      "types": "./dist/local-api.d.ts",
+      "default": "./dist/local-api.js"
+    },
+    "./village-api": {
+      "types": "./dist/village-api.d.ts",
+      "default": "./dist/village-api.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./testcase": {
+      "types": "./dist/testcase.d.ts",
+      "default": "./dist/testcase.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures.d.ts",
+      "default": "./dist/fixtures.js"
+    },
+    "./fixtures/quality": {
+      "types": "./dist/fixtures/quality.d.ts",
+      "default": "./dist/fixtures/quality.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "npm run build && tsc --noEmit -p tsconfig.test.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "package:audit": "npm run build && node scripts/package-audit.mjs",
+    "package:smoke": "npm run build && node scripts/package-smoke.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "npm@11.12.1",
+  "publishConfig": {
+    "access": "public"
+  }
+}
