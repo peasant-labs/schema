@@ -5,5 +5,5 @@
     "rootDir": "."
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["tests/fixtures/invalid-enum-consumer.ts"]
+  "exclude": ["tests/fixtures/invalid-enum-consumer.ts", "tests/fixtures/invalid-project-hash-consumer.ts"]
 }

@@ -52,6 +52,11 @@ try {
   const invalid = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
   assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
   assert.match(`${invalid.stdout}\n${invalid.stderr}`, /unknown-role|not assignable/, "invalid enum failure did not explain the rejected value");
+
+  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-project-hash-consumer.ts", import.meta.url), "utf8"));
+  const invalidProjectHash = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
+  assert.notEqual(invalidProjectHash.status, 0, "plain string unexpectedly compiled as ProjectHash");
+  assert.match(`${invalidProjectHash.stdout}\n${invalidProjectHash.stderr}`, /ProjectHash|not assignable/, "ProjectHash brand failure did not explain the rejected value");
 } finally {
   await rm(temp, { recursive: true, force: true });
 }

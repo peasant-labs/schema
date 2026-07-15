@@ -18,6 +18,7 @@ import (
 type publicExportFixture struct {
 	Aliases   []publicAliasFixture    `yaml:"aliases"`
 	Constants []publicConstantFixture `yaml:"constants"`
+	Functions []publicFunctionFixture `yaml:"functions"`
 	Forbidden []string                `yaml:"forbidden"`
 }
 
@@ -30,6 +31,12 @@ type publicAliasFixture struct {
 type publicConstantFixture struct {
 	Name     string   `yaml:"name"`
 	Value    string   `yaml:"value"`
+	Surfaces []string `yaml:"surfaces"`
+}
+
+type publicFunctionFixture struct {
+	Name     string   `yaml:"name"`
+	Target   string   `yaml:"target"`
 	Surfaces []string `yaml:"surfaces"`
 }
 
@@ -62,13 +69,15 @@ type publicExportMutationInput struct {
 }
 
 var (
-	schemaTypeExportPattern  = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = (?:TypesComponents|components)\["schemas"\]\["([^"]+)"\];$`)
-	runtimeTypeExportPattern = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = \(typeof ([A-Za-z][A-Za-z0-9_]*)\)\[keyof typeof ([A-Za-z][A-Za-z0-9_]*)\];$`)
-	aliasTypeExportPattern   = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = ([A-Za-z][A-Za-z0-9_]*);$`)
-	runtimeValuePattern      = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = Object\.freeze\(\{$`)
-	runtimeValuesPattern     = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = Object\.freeze\(\[.* satisfies readonly ([A-Za-z][A-Za-z0-9_]*)\[\]\);$`)
-	literalValuePattern      = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = (.+) as const;$`)
-	runtimeGuardPattern      = regexp.MustCompile(`^export function (is[A-Za-z][A-Za-z0-9_]*)\(value: unknown\): value is ([A-Za-z][A-Za-z0-9_]*) \{$`)
+	schemaTypeExportPattern   = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = (?:TypesComponents|components)\["schemas"\]\["([^"]+)"\];$`)
+	runtimeTypeExportPattern  = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = \(typeof ([A-Za-z][A-Za-z0-9_]*)\)\[keyof typeof ([A-Za-z][A-Za-z0-9_]*)\];$`)
+	aliasTypeExportPattern    = regexp.MustCompile(`^export type ([A-Za-z][A-Za-z0-9_]*) = ([A-Za-z][A-Za-z0-9_]*);$`)
+	runtimeValuePattern       = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = Object\.freeze\(\{$`)
+	runtimeValuesPattern      = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = Object\.freeze\(\[.* satisfies readonly ([A-Za-z][A-Za-z0-9_]*)\[\]\);$`)
+	literalValuePattern       = regexp.MustCompile(`^export const ([A-Za-z][A-Za-z0-9_]*) = (.+) as const;$`)
+	runtimeGuardPattern       = regexp.MustCompile(`^export function (is[A-Za-z][A-Za-z0-9_]*)\(value: unknown\): value is ([A-Za-z][A-Za-z0-9_]*) \{$`)
+	runtimeValidatorPattern   = regexp.MustCompile(`^export function (validate[A-Za-z][A-Za-z0-9_]*)\(value: unknown\): asserts value is ([A-Za-z][A-Za-z0-9_]*) \{$`)
+	runtimeConstructorPattern = regexp.MustCompile(`^export function (new[A-Za-z][A-Za-z0-9_]*)\(raw: string\): ([A-Za-z][A-Za-z0-9_]*) \{$`)
 )
 
 func TestGeneratedPublicExportsHaveExactIdentity(t *testing.T) {
@@ -190,6 +199,12 @@ func expectedPublicExports(t *testing.T, surface string, public publicExportFixt
 			addExpectedExport(t, expected, "value", constant.Name, "literal:"+constant.Value)
 		}
 	}
+	for _, function := range public.Functions {
+		validatePublicFixtureSurfaces(t, function.Name, function.Surfaces)
+		if includesSurface(function.Surfaces, surface) {
+			addExpectedExport(t, expected, "function", function.Name, function.Target)
+		}
+	}
 	return expected
 }
 
@@ -309,6 +324,12 @@ func parsePublicExports(source []byte) (map[string]string, error) {
 		case runtimeGuardPattern.MatchString(line):
 			matches := runtimeGuardPattern.FindStringSubmatch(line)
 			namespace, name, target = "function", matches[1], "runtime-guard:"+matches[2]
+		case runtimeValidatorPattern.MatchString(line):
+			matches := runtimeValidatorPattern.FindStringSubmatch(line)
+			namespace, name, target = "function", matches[1], "runtime-validator:"+matches[2]
+		case runtimeConstructorPattern.MatchString(line):
+			matches := runtimeConstructorPattern.FindStringSubmatch(line)
+			namespace, name, target = "function", matches[1], "runtime-constructor:"+matches[2]
 		default:
 			return nil, fmt.Errorf("unrecognized generated public export: %s", line)
 		}

@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -65,6 +66,9 @@ func generateTypeScript(moduleRoot string) error {
 		aliasesBySurface[surface.name] = aliases
 	}
 	typesAliases := aliasesBySurface["types"]
+	if err := canonicalizeRootProjectHashIdentity(surfaces[0].rawOutput); err != nil {
+		return err
+	}
 	for _, surface := range surfaces {
 		if surface.name != "types" {
 			if err := canonicalizeAPIOperationReferences(surface, aliasesBySurface[surface.name], typesAliases); err != nil {
@@ -122,6 +126,43 @@ func generateTypeScript(moduleRoot string) error {
 	}
 
 	return nil
+}
+
+var projectHashPropertyPattern = regexp.MustCompile(`(?m)^(\s+(?:projectHash|targetProjectHash)(?:\?)?: )([^;\n]*\bstring\b[^;\n]*);$`)
+
+// canonicalizeRootProjectHashIdentity refines the structural OpenAPI output
+// after generation. OpenAPI can describe the ProjectHash constraints, but it
+// cannot express TypeScript nominal identity. Keeping the private brand in the
+// raw catalog makes every public payload that references ProjectHash carry the
+// same identity while the package root remains the sole domain namespace.
+func canonicalizeRootProjectHashIdentity(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read generated root TypeScript catalog for ProjectHash canonicalization: %w", err)
+	}
+	source := string(data)
+	headerEnd := " */\n\n"
+	if !strings.Contains(source, headerEnd) {
+		return fmt.Errorf("generated root TypeScript catalog at %s has an unrecognized openapi-typescript header; cannot attach the ProjectHash nominal identity", path)
+	}
+	brand := "declare const projectHashBrand: unique symbol;\ntype CanonicalProjectHash = string & { readonly [projectHashBrand]: \"ProjectHash\" };\n\n"
+	source = strings.Replace(source, headerEnd, headerEnd+brand, 1)
+	const component = "        ProjectHash: string;"
+	if count := strings.Count(source, component); count != 1 {
+		return fmt.Errorf("generated root TypeScript catalog at %s contains %d plain ProjectHash component declarations, want exactly 1 before nominal canonicalization; inspect the generated Types schema before publishing", path, count)
+	}
+	source = strings.Replace(source, component, "        ProjectHash: CanonicalProjectHash;", 1)
+	source = rewriteProjectHashProperties(source, `components["schemas"]["ProjectHash"]`)
+	if projectHashPropertyPattern.MatchString(source) {
+		return fmt.Errorf("generated root TypeScript catalog at %s still contains an unbranded projectHash or targetProjectHash property after nominal canonicalization; add the new openapi-typescript shape to rewriteProjectHashProperties before publishing", path)
+	}
+	return writeGeneratedFile(path, []byte(source))
+}
+
+func rewriteProjectHashProperties(source, replacement string) string {
+	return projectHashPropertyPattern.ReplaceAllStringFunc(source, func(line string) string {
+		return strings.Replace(line, "string", replacement, 1)
+	})
 }
 
 func typeScriptSurfaces(moduleRoot, packageRoot string) []typeScriptSurface {
@@ -310,10 +351,12 @@ func canonicalizeAPIOperationReferences(surface typeScriptSurface, aliases, root
 		to := "Schema." + rootName
 		source = strings.ReplaceAll(source, from, to)
 	}
-	if surface.name == "local" {
-		// swaggest emits constrained path scalars inline. Restore the branded
-		// root identity in every operation parameter before publication.
-		source = strings.ReplaceAll(source, "projectHash: string;", "projectHash: Schema.ProjectHash;")
+	// swaggest emits some constrained fields and path scalars inline. Restore
+	// the branded root identity only after every same-named component above has
+	// passed the exact schema-equality gate.
+	source = rewriteProjectHashProperties(source, "Schema.ProjectHash")
+	if projectHashPropertyPattern.MatchString(source) {
+		return fmt.Errorf("generated %s operation types at %s still contain an unbranded projectHash or targetProjectHash property after canonicalization; add the new openapi-typescript shape to rewriteProjectHashProperties before publishing", surface.name, surface.rawOutput)
 	}
 	if strings.Contains(source, "export type ") && strings.Contains(source, "components[\"schemas\"][\"SchemaProjectResolutionPayload\"]") {
 		return fmt.Errorf("generated %s operation types still reference a duplicate ProjectResolutionPayload dialect; map the operation to the canonical root type", surface.name)
@@ -373,6 +416,34 @@ func renderRootFacade(aliases []schemaAlias) ([]byte, error) {
 func renderGoParityExports(out *strings.Builder) {
 	out.WriteString("\nexport type PushContractVersion = ContractVersion;\n")
 	fmt.Fprintf(out, "export const MetadataSchemaVersion = %d as const;\n", schema.MetadataSchemaVersion)
+	out.WriteString(`
+const projectHashPattern = /^[0-9a-f]{64}$/;
+
+function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
+  if (!isProjectHash(value)) {
+    let rendered: string;
+    try {
+      rendered = JSON.stringify(value) ?? String(value);
+    } catch {
+      rendered = String(value);
+    }
+    throw new TypeError("ProjectHash validation failed for " + rendered + " at @peasant-labs/schema ProjectHash during " + operation + ": the value is not a 64-character lowercase hexadecimal string; callers cannot use it as a canonical project identity; pass the lowercase SHA-256 hex digest of the project origin URL or local path.");
+  }
+}
+
+export function isProjectHash(value: unknown): value is ProjectHash {
+  return typeof value === "string" && projectHashPattern.test(value);
+}
+
+export function validateProjectHash(value: unknown): asserts value is ProjectHash {
+  assertProjectHash(value, "validateProjectHash");
+}
+
+export function newProjectHash(raw: string): ProjectHash {
+  assertProjectHash(raw, "newProjectHash");
+  return raw;
+}
+`)
 }
 
 func enumNameSet(enums []typeScriptEnum) map[string]struct{} {

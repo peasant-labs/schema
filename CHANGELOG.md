@@ -41,6 +41,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - The package root is the sole TypeScript domain namespace. `/types` is a
   compatibility re-export, while `/local-api` and `/village-api` expose only
   version constants and endpoint path/operation maps that use root payloads.
+- TypeScript `ProjectHash` now mirrors the Go validated newtype with one
+  generated nominal identity plus `newProjectHash`, `isProjectHash`, and
+  `validateProjectHash`. Root payloads and Local/Village operations carry the
+  brand, so plain strings cannot silently cross a project-identity boundary.
 - Testcase closed sets, model interfaces, and validation helpers are generated
   from the Go `testcase` package; handwritten TypeScript owns YAML decoding only.
 

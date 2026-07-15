@@ -353,7 +353,7 @@ export type components = {
             targetEntryEndIndex?: (null | number) | null;
             targetEntryIndex?: (null | number) | null;
             targetKind: Schema.TargetKind;
-            targetProjectHash?: (null | string) | null;
+            targetProjectHash?: (null | Schema.ProjectHash) | null;
             targetSessionId?: (null | string) | null;
             typeId: string;
             typeName: string;

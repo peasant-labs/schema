@@ -3,6 +3,9 @@
  * Do not make direct changes to the file.
  */
 
+declare const projectHashBrand: unique symbol;
+type CanonicalProjectHash = string & { readonly [projectHashBrand]: "ProjectHash" };
+
 export type paths = Record<string, never>;
 export type webhooks = Record<string, never>;
 export type components = {
@@ -39,7 +42,7 @@ export type components = {
             contentHash: string;
             entryTarget?: components["schemas"]["AnnotationEntryTarget"] | null;
             isPrimary: boolean;
-            projectHash?: (null | string) | null;
+            projectHash?: (null | components["schemas"]["ProjectHash"]) | null;
             provenance?: components["schemas"]["Provenance"] | null;
             reason?: (null | string) | null;
             sessionId?: (null | string) | null;
@@ -88,7 +91,7 @@ export type components = {
             targetEntryEndIndex?: (null | number) | null;
             targetEntryIndex?: (null | number) | null;
             targetKind: components["schemas"]["TargetKind"];
-            targetProjectHash?: (null | string) | null;
+            targetProjectHash?: (null | components["schemas"]["ProjectHash"]) | null;
             targetSessionId?: (null | string) | null;
             typeId: string;
             typeName: string;
@@ -483,7 +486,7 @@ export type components = {
          * @description SHA-256 hex digest of the project's origin URL or local path
          * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
          */
-        ProjectHash: string;
+        ProjectHash: CanonicalProjectHash;
         ProjectResolutionPayload: {
             project: string;
             projectHash: components["schemas"]["ProjectHash"];
@@ -556,7 +559,7 @@ export type components = {
             targetEntryEndIndex?: null | number;
             targetEntryIndex?: null | number;
             targetKind?: components["schemas"]["TargetKind"];
-            targetProjectHash?: null | string;
+            targetProjectHash?: null | components["schemas"]["ProjectHash"];
             targetSessionId?: null | string;
             typeId?: string;
             typeName?: string;

@@ -21,6 +21,16 @@ constants:
   - name: MetadataSchemaVersion
     value: "9"
     surfaces: [root]
+functions:
+  - name: isProjectHash
+    target: runtime-guard:ProjectHash
+    surfaces: [root]
+  - name: validateProjectHash
+    target: runtime-validator:ProjectHash
+    surfaces: [root]
+  - name: newProjectHash
+    target: runtime-constructor:ProjectHash
+    surfaces: [root]
 forbidden:
   - Provider
   - BestiaryHarness

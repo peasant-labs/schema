@@ -112,6 +112,33 @@ export type WalkthroughTrail = TypesComponents["schemas"]["WalkthroughTrail"];
 export type PushContractVersion = ContractVersion;
 export const MetadataSchemaVersion = 9 as const;
 
+const projectHashPattern = /^[0-9a-f]{64}$/;
+
+function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
+  if (!isProjectHash(value)) {
+    let rendered: string;
+    try {
+      rendered = JSON.stringify(value) ?? String(value);
+    } catch {
+      rendered = String(value);
+    }
+    throw new TypeError("ProjectHash validation failed for " + rendered + " at @peasant-labs/schema ProjectHash during " + operation + ": the value is not a 64-character lowercase hexadecimal string; callers cannot use it as a canonical project identity; pass the lowercase SHA-256 hex digest of the project origin URL or local path.");
+  }
+}
+
+export function isProjectHash(value: unknown): value is ProjectHash {
+  return typeof value === "string" && projectHashPattern.test(value);
+}
+
+export function validateProjectHash(value: unknown): asserts value is ProjectHash {
+  assertProjectHash(value, "validateProjectHash");
+}
+
+export function newProjectHash(raw: string): ProjectHash {
+  assertProjectHash(raw, "newProjectHash");
+  return raw;
+}
+
 export const AnnotationAxis = Object.freeze({
   Type: "type",
   Session: "session",
