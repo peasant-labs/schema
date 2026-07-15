@@ -30,6 +30,12 @@ on:
       - "flake.lock"
       - ".vacuum.yaml"
       - "scripts/**"
+      - "typescript/**"
+      - "testcase/testdata/**"
+      - "README.md"
+      - "TESTING.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
       - ".github/workflows/tests.yml"
       # The release-workflow guard (make check -> release-guard check-workflow)
       # validates release.yml against the policy file, so a change to EITHER must
@@ -49,6 +55,12 @@ on:
       - "flake.lock"
       - ".vacuum.yaml"
       - "scripts/**"
+      - "typescript/**"
+      - "testcase/testdata/**"
+      - "README.md"
+      - "TESTING.md"
+      - "CONTRIBUTING.md"
+      - "CHANGELOG.md"
       - ".github/workflows/tests.yml"
       # The release-workflow guard (make check -> release-guard check-workflow)
       # validates release.yml against the policy file, so a change to EITHER must
@@ -114,7 +126,9 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - name: make check
-        run: nix develop -c make check
+        run: |
+          nix develop -c npm ci --prefix typescript --ignore-scripts
+          nix develop -c make check
 
   contract-gates:
     name: contract gates (vs base)

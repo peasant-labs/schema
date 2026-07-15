@@ -100,11 +100,32 @@ never `nix search nixpkgs` (it is slow and can hang).
 ## Regeneration & gates
 
 ```bash
+npm ci --prefix typescript --ignore-scripts
 make check                 # gofmt + vet + release-workflow guard + go test -race ./...
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
 go run ./cmd/schema-gen    # regenerate generated/ specs (commit the result)
 nix build                  # hermetic build + go test ./... sanity gate
 ```
+
+The npm install is development tooling only and is pinned by
+`typescript/package-lock.json`. It does not change `go.mod` or the Go module's
+leaf dependency set. `go run ./cmd/schema-gen` verifies the installed
+`openapi-typescript` version before it regenerates the three current catalogs,
+their named public facades, and the typed quality fixtures. Never hand-edit a
+generated TypeScript file.
+
+Before reporting a TypeScript contract change ready, run:
+
+```bash
+npm --prefix typescript run typecheck
+npm --prefix typescript test
+npm --prefix typescript run package:audit
+npm --prefix typescript run package:smoke
+```
+
+The last gate packs the artifact, installs it into a disposable directory, and
+imports every public subpath. This package remains unpublished until a separate
+release change explicitly enables npm publication.
 
 Gates that run in CI (and locally):
 

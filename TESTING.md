@@ -33,6 +33,10 @@ make check                          # the authoritative quality gate (bare-go ru
 make test                           # go test -race ./...
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
+npm --prefix typescript run typecheck
+npm --prefix typescript test
+npm --prefix typescript run package:audit
+npm --prefix typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
@@ -74,6 +78,10 @@ script) behind it.
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish behind un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
+| TypeScript catalog completeness + collision safety | `cmd/schema-gen/typescript_test.go` | **Hard.** Every current OpenAPI component is named, and unequal normalized-name collisions stop generation. |
+| TypeScript generated-file accounting | `cmd/schema-gen/typescript_test.go`; `make freshness` | **Hard.** Every generated TypeScript source is known and byte-stable after regeneration. |
+| TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
+| npm package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
 ### Codegen freshness
 
@@ -94,6 +102,28 @@ redundant with `TestCodegenFreshness` (both diff the generator's output), but it
 uses `git add -N` so it also catches a future generator write-path that emits a
 tracked artifact outside the shared artifact map, which the Go test (iterating that
 map) could not see.
+
+The same command regenerates the TypeScript catalogs with the exact
+`openapi-typescript` version pinned in `typescript/package-lock.json`, then diffs
+the generated named facades, raw internal catalogs, and typed quality module.
+`TestGeneratedTypeScriptFilesFullyAccounted` independently asserts that no
+generated `.ts` file sits outside the known artifact set.
+
+### Cross-language testcase and fixture gates
+
+`testcase/testdata/load_cases.yaml` is one strict-loader matrix consumed by both
+Go and TypeScript. It covers unknown envelope keys, duplicate YAML keys,
+malformed input, trailing documents, invalid closed values, and duplicate case
+names. The TypeScript generic loader requires `decodeInput` and
+`decodeExpected` callbacks, because erased generic parameters cannot safely
+decode `unknown`; the package never casts an unknown payload to caller-selected
+`I` or `E`.
+
+Quality fixture consumers do not parse YAML. `cmd/schema-gen` first calls the Go
+`LoadQualityFixtures`, which strictly decodes and validates the complete source
+document, then renders immutable TypeScript constants and clone-returning
+accessors. TypeScript tests cover the five sessions, the named set, and the full
+variation catalog.
 
 ### Retired-version immutability
 

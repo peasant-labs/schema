@@ -1,4 +1,4 @@
-.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean
+.PHONY: schema check fmt vet test freshness gates lint-specs nix-vendor-hash docs clean typescript-deps typescript-check
 
 GO ?= go
 
@@ -8,8 +8,20 @@ GO ?= go
 BASE_REF ?= origin/develop
 
 # Regenerate the OpenAPI specs + Redoc HTML from the Go source of truth.
-schema:
+schema: typescript-deps
 	$(GO) run ./cmd/schema-gen
+
+typescript-deps:
+	@if [ ! -x typescript/node_modules/.bin/openapi-typescript ]; then \
+		echo "TypeScript dependencies are missing; run 'npm ci --prefix typescript' from the module root."; \
+		exit 1; \
+	fi
+
+typescript-check: typescript-deps
+	npm --prefix typescript run typecheck
+	npm --prefix typescript test
+	npm --prefix typescript run package:audit
+	npm --prefix typescript run package:smoke
 
 # gofmt gate: fail (non-zero) if any file needs formatting.
 fmt:
@@ -25,15 +37,15 @@ vet:
 
 # check is the schema repo's quality gate — the make-check-equivalent of peasant's
 # `make check`, minus the peasant-specific web build and ast-grep step (no
-# ast-grep ruleset is configured in this contract-only leaf). It is fully
-# runnable with a bare `go` toolchain: the race suite includes the leaf-audit
-# test and the oasdiff/go-apidiff synthetic-break tests, which t.Skip with an
-# actionable message when a gate binary is absent (e.g. outside `nix develop`)
-# and run for real inside the flake dev shell.
+# ast-grep ruleset is configured in this contract-only leaf). The Go race suite
+# includes the leaf-audit test and the oasdiff/go-apidiff synthetic-break tests,
+# which t.Skip with an actionable message when a gate binary is absent (e.g.
+# outside `nix develop`) and run for real inside the flake dev shell. The full
+# gate also requires the locked TypeScript dependencies.
 #
 # The release-workflow guard (release-guard check-workflow) keeps publication
 # behind the required gates; the race suite is the authoritative test run.
-check: fmt vet freshness
+check: fmt vet freshness typescript-check
 	$(GO) run ./cmd/release-guard check-workflow --policy .github/release-guard.policy.yml --release .github/workflows/release.yml
 	$(GO) test -race ./...
 
@@ -47,12 +59,12 @@ test:
 # FUTURE main() write-path that emits a *tracked* artifact OUTSIDE that shared
 # map (the Go test, iterating the map, could not see such a file). `git add -N`
 # surfaces any newly-emitted untracked file to `git diff --exit-code`.
-freshness:
+freshness: typescript-deps
 	$(GO) run ./cmd/schema-gen
-	@git add -N -- generated/ testdata/session-detail/redactions.yaml
-	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml; then \
+	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/internal/generated/
+	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/internal/generated/; then \
 		echo "generated artifacts drifted from the Go source — run 'make schema' and commit the result."; \
-		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml; \
+		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/internal/generated/; \
 		exit 1; \
 	fi
 
@@ -75,4 +87,4 @@ docs: schema
 	@echo "Docs generated (OpenAPI specs + Redoc HTML under docs/api/)"
 
 clean:
-	rm -rf docs/api/
+	rm -rf docs/api/ typescript/dist/ typescript/.test-dist/

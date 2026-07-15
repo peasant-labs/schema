@@ -10,7 +10,8 @@ module github.com/peasant-labs/schema
 
 It holds the domain + wire types, the closed-set enums, the publish/pull/push
 envelopes, the versioned OpenAPI specs, the publish-request validator, the typed
-fixtures, and the codegen + release-guard tooling. It has **no runtime**: no HTTP
+fixtures, the generated TypeScript bindings, and the codegen + release-guard
+tooling. It has **no runtime**: no HTTP
 server, no WebSocket hub, no CLI product. Everything here is types, constants,
 generated specs, and the gates that keep them honest.
 
@@ -78,7 +79,7 @@ flowchart LR
 |---|---|---|
 | **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc3`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
 | **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc3`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
-| **transcript-browser** (`@peasant-labs/types`) | TypeScript | A hand-maintained TS port that has **drifted** from the Go, so treat the Go here as authoritative when they disagree. The durable fix is OpenAPI→TS codegen off `generated/` (an open follow-up), which retires the hand port. |
+| **TypeScript clients** (`@peasant-labs/schema`) | TypeScript | Consume generated named types and schema-owned fixtures from the unpublished package under `typescript/`. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
 > Both consumers now pin `rc3`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
@@ -314,6 +315,30 @@ Alongside these, `make check` runs the codegen-freshness gate, the retired-versi
 immutability guard, the leaf-audit, the `vendorHash`-stability proof, and the
 synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fire.
 
+### TypeScript bindings
+
+The `typescript/` directory is the source of the future
+`@peasant-labs/schema` npm package. It mirrors the Go contract architecture:
+
+- the package root provides ergonomic named wire types from all current specs;
+- `/local-api`, `/village-api`, and `/types` expose their corresponding
+  catalogs;
+- `/testcase` mirrors the pure Go testcase model and strict YAML loader;
+- `/fixtures/quality` provides generated typed data loaded and validated by Go
+  at generation time.
+
+Raw OpenAPI `components`, `paths`, and `operations` maps are generated internal
+inputs, not the primary public API. Component names drop only the reflection
+prefix `Schema`. A normalized-name collision is coalesced only when the two
+canonical schemas are equivalent after their component references are
+normalized; any real difference fails generation with both sources named.
+
+The package version is `0.0.0-development` until a separate release change
+enables publication. Its eventual version follows the schema module release tag,
+not the individual Village, local, or types document versions. The old
+`@peasant-labs/types` package is deprecated rather than migrated: do not add new
+handwritten wire interfaces there.
+
 ---
 
 ## Develop, build, regenerate
@@ -335,20 +360,23 @@ nix develop           # drops you into the Go 1.26 dev shell
 ```
 
 Inside the shell (`go`, `gopls`, `golangci-lint`, `oasdiff`, `go-apidiff`, `vacuum`,
-`actionlint`, ... on `PATH`):
+`actionlint`, Node, npm, ... on `PATH`):
 
 ```bash
-make check                            # quality gate: gofmt + vet + release-workflow guard + `go test -race ./...`
+npm ci --prefix typescript --ignore-scripts # install the exact locked generator/toolchain
+make check                            # Go + TypeScript generation, tests, and package gates
                                       #   (incl. leaf-audit, freshness, immutability, and the synthetic-break tests)
 make gates BASE_REF=origin/develop    # breaking-change gates vs a base ref (oasdiff + go-apidiff + vacuum)
 go run ./cmd/schema-gen               # regenerate generated/ specs (+ Redoc HTML); commit the result
 nix build                             # hermetic buildGoModule (cmd/schema-gen + cmd/release-guard)
 ```
 
-`make check` is fully runnable with a bare `go` toolchain: the gate-binary tests
-`t.Skip` with an actionable message when a tool is absent and run for real inside
-`nix develop`. After any change to the Go schema source, regenerate and commit
-`generated/` (the freshness gate enforces byte-identity).
+The Go test packages remain runnable with a bare Go toolchain. Full `make check`
+also needs the locked Node dependencies because freshness regenerates the
+TypeScript package. If they are absent, the gate names the exact `npm ci`
+command. After any change to the Go schema source, regenerate and commit both
+`generated/` and the generated TypeScript sources; freshness enforces
+byte-identity.
 
 ### The leaf rule
 
@@ -436,6 +464,7 @@ tested, re-enabled alongside branch protection at the flip. The full operator gu
 | `versions.go` | Single source of truth for the versioned-spec semvers |
 | `openapi/` | OpenAPI 3.1 spec builders (`BuildVillageAPISpec`, `BuildPeasantLocalAPISpec`, `BuildTypesSpec`) |
 | `generated/` | Committed OpenAPI spec goldens (JSON + YAML) + the PublishRequest JSON-Schema - gate-checked; regenerate with `go run ./cmd/schema-gen` |
+| `typescript/` | Unpublished `@peasant-labs/schema` package: generated named wire types, testcase helpers, typed fixtures, and package gates |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + typed test fixtures |
 | `cmd/schema-gen/` | Regenerates `generated/`; hosts the freshness / immutability / surface gate tests |
 | `cmd/release-guard/` + `internal/release/` | The PR-title/tag grammar + release-gating CLI |

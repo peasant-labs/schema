@@ -16,7 +16,9 @@ their clients.
 
 It is a **contract-only leaf**: types, closed enums, generated OpenAPI specs, the
 publish-request JSON Schema validator, typed fixtures, and the codegen plus
-release-guard tooling. It has **no runtime server**: no HTTP handler and no
+release-guard tooling. Its unpublished `typescript/` package generates the same
+contract for TypeScript clients; `@peasant-labs/types` is deprecated. It has
+**no runtime server**: no HTTP handler and no
 WebSocket hub (the WebSocket types live here, but the hub stays in peasant). So
 the test suite is about keeping the contract honest, not about request/response
 behaviour (see `TESTING.md`).
@@ -107,16 +109,20 @@ should update one YAML corpus, not several inline tables.
 
 ## Codegen and freshness
 
-The `generated/` specs and the generated fixtures are produced by
-`go run ./cmd/schema-gen`; never hand-edit a generated file. The committed output
+The `generated/` specs, generated fixtures, and generated TypeScript wire types
+are produced by `go run ./cmd/schema-gen`; never hand-edit a generated file. The committed output
 must be byte-identical to a fresh generation: the freshness gate (`make freshness`
 and `TestCodegenFreshness_SpecsMatchSource`) fails on drift, and the fix it names
 is always regenerate then commit.
 
+Install the locked TypeScript development toolchain with
+`npm ci --prefix typescript --ignore-scripts` before regenerating.
+
 ## Gates
 
-`make check` is the authoritative bare-`go` gate: fmt, vet, the release-workflow
-guard, and `go test -race ./...` (which carries the freshness, immutability,
+`make check` is the authoritative full-repository gate: fmt, vet, the
+release-workflow guard, TypeScript typecheck/tests/package smoke, and
+`go test -race ./...` (which carries the freshness, immutability,
 leaf-audit, vendor-hash, and synthetic-break checks). `make gates
 BASE_REF=origin/develop` runs the breaking-change gates (`oasdiff`, `go-apidiff`,
 `vacuum`) and needs the flake tools. `TESTING.md` has the full gate table and the

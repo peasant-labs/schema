@@ -3,6 +3,29 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- An unpublished `@peasant-labs/schema` TypeScript package generated from every
+  current OpenAPI catalog. It mirrors the Go module with named root exports and
+  `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`, and
+  `/fixtures/quality` subpaths. The package remains at
+  `0.0.0-development`; no npm publication workflow is enabled.
+- Cross-language testcase corpus helpers and typed quality-fixture accessors.
+  The Go and TypeScript loaders share strict YAML cases, and consumers read
+  generated quality data rather than parsing repository-relative YAML.
+
+### Changed
+
+- `testcase.LoadCorpus` now rejects unknown fields, duplicate case names, and
+  trailing YAML documents. The quality fixture loader now models the complete
+  variation catalog and rejects unknown fields, duplicate names, and trailing
+  documents.
+- `@peasant-labs/types` is documented as deprecated. New TypeScript consumers
+  use the schema-owned generated package instead of extending the handwritten
+  port.
+
 ## [v0.1.0-rc5] - 2026-07-14
 
 Fixture-contract correction with no OpenAPI wire-shape change.
