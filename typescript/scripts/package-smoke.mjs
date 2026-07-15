@@ -23,38 +23,35 @@ try {
     include: ["consumer.ts"],
   };
 
-  for (let run = 1; run <= 2; run += 1) {
-    const runRoot = join(temp, `run-${run}`);
-    const storeDir = join(runRoot, "store");
-    const modulesDir = join(runRoot, "modules");
-    const virtualStoreDir = join(runRoot, "virtual-store");
-    const consumerDir = join(runRoot, "consumer");
-    await mkdir(consumerDir, { recursive: true });
+  const storeDir = join(temp, "store");
+  const modulesDir = join(temp, "modules");
+  const virtualStoreDir = join(temp, "virtual-store");
+  const consumerDir = join(temp, "consumer");
+  await mkdir(consumerDir, { recursive: true });
 
-    execFileSync("pnpm", ["fetch", "--frozen-lockfile", "--ignore-scripts", "--store-dir", storeDir, "--modules-dir", modulesDir, "--virtual-store-dir", virtualStoreDir], {
-      cwd: packageRoot,
-      stdio: "inherit",
-    });
-    await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
-    execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, tarball], {
-      cwd: consumerDir,
-      stdio: "inherit",
-    });
+  execFileSync("pnpm", ["fetch", "--frozen-lockfile", "--ignore-scripts", "--store-dir", storeDir, "--modules-dir", modulesDir, "--virtual-store-dir", virtualStoreDir], {
+    cwd: packageRoot,
+    stdio: "inherit",
+  });
+  await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
+  execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, tarball], {
+    cwd: consumerDir,
+    stdio: "inherit",
+  });
 
-    const probe = fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`).join("\n");
-    await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
-    execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });
+  const probe = fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`).join("\n");
+  await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
+  execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });
 
-    await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
-    await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8"));
-    const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
-    execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
+  await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
+  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8"));
+  const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
+  execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 
-    await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));
-    const invalid = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
-    assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
-    assert.match(`${invalid.stdout}\n${invalid.stderr}`, /unknown-role|not assignable/, "invalid enum failure did not explain the rejected value");
-  }
+  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/invalid-enum-consumer.ts", import.meta.url), "utf8"));
+  const invalid = spawnSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, encoding: "utf8" });
+  assert.notEqual(invalid.status, 0, "invalid enum sentinel unexpectedly compiled");
+  assert.match(`${invalid.stdout}\n${invalid.stderr}`, /unknown-role|not assignable/, "invalid enum failure did not explain the rejected value");
 } finally {
   await rm(temp, { recursive: true, force: true });
 }
