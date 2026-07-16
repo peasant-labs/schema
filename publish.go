@@ -1,5 +1,7 @@
 package schema
 
+import jsonschema "github.com/swaggest/jsonschema-go"
+
 // PublishRequest is the canonical wire type for CLI → Village upload.
 // The CLI sends this; the village validates and persists it.
 //
@@ -105,8 +107,34 @@ const (
 	PushStatusError   AnnotationPushStatus = "error"
 )
 
+// AllAnnotationPushStatuses is the canonical list of annotation push outcomes.
+var AllAnnotationPushStatuses = []AnnotationPushStatus{
+	PushStatusCreated,
+	PushStatusUpdated,
+	PushStatusSkipped,
+	PushStatusError,
+}
+
+// IsValid reports whether s is a defined annotation push outcome.
+func (s AnnotationPushStatus) IsValid() bool {
+	switch s {
+	case PushStatusCreated, PushStatusUpdated, PushStatusSkipped, PushStatusError:
+		return true
+	}
+	return false
+}
+
 // String returns the string representation of the push status.
 func (s AnnotationPushStatus) String() string { return string(s) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (AnnotationPushStatus) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Annotation Push Status",
+		"Per-item annotation push outcome",
+		AllAnnotationPushStatuses,
+	), nil
+}
 
 // AnnotationPushResult is the per-item result within an AnnotationPushResponse.
 type AnnotationPushResult struct {

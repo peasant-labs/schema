@@ -78,8 +78,8 @@ script) behind it.
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish behind un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
-| TypeScript catalog completeness + collision safety | `cmd/schema-gen/typescript_test.go` | **Hard.** Every current OpenAPI component is named, and unequal normalized-name collisions stop generation. |
-| TypeScript generated-file accounting | `cmd/schema-gen/typescript_test.go`; `make freshness` | **Hard.** Every generated TypeScript source is known and byte-stable after regeneration. |
+| TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
+| TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod output and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
 | Published package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
@@ -103,12 +103,11 @@ uses `git add -N` so it also catches a future generator write-path that emits a
 tracked artifact outside the shared artifact map, which the Go test (iterating that
 map) could not see.
 
-The same command regenerates the TypeScript catalogs with the exact
-`openapi-typescript` version pinned in `typescript/pnpm-lock.yaml`, then diffs
-the generated root and operation facades, raw internal catalogs, Go-derived
-testcase model, and typed quality and timeline modules.
-`TestGeneratedTypeScriptFilesFullyAccounted` independently asserts that no
-generated `.ts` file sits outside the known artifact set.
+`make freshness` then regenerates the TypeScript contract with the exact Hey API
+and Zod versions pinned in `typescript/pnpm-lock.yaml`. The generator consumes
+only the canonical Types OpenAPI catalog and does not enable an SDK/client
+plugin. It diffs the Zod definitions, Go-shaped enum facade, version constants,
+and YAML-derived quality and timeline fixture data.
 
 ### Cross-language testcase and fixture gates
 
@@ -120,11 +119,11 @@ names. The TypeScript generic loader requires `decodeInput` and
 decode `unknown`; the package never casts an unknown payload to caller-selected
 `I` or `E`.
 
-Quality fixture consumers do not parse YAML. `cmd/schema-gen` first calls the Go
-`LoadQualityFixtures`, which strictly decodes and validates the complete source
-document, then renders immutable TypeScript constants and clone-returning
-accessors. TypeScript tests cover the five sessions, the named set, and the full
-variation catalog.
+Quality fixture consumers do not parse repository-relative YAML. The TypeScript
+generator reads the same canonical YAML as Go, maps its public field names, and
+emits typed data behind clone-returning accessors. The Go loader remains the
+strict source validation gate. TypeScript tests cover the five sessions, the
+named set, and the full variation catalog.
 
 The project timeline corpus uses the same schema-owned path. Each row in
 `timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`

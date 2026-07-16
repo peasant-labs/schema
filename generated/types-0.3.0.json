@@ -27,10 +27,19 @@
         "type": "object"
       },
       "AnnotationAxis": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Subscription dimension for annotation channels",
+        "enum": [
+          "type",
+          "session",
+          "project"
+        ],
+        "examples": [
+          "type",
+          "session",
+          "project"
+        ],
+        "title": "Annotation Axis",
+        "type": "string"
       },
       "AnnotationDatatype": {
         "description": "Storage type for annotation values (maps to SQLite STRICT column type)",
@@ -259,7 +268,7 @@
             "type": "string"
           },
           "status": {
-            "type": "string"
+            "$ref": "#/components/schemas/AnnotationPushStatus"
           }
         },
         "required": [
@@ -268,10 +277,21 @@
         "type": "object"
       },
       "AnnotationPushStatus": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Per-item annotation push outcome",
+        "enum": [
+          "created",
+          "updated",
+          "skipped",
+          "error"
+        ],
+        "examples": [
+          "created",
+          "updated",
+          "skipped",
+          "error"
+        ],
+        "title": "Annotation Push Status",
+        "type": "string"
       },
       "AnnotationStatus": {
         "description": "ISO 11179 lifecycle state of an annotation type",
@@ -548,7 +568,7 @@
             ]
           },
           "axis": {
-            "type": "string"
+            "$ref": "#/components/schemas/AnnotationAxis"
           },
           "id": {
             "type": "string"
@@ -682,10 +702,65 @@
         "type": "object"
       },
       "BuiltinCommand": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Claude Code built-in slash command name without the leading slash",
+        "enum": [
+          "exit",
+          "compact",
+          "clear",
+          "new",
+          "model",
+          "usage",
+          "cost",
+          "context",
+          "plugin",
+          "permissions",
+          "login",
+          "resume",
+          "plan",
+          "fast",
+          "voice",
+          "todos",
+          "reload-plugins",
+          "sandbox",
+          "config",
+          "statusline",
+          "upgrade",
+          "extra-usage",
+          "rate-limit-options",
+          "privacy-settings",
+          "help",
+          "commands"
+        ],
+        "examples": [
+          "exit",
+          "compact",
+          "clear",
+          "new",
+          "model",
+          "usage",
+          "cost",
+          "context",
+          "plugin",
+          "permissions",
+          "login",
+          "resume",
+          "plan",
+          "fast",
+          "voice",
+          "todos",
+          "reload-plugins",
+          "sandbox",
+          "config",
+          "statusline",
+          "upgrade",
+          "extra-usage",
+          "rate-limit-options",
+          "privacy-settings",
+          "help",
+          "commands"
+        ],
+        "title": "Built-in Command",
+        "type": "string"
       },
       "CLILoginQuery": {
         "properties": {
@@ -705,10 +780,17 @@
         "type": "object"
       },
       "ChangeBinding": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Strength of the evidence connecting a recorded session to a code change",
+        "enum": [
+          "bound",
+          "candidate"
+        ],
+        "examples": [
+          "bound",
+          "candidate"
+        ],
+        "title": "Change Binding",
+        "type": "string"
       },
       "ChangeDetailPayload": {
         "properties": {
@@ -912,7 +994,7 @@
       "ChangeSession": {
         "properties": {
           "binding": {
-            "type": "string"
+            "$ref": "#/components/schemas/ChangeBinding"
           },
           "harness": {
             "type": "string"
@@ -1053,13 +1135,13 @@
       "ChannelSubscription": {
         "properties": {
           "axis": {
-            "type": "string"
+            "$ref": "#/components/schemas/AnnotationAxis"
           },
           "id": {
             "type": "string"
           },
           "topic": {
-            "type": "string"
+            "$ref": "#/components/schemas/ChannelTopic"
           }
         },
         "required": [
@@ -1068,10 +1150,27 @@
         "type": "object"
       },
       "ChannelTopic": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Subscribable WebSocket data stream",
+        "enum": [
+          "dashboard",
+          "sessions",
+          "session_detail",
+          "trends",
+          "quality",
+          "annotations",
+          "project_familiarity"
+        ],
+        "examples": [
+          "dashboard",
+          "sessions",
+          "session_detail",
+          "trends",
+          "quality",
+          "annotations",
+          "project_familiarity"
+        ],
+        "title": "Channel Topic",
+        "type": "string"
       },
       "ChildSessionRef": {
         "properties": {
@@ -1101,7 +1200,7 @@
             "type": "array"
           },
           "type": {
-            "type": "string"
+            "$ref": "#/components/schemas/MessageType"
           }
         },
         "required": [
@@ -1182,10 +1281,15 @@
         "type": "object"
       },
       "ContentKind": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Payload kind carried by a transcript content envelope",
+        "enum": [
+          "session_detail"
+        ],
+        "examples": [
+          "session_detail"
+        ],
+        "title": "Content Kind",
+        "type": "string"
       },
       "ContractVersion": {
         "type": [
@@ -1355,10 +1459,21 @@
         "type": "object"
       },
       "DecayLevel": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Recency band for project file familiarity",
+        "enum": [
+          "fresh",
+          "fading",
+          "stale",
+          "unexplored"
+        ],
+        "examples": [
+          "fresh",
+          "fading",
+          "stale",
+          "unexplored"
+        ],
+        "title": "Decay Level",
+        "type": "string"
       },
       "DiagnosticEntry": {
         "properties": {
@@ -1491,7 +1606,7 @@
             "type": "string"
           },
           "kind": {
-            "type": "string"
+            "$ref": "#/components/schemas/EdgeViolationKind"
           },
           "to": {
             "type": "string"
@@ -1505,10 +1620,17 @@
         "type": "object"
       },
       "EdgeViolationKind": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Structural violation detected on a map edge",
+        "enum": [
+          "cycle",
+          "wrong_way"
+        ],
+        "examples": [
+          "cycle",
+          "wrong_way"
+        ],
+        "title": "Edge Violation Kind",
+        "type": "string"
       },
       "EntryType": {
         "description": "Classification of a single entry within an agent session transcript",
@@ -1700,7 +1822,7 @@
             ]
           },
           "decayLevel": {
-            "type": "string"
+            "$ref": "#/components/schemas/DecayLevel"
           },
           "depth": {
             "type": "integer"
@@ -1876,10 +1998,21 @@
         "type": "string"
       },
       "InteractionType": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "How deeply a session engaged with a project file",
+        "enum": [
+          "mentioned",
+          "read",
+          "discussed",
+          "questioned"
+        ],
+        "examples": [
+          "mentioned",
+          "read",
+          "discussed",
+          "questioned"
+        ],
+        "title": "Interaction Type",
+        "type": "string"
       },
       "License": {
         "description": "Content license for a published transcript",
@@ -2002,7 +2135,7 @@
             "type": "string"
           },
           "kind": {
-            "type": "string"
+            "$ref": "#/components/schemas/MapNodeKind"
           },
           "language": {
             "type": "string"
@@ -2072,7 +2205,7 @@
             ]
           },
           "kind": {
-            "type": "string"
+            "$ref": "#/components/schemas/MapNodeKind"
           },
           "language": {
             "type": "string"
@@ -2160,10 +2293,19 @@
         "type": "object"
       },
       "MapNodeKind": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "Path-derived map node classification",
+        "enum": [
+          "module",
+          "package",
+          "file"
+        ],
+        "examples": [
+          "module",
+          "package",
+          "file"
+        ],
+        "title": "Map Node Kind",
+        "type": "string"
       },
       "MapSlice": {
         "properties": {
@@ -2203,10 +2345,35 @@
         "type": "object"
       },
       "MessageType": {
-        "type": [
-          "null",
-          "string"
-        ]
+        "description": "WebSocket message discriminator",
+        "enum": [
+          "subscribe",
+          "unsubscribe",
+          "dashboard",
+          "sessions",
+          "session_detail",
+          "trends",
+          "quality",
+          "annotations",
+          "project_familiarity",
+          "connected",
+          "error"
+        ],
+        "examples": [
+          "subscribe",
+          "unsubscribe",
+          "dashboard",
+          "sessions",
+          "session_detail",
+          "trends",
+          "quality",
+          "annotations",
+          "project_familiarity",
+          "connected",
+          "error"
+        ],
+        "title": "Message Type",
+        "type": "string"
       },
       "MockConfigResponse": {
         "properties": {
@@ -3680,7 +3847,7 @@
       "ServerMessage": {
         "properties": {
           "axis": {
-            "type": "string"
+            "$ref": "#/components/schemas/AnnotationAxis"
           },
           "data": {},
           "id": {
@@ -3690,10 +3857,10 @@
             "type": "string"
           },
           "topic": {
-            "type": "string"
+            "$ref": "#/components/schemas/ChannelTopic"
           },
           "type": {
-            "type": "string"
+            "$ref": "#/components/schemas/MessageType"
           },
           "version": {
             "type": "string"
@@ -4759,7 +4926,7 @@
             "type": "string"
           },
           "kind": {
-            "type": "string"
+            "$ref": "#/components/schemas/ContentKind"
           },
           "sessionDetail": {
             "anyOf": [

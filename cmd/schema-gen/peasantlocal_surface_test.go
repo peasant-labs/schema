@@ -16,19 +16,8 @@ import (
 )
 
 type localAPISurfaceFixture struct {
-	Exports []struct {
-		Namespace string `yaml:"namespace"`
-		Name      string `yaml:"name"`
-		Target    string `yaml:"target"`
-	} `yaml:"exports"`
-	Operations          []localAPIOperationIdentity `yaml:"operations"`
-	CanonicalReferences []struct {
-		OperationID  string `yaml:"operation_id"`
-		APIComponent string `yaml:"api_component"`
-		RootType     string `yaml:"root_type"`
-	} `yaml:"canonical_references"`
-	Mutations       testcase.Corpus[localAPISurfaceMutation, bool]   `yaml:"mutations"`
-	FacadeMutations testcase.Corpus[publicExportMutationInput, bool] `yaml:"facade_mutations"`
+	Operations []localAPIOperationIdentity                    `yaml:"operations"`
+	Mutations  testcase.Corpus[localAPISurfaceMutation, bool] `yaml:"mutations"`
 }
 
 type localAPIOperationIdentity struct {
@@ -61,33 +50,6 @@ func TestPeasantLocalGeneratedSurfaceHasExactIdentity(t *testing.T) {
 	}
 	if err := validateLocalAPIOperations(actual, fixture.Operations); err != nil {
 		t.Fatal(err)
-	}
-
-	facade, err := os.ReadFile(filepath.Join(root, "typescript", "src", "local-api.ts"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	expectedExports := make(map[string]string, len(fixture.Exports))
-	for _, entry := range fixture.Exports {
-		expectedExports[entry.Namespace+":"+entry.Name] = entry.Target
-	}
-	if err := validatePublicExports(facade, expectedExports, nil); err != nil {
-		t.Fatalf("local API public facade: %v", err)
-	}
-
-	operationSource, err := os.ReadFile(filepath.Join(root, "typescript", "src", "internal", "generated", "local-api.ts"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, reference := range fixture.CanonicalReferences {
-		canonical := "Schema." + reference.RootType
-		duplicate := fmt.Sprintf("components[\"schemas\"][%q]", reference.APIComponent)
-		if !bytes.Contains(operationSource, []byte(canonical)) {
-			t.Errorf("operation %s does not reference canonical root type %s", reference.OperationID, reference.RootType)
-		}
-		if bytes.Contains(operationSource, []byte(duplicate)) {
-			t.Errorf("operation surface retains duplicate component dialect %s; reference %s instead", reference.APIComponent, canonical)
-		}
 	}
 }
 
@@ -124,26 +86,6 @@ func TestPeasantLocalGeneratedSurfaceMutationProof(t *testing.T) {
 	}
 }
 
-func TestPeasantLocalFacadeExportMutationProof(t *testing.T) {
-	root, err := findModuleRoot()
-	if err != nil {
-		t.Fatal(err)
-	}
-	fixture := loadLocalAPISurfaceFixture(t, root)
-	source := readPublicFacade(t, filepath.Join(root, "typescript", "src", "local-api.ts"))
-	expected := make(map[string]string, len(fixture.Exports))
-	for _, entry := range fixture.Exports {
-		expected[entry.Namespace+":"+entry.Name] = entry.Target
-	}
-	for _, mutation := range fixture.FacadeMutations.Cases {
-		mutated := mutatePublicExports(t, source, mutation.Input)
-		accepted := validatePublicExports(mutated, expected, nil) == nil
-		if accepted != mutation.Expected {
-			t.Fatalf("%s: accepted=%v, want %v", mutation.Name, accepted, mutation.Expected)
-		}
-	}
-}
-
 func loadLocalAPISurfaceFixture(t *testing.T, root string) localAPISurfaceFixture {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(root, "testdata", "typescript", "local_api_surface.yaml"))
@@ -160,15 +102,6 @@ func loadLocalAPISurfaceFixture(t *testing.T, root string) localAPISurfaceFixtur
 		t.Fatal(err)
 	}
 	if err := fixture.Mutations.CheckMin(3); err != nil {
-		t.Fatal(err)
-	}
-	if err := fixture.FacadeMutations.Validate(); err != nil {
-		t.Fatal(err)
-	}
-	if len(fixture.FacadeMutations.Cases) != 9 {
-		t.Fatalf("local facade mutation fixture has %d rows, want exactly 9", len(fixture.FacadeMutations.Cases))
-	}
-	if err := fixture.FacadeMutations.CheckMin(9); err != nil {
 		t.Fatal(err)
 	}
 	return fixture

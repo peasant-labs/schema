@@ -48,15 +48,6 @@ func main() {
 		log.Printf("Generated %s", path)
 	}
 
-	// --- TypeScript package ---
-	// Raw OpenAPI maps are generated with the pinned openapi-typescript tool,
-	// then wrapped in collision-checked named exports. The quality fixture module
-	// is rendered only after the canonical Go loader validates the source YAML.
-	if err := generateTypeScript(moduleRoot); err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("Generated TypeScript package sources under %s", filepath.Join(moduleRoot, "typescript", "src"))
-
 	// Specs still needed below for the HTML docs.
 	villageSpec, err := openapi.BuildVillageAPISpec()
 	if err != nil {

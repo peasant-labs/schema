@@ -9,9 +9,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 - An unpublished `@peasant-labs/schema` TypeScript package whose root is generated
   from the comprehensive Types 0.3 Go catalog. It mirrors the Go module with
-  named wire types, runtime closed sets, frozen registries and guards, plus
-  `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`,
-  `/fixtures/quality`, and `/fixtures/timeline` subpaths. The package remains at
+  named wire types, Zod runtime schemas, closed sets, frozen registries and
+  guards, plus `/testcase`, `/fixtures`, `/fixtures/quality`, and
+  `/fixtures/timeline` subpaths. The package remains at
   `0.0.0-development`; no publication workflow is enabled.
 - Cross-language testcase corpus helpers and Go-shaped typed quality-fixture accessors.
   The Go and TypeScript loaders share strict YAML cases, and consumers read
@@ -45,15 +45,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `@peasant-labs/types` is documented as deprecated. New TypeScript consumers
   use the schema-owned generated package instead of extending the handwritten
   port.
-- The package root is the sole TypeScript domain namespace. `/types` is a
-  compatibility re-export, while `/local-api` and `/village-api` expose only
-  version constants and endpoint path/operation maps that use root payloads.
+- The package root is the sole TypeScript contract namespace. Hey API's Zod
+  plugin generates definitions and runtime validators from the canonical Types
+  OpenAPI document. No HTTP or WebSocket client SDK, endpoint operation map, or
+  duplicate API namespace is generated.
 - TypeScript `ProjectHash` now mirrors the Go validated newtype with one
   generated nominal identity plus `newProjectHash`, `isProjectHash`, and
   `validateProjectHash`. Root payloads and Local/Village operations carry the
   brand, so plain strings cannot silently cross a project-identity boundary.
-- Testcase closed sets, model interfaces, and validation helpers are generated
-  from the Go `testcase` package; handwritten TypeScript owns YAML decoding only.
+- The bespoke Go-to-TypeScript emitter is removed. Handwritten TypeScript owns
+  generic testcase behavior, while generated fixture data comes directly from
+  the schema-owned YAML corpora.
 
 ## [v0.1.0-rc5] - 2026-07-14
 

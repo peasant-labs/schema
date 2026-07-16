@@ -103,16 +103,16 @@ never `nix search nixpkgs` (it is slow and can hang).
 pnpm --dir typescript install --frozen-lockfile --ignore-scripts
 make check                 # gofmt + vet + release-workflow guard + go test -race ./...
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
-go run ./cmd/schema-gen    # regenerate generated/ specs (commit the result)
+make schema                # regenerate OpenAPI, docs, and TypeScript contract outputs
 nix build                  # hermetic build + go test ./... sanity gate
 ```
 
 The pnpm install is development tooling only and is pinned by
 `typescript/pnpm-lock.yaml`. It does not change `go.mod` or the Go module's
-leaf dependency set. `go run ./cmd/schema-gen` verifies the installed
-`openapi-typescript` version before it regenerates the three current catalogs,
-their named public facades, and the typed quality fixtures. Never hand-edit a
-generated TypeScript file.
+leaf dependency set. `make schema` first regenerates the canonical OpenAPI
+documents from Go, then uses the pinned Hey API Zod plugin to derive the
+contract-only TypeScript package and its YAML-backed fixture data. Never
+hand-edit a generated TypeScript file.
 
 Before reporting a TypeScript contract change ready, run:
 

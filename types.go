@@ -171,6 +171,12 @@ const (
 	SourceFormatJSON  SourceFormat = "json"  // OpenCode JSON transcripts
 )
 
+// AllSourceFormats is the canonical list of transcript source formats.
+var AllSourceFormats = []SourceFormat{
+	SourceFormatJSONL,
+	SourceFormatJSON,
+}
+
 // IsValid returns true if the SourceFormat is one of the known variants.
 func (f SourceFormat) IsValid() bool {
 	switch f {

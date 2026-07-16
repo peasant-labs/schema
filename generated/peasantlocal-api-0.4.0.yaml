@@ -460,7 +460,7 @@ components:
           - array
           - "null"
         axis:
-          type: string
+          $ref: '#/components/schemas/SchemaAnnotationAxis'
         id:
           type: string
       required:
@@ -489,7 +489,7 @@ components:
             $ref: '#/components/schemas/SchemaChannelSubscription'
           type: array
         type:
-          type: string
+          $ref: '#/components/schemas/SchemaMessageType'
       required:
       - type
       type: object
@@ -546,6 +546,18 @@ components:
       - to
       - taskCount
       type: object
+    SchemaAnnotationAxis:
+      description: Subscription dimension for annotation channels
+      enum:
+      - type
+      - session
+      - project
+      examples:
+      - type
+      - session
+      - project
+      title: Annotation Axis
+      type: string
     SchemaAnnotationDatatype:
       description: Storage type for annotation values (maps to SQLite STRICT column
         type)
@@ -722,6 +734,17 @@ components:
       - rule
       title: Annotator Kind
       type: string
+    SchemaChangeBinding:
+      description: Strength of the evidence connecting a recorded session to a code
+        change
+      enum:
+      - bound
+      - candidate
+      examples:
+      - bound
+      - candidate
+      title: Change Binding
+      type: string
     SchemaChangeDetailPayload:
       properties:
         baseRef:
@@ -859,7 +882,7 @@ components:
     SchemaChangeSession:
       properties:
         binding:
-          type: string
+          $ref: '#/components/schemas/SchemaChangeBinding'
         harness:
           type: string
         sessionId:
@@ -946,14 +969,34 @@ components:
     SchemaChannelSubscription:
       properties:
         axis:
-          type: string
+          $ref: '#/components/schemas/SchemaAnnotationAxis'
         id:
           type: string
         topic:
-          type: string
+          $ref: '#/components/schemas/SchemaChannelTopic'
       required:
       - topic
       type: object
+    SchemaChannelTopic:
+      description: Subscribable WebSocket data stream
+      enum:
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      examples:
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      title: Channel Topic
+      type: string
     SchemaChildSessionRef:
       properties:
         id:
@@ -1115,7 +1158,7 @@ components:
         from:
           type: string
         kind:
-          type: string
+          $ref: '#/components/schemas/SchemaEdgeViolationKind'
         to:
           type: string
       required:
@@ -1123,6 +1166,16 @@ components:
       - from
       - to
       type: object
+    SchemaEdgeViolationKind:
+      description: Structural violation detected on a map edge
+      enum:
+      - cycle
+      - wrong_way
+      examples:
+      - cycle
+      - wrong_way
+      title: Edge Violation Kind
+      type: string
     SchemaEntryType:
       description: Classification of a single entry within an agent session transcript
       enum:
@@ -1277,7 +1330,7 @@ components:
         id:
           type: string
         kind:
-          type: string
+          $ref: '#/components/schemas/SchemaMapNodeKind'
         language:
           type: string
         layer:
@@ -1324,7 +1377,7 @@ components:
           - array
           - "null"
         kind:
-          type: string
+          $ref: '#/components/schemas/SchemaMapNodeKind'
         language:
           type: string
         lastTouchMs:
@@ -1382,6 +1435,18 @@ components:
       - retryLoops
       - reEdits
       type: object
+    SchemaMapNodeKind:
+      description: Path-derived map node classification
+      enum:
+      - module
+      - package
+      - file
+      examples:
+      - module
+      - package
+      - file
+      title: Map Node Kind
+      type: string
     SchemaMapSlice:
       properties:
         activityEdges:
@@ -1407,6 +1472,34 @@ components:
       - structureEdges
       - activityEdges
       type: object
+    SchemaMessageType:
+      description: WebSocket message discriminator
+      enum:
+      - subscribe
+      - unsubscribe
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      - connected
+      - error
+      examples:
+      - subscribe
+      - unsubscribe
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      - connected
+      - error
+      title: Message Type
+      type: string
     SchemaMockConfigResponse:
       properties:
         api:
@@ -2167,16 +2260,16 @@ components:
     ServerMessage:
       properties:
         axis:
-          type: string
+          $ref: '#/components/schemas/SchemaAnnotationAxis'
         data: {}
         id:
           type: string
         message:
           type: string
         topic:
-          type: string
+          $ref: '#/components/schemas/SchemaChannelTopic'
         type:
-          type: string
+          $ref: '#/components/schemas/SchemaMessageType'
         version:
           type: string
       required:

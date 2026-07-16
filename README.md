@@ -79,7 +79,7 @@ flowchart LR
 |---|---|---|
 | **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc5`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
 | **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
-| **TypeScript clients** (`@peasant-labs/schema`) | TypeScript | Consume generated named types and schema-owned fixtures from the unpublished package under `typescript/`. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
+| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, and schema-owned fixtures from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
 > Both consumers now pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
@@ -325,19 +325,17 @@ The `typescript/` directory is the source of the future
 `@peasant-labs/schema` package. It mirrors the Go contract architecture:
 
 - the package root is the canonical Types 0.3 projection of the complete public
-  Go wire/domain catalog, including Go-shaped runtime closed sets and guards;
-- `/types` is a deprecated pure re-export of the package root, while
-  `/local-api` and `/village-api` export only version constants plus endpoint
-  path/operation maps that reference canonical root payloads;
-- `/testcase` combines a Go-generated model and closed sets with a handwritten
-  strict YAML decoder;
-- `/fixtures/quality` and `/fixtures/timeline` provide generated typed data
-  loaded and validated by Go at generation time.
+  Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
+  and guards;
+- no HTTP or WebSocket client SDK and no per-API operation-map namespace is
+  generated;
+- `/testcase` owns generic validation behavior and a strict YAML decoder;
+- `/fixtures/quality` and `/fixtures/timeline` provide typed access to generated
+  data from the same canonical YAML corpora consumed by Go.
 
-Raw OpenAPI component maps are generated internal inputs, not a public domain
-namespace. Canonical Types names preserve their Go identity. API operations
-import those root types; a genuinely operation-specific validation projection
-stays unnamed outside its operation rather than shadowing a canonical Go name.
+The Go source and its Types OpenAPI catalog remain authoritative. Hey API's Zod
+plugin derives TypeScript definitions and runtime schemas without enabling its
+SDK/client plugins. Canonical Types names preserve their Go identity.
 
 The package version is `0.0.0-development` until a separate release change
 enables publication. Its eventual version follows the schema module release tag,
@@ -373,7 +371,7 @@ pnpm --dir typescript install --frozen-lockfile --ignore-scripts # install the e
 make check                            # Go + TypeScript generation, tests, and package gates
                                       #   (incl. leaf-audit, freshness, immutability, and the synthetic-break tests)
 make gates BASE_REF=origin/develop    # breaking-change gates vs a base ref (oasdiff + go-apidiff + vacuum)
-go run ./cmd/schema-gen               # regenerate generated/ specs (+ Redoc HTML); commit the result
+make schema                           # regenerate OpenAPI/Redoc and TypeScript contract outputs
 nix build                             # hermetic buildGoModule (cmd/schema-gen + cmd/release-guard)
 ```
 

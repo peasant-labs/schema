@@ -7,12 +7,13 @@ GO ?= go
 # override on the CLI: `make gates BASE_REF=HEAD~1`.
 BASE_REF ?= origin/develop
 
-# Regenerate the OpenAPI specs + Redoc HTML from the Go source of truth.
+# Regenerate OpenAPI/Redoc from Go, then derive the TypeScript contract package.
 schema: typescript-deps
 	$(GO) run ./cmd/schema-gen
+	pnpm --dir typescript run generate
 
 typescript-deps:
-	@if [ ! -x typescript/node_modules/.bin/openapi-typescript ]; then \
+	@if [ ! -x typescript/node_modules/.bin/openapi-ts ]; then \
 		echo "TypeScript dependencies are missing; run 'pnpm --dir typescript install --frozen-lockfile --ignore-scripts' from the module root."; \
 		exit 1; \
 	fi
@@ -61,10 +62,11 @@ test:
 # surfaces any newly-emitted untracked file to `git diff --exit-code`.
 freshness: typescript-deps
 	$(GO) run ./cmd/schema-gen
-	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts
-	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts; then \
-		echo "generated artifacts drifted from the Go source — run 'make schema' and commit the result."; \
-		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/index.ts typescript/src/local-api.ts typescript/src/village-api.ts typescript/src/types.ts typescript/src/fixtures/quality.ts typescript/src/fixtures/timeline.ts typescript/src/internal/generated/ typescript/tests/project-hash-locations.ts; \
+	pnpm --dir typescript run generate
+	@git add -N -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/
+	@if ! git diff --quiet -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; then \
+		echo "generated artifacts drifted from their canonical Go/OpenAPI/YAML sources — run 'make schema' and commit the result."; \
+		git --no-pager diff --stat -- generated/ testdata/session-detail/redactions.yaml typescript/src/internal/generated/; \
 		exit 1; \
 	fi
 

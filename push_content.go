@@ -1,5 +1,7 @@
 package schema
 
+import jsonschema "github.com/swaggest/jsonschema-go"
+
 // --- Push contract versioning + structured content envelope ---
 //
 // These types define the versioned wire contract for `peasant push`'s transcript
@@ -45,8 +47,23 @@ type ContentKind string
 // normalized SessionDetailPayload. It is the only kind peasant currently emits.
 const ContentKindSessionDetail ContentKind = "session_detail"
 
+// AllContentKinds is the canonical list of transcript content envelope kinds.
+var AllContentKinds = []ContentKind{ContentKindSessionDetail}
+
+// IsValid reports whether k is a defined content envelope kind.
+func (k ContentKind) IsValid() bool { return k == ContentKindSessionDetail }
+
 // String returns the bare kind string for serialization/log boundaries.
 func (k ContentKind) String() string { return string(k) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (ContentKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Content Kind",
+		"Payload kind carried by a transcript content envelope",
+		AllContentKinds,
+	), nil
+}
 
 // TranscriptContent is the versioned, self-describing wire body that `peasant
 // push` uploads in place of raw provider JSONL. The village decodes this

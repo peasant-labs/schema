@@ -28,6 +28,13 @@ const (
 	MapNodeKindFile    MapNodeKind = "file"
 )
 
+// AllMapNodeKinds is the canonical list of map node classifications.
+var AllMapNodeKinds = []MapNodeKind{
+	MapNodeKindModule,
+	MapNodeKindPackage,
+	MapNodeKindFile,
+}
+
 // String returns the wire representation of the node kind.
 func (k MapNodeKind) String() string { return string(k) }
 
@@ -38,6 +45,15 @@ func (k MapNodeKind) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (MapNodeKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Map Node Kind",
+		"Path-derived map node classification",
+		AllMapNodeKinds,
+	), nil
 }
 
 // MapGraphPayload is the full map graph for one project, served by
@@ -109,6 +125,12 @@ const (
 	EdgeViolationWrongWay EdgeViolationKind = "wrong_way"
 )
 
+// AllEdgeViolationKinds is the canonical list of map structure violations.
+var AllEdgeViolationKinds = []EdgeViolationKind{
+	EdgeViolationCycle,
+	EdgeViolationWrongWay,
+}
+
 // String returns the wire representation of the violation kind.
 func (k EdgeViolationKind) String() string { return string(k) }
 
@@ -119,6 +141,15 @@ func (k EdgeViolationKind) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (EdgeViolationKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Edge Violation Kind",
+		"Structural violation detected on a map edge",
+		AllEdgeViolationKinds,
+	), nil
 }
 
 // EdgeViolation flags an edge that breaks the layering discipline.
@@ -664,6 +695,12 @@ const (
 	ChangeBindingCandidate ChangeBinding = "candidate"
 )
 
+// AllChangeBindings is the canonical list of session-to-change bindings.
+var AllChangeBindings = []ChangeBinding{
+	ChangeBindingBound,
+	ChangeBindingCandidate,
+}
+
 // String returns the wire representation of the binding.
 func (b ChangeBinding) String() string { return string(b) }
 
@@ -674,6 +711,15 @@ func (b ChangeBinding) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (ChangeBinding) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Change Binding",
+		"Strength of the evidence connecting a recorded session to a code change",
+		AllChangeBindings,
+	), nil
 }
 
 // ChangeSession is one recorded session behind a change, with its tasks.

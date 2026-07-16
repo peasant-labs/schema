@@ -1,6 +1,10 @@
 package schema
 
-import "strings"
+import (
+	"strings"
+
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
 
 // BuiltinCommand represents a built-in slash command supported by Claude Code.
 // These are first-party commands that ship with the tool (e.g. /exit, /compact).
@@ -84,6 +88,15 @@ var AllClaudeBuiltinCmds = [...]BuiltinCommand{
 	ClaudeBuiltinCmdPrivacySettings,
 	ClaudeBuiltinCmdHelp,
 	ClaudeBuiltinCmdCommands,
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (BuiltinCommand) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Built-in Command",
+		"Claude Code built-in slash command name without the leading slash",
+		AllClaudeBuiltinCmds[:],
+	), nil
 }
 
 // IsClaudeBuiltinCommand reports whether name (with any leading slash stripped)

@@ -1,8 +1,5 @@
 subpaths:
   - "@peasant-labs/schema"
-  - "@peasant-labs/schema/local-api"
-  - "@peasant-labs/schema/village-api"
-  - "@peasant-labs/schema/types"
   - "@peasant-labs/schema/testcase"
   - "@peasant-labs/schema/fixtures"
   - "@peasant-labs/schema/fixtures/quality"
