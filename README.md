@@ -71,7 +71,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc5` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.6.0` · peasant local API `0.3.0` · types `0.2.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.6.0` · peasant local API `0.4.0` · types `0.3.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -165,7 +165,10 @@ classDiagram
 ```
 
 The enum field types (`Role`, `EntryType`, `StopReason`, `ToolCallKind`,
-`SessionOutcome`) are schema newtypes; `Harness` is re-exported from `bestiary`.
+`SessionOutcome`, `FileChangeStatus`, and `DiffLineKind`) are schema newtypes;
+`Harness` is re-exported from `bestiary`. File-change statuses retain the Git
+wire tokens `M`, `A`, `D`, and `R`; diff-line kinds retain `context`, `add`, and
+`del`.
 
 A trimmed excerpt of the top-level shape (`local_api.go`):
 
@@ -207,8 +210,8 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
 | **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.6.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.3.0` |
-| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.2.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.4.0` |
+| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.3.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
@@ -262,11 +265,11 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0`, peasant local API `0.1.0` / `0.2.0`, and
-types `0.1.0`. The
+Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`,
+PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0`, and
+types `0.1.0` / `0.2.0`. The
 still-generated current versions (village API `0.6.0`, PublishRequest `0.6.0`,
-peasant local API `0.3.0`, types `0.2.0`) live under the freshness gate instead.
+peasant local API `0.4.0`, types `0.3.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
@@ -321,7 +324,7 @@ synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fir
 The `typescript/` directory is the source of the future
 `@peasant-labs/schema` package. It mirrors the Go contract architecture:
 
-- the package root is the canonical Types 0.2 projection of the complete public
+- the package root is the canonical Types 0.3 projection of the complete public
   Go wire/domain catalog, including Go-shaped runtime closed sets and guards;
 - `/types` is a deprecated pure re-export of the package root, while
   `/local-api` and `/village-api` export only version constants plus endpoint

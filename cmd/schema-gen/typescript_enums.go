@@ -38,8 +38,10 @@ func typeScriptEnums() ([]typeScriptEnum, error) {
 		{"ChannelTopic", "AllChannelTopics", stringsOf(schema.TopicDashboard, schema.TopicSessions, schema.TopicSessionDetail, schema.TopicTrends, schema.TopicQuality, schema.TopicAnnotations, schema.TopicProjectFamiliarity), nil},
 		{"ContentKind", "AllContentKinds", stringsOf(schema.ContentKindSessionDetail), nil},
 		{"DecayLevel", "AllDecayLevels", stringsOf(schema.DecayFresh, schema.DecayFading, schema.DecayStale, schema.DecayUnexplored), nil},
+		{"DiffLineKind", "AllDiffLineKinds", stringsOfSlice(schema.AllDiffLineKinds), nil},
 		{"EdgeViolationKind", "AllEdgeViolationKinds", stringsOf(schema.EdgeViolationCycle, schema.EdgeViolationWrongWay), nil},
 		{"EntryType", "AllEntryTypes", stringsOfSlice(schema.AllEntryTypes), nil},
+		{"FileChangeStatus", "AllFileChangeStatuses", stringsOfSlice(schema.AllFileChangeStatuses), nil},
 		{"Harness", "AllHarnesses", stringsOfSlice(schema.Harnesses()), stringsOfSlice(schema.AllHarnesses)},
 		{"InteractionType", "AllInteractionTypes", stringsOf(schema.InteractionMentioned, schema.InteractionRead, schema.InteractionDiscussed, schema.InteractionQuestioned), nil},
 		{"License", "AllLicenses", stringsOfSlice(schema.AllLicenses), nil},
@@ -103,9 +105,11 @@ var enumWordBoundary = regexp.MustCompile(`[^A-Za-z0-9]+`)
 
 func enumMemberName(enumName, value string) string {
 	overrides := map[string]map[string]string{
-		"Harness":      {"gemini-cli": "GeminiCLI", "opencode": "OpenCode"},
-		"License":      {"CC0-1.0": "CC0", "CC-BY-4.0": "CCBY", "CC-BY-SA-4.0": "CCBYSA"},
-		"SourceFormat": {"jsonl": "JSONL", "json": "JSON"},
+		"DiffLineKind":     {"del": "Delete"},
+		"FileChangeStatus": {"M": "Modified", "A": "Added", "D": "Deleted", "R": "Renamed"},
+		"Harness":          {"gemini-cli": "GeminiCLI", "opencode": "OpenCode"},
+		"License":          {"CC0-1.0": "CC0", "CC-BY-4.0": "CCBY", "CC-BY-SA-4.0": "CCBYSA"},
+		"SourceFormat":     {"jsonl": "JSONL", "json": "JSON"},
 	}
 	if name := overrides[enumName][value]; name != "" {
 		return name

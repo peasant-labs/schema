@@ -2,8 +2,8 @@
 import type { components as TypesComponents } from "./internal/generated/types.js";
 
 export const VillageAPIVersion = "0.6.0" as const;
-export const PeasantLocalAPIVersion = "0.3.0" as const;
-export const TypesVersion = "0.2.0" as const;
+export const PeasantLocalAPIVersion = "0.4.0" as const;
+export const TypesVersion = "0.3.0" as const;
 
 export type ActivityEdge = TypesComponents["schemas"]["ActivityEdge"];
 export type AnnotationEntryTarget = TypesComponents["schemas"]["AnnotationEntryTarget"];
@@ -286,6 +286,17 @@ export function isDecayLevel(value: unknown): value is DecayLevel {
   return typeof value === "string" && (Object.values(DecayLevel) as readonly string[]).includes(value);
 }
 
+export const DiffLineKind = Object.freeze({
+  Context: "context",
+  Add: "add",
+  Delete: "del",
+} as const);
+export type DiffLineKind = (typeof DiffLineKind)[keyof typeof DiffLineKind];
+export const AllDiffLineKinds = Object.freeze([DiffLineKind.Context, DiffLineKind.Add, DiffLineKind.Delete] as const satisfies readonly DiffLineKind[]);
+export function isDiffLineKind(value: unknown): value is DiffLineKind {
+  return typeof value === "string" && (Object.values(DiffLineKind) as readonly string[]).includes(value);
+}
+
 export const EdgeViolationKind = Object.freeze({
   Cycle: "cycle",
   WrongWay: "wrong_way",
@@ -309,6 +320,18 @@ export type EntryType = (typeof EntryType)[keyof typeof EntryType];
 export const AllEntryTypes = Object.freeze([EntryType.Text, EntryType.ToolUse, EntryType.ToolResult, EntryType.Thinking, EntryType.System, EntryType.Error, EntryType.Result] as const satisfies readonly EntryType[]);
 export function isEntryType(value: unknown): value is EntryType {
   return typeof value === "string" && (Object.values(EntryType) as readonly string[]).includes(value);
+}
+
+export const FileChangeStatus = Object.freeze({
+  Modified: "M",
+  Added: "A",
+  Deleted: "D",
+  Renamed: "R",
+} as const);
+export type FileChangeStatus = (typeof FileChangeStatus)[keyof typeof FileChangeStatus];
+export const AllFileChangeStatuses = Object.freeze([FileChangeStatus.Modified, FileChangeStatus.Added, FileChangeStatus.Deleted, FileChangeStatus.Renamed] as const satisfies readonly FileChangeStatus[]);
+export function isFileChangeStatus(value: unknown): value is FileChangeStatus {
+  return typeof value === "string" && (Object.values(FileChangeStatus) as readonly string[]).includes(value);
 }
 
 export const Harness = Object.freeze({

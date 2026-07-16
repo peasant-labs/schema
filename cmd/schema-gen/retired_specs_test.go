@@ -43,7 +43,7 @@ type retiredSpec struct {
 // released-versions-immutability guard.
 //
 // This registry covers RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.3.0, village-api-0.6.0, types-0.2.0,
+// (peasantlocal-api-0.4.0, village-api-0.6.0, types-0.3.0,
 // publish-request-0.6.0) are deliberately EXCLUDED — they stay under the
 // codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
 // them from the Go source on every run. Pinning a current version's hash here would

@@ -32,11 +32,15 @@ const (
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
 	// timeline gained normalized session identities and authoritative many-to-many
-	// commit bindings. Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.3.0"
+	// commit bindings. Bumped to 0.4.0 when file-change statuses and diff-line
+	// kinds became named closed sets while retaining their existing JSON tokens.
+	// Prior versions stay byte-frozen.
+	PeasantLocalAPIVersion = "0.4.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
 	// cross-language contract surface instead of a small set of seed types.
-	TypesVersion = "0.2.0"
+	// Bumped to 0.3.0 when the map/review diff string fields became named closed
+	// sets with generated runtime inventories and predicates.
+	TypesVersion = "0.3.0"
 )

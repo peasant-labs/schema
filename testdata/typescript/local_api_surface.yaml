@@ -1,5 +1,5 @@
 exports:
-  - {namespace: value, name: PeasantLocalAPIVersion, target: "literal:0.3.0"}
+  - {namespace: value, name: PeasantLocalAPIVersion, target: "literal:0.4.0"}
   - {namespace: type, name: paths, target: "alias:GeneratedPaths"}
   - {namespace: type, name: operations, target: "alias:GeneratedOperations"}
 operations:
@@ -67,7 +67,7 @@ facade_mutations:
       provenance: {source: requirement, ref: exact local API facade exports}
       mutation: {description: removes the generated operation map export}
     - name: unexpected_local_version_is_rejected
-      input: {kind: add, namespace: value, name: UnexpectedLocalVersion, target: '"0.3.0"'}
+      input: {kind: add, namespace: value, name: UnexpectedLocalVersion, target: '"0.4.0"'}
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: exact local API facade exports}

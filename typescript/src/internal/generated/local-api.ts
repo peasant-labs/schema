@@ -411,7 +411,7 @@ export type components = {
             file: string;
             hunks: Schema.DiffHunk[] | null;
             oldPath?: (null | string) | null;
-            status: string;
+            status: Schema.FileChangeStatus;
             truncated: boolean;
         };
         SchemaChangeSession: {
@@ -489,9 +489,18 @@ export type components = {
             sessionTitle?: string;
         };
         SchemaDiffLine: {
-            kind: string;
+            kind: Schema.DiffLineKind;
             text: string;
         };
+        /**
+         * Diff Line Kind
+         * @description Unified-diff line kind: context, addition, or deletion
+         * @example context
+         * @example add
+         * @example del
+         * @enum {string}
+         */
+        SchemaDiffLineKind: "context" | "add" | "del";
         SchemaEdgeViolation: {
             from: string;
             kind: string;
@@ -511,8 +520,18 @@ export type components = {
             linesRemoved: number;
             oldPath?: (null | string) | null;
             path: string;
-            status: string;
+            status: Schema.FileChangeStatus;
         };
+        /**
+         * File Change Status
+         * @description Git file delta status: modified, added, deleted, or renamed
+         * @example M
+         * @example A
+         * @example D
+         * @example R
+         * @enum {string}
+         */
+        SchemaFileChangeStatus: "M" | "A" | "D" | "R";
         SchemaFrictionCluster: {
             count: number;
             file: string;

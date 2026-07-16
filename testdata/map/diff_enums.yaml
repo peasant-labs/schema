@@ -1,0 +1,55 @@
+cases:
+  - name: modified file status is valid
+    input: {enum: file-change-status, value: M}
+    expected: {valid: true, json: '"M"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllFileChangeStatuses}
+    mutation: {description: removing M would reject the canonical modified-file token}
+  - name: added file status is valid
+    input: {enum: file-change-status, value: A}
+    expected: {valid: true, json: '"A"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllFileChangeStatuses}
+    mutation: {description: removing A would reject the canonical added-file token}
+  - name: deleted file status is valid
+    input: {enum: file-change-status, value: D}
+    expected: {valid: true, json: '"D"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllFileChangeStatuses}
+    mutation: {description: removing D would reject the canonical deleted-file token}
+  - name: renamed file status is valid
+    input: {enum: file-change-status, value: R}
+    expected: {valid: true, json: '"R"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllFileChangeStatuses}
+    mutation: {description: removing R would reject the canonical renamed-file token}
+  - name: unknown file status is rejected
+    input: {enum: file-change-status, value: X}
+    expected: {valid: false, json: '"X"', error_contains: file change status validation failed}
+    classification: must-fail
+    provenance: {source: boundary, ref: schema.FileChangeStatus.Validate}
+    mutation: {description: replacing a canonical Git status with X must fail closed}
+  - name: context diff line is valid
+    input: {enum: diff-line-kind, value: context}
+    expected: {valid: true, json: '"context"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllDiffLineKinds}
+    mutation: {description: removing context would reject unchanged unified-diff lines}
+  - name: added diff line is valid
+    input: {enum: diff-line-kind, value: add}
+    expected: {valid: true, json: '"add"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllDiffLineKinds}
+    mutation: {description: removing add would reject added unified-diff lines}
+  - name: deleted diff line is valid
+    input: {enum: diff-line-kind, value: del}
+    expected: {valid: true, json: '"del"', error_contains: ""}
+    classification: must-pass
+    provenance: {source: enum, ref: schema.AllDiffLineKinds}
+    mutation: {description: removing del would reject deleted unified-diff lines}
+  - name: unknown diff line kind is rejected
+    input: {enum: diff-line-kind, value: move}
+    expected: {valid: false, json: '"move"', error_contains: diff line kind validation failed}
+    classification: must-fail
+    provenance: {source: boundary, ref: schema.DiffLineKind.Validate}
+    mutation: {description: replacing a canonical diff line kind with move must fail closed}

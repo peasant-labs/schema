@@ -182,7 +182,7 @@ export type components = {
             file: string;
             hunks: components["schemas"]["DiffHunk"][] | null;
             oldPath?: (null | string) | null;
-            status: string;
+            status: components["schemas"]["FileChangeStatus"];
             truncated: boolean;
         };
         ChangeSession: {
@@ -301,9 +301,18 @@ export type components = {
             sessionTitle?: string;
         };
         DiffLine: {
-            kind: string;
+            kind: components["schemas"]["DiffLineKind"];
             text: string;
         };
+        /**
+         * Diff Line Kind
+         * @description Unified-diff line kind: context, addition, or deletion
+         * @example context
+         * @example add
+         * @example del
+         * @enum {string}
+         */
+        DiffLineKind: "context" | "add" | "del";
         EdgeViolation: {
             from: string;
             kind: string;
@@ -344,8 +353,18 @@ export type components = {
             linesRemoved: number;
             oldPath?: (null | string) | null;
             path: string;
-            status: string;
+            status: components["schemas"]["FileChangeStatus"];
         };
+        /**
+         * File Change Status
+         * @description Git file delta status: modified, added, deleted, or renamed
+         * @example M
+         * @example A
+         * @example D
+         * @example R
+         * @enum {string}
+         */
+        FileChangeStatus: "M" | "A" | "D" | "R";
         FileFamiliarity: {
             daysSince: (null | number) | null;
             decayLevel: string;

@@ -8,7 +8,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 ### Added
 
 - An unpublished `@peasant-labs/schema` TypeScript package whose root is generated
-  from the comprehensive Types 0.2 Go catalog. It mirrors the Go module with
+  from the comprehensive Types 0.3 Go catalog. It mirrors the Go module with
   named wire types, runtime closed sets, frozen registries and guards, plus
   `/local-api`, `/village-api`, `/types`, `/testcase`, `/fixtures`,
   `/fixtures/quality`, and `/fixtures/timeline` subpaths. The package remains at
@@ -24,6 +24,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Peasant Local API `0.4.0` and Types `0.3.0` promote file-change statuses and
+  unified-diff line kinds from unconstrained strings to the named closed sets
+  `FileChangeStatus` (`M`, `A`, `D`, `R`) and `DiffLineKind` (`context`, `add`,
+  `del`). The JSON tokens are unchanged. Go exposes canonical inventories,
+  predicates, and actionable validators; generated TypeScript exposes matching
+  runtime objects, inventories, types, and predicates. Strict fixture and
+  independent identity-manifest mutations guard both sets.
 - Village API `0.6.0` gives the stricter publish HTTP body its own
   `OpenapiTranscriptPublishRequest` component identity and uses exact canonical
   Types schemas for every same-name shared operation component. Released `0.5.0`

@@ -1,8 +1,12 @@
 import {
   MetadataSchemaVersion,
   newProjectHash,
+  DiffLineKind,
+  FileChangeStatus,
   Role,
   TypesVersion,
+  isDiffLineKind,
+  isFileChangeStatus,
   isRole,
   type SchemaVersionResponse,
   type PushContractVersion,
@@ -38,4 +42,4 @@ const fixtures = loadQualityFixtures();
 const timelineFixtures: TimelineFixtureCorpus = loadTimelineFixtures();
 const firstTimelineFixture: TimelineFixtureCase | undefined = timelineFixtures.cases[0];
 
-void [MetadataSchemaVersion, TypesVersion, isRole(role), projectHash, detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures, firstTimelineFixture];
+void [MetadataSchemaVersion, TypesVersion, isRole(role), isFileChangeStatus(FileChangeStatus.Modified), isDiffLineKind(DiffLineKind.Add), projectHash, detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures, firstTimelineFixture];

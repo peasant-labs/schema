@@ -97,6 +97,13 @@ enums:
       - {name: Stale, value: "stale"}
       - {name: Unexplored, value: "unexplored"}
     all_values: ["fresh", "fading", "stale", "unexplored"]
+  - name: DiffLineKind
+    all_name: AllDiffLineKinds
+    members:
+      - {name: Context, value: "context"}
+      - {name: Add, value: "add"}
+      - {name: Delete, value: "del"}
+    all_values: ["context", "add", "del"]
   - name: EdgeViolationKind
     all_name: AllEdgeViolationKinds
     members:
@@ -114,6 +121,14 @@ enums:
       - {name: Error, value: "error"}
       - {name: Result, value: "result"}
     all_values: ["text", "tool_use", "tool_result", "thinking", "system", "error", "result"]
+  - name: FileChangeStatus
+    all_name: AllFileChangeStatuses
+    members:
+      - {name: Modified, value: "M"}
+      - {name: Added, value: "A"}
+      - {name: Deleted, value: "D"}
+      - {name: Renamed, value: "R"}
+    all_values: ["M", "A", "D", "R"]
   - name: Harness
     all_name: AllHarnesses
     members:

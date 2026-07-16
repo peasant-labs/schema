@@ -1,6 +1,10 @@
 package schema
 
-import "fmt"
+import (
+	"fmt"
+
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
 
 // Map / Review wire contract (impl contract §2).
 //
@@ -487,16 +491,69 @@ func NewMapSlice() MapSlice {
 	}
 }
 
+// FileChangeStatus classifies a file-level delta using Git's canonical
+// one-letter status tokens.
+type FileChangeStatus string
+
+const (
+	FileChangeStatusModified FileChangeStatus = "M"
+	FileChangeStatusAdded    FileChangeStatus = "A"
+	FileChangeStatusDeleted  FileChangeStatus = "D"
+	FileChangeStatusRenamed  FileChangeStatus = "R"
+)
+
+// AllFileChangeStatuses is the canonical inventory of file change statuses.
+var AllFileChangeStatuses = []FileChangeStatus{
+	FileChangeStatusModified,
+	FileChangeStatusAdded,
+	FileChangeStatusDeleted,
+	FileChangeStatusRenamed,
+}
+
+// String returns the wire representation of the file change status.
+func (s FileChangeStatus) String() string { return string(s) }
+
+// IsValid reports whether s is a canonical file change status.
+func (s FileChangeStatus) IsValid() bool {
+	switch s {
+	case FileChangeStatusModified, FileChangeStatusAdded, FileChangeStatusDeleted, FileChangeStatusRenamed:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross a file-change wire boundary.
+func (s FileChangeStatus) Validate() error {
+	if s.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"file change status validation failed for %q at schema.FileChangeStatus.Validate during wire-boundary validation: the value is not one of M, A, D, or R; callers cannot classify the file delta; use a member of schema.AllFileChangeStatuses",
+		s,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (FileChangeStatus) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("File Change Status")
+	s.WithDescription("Git file delta status: modified, added, deleted, or renamed")
+	s.WithEnum("M", "A", "D", "R")
+	s.WithExamples("M", "A", "D", "R")
+	return s, nil
+}
+
 // FileChange is one file-level delta of a change (branch vs merge-base).
 // LinesAdded/LinesRemoved are the per-file numstat churn (0 for binary files or
 // when numstat is unavailable) — the change-weight treemap's sizing input
 // Always present; 0 is meaningful, so no omitempty.
 type FileChange struct {
-	Path         string  `json:"path"`
-	Status       string  `json:"status"` // "M" | "A" | "D" | "R"
-	OldPath      *string `json:"oldPath,omitempty"`
-	LinesAdded   int     `json:"linesAdded"`
-	LinesRemoved int     `json:"linesRemoved"`
+	Path         string           `json:"path"`
+	Status       FileChangeStatus `json:"status"`
+	OldPath      *string          `json:"oldPath,omitempty"`
+	LinesAdded   int              `json:"linesAdded"`
+	LinesRemoved int              `json:"linesRemoved"`
 }
 
 // ChangeDiffPayload is the rendered unified diff of ONE changed file of a change
@@ -505,13 +562,13 @@ type FileChange struct {
 // ?branch=&file=). Binary files come back Binary=true with no hunks; files
 // exceeding the size cap come back Truncated.
 type ChangeDiffPayload struct {
-	Branch    string     `json:"branch"`
-	File      string     `json:"file"` // the new path
-	OldPath   *string    `json:"oldPath,omitempty"`
-	Status    string     `json:"status"` // "M" | "A" | "D" | "R"
-	Binary    bool       `json:"binary"`
-	Truncated bool       `json:"truncated"`
-	Hunks     []DiffHunk `json:"hunks"`
+	Branch    string           `json:"branch"`
+	File      string           `json:"file"` // the new path
+	OldPath   *string          `json:"oldPath,omitempty"`
+	Status    FileChangeStatus `json:"status"`
+	Binary    bool             `json:"binary"`
+	Truncated bool             `json:"truncated"`
+	Hunks     []DiffHunk       `json:"hunks"`
 }
 
 // NewChangeDiffPayload returns a ChangeDiffPayload with Hunks initialized to
@@ -537,11 +594,61 @@ type DiffHunk struct {
 	SessionTitle string `json:"sessionTitle,omitempty"`
 }
 
+// DiffLineKind classifies a unified-diff line.
+type DiffLineKind string
+
+const (
+	DiffLineKindContext DiffLineKind = "context"
+	DiffLineKindAdd     DiffLineKind = "add"
+	DiffLineKindDelete  DiffLineKind = "del"
+)
+
+// AllDiffLineKinds is the canonical inventory of unified-diff line kinds.
+var AllDiffLineKinds = []DiffLineKind{
+	DiffLineKindContext,
+	DiffLineKindAdd,
+	DiffLineKindDelete,
+}
+
+// String returns the wire representation of the diff line kind.
+func (k DiffLineKind) String() string { return string(k) }
+
+// IsValid reports whether k is a canonical diff line kind.
+func (k DiffLineKind) IsValid() bool {
+	switch k {
+	case DiffLineKindContext, DiffLineKindAdd, DiffLineKindDelete:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross a diff-line wire boundary.
+func (k DiffLineKind) Validate() error {
+	if k.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"diff line kind validation failed for %q at schema.DiffLineKind.Validate during wire-boundary validation: the value is not one of context, add, or del; callers cannot render the line with correct diff semantics; use a member of schema.AllDiffLineKinds",
+		k,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (DiffLineKind) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("Diff Line Kind")
+	s.WithDescription("Unified-diff line kind: context, addition, or deletion")
+	s.WithEnum("context", "add", "del")
+	s.WithExamples("context", "add", "del")
+	return s, nil
+}
+
 // DiffLine is one line within a hunk. Kind is "context" | "add" | "del";
 // Text excludes the leading +/-/space marker.
 type DiffLine struct {
-	Kind string `json:"kind"`
-	Text string `json:"text"`
+	Kind DiffLineKind `json:"kind"`
+	Text string       `json:"text"`
 }
 
 // ChangeBinding states how strongly a session is tied to a change

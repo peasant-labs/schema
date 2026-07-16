@@ -273,6 +273,10 @@ types:
     disposition: catalog
     component: DiffLine
     reason: public wire or domain contract type
+  - go_name: DiffLineKind
+    disposition: catalog
+    component: DiffLineKind
+    reason: public wire or domain contract type
   - go_name: EdgeViolation
     disposition: catalog
     component: EdgeViolation
@@ -284,6 +288,10 @@ types:
   - go_name: FileChange
     disposition: catalog
     component: FileChange
+    reason: public wire or domain contract type
+  - go_name: FileChangeStatus
+    disposition: catalog
+    component: FileChangeStatus
     reason: public wire or domain contract type
   - go_name: FrictionCluster
     disposition: catalog
