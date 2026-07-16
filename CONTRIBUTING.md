@@ -110,8 +110,9 @@ nix build                  # hermetic build + go test ./... sanity gate
 The pnpm install is development tooling only and is pinned by
 `typescript/pnpm-lock.yaml`. It does not change `go.mod` or the Go module's
 leaf dependency set. `make schema` first regenerates the canonical OpenAPI
-documents from Go, then uses the pinned Hey API Zod plugin to derive the
-contract-only TypeScript package and its YAML-backed fixture data. Never
+documents from Go, then uses the pinned Hey API Zod plugin to derive the root
+contract and runtime schemas, `openapi-typescript` to derive type-only Local and
+Village operation contracts, and canonical YAML for fixture data. Never
 hand-edit a generated TypeScript file.
 
 Before reporting a TypeScript contract change ready, run:

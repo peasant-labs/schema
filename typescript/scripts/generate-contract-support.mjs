@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import openapiTS, { astToString } from "openapi-typescript";
+import ts from "typescript";
 import { parse } from "yaml";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -29,6 +31,8 @@ await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatal
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
+await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
+await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
 
 function renderVersions(values) {
   return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
@@ -116,6 +120,73 @@ function renderTimelineFixtures(source) {
     }
   }
   return `${header()}import type { TimelineFixtureCorpus } from "../../fixtures/timeline.js";\n\nexport const canonicalTimelineFixtures: TimelineFixtureCorpus = ${JSON.stringify(fixtures, null, 2)};\n`;
+}
+
+async function generateOperationContracts(surface, filename, outputName) {
+  const apiPath = join(moduleRoot, "generated", filename);
+  const apiSpec = JSON.parse(await readFile(apiPath, "utf8"));
+  const aliases = canonicalOperationAliases(surface, apiSpec, spec);
+  const projectHashPattern = "^[0-9a-f]{64}$";
+  const ast = await openapiTS(apiSpec, {
+    inject: 'import type * as Schema from "../../index.js";',
+    silent: true,
+    transform(schemaObject, metadata) {
+      if (schemaObject.pattern === projectHashPattern) return schemaTypeReference("ProjectHash");
+      const prefix = "#/components/schemas/";
+      if (!metadata.path.startsWith(prefix) || metadata.path.slice(prefix.length).includes("/")) return;
+      const rootName = aliases.get(metadata.path.slice(prefix.length));
+      return rootName === undefined ? undefined : schemaTypeReference(rootName);
+    },
+  });
+  await writeFile(join(generatedRoot, outputName), astToString(ast));
+}
+
+function canonicalOperationAliases(surface, apiSpec, rootSpec) {
+  const apiSchemas = apiSpec?.components?.schemas;
+  const rootSchemas = rootSpec?.components?.schemas;
+  if (typeof apiSchemas !== "object" || apiSchemas === null || typeof rootSchemas !== "object" || rootSchemas === null) {
+    throw new Error(`TypeScript ${surface} operation generation could not compare components.schemas with the canonical Types catalog; operation payload identities cannot be trusted; regenerate both OpenAPI documents from Go.`);
+  }
+  const rootCanonical = new Map(Object.entries(rootSchemas).map(([name, schema]) => [name, stableSchema("types", schema)]));
+  const aliases = new Map();
+  for (const [rawName, schema] of Object.entries(apiSchemas)) {
+    const rootName = canonicalTypeScriptName(surface, rawName);
+    const rootSchema = rootCanonical.get(rootName);
+    if (rootSchema === undefined) continue;
+    const apiSchema = stableSchema(surface, schema);
+    if (apiSchema !== rootSchema) {
+      throw new Error(`TypeScript ${surface} operation generation found API component ${rawName} normalizing to canonical root type ${rootName} with an unequal schema; aliasing it would misrepresent the HTTP contract; rename the operation-specific component or make it exactly equal to the canonical Go/OpenAPI definition.`);
+    }
+    aliases.set(rawName, rootName);
+  }
+  return aliases;
+}
+
+function canonicalTypeScriptName(surface, name) {
+  const unprefixed = surface === "types" ? name : name.replace(/^Schema/, "");
+  return unprefixed === "BestiaryHarness" || unprefixed === "Provider" ? "Harness" : unprefixed;
+}
+
+function stableSchema(surface, schema) {
+  return JSON.stringify(normalizeSchemaRefs(surface, structuredClone(schema)));
+}
+
+function normalizeSchemaRefs(surface, value) {
+  if (Array.isArray(value)) return value.map((item) => normalizeSchemaRefs(surface, item));
+  if (typeof value !== "object" || value === null) return value;
+  return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => {
+    if (key === "$ref" && typeof item === "string") {
+      const prefix = "#/components/schemas/";
+      return [key, item.startsWith(prefix) ? prefix + canonicalTypeScriptName(surface, item.slice(prefix.length)) : item];
+    }
+    return [key, normalizeSchemaRefs(surface, item)];
+  }));
+}
+
+function schemaTypeReference(name) {
+  return ts.factory.createTypeReferenceNode(
+    ts.factory.createQualifiedName(ts.factory.createIdentifier("Schema"), ts.factory.createIdentifier(name)),
+  );
 }
 
 function mapKeys(value, mapping) {

@@ -18,8 +18,10 @@ It is a **contract-only leaf**: types, closed enums, generated OpenAPI specs, th
 publish-request JSON Schema validator, typed fixtures, and the codegen plus
 release-guard tooling. Its unpublished `typescript/` package generates the same
 contract definitions and runtime schemas for TypeScript consumers;
-`@peasant-labs/types` is deprecated. Neither language package provides an HTTP
-or WebSocket client SDK. It has
+`@peasant-labs/types` is deprecated. The TypeScript package retains type-only
+`paths` and `operations` contracts at `/local-api` and `/village-api`, while
+shared payloads resolve to the canonical package root. Neither language package
+provides an HTTP or WebSocket transport client SDK. It has
 **no runtime server**: no HTTP handler and no
 WebSocket hub (the WebSocket types live here, but the hub stays in peasant). So
 the test suite is about keeping the contract honest, not about request/response
@@ -112,8 +114,9 @@ should update one YAML corpus, not several inline tables.
 ## Codegen and freshness
 
 `go run ./cmd/schema-gen` produces the OpenAPI specs and Redoc pages. `pnpm --dir
-typescript run generate` uses the pinned Hey API Zod plugin to derive TypeScript
-contract definitions and fixture data from those specs and canonical YAML.
+typescript run generate` uses the pinned Hey API Zod plugin for root contract
+definitions and runtime schemas, `openapi-typescript` for the type-only Local and
+Village operation contracts, and canonical YAML for fixture data.
 `make schema` runs both stages. Never hand-edit a generated file. The committed output
 must be byte-identical to a fresh generation: the freshness gate (`make freshness`
 and `TestCodegenFreshness_SpecsMatchSource`) fails on drift, and the fix it names

@@ -4,6 +4,14 @@ The **canonical data / wire contract** for [peasant](https://github.com/peasant-
 and the village transcript commons: one contract-only Go **leaf module** that every
 backend produces and every client consumes.
 
+Use this module whenever code produces, validates, or consumes a peasant-labs
+wire payload. Go services import the canonical structs and validators directly;
+TypeScript applications import the matching generated types and Zod schemas.
+API-aware TypeScript tooling can additionally import type-only `paths` and
+`operations` contracts from `@peasant-labs/schema/local-api` or
+`@peasant-labs/schema/village-api`. Those subpaths describe request and response
+shapes; they do not perform network requests.
+
 ```
 module github.com/peasant-labs/schema
 ```
@@ -11,9 +19,9 @@ module github.com/peasant-labs/schema
 It holds the domain + wire types, the closed-set enums, the publish/pull/push
 envelopes, the versioned OpenAPI specs, the publish-request validator, the typed
 fixtures, the generated TypeScript bindings, and the codegen + release-guard
-tooling. It has **no runtime**: no HTTP
-server, no WebSocket hub, no CLI product. Everything here is types, constants,
-generated specs, and the gates that keep them honest.
+tooling. It has **no service runtime**: no HTTP server, WebSocket hub, transport
+client, or CLI product. Everything here is contract data, validators, generated
+specs, fixtures, and the gates that keep them honest.
 
 ---
 
@@ -79,7 +87,7 @@ flowchart LR
 |---|---|---|
 | **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc5`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
 | **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
-| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, and schema-owned fixtures from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
+| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
 > Both consumers now pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
@@ -327,15 +335,19 @@ The `typescript/` directory is the source of the future
 - the package root is the canonical Types 0.3 projection of the complete public
   Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
   and guards;
-- no HTTP or WebSocket client SDK and no per-API operation-map namespace is
-  generated;
+- `/local-api` and `/village-api` retain type-only OpenAPI `paths` and
+  `operations` namespaces for consumers that need endpoint request/response
+  contracts; shared payloads resolve to the canonical root identities;
+- `/types` remains a deprecated compatibility re-export of the canonical root;
+- no HTTP or WebSocket transport client SDK is generated;
 - `/testcase` owns generic validation behavior and a strict YAML decoder;
 - `/fixtures/quality` and `/fixtures/timeline` provide typed access to generated
   data from the same canonical YAML corpora consumed by Go.
 
-The Go source and its Types OpenAPI catalog remain authoritative. Hey API's Zod
-plugin derives TypeScript definitions and runtime schemas without enabling its
-SDK/client plugins. Canonical Types names preserve their Go identity.
+The Go source and generated OpenAPI catalogs remain authoritative. Hey API's Zod
+plugin derives root TypeScript definitions and runtime schemas without enabling
+its SDK/client plugins. `openapi-typescript` derives the type-only Local/Village
+operation contracts. Canonical shared payload names preserve their root identity.
 
 The package version is `0.0.0-development` until a separate release change
 enables publication. Its eventual version follows the schema module release tag,

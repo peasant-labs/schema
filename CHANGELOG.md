@@ -45,10 +45,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `@peasant-labs/types` is documented as deprecated. New TypeScript consumers
   use the schema-owned generated package instead of extending the handwritten
   port.
-- The package root is the sole TypeScript contract namespace. Hey API's Zod
-  plugin generates definitions and runtime validators from the canonical Types
-  OpenAPI document. No HTTP or WebSocket client SDK, endpoint operation map, or
-  duplicate API namespace is generated.
+- The package root is the canonical shared TypeScript contract namespace. Hey
+  API's Zod plugin generates definitions and runtime validators from the Types
+  OpenAPI document. The existing `/local-api` and `/village-api` subpaths retain
+  type-only `paths` and `operations` namespaces, generated with
+  `openapi-typescript`; shared operation payloads resolve to root identities.
+  The deprecated `/types` root re-export is retained. No HTTP or WebSocket
+  transport client SDK is generated.
 - TypeScript `ProjectHash` now mirrors the Go validated newtype with one
   generated nominal identity plus `newProjectHash`, `isProjectHash`, and
   `validateProjectHash`. Root payloads and Local/Village operations carry the

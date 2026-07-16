@@ -13,7 +13,7 @@ schema: typescript-deps
 	pnpm --dir typescript run generate
 
 typescript-deps:
-	@if [ ! -x typescript/node_modules/.bin/openapi-ts ]; then \
+	@if [ ! -x typescript/node_modules/.bin/openapi-ts ] || [ ! -x typescript/node_modules/.bin/openapi-typescript ]; then \
 		echo "TypeScript dependencies are missing; run 'pnpm --dir typescript install --frozen-lockfile --ignore-scripts' from the module root."; \
 		exit 1; \
 	fi

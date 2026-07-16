@@ -79,7 +79,7 @@ script) behind it.
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
-| TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod output and YAML-derived fixture data are byte-stable after regeneration. |
+| TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
 | Published package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
@@ -103,11 +103,12 @@ uses `git add -N` so it also catches a future generator write-path that emits a
 tracked artifact outside the shared artifact map, which the Go test (iterating that
 map) could not see.
 
-`make freshness` then regenerates the TypeScript contract with the exact Hey API
-and Zod versions pinned in `typescript/pnpm-lock.yaml`. The generator consumes
-only the canonical Types OpenAPI catalog and does not enable an SDK/client
-plugin. It diffs the Zod definitions, Go-shaped enum facade, version constants,
-and YAML-derived quality and timeline fixture data.
+`make freshness` then regenerates the TypeScript contract with exact tool
+versions pinned in `typescript/pnpm-lock.yaml`. Hey API's Zod plugin consumes the
+canonical Types OpenAPI catalog without enabling an SDK/client plugin;
+`openapi-typescript` emits type-only `paths` and `operations` contracts from the
+Local and Village catalogs. The gate diffs those outputs, the Go-shaped enum
+facade, version constants, and YAML-derived quality and timeline fixture data.
 
 ### Cross-language testcase and fixture gates
 
