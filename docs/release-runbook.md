@@ -30,10 +30,13 @@ release-pr.yml (merge trigger)
    │  → push annotated tag vX.Y.Z[-rcN] via the releaser App token
    ▼ (tag push triggers)
 release.yml
-   guard → nix-vendor-hash (freshness) → contract-gates → publish
-   ▼
-GitHub Release (prerelease for -rcN) with the generated/ OpenAPI specs as ASSETS
+   guard → nix-vendor-hash (freshness) → contract-gates ─┬─→ release      → GitHub Release (prerelease for -rcN)
+                                                          │                  with the generated/ OpenAPI specs as ASSETS
+                                                          └─→ npm-publish  → @peasant-labs/schema on npm
+                                                                             (dist-tag next/latest, via OIDC trusted publishing)
 ```
+
+`release` and `npm-publish` are independent siblings behind the same three gates: neither publish can block the other.
 
 ### What is SUBTRACTED vs peasant
 
@@ -61,11 +64,13 @@ it fires; those run in `make check`.
 |----------|---------|------|
 | `tests.yml` | PR / push / `workflow_call` | `make check` + the `contract-gates` job (oasdiff/go-apidiff/vacuum vs base). |
 | `release-pr.yml` | release PR open / merge | Validate title + maintainer; on merge: nix-vendor-hash + mint the annotated tag (App token). |
-| `release.yml` | tag push `v*` | guard → nix-vendor-hash → contract-gates → publish the GitHub Release. |
+| `release.yml` | tag push `v*` | guard → nix-vendor-hash → contract-gates → publish the GitHub Release **and**, independently, publish the `@peasant-labs/schema` npm package. |
 | `nix-vendor-hash.yml` | push to develop (dep files) | Recompute + commit the flake `vendorHash` after a dependency bump. |
 
-The `release.yml` job graph (publish behind guard + nix-vendor-hash +
-contract-gates) is asserted by `release-guard check-workflow`, run in `make check`.
+The `release.yml` job graph (the `release` GitHub-Release job and the
+`npm-publish` job each sit behind guard + nix-vendor-hash + contract-gates, as
+independent siblings) is asserted by `release-guard check-workflow`, run in
+`make check`.
 
 ---
 
@@ -84,7 +89,47 @@ the same App peasant uses, additionally installed on the schema repo. The live
 `v0.1.0-rc1` run is the first time this is exercised end-to-end.
 
 No other secrets are needed (no registry tokens, no AUR key, no Homebrew tap — all
-subtracted).
+subtracted). npm publication deliberately holds **no secret at all**: it
+authenticates via npm **Trusted Publishing** (OpenID Connect), so there is no
+token to provision, rotate, or leak.
+
+### npm publication setup (one-time, no secret)
+
+`release.yml`'s `npm-publish` job authenticates to the npm registry via **npm
+Trusted Publishing (OIDC)**, not a stored token: the job requests
+`permissions: { id-token: write }`, GitHub mints it a short-lived OIDC token
+scoped to the `npm-publish` GitHub Actions environment, and `pnpm publish`
+(native OIDC trusted-publish support since pnpm's v11 publish
+reimplementation; the flake pins pnpm 11.5.3) exchanges that token with
+npmjs.com for a one-time publish credential - no `NPM_TOKEN` secret exists or
+is needed. Provenance attestation is automatic on a trusted-publishing publish.
+
+Two one-time, maintainer-side registrations make this work (both are already
+unblocked: the package exists - `@peasant-labs/schema@0.1.0-rc6` was published
+manually on 2026-07-17):
+
+1. **GitHub Actions environment (create this FIRST).** Create an environment
+   named `npm-publish` on `peasant-labs/schema` (Settings → Environments → New
+   environment), with **no protection rules for now**. The `npm-publish` job is
+   bound to it (`environment: npm-publish` in `release.yml`, asserted by
+   `release-guard check-workflow`). Optional protection rules (a required
+   reviewer, a tag-pattern restriction) are additional defense-in-depth that can
+   be added later without any workflow change - deferred to the public-flip
+   checklist (§6).
+2. **npm Trusted Publisher** (register AFTER step 1 - the environment must
+   already exist for npm to bind to it). On npmjs.com, `@peasant-labs/schema` →
+   Settings → Trusted Publisher → GitHub Actions, and register: organization or
+   user `peasant-labs`, repository `schema`, workflow filename `release.yml`,
+   environment name `npm-publish` (matching step 1 exactly - an npm Trusted
+   Publisher registration is exact-match on all four fields, and a run whose
+   job does not carry that exact `environment:` cannot mint a valid publish
+   token). Scope the allowed action to **`npm publish` only** - not `npm stage
+   publish` - since this ceremony publishes directly and least-privilege scoping
+   costs nothing here.
+
+Until both registrations exist, `npm-publish` fails at the `pnpm publish` step
+with the registry's own rejection (see Troubleshooting below); that failure
+does **not** block the GitHub Release published by the sibling `release` job.
 
 ### Maintainer gating
 
@@ -127,11 +172,60 @@ public flip.
    - pushes the annotated tag `v0.1.0-rc1` on the hash-current commit (App token).
 4. The tag push triggers `release.yml`: guard → nix-vendor-hash freshness →
    contract-gates → **publish a prerelease GitHub Release** with the `generated/`
-   OpenAPI specs attached as assets.
+   OpenAPI specs attached as assets. Independently and behind the same three
+   gates, the `npm-publish` job stamps `typescript/package.json`'s version from
+   the tag (stripping the leading `v`; the committed manifest stays
+   `0.0.0-development` + `private: true`) and publishes `@peasant-labs/schema` to
+   npm - `next` for an `-rcN` tag, `latest` for a final `vX.Y.Z` (dist-tag chosen
+   from the guard job's tag classification, not re-derived).
 
 `rcN` tags publish **prereleases**. A final `vX.Y.Z` additionally requires a
 same-version `-rcN` that is green **and** an ancestor of the final commit
 (`release-guard check-final`).
+
+### npm publication
+
+Every tag from the one that lands this automation onward publishes
+`@peasant-labs/schema` to npm automatically, alongside (never gating) the GitHub
+Release: `v0.1.0-rc6` (the package's first tagged appearance) was published
+**manually** under dist-tag `next` before this automation existed, from the same
+staged-tag checkout this job now automates; the `npm-publish` job takes over
+from the next tag. Authentication is npm Trusted Publishing (OIDC) - see §2 for
+the one-time GitHub environment + npm Trusted Publisher registrations. Until
+both exist, `npm-publish` fails at the registry (see Troubleshooting below) -
+this does not block the GitHub Release, which the sibling `release` job still
+publishes. Note the npm registry's read replicas can lag the primary by several
+minutes after a publish; a `npm view`/website check run immediately after a
+publish can read as "not there yet" even on a successful publish, so this repo's
+tooling does not assert post-publish registry state.
+
+**Troubleshooting `npm-publish`:**
+
+- **`pnpm publish` fails to authenticate / npm rejects the OIDC exchange
+  ("no trusted publisher configured" or similar)** - the npm Trusted Publisher
+  is not registered, or its four fields (org/user, repo, workflow filename,
+  environment) don't exactly match this job. Register or correct it on
+  npmjs.com (§2, step 2): organization `peasant-labs`, repository `schema`,
+  workflow filename `release.yml`, environment `npm-publish`. Then re-run the
+  failed job from the Actions run page; no new tag is needed.
+- **The job errors before publish with a permissions/OIDC-token complaint** -
+  the `npm-publish` job's `permissions: id-token: write` was removed or
+  narrowed, or the `environment: npm-publish` binding was removed (both are
+  asserted by `release-guard check-workflow` in `make check`, so this should
+  fail on the PR before it ever reaches a tag; if it doesn't, the policy file
+  drifted from the workflow - see `.github/release-guard.policy.yml`). Restore
+  both and cut a new release PR.
+- **`E409` / "cannot publish over the previously published version"** - the tag's
+  stripped version (`${GITHUB_REF_NAME#v}`) already exists on the npm registry.
+  This means the tag was already published (check `npm view @peasant-labs/schema
+  versions`, allowing for registry replica lag - see above) or was re-cut after
+  a prior partial publish; npm tags are append-only just like git release tags,
+  so cut a new version rather than retrying the same one.
+- **The gate steps (typecheck/test/package:audit/package:smoke) fail** - treat
+  identically to a `tests.yml` failure: the same gates already ran on the release
+  PR, so a failure here on the tagged commit means something drifted between PR
+  merge and tag (for example an out-of-band edit to `develop`); fix on `develop`
+  and cut a new release rather than forcing this job to pass.
 
 ---
 
@@ -188,10 +282,19 @@ deb/rpm/AUR/Homebrew/nixpkgs — see "What is SUBTRACTED vs peasant" in §1).
       and **re-enable the `check-approval` step** in `release-pr.yml`'s tag job
       (commented out pre-flip; the `release-guard check-approval` guard code is live
       and tested — byte-identical to peasant's). This closes the §2 deferral.
+- [ ] **(Optional) Attach protection rules to the `npm-publish` GitHub
+      environment** (§2) - a required reviewer and/or a tag-pattern restriction.
+      This adds a human approval gate on every npm publish with **no workflow
+      change**: the `npm-publish` job already targets `environment: npm-publish`,
+      so GitHub enforces whatever rules the environment carries. Pairs with the
+      `check-approval` re-enable above as the same class of defense-in-depth,
+      deferred pre-flip for the same reason (single active maintainer).
 - [ ] **Live verification (post-flip):**
       - A `release(vX.Y.Z-rcN): …` PR merges and `release-pr.yml` mints the annotated
         tag via the App token; `release.yml` runs guard → nix-vendor-hash freshness →
         contract-gates and publishes a prerelease GitHub Release with the `generated/`
-        OpenAPI specs attached.
+        OpenAPI specs attached, and (independently) the `npm-publish` job publishes
+        `@peasant-labs/schema@X.Y.Z-rcN` to npm under dist-tag `next` via OIDC trusted
+        publishing.
       - `go get github.com/peasant-labs/schema@vX.Y.Z-rcN` resolves against the public
         module for a downstream consumer (peasant / village pin).

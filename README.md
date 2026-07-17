@@ -87,7 +87,7 @@ flowchart LR
 |---|---|---|
 | **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc5`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
 | **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
-| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
+| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | `npm install @peasant-labs/schema` (published to npm from `typescript/`, version tracking the module release tag) for generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
 > Both consumers currently pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
@@ -350,11 +350,19 @@ plugin derives root TypeScript definitions and runtime schemas without enabling
 its SDK/client plugins. `openapi-typescript` derives the type-only Local/Village
 operation contracts. Canonical shared payload names preserve their root identity.
 
-The package version is `0.0.0-development` until a separate release change
-enables publication. Its eventual version follows the schema module release tag,
-not the individual Village, local, or types document versions. The old
-`@peasant-labs/types` package is deprecated rather than migrated: do not add new
-handwritten wire interfaces there.
+The package is published to npm as `@peasant-labs/schema`. The committed
+`typescript/package.json` stays `0.0.0-development` + `private: true` as the
+local safety; the release pipeline (`release.yml`'s `npm-publish` job, behind the
+same guard → nix-vendor-hash → contract-gates gates as the GitHub Release, and
+authenticated via npm Trusted Publishing / OIDC rather than a stored token)
+stamps the real version from the tag and publishes at release time. The
+published version follows the schema module release tag, not the individual
+Village, local, or types document versions: an `-rcN` tag publishes under the
+npm dist-tag `next`, a final `vX.Y.Z` under `latest`. See
+[`docs/release-runbook.md`](docs/release-runbook.md) for the npm publication
+ceremony (the one-time GitHub environment + npm Trusted Publisher setup) and
+troubleshooting. The old `@peasant-labs/types` package is deprecated rather than
+migrated: do not add new handwritten wire interfaces there.
 
 ---
 

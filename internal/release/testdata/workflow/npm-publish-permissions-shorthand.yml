@@ -11,8 +11,7 @@ jobs:
     needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest
     environment: npm-publish
-    permissions:
-      id-token: write
+    permissions: write-all
   release:
-    needs: [guard, nix-vendor-hash]
+    needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest

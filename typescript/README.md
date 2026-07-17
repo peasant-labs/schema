@@ -26,9 +26,13 @@ package must not receive new wire definitions.
 Construct values with `newProjectHash`, narrow unknown wire values with
 `isProjectHash`, or assert a trust boundary with `validateProjectHash`.
 
-This package is not published yet. Its development version is
-`0.0.0-development`; a published package version will follow the schema module
-release tag, not an individual OpenAPI document version.
+This package is published to npm as `@peasant-labs/schema`. The committed
+`package.json` in this directory stays `0.0.0-development` + `private: true` as
+a local safety; the schema module's release pipeline stamps the real version
+from the module release tag (not an individual OpenAPI document version) and
+publishes at release time, so every published version corresponds to a tagged
+schema module release. An `-rcN` tag publishes under the npm dist-tag `next`; a
+final `vX.Y.Z` publishes under `latest`.
 
 ```ts
 import {

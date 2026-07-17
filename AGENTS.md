@@ -18,8 +18,9 @@ It is a **contract-only leaf**: types, closed enums, generated OpenAPI specs, th
 publish-request JSON Schema validator, typed fixtures, and the codegen plus
 release-guard tooling. Its `typescript/` package generates the same contract
 definitions and runtime schemas for TypeScript consumers and ships inside the
-module's tagged releases (first in `v0.1.0-rc6`); npm publication stays
-disabled and `@peasant-labs/types` is deprecated. The TypeScript package retains type-only
+module's tagged releases (first in `v0.1.0-rc6`); npm publication is automated
+in the release ceremony (`release.yml`'s `npm-publish` job, behind the same
+gates as the GitHub Release) and `@peasant-labs/types` is deprecated. The TypeScript package retains type-only
 `paths` and `operations` contracts at `/local-api` and `/village-api`, while
 shared payloads resolve to the canonical package root. Neither language package
 provides an HTTP or WebSocket transport client SDK. It has

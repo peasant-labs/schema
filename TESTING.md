@@ -75,7 +75,7 @@ script) behind it.
 | Exported-Go-API diff (`go-apidiff`) | `scripts/contract-gates.sh`; `internal/contractgates/synthetic_break_test.go` | **Advisory (pre-1.0).** Incompatible changes warn; an unparseable diff fails closed. |
 | Leaf-purity audit | `leaf_audit_test.go` | **Hard.** A `go.mod` direct require outside the allowed set fails. |
 | Vendor-hash stability | `vendorhash_test.go` | **Hard.** A local-path `replace` in `go.mod` fails. |
-| Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish behind un-gated workflow, is rejected. |
+| Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish (GitHub Release or npm) behind an un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
@@ -267,7 +267,34 @@ publication guard (`parse_test.go`, `guard_test.go`, `permission_test.go`,
 `cmd/release-guard/*_test.go` cover the CLI that exposes them (`main_test.go`, plus
 the `go-github` and git seams in `githubclient_test.go` / `gitrunner_test.go`).
 `release-guard check-workflow` runs inside `make check` to keep publication behind
-the required gates.
+the required gates: the per-repo policy (`.github/release-guard.policy.yml`)
+requires both the `release` (GitHub Release) and `npm-publish` jobs to sit behind
+`guard` + `nix-vendor-hash` + `contract-gates`, and additionally requires
+`npm-publish` to carry `permissions.id-token: write` and run under the
+`npm-publish` GitHub Actions environment (the two scopes its npm Trusted
+Publishing / OIDC authentication needs - see `docs/release-runbook.md`).
+`TestCheckReleaseWorkflow_Cases` (`workflow_guard_test.go`, fed by
+`testdata/workflow/cases.yaml`) includes synthetic-break fixtures proving each
+assertion fires for BOTH the "missing entirely" and the "present but wrong
+value" mutation of the `id-token` permission and the environment binding -
+`missing-npm-publish.yml` and `npm-publish-missing-needs.yml` cover the job and
+its needs-edges; `npm-publish-missing-permissions.yml` /
+`npm-publish-wrong-permissions.yml` cover the `id-token` permission absent vs.
+present-but-wrong (`read` instead of `write`); `npm-publish-missing-environment.yml`
+/ `npm-publish-wrong-environment.yml` cover the environment binding absent vs.
+present-but-wrong (`production` instead of `npm-publish`) - so the `npm-publish`
+job, one of its needs-edges, its `id-token` permission, and its environment
+binding are each proven caught whether missing OR wrong, not just one mutation
+shape per field.
+
+The permission/environment checks only parse the exact forms this repo's
+workflows use (the explicit `permissions:` map, a bare scalar `environment:`),
+not GitHub's `permissions: write-all`/`read-all` shorthand or the
+`environment: { name, url }` mapping form; both gaps fail CLOSED (a false
+rejection, never a false accept). `npm-publish-permissions-shorthand.yml` and
+`npm-publish-environment-mapping.yml` prove each unsupported-but-valid form is
+rejected with a message naming the specific form and the fix, distinct from
+the "missing entirely" message.
 
 ## Layer 2: unit tests alongside the sources
 

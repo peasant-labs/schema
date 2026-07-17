@@ -173,3 +173,93 @@ jobs:
             $prerelease_flag \
             "${assets[@]}"
           echo "::notice::published GitHub Release $TAG with ${#assets[@]} contract assets"
+
+  # Publish the generated @peasant-labs/schema TypeScript package to npm. Sits
+  # behind the SAME three gates as the GitHub Release publish job above (guard ->
+  # nix-vendor-hash -> contract-gates), but is otherwise independent of it: an npm
+  # publish failure here must never block the GitHub Release, and a GitHub
+  # Release asset failure must never block this job. The committed
+  # typescript/package.json stays "0.0.0-development" + "private": true as the
+  # local safety; this job stamps the real version and drops "private" in the CI
+  # working copy only, never committing either change back to the repo.
+  #
+  # Authentication is npm Trusted Publishing (OIDC) - NOT a long-lived NPM_TOKEN
+  # secret. `permissions.id-token: write` lets GitHub mint a short-lived OIDC
+  # token for this job, scoped to the "npm-publish" GitHub Actions environment
+  # (below) that the npm Trusted Publisher registration is bound to; pnpm
+  # (native OIDC trusted-publish support since the v11 publish reimplementation;
+  # the flake pins 11.5.3, chosen over the npm CLI to stay on this repo's one
+  # package-manager toolchain for install/build/test/publish) exchanges that
+  # token with the npm registry itself when no registry auth token is
+  # configured, so there is no secret to provision, rotate, or leak. Provenance
+  # attestation is automatic with a trusted-publishing publish; no extra flag
+  # needed. This requires one-time, maintainer-side registrations (the
+  # "npm-publish" GitHub environment, and this repo+workflow+environment as the
+  # package's Trusted Publisher on npmjs.com) documented in
+  # docs/release-runbook.md, "npm publication".
+  npm-publish:
+    name: publish npm package
+    needs: [guard, nix-vendor-hash, contract-gates]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm-publish
+    permissions:
+      contents: read # checkout only; no tag/commit is pushed from this job
+      id-token: write # mint the OIDC token npm Trusted Publishing exchanges
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Install locked TypeScript dependencies
+        run: nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
+
+      - name: Run the TypeScript package gates (typecheck, test, package:audit, package:smoke)
+        run: |
+          nix develop -c pnpm --dir typescript run typecheck
+          nix develop -c pnpm --dir typescript test
+          nix develop -c pnpm --dir typescript run package:audit
+          nix develop -c pnpm --dir typescript run package:smoke
+
+      - name: Determine the npm dist-tag from the tag kind
+        id: disttag
+        env:
+          KIND: ${{ needs.guard.outputs.kind }}
+        run: |
+          set -euo pipefail
+          # Dist-tag policy, keyed off the guard job's already-tested classification
+          # (release-guard parse-tag -> internal/release Kind()), never re-derived
+          # here: an rc prerelease publishes under `next`; a final vX.Y.Z takes
+          # `latest`.
+          if [ "${KIND}" = "rc" ]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stamp the package version (working copy only, never committed)
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          nix develop -c node -e '
+            const fs = require("fs");
+            const pkgPath = "typescript/package.json";
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+            pkg.version = process.argv[1];
+            delete pkg.private;
+            fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+          ' "$version"
+          echo "::notice::stamped typescript/package.json to version ${version} for this publish only; develop keeps 0.0.0-development / private"
+
+      - name: Publish @peasant-labs/schema to npm (OIDC trusted publishing)
+        run: |
+          set -euo pipefail
+          nix develop -c pnpm --dir typescript publish --access public --no-git-checks --tag "${{ steps.disttag.outputs.tag }}"
+          published_version="$(nix develop -c node -p "require('./typescript/package.json').version")"
+          echo "::notice::published @peasant-labs/schema@${published_version} to npm under dist-tag ${{ steps.disttag.outputs.tag }} via OIDC trusted publishing"

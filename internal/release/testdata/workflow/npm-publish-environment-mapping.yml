@@ -10,9 +10,11 @@ jobs:
   npm-publish:
     needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest
-    environment: npm-publish
+    environment:
+      name: npm-publish
+      url: https://www.npmjs.com/package/@peasant-labs/schema
     permissions:
       id-token: write
   release:
-    needs: [guard, nix-vendor-hash]
+    needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest
