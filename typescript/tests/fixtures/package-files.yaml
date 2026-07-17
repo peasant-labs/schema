@@ -19,6 +19,8 @@ files:
   - dist/internal/generated/public-contract.gen.js
   - dist/internal/generated/quality-fixtures.gen.d.ts
   - dist/internal/generated/quality-fixtures.gen.js
+  - dist/internal/generated/testcase.gen.d.ts
+  - dist/internal/generated/testcase.gen.js
   - dist/internal/generated/timeline-fixtures.gen.d.ts
   - dist/internal/generated/timeline-fixtures.gen.js
   - dist/internal/generated/versions.gen.d.ts

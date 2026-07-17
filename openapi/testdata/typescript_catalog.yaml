@@ -1,6 +1,7 @@
 forbidden_components:
   - Provider
   - BestiaryHarness
+  - VersionResponse
 types:
   - go_name: AnnotationSummary
     disposition: catalog

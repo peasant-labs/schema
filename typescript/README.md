@@ -1,5 +1,11 @@
 # @peasant-labs/schema
 
+Use this package when a TypeScript application needs typed, always-in-sync
+access to the peasant-labs wire contract: the same domain types, closed-set
+enums, and runtime validation Go services already produce and enforce,
+optionally with type-only Local/Village operation contracts for API-aware
+tooling.
+
 TypeScript bindings for the canonical `github.com/peasant-labs/schema` wire
 contract. The package is a contract-only leaf: it contains data definitions,
 runtime Zod schemas, Go-shaped closed-set values and guards, version constants,

@@ -15,8 +15,8 @@ import {
   type SessionDetailPayload,
   type ProjectHash,
 } from "@peasant-labs/schema";
-import type { operations as LocalOperations } from "@peasant-labs/schema/local-api";
-import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
+import { PeasantLocalAPIVersion, type operations as LocalOperations } from "@peasant-labs/schema/local-api";
+import { VillageAPIVersion, type operations as VillageOperations } from "@peasant-labs/schema/village-api";
 import type { UnifiedMetadata } from "@peasant-labs/schema/types";
 import { Classification, type Corpus } from "@peasant-labs/schema/testcase";
 import { loadQualityFixtures } from "@peasant-labs/schema/fixtures";
@@ -42,4 +42,4 @@ const fixtures = loadQualityFixtures();
 const timelineFixtures: TimelineFixtureCorpus = loadTimelineFixtures();
 const firstTimelineFixture: TimelineFixtureCase | undefined = timelineFixtures.cases[0];
 
-void [MetadataSchemaVersion, TypesVersion, isRole(role), isFileChangeStatus(FileChangeStatus.Modified), isDiffLineKind(DiffLineKind.Add), projectHash, detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures, firstTimelineFixture];
+void [MetadataSchemaVersion, TypesVersion, PeasantLocalAPIVersion, VillageAPIVersion, isRole(role), isFileChangeStatus(FileChangeStatus.Modified), isDiffLineKind(DiffLineKind.Add), projectHash, detail, dashboard, publish, localOperations, villageOperations, metadata, versionResponse, pushContractVersion, corpus, Classification.MustPass, qualitySessions(fixtures), timelineFixtures, firstTimelineFixture];

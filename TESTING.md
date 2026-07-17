@@ -81,6 +81,10 @@ script) behind it.
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
+| TypeScript operation-alias collision safety | `typescript/scripts/lib/operation-aliases.mjs`; `typescript/tests/operation-aliases.test.mjs`; `testdata/typescript/collision_cases.yaml` | **Hard.** A Local/Village API component whose schema drifts from the canonical root type it would alias to stops generation with an actionable error; a synthetic-break test proves the throw fires on a real mismatch, not only on today's already-consistent specs. |
+| TypeScript public contract completeness | `typescript/scripts/generate-contract-support.mjs` (`renderPublicContract`) | **Hard.** Every Types OpenAPI catalog component must produce exactly one matching Hey API Zod export; a missing, extra, or renamed export fails generation instead of only asserting the facade is non-empty. |
+| TypeScript facade export identity | `typescript/tests/public-exports.test.mjs`; `testdata/typescript/public_exports.yaml`, `public_export_mutations.yaml` | **Hard.** The hand-maintained root/`local-api`/`village-api` facade exports (aliases, version constants, ProjectHash functions, forbidden names) match a fixture; a dedicated add/remove/duplicate/redirect mutation corpus proves the check is not vacuous. |
+| TypeScript ProjectHash wire-location coverage | `typescript/tests/project-hash-locations.ts`, `project-hash-locations.test.mjs`; `testdata/typescript/project_hash_locations.yaml` | **Hard.** Compile-time proof that the ProjectHash brand reaches all 5 named wire locations plus a same-spelling negative control; a runtime coupling test fails if a location is dropped from either the fixture or the compile-time file (removing a passing assertion is not by itself a type error). |
 | Published package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
 ### Codegen freshness
@@ -135,6 +139,35 @@ that review scaffolding is not generated or published. Generation emits only the
 typed corpus and clone-returning `/fixtures/timeline` accessor, so TypeScript
 consumers never reparse repository YAML or redefine the session-to-commit
 relationship contract.
+
+### TypeScript facade and operation-alias gates
+
+A gate that can never fail is worthless here too. `canonicalOperationAliases`
+(`typescript/scripts/lib/operation-aliases.mjs`) structurally compares every
+Local/Village API OpenAPI component against the canonical root Types schema its
+name normalizes to, and throws when they diverge; it happens to never throw
+against today's already-consistent generated specs, which is not evidence it
+would fire on a real mismatch. `typescript/tests/operation-aliases.test.mjs`
+proves it: a synthetic-break case constructs a same-named root/API schema pair
+that deliberately disagree and asserts generation throws with the expected
+message, alongside `testdata/typescript/collision_cases.yaml`'s fixture-backed
+equal/unequal and dropped-required-field/changed-property-type corpus.
+
+The hand-maintained root, `/local-api`, and `/village-api` facade files
+(`typescript/src/index.ts`, `local-api.ts`, `village-api.ts`) are five lines
+each and carry no compiler-visible contract of their own: dropping one of their
+re-export lines passes typecheck, `pnpm test`, `package:audit`, `package:smoke`,
+and `make freshness` unless something specifically asserts the export exists.
+`typescript/tests/public-exports.test.mjs` is that assertion: it checks runtime
+constants and functions by value, type-only aliases by source-text wiring, and
+runs `testdata/typescript/public_export_mutations.yaml`'s remove/add/duplicate/
+redirect corpus through a small identity validator to prove the check is not
+vacuous. `typescript/tests/project-hash-locations.ts` is the equivalent
+compile-time proof for the ProjectHash brand: it is a `Same<>` assertion per
+wire location, and because removing a passing assertion typechecks fine on its
+own, `project-hash-locations.test.mjs` cross-checks the fixture's named
+locations against the `.ts` file's source text so a dropped location fails
+loudly instead of silently.
 
 ### Retired-version immutability
 

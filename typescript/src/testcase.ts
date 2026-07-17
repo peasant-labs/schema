@@ -1,18 +1,19 @@
 import { parseAllDocuments } from "yaml";
 
-export const Classification = Object.freeze({ MustPass: "must-pass", MustFail: "must-fail" } as const);
-export type Classification = (typeof Classification)[keyof typeof Classification];
-export const AllClassifications = Object.freeze(Object.values(Classification)) as readonly Classification[];
-export function isClassification(value: unknown): value is Classification {
-  return typeof value === "string" && (AllClassifications as readonly string[]).includes(value);
-}
-
-export const ProvenanceSource = Object.freeze({ Requirement: "requirement", Bug: "bug", Enum: "enum", Boundary: "boundary", Manual: "manual" } as const);
-export type ProvenanceSource = (typeof ProvenanceSource)[keyof typeof ProvenanceSource];
-export const AllProvenanceSources = Object.freeze(Object.values(ProvenanceSource)) as readonly ProvenanceSource[];
-export function isProvenanceSource(value: unknown): value is ProvenanceSource {
-  return typeof value === "string" && (AllProvenanceSources as readonly string[]).includes(value);
-}
+// Classification and ProvenanceSource are generated from
+// testcase/testcase.go's AllClassifications/AllProvenanceSources (see
+// typescript/scripts/generate-contract-support.mjs's renderTestcaseModel) so
+// this meta-testing vocabulary can never silently drift from the Go source it
+// mirrors. Only the YAML-loading mechanics below are handwritten.
+import {
+  Classification,
+  AllClassifications,
+  isClassification,
+  ProvenanceSource,
+  AllProvenanceSources,
+  isProvenanceSource,
+} from "./internal/generated/testcase.gen.js";
+export { Classification, AllClassifications, isClassification, ProvenanceSource, AllProvenanceSources, isProvenanceSource };
 
 export interface Provenance { source: ProvenanceSource; ref: string; }
 export interface Mutation { description: string; }

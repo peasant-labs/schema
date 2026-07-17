@@ -224,6 +224,11 @@ export const Harness = Object.freeze({
   Cursor: zHarness.parse("cursor"),
   Antigravity: zHarness.parse("antigravity"),
 } as const);
+/**
+ * AllHarnesses is the ingestion-supported subset of Harness, not the full
+ * canonical set (mirrors types.go's AllHarnesses doc comment). Every Harness
+ * member remains individually valid and accepted by isHarness.
+ */
 export const AllHarnesses = Object.freeze([Harness.ClaudeCode, Harness.GeminiCLI, Harness.Codex, Harness.OpenCode, Harness.Cursor]) as readonly Harness[];
 export function isHarness(value: unknown): value is Harness {
   return zHarness.safeParse(value).success;

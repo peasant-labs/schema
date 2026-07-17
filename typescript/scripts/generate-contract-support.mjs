@@ -6,6 +6,8 @@ import openapiTS, { astToString } from "openapi-typescript";
 import ts from "typescript";
 import { parse } from "yaml";
 
+import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
+
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
 const generatedRoot = join(packageRoot, "src", "internal", "generated");
@@ -24,6 +26,7 @@ const spec = JSON.parse(await readFile(specPath, "utf8"));
 const enumCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "enums.yaml"), "utf8"));
 const qualitySource = parse(await readFile(join(moduleRoot, "testdata", "quality", "sessions.yaml"), "utf8"));
 const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-api", "timeline.yaml"), "utf8"));
+const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
@@ -31,6 +34,7 @@ await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatal
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
+await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
 await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
 await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
 
@@ -73,7 +77,15 @@ function renderEnums(openapi, catalog) {
     });
     imports.push(`import { z${enumCase.name}, type ${enumCase.name} as ${enumCase.name}Contract } from "./contract/zod.gen.js";`);
     const renderedMembers = members.map((member) => `  ${member.name}: z${enumCase.name}.parse(${JSON.stringify(member.value)}),`).join("\n");
-    blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
+    // Every other generated All* export is the complete member list for its
+    // enum; when all_values is a proper subset of members (today, only
+    // Harness: AllHarnesses is the ingestion-supported subset, mirroring Go's
+    // own doc comment on the same asymmetry in types.go), say so here too, so
+    // a TypeScript-only reader does not assume All* is always exhaustive.
+    const allDoc = allMembers.length < members.length
+      ? `/**\n * ${enumCase.all_name} is the ingestion-supported subset of ${enumCase.name}, not the full\n * canonical set (mirrors types.go's AllHarnesses doc comment). Every ${enumCase.name}\n * member remains individually valid and accepted by is${enumCase.name}.\n */\n`
+      : "";
+    blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }
   return `${header()}${imports.join("\n")}\n\n${blocks.join("\n\n")}\n`;
 }
@@ -84,10 +96,82 @@ async function renderPublicContract(catalog) {
   const typeNames = [...source.matchAll(/^export type ([A-Za-z0-9_]+)\s*=/gm)].map((match) => match[1]);
   const enumNames = new Set(catalog.enums.map((enumCase) => enumCase.name));
   const contractTypes = typeNames.filter((name) => !enumNames.has(name));
-  if (schemaNames.length === 0 || contractTypes.length === 0) {
-    throw new Error("TypeScript contract generation could not discover Hey API Zod exports in src/internal/generated/contract/zod.gen.ts; the public contract facade would be empty; inspect the pinned Hey API output before updating the generator parser.");
+
+  // The Types OpenAPI catalog (not the just-generated zod.gen.ts text) is the
+  // authoritative expected export set: every catalog component must produce
+  // exactly one zSchema const and, for non-enum components, exactly one
+  // exported type. Cross-checking against it (rather than only asserting the
+  // regex-scraped set is non-empty) catches a future Hey API output-format
+  // change that silently narrows or duplicates the facade while still
+  // producing well-formed, non-empty source.
+  const catalogNames = Object.keys(spec?.components?.schemas ?? {});
+  if (catalogNames.length === 0) {
+    throw new Error(`TypeScript contract generation found no components.schemas in ${specPath}; the public contract facade cannot be checked for completeness; regenerate the Types OpenAPI spec from Go.`);
   }
+  const expectedSchemaNames = new Set(catalogNames.map((name) => `z${name}`));
+  const expectedTypeNames = new Set(catalogNames.filter((name) => !enumNames.has(name)));
+  const actualSchemaNames = new Set(schemaNames);
+  const actualTypeNames = new Set(contractTypes);
+  const missingSchemas = [...expectedSchemaNames].filter((name) => !actualSchemaNames.has(name));
+  const extraSchemas = [...actualSchemaNames].filter((name) => !expectedSchemaNames.has(name));
+  const missingTypes = [...expectedTypeNames].filter((name) => !actualTypeNames.has(name));
+  const extraTypes = [...actualTypeNames].filter((name) => !expectedTypeNames.has(name));
+  if (missingSchemas.length > 0 || extraSchemas.length > 0 || missingTypes.length > 0 || extraTypes.length > 0) {
+    throw new Error(`TypeScript contract generation found src/internal/generated/contract/zod.gen.ts's exports do not exactly match the ${catalogNames.length}-component Types OpenAPI catalog at ${specPath}; the public contract facade would silently drop or add names; missing schema export(s): [${missingSchemas.join(", ") || "none"}]; unexpected schema export(s): [${extraSchemas.join(", ") || "none"}]; missing type export(s): [${missingTypes.join(", ") || "none"}]; unexpected type export(s): [${extraTypes.join(", ") || "none"}]; inspect the pinned Hey API output before updating the generator parser.`);
+  }
+
   return `${header()}export { ${schemaNames.join(", ")} } from "./contract/zod.gen.js";\nexport type { ${contractTypes.join(", ")} } from "./contract/zod.gen.js";\n`;
+}
+
+// renderTestcaseModel generates the closed Classification and ProvenanceSource
+// sets from testcase/testcase.go's AllClassifications/AllProvenanceSources, so
+// the TypeScript meta-testing vocabulary can never silently drift from the Go
+// source it mirrors (a real regression class: this package's own review
+// history landed and then lost this generation once already). These are test
+// classification vocabulary, not wire types, so they are generated directly
+// from Go source text rather than routed through the Types OpenAPI catalog.
+function renderTestcaseModel(source) {
+  const models = [
+    { goType: "Classification", allVar: "AllClassifications", tsPrefix: "" },
+    { goType: "ProvenanceSource", allVar: "AllProvenanceSources", tsPrefix: "Source" },
+  ];
+  const blocks = models.map((model) => renderTestcaseClosedSet(source, model));
+  return `${header()}${blocks.join("\n\n")}\n`;
+}
+
+function renderTestcaseClosedSet(source, model) {
+  const constPattern = new RegExp(`(\\w+)\\s+${model.goType}\\s*=\\s*"([^"]+)"`, "g");
+  const values = new Map();
+  for (const match of source.matchAll(constPattern)) values.set(match[1], match[2]);
+  if (values.size === 0) {
+    throw new Error(`TypeScript testcase generation found no "<Name> ${model.goType} = \"...\"" const declarations in testcase/testcase.go; the ${model.goType} closed set would be empty; keep the canonical Go consts in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
+  }
+
+  const allPattern = new RegExp(`var\\s+${model.allVar}\\s*=\\s*\\[\\]${model.goType}\\{([^}]*)\\}`, "s");
+  const allMatch = allPattern.exec(source);
+  if (allMatch === null) {
+    throw new Error(`TypeScript testcase generation could not find "var ${model.allVar} = []${model.goType}{...}" in testcase/testcase.go; the ${model.goType} member order cannot be trusted; keep the canonical Go slice in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
+  }
+  const order = allMatch[1].split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  if (order.length === 0) {
+    throw new Error(`TypeScript testcase generation found an empty ${model.allVar} in testcase/testcase.go; the ${model.goType} closed set would be empty; add at least one member.`);
+  }
+
+  const members = order.map((goName) => {
+    const value = values.get(goName);
+    if (value === undefined) {
+      throw new Error(`TypeScript testcase generation found ${model.allVar} member ${goName} in testcase/testcase.go without a matching "${goName} ${model.goType} = \"...\"" const; the runtime inventory cannot be rendered; add the const or remove the unsupported member.`);
+    }
+    if (model.tsPrefix !== "" && !goName.startsWith(model.tsPrefix)) {
+      throw new Error(`TypeScript testcase generation found ${model.goType} member ${goName} in testcase/testcase.go without the expected "${model.tsPrefix}" prefix; the TypeScript member name cannot be derived; keep the canonical Go naming convention or update typescript/scripts/generate-contract-support.mjs.`);
+    }
+    const tsName = model.tsPrefix === "" ? goName : goName.slice(model.tsPrefix.length);
+    return { tsName, value };
+  });
+
+  const renderedMembers = members.map((member) => `  ${member.tsName}: ${JSON.stringify(member.value)},`).join("\n");
+  const allMembers = members.map((member) => `${model.goType}.${member.tsName}`).join(", ");
+  return `export const ${model.goType} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${model.goType} = (typeof ${model.goType})[keyof typeof ${model.goType}];\nexport const ${model.allVar} = Object.freeze([${allMembers}]) as readonly ${model.goType}[];\nexport function is${model.goType}(value: unknown): value is ${model.goType} {\n  return typeof value === "string" && (${model.allVar} as readonly string[]).includes(value);\n}`;
 }
 
 function renderQualityFixtures(source) {
@@ -126,12 +210,10 @@ async function generateOperationContracts(surface, filename, outputName) {
   const apiPath = join(moduleRoot, "generated", filename);
   const apiSpec = JSON.parse(await readFile(apiPath, "utf8"));
   const aliases = canonicalOperationAliases(surface, apiSpec, spec);
-  const projectHashPattern = "^[0-9a-f]{64}$";
   const ast = await openapiTS(apiSpec, {
     inject: 'import type * as Schema from "../../index.js";',
     silent: true,
-    transform(schemaObject, metadata) {
-      if (schemaObject.pattern === projectHashPattern) return schemaTypeReference("ProjectHash");
+    transform(_schemaObject, metadata) {
       const prefix = "#/components/schemas/";
       if (!metadata.path.startsWith(prefix) || metadata.path.slice(prefix.length).includes("/")) return;
       const rootName = aliases.get(metadata.path.slice(prefix.length));
@@ -139,48 +221,6 @@ async function generateOperationContracts(surface, filename, outputName) {
     },
   });
   await writeFile(join(generatedRoot, outputName), astToString(ast));
-}
-
-function canonicalOperationAliases(surface, apiSpec, rootSpec) {
-  const apiSchemas = apiSpec?.components?.schemas;
-  const rootSchemas = rootSpec?.components?.schemas;
-  if (typeof apiSchemas !== "object" || apiSchemas === null || typeof rootSchemas !== "object" || rootSchemas === null) {
-    throw new Error(`TypeScript ${surface} operation generation could not compare components.schemas with the canonical Types catalog; operation payload identities cannot be trusted; regenerate both OpenAPI documents from Go.`);
-  }
-  const rootCanonical = new Map(Object.entries(rootSchemas).map(([name, schema]) => [name, stableSchema("types", schema)]));
-  const aliases = new Map();
-  for (const [rawName, schema] of Object.entries(apiSchemas)) {
-    const rootName = canonicalTypeScriptName(surface, rawName);
-    const rootSchema = rootCanonical.get(rootName);
-    if (rootSchema === undefined) continue;
-    const apiSchema = stableSchema(surface, schema);
-    if (apiSchema !== rootSchema) {
-      throw new Error(`TypeScript ${surface} operation generation found API component ${rawName} normalizing to canonical root type ${rootName} with an unequal schema; aliasing it would misrepresent the HTTP contract; rename the operation-specific component or make it exactly equal to the canonical Go/OpenAPI definition.`);
-    }
-    aliases.set(rawName, rootName);
-  }
-  return aliases;
-}
-
-function canonicalTypeScriptName(surface, name) {
-  const unprefixed = surface === "types" ? name : name.replace(/^Schema/, "");
-  return unprefixed === "BestiaryHarness" || unprefixed === "Provider" ? "Harness" : unprefixed;
-}
-
-function stableSchema(surface, schema) {
-  return JSON.stringify(normalizeSchemaRefs(surface, structuredClone(schema)));
-}
-
-function normalizeSchemaRefs(surface, value) {
-  if (Array.isArray(value)) return value.map((item) => normalizeSchemaRefs(surface, item));
-  if (typeof value !== "object" || value === null) return value;
-  return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)).map(([key, item]) => {
-    if (key === "$ref" && typeof item === "string") {
-      const prefix = "#/components/schemas/";
-      return [key, item.startsWith(prefix) ? prefix + canonicalTypeScriptName(surface, item.slice(prefix.length)) : item];
-    }
-    return [key, normalizeSchemaRefs(surface, item)];
-  }));
 }
 
 function schemaTypeReference(name) {
