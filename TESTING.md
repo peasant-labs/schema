@@ -272,14 +272,29 @@ requires both the `release` (GitHub Release) and `npm-publish` jobs to sit behin
 `guard` + `nix-vendor-hash` + `contract-gates`, and additionally requires
 `npm-publish` to carry `permissions.id-token: write` and run under the
 `npm-publish` GitHub Actions environment (the two scopes its npm Trusted
-Publishing / OIDC authentication needs — see `docs/release-runbook.md`).
+Publishing / OIDC authentication needs - see `docs/release-runbook.md`).
 `TestCheckReleaseWorkflow_Cases` (`workflow_guard_test.go`, fed by
-`testdata/workflow/cases.yaml`) includes synthetic-break fixtures
-(`missing-npm-publish.yml`, `npm-publish-missing-needs.yml`,
-`npm-publish-missing-permissions.yml`, `npm-publish-wrong-environment.yml`)
-proving each assertion fires when the `npm-publish` job, one of its
-needs-edges, its `id-token` permission, or its environment binding is missing
-or wrong.
+`testdata/workflow/cases.yaml`) includes synthetic-break fixtures proving each
+assertion fires for BOTH the "missing entirely" and the "present but wrong
+value" mutation of the `id-token` permission and the environment binding -
+`missing-npm-publish.yml` and `npm-publish-missing-needs.yml` cover the job and
+its needs-edges; `npm-publish-missing-permissions.yml` /
+`npm-publish-wrong-permissions.yml` cover the `id-token` permission absent vs.
+present-but-wrong (`read` instead of `write`); `npm-publish-missing-environment.yml`
+/ `npm-publish-wrong-environment.yml` cover the environment binding absent vs.
+present-but-wrong (`production` instead of `npm-publish`) - so the `npm-publish`
+job, one of its needs-edges, its `id-token` permission, and its environment
+binding are each proven caught whether missing OR wrong, not just one mutation
+shape per field.
+
+The permission/environment checks only parse the exact forms this repo's
+workflows use (the explicit `permissions:` map, a bare scalar `environment:`),
+not GitHub's `permissions: write-all`/`read-all` shorthand or the
+`environment: { name, url }` mapping form; both gaps fail CLOSED (a false
+rejection, never a false accept). `npm-publish-permissions-shorthand.yml` and
+`npm-publish-environment-mapping.yml` prove each unsupported-but-valid form is
+rejected with a message naming the specific form and the fix, distinct from
+the "missing entirely" message.
 
 ## Layer 2: unit tests alongside the sources
 

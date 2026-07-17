@@ -36,7 +36,7 @@
 //	    (.github/release-guard.policy.yml): every declared job exists with the
 //	    required needs-edges (and, for reusable gates, the required uses /
 //	    secrets:inherit / no-if shape; for OIDC-authenticated gates, the required
-//	    job permissions and GitHub environment binding). Repo-agnostic — the job graph lives in the
+//	    job permissions and GitHub environment binding). Repo-agnostic - the job graph lives in the
 //	    policy file, not in this tool.
 //
 // Every subcommand that derives a (version, kind) writes "version=<v>" and

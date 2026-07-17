@@ -36,9 +36,18 @@ type WorkflowPolicy struct {
 // reusable-workflow gate matching the ReusableRule; Permissions (when non-nil)
 // requires the job's own `permissions:` block to grant the scopes in
 // PermissionsRule; Environment (when non-empty) requires the job's `environment:`
-// to equal it — scoping which GitHub Actions environment (and therefore, for an
+// to equal it - scoping which GitHub Actions environment (and therefore, for an
 // OIDC-trusted-publishing job, which environment's protection rules) the job runs
 // under.
+//
+// Permissions/Environment recognize only the exact forms this repo's workflows
+// use - the explicit `permissions:` map (not the `read-all`/`write-all` bare
+// scalar shorthand) and a bare scalar `environment:` (not the `{name, url}`
+// mapping form). GitHub accepts all of those forms; this checker intentionally
+// does not parse the unrecognized ones (rather than silently mis-accept or
+// mis-reject them) and instead fails closed with an error naming the
+// unsupported form, per checkJobPermissionsAgainstRule /
+// checkJobEnvironmentAgainstRule below.
 type JobRule struct {
 	Name        string           `yaml:"name"`
 	Needs       []string         `yaml:"needs"`
@@ -58,7 +67,7 @@ type ReusableRule struct {
 }
 
 // PermissionsRule constrains a job's own `permissions:` block. IDToken (when
-// true) requires `permissions.id-token: write` on the job — the scope an OIDC
+// true) requires `permissions.id-token: write` on the job - the scope an OIDC
 // trusted-publishing step (e.g. `pnpm publish` to npm) needs to mint its token.
 // Job-level `permissions:` REPLACES the workflow-level default entirely (GitHub
 // Actions does not merge the two), so this checks the job's own block, not the
@@ -191,12 +200,23 @@ func checkReusableJobAgainstRule(path, jobName string, job *yaml.Node, rule *Reu
 // grants the scopes rule requires. Job-level `permissions:` replaces the
 // workflow-level default rather than merging with it, so this reads only
 // jobs.<name>.permissions, never the workflow top level.
+//
+// Only the explicit map form (`permissions: { id-token: write, ... }`) is
+// parsed. GitHub also accepts a bare `permissions: read-all` / `write-all`
+// shorthand that implicitly grants every scope including id-token: write; that
+// form is deliberately NOT recognized (rather than silently mis-detected as
+// either granting or lacking the scope) - a job using it is rejected with a
+// message naming the shorthand and the fix, distinct from the "missing
+// entirely" message.
 func checkJobPermissionsAgainstRule(path, jobName string, job *yaml.Node, rule *PermissionsRule) error {
 	if !rule.IDToken {
 		return nil
 	}
-	perms := mappingValue(job, "permissions")
-	idToken := mappingValue(perms, "id-token")
+	permsNode := mappingValue(job, "permissions")
+	if permsNode != nil && permsNode.Kind != yaml.MappingNode {
+		return fmt.Errorf("check workflow: %s jobs.%s permissions is the shorthand scalar %q during release workflow validation. This checker only parses the explicit map form; rewrite jobs.%s.permissions to { id-token: write, ... } (even though GitHub itself also accepts the %q shorthand here) so the required id-token scope is checkable", path, jobName, permsNode.Value, jobName, permsNode.Value)
+	}
+	idToken := mappingValue(permsNode, "id-token")
 	if idToken == nil || idToken.Kind != yaml.ScalarNode || idToken.Value != "write" {
 		got := "<missing>"
 		if idToken != nil {
@@ -210,8 +230,18 @@ func checkJobPermissionsAgainstRule(path, jobName string, job *yaml.Node, rule *
 // checkJobEnvironmentAgainstRule asserts a job's `environment:` scalar equals
 // want. Used to keep an OIDC-trusted-publishing job bound to the GitHub
 // Actions environment its npm Trusted Publisher registration is scoped to.
+//
+// Only the bare scalar form (`environment: npm-publish`) is parsed. GitHub
+// also accepts a mapping form (`environment: { name: npm-publish, url: ... }`)
+// that surfaces a "View deployment" link in the Actions UI; that form is
+// deliberately NOT recognized (rather than silently mis-detected) - a job
+// using it is rejected with a message naming the mapping form and the fix,
+// distinct from the "missing entirely" message.
 func checkJobEnvironmentAgainstRule(path, jobName string, job *yaml.Node, want string) error {
 	env := mappingValue(job, "environment")
+	if env != nil && env.Kind == yaml.MappingNode {
+		return fmt.Errorf("check workflow: %s jobs.%s environment is the {name, url} mapping form during release workflow validation. This checker only parses the bare scalar form; rewrite jobs.%s.environment to the scalar %s (even though GitHub itself also accepts an environment: { name: ..., url: ... } mapping here, e.g. to surface a deployment link) so the required environment binding is checkable", path, jobName, jobName, want)
+	}
 	if env == nil || env.Kind != yaml.ScalarNode || env.Value != want {
 		got := "<missing>"
 		if env != nil {

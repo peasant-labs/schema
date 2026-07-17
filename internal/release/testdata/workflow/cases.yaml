@@ -51,12 +51,31 @@ reject:
     policy: schema
     workflow: npm-publish-missing-permissions.yml
     wantContains: ["jobs.npm-publish permissions.id-token is <missing>"]
+  - name: npm-publish job has the id-token permission present but wrong
+    policy: schema
+    workflow: npm-publish-wrong-permissions.yml
+    wantContains: ["jobs.npm-publish permissions.id-token is read"]
   - name: npm-publish job bound to the wrong GitHub environment
     policy: schema
     workflow: npm-publish-wrong-environment.yml
     wantContains:
       - "jobs.npm-publish environment is production"
       - "Set environment: npm-publish"
+  - name: npm-publish job missing the environment binding entirely
+    policy: schema
+    workflow: npm-publish-missing-environment.yml
+    wantContains: ["jobs.npm-publish environment is <missing>"]
+  - name: npm-publish job uses the permissions write-all shorthand (unsupported form)
+    policy: schema
+    workflow: npm-publish-permissions-shorthand.yml
+    wantContains:
+      - "jobs.npm-publish permissions is the shorthand scalar"
+      - "write-all"
+  - name: npm-publish job uses the environment name/url mapping form (unsupported form)
+    policy: schema
+    workflow: npm-publish-environment-mapping.yml
+    wantContains:
+      - "jobs.npm-publish environment is the {name, url} mapping form"
   - name: reusable gate missing uses
     policy: peasant
     workflow: missing-uses.yml

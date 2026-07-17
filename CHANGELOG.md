@@ -17,7 +17,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   local safety) and drops the `private` flag in the CI working copy only, then
   publishes with `--access public` under a dist-tag derived from the tag
   grammar (`-rcN` prerelease to `next`, final `vX.Y.Z` to `latest`).
-  Authentication is npm Trusted Publishing (GitHub Actions OIDC) — the job
+  Authentication is npm Trusted Publishing (GitHub Actions OIDC) - the job
   requests `permissions.id-token: write`, runs under the `npm-publish` GitHub
   environment, and holds no npm token secret. `release-guard check-workflow`'s
   per-repo policy (`.github/release-guard.policy.yml`) and its `WorkflowPolicy`

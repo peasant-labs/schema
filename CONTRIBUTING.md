@@ -167,6 +167,6 @@ The CI workflows that wire these guards live in `.github/workflows/`
 nix-vendor-hash → contract-gates → publish, where "publish" is both the
 GitHub Release job and the independent `npm-publish` job that ships
 `@peasant-labs/schema` to npm via OIDC trusted publishing, no stored token).
-The full operator guide — secrets, the GitHub App installation, the npm
-Trusted Publisher setup, the `v0.1.0-rc1` cut, and troubleshooting — is in
+The full operator guide - secrets, the GitHub App installation, the npm
+Trusted Publisher setup, the `v0.1.0-rc1` cut, and troubleshooting - is in
 [`docs/release-runbook.md`](docs/release-runbook.md).

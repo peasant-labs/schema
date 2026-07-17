@@ -59,8 +59,8 @@ func TestCheckReleaseWorkflow_Cases(t *testing.T) {
 	t.Parallel()
 
 	cases := loadCheckWorkflowCases(t)
-	if len(cases.Accept) != 2 || len(cases.Reject) != 14 {
-		t.Fatalf("check-workflow fixture has accept=%d reject=%d, want accept=2 reject=14 (fixture truncated?)",
+	if len(cases.Accept) != 2 || len(cases.Reject) != 18 {
+		t.Fatalf("check-workflow fixture has accept=%d reject=%d, want accept=2 reject=18 (fixture truncated?)",
 			len(cases.Accept), len(cases.Reject))
 	}
 
