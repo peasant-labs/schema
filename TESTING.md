@@ -82,6 +82,7 @@ script) behind it.
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
 | TypeScript operation-alias collision safety | `typescript/scripts/lib/operation-aliases.mjs`; `typescript/tests/operation-aliases.test.mjs`; `testdata/typescript/collision_cases.yaml` | **Hard.** A Local/Village API component whose schema drifts from the canonical root type it would alias to stops generation with an actionable error; a synthetic-break test proves the throw fires on a real mismatch, not only on today's already-consistent specs. |
+| TypeScript ProjectHash brand-resolver safety | `typescript/scripts/lib/project-hash-resolver.mjs`; `typescript/tests/project-hash-resolver.test.mjs`; `testdata/typescript/project_hash_resolver_cases.yaml` | **Hard.** The generation-time decision that brands a string schema as `ProjectHash` requires both the canonical pattern AND the canonical `#/components/schemas/ProjectHash` `$ref` location; a 6-case fixture (1 positive, 5 negative-control) drives the extracted decision function directly, proving a same-pattern differently-named or differently-located schema is never branded. |
 | TypeScript public contract completeness | `typescript/scripts/generate-contract-support.mjs` (`renderPublicContract`) | **Hard.** Every Types OpenAPI catalog component must produce exactly one matching Hey API Zod export; a missing, extra, or renamed export fails generation instead of only asserting the facade is non-empty. |
 | TypeScript facade export identity | `typescript/tests/public-exports.test.mjs`; `testdata/typescript/public_exports.yaml`, `public_export_mutations.yaml` | **Hard.** The hand-maintained root/`local-api`/`village-api` facade exports (aliases, version constants, ProjectHash functions, forbidden names) match a fixture; a dedicated add/remove/duplicate/redirect mutation corpus proves the check is not vacuous. |
 | TypeScript ProjectHash wire-location coverage | `typescript/tests/project-hash-locations.ts`, `project-hash-locations.test.mjs`; `testdata/typescript/project_hash_locations.yaml` | **Hard.** Compile-time proof that the ProjectHash brand reaches all 5 named wire locations plus a same-spelling negative control; a runtime coupling test fails if a location is dropped from either the fixture or the compile-time file (removing a passing assertion is not by itself a type error). |
@@ -152,6 +153,27 @@ proves it: a synthetic-break case constructs a same-named root/API schema pair
 that deliberately disagree and asserts generation throws with the expected
 message, alongside `testdata/typescript/collision_cases.yaml`'s fixture-backed
 equal/unequal and dropped-required-field/changed-property-type corpus.
+
+The ProjectHash brand carries the same "never observed to fail" risk one layer
+earlier, at generation time: `typescript/openapi-ts.config.mjs`'s Hey API
+Zod-plugin resolver decides whether a string schema receives the nominal
+`ProjectHash` brand. That decision (`shouldBrandProjectHash` /
+`isCanonicalProjectHashSchema`, extracted to
+`typescript/scripts/lib/project-hash-resolver.mjs` the same way
+`canonicalOperationAliases` was) requires both the canonical
+`^[0-9a-f]{64}$` pattern AND the canonical `#/components/schemas/ProjectHash`
+`$ref` location; today's Types catalog has only one schema with that pattern,
+so generation alone can never observe the guard reject anything.
+`typescript/tests/project-hash-resolver.test.mjs` is the committed proof
+instead: `testdata/typescript/project_hash_resolver_cases.yaml`'s 6 cases drive
+the extracted function directly against synthetic path/pattern pairs, covering
+the canonical case plus 5 ways it must fail closed (a same-pattern
+differently-named component, the canonical path with the wrong pattern, a
+nested non-top-level path, a path outside `components/schemas`, and a missing
+path reference). This is a different layer from the ProjectHash
+*wire-location* coverage described below: this gate proves the brand is
+assigned correctly at the one place it originates; that one proves the
+assigned brand then propagates to every wire location that should carry it.
 
 The hand-maintained root, `/local-api`, and `/village-api` facade files
 (`typescript/src/index.ts`, `local-api.ts`, `village-api.ts`) are five lines
