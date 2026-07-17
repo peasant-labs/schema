@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { shouldBrandProjectHash } from "./scripts/lib/project-hash-resolver.mjs";
+
 const packageRoot = dirname(fileURLToPath(import.meta.url));
 const moduleRoot = join(packageRoot, "..");
 const versionsSource = readFileSync(join(moduleRoot, "versions.go"), "utf8");
@@ -37,8 +39,7 @@ export default {
       },
       $resolvers: {
         string(context) {
-          if (context.schema.pattern !== "^[0-9a-f]{64}$") return;
-          if (!isCanonicalProjectHashSchema(context.path)) return;
+          if (!shouldBrandProjectHash(context.schema, context.path)) return;
           return context.nodes.base(context)
             .attr("regex").call(context.$.expr("/^[0-9a-f]{64}$/"))
             .attr("brand").call().generic(context.$.type.literal("ProjectHash"));
@@ -54,15 +55,4 @@ function requiredMatch(source, pattern, field, location) {
   const match = pattern.exec(source);
   if (match?.[1] !== undefined) return match[1];
   throw new Error(`TypeScript contract generation could not read ${field} from ${location}; the generator cannot identify its OpenAPI input; keep the canonical Go constant in the expected assignment form or update typescript/openapi-ts.config.mjs.`);
-}
-
-// isCanonicalProjectHashSchema anchors the ProjectHash brand to the schema's canonical
-// $ref location (#/components/schemas/ProjectHash) rather than its pattern string alone.
-// A pattern-only match would silently brand any future unrelated 64-lowercase-hex field
-// (for example a SHA-256 content hash) as ProjectHash; matching on JSON-pointer identity
-// keeps the nominal brand tied to the one real ProjectHash schema component, mirroring the
-// $ref-anchored mechanism this generator's predecessor used before the Hey API rewrite.
-function isCanonicalProjectHashSchema(path) {
-  const segments = path?.["~ref"];
-  return Array.isArray(segments) && segments.length === 3 && segments[0] === "components" && segments[1] === "schemas" && segments[2] === "ProjectHash";
 }

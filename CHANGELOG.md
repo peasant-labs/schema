@@ -56,9 +56,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   generated nominal identity plus `newProjectHash`, `isProjectHash`, and
   `validateProjectHash`. Root payloads and Local/Village operations carry the
   brand, so plain strings cannot silently cross a project-identity boundary.
-- The bespoke Go-to-TypeScript emitter is removed. Handwritten TypeScript owns
-  generic testcase behavior, while generated fixture data comes directly from
-  the schema-owned YAML corpora.
+- The bespoke Go-to-TypeScript emitter is removed. TypeScript `testcase`
+  `Classification` and `ProvenanceSource` closed sets are generated from
+  `testcase.go`'s `AllClassifications`/`AllProvenanceSources`; only the
+  YAML-decoding mechanics are handwritten. Generated fixture data comes
+  directly from the schema-owned YAML corpora.
 
 ## [v0.1.0-rc5] - 2026-07-14
 

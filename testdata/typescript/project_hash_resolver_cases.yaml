@@ -1,0 +1,37 @@
+cases:
+  - name: canonical ProjectHash path with the matching pattern is branded
+    input: {path: [components, schemas, ProjectHash], pattern: "^[0-9a-f]{64}$"}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: the one real ProjectHash schema component receives the nominal brand}
+    mutation: {description: presents the canonical $ref location with the canonical pattern}
+  - name: same-pattern differently-named component is not branded
+    input: {path: [components, schemas, ContentHash], pattern: "^[0-9a-f]{64}$"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: pattern shape alone must never confer nominal identity}
+    mutation: {description: renames the canonical component to an unrelated 64-hex content hash while keeping the identical pattern}
+  - name: canonical path with an unrelated pattern is not branded
+    input: {path: [components, schemas, ProjectHash], pattern: "^[0-9a-f]{40}$"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: the brand requires the exact canonical pattern too and not merely the canonical name}
+    mutation: {description: shortens the pattern to a 40-hex digest at the canonical component location}
+  - name: canonical name at a nested non-top-level path is not branded
+    input: {path: [components, schemas, ProjectHash, properties, hash], pattern: "^[0-9a-f]{64}$"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: only the top-level component definition is canonical and not an arbitrarily nested property path}
+    mutation: {description: appends a nested properties/hash path segment onto the canonical component location}
+  - name: canonical name outside components/schemas is not branded
+    input: {path: [paths, schemas, ProjectHash], pattern: "^[0-9a-f]{64}$"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: the canonical anchor is the full components/schemas JSON pointer prefix and not the trailing name alone}
+    mutation: {description: replaces the leading components segment with an unrelated paths segment}
+  - name: a missing path reference is not branded
+    input: {path: null, pattern: "^[0-9a-f]{64}$"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: an inline or unresolved schema with no canonical location must fail closed}
+    mutation: {description: omits the path Ref entirely as an inline non-$ref occurrence of the pattern would}
