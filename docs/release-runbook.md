@@ -104,19 +104,24 @@ Two one-time, maintainer-side registrations make this work (both are already
 unblocked: the package exists — `@peasant-labs/schema@0.1.0-rc6` was published
 manually on 2026-07-17):
 
-1. **GitHub Actions environment.** Create an environment named `npm-publish` on
-   `peasant-labs/schema` (Settings → Environments → New environment). The
-   `npm-publish` job is bound to it (`environment: npm-publish` in
-   `release.yml`, asserted by `release-guard check-workflow`); optional
-   environment protection rules (e.g. required reviewers) are additional
-   defense-in-depth, not required for OIDC to work.
-2. **npm Trusted Publisher.** On npmjs.com, `@peasant-labs/schema` → Settings →
-   Trusted Publisher → GitHub Actions, and register: organization or user
-   `peasant-labs`, repository `schema`, workflow filename `release.yml`,
+1. **GitHub Actions environment (create this FIRST).** Create an environment
+   named `npm-publish` on `peasant-labs/schema` (Settings → Environments → New
+   environment), with **no protection rules for now**. The `npm-publish` job is
+   bound to it (`environment: npm-publish` in `release.yml`, asserted by
+   `release-guard check-workflow`). Optional protection rules (a required
+   reviewer, a tag-pattern restriction) are additional defense-in-depth that can
+   be added later without any workflow change — deferred to the public-flip
+   checklist (§6).
+2. **npm Trusted Publisher** (register AFTER step 1 — the environment must
+   already exist for npm to bind to it). On npmjs.com, `@peasant-labs/schema` →
+   Settings → Trusted Publisher → GitHub Actions, and register: organization or
+   user `peasant-labs`, repository `schema`, workflow filename `release.yml`,
    environment name `npm-publish` (matching step 1 exactly — an npm Trusted
-   Publisher registration is exact-match on all four fields). If npm's UI
-   offers an "allowed workflow" / action restriction, scope it to the publish
-   step only (no other write action).
+   Publisher registration is exact-match on all four fields, and a run whose
+   job does not carry that exact `environment:` cannot mint a valid publish
+   token). Scope the allowed action to **`npm publish` only** — not `npm stage
+   publish` — since this ceremony publishes directly and least-privilege scoping
+   costs nothing here.
 
 Until both registrations exist, `npm-publish` fails at the `pnpm publish` step
 with the registry's own rejection (see Troubleshooting below); that failure
@@ -273,10 +278,19 @@ deb/rpm/AUR/Homebrew/nixpkgs — see "What is SUBTRACTED vs peasant" in §1).
       and **re-enable the `check-approval` step** in `release-pr.yml`'s tag job
       (commented out pre-flip; the `release-guard check-approval` guard code is live
       and tested — byte-identical to peasant's). This closes the §2 deferral.
+- [ ] **(Optional) Attach protection rules to the `npm-publish` GitHub
+      environment** (§2) — a required reviewer and/or a tag-pattern restriction.
+      This adds a human approval gate on every npm publish with **no workflow
+      change**: the `npm-publish` job already targets `environment: npm-publish`,
+      so GitHub enforces whatever rules the environment carries. Pairs with the
+      `check-approval` re-enable above as the same class of defense-in-depth,
+      deferred pre-flip for the same reason (single active maintainer).
 - [ ] **Live verification (post-flip):**
       - A `release(vX.Y.Z-rcN): …` PR merges and `release-pr.yml` mints the annotated
         tag via the App token; `release.yml` runs guard → nix-vendor-hash freshness →
         contract-gates and publishes a prerelease GitHub Release with the `generated/`
-        OpenAPI specs attached.
+        OpenAPI specs attached, and (independently) the `npm-publish` job publishes
+        `@peasant-labs/schema@X.Y.Z-rcN` to npm under dist-tag `next` via OIDC trusted
+        publishing.
       - `go get github.com/peasant-labs/schema@vX.Y.Z-rcN` resolves against the public
         module for a downstream consumer (peasant / village pin).
