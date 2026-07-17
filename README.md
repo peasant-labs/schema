@@ -77,7 +77,7 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.0-rc5` (GitHub **prerelease**) - prior release candidates remain published |
+| Latest tag | `v0.1.0-rc6` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
 | Spec versions | village API `0.6.0` · peasant local API `0.4.0` · types `0.3.0` (see [`versions.go`](versions.go)) |
 
@@ -89,7 +89,7 @@ flowchart LR
 | **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
 | **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
-> Both consumers now pin `rc5`. Because the module is normal `go get`-pinned, each
+> Both consumers currently pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
 > re-pins; a re-pin is a one-line `go.mod` change plus `go mod tidy`.
 
@@ -292,7 +292,7 @@ Because the contract is a normal published, tagged Go module, a consumer pins **
 version**:
 
 ```bash
-go get github.com/peasant-labs/schema@v0.1.0-rc5
+go get github.com/peasant-labs/schema@v0.1.0-rc6
 ```
 
 That single pin replaces the old model of vendoring an in-tree copy of the types. It
@@ -329,8 +329,9 @@ synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fir
 
 ### TypeScript bindings
 
-The `typescript/` directory is the source of the future
-`@peasant-labs/schema` package. It mirrors the Go contract architecture:
+The `typescript/` directory is the source of the `@peasant-labs/schema`
+package, first shipped with the module's `v0.1.0-rc6` tag. It mirrors the Go
+contract architecture:
 
 - the package root is the canonical Types 0.3 projection of the complete public
   Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
