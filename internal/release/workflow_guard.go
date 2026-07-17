@@ -80,7 +80,7 @@ func LoadWorkflowPolicy(path string) (WorkflowPolicy, error) {
 	dec.KnownFields(true)
 	var policy WorkflowPolicy
 	if err := dec.Decode(&policy); err != nil && !errors.Is(err, io.EOF) {
-		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: cannot parse %s as a release-guard policy: %w. Expected a top-level 'jobs:' sequence of {name, needs, reusable} entries", path, err)
+		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: cannot parse %s as a release-guard policy: %w. Expected a top-level 'jobs:' sequence of {name, needs, reusable, permissions, environment} entries", path, err)
 	}
 	if len(policy.Jobs) == 0 {
 		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: %s declares no jobs during release workflow validation. A policy must list at least the publish job and its required gates under 'jobs:'", path)
