@@ -14,6 +14,14 @@ jobs:
     needs: [guard, nix-vendor-hash]
     runs-on: ubuntu-latest
     steps: [{ run: "make gates" }]
+  npm-publish:
+    needs: [guard, nix-vendor-hash, contract-gates]
+    runs-on: ubuntu-latest
+    environment: npm-publish
+    permissions:
+      contents: read
+      id-token: write
+    steps: [{ run: "pnpm --dir typescript publish --access public --no-git-checks" }]
   release:
     needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest

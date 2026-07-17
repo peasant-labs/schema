@@ -3,6 +3,30 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Automated npm publication of `@peasant-labs/schema` in the release ceremony.
+  `release.yml` gains an `npm-publish` job, gated behind the same guard →
+  nix-vendor-hash → contract-gates chain as the GitHub Release publish job and
+  independent of it: it installs the locked TypeScript toolchain, re-runs the
+  package gates (typecheck, test, package:audit, package:smoke) on the release
+  commit, stamps the package version from the tag (stripping the leading `v`;
+  the committed manifest stays `0.0.0-development` + `private: true` as the
+  local safety) and drops the `private` flag in the CI working copy only, then
+  publishes with `--access public` under a dist-tag derived from the tag
+  grammar (`-rcN` prerelease to `next`, final `vX.Y.Z` to `latest`).
+  Authentication is npm Trusted Publishing (GitHub Actions OIDC) — the job
+  requests `permissions.id-token: write`, runs under the `npm-publish` GitHub
+  environment, and holds no npm token secret. `release-guard check-workflow`'s
+  per-repo policy (`.github/release-guard.policy.yml`) and its `WorkflowPolicy`
+  grammar (`internal/release`) now require the `npm-publish` job with the same
+  needs-edges plus its `id-token: write` permission and `npm-publish`
+  environment binding, and the fixture corpus gained synthetic-break cases
+  proving each assertion fires when the job, its needs, its permission, or its
+  environment is missing or wrong.
+
 ## [v0.1.0-rc6] - 2026-07-17
 
 ### Added

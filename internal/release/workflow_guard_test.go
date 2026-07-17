@@ -17,13 +17,18 @@ import (
 // --- Policy fixtures (Go values) --------------------------------------------
 
 // schemaShapePolicy is the schema repo's WorkflowPolicy: guard; nix-vendor-hash
-// needs[guard]; contract-gates needs[guard, nix-vendor-hash]; release
-// needs[guard, nix-vendor-hash, contract-gates].
+// needs[guard]; contract-gates needs[guard, nix-vendor-hash]; npm-publish
+// needs[guard, nix-vendor-hash, contract-gates], requires its own
+// permissions.id-token: write (OIDC trusted publishing), and must run under the
+// "npm-publish" GitHub Actions environment; release needs[guard,
+// nix-vendor-hash, contract-gates]. npm-publish and release are independent
+// siblings behind the same three gates.
 func schemaShapePolicy() WorkflowPolicy {
 	return WorkflowPolicy{Jobs: []JobRule{
 		{Name: "guard"},
 		{Name: "nix-vendor-hash", Needs: []string{"guard"}},
 		{Name: "contract-gates", Needs: []string{"guard", "nix-vendor-hash"}},
+		{Name: "npm-publish", Needs: []string{"guard", "nix-vendor-hash", "contract-gates"}, Permissions: &PermissionsRule{IDToken: true}, Environment: "npm-publish"},
 		{Name: "release", Needs: []string{"guard", "nix-vendor-hash", "contract-gates"}},
 	}}
 }
@@ -54,8 +59,8 @@ func TestCheckReleaseWorkflow_Cases(t *testing.T) {
 	t.Parallel()
 
 	cases := loadCheckWorkflowCases(t)
-	if len(cases.Accept) != 2 || len(cases.Reject) != 10 {
-		t.Fatalf("check-workflow fixture has accept=%d reject=%d, want accept=2 reject=10 (fixture truncated?)",
+	if len(cases.Accept) != 2 || len(cases.Reject) != 14 {
+		t.Fatalf("check-workflow fixture has accept=%d reject=%d, want accept=2 reject=14 (fixture truncated?)",
 			len(cases.Accept), len(cases.Reject))
 	}
 

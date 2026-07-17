@@ -39,6 +39,24 @@ reject:
     policy: schema
     workflow: missing-needs.yml
     wantContains: ["jobs.release.needs is missing contract-gates"]
+  - name: npm-publish job missing entirely
+    policy: schema
+    workflow: missing-npm-publish.yml
+    wantContains: ["missing jobs.npm-publish"]
+  - name: npm-publish job missing required needs edges
+    policy: schema
+    workflow: npm-publish-missing-needs.yml
+    wantContains: ["jobs.npm-publish.needs is missing nix-vendor-hash, contract-gates"]
+  - name: npm-publish job missing the id-token permission
+    policy: schema
+    workflow: npm-publish-missing-permissions.yml
+    wantContains: ["jobs.npm-publish permissions.id-token is <missing>"]
+  - name: npm-publish job bound to the wrong GitHub environment
+    policy: schema
+    workflow: npm-publish-wrong-environment.yml
+    wantContains:
+      - "jobs.npm-publish environment is production"
+      - "Set environment: npm-publish"
   - name: reusable gate missing uses
     policy: peasant
     workflow: missing-uses.yml

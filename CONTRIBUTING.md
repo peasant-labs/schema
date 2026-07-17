@@ -125,8 +125,9 @@ pnpm --dir typescript run package:smoke
 ```
 
 The last gate packs the artifact, installs it into a disposable directory, and
-imports every public subpath. This package remains unpublished until a separate
-release change explicitly enables package publication.
+imports every public subpath. `release.yml`'s `npm-publish` job re-runs these
+same four gates on the release commit before publishing `@peasant-labs/schema`
+to npm (see [`docs/release-runbook.md`](docs/release-runbook.md)).
 
 Gates that run in CI (and locally):
 
@@ -163,6 +164,9 @@ final-release guard are in `internal/release`, exposed via `cmd/release-guard`):
 
 The CI workflows that wire these guards live in `.github/workflows/`
 (`release-pr.yml` mints the tag on merge; `release.yml` runs guard →
-nix-vendor-hash → contract-gates → publish). The full operator guide — secrets,
-the GitHub App installation, the `v0.1.0-rc1` cut, and troubleshooting — is in
+nix-vendor-hash → contract-gates → publish, where "publish" is both the
+GitHub Release job and the independent `npm-publish` job that ships
+`@peasant-labs/schema` to npm via OIDC trusted publishing, no stored token).
+The full operator guide — secrets, the GitHub App installation, the npm
+Trusted Publisher setup, the `v0.1.0-rc1` cut, and troubleshooting — is in
 [`docs/release-runbook.md`](docs/release-runbook.md).

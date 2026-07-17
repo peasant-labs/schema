@@ -7,12 +7,6 @@ jobs:
   contract-gates:
     needs: [guard, nix-vendor-hash]
     runs-on: ubuntu-latest
-  npm-publish:
-    needs: [guard, nix-vendor-hash, contract-gates]
-    runs-on: ubuntu-latest
-    environment: npm-publish
-    permissions:
-      id-token: write
   release:
-    needs: [guard, nix-vendor-hash]
+    needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest
