@@ -8,11 +8,13 @@ package testcase_test
 // YAML fixtures, never inline.
 
 import (
+	"bytes"
 	_ "embed"
 	"testing"
 
 	"github.com/peasant-labs/schema/testcase"
 	"github.com/peasant-labs/schema/testcase/assert"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed testdata/vacuous_corpus.yaml
@@ -37,9 +39,14 @@ func TestRequireValid_PopulatedFixturePasses(t *testing.T) {
 // uses). Each fixture case is vacuous in one distinct way, so each must fail
 // Case.Validate and the whole corpus must fail Corpus.Validate.
 func TestRequireValid_VacuousFixtureRejected(t *testing.T) {
-	corpus, err := testcase.LoadCorpus[string, bool](vacuousCorpusYAML)
-	if err != nil {
-		t.Fatalf("LoadCorpus(testdata/vacuous_corpus.yaml): %v", err)
+	// Decode directly to exercise the standalone validator used by programmatic
+	// corpora. LoadCorpus intentionally validates at its trust boundary and would
+	// reject this negative-control document before the standalone seam is reached.
+	var corpus testcase.Corpus[string, bool]
+	decoder := yaml.NewDecoder(bytes.NewReader(vacuousCorpusYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&corpus); err != nil {
+		t.Fatalf("decode testdata/vacuous_corpus.yaml: %v", err)
 	}
 	// Four distinct vacuity kinds: out-of-set classification, out-of-set
 	// provenance source, empty ref, empty mutation description.

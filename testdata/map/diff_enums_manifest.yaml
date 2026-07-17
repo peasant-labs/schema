@@ -1,0 +1,24 @@
+cases:
+  - {enum: file-change-status, name: modified file status is valid, classification: must-pass}
+  - {enum: file-change-status, name: added file status is valid, classification: must-pass}
+  - {enum: file-change-status, name: deleted file status is valid, classification: must-pass}
+  - {enum: file-change-status, name: renamed file status is valid, classification: must-pass}
+  - {enum: file-change-status, name: unknown file status is rejected, classification: must-fail}
+  - {enum: diff-line-kind, name: context diff line is valid, classification: must-pass}
+  - {enum: diff-line-kind, name: added diff line is valid, classification: must-pass}
+  - {enum: diff-line-kind, name: deleted diff line is valid, classification: must-pass}
+  - {enum: diff-line-kind, name: unknown diff line kind is rejected, classification: must-fail}
+mutations:
+  cases:
+    - name: count preserving enum case rename is rejected
+      input: {kind: rename, target: modified file status is valid, replacement_name: changed file status filler, replacement_classification: must-pass}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact diff enum identity manifest}
+      mutation: {description: renames a required case without changing corpus size}
+    - name: count preserving enum case replacement is rejected
+      input: {kind: replace, target: unknown diff line kind is rejected, replacement_name: filler diff line boundary, replacement_classification: must-fail}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact diff enum identity manifest}
+      mutation: {description: replaces a required boundary with a valid filler without changing corpus size}

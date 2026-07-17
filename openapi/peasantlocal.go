@@ -159,8 +159,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/map/{projectHash}",
 		"getMapGraph", "Get the full map graph for a project (optionally at a commit).", []string{"map"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
-			Commit      string `query:"commit" description:"Optional commit SHA to build the graph at (default HEAD)"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
+			Commit      string             `query:"commit" description:"Optional commit SHA to build the graph at (default HEAD)"`
 		}),
 		new(schema.MapGraphPayload)); err != nil {
 		return nil, err
@@ -170,8 +170,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/map/{projectHash}/node",
 		"getMapNodeDetail", "Get the rail panel detail for one map node.", []string{"map"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
-			Path        string `query:"path" required:"true" description:"Repo-relative node ID"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
+			Path        string             `query:"path" required:"true" description:"Repo-relative node ID"`
 		}),
 		new(schema.MapNodeDetailPayload)); err != nil {
 		return nil, err
@@ -181,8 +181,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/map/{projectHash}/tasks",
 		"listProjectTasks", "List a project's tasks (reverse-chronological, cap 500).", []string{"map"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
-			File        string `query:"file" description:"Optional file or directory filter"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
+			File        string             `query:"file" description:"Optional file or directory filter"`
 		}),
 		new(schema.ProjectTasksPayload)); err != nil {
 		return nil, err
@@ -196,11 +196,21 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/projects/resolve?name=<display-identity>
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/projects/resolve",
+		"resolveProject", "Resolve one explicit project display identity without enumerating sibling projects.", []string{"map"},
+		new(struct {
+			Name string `query:"name" required:"true" description:"Exact project display identity from a saved route"`
+		}),
+		new(schema.ProjectResolutionPayload)); err != nil {
+		return nil, err
+	}
+
 	// GET /api/v1/review/{projectHash}
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/review/{projectHash}",
 		"listReviewChanges", "List a project's changes (open branches, then merged).", []string{"review"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
 		}),
 		new(schema.ReviewListPayload)); err != nil {
 		return nil, err
@@ -210,8 +220,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/review/{projectHash}/change",
 		"getChangeDetail", "Get the Review detail payload for one branch.", []string{"review"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
-			Branch      string `query:"branch" required:"true" description:"Branch name (may contain slashes)"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
+			Branch      string             `query:"branch" required:"true" description:"Branch name (may contain slashes)"`
 		}),
 		new(schema.ChangeDetailPayload)); err != nil {
 		return nil, err
@@ -221,9 +231,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/review/{projectHash}/diff",
 		"getChangeDiff", "Get the rendered per-file unified diff for one changed file of a branch.", []string{"review"},
 		new(struct {
-			ProjectHash string `path:"projectHash" description:"Opaque project hash"`
-			Branch      string `query:"branch" required:"true" description:"Branch name (may contain slashes)"`
-			File        string `query:"file" required:"true" description:"Repo-relative file path"`
+			ProjectHash schema.ProjectHash `path:"projectHash" description:"Opaque project hash"`
+			Branch      string             `query:"branch" required:"true" description:"Branch name (may contain slashes)"`
+			File        string             `query:"file" required:"true" description:"Repo-relative file path"`
 		}),
 		new(schema.ChangeDiffPayload)); err != nil {
 		return nil, err
@@ -252,6 +262,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		for _, schemaMap := range comps.Schemas {
 			fixDefinitionRefs(schemaMap)
 		}
+	}
+	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
+		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
 	}
 
 	return r.Spec, nil

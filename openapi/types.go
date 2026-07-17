@@ -2,6 +2,7 @@ package openapi
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	schema "github.com/peasant-labs/schema"
@@ -9,19 +10,92 @@ import (
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
-// BuildTypesSpec builds an OpenAPI 3.1 specification registering foundational shared
-// domain types as reusable components. No paths — this is a pure type catalog
-// for SDK code generators and type-sharing across API boundaries.
-//
-// Registered entry-point types (7 top-level components):
-//   - Provider, Role, SessionID, ModelID (primitive domain types)
-//   - Visibility (access control)
-//   - SessionEntry (content layer)
-//   - QualityMetrics (analytics)
-//
-// Transitively referenced types (ToolCallKind, StopReason, EntryType, SessionOutcome, etc.)
-// are collected via CollectDefinitions and registered as separate top-level components.
-// All component names and $ref paths are normalized to plain names (no "Schema" prefix).
+// TypeCatalogEntry is one canonical public Go contract type registered in the
+// language-neutral Types document. It is the production source of truth used by
+// both OpenAPI generation and the TypeScript facade generator.
+type TypeCatalogEntry struct {
+	Name  string
+	Value interface{}
+}
+
+// TypeCatalogEntries returns the complete public wire/domain catalog. Test-only
+// fixture structs and registry/service interfaces deliberately do not belong to
+// this language-neutral contract surface.
+func TypeCatalogEntries() []TypeCatalogEntry {
+	return []TypeCatalogEntry{
+		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
+		{"AnnotationDatatype", new(schema.AnnotationDatatype)}, {"AnnotationEntryTarget", new(schema.AnnotationEntryTarget)},
+		{"AnnotationManifestResponse", new(schema.AnnotationManifestResponse)}, {"AnnotationPushItem", new(schema.AnnotationPushItem)},
+		{"AnnotationPushRequest", new(schema.AnnotationPushRequest)}, {"AnnotationPushResponse", new(schema.AnnotationPushResponse)},
+		{"AnnotationPushResult", new(schema.AnnotationPushResult)}, {"AnnotationPushStatus", new(schema.AnnotationPushStatus)},
+		{"AnnotationStatus", new(schema.AnnotationStatus)}, {"AnnotationSummary", new(schema.AnnotationSummary)},
+		{"AnnotationTypeSummary", new(schema.AnnotationTypeSummary)}, {"AnnotationsPayload", new(schema.AnnotationsPayload)},
+		{"AnnotatorKind", new(schema.AnnotatorKind)},
+		{"AnnotatorSummary", new(schema.AnnotatorSummary)}, {"BatchCreateAnnotationsErrorResponse", new(schema.BatchCreateAnnotationsErrorResponse)},
+		{"BatchCreateAnnotationsRequest", new(schema.BatchCreateAnnotationsRequest)}, {"BatchCreateAnnotationsResponse", new(schema.BatchCreateAnnotationsResponse)},
+		{"BuiltinCommand", new(schema.BuiltinCommand)}, {"ChangeBinding", new(schema.ChangeBinding)},
+		{"ChangeDetailPayload", new(schema.ChangeDetailPayload)}, {"ChangeDiffPayload", new(schema.ChangeDiffPayload)},
+		{"ChangeSession", new(schema.ChangeSession)}, {"ChangeSummary", new(schema.ChangeSummary)},
+		{"ChannelSubscription", new(schema.ChannelSubscription)}, {"ChannelTopic", new(schema.ChannelTopic)},
+		{"ChildSessionRef", new(schema.ChildSessionRef)}, {"CLILoginQuery", new(schema.CLILoginQuery)},
+		{"ClientMessage", new(schema.ClientMessage)}, {"CommitInfo", new(schema.CommitInfo)},
+		{"CommitRef", new(schema.CommitRef)}, {"ContentKind", new(schema.ContentKind)},
+		{"ContractVersion", new(schema.ContractVersion)}, {"CreateAnnotationRequest", new(schema.CreateAnnotationRequest)},
+		{"CreateAnnotationResponse", new(schema.CreateAnnotationResponse)}, {"DashboardPayload", new(schema.DashboardPayload)},
+		{"DayStats", new(schema.DayStats)}, {"DecayLevel", new(schema.DecayLevel)},
+		{"DiagnosticEntry", new(schema.DiagnosticEntry)}, {"DiagnosticsInfo", new(schema.DiagnosticsInfo)},
+		{"DiffHunk", new(schema.DiffHunk)}, {"DiffLine", new(schema.DiffLine)}, {"DiffLineKind", new(schema.DiffLineKind)},
+		{"EdgeViolation", new(schema.EdgeViolation)}, {"EdgeViolationKind", new(schema.EdgeViolationKind)},
+		{"EntryType", new(schema.EntryType)}, {"ExchangeCodeRequest", new(schema.ExchangeCodeRequest)},
+		{"ExchangeCodeResponse", new(schema.ExchangeCodeResponse)}, {"FamiliarityPayload", new(schema.FamiliarityPayload)},
+		{"FileChange", new(schema.FileChange)}, {"FileChangeStatus", new(schema.FileChangeStatus)},
+		{"FileFamiliarity", new(schema.FileFamiliarity)}, {"FrictionCluster", new(schema.FrictionCluster)},
+		{"GitContext", new(schema.GitContext)}, {"Harness", new(schema.Harness)},
+		{"HealthResponse", new(schema.HealthResponse)}, {"HostSlug", new(schema.HostSlug)},
+		{"InteractionType", new(schema.InteractionType)}, {"License", new(schema.License)},
+		{"MapEdge", new(schema.MapEdge)}, {"MapGraphPayload", new(schema.MapGraphPayload)},
+		{"MapNode", new(schema.MapNode)}, {"MapNodeDetailPayload", new(schema.MapNodeDetailPayload)},
+		{"MapNodeKind", new(schema.MapNodeKind)}, {"MapSlice", new(schema.MapSlice)},
+		{"MessageType", new(schema.MessageType)}, {"MockConfigResponse", new(schema.MockConfigResponse)},
+		{"ModelID", new(schema.ModelID)}, {"ModelInfo", new(schema.ModelInfo)},
+		{"ProjectContext", new(schema.ProjectContext)}, {"ProjectHash", new(schema.ProjectHash)},
+		{"ProjectResolutionPayload", new(schema.ProjectResolutionPayload)},
+		{"ProjectSummariesPayload", new(schema.ProjectSummariesPayload)}, {"ProjectSummary", new(schema.ProjectSummary)},
+		{"ProjectTasksPayload", new(schema.ProjectTasksPayload)}, {"Provenance", new(schema.Provenance)},
+		{"PublishRequest", new(schema.PublishRequest)}, {"PublishResponse", new(schema.PublishResponse)},
+		{"PullAnnotation", new(schema.PullAnnotation)}, {"PullListResponse", new(schema.PullListResponse)},
+		{"PullSkipGateItem", new(schema.PullSkipGateItem)}, {"PullSkipGateRequest", new(schema.PullSkipGateRequest)},
+		{"PullSkipGateResponse", new(schema.PullSkipGateResponse)}, {"PullSkipGateResult", new(schema.PullSkipGateResult)},
+		{"PullTranscriptInfo", new(schema.PullTranscriptInfo)}, {"QualityMetrics", new(schema.QualityMetrics)},
+		{"QualityPayload", new(schema.QualityPayload)}, {"QualitySession", new(schema.QualitySession)},
+		{"RedactionInfo", new(schema.RedactionInfo)}, {"ReviewListPayload", new(schema.ReviewListPayload)},
+		{"ReviewSuggestion", new(schema.ReviewSuggestion)}, {"Role", new(schema.Role)},
+		{"ScaleKind", new(schema.ScaleKind)}, {"SchemaVersionResponse", new(schema.SchemaVersionResponse)},
+		{"SearchPayload", new(schema.SearchPayload)}, {"SearchResult", new(schema.SearchResult)},
+		{"ServerMessage", new(schema.ServerMessage)}, {"SessionDetailPayload", new(schema.SessionDetailPayload)},
+		{"SessionEntry", new(schema.SessionEntry)}, {"SessionID", new(schema.SessionID)},
+		{"SessionIdentity", new(schema.SessionIdentity)}, {"SessionOutcome", new(schema.SessionOutcome)},
+		{"SessionScorecard", new(schema.SessionScorecard)}, {"SessionStats", new(schema.SessionStats)},
+		{"SessionSummary", new(schema.SessionSummary)}, {"SessionsPayload", new(schema.SessionsPayload)},
+		{"ShutdownResponse", new(schema.ShutdownResponse)}, {"SourceFormat", new(schema.SourceFormat)},
+		{"SourceInfo", new(schema.SourceInfo)},
+		{"StopReason", new(schema.StopReason)}, {"SubagentRef", new(schema.SubagentRef)},
+		{"TargetKind", new(schema.TargetKind)}, {"TaskSummary", new(schema.TaskSummary)},
+		{"TaxonomyFamilyNode", new(schema.TaxonomyFamilyNode)}, {"TaxonomyNode", new(schema.TaxonomyNode)},
+		{"TimestampInfo", new(schema.TimestampInfo)}, {"ToolCallDetail", new(schema.ToolCallDetail)},
+		{"ToolCallKind", new(schema.ToolCallKind)}, {"TranscriptContent", new(schema.TranscriptContent)},
+		{"TranscriptID", new(schema.TranscriptID)}, {"TrendsPayload", new(schema.TrendsPayload)},
+		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
+		{"TypeOrigin", new(schema.TypeOrigin)},
+		{"UnifiedMetadata", new(schema.UnifiedMetadata)}, {"UnusualSignal", new(schema.UnusualSignal)},
+		{"ValueDomain", new(schema.ValueDomain)}, {"ValueDomainKind", new(schema.ValueDomainKind)},
+		{"Visibility", new(schema.Visibility)}, {"WalkthroughStep", new(schema.WalkthroughStep)},
+		{"WalkthroughTrail", new(schema.WalkthroughTrail)},
+	}
+}
+
+// BuildTypesSpec builds the comprehensive OpenAPI 3.1 type catalog. It has no
+// paths: the named components are the canonical cross-language contract.
 func BuildTypesSpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -32,42 +106,44 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 		WithDescription("Shared domain type catalog for Peasant APIs. No operations — register these " +
 			"components for SDK code generation and cross-API type sharing.")
 
-	entryPoints := []struct {
-		name string
-		val  interface{}
-	}{
-		{"Provider", new(schema.Harness)},
-		{"Role", new(schema.Role)},
-		{"SessionID", new(schema.SessionID)},
-		{"ModelID", new(schema.ModelID)},
-		{"Visibility", new(schema.Visibility)},
-		{"SessionEntry", new(schema.SessionEntry)},
-		{"QualityMetrics", new(schema.QualityMetrics)},
-	}
-
 	jsr := r.JSONSchemaReflector()
-	for _, t := range entryPoints {
-		s, err := jsr.Reflect(t.val, jsonschema.CollectDefinitions(
+	directSchemas := make(map[string]map[string]interface{}, len(TypeCatalogEntries()))
+	for _, t := range TypeCatalogEntries() {
+		var definitionErr error
+		s, err := jsr.Reflect(t.Value, jsonschema.CollectDefinitions(
 			func(name string, defSchema jsonschema.Schema) {
 				// Strip the "Schema" prefix that swaggest derives from the package alias,
 				// so transitive types are stored as "Provider", "Role", etc.
-				plainName := strings.TrimPrefix(name, "Schema")
+				plainName := canonicalTypeName(name)
 				sm, smErr := defSchema.ToSchemaOrBool().ToSimpleMap()
 				if smErr != nil {
+					definitionErr = fmt.Errorf("marshal transitive shared type %s while reflecting %s: %w", plainName, t.Name, smErr)
 					return
 				}
 				r.SpecEns().ComponentsEns().WithSchemasItem(plainName, sm)
 			},
 		))
 		if err != nil {
-			return nil, fmt.Errorf("reflect shared type %s: %w", t.name, err)
+			return nil, fmt.Errorf("reflect shared type %s: %w", t.Name, err)
+		}
+		if definitionErr != nil {
+			return nil, definitionErr
 		}
 		sm, err := s.ToSchemaOrBool().ToSimpleMap()
 		if err != nil {
-			return nil, fmt.Errorf("marshal shared type %s: %w", t.name, err)
+			return nil, fmt.Errorf("marshal shared type %s: %w", t.Name, err)
 		}
-		r.SpecEns().ComponentsEns().WithSchemasItem(t.name, sm)
+		applyGoRequiredFields(sm, reflect.TypeOf(t.Value))
+		directSchemas[t.Name] = sm
 	}
+	// Reflection discovers transitive definitions repeatedly. Re-apply every
+	// explicitly catalogued Go type last so discovery order can never overwrite
+	// its canonical name or Go-requiredness metadata.
+	for name, schemaMap := range directSchemas {
+		r.SpecEns().ComponentsEns().WithSchemasItem(name, schemaMap)
+	}
+	delete(r.SpecEns().ComponentsEns().Schemas, "BestiaryHarness")
+	delete(r.SpecEns().ComponentsEns().Schemas, "Provider")
 
 	// Fix $ref values: JSON Schema Draft 4 CollectDefinitions uses "#/definitions/"
 	// but OAS 3.1 components live under "#/components/schemas/". Walk all component
@@ -82,6 +158,71 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	return r.Spec, nil
 }
 
+// applyGoRequiredFields preserves Go's JSON presence contract in the canonical
+// Types document. API operation documents may intentionally have distinct
+// validation policy; the language binding catalog mirrors the Go wire shape:
+// every exported JSON field without omitempty is present.
+func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.Type) {
+	for valueType.Kind() == reflect.Pointer {
+		valueType = valueType.Elem()
+	}
+	if valueType.Kind() != reflect.Struct {
+		return
+	}
+	var required []interface{}
+	properties, _ := schemaMap["properties"].(map[string]interface{})
+	for i := 0; i < valueType.NumField(); i++ {
+		field := valueType.Field(i)
+		if !field.IsExported() {
+			continue
+		}
+		tag := field.Tag.Get("json")
+		parts := strings.Split(tag, ",")
+		name := parts[0]
+		if name == "-" {
+			continue
+		}
+		if name == "" {
+			name = field.Name
+		}
+		optional := false
+		for _, option := range parts[1:] {
+			optional = optional || option == "omitempty"
+		}
+		if !optional {
+			required = append(required, name)
+		}
+		if field.Type.Kind() == reflect.Pointer {
+			if property, ok := properties[name].(map[string]interface{}); ok {
+				properties[name] = nullableSchema(property)
+			}
+		}
+	}
+	if len(required) > 0 {
+		schemaMap["required"] = required
+	}
+}
+
+func nullableSchema(property map[string]interface{}) map[string]interface{} {
+	if propertyType, ok := property["type"].(string); ok {
+		copy := make(map[string]interface{}, len(property))
+		for key, value := range property {
+			copy[key] = value
+		}
+		copy["type"] = []interface{}{propertyType, "null"}
+		return copy
+	}
+	return map[string]interface{}{"anyOf": []interface{}{property, map[string]interface{}{"type": "null"}}}
+}
+
+func canonicalTypeName(name string) string {
+	name = strings.TrimPrefix(name, "Schema")
+	if name == "BestiaryHarness" || name == "Provider" {
+		return "Harness"
+	}
+	return name
+}
+
 // fixSharedDefinitionRefs is like fixDefinitionRefs but also strips the "Schema"
 // prefix from definition names, normalizing "#/definitions/SchemaX" to
 // "#/components/schemas/X". Used by BuildTypesSpec where all components
@@ -93,8 +234,7 @@ func fixSharedDefinitionRefs(m map[string]interface{}) {
 		switch val := v.(type) {
 		case string:
 			if k == "$ref" && strings.HasPrefix(val, oldPrefix) {
-				name := strings.TrimPrefix(val, oldPrefix)
-				name = strings.TrimPrefix(name, "Schema")
+				name := canonicalTypeName(strings.TrimPrefix(val, oldPrefix))
 				m[k] = newPrefix + name
 			}
 		case map[string]interface{}:

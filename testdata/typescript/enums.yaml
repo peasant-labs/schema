@@ -1,0 +1,256 @@
+enums:
+  - name: AnnotationAxis
+    all_name: AllAnnotationAxes
+    members:
+      - {name: Type, value: "type"}
+      - {name: Session, value: "session"}
+      - {name: Project, value: "project"}
+    all_values: ["type", "session", "project"]
+  - name: AnnotationDatatype
+    all_name: AllAnnotationDatatypes
+    members:
+      - {name: Text, value: "text"}
+      - {name: Integer, value: "integer"}
+      - {name: Real, value: "real"}
+      - {name: Boolean, value: "boolean"}
+    all_values: ["text", "integer", "real", "boolean"]
+  - name: AnnotationPushStatus
+    all_name: AllAnnotationPushStatuses
+    members:
+      - {name: Created, value: "created"}
+      - {name: Updated, value: "updated"}
+      - {name: Skipped, value: "skipped"}
+      - {name: Error, value: "error"}
+    all_values: ["created", "updated", "skipped", "error"]
+  - name: AnnotationStatus
+    all_name: AllAnnotationStatuses
+    members:
+      - {name: Proposed, value: "proposed"}
+      - {name: Active, value: "active"}
+      - {name: Deprecated, value: "deprecated"}
+      - {name: Retired, value: "retired"}
+    all_values: ["proposed", "active", "deprecated", "retired"]
+  - name: AnnotatorKind
+    all_name: AllAnnotatorKinds
+    members:
+      - {name: Human, value: "human"}
+      - {name: Agent, value: "agent"}
+      - {name: Rule, value: "rule"}
+    all_values: ["human", "agent", "rule"]
+  - name: BuiltinCommand
+    all_name: AllClaudeBuiltinCmds
+    members:
+      - {name: Exit, value: "exit"}
+      - {name: Compact, value: "compact"}
+      - {name: Clear, value: "clear"}
+      - {name: New, value: "new"}
+      - {name: Model, value: "model"}
+      - {name: Usage, value: "usage"}
+      - {name: Cost, value: "cost"}
+      - {name: Context, value: "context"}
+      - {name: Plugin, value: "plugin"}
+      - {name: Permissions, value: "permissions"}
+      - {name: Login, value: "login"}
+      - {name: Resume, value: "resume"}
+      - {name: Plan, value: "plan"}
+      - {name: Fast, value: "fast"}
+      - {name: Voice, value: "voice"}
+      - {name: Todos, value: "todos"}
+      - {name: ReloadPlugins, value: "reload-plugins"}
+      - {name: Sandbox, value: "sandbox"}
+      - {name: Config, value: "config"}
+      - {name: Statusline, value: "statusline"}
+      - {name: Upgrade, value: "upgrade"}
+      - {name: ExtraUsage, value: "extra-usage"}
+      - {name: RateLimitOptions, value: "rate-limit-options"}
+      - {name: PrivacySettings, value: "privacy-settings"}
+      - {name: Help, value: "help"}
+      - {name: Commands, value: "commands"}
+    all_values: ["exit", "compact", "clear", "new", "model", "usage", "cost", "context", "plugin", "permissions", "login", "resume", "plan", "fast", "voice", "todos", "reload-plugins", "sandbox", "config", "statusline", "upgrade", "extra-usage", "rate-limit-options", "privacy-settings", "help", "commands"]
+  - name: ChangeBinding
+    all_name: AllChangeBindings
+    members:
+      - {name: Bound, value: "bound"}
+      - {name: Candidate, value: "candidate"}
+    all_values: ["bound", "candidate"]
+  - name: ChannelTopic
+    all_name: AllChannelTopics
+    members:
+      - {name: Dashboard, value: "dashboard"}
+      - {name: Sessions, value: "sessions"}
+      - {name: SessionDetail, value: "session_detail"}
+      - {name: Trends, value: "trends"}
+      - {name: Quality, value: "quality"}
+      - {name: Annotations, value: "annotations"}
+      - {name: ProjectFamiliarity, value: "project_familiarity"}
+    all_values: ["dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity"]
+  - name: ContentKind
+    all_name: AllContentKinds
+    members:
+      - {name: SessionDetail, value: "session_detail"}
+    all_values: ["session_detail"]
+  - name: DecayLevel
+    all_name: AllDecayLevels
+    members:
+      - {name: Fresh, value: "fresh"}
+      - {name: Fading, value: "fading"}
+      - {name: Stale, value: "stale"}
+      - {name: Unexplored, value: "unexplored"}
+    all_values: ["fresh", "fading", "stale", "unexplored"]
+  - name: DiffLineKind
+    all_name: AllDiffLineKinds
+    members:
+      - {name: Context, value: "context"}
+      - {name: Add, value: "add"}
+      - {name: Delete, value: "del"}
+    all_values: ["context", "add", "del"]
+  - name: EdgeViolationKind
+    all_name: AllEdgeViolationKinds
+    members:
+      - {name: Cycle, value: "cycle"}
+      - {name: WrongWay, value: "wrong_way"}
+    all_values: ["cycle", "wrong_way"]
+  - name: EntryType
+    all_name: AllEntryTypes
+    members:
+      - {name: Text, value: "text"}
+      - {name: ToolUse, value: "tool_use"}
+      - {name: ToolResult, value: "tool_result"}
+      - {name: Thinking, value: "thinking"}
+      - {name: System, value: "system"}
+      - {name: Error, value: "error"}
+      - {name: Result, value: "result"}
+    all_values: ["text", "tool_use", "tool_result", "thinking", "system", "error", "result"]
+  - name: FileChangeStatus
+    all_name: AllFileChangeStatuses
+    members:
+      - {name: Modified, value: "M"}
+      - {name: Added, value: "A"}
+      - {name: Deleted, value: "D"}
+      - {name: Renamed, value: "R"}
+    all_values: ["M", "A", "D", "R"]
+  - name: Harness
+    all_name: AllHarnesses
+    members:
+      - {name: ClaudeCode, value: "claude-code"}
+      - {name: GeminiCLI, value: "gemini-cli"}
+      - {name: Codex, value: "codex"}
+      - {name: OpenCode, value: "opencode"}
+      - {name: Cursor, value: "cursor"}
+      - {name: Antigravity, value: "antigravity"}
+    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor"]
+  - name: InteractionType
+    all_name: AllInteractionTypes
+    members:
+      - {name: Mentioned, value: "mentioned"}
+      - {name: Read, value: "read"}
+      - {name: Discussed, value: "discussed"}
+      - {name: Questioned, value: "questioned"}
+    all_values: ["mentioned", "read", "discussed", "questioned"]
+  - name: License
+    all_name: AllLicenses
+    members:
+      - {name: CC0, value: "CC0-1.0"}
+      - {name: CCBY, value: "CC-BY-4.0"}
+      - {name: CCBYSA, value: "CC-BY-SA-4.0"}
+    all_values: ["CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"]
+  - name: MapNodeKind
+    all_name: AllMapNodeKinds
+    members:
+      - {name: Module, value: "module"}
+      - {name: Package, value: "package"}
+      - {name: File, value: "file"}
+    all_values: ["module", "package", "file"]
+  - name: MessageType
+    all_name: AllMessageTypes
+    members:
+      - {name: Subscribe, value: "subscribe"}
+      - {name: Unsubscribe, value: "unsubscribe"}
+      - {name: Dashboard, value: "dashboard"}
+      - {name: Sessions, value: "sessions"}
+      - {name: SessionDetail, value: "session_detail"}
+      - {name: Trends, value: "trends"}
+      - {name: Quality, value: "quality"}
+      - {name: Annotations, value: "annotations"}
+      - {name: ProjectFamiliarity, value: "project_familiarity"}
+      - {name: Connected, value: "connected"}
+      - {name: Error, value: "error"}
+    all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error"]
+  - name: Role
+    all_name: AllRoles
+    members:
+      - {name: User, value: "user"}
+      - {name: Assistant, value: "assistant"}
+      - {name: Tool, value: "tool"}
+      - {name: System, value: "system"}
+    all_values: ["user", "assistant", "tool", "system"]
+  - name: ScaleKind
+    all_name: AllScaleKinds
+    members:
+      - {name: Nominal, value: "nominal"}
+      - {name: Ordinal, value: "ordinal"}
+      - {name: Continuous, value: "continuous"}
+    all_values: ["nominal", "ordinal", "continuous"]
+  - name: SessionOutcome
+    all_name: AllOutcomes
+    members:
+      - {name: Resolved, value: "resolved"}
+      - {name: Partial, value: "partial"}
+      - {name: Failed, value: "failed"}
+    all_values: ["resolved", "partial", "failed"]
+  - name: SourceFormat
+    all_name: AllSourceFormats
+    members:
+      - {name: JSONL, value: "jsonl"}
+      - {name: JSON, value: "json"}
+    all_values: ["jsonl", "json"]
+  - name: StopReason
+    all_name: AllStopReasons
+    members:
+      - {name: EndTurn, value: "end_turn"}
+      - {name: Cancelled, value: "cancelled"}
+      - {name: MaxTokens, value: "max_tokens"}
+      - {name: MaxTurnRequests, value: "max_turn_requests"}
+      - {name: Refusal, value: "refusal"}
+    all_values: ["end_turn", "cancelled", "max_tokens", "max_turn_requests", "refusal"]
+  - name: TargetKind
+    all_name: AllTargetKinds
+    members:
+      - {name: Session, value: "session"}
+      - {name: Entry, value: "entry"}
+      - {name: Annotation, value: "annotation"}
+      - {name: Project, value: "project"}
+    all_values: ["session", "entry", "annotation", "project"]
+  - name: ToolCallKind
+    all_name: AllToolCallKinds
+    members:
+      - {name: Read, value: "read"}
+      - {name: Edit, value: "edit"}
+      - {name: Delete, value: "delete"}
+      - {name: Move, value: "move"}
+      - {name: Search, value: "search"}
+      - {name: Execute, value: "execute"}
+      - {name: Think, value: "think"}
+      - {name: Fetch, value: "fetch"}
+      - {name: Other, value: "other"}
+    all_values: ["read", "edit", "delete", "move", "search", "execute", "think", "fetch", "other"]
+  - name: TypeOrigin
+    all_name: AllTypeOrigins
+    members:
+      - {name: System, value: "system"}
+      - {name: User, value: "user"}
+      - {name: Group, value: "group"}
+    all_values: ["system", "user", "group"]
+  - name: ValueDomainKind
+    all_name: AllValueDomainKinds
+    members:
+      - {name: Enumerated, value: "enumerated"}
+      - {name: Described, value: "described"}
+    all_values: ["enumerated", "described"]
+  - name: Visibility
+    all_name: AllVisibilities
+    members:
+      - {name: Private, value: "private"}
+      - {name: Group, value: "group"}
+      - {name: Public, value: "public"}
+    all_values: ["private", "group", "public"]

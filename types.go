@@ -101,6 +101,15 @@ func NewProjectHash(raw string) (ProjectHash, error) {
 	return ProjectHash(raw), nil
 }
 
+// Validate reports whether p is the canonical 64-character lowercase hex
+// project identity accepted at wire boundaries.
+func (p ProjectHash) Validate() error {
+	if !projectHashPattern.MatchString(string(p)) {
+		return fmt.Errorf("invalid project hash %q: must be a 64-character lowercase hex string", p)
+	}
+	return nil
+}
+
 func (p ProjectHash) String() string { return string(p) }
 
 // JSONSchema implements jsonschema.Exposer.
@@ -161,6 +170,12 @@ const (
 	SourceFormatJSONL SourceFormat = "jsonl" // Claude Code JSONL transcripts
 	SourceFormatJSON  SourceFormat = "json"  // OpenCode JSON transcripts
 )
+
+// AllSourceFormats is the canonical list of transcript source formats.
+var AllSourceFormats = []SourceFormat{
+	SourceFormatJSONL,
+	SourceFormatJSON,
+}
 
 // IsValid returns true if the SourceFormat is one of the known variants.
 func (f SourceFormat) IsValid() bool {

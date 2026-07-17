@@ -1,7 +1,11 @@
 package schema
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+	"math"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -36,48 +40,95 @@ var allQualityFixtureSetNames = []QualityFixtureSetName{
 
 // QualityFixtures is the parsed testdata/quality/sessions.yaml corpus.
 type QualityFixtures struct {
-	Sessions []QualitySessionFixture `yaml:"quality_sessions"`
-	Sets     []QualityFixtureSet     `yaml:"quality_fixture_sets"`
+	Sessions   []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
+	Sets       []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
+	Variations QualityVariations       `json:"variations" yaml:"quality_variations"`
+}
+
+// QualityVariations is the reusable combinatorial input catalog carried by the
+// canonical quality fixture document.
+type QualityVariations struct {
+	Outcomes    []QualityStringVariation `json:"outcomes" yaml:"outcomes"`
+	Projects    []QualityStringVariation `json:"projects" yaml:"projects"`
+	Scopes      []QualityStringVariation `json:"scopes" yaml:"scopes"`
+	TaskTitles  []QualityStringVariation `json:"taskTitles" yaml:"task_titles"`
+	TokenRatios []QualityRatioVariation  `json:"tokenRatios" yaml:"token_ratios"`
+	Metrics     QualityMetricVariations  `json:"metrics" yaml:"metrics"`
+}
+
+type QualityStringVariation struct {
+	Value string `json:"value" yaml:"value"`
+}
+
+type QualityRatioVariation struct {
+	Name       string  `json:"name" yaml:"name"`
+	InputRatio float64 `json:"inputRatio" yaml:"inputRatio"`
+}
+
+type QualityMetricVariation struct {
+	Name  string  `json:"name" yaml:"name"`
+	Value float64 `json:"value" yaml:"value"`
+}
+
+type QualityMetricVariations struct {
+	RetryLoops       []QualityMetricVariation `json:"retryLoops" yaml:"retry_loops"`
+	SignalDensity    []QualityMetricVariation `json:"signalDensity" yaml:"signal_density"`
+	SpecQualityScore []QualityMetricVariation `json:"specQualityScore" yaml:"spec_quality_score"`
+	FilesTouched     []QualityMetricVariation `json:"filesTouched" yaml:"files_touched"`
+	LinesChanged     []QualityMetricVariation `json:"linesChanged" yaml:"lines_changed"`
 }
 
 // QualitySessionFixture is one named quality-session fixture row.
 type QualitySessionFixture struct {
-	Name                 QualityFixtureName `yaml:"name"`
-	ID                   string             `yaml:"id"`
-	Date                 string             `yaml:"date"`
-	Project              string             `yaml:"project"`
-	Scope                string             `yaml:"scope"`
-	Title                string             `yaml:"title"`
-	TotalTokens          int                `yaml:"totalTokens"`
-	InputTokens          int                `yaml:"inputTokens"`
-	OutputTokens         int                `yaml:"outputTokens"`
-	TurnCount            int                `yaml:"turnCount"`
-	ToolCalls            int                `yaml:"toolCalls"`
-	Outcome              string             `yaml:"outcome"`
-	FilesTouched         int                `yaml:"filesTouched"`
-	LinesChanged         int                `yaml:"linesChanged"`
-	DurationMinutes      float64            `yaml:"durationMinutes"`
-	RetryLoops           int                `yaml:"retryLoops"`
-	RetryTokensWasted    int                `yaml:"retryTokensWasted"`
-	WithinSessionReverts int                `yaml:"withinSessionReverts"`
-	SignalDensity        float64            `yaml:"signalDensity"`
-	SpecQualityScore     float64            `yaml:"specQualityScore"`
-	ExplorationRatio     float64            `yaml:"explorationRatio"`
-	ScopeBreadth         int                `yaml:"scopeBreadth"`
-	DiscoveryTurns       int                `yaml:"discoveryTurns"`
+	Name                 QualityFixtureName `json:"name" yaml:"name"`
+	ID                   string             `json:"id" yaml:"id"`
+	Date                 string             `json:"date" yaml:"date"`
+	Project              string             `json:"project" yaml:"project"`
+	Scope                string             `json:"scope" yaml:"scope"`
+	Title                string             `json:"title" yaml:"title"`
+	TotalTokens          int                `json:"totalTokens" yaml:"totalTokens"`
+	InputTokens          int                `json:"inputTokens" yaml:"inputTokens"`
+	OutputTokens         int                `json:"outputTokens" yaml:"outputTokens"`
+	TurnCount            int                `json:"turnCount" yaml:"turnCount"`
+	ToolCalls            int                `json:"toolCalls" yaml:"toolCalls"`
+	Outcome              string             `json:"outcome" yaml:"outcome"`
+	FilesTouched         int                `json:"filesTouched" yaml:"filesTouched"`
+	LinesChanged         int                `json:"linesChanged" yaml:"linesChanged"`
+	DurationMinutes      float64            `json:"durationMinutes" yaml:"durationMinutes"`
+	RetryLoops           int                `json:"retryLoops" yaml:"retryLoops"`
+	RetryTokensWasted    int                `json:"retryTokensWasted" yaml:"retryTokensWasted"`
+	WithinSessionReverts int                `json:"withinSessionReverts" yaml:"withinSessionReverts"`
+	SignalDensity        float64            `json:"signalDensity" yaml:"signalDensity"`
+	SpecQualityScore     float64            `json:"specQualityScore" yaml:"specQualityScore"`
+	ExplorationRatio     float64            `json:"explorationRatio" yaml:"explorationRatio"`
+	ScopeBreadth         int                `json:"scopeBreadth" yaml:"scopeBreadth"`
+	DiscoveryTurns       int                `json:"discoveryTurns" yaml:"discoveryTurns"`
 }
 
 // QualityFixtureSet is a named reusable list of quality-session fixture rows.
 type QualityFixtureSet struct {
-	Name  QualityFixtureSetName `yaml:"name"`
-	Cases []QualityFixtureName  `yaml:"cases"`
+	Name  QualityFixtureSetName `json:"name" yaml:"name"`
+	Cases []QualityFixtureName  `json:"cases" yaml:"cases"`
 }
 
 // LoadQualityFixtures parses QualitySessionsYAML into structured fixtures.
 func LoadQualityFixtures() (*QualityFixtures, error) {
+	return loadQualityFixtures(QualitySessionsYAML)
+}
+
+func loadQualityFixtures(data []byte) (*QualityFixtures, error) {
 	var f QualityFixtures
-	if err := yaml.Unmarshal(QualitySessionsYAML, &f); err != nil {
-		return nil, fmt.Errorf("load quality fixtures: %w", err)
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&f); err != nil {
+		return nil, fmt.Errorf("load quality fixtures: decode document: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return nil, fmt.Errorf("load quality fixtures: decode trailing document: %w", err)
+		}
+		return nil, fmt.Errorf("load quality fixtures: multiple YAML documents are not allowed")
 	}
 	if err := f.validate(); err != nil {
 		return nil, err
@@ -163,6 +214,9 @@ func (f QualitySessionFixture) ToQualitySession() QualitySession {
 func (f *QualityFixtures) validate() error {
 	sessionNames := make(map[QualityFixtureName]struct{}, len(f.Sessions))
 	for _, session := range f.Sessions {
+		if _, exists := sessionNames[session.Name]; exists {
+			return fmt.Errorf("quality fixture corpus has duplicate case %q", session.Name)
+		}
 		sessionNames[session.Name] = struct{}{}
 	}
 	knownSessionNames := make(map[QualityFixtureName]struct{}, len(allQualityFixtureNames))
@@ -184,20 +238,98 @@ func (f *QualityFixtures) validate() error {
 		knownSetNames[name] = struct{}{}
 	}
 	for _, set := range f.Sets {
+		if _, exists := setNames[set.Name]; exists {
+			return fmt.Errorf("quality fixture corpus has duplicate set %q", set.Name)
+		}
 		if _, ok := knownSetNames[set.Name]; !ok {
 			return fmt.Errorf("quality fixture corpus has unregistered set %q", set.Name)
 		}
 		setNames[set.Name] = struct{}{}
+		setCases := map[QualityFixtureName]struct{}{}
 		for _, caseName := range set.Cases {
 			if _, ok := sessionNames[caseName]; !ok {
 				return fmt.Errorf("quality fixture set %q references unknown case %q", set.Name, caseName)
 			}
+			if _, duplicate := setCases[caseName]; duplicate {
+				return fmt.Errorf("quality fixture set %q repeats case %q", set.Name, caseName)
+			}
+			setCases[caseName] = struct{}{}
 		}
 	}
 	for _, name := range allQualityFixtureSetNames {
 		if _, ok := setNames[name]; !ok {
 			return fmt.Errorf("quality fixture corpus missing set %q", name)
 		}
+	}
+	return f.Variations.validate()
+}
+
+func (v QualityVariations) validate() error {
+	for name, values := range map[string][]QualityStringVariation{
+		"outcomes": v.Outcomes, "projects": v.Projects, "scopes": v.Scopes, "taskTitles": v.TaskTitles,
+	} {
+		if len(values) == 0 {
+			return fmt.Errorf("quality variations arm %s is empty", name)
+		}
+		seen := map[string]struct{}{}
+		for _, value := range values {
+			if _, duplicate := seen[value.Value]; duplicate {
+				return fmt.Errorf("quality variations arm %s repeats value %q", name, value.Value)
+			}
+			seen[value.Value] = struct{}{}
+		}
+	}
+	if err := validateRatioVariations("tokenRatios", v.TokenRatios); err != nil {
+		return err
+	}
+	for name, values := range map[string][]QualityMetricVariation{
+		"retryLoops": v.Metrics.RetryLoops, "signalDensity": v.Metrics.SignalDensity,
+		"specQualityScore": v.Metrics.SpecQualityScore, "filesTouched": v.Metrics.FilesTouched,
+		"linesChanged": v.Metrics.LinesChanged,
+	} {
+		if err := validateMetricVariations(name, values); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateRatioVariations(name string, values []QualityRatioVariation) error {
+	if len(values) == 0 {
+		return fmt.Errorf("quality variations arm %s is empty", name)
+	}
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		if strings.TrimSpace(value.Name) == "" {
+			return fmt.Errorf("quality variations arm %s has a blank name", name)
+		}
+		if _, duplicate := seen[value.Name]; duplicate {
+			return fmt.Errorf("quality variations arm %s repeats name %q", name, value.Name)
+		}
+		if math.IsNaN(value.InputRatio) || math.IsInf(value.InputRatio, 0) {
+			return fmt.Errorf("quality variations arm %s name %q has a non-finite ratio", name, value.Name)
+		}
+		seen[value.Name] = struct{}{}
+	}
+	return nil
+}
+
+func validateMetricVariations(name string, values []QualityMetricVariation) error {
+	if len(values) == 0 {
+		return fmt.Errorf("quality variations arm %s is empty", name)
+	}
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		if strings.TrimSpace(value.Name) == "" {
+			return fmt.Errorf("quality variations arm %s has a blank name", name)
+		}
+		if _, duplicate := seen[value.Name]; duplicate {
+			return fmt.Errorf("quality variations arm %s repeats name %q", name, value.Name)
+		}
+		if math.IsNaN(value.Value) || math.IsInf(value.Value, 0) {
+			return fmt.Errorf("quality variations arm %s name %q has a non-finite value", name, value.Name)
+		}
+		seen[value.Name] = struct{}{}
 	}
 	return nil
 }

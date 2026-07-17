@@ -33,6 +33,10 @@ make check                          # the authoritative quality gate (bare-go ru
 make test                           # go test -race ./...
 make gates BASE_REF=origin/develop  # the breaking-change contract gates (needs the flake tools)
 make freshness                      # git-diff backstop on the generated artifacts
+pnpm --dir typescript run typecheck
+pnpm --dir typescript test
+pnpm --dir typescript run package:audit
+pnpm --dir typescript run package:smoke
 ```
 
 `make check` is `fmt` + `vet` + `freshness` + the release-workflow guard
@@ -74,6 +78,15 @@ script) behind it.
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish behind un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
+| TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
+| TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
+| TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
+| TypeScript operation-alias collision safety | `typescript/scripts/lib/operation-aliases.mjs`; `typescript/tests/operation-aliases.test.mjs`; `testdata/typescript/collision_cases.yaml` | **Hard.** A Local/Village API component whose schema drifts from the canonical root type it would alias to stops generation with an actionable error; a synthetic-break test proves the throw fires on a real mismatch, not only on today's already-consistent specs. |
+| TypeScript ProjectHash brand-resolver safety | `typescript/scripts/lib/project-hash-resolver.mjs`; `typescript/tests/project-hash-resolver.test.mjs`; `testdata/typescript/project_hash_resolver_cases.yaml` | **Hard.** The generation-time decision that brands a string schema as `ProjectHash` requires both the canonical pattern AND the canonical `#/components/schemas/ProjectHash` `$ref` location; a 6-case fixture (1 positive, 5 negative-control) drives the extracted decision function directly, proving a same-pattern differently-named or differently-located schema is never branded. |
+| TypeScript public contract completeness | `typescript/scripts/generate-contract-support.mjs` (`renderPublicContract`) | **Hard.** Every Types OpenAPI catalog component must produce exactly one matching Hey API Zod export; a missing, extra, or renamed export fails generation instead of only asserting the facade is non-empty. |
+| TypeScript facade export identity | `typescript/tests/public-exports.test.mjs`; `testdata/typescript/public_exports.yaml`, `public_export_mutations.yaml` | **Hard.** The hand-maintained root/`local-api`/`village-api` facade exports (aliases, version constants, ProjectHash functions, forbidden names) match a fixture; a dedicated add/remove/duplicate/redirect mutation corpus proves the check is not vacuous. |
+| TypeScript ProjectHash wire-location coverage | `typescript/tests/project-hash-locations.ts`, `project-hash-locations.test.mjs`; `testdata/typescript/project_hash_locations.yaml` | **Hard.** Compile-time proof that the ProjectHash brand reaches all 5 named wire locations plus a same-spelling negative control; a runtime coupling test fails if a location is dropped from either the fixture or the compile-time file (removing a passing assertion is not by itself a type error). |
+| Published package content + tarball imports | `typescript/scripts/package-*.mjs` | **Hard.** Only audited files ship, and every public subpath imports from a disposable packed install. |
 
 ### Codegen freshness
 
@@ -94,6 +107,89 @@ redundant with `TestCodegenFreshness` (both diff the generator's output), but it
 uses `git add -N` so it also catches a future generator write-path that emits a
 tracked artifact outside the shared artifact map, which the Go test (iterating that
 map) could not see.
+
+`make freshness` then regenerates the TypeScript contract with exact tool
+versions pinned in `typescript/pnpm-lock.yaml`. Hey API's Zod plugin consumes the
+canonical Types OpenAPI catalog without enabling an SDK/client plugin;
+`openapi-typescript` emits type-only `paths` and `operations` contracts from the
+Local and Village catalogs. The gate diffs those outputs, the Go-shaped enum
+facade, version constants, and YAML-derived quality and timeline fixture data.
+
+### Cross-language testcase and fixture gates
+
+`testcase/testdata/load_cases.yaml` is one strict-loader matrix consumed by both
+Go and TypeScript. It covers unknown envelope keys, duplicate YAML keys,
+malformed input, trailing documents, invalid closed values, and duplicate case
+names. The TypeScript generic loader requires `decodeInput` and
+`decodeExpected` callbacks, because erased generic parameters cannot safely
+decode `unknown`; the package never casts an unknown payload to caller-selected
+`I` or `E`.
+
+Quality fixture consumers do not parse repository-relative YAML. The TypeScript
+generator reads the same canonical YAML as Go, maps its public field names, and
+emits typed data behind clone-returning accessors. The Go loader remains the
+strict source validation gate. TypeScript tests cover the five sessions, the
+named set, and the full variation catalog.
+
+The project timeline corpus uses the same schema-owned path. Each row in
+`timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`
+validates exactly 16 families with 5 accepted and 11 rejected relationship
+cases. A separate schema-repo-only oracle and count-preserving rename and
+replacement mutations prove the public corpus has the exact intended identities;
+that review scaffolding is not generated or published. Generation emits only the
+typed corpus and clone-returning `/fixtures/timeline` accessor, so TypeScript
+consumers never reparse repository YAML or redefine the session-to-commit
+relationship contract.
+
+### TypeScript facade and operation-alias gates
+
+A gate that can never fail is worthless here too. `canonicalOperationAliases`
+(`typescript/scripts/lib/operation-aliases.mjs`) structurally compares every
+Local/Village API OpenAPI component against the canonical root Types schema its
+name normalizes to, and throws when they diverge; it happens to never throw
+against today's already-consistent generated specs, which is not evidence it
+would fire on a real mismatch. `typescript/tests/operation-aliases.test.mjs`
+proves it: a synthetic-break case constructs a same-named root/API schema pair
+that deliberately disagree and asserts generation throws with the expected
+message, alongside `testdata/typescript/collision_cases.yaml`'s fixture-backed
+equal/unequal and dropped-required-field/changed-property-type corpus.
+
+The ProjectHash brand carries the same "never observed to fail" risk one layer
+earlier, at generation time: `typescript/openapi-ts.config.mjs`'s Hey API
+Zod-plugin resolver decides whether a string schema receives the nominal
+`ProjectHash` brand. That decision (`shouldBrandProjectHash` /
+`isCanonicalProjectHashSchema`, extracted to
+`typescript/scripts/lib/project-hash-resolver.mjs` the same way
+`canonicalOperationAliases` was) requires both the canonical
+`^[0-9a-f]{64}$` pattern AND the canonical `#/components/schemas/ProjectHash`
+`$ref` location; today's Types catalog has only one schema with that pattern,
+so generation alone can never observe the guard reject anything.
+`typescript/tests/project-hash-resolver.test.mjs` is the committed proof
+instead: `testdata/typescript/project_hash_resolver_cases.yaml`'s 6 cases drive
+the extracted function directly against synthetic path/pattern pairs, covering
+the canonical case plus 5 ways it must fail closed (a same-pattern
+differently-named component, the canonical path with the wrong pattern, a
+nested non-top-level path, a path outside `components/schemas`, and a missing
+path reference). This is a different layer from the ProjectHash
+*wire-location* coverage described below: this gate proves the brand is
+assigned correctly at the one place it originates; that one proves the
+assigned brand then propagates to every wire location that should carry it.
+
+The hand-maintained root, `/local-api`, and `/village-api` facade files
+(`typescript/src/index.ts`, `local-api.ts`, `village-api.ts`) are five lines
+each and carry no compiler-visible contract of their own: dropping one of their
+re-export lines passes typecheck, `pnpm test`, `package:audit`, `package:smoke`,
+and `make freshness` unless something specifically asserts the export exists.
+`typescript/tests/public-exports.test.mjs` is that assertion: it checks runtime
+constants and functions by value, type-only aliases by source-text wiring, and
+runs `testdata/typescript/public_export_mutations.yaml`'s remove/add/duplicate/
+redirect corpus through a small identity validator to prove the check is not
+vacuous. `typescript/tests/project-hash-locations.ts` is the equivalent
+compile-time proof for the ProjectHash brand: it is a `Same<>` assertion per
+wire location, and because removing a passing assertion typechecks fine on its
+own, `project-hash-locations.test.mjs` cross-checks the fixture's named
+locations against the `.ts` file's source text so a dropped location fails
+loudly instead of silently.
 
 ### Retired-version immutability
 
@@ -264,8 +360,9 @@ metadata keeps every case both traceable and non-vacuous.
   pointer (a requirement id, a bug link, an enum name); `description` names the
   one change under test. For a must-fail case that change is the mutation that
   makes a valid input invalid, so a negative case is never vacuous.
-- **Pure loader + pure validators.** `LoadCorpus[I, E]` unmarshals the YAML and
-  returns an error rather than failing a test. `Case.Validate` / `Corpus.Validate`
+- **Pure loader + pure validators.** `LoadCorpus[I, E]` unmarshals and validates
+  the YAML, returning an error rather than failing a test. `Case.Validate` /
+  `Corpus.Validate` remain available for programmatically assembled corpora and
   reject a vacuous case: an out-of-set classification or provenance source, an
   empty `ref`, or an empty mutation `description`. `CheckMin(n)` is the pure
   minimum-size floor (`len >= n`), so a corpus may grow without tripping it.

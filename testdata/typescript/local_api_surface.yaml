@@ -1,0 +1,38 @@
+operations:
+  - {path: /api/v1/annotation-types, method: get, operation_id: listAnnotationTypes}
+  - {path: /api/v1/annotations, method: get, operation_id: listAnnotations}
+  - {path: /api/v1/annotations, method: post, operation_id: createAnnotation}
+  - {path: /api/v1/config/mock, method: get, operation_id: getMockConfig}
+  - {path: /api/v1/health, method: get, operation_id: getHealth}
+  - {path: "/api/v1/map/{projectHash}", method: get, operation_id: getMapGraph}
+  - {path: "/api/v1/map/{projectHash}/node", method: get, operation_id: getMapNodeDetail}
+  - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}
+  - {path: /api/v1/projects/resolve, method: get, operation_id: resolveProject}
+  - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries}
+  - {path: "/api/v1/review/{projectHash}", method: get, operation_id: listReviewChanges}
+  - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
+  - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}
+  - {path: /api/v1/search, method: get, operation_id: searchMessages}
+  - {path: /api/v1/sessions, method: get, operation_id: listSessions}
+  - {path: "/api/v1/sessions/{id}", method: get, operation_id: getSession}
+  - {path: /api/v1/shutdown, method: post, operation_id: postShutdown}
+mutations:
+  cases:
+    - name: removed_operation_is_rejected
+      input: {kind: remove, path: /api/v1/projects/resolve, method: get}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API operation manifest}
+      mutation: {description: removes the project resolver operation}
+    - name: added_operation_is_rejected
+      input: {kind: add, path: /api/v1/unexpected, method: get, operation_id: unexpectedOperation}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: exact local API operation manifest}
+      mutation: {description: adds an unaccounted operation to the public surface}
+    - name: redirected_operation_is_rejected
+      input: {kind: redirect, path: "/api/v1/review/{projectHash}", method: get, operation_id: resolveProject}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: exact local API operation mapping}
+      mutation: {description: redirects the review timeline route to the resolver operation}

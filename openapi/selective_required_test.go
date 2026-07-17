@@ -11,19 +11,16 @@ import (
 	specpkg "github.com/peasant-labs/schema/openapi"
 )
 
-// TestVillageSpec_SelectiveRequiredScope is the rc2 (#118) SELECTIVE-SCOPE guard.
-// It parses the REGENERATED village-api spec (the exact bytes the generator emits)
-// and asserts that EXACTLY the SchemaModelInfo and SchemaPublishRequest component
-// schemas carry a non-empty `required` array — with the EXACT contents
-// [harness,model] and [model]. This proves the required strictening is selective:
-// no other component schema gains a required array (no global/blanket flip), and
-// no `required:"true"` tag leaks onto another struct.
+// TestVillageSpec_RequirednessMatchesCanonicalTypes asserts that every shared
+// Village component has the exact canonical Types required set. The distinct
+// operation-only publish body retains its stricter model requirement without
+// shadowing the canonical PublishRequest name.
 //
 // Out of scope by construction: operation/path parameter `required: true` booleans
 // live under paths/.../parameters, NOT components/schemas, so examining only
 // components/schemas excludes them (a parameter's required is a bool, not the
 // object-schema required ARRAY this guard inspects).
-func TestVillageSpec_SelectiveRequiredScope(t *testing.T) {
+func TestVillageSpec_RequirednessMatchesCanonicalTypes(t *testing.T) {
 	artifacts, err := specpkg.GenerateSpecArtifacts()
 	if err != nil {
 		t.Fatalf("GenerateSpecArtifacts: %v", err)
@@ -36,13 +33,14 @@ func TestVillageSpec_SelectiveRequiredScope(t *testing.T) {
 		t.Fatalf("generator did not emit %s; check VillageAPIVersion / BuildVillageAPISpec", key)
 	}
 
-	var doc struct {
+	type componentDocument struct {
 		Components struct {
 			Schemas map[string]struct {
 				Required []string `json:"required"`
 			} `json:"schemas"`
 		} `json:"components"`
 	}
+	var doc componentDocument
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatalf("unmarshal %s: %v", key, err)
 	}
@@ -50,27 +48,39 @@ func TestVillageSpec_SelectiveRequiredScope(t *testing.T) {
 		t.Fatalf("%s has no components/schemas — spec shape changed unexpectedly", key)
 	}
 
-	got := map[string][]string{}
-	for name, s := range doc.Components.Schemas {
-		if len(s.Required) > 0 {
-			r := append([]string(nil), s.Required...)
-			sort.Strings(r) // order is not semantically meaningful in JSON Schema required
-			got[name] = r
+	typesSpec, err := specpkg.BuildTypesSpec()
+	if err != nil {
+		t.Fatalf("BuildTypesSpec: %v", err)
+	}
+	typesRaw, err := typesSpec.MarshalJSON()
+	if err != nil {
+		t.Fatalf("marshal Types spec: %v", err)
+	}
+	var canonical componentDocument
+	if err := json.Unmarshal(typesRaw, &canonical); err != nil {
+		t.Fatalf("unmarshal Types spec: %v", err)
+	}
+	publishRequired := append([]string(nil), doc.Components.Schemas["OpenapiTranscriptPublishRequest"].Required...)
+	sort.Strings(publishRequired)
+	if !reflect.DeepEqual(publishRequired, []string{"model"}) {
+		t.Fatalf("Village publish body required=%v, want [model]; restore the operation-specific validation contract", publishRequired)
+	}
+	for name, component := range doc.Components.Schemas {
+		canonicalName := strings.TrimPrefix(name, "Schema")
+		if canonicalName == "BestiaryHarness" || canonicalName == "Provider" {
+			canonicalName = "Harness"
 		}
-	}
-
-	want := map[string][]string{
-		"SchemaModelInfo":      {"harness", "model"},
-		"SchemaPublishRequest": {"model"},
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("SELECTIVE-required scope drift in %s.\n"+
-			"  what: the set/contents of component schemas carrying a non-empty `required` array changed.\n"+
-			"  why:  rc2 #118 requires EXACTLY SchemaModelInfo=[harness,model] + SchemaPublishRequest=[model] — no other schema, no global flip.\n"+
-			"  got:  %v\n"+
-			"  want: %v\n"+
-			"  fix:  a new required:\"true\" tag leaked onto another struct, or a tag was dropped — reconcile struct tags (model.go/publish.go) + `make schema`.",
-			key, got, want)
+		root, shared := canonical.Components.Schemas[canonicalName]
+		if !shared {
+			continue
+		}
+		got := append([]string(nil), component.Required...)
+		want := append([]string(nil), root.Required...)
+		sort.Strings(got)
+		sort.Strings(want)
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Village component %s required=%v, canonical Types %s required=%v; harmonize the shared component or give a genuinely operation-specific schema a distinct name", name, got, canonicalName, want)
+		}
 	}
 }
 

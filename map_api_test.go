@@ -6,6 +6,29 @@ import (
 	"testing"
 )
 
+const testProjectHash ProjectHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+func TestNewReviewListPayload_TimelineCollectionsMarshalAsArrays(t *testing.T) {
+	b, err := json.Marshal(NewReviewListPayload(testProjectHash))
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(b)
+	if !strings.Contains(got, `"recentCommits":[]`) || !strings.Contains(got, `"sessions":[]`) {
+		t.Errorf("timeline collections should marshal as arrays, got %s", got)
+	}
+}
+
+func TestNewCommitRef_SessionIDsMarshalAsArray(t *testing.T) {
+	b, err := json.Marshal(NewCommitRef("hash", "subject"))
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if got := string(b); !strings.Contains(got, `"sessionIds":[]`) {
+		t.Errorf("sessionIds should marshal as an array, got %s", got)
+	}
+}
+
 func TestNewChangeDetailPayload_FrictionsMarshalsAsArray(t *testing.T) {
 	b, err := json.Marshal(NewChangeDetailPayload("feat/x"))
 	if err != nil {

@@ -49,15 +49,15 @@ func TestBuildTypesSpec_Title(t *testing.T) {
 	}
 }
 
-// TestBuildTypesSpec_Version verifies info.version is "0.1.0".
+// TestBuildTypesSpec_Version verifies info.version follows the canonical constant.
 func TestBuildTypesSpec_Version(t *testing.T) {
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {
 		t.Fatalf("BuildTypesSpec() error: %v", err)
 	}
 
-	if spec.Info.Version != "0.1.0" {
-		t.Errorf("info.version = %q; want %q", spec.Info.Version, "0.1.0")
+	if spec.Info.Version != specpkg.TypesVersion {
+		t.Errorf("info.version = %q; want %q", spec.Info.Version, specpkg.TypesVersion)
 	}
 }
 
@@ -95,8 +95,8 @@ func TestBuildTypesSpec_ZeroPaths(t *testing.T) {
 	}
 }
 
-// TestBuildTypesSpec_ProviderEnum verifies Provider enum values appear.
-func TestBuildTypesSpec_ProviderEnum(t *testing.T) {
+// TestBuildTypesSpec_HarnessEnum verifies Harness enum values appear.
+func TestBuildTypesSpec_HarnessEnum(t *testing.T) {
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {
 		t.Fatalf("BuildTypesSpec() error: %v", err)
@@ -106,7 +106,7 @@ func TestBuildTypesSpec_ProviderEnum(t *testing.T) {
 
 	for _, provider := range []string{"claude-code", "gemini-cli", "codex", "opencode"} {
 		if !containsQuoted(jsonStr, provider) {
-			t.Errorf("shared types spec missing Provider enum value %q", provider)
+			t.Errorf("shared types spec missing Harness enum value %q", provider)
 		}
 	}
 }

@@ -1,0 +1,43 @@
+cases:
+  - name: unknown top-level field
+    input: {old: "quality_sessions:", new: "surprise: true\nquality_sessions:"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: strict quality fixture envelope}
+    mutation: {description: adds an unknown top-level field}
+  - name: trailing document
+    input: {append: "\n---\nquality_sessions: []\n"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: exactly one quality fixture document}
+    mutation: {description: appends a second YAML document}
+  - name: duplicate session name
+    input: {old: '  - name: "resolved_high_tokens"', new: '  - name: "resolved_typical"'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: unique quality session names}
+    mutation: {description: changes a second session to an existing name}
+  - name: duplicate case in set
+    input: {old: '      - "partial_medium"', new: '      - "resolved_typical"'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: unique members within a fixture set}
+    mutation: {description: repeats the first fixture-set member}
+  - name: duplicate string variation
+    input: {old: '    - value: "partial"', new: '    - value: "resolved"'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: unique variation values}
+    mutation: {description: changes an outcome variation to an existing value}
+  - name: duplicate ratio variation name
+    input: {old: '    - name: "balanced"', new: '    - name: "typical_input_heavy"'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: unique ratio variation names}
+    mutation: {description: changes a ratio variation to an existing name}
+  - name: blank metric variation name
+    input: {old: '      - name: "few"', new: '      - name: "   "'}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: nonempty metric variation names}
+    mutation: {description: replaces a metric variation name with whitespace}

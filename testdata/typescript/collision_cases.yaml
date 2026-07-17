@@ -1,0 +1,37 @@
+cases:
+  - name: equal schemas share a public name
+    input:
+      name: Example
+      first_schema: '{"type":"string"}'
+      second_schema: '{"type":"string"}'
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: identical schema aliases may deduplicate}
+    mutation: {description: presents byte-identical canonical schemas from two document views}
+  - name: unequal schemas cannot share a public name
+    input:
+      name: Example
+      first_schema: '{"type":"string"}'
+      second_schema: '{"type":"integer"}'
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: public TypeScript names fail closed on structural collision}
+    mutation: {description: changes the second schema type while retaining the same public name}
+  - name: unequal_same_name_copy_is_rejected
+    input:
+      name: ProjectResolutionPayload
+      first_schema: '{"type":"object","properties":{"project":{"type":"string"}},"required":["project"]}'
+      second_schema: '{"type":"object","properties":{"project":{"type":"integer"}},"required":["project"]}'
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: API aliases may use canonical root names only when schemas are exactly equal}
+    mutation: {description: changes a same-name API response property type without renaming the component}
+  - name: dropped_required_field_projection_is_rejected
+    input:
+      name: ReviewListPayload
+      first_schema: '{"type":"object","properties":{"sessions":{"type":"array"}},"required":["sessions"]}'
+      second_schema: '{"type":"object","properties":{"sessions":{"type":"array"}}}'
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: operation references must preserve canonical root requiredness exactly}
+    mutation: {description: removes one required field while retaining the canonical component name}

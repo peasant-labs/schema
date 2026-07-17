@@ -1,0 +1,40 @@
+cases:
+  - name: a loaded session scalar cannot mutate the canonical graph
+    input: {kind: session-scalar, replacement: changed-by-consumer}
+    expected: fortuna
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: each load returns an independent quality fixture graph
+    mutation:
+      description: replaces the project on the first loaded session
+
+  - name: a nested set case cannot mutate the canonical graph
+    input: {kind: nested-set-case, replacement: partial_medium}
+    expected: resolved_typical
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: structured cloning includes nested fixture-set case arrays
+    mutation:
+      description: replaces the first case in the loaded project_mix set
+
+  - name: a nested metric value cannot mutate the canonical graph
+    input: {kind: nested-metric-value, replacement: 999}
+    expected: 100
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: structured cloning includes nested metric variation values
+    mutation:
+      description: replaces the first spec-quality metric value
+
+  - name: an accessor result cannot mutate its source load
+    input: {kind: accessor-result, replacement: changed-by-accessor}
+    expected: fortuna
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: fixture accessors return independent values
+    mutation:
+      description: replaces the project on a session returned by sessionByName

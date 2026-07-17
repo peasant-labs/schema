@@ -1,0 +1,42 @@
+cases:
+  - name: missing schema mapping is rejected
+    input: {kind: remove, namespace: type, name: ActivityEdge}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: exact generated-root public export identity}
+    mutation: {description: removes one canonical schema mapping}
+
+  - name: extra schema mapping is rejected
+    input: {kind: add, namespace: type, name: UnexpectedPublicType, target: ActivityEdge}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: exact generated-root public export identity}
+    mutation: {description: adds a public type not present in the independent catalog fixture}
+
+  - name: duplicate schema mapping is rejected
+    input: {kind: duplicate, namespace: type, name: ActivityEdge}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: unique generated-root public exports}
+    mutation: {description: repeats one canonical schema mapping}
+
+  - name: redirected schema mapping is rejected
+    input: {kind: redirect, namespace: type, name: ActivityEdge, target: AnnotationSummary}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: public names map to their exact raw schema targets}
+    mutation: {description: redirects ActivityEdge to a different schema component}
+
+  - name: missing runtime enum is rejected
+    input: {kind: remove, namespace: value, name: Role}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: runtime closed sets are public root exports}
+    mutation: {description: removes the Role runtime enum object export}
+
+  - name: wrong metadata schema version is rejected
+    input: {kind: redirect, namespace: value, name: MetadataSchemaVersion, target: "10"}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: TypeScript metadata version is sourced from the Go constant}
+    mutation: {description: changes the exported metadata schema version value}

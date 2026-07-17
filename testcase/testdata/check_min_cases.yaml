@@ -1,0 +1,25 @@
+cases:
+  - name: below floor
+    input: {size: 1, minimum: 2}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: Corpus.CheckMin minimum-size contract}
+    mutation: {description: raises the minimum above the corpus size}
+  - name: at floor
+    input: {size: 1, minimum: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: boundary, ref: Corpus.CheckMin minimum-size contract}
+    mutation: {description: sets the minimum equal to the corpus size}
+  - name: zero floor
+    input: {size: 0, minimum: 0}
+    expected: true
+    classification: must-pass
+    provenance: {source: boundary, ref: Corpus.CheckMin minimum-size contract}
+    mutation: {description: applies the smallest valid minimum}
+  - name: negative floor
+    input: {size: 0, minimum: -1}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: Go and TypeScript minimum parity}
+    mutation: {description: changes the minimum below zero}

@@ -1,0 +1,73 @@
+{
+  "name": "@peasant-labs/schema",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Generated TypeScript contract bindings for the peasant-labs schema module",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./local-api": {
+      "types": "./dist/local-api.d.ts",
+      "default": "./dist/local-api.js"
+    },
+    "./village-api": {
+      "types": "./dist/village-api.d.ts",
+      "default": "./dist/village-api.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./testcase": {
+      "types": "./dist/testcase.d.ts",
+      "default": "./dist/testcase.js"
+    },
+    "./fixtures": {
+      "types": "./dist/fixtures.d.ts",
+      "default": "./dist/fixtures.js"
+    },
+    "./fixtures/quality": {
+      "types": "./dist/fixtures/quality.d.ts",
+      "default": "./dist/fixtures/quality.js"
+    },
+    "./fixtures/timeline": {
+      "types": "./dist/fixtures/timeline.d.ts",
+      "default": "./dist/fixtures/timeline.js"
+    }
+  },
+  "scripts": {
+    "generate": "openapi-ts -f openapi-ts.config.mjs && node scripts/generate-contract-support.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "pnpm run build && tsc --noEmit -p tsconfig.test.json",
+    "test": "pnpm run build && node --test tests/*.test.mjs",
+    "package:audit": "pnpm run build && node scripts/package-audit.mjs",
+    "package:smoke": "pnpm run build && node scripts/package-smoke.mjs"
+  },
+  "dependencies": {
+    "yaml": "2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "@types/node": "24.13.3",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.5.3",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,5 +1,5 @@
 # Quality sessions for combinatorial testing
-# Generated from quality/mock-data.ts with variations for fuzzing
+# Canonical schema-owned quality fixtures and variations
 
 quality_sessions:
   - name: "resolved_typical"

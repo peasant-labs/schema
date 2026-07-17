@@ -6,9 +6,10 @@ import (
 	"strings"
 )
 
-// publishRequestComponent is the components/schemas key the village-api spec
-// emits for schema.PublishRequest (the openapi31 reflector prefixes "Schema").
-const publishRequestComponent = "SchemaPublishRequest"
+// publishRequestComponent is the operation-specific components/schemas key the
+// village-api spec emits for TranscriptPublishRequest. The "Openapi" prefix is
+// added by the reflector from this package name.
+const publishRequestComponent = "OpenapiTranscriptPublishRequest"
 
 // componentsRefPrefix is the $ref prefix the village-api spec uses for its
 // reusable component schemas.
@@ -42,7 +43,7 @@ const jsonSchema2020Dialect = "https://json-schema.org/draft/2020-12/schema"
 //     village validator selects the right draft);
 //   - sets "$id" to urn:peasant:publish-request:<VillageAPIVersion> (derived from
 //     the single-source version const, never retyped);
-//   - hoists SchemaPublishRequest's own keywords (type, properties) to the root;
+//   - hoists OpenapiTranscriptPublishRequest's own keywords to the root;
 //   - bundles every transitively-referenced component under "$defs", with all
 //     "#/components/schemas/X" $refs rewritten to "#/$defs/X".
 //
@@ -77,7 +78,7 @@ func BuildPublishRequestSchema(version string) ([]byte, error) {
 		return nil, fmt.Errorf(
 			"village-api spec is missing the %q component in components/schemas; "+
 				"cannot extract the PublishRequest schema — verify BuildVillageAPISpec still "+
-				"registers schema.PublishRequest as the publish request body",
+				"registers openapi.TranscriptPublishRequest as the publish request body",
 			publishRequestComponent)
 	}
 

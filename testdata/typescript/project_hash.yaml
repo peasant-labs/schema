@@ -1,0 +1,55 @@
+cases:
+  - name: lowercase hexadecimal digest
+    input: a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: ProjectHash accepts the canonical lowercase SHA-256 wire form}
+    mutation: {description: supplies exactly 64 lowercase hexadecimal characters}
+  - name: all-zero digest
+    input: "0000000000000000000000000000000000000000000000000000000000000000"
+    expected: true
+    classification: must-pass
+    provenance: {source: boundary, ref: ProjectHash validates shape rather than cryptographic provenance}
+    mutation: {description: replaces every hexadecimal digit while preserving the canonical shape}
+  - name: uppercase digest
+    input: A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2C3D4E5F6A1B2
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: ProjectHash is lowercase at every trust boundary}
+    mutation: {description: uppercases the otherwise valid digest}
+  - name: sixty-three characters
+    input: "000000000000000000000000000000000000000000000000000000000000000"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash has an exact 64-character length}
+    mutation: {description: removes one character from the valid all-zero digest}
+  - name: sixty-five characters
+    input: "00000000000000000000000000000000000000000000000000000000000000000"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash has an exact 64-character length}
+    mutation: {description: appends one character to the valid all-zero digest}
+  - name: non-hexadecimal character
+    input: "000000000000000000000000000000000000000000000000000000000000000g"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash accepts hexadecimal characters only}
+    mutation: {description: replaces the final valid digit with g}
+  - name: leading whitespace
+    input: " 0000000000000000000000000000000000000000000000000000000000000000"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash does not normalize surrounding whitespace}
+    mutation: {description: prefixes a space to the valid all-zero digest}
+  - name: embedded control character
+    input: "00000000000000000000000000000000\u0000000000000000000000000000000"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash rejects control characters rather than truncating}
+    mutation: {description: replaces one valid digit with a null control character}
+  - name: trailing newline
+    input: "0000000000000000000000000000000000000000000000000000000000000000\n"
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash does not trim line endings}
+    mutation: {description: appends a newline to the valid all-zero digest}

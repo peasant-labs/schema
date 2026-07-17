@@ -3,6 +3,65 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Added
+
+- An unpublished `@peasant-labs/schema` TypeScript package whose root is generated
+  from the comprehensive Types 0.3 Go catalog. It mirrors the Go module with
+  named wire types, Zod runtime schemas, closed sets, frozen registries and
+  guards, plus `/testcase`, `/fixtures`, `/fixtures/quality`, and
+  `/fixtures/timeline` subpaths. The package remains at
+  `0.0.0-development`; no publication workflow is enabled.
+- Cross-language testcase corpus helpers and Go-shaped typed quality-fixture accessors.
+  The Go and TypeScript loaders share strict YAML cases, and consumers read
+  generated quality data rather than parsing repository-relative YAML.
+- Normalized timeline session identities, authoritative many-to-many commit
+  bindings, and explicit project resolution in Peasant Local API 0.3.0. The
+  canonical 16-family relationship corpus is available to Go and TypeScript
+  consumers through schema-owned typed fixture loaders. Its exact-identity
+  mutation oracle remains schema-repo test infrastructure and is not published.
+
+### Changed
+
+- Peasant Local API `0.4.0` and Types `0.3.0` promote file-change statuses and
+  unified-diff line kinds from unconstrained strings to the named closed sets
+  `FileChangeStatus` (`M`, `A`, `D`, `R`) and `DiffLineKind` (`context`, `add`,
+  `del`). The JSON tokens are unchanged. Go exposes canonical inventories,
+  predicates, and actionable validators; generated TypeScript exposes matching
+  runtime objects, inventories, types, and predicates. Strict fixture and
+  independent identity-manifest mutations guard both sets.
+- Village API `0.6.0` gives the stricter publish HTTP body its own
+  `OpenapiTranscriptPublishRequest` component identity and uses exact canonical
+  Types schemas for every same-name shared operation component. Released `0.5.0`
+  artifacts remain byte-frozen.
+- Publish request schema compilation is lazy and thread-safe so a newly bumped
+  Village API version can generate its embedded schema before that artifact
+  exists. Runtime validation still compiles the exact embedded bytes on first use.
+- `testcase.LoadCorpus` now rejects unknown fields, duplicate case names, and
+  trailing YAML documents. The quality fixture loader now models the complete
+  variation catalog and rejects unknown fields, duplicate names, and trailing
+  documents.
+- `@peasant-labs/types` is documented as deprecated. New TypeScript consumers
+  use the schema-owned generated package instead of extending the handwritten
+  port.
+- The package root is the canonical shared TypeScript contract namespace. Hey
+  API's Zod plugin generates definitions and runtime validators from the Types
+  OpenAPI document. The existing `/local-api` and `/village-api` subpaths retain
+  type-only `paths` and `operations` namespaces, generated with
+  `openapi-typescript`; shared operation payloads resolve to root identities.
+  The deprecated `/types` root re-export is retained. No HTTP or WebSocket
+  transport client SDK is generated.
+- TypeScript `ProjectHash` now mirrors the Go validated newtype with one
+  generated nominal identity plus `newProjectHash`, `isProjectHash`, and
+  `validateProjectHash`. Root payloads and Local/Village operations carry the
+  brand, so plain strings cannot silently cross a project-identity boundary.
+- The bespoke Go-to-TypeScript emitter is removed. TypeScript `testcase`
+  `Classification` and `ProvenanceSource` closed sets are generated from
+  `testcase.go`'s `AllClassifications`/`AllProvenanceSources`; only the
+  YAML-decoding mechanics are handwritten. Generated fixture data comes
+  directly from the schema-owned YAML corpora.
+
 ## [v0.1.0-rc5] - 2026-07-14
 
 Fixture-contract correction with no OpenAPI wire-shape change.

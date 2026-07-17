@@ -1,6 +1,10 @@
 package schema
 
-import "time"
+import (
+	"time"
+
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
 
 // --- Dashboard ---
 
@@ -29,9 +33,9 @@ type SessionSummary struct {
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
-	ProjectHash     string  `json:"projectHash,omitempty"`
-	Outcome         string  `json:"outcome,omitempty"`
-	ParentSessionID *string `json:"parentSessionId,omitempty"`
+	ProjectHash     ProjectHash `json:"projectHash,omitempty"`
+	Outcome         string      `json:"outcome,omitempty"`
+	ParentSessionID *string     `json:"parentSessionId,omitempty"`
 	// Preview is the raw first user message of the session, sourced from the
 	// already-redacted indexed transcript (session_entries.content_preview). It
 	// is redaction-safe by construction. Empty when the session has no indexed
@@ -222,7 +226,33 @@ const (
 	InteractionQuestioned InteractionType = "questioned"
 )
 
+// AllInteractionTypes is the canonical list of project familiarity interactions.
+var AllInteractionTypes = []InteractionType{
+	InteractionMentioned,
+	InteractionRead,
+	InteractionDiscussed,
+	InteractionQuestioned,
+}
+
+// IsValid reports whether i is a defined interaction type.
+func (i InteractionType) IsValid() bool {
+	switch i {
+	case InteractionMentioned, InteractionRead, InteractionDiscussed, InteractionQuestioned:
+		return true
+	}
+	return false
+}
+
 func (i InteractionType) String() string { return string(i) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (InteractionType) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Interaction Type",
+		"How deeply a session engaged with a project file",
+		AllInteractionTypes,
+	), nil
+}
 
 // DecayLevel classifies how recently a file was engaged.
 type DecayLevel string
@@ -234,7 +264,33 @@ const (
 	DecayUnexplored DecayLevel = "unexplored"
 )
 
+// AllDecayLevels is the canonical list of project familiarity decay levels.
+var AllDecayLevels = []DecayLevel{
+	DecayFresh,
+	DecayFading,
+	DecayStale,
+	DecayUnexplored,
+}
+
+// IsValid reports whether d is a defined familiarity decay level.
+func (d DecayLevel) IsValid() bool {
+	switch d {
+	case DecayFresh, DecayFading, DecayStale, DecayUnexplored:
+		return true
+	}
+	return false
+}
+
 func (d DecayLevel) String() string { return string(d) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (DecayLevel) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Decay Level",
+		"Recency band for project file familiarity",
+		AllDecayLevels,
+	), nil
+}
 
 // FileFamiliarity represents familiarity data for a single file.
 type FileFamiliarity struct {
@@ -276,7 +332,7 @@ type ReviewSuggestion struct {
 
 // FamiliarityPayload is the data sent on the project_familiarity WebSocket channel.
 type FamiliarityPayload struct {
-	ProjectHash     string             `json:"projectHash"`
+	ProjectHash     ProjectHash        `json:"projectHash"`
 	FamiliarityPct  float64            `json:"familiarityPct"`  // % of source files engaged
 	UnexploredCount int                `json:"unexploredCount"` // source files with 0 engagement
 	FreshnessDays   *int               `json:"freshnessDays"`   // days since last learning session
@@ -364,6 +420,43 @@ const (
 	MsgError              MessageType = "error"
 )
 
+// AllMessageTypes is the canonical list of WebSocket message discriminators.
+var AllMessageTypes = []MessageType{
+	MsgSubscribe,
+	MsgUnsubscribe,
+	MsgDashboard,
+	MsgSessions,
+	MsgSessionDetail,
+	MsgTrends,
+	MsgQuality,
+	MsgAnnotations,
+	MsgProjectFamiliarity,
+	MsgConnected,
+	MsgError,
+}
+
+// IsValid reports whether m is a defined WebSocket message discriminator.
+func (m MessageType) IsValid() bool {
+	for _, candidate := range AllMessageTypes {
+		if m == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+// String returns the wire representation of the message discriminator.
+func (m MessageType) String() string { return string(m) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (MessageType) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Message Type",
+		"WebSocket message discriminator",
+		AllMessageTypes,
+	), nil
+}
+
 // ChannelTopic identifies a subscribable data stream.
 type ChannelTopic string
 
@@ -377,6 +470,39 @@ const (
 	TopicProjectFamiliarity ChannelTopic = "project_familiarity"
 )
 
+// AllChannelTopics is the canonical list of subscribable WebSocket topics.
+var AllChannelTopics = []ChannelTopic{
+	TopicDashboard,
+	TopicSessions,
+	TopicSessionDetail,
+	TopicTrends,
+	TopicQuality,
+	TopicAnnotations,
+	TopicProjectFamiliarity,
+}
+
+// IsValid reports whether t is a defined WebSocket channel topic.
+func (t ChannelTopic) IsValid() bool {
+	for _, candidate := range AllChannelTopics {
+		if t == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+// String returns the wire representation of the channel topic.
+func (t ChannelTopic) String() string { return string(t) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (ChannelTopic) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Channel Topic",
+		"Subscribable WebSocket data stream",
+		AllChannelTopics,
+	), nil
+}
+
 // AnnotationAxis is the subscription dimension for annotation channels.
 type AnnotationAxis string
 
@@ -385,6 +511,34 @@ const (
 	AxisSession AnnotationAxis = "session"
 	AxisProject AnnotationAxis = "project"
 )
+
+// AllAnnotationAxes is the canonical list of annotation subscription axes.
+var AllAnnotationAxes = []AnnotationAxis{
+	AxisType,
+	AxisSession,
+	AxisProject,
+}
+
+// IsValid reports whether a is a defined annotation subscription axis.
+func (a AnnotationAxis) IsValid() bool {
+	switch a {
+	case AxisType, AxisSession, AxisProject:
+		return true
+	}
+	return false
+}
+
+// String returns the wire representation of the annotation axis.
+func (a AnnotationAxis) String() string { return string(a) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (AnnotationAxis) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Annotation Axis",
+		"Subscription dimension for annotation channels",
+		AllAnnotationAxes,
+	), nil
+}
 
 // ChannelSubscription describes a single channel subscription.
 // Topic is always required. Additional fields are topic-specific:
@@ -404,8 +558,11 @@ type ClientMessage struct {
 
 // ServerMessage is a message sent from the server to the browser via WebSocket.
 type ServerMessage struct {
-	Type    MessageType `json:"type"`
-	Data    any         `json:"data,omitempty"`
-	Message string      `json:"message,omitempty"` // for error type
-	Version string      `json:"version,omitempty"` // for connected type
+	Type    MessageType    `json:"type"`
+	Data    any            `json:"data,omitempty"`
+	Message string         `json:"message,omitempty"` // for error type
+	Version string         `json:"version,omitempty"` // for connected type
+	Topic   ChannelTopic   `json:"topic,omitempty"`   // failed subscription topic for error type
+	ID      string         `json:"id,omitempty"`      // failed topic identity, when applicable
+	Axis    AnnotationAxis `json:"axis,omitempty"`    // failed annotation axis, when applicable
 }

@@ -50,7 +50,7 @@ type AnnotationSummary struct {
 	TargetEntryIndex    *int          `json:"targetEntryIndex,omitempty"`
 	TargetEntryEndIndex *int          `json:"targetEntryEndIndex,omitempty"` // V16: half-open [start, end)
 	TargetAnnotID       *string       `json:"targetAnnotationId,omitempty"`
-	TargetProjectHash   *string       `json:"targetProjectHash,omitempty"`
+	TargetProjectHash   *ProjectHash  `json:"targetProjectHash,omitempty"`
 	IsPrimary           bool          `json:"isPrimary"`
 	AnnotatorKind       AnnotatorKind `json:"annotatorKind"`
 	AnnotatorName       string        `json:"annotatorName"`

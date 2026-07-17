@@ -48,3 +48,8 @@ var PublishVerdictsYAML []byte
 //
 //go:embed testdata/session-detail/redactions.yaml
 var RedactionsYAML []byte
+
+// TimelineYAML contains project timeline validation cases.
+//
+//go:embed testdata/local-api/timeline.yaml
+var TimelineYAML []byte

@@ -4,15 +4,24 @@ The **canonical data / wire contract** for [peasant](https://github.com/peasant-
 and the village transcript commons: one contract-only Go **leaf module** that every
 backend produces and every client consumes.
 
+Use this module whenever code produces, validates, or consumes a peasant-labs
+wire payload. Go services import the canonical structs and validators directly;
+TypeScript applications import the matching generated types and Zod schemas.
+API-aware TypeScript tooling can additionally import type-only `paths` and
+`operations` contracts from `@peasant-labs/schema/local-api` or
+`@peasant-labs/schema/village-api`. Those subpaths describe request and response
+shapes; they do not perform network requests.
+
 ```
 module github.com/peasant-labs/schema
 ```
 
 It holds the domain + wire types, the closed-set enums, the publish/pull/push
 envelopes, the versioned OpenAPI specs, the publish-request validator, the typed
-fixtures, and the codegen + release-guard tooling. It has **no runtime**: no HTTP
-server, no WebSocket hub, no CLI product. Everything here is types, constants,
-generated specs, and the gates that keep them honest.
+fixtures, the generated TypeScript bindings, and the codegen + release-guard
+tooling. It has **no service runtime**: no HTTP server, WebSocket hub, transport
+client, or CLI product. Everything here is contract data, validators, generated
+specs, fixtures, and the gates that keep them honest.
 
 ---
 
@@ -68,19 +77,19 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.0-rc3` (GitHub **prerelease**) - `v0.1.0-rc1` and `v0.1.0-rc2` are also published prereleases |
+| Latest tag | `v0.1.0-rc5` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.5.0` · peasant local API `0.2.0` · types `0.1.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.6.0` · peasant local API `0.4.0` · types `0.3.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
 | Consumer | Language | How it pins / uses the contract |
 |---|---|---|
-| **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc3`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
-| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc3`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
-| **transcript-browser** (`@peasant-labs/types`) | TypeScript | A hand-maintained TS port that has **drifted** from the Go, so treat the Go here as authoritative when they disagree. The durable fix is OpenAPI→TS codegen off `generated/` (an open follow-up), which retires the hand port. |
+| **peasant** (Go backend + web) | Go | `go.mod` requires `github.com/peasant-labs/schema@v0.1.0-rc5`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
+| **village** (Go backend) | Go | `backend/go.mod` requires `@v0.1.0-rc5`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
+| **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | Consume generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts from the unpublished contract-only package under `typescript/`. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
-> Both consumers now pin `rc3`. Because the module is normal `go get`-pinned, each
+> Both consumers now pin `rc5`. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
 > re-pins; a re-pin is a one-line `go.mod` change plus `go mod tidy`.
 
@@ -101,7 +110,7 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Publish envelope** | `publish.go`, `publish_validate.go` | `PublishRequest`, `PublishResponse`, `ModelInfo`; the annotation push wire (`AnnotationPushItem` / `Request` / `Response`), `SchemaVersionResponse`; `ValidatePublishRequest` |
 | **Pull envelope** | `pull.go` | `TranscriptID`, `PullTranscriptInfo`, `PullListResponse`, `PullAnnotation` |
 | **Push content envelope** | `push_content.go` | `TranscriptContent` (self-describing, versioned blob body), `ContractVersion` / `PushContractVersion`, `ContentKind` |
-| **Map / Review REST** | `map_api.go` | `MapGraphPayload`, `MapNode`, `MapEdge`, `ActivityEdge`, `EdgeViolation`, `MapNodeDetailPayload`, `TaskSummary`, `CommitRef`, `ProjectTasksPayload`, `ProjectSummary`, `ReviewListPayload`, `ChangeSummary`, `ChangeDetailPayload`, `ChangeDiffPayload`, `FrictionCluster`, `FileChange`, `DiffHunk` |
+| **Map / Review REST** | `map_api.go` | `MapGraphPayload`, `MapNode`, `MapEdge`, `ActivityEdge`, `EdgeViolation`, `MapNodeDetailPayload`, `TaskSummary`, `CommitRef`, `TimelineSessionRef`, `ProjectResolutionPayload`, `ProjectTasksPayload`, `ProjectSummary`, `ReviewListPayload`, `ChangeSummary`, `ChangeDetailPayload`, `ChangeDiffPayload`, `FrictionCluster`, `FileChange`, `DiffHunk` |
 | **Search REST** | `search_api.go` | `SearchPayload`, `SearchResult` |
 | **Quality metrics** | `quality.go` | `QualityMetrics`, `QualitySession` (session stats + derived quality/cost signals) |
 | **Annotations** | `annotation.go`, `annotation_enums.go`, `annotation_manifest.go`, `annotation_registry.go`, `annotation_validate.go` | `AnnotationSummary`, `AnnotationTypeSummary`, `AnnotatorSummary`, `ValueDomain`, `Provenance`, `TaxonomyNode`, batch request/response types; the enums `AnnotatorKind`, `AnnotationStatus`, `TargetKind`, `ScaleKind`, `ValueDomainKind`, `AnnotationDatatype`, `TypeOrigin` |
@@ -164,7 +173,10 @@ classDiagram
 ```
 
 The enum field types (`Role`, `EntryType`, `StopReason`, `ToolCallKind`,
-`SessionOutcome`) are schema newtypes; `Harness` is re-exported from `bestiary`.
+`SessionOutcome`, `FileChangeStatus`, and `DiffLineKind`) are schema newtypes;
+`Harness` is re-exported from `bestiary`. File-change statuses retain the Git
+wire tokens `M`, `A`, `D`, and `R`; diff-line kinds retain `context`, `add`, and
+`del`.
 
 A trimmed excerpt of the top-level shape (`local_api.go`):
 
@@ -205,9 +217,9 @@ byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.5.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.2.0` |
-| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.1.0` |
+| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.6.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.4.0` |
+| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.3.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
@@ -261,10 +273,11 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0`, and peasant local API `0.1.0`. The
-still-generated current versions (village API `0.5.0`, PublishRequest `0.5.0`,
-peasant local API `0.2.0`, types `0.1.0`) live under the freshness gate instead.
+Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`,
+PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0`, and
+types `0.1.0` / `0.2.0`. The
+still-generated current versions (village API `0.6.0`, PublishRequest `0.6.0`,
+peasant local API `0.4.0`, types `0.3.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
@@ -279,7 +292,7 @@ Because the contract is a normal published, tagged Go module, a consumer pins **
 version**:
 
 ```bash
-go get github.com/peasant-labs/schema@v0.1.0-rc3
+go get github.com/peasant-labs/schema@v0.1.0-rc5
 ```
 
 That single pin replaces the old model of vendoring an in-tree copy of the types. It
@@ -314,6 +327,34 @@ Alongside these, `make check` runs the codegen-freshness gate, the retired-versi
 immutability guard, the leaf-audit, the `vendorHash`-stability proof, and the
 synthetic-break tests that prove the `oasdiff` / `go-apidiff` gates actually fire.
 
+### TypeScript bindings
+
+The `typescript/` directory is the source of the future
+`@peasant-labs/schema` package. It mirrors the Go contract architecture:
+
+- the package root is the canonical Types 0.3 projection of the complete public
+  Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
+  and guards;
+- `/local-api` and `/village-api` retain type-only OpenAPI `paths` and
+  `operations` namespaces for consumers that need endpoint request/response
+  contracts; shared payloads resolve to the canonical root identities;
+- `/types` remains a deprecated compatibility re-export of the canonical root;
+- no HTTP or WebSocket transport client SDK is generated;
+- `/testcase` owns generic validation behavior and a strict YAML decoder;
+- `/fixtures/quality` and `/fixtures/timeline` provide typed access to generated
+  data from the same canonical YAML corpora consumed by Go.
+
+The Go source and generated OpenAPI catalogs remain authoritative. Hey API's Zod
+plugin derives root TypeScript definitions and runtime schemas without enabling
+its SDK/client plugins. `openapi-typescript` derives the type-only Local/Village
+operation contracts. Canonical shared payload names preserve their root identity.
+
+The package version is `0.0.0-development` until a separate release change
+enables publication. Its eventual version follows the schema module release tag,
+not the individual Village, local, or types document versions. The old
+`@peasant-labs/types` package is deprecated rather than migrated: do not add new
+handwritten wire interfaces there.
+
 ---
 
 ## Develop, build, regenerate
@@ -335,20 +376,23 @@ nix develop           # drops you into the Go 1.26 dev shell
 ```
 
 Inside the shell (`go`, `gopls`, `golangci-lint`, `oasdiff`, `go-apidiff`, `vacuum`,
-`actionlint`, ... on `PATH`):
+`actionlint`, Node, pnpm, ... on `PATH`):
 
 ```bash
-make check                            # quality gate: gofmt + vet + release-workflow guard + `go test -race ./...`
+pnpm --dir typescript install --frozen-lockfile --ignore-scripts # install the exact locked generator/toolchain
+make check                            # Go + TypeScript generation, tests, and package gates
                                       #   (incl. leaf-audit, freshness, immutability, and the synthetic-break tests)
 make gates BASE_REF=origin/develop    # breaking-change gates vs a base ref (oasdiff + go-apidiff + vacuum)
-go run ./cmd/schema-gen               # regenerate generated/ specs (+ Redoc HTML); commit the result
+make schema                           # regenerate OpenAPI/Redoc and TypeScript contract outputs
 nix build                             # hermetic buildGoModule (cmd/schema-gen + cmd/release-guard)
 ```
 
-`make check` is fully runnable with a bare `go` toolchain: the gate-binary tests
-`t.Skip` with an actionable message when a tool is absent and run for real inside
-`nix develop`. After any change to the Go schema source, regenerate and commit
-`generated/` (the freshness gate enforces byte-identity).
+The Go test packages remain runnable with a bare Go toolchain. Full `make check`
+also needs the locked Node dependencies because freshness regenerates the
+TypeScript package. If they are absent, the gate names the exact `pnpm install`
+command. After any change to the Go schema source, regenerate and commit both
+`generated/` and the generated TypeScript sources; freshness enforces
+byte-identity.
 
 ### The leaf rule
 
@@ -436,6 +480,7 @@ tested, re-enabled alongside branch protection at the flip. The full operator gu
 | `versions.go` | Single source of truth for the versioned-spec semvers |
 | `openapi/` | OpenAPI 3.1 spec builders (`BuildVillageAPISpec`, `BuildPeasantLocalAPISpec`, `BuildTypesSpec`) |
 | `generated/` | Committed OpenAPI spec goldens (JSON + YAML) + the PublishRequest JSON-Schema - gate-checked; regenerate with `go run ./cmd/schema-gen` |
+| `typescript/` | Unpublished `@peasant-labs/schema` package: generated named wire types, testcase helpers, typed fixtures, and package gates |
 | `external/`, `testdata/`, `fixtures.go` | Vendored external schemas + typed test fixtures |
 | `cmd/schema-gen/` | Regenerates `generated/`; hosts the freshness / immutability / surface gate tests |
 | `cmd/release-guard/` + `internal/release/` | The PR-title/tag grammar + release-gating CLI |

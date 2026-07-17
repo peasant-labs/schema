@@ -24,11 +24,12 @@ func TestNewSearchPayload_EmptyResultsMarshalsAsArray(t *testing.T) {
 }
 
 func TestSearchResult_CamelCaseJSON(t *testing.T) {
+	projectHash := ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	p := NewSearchPayload("q")
 	p.Results = append(p.Results, SearchResult{
 		SessionID:   "s1",
 		Project:     "/repo",
-		ProjectHash: "abcd",
+		ProjectHash: projectHash,
 		EntryIndex:  3,
 		Role:        "user",
 		Snippet:     "the [match] here",
@@ -40,7 +41,7 @@ func TestSearchResult_CamelCaseJSON(t *testing.T) {
 	}
 	got := string(b)
 	for _, field := range []string{
-		`"sessionId":"s1"`, `"project":"/repo"`, `"projectHash":"abcd"`,
+		`"sessionId":"s1"`, `"project":"/repo"`, `"projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`,
 		`"entryIndex":3`, `"role":"user"`, `"snippet":"the [match] here"`, `"score":1.5`,
 	} {
 		if !strings.Contains(got, field) {

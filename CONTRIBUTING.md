@@ -100,11 +100,33 @@ never `nix search nixpkgs` (it is slow and can hang).
 ## Regeneration & gates
 
 ```bash
+pnpm --dir typescript install --frozen-lockfile --ignore-scripts
 make check                 # gofmt + vet + release-workflow guard + go test -race ./...
 make gates BASE_REF=origin/develop  # oasdiff + go-apidiff + vacuum vs a base ref
-go run ./cmd/schema-gen    # regenerate generated/ specs (commit the result)
+make schema                # regenerate OpenAPI, docs, and TypeScript contract outputs
 nix build                  # hermetic build + go test ./... sanity gate
 ```
+
+The pnpm install is development tooling only and is pinned by
+`typescript/pnpm-lock.yaml`. It does not change `go.mod` or the Go module's
+leaf dependency set. `make schema` first regenerates the canonical OpenAPI
+documents from Go, then uses the pinned Hey API Zod plugin to derive the root
+contract and runtime schemas, `openapi-typescript` to derive type-only Local and
+Village operation contracts, and canonical YAML for fixture data. Never
+hand-edit a generated TypeScript file.
+
+Before reporting a TypeScript contract change ready, run:
+
+```bash
+pnpm --dir typescript run typecheck
+pnpm --dir typescript test
+pnpm --dir typescript run package:audit
+pnpm --dir typescript run package:smoke
+```
+
+The last gate packs the artifact, installs it into a disposable directory, and
+imports every public subpath. This package remains unpublished until a separate
+release change explicitly enables package publication.
 
 Gates that run in CI (and locally):
 

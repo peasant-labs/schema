@@ -1,5 +1,7 @@
 package schema
 
+import jsonschema "github.com/swaggest/jsonschema-go"
+
 // PublishRequest is the canonical wire type for CLI → Village upload.
 // The CLI sends this; the village validates and persists it.
 //
@@ -11,10 +13,9 @@ package schema
 // update to send this nested structure. This is NOT backward-compatible with the
 // current village handler — both CLI and village must update together.
 //
-// rc2 (#118): Model carries required:"true" so swaggest emits a
-// SchemaPublishRequest.required:["model"] array — a publish body with no model
-// object is rejected at the root. Metadata only (changes the generated schema's
-// `required`, not the Go wire shape).
+// The Village operation-specific publish component requires model, so a body
+// without it is rejected; this changes generated validation requiredness, not
+// the canonical Go wire shape.
 type PublishRequest struct {
 	Identity    SessionIdentity `json:"identity"`
 	Model       ModelInfo       `json:"model" required:"true"`
@@ -31,7 +32,7 @@ type PublishRequest struct {
 	// (CC0-1.0 / CC-BY-4.0 / CC-BY-SA-4.0). Optional — omitempty ⇒ a publish with no
 	// license stores NULL (legacy/un-set). The village persists it to
 	// transcripts.license_id; the vendored schema enum makes an invalid value a
-	// documented schema-422. NOT `required` (keeps SchemaPublishRequest.required = [model]).
+	// documented schema-422. NOT `required` (keeps the Village publish body required set at [model]).
 	License License `json:"license,omitempty"`
 }
 
@@ -54,7 +55,7 @@ type AnnotationPushItem struct {
 	SessionID     *string                `json:"sessionId,omitempty"`
 	EntryTarget   *AnnotationEntryTarget `json:"entryTarget,omitempty"`
 	AnnotationID  *string                `json:"annotationId,omitempty"`
-	ProjectHash   *string                `json:"projectHash,omitempty"`
+	ProjectHash   *ProjectHash           `json:"projectHash,omitempty"`
 	TypeID        string                 `json:"typeId"`
 	Value         string                 `json:"value"`
 	IsPrimary     bool                   `json:"isPrimary"`
@@ -106,8 +107,34 @@ const (
 	PushStatusError   AnnotationPushStatus = "error"
 )
 
+// AllAnnotationPushStatuses is the canonical list of annotation push outcomes.
+var AllAnnotationPushStatuses = []AnnotationPushStatus{
+	PushStatusCreated,
+	PushStatusUpdated,
+	PushStatusSkipped,
+	PushStatusError,
+}
+
+// IsValid reports whether s is a defined annotation push outcome.
+func (s AnnotationPushStatus) IsValid() bool {
+	switch s {
+	case PushStatusCreated, PushStatusUpdated, PushStatusSkipped, PushStatusError:
+		return true
+	}
+	return false
+}
+
 // String returns the string representation of the push status.
 func (s AnnotationPushStatus) String() string { return string(s) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (AnnotationPushStatus) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Annotation Push Status",
+		"Per-item annotation push outcome",
+		AllAnnotationPushStatuses,
+	), nil
+}
 
 // AnnotationPushResult is the per-item result within an AnnotationPushResponse.
 type AnnotationPushResult struct {

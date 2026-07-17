@@ -18,19 +18,29 @@ const (
 	// 0.2.0 when the /api/v1/pull surface was added (additive = minor bump).
 	// Bumped to 0.3.0 (rc2 #118) when model + model.harness/model.model became
 	// required — a tightening of the publish contract (selective required arrays on
-	// SchemaPublishRequest + SchemaModelInfo). Bumped to 0.4.0 when
+	// operation-specific publish request + SchemaModelInfo). Bumped to 0.4.0 when
 	// PublishRequest.License + PullTranscriptInfo.License were added (additive
 	// optional field = minor bump). Bumped to 0.5.0 when the pull skip-gate surface
 	// (POST /api/v1/pull/transcripts/skip-gate) was added (additive = minor bump).
+	// Bumped to 0.6.0 when shared operation components adopted exact canonical
+	// Types schemas and the stricter publish HTTP body gained a distinct component
+	// identity instead of shadowing the canonical PublishRequest.
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.5.0"
+	VillageAPIVersion = "0.6.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
-	// + FrictionCluster = minor bump). The retired 0.1.0 spec is retained byte-frozen
-	// (no longer emitted) under the retired-versions immutability guard.
-	PeasantLocalAPIVersion = "0.2.0"
+	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
+	// timeline gained normalized session identities and authoritative many-to-many
+	// commit bindings. Bumped to 0.4.0 when file-change statuses and diff-line
+	// kinds became named closed sets while retaining their existing JSON tokens.
+	// Prior versions stay byte-frozen.
+	PeasantLocalAPIVersion = "0.4.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
-	TypesVersion = "0.1.0"
+	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
+	// cross-language contract surface instead of a small set of seed types.
+	// Bumped to 0.3.0 when the map/review diff string fields became named closed
+	// sets with generated runtime inventories and predicates.
+	TypesVersion = "0.3.0"
 )

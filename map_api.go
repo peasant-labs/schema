@@ -1,5 +1,11 @@
 package schema
 
+import (
+	"fmt"
+
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
+
 // Map / Review wire contract (impl contract §2).
 //
 // These payloads back the five REST endpoints of the Map and Review surfaces
@@ -22,6 +28,13 @@ const (
 	MapNodeKindFile    MapNodeKind = "file"
 )
 
+// AllMapNodeKinds is the canonical list of map node classifications.
+var AllMapNodeKinds = []MapNodeKind{
+	MapNodeKindModule,
+	MapNodeKindPackage,
+	MapNodeKindFile,
+}
+
 // String returns the wire representation of the node kind.
 func (k MapNodeKind) String() string { return string(k) }
 
@@ -34,10 +47,19 @@ func (k MapNodeKind) IsValid() bool {
 	return false
 }
 
+// JSONSchema implements jsonschema.Exposer.
+func (MapNodeKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Map Node Kind",
+		"Path-derived map node classification",
+		AllMapNodeKinds,
+	), nil
+}
+
 // MapGraphPayload is the full map graph for one project, served by
 // GET /api/v1/map/{projectHash}.
 type MapGraphPayload struct {
-	ProjectHash     string          `json:"projectHash"`
+	ProjectHash     ProjectHash     `json:"projectHash"`
 	RepoFound       bool            `json:"repoFound"` // canonical_cwd resolved to a git repo
 	RepoPath        string          `json:"repoPath,omitempty"`
 	ParsedLanguages []string        `json:"parsedLanguages"` // e.g. ["go","typescript"]; empty => activity-only
@@ -51,7 +73,7 @@ type MapGraphPayload struct {
 
 // NewMapGraphPayload returns a MapGraphPayload with all slices initialized
 // to empty (never-nil marshal guarantee).
-func NewMapGraphPayload(projectHash string) *MapGraphPayload {
+func NewMapGraphPayload(projectHash ProjectHash) *MapGraphPayload {
 	return &MapGraphPayload{
 		ProjectHash:     projectHash,
 		ParsedLanguages: []string{},
@@ -103,6 +125,12 @@ const (
 	EdgeViolationWrongWay EdgeViolationKind = "wrong_way"
 )
 
+// AllEdgeViolationKinds is the canonical list of map structure violations.
+var AllEdgeViolationKinds = []EdgeViolationKind{
+	EdgeViolationCycle,
+	EdgeViolationWrongWay,
+}
+
 // String returns the wire representation of the violation kind.
 func (k EdgeViolationKind) String() string { return string(k) }
 
@@ -113,6 +141,15 @@ func (k EdgeViolationKind) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (EdgeViolationKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Edge Violation Kind",
+		"Structural violation detected on a map edge",
+		AllEdgeViolationKinds,
+	), nil
 }
 
 // EdgeViolation flags an edge that breaks the layering discipline.
@@ -137,7 +174,7 @@ type MapNodeDetailPayload struct {
 	TaskCount     int         `json:"taskCount"`
 	LastTouchMs   *int64      `json:"lastTouchMs,omitempty"`
 	// DependsOn / UsedBy are the node's structural role, derived deterministically
-	// from the parsed import graph (Round 5.6 "what this area does"): the node IDs
+	// from the parsed import graph (what this area does): the node IDs
 	// this node imports, and those that import it. Most-connected first, capped.
 	// Empty when there is no parsed graph (activity-only) or no edges.
 	DependsOn     []string      `json:"dependsOn"`
@@ -188,10 +225,18 @@ func NewTaskSummary(sessionID string, entryIndex int) TaskSummary {
 
 // CommitRef is lightweight commit metadata for time strips and rail panels.
 type CommitRef struct {
-	Hash       string `json:"hash"`
-	Subject    string `json:"subject"`
-	TimeMs     *int64 `json:"timeMs,omitempty"`
-	HasSession bool   `json:"hasSession"` // a recorded session is bound to it
+	Hash       string `json:"hash" yaml:"hash"`
+	Subject    string `json:"subject" yaml:"subject"`
+	TimeMs     *int64 `json:"timeMs,omitempty" yaml:"timeMs,omitempty"`
+	HasSession bool   `json:"hasSession" yaml:"hasSession"` // compatibility mirror of len(SessionIDs) > 0
+	// SessionIDs names authoritative session_commits bindings in the same
+	// strictly increasing rank order as ReviewListPayload.Sessions.
+	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
+}
+
+// NewCommitRef returns commit metadata with a non-nil session ID array.
+func NewCommitRef(hash, subject string) CommitRef {
+	return CommitRef{Hash: hash, Subject: subject, SessionIDs: []SessionID{}}
 }
 
 // --- Tasks (Tasks lens + file filter) ---
@@ -199,14 +244,14 @@ type CommitRef struct {
 // ProjectTasksPayload backs the Tasks lens, served by
 // GET /api/v1/map/{projectHash}/tasks?file=<path>.
 type ProjectTasksPayload struct {
-	ProjectHash string        `json:"projectHash"`
+	ProjectHash ProjectHash   `json:"projectHash"`
 	Tasks       []TaskSummary `json:"tasks"` // reverse-chronological, cap 500
 	FileFilter  string        `json:"fileFilter,omitempty"`
 }
 
 // NewProjectTasksPayload returns a ProjectTasksPayload with all slices
 // initialized to empty (never-nil marshal guarantee).
-func NewProjectTasksPayload(projectHash string) *ProjectTasksPayload {
+func NewProjectTasksPayload(projectHash ProjectHash) *ProjectTasksPayload {
 	return &ProjectTasksPayload{
 		ProjectHash: projectHash,
 		Tasks:       []TaskSummary{},
@@ -230,13 +275,21 @@ func NewProjectSummariesPayload() *ProjectSummariesPayload {
 // ProjectSummary is one row of the home picker: a project with its recorded
 // stats (sessions · recorded coverage · last work · open changes).
 type ProjectSummary struct {
-	ProjectHash   string `json:"projectHash"`
-	Project       string `json:"project"`       // display name (canonical cwd, else the hash)
-	Sessions      int    `json:"sessions"`      // recorded session count
-	RecordedFiles int    `json:"recordedFiles"` // coverage numerator (same rule as MapNode)
-	TotalFiles    int    `json:"totalFiles"`    // coverage denominator
-	LastWorkMs    *int64 `json:"lastWorkMs,omitempty"`
-	OpenChanges   int    `json:"openChanges"` // local non-default branches not merged (0 when no repo)
+	ProjectHash   ProjectHash `json:"projectHash"`
+	Project       string      `json:"project"`       // display name (canonical cwd, else the hash)
+	Sessions      int         `json:"sessions"`      // recorded session count
+	RecordedFiles int         `json:"recordedFiles"` // coverage numerator (same rule as MapNode)
+	TotalFiles    int         `json:"totalFiles"`    // coverage denominator
+	LastWorkMs    *int64      `json:"lastWorkMs,omitempty"`
+	OpenChanges   int         `json:"openChanges"` // local non-default branches not merged (0 when no repo)
+}
+
+// ProjectResolutionPayload resolves one explicitly requested project display
+// identity to its opaque hash without enumerating sibling projects. It exists
+// for stable deep links when discovery lists are narrowed by user selection.
+type ProjectResolutionPayload struct {
+	Project     string      `json:"project" required:"true"`
+	ProjectHash ProjectHash `json:"projectHash" required:"true"`
 }
 
 // --- Review ---
@@ -244,21 +297,112 @@ type ProjectSummary struct {
 // ReviewListPayload lists a project's changes, served by
 // GET /api/v1/review/{projectHash}.
 type ReviewListPayload struct {
-	ProjectHash   string          `json:"projectHash"`
-	RepoFound     bool            `json:"repoFound"`
-	DefaultBranch string          `json:"defaultBranch,omitempty"`
-	Changes       []ChangeSummary `json:"changes"`       // open first, then merged
-	RecentCommits []CommitRef     `json:"recentCommits"` // default-branch, cap 200 (time strip)
+	ProjectHash   ProjectHash          `json:"projectHash"`
+	RepoFound     bool                 `json:"repoFound"`
+	DefaultBranch string               `json:"defaultBranch,omitempty"`
+	Changes       []ChangeSummary      `json:"changes" required:"true" nullable:"false"`       // open first, then merged
+	RecentCommits []CommitRef          `json:"recentCommits" required:"true" nullable:"false"` // default-branch, cap 200 (time strip)
+	Sessions      []TimelineSessionRef `json:"sessions" required:"true" nullable:"false"`      // complete visible project timeline identities, including sessions not linked to displayed commits
+}
+
+// TimelineSessionRef is identity and display metadata for a recorded session
+// available to the project timeline. Producers order these references by
+// known startMs descending, then sessionId ascending; missing startMs follows
+// every known timestamp and is likewise ordered by sessionId. HasCommitBinding
+// is computed from the complete authoritative session_commits relation, not
+// merely the bounded default-branch commit window returned alongside it.
+// CommitRef.SessionIDs names bindings that are visible inside that window.
+type TimelineSessionRef struct {
+	SessionID        SessionID `json:"sessionId" yaml:"sessionId"`
+	Title            string    `json:"title" yaml:"title"`
+	Harness          Harness   `json:"harness" yaml:"harness"`
+	StartMs          *int64    `json:"startMs,omitempty" yaml:"startMs,omitempty"`
+	HasCommitBinding bool      `json:"hasCommitBinding" yaml:"hasCommitBinding"`
 }
 
 // NewReviewListPayload returns a ReviewListPayload with all slices
 // initialized to empty (never-nil marshal guarantee).
-func NewReviewListPayload(projectHash string) *ReviewListPayload {
+func NewReviewListPayload(projectHash ProjectHash) *ReviewListPayload {
 	return &ReviewListPayload{
 		ProjectHash:   projectHash,
 		Changes:       []ChangeSummary{},
 		RecentCommits: []CommitRef{},
+		Sessions:      []TimelineSessionRef{},
 	}
+}
+
+// Validate checks the normalized timeline relationship and compatibility
+// invariants. It does not infer candidate or temporal associations.
+func (p ReviewListPayload) Validate() error {
+	if err := p.ProjectHash.Validate(); err != nil {
+		return fmt.Errorf("review list validation: projectHash is invalid: %w; resolve the canonical project identity before serving the payload", err)
+	}
+	if p.Changes == nil || p.RecentCommits == nil || p.Sessions == nil {
+		return fmt.Errorf("review list validation: changes, recentCommits, and sessions must be arrays; initialize the payload with NewReviewListPayload before serving it")
+	}
+	knownSessions := make(map[SessionID]TimelineSessionRef, len(p.Sessions))
+	sessionRanks := make(map[SessionID]int, len(p.Sessions))
+	knownHarnesses := make(map[Harness]struct{})
+	for _, harness := range Harnesses() {
+		knownHarnesses[harness] = struct{}{}
+	}
+	for index, session := range p.Sessions {
+		if session.SessionID == "" {
+			return fmt.Errorf("review list validation: timeline session has an empty sessionId; producers must emit a stable session identity")
+		}
+		if _, exists := knownSessions[session.SessionID]; exists {
+			return fmt.Errorf("review list validation: duplicate timeline session %q; normalize sessions by sessionId before serving the payload", session.SessionID)
+		}
+		if _, known := knownHarnesses[session.Harness]; !known {
+			return fmt.Errorf("review list validation: timeline session %q at index %d has unknown harness %q; use one of schema.Harnesses() before serving the payload", session.SessionID, index, session.Harness)
+		}
+		knownSessions[session.SessionID] = session
+		sessionRanks[session.SessionID] = index
+		if index > 0 {
+			previous := p.Sessions[index-1]
+			outOfOrder := false
+			switch {
+			case previous.StartMs == nil && session.StartMs != nil:
+				outOfOrder = true
+			case previous.StartMs != nil && session.StartMs != nil && *previous.StartMs < *session.StartMs:
+				outOfOrder = true
+			case (previous.StartMs == nil && session.StartMs == nil) || (previous.StartMs != nil && session.StartMs != nil && *previous.StartMs == *session.StartMs):
+				outOfOrder = previous.SessionID > session.SessionID
+			}
+			if outOfOrder {
+				return fmt.Errorf("review list validation: timeline sessions %q and %q violate canonical ordering at index %d; producers must sort known startMs descending, break equal timestamps by sessionId ascending, and place missing startMs last", previous.SessionID, session.SessionID, index)
+			}
+		}
+	}
+	for commitIndex, commit := range p.RecentCommits {
+		if commit.SessionIDs == nil {
+			return fmt.Errorf("review list validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
+		}
+		if commit.HasSession != (len(commit.SessionIDs) > 0) {
+			return fmt.Errorf("review list validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", commit.Hash, commit.HasSession, len(commit.SessionIDs))
+		}
+		seen := make(map[SessionID]bool, len(commit.SessionIDs))
+		previousRank := -1
+		for bindingIndex, sessionID := range commit.SessionIDs {
+			if seen[sessionID] {
+				return fmt.Errorf("review list validation: commit %q repeats sessionId %q; deduplicate bindings before serving the payload", commit.Hash, sessionID)
+			}
+			seen[sessionID] = true
+			session, exists := knownSessions[sessionID]
+			if !exists {
+				return fmt.Errorf("review list validation: commit %q references unknown sessionId %q; include it once in sessions or remove the stale binding", commit.Hash, sessionID)
+			}
+			if !session.HasCommitBinding {
+				return fmt.Errorf("review list validation: commit %q references sessionId %q but that session has hasCommitBinding=false; set hasCommitBinding=true because a visible commit reference proves an authoritative binding", commit.Hash, sessionID)
+			}
+			rank := sessionRanks[sessionID]
+			if rank <= previousRank {
+				return fmt.Errorf("review list validation: commit %q at index %d has noncanonical sessionIds order at binding %d; order every binding by the strictly increasing rank of ReviewListPayload.Sessions", commit.Hash, commitIndex, bindingIndex)
+			}
+			previousRank = rank
+		}
+	}
+	return nil
 }
 
 // ChangeSummary is one row of the Review list: a local branch measured
@@ -277,7 +421,7 @@ type ChangeSummary struct {
 	Merged       bool   `json:"merged"`
 	MergedAtMs   *int64 `json:"mergedAtMs,omitempty"`
 	// Reverted is true when this change was merged and later undone by a
-	// `git revert` on the default branch (git-native signal only). Round 4.5.
+	// `git revert` on the default branch (git-native signal only).
 	Reverted bool `json:"reverted,omitempty"`
 
 	// Graph anchors (Changes graph): how this row attaches to lane 0
@@ -305,11 +449,11 @@ type ChangeDetailPayload struct {
 	UnrecordedCommits []CommitRef     `json:"unrecordedCommits"`
 	// Unusual holds NEUTRAL rate-elevation observations vs the project baseline
 	// (e.g. more retry loops per conversation than usual) — facts, never a
-	// verdict or grade (Round 4.4).
+	// verdict or grade.
 	Unusual []UnusualSignal `json:"unusual"`
 	// Frictions holds NEUTRAL recurring-friction counts keyed by (kind, file):
 	// "this kind of friction touched this file N times across M conversations"
-	// — facts for orientation, never a verdict (Round 5.1).
+	// Facts are for orientation, never a verdict.
 	Frictions    []FrictionCluster `json:"frictions"`
 	LinesAdded   int               `json:"linesAdded"`
 	LinesRemoved int               `json:"linesRemoved"`
@@ -350,7 +494,7 @@ type UnusualSignal struct {
 // FrictionCluster is a NEUTRAL count of a recurring friction signal keyed to a
 // file: "this kind of friction touched this file N times across M
 // conversations". A fact for orientation — the surface shows, it does not grade
-// (Round 5.1). Kind is a stable slug ("retryLoop") so more kinds can be added
+// Kind is a stable slug ("retryLoop") so more kinds can be added
 // without a breaking change.
 type FrictionCluster struct {
 	Kind     string `json:"kind"`     // signal slug, e.g. "retryLoop"
@@ -378,16 +522,69 @@ func NewMapSlice() MapSlice {
 	}
 }
 
+// FileChangeStatus classifies a file-level delta using Git's canonical
+// one-letter status tokens.
+type FileChangeStatus string
+
+const (
+	FileChangeStatusModified FileChangeStatus = "M"
+	FileChangeStatusAdded    FileChangeStatus = "A"
+	FileChangeStatusDeleted  FileChangeStatus = "D"
+	FileChangeStatusRenamed  FileChangeStatus = "R"
+)
+
+// AllFileChangeStatuses is the canonical inventory of file change statuses.
+var AllFileChangeStatuses = []FileChangeStatus{
+	FileChangeStatusModified,
+	FileChangeStatusAdded,
+	FileChangeStatusDeleted,
+	FileChangeStatusRenamed,
+}
+
+// String returns the wire representation of the file change status.
+func (s FileChangeStatus) String() string { return string(s) }
+
+// IsValid reports whether s is a canonical file change status.
+func (s FileChangeStatus) IsValid() bool {
+	switch s {
+	case FileChangeStatusModified, FileChangeStatusAdded, FileChangeStatusDeleted, FileChangeStatusRenamed:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross a file-change wire boundary.
+func (s FileChangeStatus) Validate() error {
+	if s.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"file change status validation failed for %q at schema.FileChangeStatus.Validate during wire-boundary validation: the value is not one of M, A, D, or R; callers cannot classify the file delta; use a member of schema.AllFileChangeStatuses",
+		s,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (FileChangeStatus) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("File Change Status")
+	s.WithDescription("Git file delta status: modified, added, deleted, or renamed")
+	s.WithEnum("M", "A", "D", "R")
+	s.WithExamples("M", "A", "D", "R")
+	return s, nil
+}
+
 // FileChange is one file-level delta of a change (branch vs merge-base).
 // LinesAdded/LinesRemoved are the per-file numstat churn (0 for binary files or
 // when numstat is unavailable) — the change-weight treemap's sizing input
-// (Round 5.3). Always present; 0 is meaningful, so no omitempty.
+// Always present; 0 is meaningful, so no omitempty.
 type FileChange struct {
-	Path         string  `json:"path"`
-	Status       string  `json:"status"` // "M" | "A" | "D" | "R"
-	OldPath      *string `json:"oldPath,omitempty"`
-	LinesAdded   int     `json:"linesAdded"`
-	LinesRemoved int     `json:"linesRemoved"`
+	Path         string           `json:"path"`
+	Status       FileChangeStatus `json:"status"`
+	OldPath      *string          `json:"oldPath,omitempty"`
+	LinesAdded   int              `json:"linesAdded"`
+	LinesRemoved int              `json:"linesRemoved"`
 }
 
 // ChangeDiffPayload is the rendered unified diff of ONE changed file of a change
@@ -396,13 +593,13 @@ type FileChange struct {
 // ?branch=&file=). Binary files come back Binary=true with no hunks; files
 // exceeding the size cap come back Truncated.
 type ChangeDiffPayload struct {
-	Branch    string     `json:"branch"`
-	File      string     `json:"file"` // the new path
-	OldPath   *string    `json:"oldPath,omitempty"`
-	Status    string     `json:"status"` // "M" | "A" | "D" | "R"
-	Binary    bool       `json:"binary"`
-	Truncated bool       `json:"truncated"`
-	Hunks     []DiffHunk `json:"hunks"`
+	Branch    string           `json:"branch"`
+	File      string           `json:"file"` // the new path
+	OldPath   *string          `json:"oldPath,omitempty"`
+	Status    FileChangeStatus `json:"status"`
+	Binary    bool             `json:"binary"`
+	Truncated bool             `json:"truncated"`
+	Hunks     []DiffHunk       `json:"hunks"`
 }
 
 // NewChangeDiffPayload returns a ChangeDiffPayload with Hunks initialized to
@@ -428,11 +625,61 @@ type DiffHunk struct {
 	SessionTitle string `json:"sessionTitle,omitempty"`
 }
 
+// DiffLineKind classifies a unified-diff line.
+type DiffLineKind string
+
+const (
+	DiffLineKindContext DiffLineKind = "context"
+	DiffLineKindAdd     DiffLineKind = "add"
+	DiffLineKindDelete  DiffLineKind = "del"
+)
+
+// AllDiffLineKinds is the canonical inventory of unified-diff line kinds.
+var AllDiffLineKinds = []DiffLineKind{
+	DiffLineKindContext,
+	DiffLineKindAdd,
+	DiffLineKindDelete,
+}
+
+// String returns the wire representation of the diff line kind.
+func (k DiffLineKind) String() string { return string(k) }
+
+// IsValid reports whether k is a canonical diff line kind.
+func (k DiffLineKind) IsValid() bool {
+	switch k {
+	case DiffLineKindContext, DiffLineKindAdd, DiffLineKindDelete:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross a diff-line wire boundary.
+func (k DiffLineKind) Validate() error {
+	if k.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"diff line kind validation failed for %q at schema.DiffLineKind.Validate during wire-boundary validation: the value is not one of context, add, or del; callers cannot render the line with correct diff semantics; use a member of schema.AllDiffLineKinds",
+		k,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (DiffLineKind) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("Diff Line Kind")
+	s.WithDescription("Unified-diff line kind: context, addition, or deletion")
+	s.WithEnum("context", "add", "del")
+	s.WithExamples("context", "add", "del")
+	return s, nil
+}
+
 // DiffLine is one line within a hunk. Kind is "context" | "add" | "del";
 // Text excludes the leading +/-/space marker.
 type DiffLine struct {
-	Kind string `json:"kind"`
-	Text string `json:"text"`
+	Kind DiffLineKind `json:"kind"`
+	Text string       `json:"text"`
 }
 
 // ChangeBinding states how strongly a session is tied to a change
@@ -448,6 +695,12 @@ const (
 	ChangeBindingCandidate ChangeBinding = "candidate"
 )
 
+// AllChangeBindings is the canonical list of session-to-change bindings.
+var AllChangeBindings = []ChangeBinding{
+	ChangeBindingBound,
+	ChangeBindingCandidate,
+}
+
 // String returns the wire representation of the binding.
 func (b ChangeBinding) String() string { return string(b) }
 
@@ -458,6 +711,15 @@ func (b ChangeBinding) IsValid() bool {
 		return true
 	}
 	return false
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (ChangeBinding) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Change Binding",
+		"Strength of the evidence connecting a recorded session to a code change",
+		AllChangeBindings,
+	), nil
 }
 
 // ChangeSession is one recorded session behind a change, with its tasks.
