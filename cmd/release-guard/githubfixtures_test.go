@@ -64,6 +64,7 @@ type githubSeamCase struct {
 	WantTitle          string   `yaml:"wantTitle"`
 	WantNumber         int      `yaml:"wantNumber"`
 	WantNotFastForward bool     `yaml:"wantNotFastForward"`
+	WantTags           []string `yaml:"wantTags"` // "name=commitSHA" pairs, in order
 }
 
 // githubSeamCases is the parsed testdata/github/cases.yaml corpus.

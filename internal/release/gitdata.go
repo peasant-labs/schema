@@ -60,6 +60,19 @@ type Pull struct {
 	Body string
 }
 
+// TagRef is a repository tag resolved to the commit it points at. It is the
+// own-type projection of GitHub's "list repository tags" response
+// (RepositoryTag), so the first-run bubble guard can test drained commits
+// against release-tag commits without importing go-github. GitHub's list-tags
+// endpoint dereferences annotated tags, so CommitSHA is always the underlying
+// commit SHA for both lightweight and annotated tags.
+type TagRef struct {
+	// Name is the tag's short name (e.g. "v1.2.3", "v1.2.3-rc4", "pkg/schema/v0.2.0").
+	Name string
+	// CommitSHA is the commit the tag points at.
+	CommitSHA string
+}
+
 // ErrNotFastForward is returned (wrapped) by GitHubClient.UpdateRefFastForward
 // when GitHub rejects a ref update because it would not be a fast-forward (HTTP
 // 422 whose message says "...is not a fast forward"). With the update forced to

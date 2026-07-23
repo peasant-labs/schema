@@ -68,8 +68,8 @@ func TestGitHubClient_SeamCases(t *testing.T) {
 	t.Parallel()
 
 	cases := loadGithubSeamCases(t)
-	if len(cases) != 19 {
-		t.Fatalf("github seam fixture has %d cases, want 19 (fixture truncated?)", len(cases))
+	if len(cases) != 20 {
+		t.Fatalf("github seam fixture has %d cases, want 20 (fixture truncated?)", len(cases))
 	}
 
 	for _, tc := range cases {
@@ -234,6 +234,21 @@ func TestGitHubClient_SeamCases(t *testing.T) {
 				if err != nil {
 					t.Fatalf("UpdateRefFastForward: %v", err)
 				}
+
+			case "tags":
+				tags, err := c.Tags(context.Background(), "peasant-labs/schema")
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("Tags: %v", err)
+				}
+				got := make([]string, len(tags))
+				for i, tag := range tags {
+					got[i] = tag.Name + "=" + tag.CommitSHA
+				}
+				assertStringsEqual(t, "tags", got, tc.WantTags)
 
 			default:
 				t.Fatalf("unknown seam method %q in fixture case %q", tc.Method, tc.Name)

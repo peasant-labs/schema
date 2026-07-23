@@ -200,3 +200,12 @@ cases:
       - "heads/develop"
       - "peasant-labs/schema"
       - "GH_TOKEN can write"
+
+  - name: tags maps name and dereferenced commit sha (happy path)
+    method: tags
+    status: 200
+    response: list-tags.json
+    wantTags:
+      - "v1.2.3=aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"
+      - "v1.2.3-rc1=cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22"
+      - "pkg/schema/v0.2.0=99ee88ff77aa66bb55cc44dd33ee22ff11aa0099"

@@ -44,6 +44,11 @@ type GitHubClient interface {
 	// never clobbered). It returns release.ErrNotFastForward when GitHub rejects
 	// the update as non-fast-forward (the caller re-reads the tip and retries).
 	UpdateRefFastForward(ctx context.Context, repo, ref, newSHA string) error
+	// Tags lists every tag in repo (all pages) as own-types {Name, CommitSHA}.
+	// Backs the bubble first-run guard, which classifies release tags and refuses
+	// to drain across already-released history. CommitSHA is the commit the tag
+	// points at (GitHub's list-tags endpoint dereferences annotated tags).
+	Tags(ctx context.Context, repo string) ([]release.TagRef, error)
 }
 
 // githubClient is the production GitHubClient: a thin wrapper over the go-github
@@ -254,6 +259,34 @@ func (c *githubClient) UpdateRefFastForward(ctx context.Context, repo, ref, newS
 		return fmt.Errorf("github client: cannot update git ref %q to %s on %s/%s during release bubble: %w. Confirm the ref and SHA exist and that GH_TOKEN can write the repository's git data", ref, newSHA, owner, name, err)
 	}
 	return nil
+}
+
+func (c *githubClient) Tags(ctx context.Context, repo string) ([]release.TagRef, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return nil, err
+	}
+	// ListTags returns one page at a time; the NextPage loop collects ALL pages so
+	// the first-run guard sees every release tag, not just the first 100.
+	opts := &github.ListOptions{PerPage: 100}
+	var tags []release.TagRef
+	for {
+		page, resp, err := c.gh.Repositories.ListTags(ctx, owner, name, opts)
+		if err != nil {
+			return nil, fmt.Errorf("github client: cannot list tags on %s/%s during the bubble first-run guard: %w. Confirm GH_TOKEN can read the repository's tags", owner, name, err)
+		}
+		for _, t := range page {
+			if t == nil {
+				continue
+			}
+			tags = append(tags, release.TagRef{Name: t.GetName(), CommitSHA: t.GetCommit().GetSHA()})
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return tags, nil
 }
 
 // mapGitCommit projects a go-github *Commit onto the release.GitCommit own-type,

@@ -73,7 +73,11 @@ jobs:
           GH_TOKEN: ${{ steps.tok.outputs.token }}
           GITHUB_TOKEN: ${{ steps.tok.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_API_URL: ${{ github.api_url }}
+          # NOTE: no GITHUB_API_URL — the release-guard go-github client targets
+          # api.github.com (the MVP host) and does not read that variable, so
+          # setting it would be dead config that silently misleads on GHES. GHES
+          # support is a future follow-up: wire the host through go-github's
+          # WithEnterpriseURLs in newGitHubClient, then thread github.api_url here.
           PR_NUMBER: ${{ github.event.pull_request.number }}
           TOOL_REF: ${{ github.event.pull_request.merge_commit_sha }}
           # Fetch the module straight from GitHub (schema is public): the public

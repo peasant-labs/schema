@@ -22,6 +22,7 @@ type mockGitHubClient struct {
 	pullFn                   func(ctx context.Context, repo string, number int) (release.Pull, error)
 	createCommitFn           func(ctx context.Context, repo string, in release.NewCommit) (release.GitCommit, error)
 	updateRefFastForwardFn   func(ctx context.Context, repo, ref, newSHA string) error
+	tagsFn                   func(ctx context.Context, repo string) ([]release.TagRef, error)
 }
 
 func (m *mockGitHubClient) CollaboratorPermission(ctx context.Context, repo, user string) (release.CollaboratorPermission, error) {
@@ -47,6 +48,12 @@ func (m *mockGitHubClient) CreateCommit(ctx context.Context, repo string, in rel
 }
 func (m *mockGitHubClient) UpdateRefFastForward(ctx context.Context, repo, ref, newSHA string) error {
 	return m.updateRefFastForwardFn(ctx, repo, ref, newSHA)
+}
+func (m *mockGitHubClient) Tags(ctx context.Context, repo string) ([]release.TagRef, error) {
+	if m.tagsFn == nil {
+		return nil, nil
+	}
+	return m.tagsFn(ctx, repo)
 }
 
 type mockGitRunner struct {

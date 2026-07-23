@@ -15,7 +15,7 @@ import (
 
 // --- bubble subcommand: API-only squash-merge bubbler --------------------------
 //
-// `release-guard bubble --pr <n> [--max-attempts N]` is invoked by
+// `release-guard bubble --pr <n> [--max-attempts N] [--boundary <sha>]` is invoked by
 // bubble-merge.yml on a merged pull_request:closed event. It reads develop's
 // tip, drain-all-bubbles every pending squash into a signed merge-commit
 // triangle (M parents [T, S], M.tree == S.tree), and advances develop via a
@@ -30,9 +30,11 @@ import (
 // bubble retry / walk bounds.
 const (
 	defaultBubbleMaxAttempts = 5
-	// defaultWalkBound caps the first-parent drain-all walk so a develop with an
-	// unexpectedly long run of single-parent commits (no merge boundary) fails
-	// loud instead of walking unbounded (R-A).
+	// defaultWalkBound caps the first-parent drain-all walk: collectPending
+	// examines at most this many commits (the tip plus up to walkBound-1
+	// ancestors) before giving up, so a develop with an unexpectedly long run of
+	// single-parent commits (no merge boundary) fails loud instead of walking
+	// unbounded (R-A).
 	defaultWalkBound = 256
 )
 
@@ -64,7 +66,13 @@ type bubbler struct {
 	ref         string // unprefixed ref name, e.g. "heads/develop"
 	maxAttempts int
 	walkBound   int
-	logf        func(format string, args ...any)
+	// boundary, when non-empty, is the operator-supplied drain floor SHA (from
+	// --boundary): the first-parent walk stops when it reaches this commit and
+	// anchors the bubble's first parent T there. It is the explicit override for a
+	// deliberate first-run backfill that the released-history guard would
+	// otherwise refuse.
+	boundary string
+	logf     func(format string, args ...any)
 }
 
 // run performs the bubble. It returns nil on success or a no-op skip
@@ -196,6 +204,9 @@ func (b *bubbler) buildItems(ctx context.Context, tip release.GitCommit) ([]rele
 	if err != nil {
 		return nil, err
 	}
+	if err := b.guardReleasedHistory(ctx, pending); err != nil {
+		return nil, err
+	}
 	items := make([]release.BubbleItem, 0, len(pending))
 	for _, pc := range pending {
 		prov, err := b.resolveProvenance(ctx, pc)
@@ -219,6 +230,14 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 	var pending []pendingCommit
 	c := tip
 	for steps := 0; steps < b.walkBound; steps++ {
+		if b.boundary != "" && c.SHA == b.boundary {
+			// Reached the operator-supplied drain floor: stop here and anchor the
+			// bubble's first parent T at this commit (it is NOT collected, so the
+			// last pending commit's ParentSHA is this floor). This is the explicit
+			// override that scopes a first-run backfill above the released backlog.
+			reversePending(pending)
+			return pending, nil
+		}
 		if len(c.ParentSHAs) >= 2 {
 			// Reached the merge boundary T: collected commits are the pending
 			// squashes. Reverse to oldest-first.
@@ -250,10 +269,70 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 		c = next
 	}
 	return nil, fmt.Errorf(
-		"drain-all: no merge boundary found within %d commits walking first-parents from %s tip %s; "+
-			"refusing to bubble (R-A) — develop has an unexpectedly long run of single-parent commits; investigate manually",
-		b.walkBound, b.branch, tip.SHA,
+		"drain-all: examined the walk bound of %d first-parent commits from %s tip %s without reaching a merge boundary; "+
+			"refusing to bubble (R-A) — develop has more than %d single-parent commits above any merge boundary; investigate manually (or pass --boundary <sha> to set an explicit drain floor)",
+		b.walkBound, b.branch, tip.SHA, b.walkBound,
 	)
+}
+
+// releaseTagNameRE recognises a release tag by name: the canonical `vMAJOR.MINOR…`
+// form (v1.2.3, v1.2.3-rc4) and the legacy `pkg/schema/vMAJOR.MINOR…` published
+// form. Non-release tags (arbitrary markers) are deliberately excluded so the
+// first-run guard cannot false-fire on a normal post-install squash that merely
+// happens to carry an unrelated tag.
+var releaseTagNameRE = regexp.MustCompile(`^(?:pkg/schema/)?v\d+\.\d+`)
+
+// isReleaseTagName reports whether a tag name is a release tag the first-run
+// guard must protect against draining across.
+func isReleaseTagName(name string) bool { return releaseTagNameRE.MatchString(name) }
+
+// guardReleasedHistory refuses a first-run drain that would bubble merge-commits
+// over ALREADY-RELEASED history (the ratified B11 "surface before the first
+// protected-develop write" case).
+//
+// Mechanism — release-tag reachability, exact for the linear first-parent drain:
+// the pending set spans the first-parent range [merge boundary, tip], so any
+// release tag whose commit lies in that range appears AS one of the pending
+// commits. Reachability therefore reduces to SHA membership — no ancestor walk
+// is needed. The newest pending commit is the just-merged triggering squash
+// (never released), so only the commits BELOW it are checked. A release tag
+// below the boundary (already merged/bubbled) or the triggering squash itself
+// never trips the guard, so a normal post-install stacked-squash run — every
+// pending commit newer than every tag — proceeds untouched (contract (b)).
+//
+// On a hit it fails loud and leaves develop unchanged (contract (a)): the
+// operator decides intentionally, and can re-run with --boundary <sha> set to
+// the drain floor above the released backlog to proceed (contract (c)).
+func (b *bubbler) guardReleasedHistory(ctx context.Context, pending []pendingCommit) error {
+	if len(pending) < 2 {
+		// Only the triggering squash (or nothing): no drained commit BELOW it to
+		// cross released history.
+		return nil
+	}
+	tags, err := b.gh.Tags(ctx, b.repo)
+	if err != nil {
+		return fmt.Errorf("bubble first-run guard: cannot list release tags on %s to check the drain does not cross released history: %w", b.repo, err)
+	}
+	released := make(map[string]string, len(tags)) // commit SHA -> release tag name
+	for _, t := range tags {
+		if t.CommitSHA != "" && isReleaseTagName(t.Name) {
+			released[t.CommitSHA] = t.Name
+		}
+	}
+	// pending is oldest-first; the last element is the triggering squash (the tip)
+	// — skip it and check only the commits below it.
+	for _, pc := range pending[:len(pending)-1] {
+		if tag, ok := released[pc.squash.SHA]; ok {
+			return fmt.Errorf(
+				"bubble: refusing to drain across already-released history on %s: pending squash %s is the release tag %q. "+
+					"Bubbling would insert merge commits over released commits and reshape the first-parent mainline. "+
+					"develop is left unchanged (no write). If this is a deliberate first-run backfill, re-run with --boundary <sha> "+
+					"set to the commit ABOVE the released backlog (the drain floor); otherwise investigate why released history is being drained",
+				b.branch, pc.squash.SHA, tag,
+			)
+		}
+	}
+	return nil
 }
 
 // resolveProvenance resolves a squash's PR attribution: the PR number/title (via
@@ -261,53 +340,67 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 // title/body), the standing approvers + reviewers (via the PR's reviews), the
 // co-authors (from the squash commit's trailers), and the closing issues (from
 // the PR body + commit message).
+//
+// Provenance is BEST-EFFORT (cosmetic vs. the bubble itself): if the "(#n)" is
+// missing OR the Pull/PullReviews lookups hard-error (e.g. the "(#n)" is an issue
+// ref, a deleted/fork PR, or a coincidental "(#n)"), it LOGS a warning and
+// degrades to the no-PR "Merge commit <sha>" provenance so the bubble still
+// advances — it never returns an error and never wedges develop. Fail-loud is
+// reserved for the merge / FF-CAS write path, not a trailer lookup.
 func (b *bubbler) resolveProvenance(ctx context.Context, pc pendingCommit) (release.PRProvenance, error) {
 	subject := firstLine(pc.message)
 
-	var (
-		number int
-		title  string
-		body   string
-	)
-	if n, ok := parseTrailingPRNumber(subject); ok {
-		number = n
-		pull, err := b.gh.Pull(ctx, b.repo, n)
-		if err != nil {
-			return release.PRProvenance{}, fmt.Errorf("resolve PR #%d for squash %s: %w", n, pc.squash.SHA, err)
-		}
-		// Prefer the authoritative PR title; fall back to the "(#n)"-stripped
-		// subject when the PR title is empty/unresolved.
-		if t := strings.TrimSpace(pull.Title); t != "" {
-			title = pull.Title
-		} else {
-			title = stripTrailingPRNumber(subject)
-		}
-		body = pull.Body
-	} else {
-		// No "(#n)" suffix: degenerate, but bubble best-effort with the subject as
-		// the title (number stays 0 -> "Merge commit <sha>" subject).
-		title = subject
+	n, ok := parseTrailingPRNumber(subject)
+	if !ok {
+		// No "(#n)" suffix: degenerate, bubble best-effort with the subject as the
+		// title (number stays 0 -> "Merge commit <sha>" subject).
 		b.logf("notice: squash %s has no (#n) PR suffix; bubbling without a PR number", pc.squash.SHA)
+		return b.noPRProvenance(subject, pc), nil
 	}
 
-	var approvedBy, reviewedBy []string
-	if number > 0 {
-		reviews, err := b.gh.PullReviews(ctx, b.repo, number)
-		if err != nil {
-			return release.PRProvenance{}, fmt.Errorf("resolve reviews for PR #%d (squash %s): %w", number, pc.squash.SHA, err)
-		}
-		approvedBy = release.LatestApprovers(reviews)
-		reviewedBy = distinctReviewers(reviews)
+	pull, err := b.gh.Pull(ctx, b.repo, n)
+	if err != nil {
+		// Unresolvable "(#n)": degrade rather than wedge develop on every re-run.
+		b.logf("warning: cannot resolve PR #%d for squash %s (%v); bubbling with the no-PR \"Merge commit <sha>\" message instead", n, pc.squash.SHA, err)
+		return b.noPRProvenance(stripTrailingPRNumber(subject), pc), nil
 	}
+	// Prefer the authoritative PR title; fall back to the "(#n)"-stripped subject
+	// when the PR title is empty/unresolved.
+	title := stripTrailingPRNumber(subject)
+	if t := strings.TrimSpace(pull.Title); t != "" {
+		title = pull.Title
+	}
+
+	reviews, err := b.gh.PullReviews(ctx, b.repo, n)
+	if err != nil {
+		b.logf("warning: cannot resolve reviews for PR #%d (squash %s) (%v); bubbling with the no-PR \"Merge commit <sha>\" message instead", n, pc.squash.SHA, err)
+		return b.noPRProvenance(title, pc), nil
+	}
+	approvedBy := release.LatestApprovers(reviews)
 
 	return release.PRProvenance{
-		Number:       number,
+		Number:       n,
 		Title:        title,
-		ClosesIssues: parseClosesIssues(body + "\n" + pc.message),
+		ClosesIssues: parseClosesIssues(pull.Body + "\n" + pc.message),
 		ApprovedBy:   approvedBy,
-		ReviewedBy:   reviewedBy,
+		// Exclude standing approvers from Reviewed-by so each person is attributed
+		// once under their most-specific role (Approved-by wins over Reviewed-by).
+		ReviewedBy:   reviewersExcludingApprovers(reviews, approvedBy),
 		CoAuthoredBy: parseCoAuthors(pc.message),
 	}, nil
+}
+
+// noPRProvenance builds the best-effort provenance for a squash with no resolved
+// PR: Number 0 (renders "Merge commit <sha>" via renderBubbleMessage), the given
+// title, and the trailers recoverable from the commit message alone (no PR body
+// or reviews are available).
+func (b *bubbler) noPRProvenance(title string, pc pendingCommit) release.PRProvenance {
+	return release.PRProvenance{
+		Number:       0,
+		Title:        title,
+		ClosesIssues: parseClosesIssues(pc.message),
+		CoAuthoredBy: parseCoAuthors(pc.message),
+	}
 }
 
 // bubble creates the merge-commit chain M_1..M_k and advances the branch to M_k.
@@ -365,6 +458,14 @@ func reversePending(p []pendingCommit) {
 }
 
 // --- provenance parsing (pure, single-sourced with internal/release) -----------
+//
+// These parsers live in package main by design, NOT in internal/release: they
+// belong to provenance RESOLUTION, which interleaves live GitHub I/O
+// (Pull/PullReviews) and is inherently part of the orchestrator's composition
+// root. internal/release owns only the pure RENDER grammar (AssembleMessage /
+// BubbleMergeMessage) that turns a resolved PRProvenance into the final message.
+// Keeping resolution here and grammar there keeps the render layer free of any
+// I/O and free of the squash-subject/trailer parsing quirks.
 
 var (
 	// trailingPRNumberRE matches GitHub's native squash subject convention
@@ -475,8 +576,7 @@ func parseClosesIssues(text string) []int {
 
 // distinctReviewers returns the distinct, non-empty reviewer logins across a
 // PR's reviews, in first-seen order. Unlike release.LatestApprovers (which keeps
-// only standing approvals) this records everyone who submitted any review, for
-// the "Reviewed-by" trailers.
+// only standing approvals) this records everyone who submitted any review.
 func distinctReviewers(reviews []release.Review) []string {
 	seen := make(map[string]bool)
 	var out []string
@@ -486,6 +586,23 @@ func distinctReviewers(reviews []release.Review) []string {
 		}
 		seen[r.User.Login] = true
 		out = append(out, r.User.Login)
+	}
+	return out
+}
+
+// reviewersExcludingApprovers returns the distinct reviewers with the standing
+// approvers removed, so a person who both reviewed and approved is attributed
+// once — under Approved-by (the most-specific role), not also Reviewed-by.
+func reviewersExcludingApprovers(reviews []release.Review, approvers []string) []string {
+	approved := make(map[string]bool, len(approvers))
+	for _, a := range approvers {
+		approved[a] = true
+	}
+	out := make([]string, 0)
+	for _, login := range distinctReviewers(reviews) {
+		if !approved[login] {
+			out = append(out, login)
+		}
 	}
 	return out
 }
@@ -512,6 +629,7 @@ func runBubble(ctx context.Context, gh GitHubClient, repo string, args []string)
 func bubbleRun(ctx context.Context, gh GitHubClient, repo string, stdout, stderr io.Writer, args []string) error {
 	var (
 		prFlag      string
+		boundary    string
 		maxAttempts = defaultBubbleMaxAttempts
 	)
 	for i := 0; i < len(args); i++ {
@@ -532,6 +650,12 @@ func bubbleRun(ctx context.Context, gh GitHubClient, repo string, stdout, stderr
 				return errfTo(stderr, "bubble: --max-attempts must be a positive integer, got %q", args[i])
 			}
 			maxAttempts = n
+		case "--boundary":
+			i++
+			if i >= len(args) {
+				return errfTo(stderr, "bubble: --boundary requires a value")
+			}
+			boundary = args[i]
 		default:
 			return errfTo(stderr, "bubble: unknown flag %q", args[i])
 		}
@@ -555,6 +679,7 @@ func bubbleRun(ctx context.Context, gh GitHubClient, repo string, stdout, stderr
 		ref:         "heads/" + branch,
 		maxAttempts: maxAttempts,
 		walkBound:   defaultWalkBound,
+		boundary:    boundary,
 		logf: func(format string, a ...any) {
 			fmt.Fprintf(stderr, "release-guard bubble: "+format+"\n", a...)
 		},
