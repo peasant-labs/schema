@@ -39,6 +39,14 @@ type githubSeamCase struct {
 	Commit string `yaml:"commit"`
 	PR     int    `yaml:"pr"`
 
+	// git-data inputs (Ref/Commit/Pull/CreateCommit/UpdateRefFastForward)
+	Ref     string   `yaml:"ref"`
+	SHA     string   `yaml:"sha"`
+	Tree    string   `yaml:"tree"`
+	Parents []string `yaml:"parents"`
+	Message string   `yaml:"message"`
+	NewSHA  string   `yaml:"newSHA"`
+
 	// expected outcomes
 	WantErrContains []string `yaml:"wantErrContains"`
 	WantPath        string   `yaml:"wantPath"`
@@ -47,6 +55,14 @@ type githubSeamCase struct {
 	WantGreen       bool     `yaml:"wantGreen"`
 	WantReviewCount int      `yaml:"wantReviewCount"`
 	WantApprovers   []string `yaml:"wantApprovers"`
+
+	// git-data expected outcomes
+	WantSHA            string   `yaml:"wantSHA"`
+	WantTreeSHA        string   `yaml:"wantTreeSHA"`
+	WantParents        []string `yaml:"wantParents"`
+	WantTitle          string   `yaml:"wantTitle"`
+	WantNumber         int      `yaml:"wantNumber"`
+	WantNotFastForward bool     `yaml:"wantNotFastForward"`
 }
 
 // githubSeamCases is the parsed testdata/github/cases.yaml corpus.
