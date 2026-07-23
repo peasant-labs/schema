@@ -274,5 +274,6 @@ func mapGitCommit(commit *github.Commit) release.GitCommit {
 		SHA:        commit.GetSHA(),
 		TreeSHA:    commit.GetTree().GetSHA(),
 		ParentSHAs: parents,
+		Message:    commit.GetMessage(),
 	}
 }

@@ -116,6 +116,7 @@ cases:
     wantSHA: cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
     wantTreeSHA: 5dc4ea0f11223344556677889900aabbccddeeff
     wantParents: ["aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"]
+    wantMessage: "Squash merge PR #42\n\nSquashed changes."
 
   - name: commit 404 fires the actionable wrap
     method: commit

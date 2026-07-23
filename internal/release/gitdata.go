@@ -27,6 +27,10 @@ type GitCommit struct {
 	// ParentSHAs are the parent commit SHAs in order. For a bubble merge commit M
 	// over squash S onto tip T, ParentSHAs is [T, S] (first-parent T).
 	ParentSHAs []string
+	// Message is the commit message. The bubble orchestrator reads a squash
+	// commit's message to recover its "(#n)" PR suffix, Co-authored-by trailers,
+	// and Closes/Fixes issue references when building the bubble merge message.
+	Message string
 }
 
 // NewCommit is the input to GitHubClient.CreateCommit: the fields the caller

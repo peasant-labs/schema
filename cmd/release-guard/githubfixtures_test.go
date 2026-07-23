@@ -58,6 +58,7 @@ type githubSeamCase struct {
 
 	// git-data expected outcomes
 	WantSHA            string   `yaml:"wantSHA"`
+	WantMessage        string   `yaml:"wantMessage"`
 	WantTreeSHA        string   `yaml:"wantTreeSHA"`
 	WantParents        []string `yaml:"wantParents"`
 	WantTitle          string   `yaml:"wantTitle"`

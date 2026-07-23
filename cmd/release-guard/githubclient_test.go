@@ -173,6 +173,9 @@ func TestGitHubClient_SeamCases(t *testing.T) {
 				if commit.TreeSHA != tc.WantTreeSHA {
 					t.Fatalf("commit TreeSHA = %q, want %q", commit.TreeSHA, tc.WantTreeSHA)
 				}
+				if tc.WantMessage != "" && commit.Message != tc.WantMessage {
+					t.Fatalf("commit Message = %q, want %q", commit.Message, tc.WantMessage)
+				}
 				assertStringsEqual(t, "commit ParentSHAs", commit.ParentSHAs, tc.WantParents)
 
 			case "pull":
