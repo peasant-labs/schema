@@ -482,11 +482,14 @@ func TestBubbleRun_DegradesOnUnresolvablePR(t *testing.T) {
 	}
 }
 
-// A PullReviews hard error also degrades to the no-PR fallback (not an abort).
-func TestBubbleRun_DegradesOnUnresolvableReviews(t *testing.T) {
+// A PullReviews hard error degrades PARTIALLY: the resolved PR message is kept
+// (Merge PR #n: <title> + commit-derived trailers) and ONLY the review-derived
+// trailers are dropped — a cosmetic reviews failure must not discard a good PR
+// resolution. The bubble still advances.
+func TestBubbleRun_DegradesPartiallyOnUnresolvableReviews(t *testing.T) {
 	g := newFakeGraph()
 	g.addCommit(mergeBoundary("T"))
-	g.addCommit(release.GitCommit{SHA: "beefbeefbeef0000", TreeSHA: "treeS", ParentSHAs: []string{"T"}, Message: "feat (#12)"})
+	g.addCommit(release.GitCommit{SHA: "beefbeefbeef0000", TreeSHA: "treeS", ParentSHAs: []string{"T"}, Message: "feat (#12)\n\nCloses #4"})
 	g.ref = "beefbeefbeef0000"
 	g.pulls[12] = release.Pull{Number: 12, Title: "Twelve"}
 	g.reviewErr[12] = errors.New("github client: cannot list reviews for PR #12: 500")
@@ -498,8 +501,18 @@ func TestBubbleRun_DegradesOnUnresolvableReviews(t *testing.T) {
 	if len(g.created) != 1 || g.ref != "M1" {
 		t.Fatalf("bubble must still advance; created=%d ref=%q", len(g.created), g.ref)
 	}
-	if !strings.HasPrefix(g.created[0].Message, "Merge commit beefbeefbeef") {
-		t.Fatalf("reviews-error degrade should use the no-PR subject, got: %q", g.created[0].Message)
+	msg := g.created[0].Message
+	if !strings.HasPrefix(msg, "Merge PR #12: Twelve") {
+		t.Fatalf("reviews-error degrade should KEEP the resolved PR message, got: %q", msg)
+	}
+	if !strings.Contains(msg, "Closes #4") {
+		t.Fatalf("reviews-error degrade should keep commit-derived trailers:\n%s", msg)
+	}
+	if strings.Contains(msg, "Approved-by") || strings.Contains(msg, "Reviewed-by") {
+		t.Fatalf("reviews-error degrade should drop review-derived trailers:\n%s", msg)
+	}
+	if !strings.Contains(stderr.String(), "without Approved-by/Reviewed-by") {
+		t.Fatalf("expected a reviews-degrade warning on stderr:\n%s", stderr.String())
 	}
 }
 

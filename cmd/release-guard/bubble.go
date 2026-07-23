@@ -341,12 +341,16 @@ func (b *bubbler) guardReleasedHistory(ctx context.Context, pending []pendingCom
 // co-authors (from the squash commit's trailers), and the closing issues (from
 // the PR body + commit message).
 //
-// Provenance is BEST-EFFORT (cosmetic vs. the bubble itself): if the "(#n)" is
-// missing OR the Pull/PullReviews lookups hard-error (e.g. the "(#n)" is an issue
-// ref, a deleted/fork PR, or a coincidental "(#n)"), it LOGS a warning and
-// degrades to the no-PR "Merge commit <sha>" provenance so the bubble still
-// advances — it never returns an error and never wedges develop. Fail-loud is
-// reserved for the merge / FF-CAS write path, not a trailer lookup.
+// Provenance is BEST-EFFORT (cosmetic vs. the bubble itself) and degrades in
+// tiers — it never returns an error and never wedges develop; fail-loud is
+// reserved for the merge / FF-CAS write path, not a trailer lookup:
+//   - no "(#n)", or Pull(#n) hard-errors (issue ref, deleted/fork PR,
+//     coincidental "(#n)"): LOG a warning and fall all the way back to the no-PR
+//     "Merge commit <sha>" provenance.
+//   - Pull resolves but PullReviews hard-errors: KEEP the resolved
+//     "Merge PR #n: <title>" + the commit-derived Closes/Co-authored trailers,
+//     dropping ONLY the review-derived (Approved-by/Reviewed-by) trailers. A
+//     cosmetic reviews-only failure must not discard a good PR resolution.
 func (b *bubbler) resolveProvenance(ctx context.Context, pc pendingCommit) (release.PRProvenance, error) {
 	subject := firstLine(pc.message)
 
@@ -360,7 +364,8 @@ func (b *bubbler) resolveProvenance(ctx context.Context, pc pendingCommit) (rele
 
 	pull, err := b.gh.Pull(ctx, b.repo, n)
 	if err != nil {
-		// Unresolvable "(#n)": degrade rather than wedge develop on every re-run.
+		// Unresolvable "(#n)": degrade to the no-PR message rather than wedge
+		// develop on every re-run.
 		b.logf("warning: cannot resolve PR #%d for squash %s (%v); bubbling with the no-PR \"Merge commit <sha>\" message instead", n, pc.squash.SHA, err)
 		return b.noPRProvenance(stripTrailingPRNumber(subject), pc), nil
 	}
@@ -371,23 +376,27 @@ func (b *bubbler) resolveProvenance(ctx context.Context, pc pendingCommit) (rele
 		title = pull.Title
 	}
 
-	reviews, err := b.gh.PullReviews(ctx, b.repo, n)
-	if err != nil {
-		b.logf("warning: cannot resolve reviews for PR #%d (squash %s) (%v); bubbling with the no-PR \"Merge commit <sha>\" message instead", n, pc.squash.SHA, err)
-		return b.noPRProvenance(title, pc), nil
-	}
-	approvedBy := release.LatestApprovers(reviews)
-
-	return release.PRProvenance{
+	// The PR is resolved: keep the "Merge PR #n: <title>" + commit-derived
+	// trailers regardless of whether the reviews fetch succeeds.
+	prov := release.PRProvenance{
 		Number:       n,
 		Title:        title,
 		ClosesIssues: parseClosesIssues(pull.Body + "\n" + pc.message),
-		ApprovedBy:   approvedBy,
-		// Exclude standing approvers from Reviewed-by so each person is attributed
-		// once under their most-specific role (Approved-by wins over Reviewed-by).
-		ReviewedBy:   reviewersExcludingApprovers(reviews, approvedBy),
 		CoAuthoredBy: parseCoAuthors(pc.message),
-	}, nil
+	}
+
+	reviews, err := b.gh.PullReviews(ctx, b.repo, n)
+	if err != nil {
+		// Reviews-only failure: keep the resolved PR provenance, drop only the
+		// review-derived trailers (Approved-by/Reviewed-by).
+		b.logf("warning: cannot resolve reviews for PR #%d (squash %s) (%v); bubbling with the resolved PR message but without Approved-by/Reviewed-by trailers", n, pc.squash.SHA, err)
+		return prov, nil
+	}
+	prov.ApprovedBy = release.LatestApprovers(reviews)
+	// Exclude standing approvers from Reviewed-by so each person is attributed
+	// once under their most-specific role (Approved-by wins over Reviewed-by).
+	prov.ReviewedBy = reviewersExcludingApprovers(reviews, prov.ApprovedBy)
+	return prov, nil
 }
 
 // noPRProvenance builds the best-effort provenance for a squash with no resolved
