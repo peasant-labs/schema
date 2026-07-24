@@ -311,14 +311,12 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 
 	switch stop {
 	case stopMergeBoundary:
-		pending := make([]pendingCommit, 0, len(entries))
-		for _, e := range entries {
-			if e.pc != nil {
-				pending = append(pending, *e.pc)
-			}
-		}
-		reversePending(pending)
-		return pending, nil
+		// The merge boundary is the last entry (the anchor T); the drain is
+		// every entry above it. Route through the SAME collector as the
+		// --boundary path so a mid-walk nil pc fails LOUD in both — never
+		// silently drops a commit from the drain in one path while the other
+		// refuses it.
+		return b.collectAbove(entries, len(entries)-1)
 	case stopRoot:
 		// R-A requires a genuine merge boundary to anchor the first bubble's first
 		// parent T; fail loud rather than treating the root as T. (--boundary set
@@ -391,15 +389,27 @@ func (b *bubbler) pendingAboveBoundary(entries []walkEntry, tip release.GitCommi
 
 	// entries[floor] is the drain floor: the commits ABOVE it (entries[:floor])
 	// are the drain set, and the oldest of them has the floor as its ParentSHA,
-	// anchoring the first bubble's parent T. Every entry above the floor must
-	// carry a collected pendingCommit — only the walk's stop commit (always the
-	// LAST entry) lacks one — so a nil pc here is a broken invariant and must
-	// fail LOUD, never truncate the drain.
+	// anchoring the first bubble's parent T.
+	return b.collectAbove(entries, floor)
+}
+
+// collectAbove returns the pendingCommits carried by entries[:floor], oldest
+// first. It is the SINGLE collector shared by both drain-termination paths — the
+// natural merge-boundary stop (floor = the last entry) and the operator
+// --boundary override — so the sha<->pendingCommit invariant is enforced
+// identically in both, and neither can silently truncate the drain.
+//
+// Every entry above the floor must carry a collected pendingCommit; only the
+// walk's stop commit (always the LAST entry) may lack one, and it is never in
+// range here. A nil pc within [0, floor) is a broken invariant and fails LOUD
+// rather than dropping the commit from the drain — the exact silent-truncation
+// the walkEntry representation exists to make impossible.
+func (b *bubbler) collectAbove(entries []walkEntry, floor int) ([]pendingCommit, error) {
 	out := make([]pendingCommit, 0, floor)
 	for _, e := range entries[:floor] {
 		if e.pc == nil {
 			return nil, fmt.Errorf(
-				"drain-all: internal invariant violated: uncollected commit %s above boundary floor %s on %s; "+
+				"drain-all: internal invariant violated: uncollected commit %s above the drain floor %s on %s; "+
 					"refusing to bubble — develop is left unchanged (no write)",
 				e.sha, entries[floor].sha, b.branch,
 			)
