@@ -45,6 +45,13 @@ name: Bubble merge
 #      and only squashes ABOVE it are drained.
 # Leave `boundary` empty to re-run a normal, unguarded bubble by hand.
 #
+# `boundary` accepts an ABBREVIATED SHA (>= 7 hex chars, as `git log --abbrev-commit`
+# prints) as well as the full 40-char one — copying the short SHA off a commit
+# listing is fine. It must name a commit on develop's FIRST-PARENT chain at or above
+# the last merge boundary. A boundary that matches nothing, or that is too short /
+# ambiguous, is REFUSED with an actionable error and develop is left unchanged — it
+# is never silently ignored, so a mistyped floor cannot drain past what you intended.
+#
 # The branch dropdown is NOT cosmetic: a dispatch pins the release-guard version to
 # the launch branch's tip (github.sha), so launching from anywhere but develop would
 # run a foreign tool build against develop. That is enforced — a dispatch from any
@@ -67,7 +74,7 @@ on:
         required: true
         type: string
       boundary:
-        description: "Optional drain-floor commit SHA (--boundary). Usually the current develop tip. Leave empty for a normal bubble."
+        description: "Optional drain-floor commit SHA (--boundary). Usually the current develop tip. Short SHA (>=7 hex chars) or full 40-char both work; must be on develop's first-parent chain. Leave empty for a normal bubble."
         required: false
         default: ""
         type: string
