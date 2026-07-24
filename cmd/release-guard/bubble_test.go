@@ -504,6 +504,118 @@ func TestBubbleRun_BoundaryAcceptsAbbreviatedSHA(t *testing.T) {
 	}
 }
 
+// --boundary == the branch TIP itself (drain floor at the very top): the pending
+// set above the floor is empty, and the intended behaviour is a NO-OP SUCCESS —
+// the operator said "drain nothing above the tip", and erroring would make an
+// idempotent re-run fail. Pins floor==0 -> empty pending through the walk-entry
+// refactor.
+func TestBubbleRun_BoundaryAtTipIsNoOpSuccess(t *testing.T) {
+	g := boundaryGraph()
+
+	var stdout, stderr bytes.Buffer
+	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr,
+		[]string{"--boundary", shaNew})
+	if err != nil {
+		t.Fatalf("bubbleRun with --boundary == tip must be a no-op success, got: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if len(g.created) != 0 {
+		t.Fatalf("boundary-at-tip must create no commits; CreateCommit called %d times: %+v", len(g.created), g.created)
+	}
+	if g.upserts != 0 {
+		t.Fatalf("boundary-at-tip must not touch the ref; UpdateRefFastForward called %d times", g.upserts)
+	}
+	if g.ref != shaNew {
+		t.Fatalf("develop tip = %q, want %s unchanged", g.ref, shaNew)
+	}
+	if !strings.Contains(stderr.String(), "no pending squashes above the merge boundary") {
+		t.Fatalf("stderr missing the empty-pending notice:\n%s", stderr.String())
+	}
+}
+
+// --boundary == the ROOT commit (drain floor at the very bottom): without a
+// boundary the tool refuses a root (a root is not evidence of a merge boundary),
+// but the stopRoot error itself advertises --boundary as the escape hatch — an
+// explicit boundary means the operator IS the evidence, and git accepts a root
+// as a merge's first parent. Pins floor==len(pending) -> full drain anchored at
+// the root through the walk-entry refactor.
+func TestBubbleRun_BoundaryAtRootAnchorsDrainAtRoot(t *testing.T) {
+	const (
+		shaRoot   = "aaaa000011112222333344445555666677778888" // parentless root
+		shaSquash = "bbbb999988887777666655554444333322221111" // single squash above it
+	)
+	g := newFakeGraph()
+	g.addCommit(release.GitCommit{SHA: shaRoot, TreeSHA: "treeRoot", ParentSHAs: nil, Message: "root"})
+	g.addCommit(release.GitCommit{SHA: shaSquash, TreeSHA: "treeSq", ParentSHAs: []string{shaRoot}, Message: "feat: first real change (#21)"})
+	g.ref = shaSquash
+	g.pulls[21] = release.Pull{Number: 21, Title: "First real change"}
+
+	var stdout, stderr bytes.Buffer
+	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr,
+		[]string{"--boundary", shaRoot})
+	if err != nil {
+		t.Fatalf("bubbleRun with --boundary == root must succeed (explicit boundary sanctions root-as-anchor): %v\nstderr:\n%s", err, stderr.String())
+	}
+	if len(g.created) != 1 {
+		t.Fatalf("CreateCommit called %d times, want 1: %+v", len(g.created), g.created)
+	}
+	if got := g.created[0].ParentSHAs; len(got) != 2 || got[0] != shaRoot || got[1] != shaSquash {
+		t.Fatalf("M.parents = %v, want [%s %s] (root anchors T)", got, shaRoot, shaSquash)
+	}
+	if g.ref != "M1" {
+		t.Fatalf("develop advanced to %q, want M1", g.ref)
+	}
+}
+
+// failingGitHubClient returns a mock whose EVERY seam method fails the test
+// naming itself, so "zero API calls" is asserted across the whole GitHubClient
+// surface — not just Ref reads, with the rest guarded only by accidental
+// nil-func panics.
+func failingGitHubClient(t *testing.T) *mockGitHubClient {
+	t.Helper()
+	fail := func(method string) {
+		t.Helper()
+		t.Fatalf("validation must reject before any API call; %s was called", method)
+	}
+	return &mockGitHubClient{
+		collaboratorPermissionFn: func(context.Context, string, string) (release.CollaboratorPermission, error) {
+			fail("CollaboratorPermission")
+			return "", nil
+		},
+		workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
+			fail("WorkflowRunsForCommit")
+			return nil, nil
+		},
+		pullReviewsFn: func(context.Context, string, int) ([]release.Review, error) {
+			fail("PullReviews")
+			return nil, nil
+		},
+		refFn: func(context.Context, string, string) (release.GitRef, error) {
+			fail("Ref")
+			return release.GitRef{}, nil
+		},
+		commitFn: func(context.Context, string, string) (release.GitCommit, error) {
+			fail("Commit")
+			return release.GitCommit{}, nil
+		},
+		pullFn: func(context.Context, string, int) (release.Pull, error) {
+			fail("Pull")
+			return release.Pull{}, nil
+		},
+		createCommitFn: func(context.Context, string, release.NewCommit) (release.GitCommit, error) {
+			fail("CreateCommit")
+			return release.GitCommit{}, nil
+		},
+		updateRefFastForwardFn: func(context.Context, string, string, string) error {
+			fail("UpdateRefFastForward")
+			return nil
+		},
+		tagsFn: func(context.Context, string) ([]release.TagRef, error) {
+			fail("Tags")
+			return nil, nil
+		},
+	}
+}
+
 // A malformed --boundary is rejected on SHAPE alone, before a single API call is
 // made — so a typo never costs a walk and can never reach a write.
 func TestBubbleRun_BoundaryValidationRejectsMalformedBeforeAnyAPICall(t *testing.T) {
@@ -519,20 +631,13 @@ func TestBubbleRun_BoundaryValidationRejectsMalformedBeforeAnyAPICall(t *testing
 		{"too long", shaRc5 + "ff", "too long"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var calls int
-			gh := &mockGitHubClient{
-				refFn: func(context.Context, string, string) (release.GitRef, error) {
-					calls++
-					return release.GitRef{}, nil
-				},
-			}
+			// Every seam method on this client fails the test if called: the
+			// zero-API-call claim covers the whole GitHubClient surface.
+			gh := failingGitHubClient(t)
 			var stdout, stderr bytes.Buffer
 			err := bubbleRun(context.Background(), gh, "peasant-labs/schema", &stdout, &stderr, []string{"--boundary", tc.boundary})
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("bubbleRun(--boundary %q) error = %v, want it to contain %q", tc.boundary, err, tc.want)
-			}
-			if calls != 0 {
-				t.Fatalf("validation must reject before any API call; ref reads = %d", calls)
 			}
 			// Actionable: says what is wrong, that nothing was touched, and how to fix.
 			for _, want := range []string{"develop is unchanged", "Fix:"} {

@@ -234,6 +234,16 @@ const (
 	stopWalkBound                     // examined walkBound commits without either
 )
 
+// walkEntry is one commit the drain walk examined, pairing its full SHA with the
+// pendingCommit collected for it. pc is nil ONLY for the stop commit (the merge
+// boundary or root the walk halted at), which by the loop's structure is the
+// LAST entry — so "every examined commit above the floor was collected" is a
+// property of the type, not a parallel-slice index invariant held in a comment.
+type walkEntry struct {
+	sha string
+	pc  *pendingCommit
+}
+
 // collectPending walks first-parents from the tip, collecting the run of
 // single-parent commits (the un-bubbled squashes) until it reaches the merge
 // boundary T (a commit whose parent count != 1). It returns them oldest-first.
@@ -246,38 +256,39 @@ const (
 // the examined range. The extra reads are bounded by walkBound and only happen on
 // the rare manual seed path, which is the right trade for never silently picking
 // one of several commits an operator might have meant.
+//
+// The walk is recorded as []walkEntry so the sha<->pendingCommit correspondence
+// pendingAboveBoundary relies on is carried by the TYPE, not by parallel-slice
+// index discipline.
 func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]pendingCommit, error) {
 	var (
-		pending []pendingCommit // newest-first during the walk
-		// seen holds every full SHA the walk examined, newest-first, INCLUDING the
-		// commit it stopped at. pending[i] corresponds to seen[i] by construction
-		// (every examined commit except the stop commit is collected), which is what
-		// lets a boundary index into seen slice pending directly.
-		seen []string
-		stop = stopWalkBound
-		c    = tip
+		entries []walkEntry // newest-first; every commit the walk examined
+		stop    = stopWalkBound
+		c       = tip
 	)
 	for steps := 0; steps < b.walkBound; steps++ {
-		seen = append(seen, c.SHA)
 		if len(c.ParentSHAs) >= 2 {
-			// Reached the merge boundary T: collected commits are the pending
-			// squashes.
+			// Reached the merge boundary T: it is examined but NOT collected
+			// (pc == nil), and by the break it is the last entry.
+			entries = append(entries, walkEntry{sha: c.SHA})
 			stop = stopMergeBoundary
 			break
 		}
 		if len(c.ParentSHAs) == 0 {
-			// A root commit is NOT a merge boundary (see the R-A error below).
+			// A root commit is NOT a merge boundary (see the R-A error below); like
+			// the boundary it is examined but not collected.
+			entries = append(entries, walkEntry{sha: c.SHA})
 			stop = stopRoot
 			break
 		}
-		pending = append(pending, pendingCommit{
+		entries = append(entries, walkEntry{sha: c.SHA, pc: &pendingCommit{
 			squash: release.Squash{
 				SHA:       c.SHA,
 				ParentSHA: c.ParentSHAs[0],
 				TreeSHA:   c.TreeSHA,
 			},
 			message: c.Message,
-		})
+		}})
 		next, err := b.gh.Commit(ctx, b.repo, c.ParentSHAs[0])
 		if err != nil {
 			return nil, fmt.Errorf("drain-all walk: read commit %s: %w", c.ParentSHAs[0], err)
@@ -287,23 +298,36 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 
 	// An operator-supplied drain floor overrides the natural stop: it scopes the
 	// drain above a released backlog, and is the documented escape hatch for the
-	// root / walk-bound refusals below (so those must not pre-empt it).
+	// root / walk-bound refusals below (so those must not pre-empt it). In
+	// particular, an explicit --boundary that names the ROOT commit deliberately
+	// sanctions root-as-anchor: the stopRoot refusal below exists because a root is
+	// not EVIDENCE of a merge boundary, but with an explicit boundary the operator
+	// IS the evidence, and git happily accepts a root as a merge's first parent.
+	// Do not "fix" this by routing stopRoot around the boundary path — that would
+	// break the escape hatch the stopRoot error message itself advertises.
 	if b.boundary != "" {
-		return b.pendingAboveBoundary(pending, seen, tip)
+		return b.pendingAboveBoundary(entries, tip)
 	}
 
 	switch stop {
 	case stopMergeBoundary:
+		pending := make([]pendingCommit, 0, len(entries))
+		for _, e := range entries {
+			if e.pc != nil {
+				pending = append(pending, *e.pc)
+			}
+		}
 		reversePending(pending)
 		return pending, nil
 	case stopRoot:
 		// R-A requires a genuine merge boundary to anchor the first bubble's first
-		// parent T; fail loud rather than treating the root as T.
+		// parent T; fail loud rather than treating the root as T. (--boundary set
+		// to the root is the sanctioned way past this — see above.)
 		return nil, fmt.Errorf(
 			"drain-all: reached root commit %s with no merge boundary above it on %s; "+
 				"refusing to bubble (R-A) — cannot anchor the bubble's first parent; investigate manually "+
 				"(or pass --boundary <sha> to set an explicit drain floor)",
-			seen[len(seen)-1], b.branch,
+			entries[len(entries)-1].sha, b.branch,
 		)
 	default:
 		return nil, fmt.Errorf(
@@ -324,15 +348,15 @@ func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]
 // no-op. Silently ignoring an unmatched boundary would drain straight past the
 // floor the operator asked for and rely on the released-history guard to catch
 // it, which is exactly the defect this path exists to prevent.
-func (b *bubbler) pendingAboveBoundary(pending []pendingCommit, seen []string, tip release.GitCommit) ([]pendingCommit, error) {
+func (b *bubbler) pendingAboveBoundary(entries []walkEntry, tip release.GitCommit) ([]pendingCommit, error) {
 	prefix := strings.ToLower(b.boundary)
 	var (
 		matches []string
 		floor   = -1
 	)
-	for i, sha := range seen {
-		if strings.HasPrefix(strings.ToLower(sha), prefix) {
-			matches = append(matches, sha)
+	for i, e := range entries {
+		if strings.HasPrefix(strings.ToLower(e.sha), prefix) {
+			matches = append(matches, e.sha)
 			if floor < 0 {
 				floor = i
 			}
@@ -340,8 +364,8 @@ func (b *bubbler) pendingAboveBoundary(pending []pendingCommit, seen []string, t
 	}
 
 	oldest := ""
-	if len(seen) > 0 {
-		oldest = seen[len(seen)-1]
+	if len(entries) > 0 {
+		oldest = entries[len(entries)-1].sha
 	}
 
 	if len(matches) > 1 {
@@ -361,16 +385,27 @@ func (b *bubbler) pendingAboveBoundary(pending []pendingCommit, seen []string, t
 				"the floor you asked for. Fix: verify the SHA exists and lies on %s's FIRST-PARENT chain at or above the "+
 				"last merge boundary (`git log --first-parent %s`); a commit on a side branch, already below the last "+
 				"merge boundary, or mistyped will not match",
-			b.boundary, b.branch, len(seen), oldest, tip.SHA, b.walkBound, b.branch, b.branch,
+			b.boundary, b.branch, len(entries), oldest, tip.SHA, b.walkBound, b.branch, b.branch,
 		)
 	}
 
-	// seen[floor] is the drain floor: it is NOT collected, so the oldest pending
-	// commit's ParentSHA is that floor and it anchors the first bubble's parent T.
-	if floor > len(pending) {
-		floor = len(pending)
+	// entries[floor] is the drain floor: the commits ABOVE it (entries[:floor])
+	// are the drain set, and the oldest of them has the floor as its ParentSHA,
+	// anchoring the first bubble's parent T. Every entry above the floor must
+	// carry a collected pendingCommit — only the walk's stop commit (always the
+	// LAST entry) lacks one — so a nil pc here is a broken invariant and must
+	// fail LOUD, never truncate the drain.
+	out := make([]pendingCommit, 0, floor)
+	for _, e := range entries[:floor] {
+		if e.pc == nil {
+			return nil, fmt.Errorf(
+				"drain-all: internal invariant violated: uncollected commit %s above boundary floor %s on %s; "+
+					"refusing to bubble — develop is left unchanged (no write)",
+				e.sha, entries[floor].sha, b.branch,
+			)
+		}
+		out = append(out, *e.pc)
 	}
-	out := pending[:floor]
 	reversePending(out)
 	return out, nil
 }
@@ -393,7 +428,7 @@ func validateBoundary(boundary string) error {
 	}
 	if !boundaryHexRE.MatchString(boundary) {
 		return fmt.Errorf(
-			"bubble: --boundary %q is not a valid commit SHA: a git commit SHA is hexadecimal ([0-9a-f]), "+
+			"bubble: --boundary %q is not a valid commit SHA: a git commit SHA is hexadecimal (0-9, a-f, case-insensitive), "+
 				"and this value contains other characters. No API call was made and develop is unchanged. "+
 				"Fix: pass the commit SHA itself (e.g. from `git log --first-parent develop` or the GitHub commit URL), "+
 				"not a branch name, tag, or ref expression",
