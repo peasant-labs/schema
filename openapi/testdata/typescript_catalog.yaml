@@ -242,9 +242,65 @@ types:
     disposition: catalog
     component: ActivityEdge
     reason: public wire or domain contract type
+  - go_name: AssociationEvidence
+    disposition: catalog
+    component: AssociationEvidence
+    reason: public wire or domain contract type
+  - go_name: AssociationKind
+    disposition: catalog
+    component: AssociationKind
+    reason: public wire or domain contract type
   - go_name: ChangeBinding
     disposition: catalog
     component: ChangeBinding
+    reason: public wire or domain contract type
+  - go_name: Confidence
+    disposition: catalog
+    component: Confidence
+    reason: public wire or domain contract type
+  - go_name: InsightClassification
+    disposition: catalog
+    component: InsightClassification
+    reason: public wire or domain contract type
+  - go_name: InsightEvidence
+    disposition: catalog
+    component: InsightEvidence
+    reason: public wire or domain contract type
+  - go_name: InsightKind
+    disposition: catalog
+    component: InsightKind
+    reason: public wire or domain contract type
+  - go_name: InsightProvenance
+    disposition: catalog
+    component: InsightProvenance
+    reason: public wire or domain contract type
+  - go_name: ReadAttributionState
+    disposition: catalog
+    component: ReadAttributionState
+    reason: public wire or domain contract type
+  - go_name: ReadStateGrade
+    disposition: catalog
+    component: ReadStateGrade
+    reason: public wire or domain contract type
+  - go_name: RewriteMethod
+    disposition: catalog
+    component: RewriteMethod
+    reason: public wire or domain contract type
+  - go_name: RewriteResolution
+    disposition: catalog
+    component: RewriteResolution
+    reason: public wire or domain contract type
+  - go_name: RewrittenCommit
+    disposition: catalog
+    component: RewrittenCommit
+    reason: public wire or domain contract type
+  - go_name: SessionAssociation
+    disposition: catalog
+    component: SessionAssociation
+    reason: public wire or domain contract type
+  - go_name: SessionInsight
+    disposition: catalog
+    component: SessionInsight
     reason: public wire or domain contract type
   - go_name: ChangeDetailPayload
     disposition: catalog

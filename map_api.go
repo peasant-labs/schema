@@ -99,6 +99,170 @@ type MapNode struct {
 	TotalFiles    int         `json:"totalFiles"`
 	TouchCount    int         `json:"touchCount"`    // recorded edits in window (activity size metric)
 	EffortDensity float64     `json:"effortDensity"` // 0..1 per-file re-edit/error density rollup (0 when unknown)
+
+	// AgentEditedCount / ReadCount / ReadAttribution are the node-grain
+	// comprehension signals behind the ranked entry list's tri-state debt
+	// tag (impl contract §2 D4, §3.3). ReadAttribution is the honesty field:
+	// a zero ReadCount is "unavailable" (no recoverable per-file read
+	// attribution for any editing session), "partial" (some do), or
+	// "complete" (all do) — never silently indistinguishable from unread.
+	AgentEditedCount int                  `json:"agentEditedCount"`
+	ReadCount        int                  `json:"readCount"`
+	ReadAttribution  ReadAttributionState `json:"readAttribution" required:"true"`
+
+	// ReadState is the composed effective read-state grade for the node's
+	// current content version (the read-state grade design). ChangedRegionCount
+	// / AttributedRegionCount / ReviewedRegionCount are the minimal per-node
+	// region-coverage counts over that same current version — total changed
+	// hunks, hunks the server could attribute to a producing turn, and
+	// attributed hunks whose producing turn carries a reviewed+ grade —
+	// needed for the client's hunk-linked hover ("N of M changed regions
+	// reviewed"; team-lead §G5-boundary ruling, orchestrator ruling
+	// 2026-07-24, option a). All server-computed; the client-side debt
+	// derivation stays a pure function over these MapNode scalars.
+	ReadState             ReadStateGrade `json:"readState" required:"true"`
+	ChangedRegionCount    int            `json:"changedRegionCount"`
+	AttributedRegionCount int            `json:"attributedRegionCount"`
+	ReviewedRegionCount   int            `json:"reviewedRegionCount"`
+}
+
+// Validate checks a MapNode's closed-set fields fail closed. It does not
+// check cross-region-count consistency (e.g. ReviewedRegionCount <=
+// AttributedRegionCount <= ChangedRegionCount) — those are producer-side
+// invariants enforced by the S4b composed producer, not a wire shape rule.
+func (n MapNode) Validate() error {
+	if err := n.ReadAttribution.Validate(); err != nil {
+		return fmt.Errorf("map node validation failed for %q at schema.MapNode.Validate during wire-boundary validation: %w", n.ID, err)
+	}
+	if err := n.ReadState.Validate(); err != nil {
+		return fmt.Errorf("map node validation failed for %q at schema.MapNode.Validate during wire-boundary validation: %w", n.ID, err)
+	}
+	return nil
+}
+
+// ReadAttributionState reports whether per-file read attribution is
+// recoverable for a node's editing sessions (impl contract §2.5, §2 D4): the
+// honesty axis that keeps a zero ReadCount from being misread as "known
+// unread" when it is really "never recorded".
+type ReadAttributionState string
+
+// ReadAttributionState values.
+const (
+	ReadAttributionComplete    ReadAttributionState = "complete"
+	ReadAttributionPartial     ReadAttributionState = "partial"
+	ReadAttributionUnavailable ReadAttributionState = "unavailable"
+)
+
+// AllReadAttributionStates is the canonical list of read attribution states.
+var AllReadAttributionStates = []ReadAttributionState{
+	ReadAttributionComplete,
+	ReadAttributionPartial,
+	ReadAttributionUnavailable,
+}
+
+// String returns the wire representation of the read attribution state.
+func (s ReadAttributionState) String() string { return string(s) }
+
+// IsValid reports whether s is one of the defined read attribution states.
+func (s ReadAttributionState) IsValid() bool {
+	switch s {
+	case ReadAttributionComplete, ReadAttributionPartial, ReadAttributionUnavailable:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the read-attribution wire
+// boundary.
+func (s ReadAttributionState) Validate() error {
+	if s.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"read attribution state validation failed for %q at schema.ReadAttributionState.Validate during wire-boundary validation: the value is not one of complete, partial, or unavailable; callers cannot distinguish unread from unrecorded; use a member of schema.AllReadAttributionStates",
+		s,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (ReadAttributionState) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Read Attribution State",
+		"Whether per-file read attribution is recoverable for a node's editing sessions: complete, partial, or unavailable",
+		AllReadAttributionStates,
+	), nil
+}
+
+// ReadStateGrade is the ordinal closed set of explicit read-state acts
+// (the read-state grade design): none < viewed < reviewed <
+// reviewed_in_detail. The ordering is registry data (the peasant-side
+// system-origin TypeDefinition seed, S4a); this Go closed set is the sole
+// typed copy on the wire, kept identical to the registry seed by
+// ReadStateGradeRegistrySeedPermissibleValues.
+type ReadStateGrade string
+
+// ReadStateGrade values, in ascending ordinal order.
+const (
+	ReadStateGradeNone             ReadStateGrade = "none"
+	ReadStateGradeViewed           ReadStateGrade = "viewed"
+	ReadStateGradeReviewed         ReadStateGrade = "reviewed"
+	ReadStateGradeReviewedInDetail ReadStateGrade = "reviewed_in_detail"
+)
+
+// AllReadStateGrades is the canonical ordered list of read-state grades,
+// ascending: none < viewed < reviewed < reviewed_in_detail.
+var AllReadStateGrades = []ReadStateGrade{
+	ReadStateGradeNone,
+	ReadStateGradeViewed,
+	ReadStateGradeReviewed,
+	ReadStateGradeReviewedInDetail,
+}
+
+// ReadStateGradeRegistrySeedPermissibleValues is AllReadStateGrades with the
+// unstated zero grade "none" removed, in the same ascending order: the
+// registered set the peasant-side read-state registry seed's
+// PermissibleValues (S4a) must byte-equal (the read-state grade design: "cross-check
+// that AllReadStateGrades (minus none) byte-equals the registry seed
+// permissible-values"). TestReadStateGradeRegistrySeedCrossCheck pins this
+// module's half of the cross-check; the peasant-side registry seed test pins
+// the other half against this exported value.
+var ReadStateGradeRegistrySeedPermissibleValues = []string{
+	string(ReadStateGradeViewed),
+	string(ReadStateGradeReviewed),
+	string(ReadStateGradeReviewedInDetail),
+}
+
+// String returns the wire representation of the read-state grade.
+func (g ReadStateGrade) String() string { return string(g) }
+
+// IsValid reports whether g is one of the defined read-state grades.
+func (g ReadStateGrade) IsValid() bool {
+	switch g {
+	case ReadStateGradeNone, ReadStateGradeViewed, ReadStateGradeReviewed, ReadStateGradeReviewedInDetail:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the read-state-grade wire
+// boundary.
+func (g ReadStateGrade) Validate() error {
+	if g.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"read state grade validation failed for %q at schema.ReadStateGrade.Validate during wire-boundary validation: the value is not one of none, viewed, reviewed, or reviewed_in_detail; callers cannot render the comprehension-debt tag's clear/partial state; use a member of schema.AllReadStateGrades",
+		g,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (ReadStateGrade) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Read State Grade",
+		"Ordinal explicit read-state act: none, viewed, reviewed, or reviewed_in_detail",
+		AllReadStateGrades,
+	), nil
 }
 
 // MapEdge is a structure (import) dependency between two nodes.
@@ -184,18 +348,61 @@ type MapNodeDetailPayload struct {
 	RetryLoops    int           `json:"retryLoops"`        // summed over touching sessions
 	ReEdits       int           `json:"reEdits"`           // re-edited files within this node
 	CostUsd       *float64      `json:"costUsd,omitempty"` // nil when unknown
+	// RewrittenCommits lists ghost commits touching this node (impl contract
+	// §2 D2). Additive; empty when the resolver found no ghosts here.
+	RewrittenCommits []RewrittenCommit `json:"rewrittenCommits" required:"true" nullable:"false"`
+	// Insights carries the mechanical (and, from peasant#175, mined) insight
+	// envelope for this node (impl contract §2 D3). Additive alongside the
+	// per-change Unusual/Frictions signals — never a replacement for them.
+	Insights []SessionInsight `json:"insights" required:"true" nullable:"false"`
 }
 
 // NewMapNodeDetailPayload returns a MapNodeDetailPayload with all slices
 // initialized to empty (never-nil marshal guarantee).
 func NewMapNodeDetailPayload(path string) *MapNodeDetailPayload {
 	return &MapNodeDetailPayload{
-		Path:          path,
-		DependsOn:     []string{},
-		UsedBy:        []string{},
-		ShapedBy:      []TaskSummary{},
-		RecentCommits: []CommitRef{},
+		Path:             path,
+		DependsOn:        []string{},
+		UsedBy:           []string{},
+		ShapedBy:         []TaskSummary{},
+		RecentCommits:    []CommitRef{},
+		RewrittenCommits: []RewrittenCommit{},
+		Insights:         []SessionInsight{},
 	}
+}
+
+// Validate checks the D2/D3 additive invariants: slices are non-nil, every
+// RewrittenCommit's own fields are well-formed and its SuccessorHash (when
+// set) is present in RecentCommits, and every SessionInsight is well-formed
+// (including the epoch's Classification-must-be-nil rule). Unlike
+// ReviewListPayload, a node detail payload carries no independent session
+// table, so RewrittenCommits.SessionIDs are checked for well-formedness only
+// (not cross-referenced against a session list this payload does not have).
+func (p MapNodeDetailPayload) Validate() error {
+	if p.DependsOn == nil || p.UsedBy == nil || p.ShapedBy == nil || p.RecentCommits == nil || p.RewrittenCommits == nil || p.Insights == nil {
+		return fmt.Errorf("map node detail validation: dependsOn, usedBy, shapedBy, recentCommits, rewrittenCommits, and insights must be arrays; initialize the payload with NewMapNodeDetailPayload before serving it")
+	}
+	for index, ghost := range p.RewrittenCommits {
+		if err := ghost.Validate(); err != nil {
+			return fmt.Errorf("map node detail validation: rewrittenCommits[%d]: %w", index, err)
+		}
+		if ghost.SuccessorHash != nil {
+			found := false
+			for _, commit := range p.RecentCommits {
+				if commit.Hash == *ghost.SuccessorHash {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("map node detail validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in recentCommits; include the successor commit or leave successorHash nil", index, ghost.GhostHash, *ghost.SuccessorHash)
+			}
+		}
+	}
+	if err := validateSessionInsights(p.Insights); err != nil {
+		return fmt.Errorf("map node detail validation: %w", err)
+	}
+	return nil
 }
 
 // TaskSummary is one task: a depth-0 user turn and everything until the next
@@ -208,8 +415,15 @@ type TaskSummary struct {
 	Outcome     string   `json:"outcome,omitempty"` // session-level outcome
 	EditedFiles []string `json:"editedFiles"`
 	ReadCount   int      `json:"readCount"`
-	RetryLoop   bool     `json:"retryLoop"` // an error streak >=2 occurs inside this task's range
-	Labels      []string `json:"labels"`    // effective auto/manual annotation values, plain strings
+	// ReadFiles is the per-file derivation of ReadCount (impl contract §2 D5,
+	// §2.5): repo-relative paths, sorted, distinct, non-nil, mirroring
+	// EditedFiles' invariants. Retroactively recoverable for any already-
+	// ingested session with at least one depth-1 tool_use entry carrying
+	// non-NULL tool_input (see MapNode.ReadAttribution for the honest
+	// residual-gap signal when it is not).
+	ReadFiles []string `json:"readFiles" required:"true" nullable:"false"`
+	RetryLoop bool     `json:"retryLoop"` // an error streak >=2 occurs inside this task's range
+	Labels    []string `json:"labels"`    // effective auto/manual annotation values, plain strings
 }
 
 // NewTaskSummary returns a TaskSummary with all slices initialized to empty
@@ -219,8 +433,27 @@ func NewTaskSummary(sessionID string, entryIndex int) TaskSummary {
 		SessionID:   sessionID,
 		EntryIndex:  entryIndex,
 		EditedFiles: []string{},
+		ReadFiles:   []string{},
 		Labels:      []string{},
 	}
+}
+
+// Validate checks TaskSummary's D5 ReadFiles invariant: non-nil, sorted
+// ascending, and free of duplicates (mirroring the invariants EditedFiles is
+// already expected to carry).
+func (t TaskSummary) Validate() error {
+	if t.ReadFiles == nil {
+		return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is null; initialize the array (even empty) with NewTaskSummary before serving it", t.SessionID, t.EntryIndex)
+	}
+	for i := 1; i < len(t.ReadFiles); i++ {
+		switch {
+		case t.ReadFiles[i] == t.ReadFiles[i-1]:
+			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles has a duplicate entry %q; the derivation must deduplicate by repo-relative path before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i])
+		case t.ReadFiles[i] < t.ReadFiles[i-1]:
+			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is not sorted ascending (%q precedes %q); sort repo-relative paths before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i-1], t.ReadFiles[i])
+		}
+	}
+	return nil
 }
 
 // CommitRef is lightweight commit metadata for time strips and rail panels.
@@ -232,11 +465,621 @@ type CommitRef struct {
 	// SessionIDs names authoritative session_commits bindings in the same
 	// strictly increasing rank order as ReviewListPayload.Sessions.
 	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
+	// Associations decomposes each SessionIDs binding into its kind,
+	// confidence, and evidence (impl contract §2 D1) instead of one flat
+	// badge. It mirrors SessionIDs one-for-one in the same rank order:
+	// Associations[i].SessionID == SessionIDs[i] for every i.
+	Associations []SessionAssociation `json:"associations" yaml:"associations" required:"true" nullable:"false"`
 }
 
-// NewCommitRef returns commit metadata with a non-nil session ID array.
+// NewCommitRef returns commit metadata with non-nil session ID and
+// association arrays.
 func NewCommitRef(hash, subject string) CommitRef {
-	return CommitRef{Hash: hash, Subject: subject, SessionIDs: []SessionID{}}
+	return CommitRef{Hash: hash, Subject: subject, SessionIDs: []SessionID{}, Associations: []SessionAssociation{}}
+}
+
+// AssociationKind classifies the strength of evidence linking a recorded
+// session to a commit (impl contract §2 D1, §1 governing insight: an
+// association is never a flat badge).
+type AssociationKind string
+
+// AssociationKind values. bound = commit-in-branch AND touch overlap;
+// candidate = one arm matched; temporal = time-window proximity only.
+const (
+	AssociationKindBound     AssociationKind = "bound"
+	AssociationKindCandidate AssociationKind = "candidate"
+	AssociationKindTemporal  AssociationKind = "temporal"
+)
+
+// AllAssociationKinds is the canonical list of session<->commit association
+// kinds.
+var AllAssociationKinds = []AssociationKind{
+	AssociationKindBound,
+	AssociationKindCandidate,
+	AssociationKindTemporal,
+}
+
+// String returns the wire representation of the association kind.
+func (k AssociationKind) String() string { return string(k) }
+
+// IsValid reports whether k is one of the defined association kinds.
+func (k AssociationKind) IsValid() bool {
+	switch k {
+	case AssociationKindBound, AssociationKindCandidate, AssociationKindTemporal:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the association-kind wire
+// boundary.
+func (k AssociationKind) Validate() error {
+	if k.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"association kind validation failed for %q at schema.AssociationKind.Validate during wire-boundary validation: the value is not one of bound, candidate, or temporal; callers cannot classify the session<->commit relationship; use a member of schema.AllAssociationKinds",
+		k,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (AssociationKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Association Kind",
+		"Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal",
+		AllAssociationKinds,
+	), nil
+}
+
+// Confidence classifies how strongly the evidence behind a derived
+// relationship (a session<->commit association, or a ghost-commit rewrite
+// resolution) supports its conclusion. Shared across impl contract §1.4 and
+// §2 D1.
+type Confidence string
+
+// Confidence values.
+const (
+	ConfidenceHigh   Confidence = "high"
+	ConfidenceMedium Confidence = "medium"
+	ConfidenceLow    Confidence = "low"
+)
+
+// AllConfidences is the canonical list of confidence levels.
+var AllConfidences = []Confidence{
+	ConfidenceHigh,
+	ConfidenceMedium,
+	ConfidenceLow,
+}
+
+// String returns the wire representation of the confidence level.
+func (c Confidence) String() string { return string(c) }
+
+// IsValid reports whether c is one of the defined confidence levels.
+func (c Confidence) IsValid() bool {
+	switch c {
+	case ConfidenceHigh, ConfidenceMedium, ConfidenceLow:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the confidence wire boundary.
+func (c Confidence) Validate() error {
+	if c.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"confidence validation failed for %q at schema.Confidence.Validate during wire-boundary validation: the value is not one of high, medium, or low; callers cannot weigh the derived relationship; use a member of schema.AllConfidences",
+		c,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (Confidence) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Confidence",
+		"Strength of evidence behind a derived relationship: high, medium, or low",
+		AllConfidences,
+	), nil
+}
+
+// AssociationEvidence names which signal(s) produced a session<->commit
+// association (impl contract §2 D1). Producer work note: classifySessions
+// must preserve which arm(s) matched instead of collapsing them.
+type AssociationEvidence string
+
+// AssociationEvidence values.
+const (
+	AssociationEvidenceCommitAndTouch AssociationEvidence = "commit_and_touch"
+	AssociationEvidenceCommitOnly     AssociationEvidence = "commit_only"
+	AssociationEvidenceTouchOnly      AssociationEvidence = "touch_only"
+	AssociationEvidenceBranchOnly     AssociationEvidence = "branch_only"
+	AssociationEvidenceTimeWindow     AssociationEvidence = "time_window"
+)
+
+// AllAssociationEvidences is the canonical list of association evidence
+// signals.
+var AllAssociationEvidences = []AssociationEvidence{
+	AssociationEvidenceCommitAndTouch,
+	AssociationEvidenceCommitOnly,
+	AssociationEvidenceTouchOnly,
+	AssociationEvidenceBranchOnly,
+	AssociationEvidenceTimeWindow,
+}
+
+// String returns the wire representation of the association evidence.
+func (e AssociationEvidence) String() string { return string(e) }
+
+// IsValid reports whether e is one of the defined association evidence
+// signals.
+func (e AssociationEvidence) IsValid() bool {
+	switch e {
+	case AssociationEvidenceCommitAndTouch, AssociationEvidenceCommitOnly, AssociationEvidenceTouchOnly, AssociationEvidenceBranchOnly, AssociationEvidenceTimeWindow:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the association-evidence wire
+// boundary.
+func (e AssociationEvidence) Validate() error {
+	if e.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"association evidence validation failed for %q at schema.AssociationEvidence.Validate during wire-boundary validation: the value is not one of commit_and_touch, commit_only, touch_only, branch_only, or time_window; callers cannot explain why the association was made; use a member of schema.AllAssociationEvidences",
+		e,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (AssociationEvidence) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Association Evidence",
+		"Which signal(s) produced a session<->commit association",
+		AllAssociationEvidences,
+	), nil
+}
+
+// SessionAssociation decomposes a session<->commit relationship into three
+// independent axes instead of one flat badge (impl contract §2 D1).
+type SessionAssociation struct {
+	SessionID  SessionID           `json:"sessionId" yaml:"sessionId" required:"true"`
+	Kind       AssociationKind     `json:"kind" yaml:"kind" required:"true"`
+	Confidence Confidence          `json:"confidence" yaml:"confidence" required:"true"`
+	Evidence   AssociationEvidence `json:"evidence" yaml:"evidence" required:"true"`
+}
+
+// Validate checks a single association's own fields are well-formed. It does
+// not check cross-references to a payload's session table or rank order —
+// callers with that context use validateCommitRefAssociations.
+func (a SessionAssociation) Validate() error {
+	if a.SessionID == "" {
+		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links, callers cannot resolve an anonymous association")
+	}
+	if err := a.Kind.Validate(); err != nil {
+		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
+	}
+	if err := a.Confidence.Validate(); err != nil {
+		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
+	}
+	if err := a.Evidence.Validate(); err != nil {
+		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
+	}
+	return nil
+}
+
+// validateCommitRefAssociations checks the D1 cross-reference invariants for
+// one commit's Associations against the payload's known session table:
+// every association's own fields are well-formed, every SessionID is present
+// in the payload's session table, and Associations mirrors SessionIDs
+// one-for-one in the same rank order (preserving the existing HasSession
+// mirror and rank-order invariants).
+func validateCommitRefAssociations(commit CommitRef, knownSessions map[SessionID]struct{}) error {
+	if commit.Associations == nil {
+		return fmt.Errorf("review list validation: commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", commit.Hash)
+	}
+	if len(commit.Associations) != len(commit.SessionIDs) {
+		return fmt.Errorf("review list validation: commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", commit.Hash, len(commit.Associations), len(commit.SessionIDs))
+	}
+	for index, association := range commit.Associations {
+		if err := association.Validate(); err != nil {
+			return fmt.Errorf("review list validation: commit %q at association index %d: %w", commit.Hash, index, err)
+		}
+		if association.SessionID != commit.SessionIDs[index] {
+			return fmt.Errorf("review list validation: commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
+		}
+		if _, exists := knownSessions[association.SessionID]; !exists {
+			return fmt.Errorf("review list validation: commit %q references association sessionId %q that is not present in sessions; include it once in ReviewListPayload.Sessions or remove the stale association", commit.Hash, association.SessionID)
+		}
+	}
+	return nil
+}
+
+// RewriteResolution classifies whether a ledger-observed commit hash is
+// still live on the default branch, was rewritten to a resolvable
+// successor, or could not be resolved (impl contract §1.4, §2 D2).
+type RewriteResolution string
+
+// RewriteResolution values.
+const (
+	RewriteResolutionLive       RewriteResolution = "live"
+	RewriteResolutionRewritten  RewriteResolution = "rewritten"
+	RewriteResolutionUnresolved RewriteResolution = "unresolved"
+)
+
+// AllRewriteResolutions is the canonical list of rewrite resolutions.
+var AllRewriteResolutions = []RewriteResolution{
+	RewriteResolutionLive,
+	RewriteResolutionRewritten,
+	RewriteResolutionUnresolved,
+}
+
+// String returns the wire representation of the rewrite resolution.
+func (r RewriteResolution) String() string { return string(r) }
+
+// IsValid reports whether r is one of the defined rewrite resolutions.
+func (r RewriteResolution) IsValid() bool {
+	switch r {
+	case RewriteResolutionLive, RewriteResolutionRewritten, RewriteResolutionUnresolved:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the rewrite-resolution wire
+// boundary.
+func (r RewriteResolution) Validate() error {
+	if r.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"rewrite resolution validation failed for %q at schema.RewriteResolution.Validate during wire-boundary validation: the value is not one of live, rewritten, or unresolved; callers cannot render the ghost commit's resolution state; use a member of schema.AllRewriteResolutions",
+		r,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (RewriteResolution) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Rewrite Resolution",
+		"Whether a ledger-observed commit hash is live, was rewritten, or could not be resolved",
+		AllRewriteResolutions,
+	), nil
+}
+
+// RewriteMethod names the mechanism the resolver used to map a ghost commit
+// to its successor (impl contract §1.3, §2 D2), in the order the resolver
+// attempts them.
+type RewriteMethod string
+
+// RewriteMethod values.
+const (
+	RewriteMethodHash            RewriteMethod = "hash"
+	RewriteMethodPatchID         RewriteMethod = "patch_id"
+	RewriteMethodAuthorIdentity  RewriteMethod = "author_identity"
+	RewriteMethodMessageEmbedded RewriteMethod = "message_embedded"
+	RewriteMethodTemporal        RewriteMethod = "temporal"
+	RewriteMethodNone            RewriteMethod = "none"
+)
+
+// AllRewriteMethods is the canonical list of rewrite resolution methods.
+var AllRewriteMethods = []RewriteMethod{
+	RewriteMethodHash,
+	RewriteMethodPatchID,
+	RewriteMethodAuthorIdentity,
+	RewriteMethodMessageEmbedded,
+	RewriteMethodTemporal,
+	RewriteMethodNone,
+}
+
+// String returns the wire representation of the rewrite method.
+func (m RewriteMethod) String() string { return string(m) }
+
+// IsValid reports whether m is one of the defined rewrite methods.
+func (m RewriteMethod) IsValid() bool {
+	switch m {
+	case RewriteMethodHash, RewriteMethodPatchID, RewriteMethodAuthorIdentity, RewriteMethodMessageEmbedded, RewriteMethodTemporal, RewriteMethodNone:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the rewrite-method wire
+// boundary.
+func (m RewriteMethod) Validate() error {
+	if m.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"rewrite method validation failed for %q at schema.RewriteMethod.Validate during wire-boundary validation: the value is not one of hash, patch_id, author_identity, message_embedded, temporal, or none; callers cannot explain how the resolution was reached; use a member of schema.AllRewriteMethods",
+		m,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (RewriteMethod) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Rewrite Method",
+		"Mechanism the resolver used to map a ghost commit to its successor",
+		AllRewriteMethods,
+	), nil
+}
+
+// RewrittenCommit is one ghost commit: a session-era commit hash no longer
+// reachable from the default branch, with the resolver's best mapping to a
+// successor (impl contract §1, §2 D2).
+type RewrittenCommit struct {
+	GhostHash string `json:"ghostHash" yaml:"ghostHash" required:"true"`
+	// Subject and AuthorTimeMs are "" / nil when the ledger row never
+	// recorded that metadata (degraded providers, impl contract §1.5).
+	Subject      string      `json:"subject" yaml:"subject"`
+	AuthorTimeMs *int64      `json:"authorTimeMs,omitempty" yaml:"authorTimeMs,omitempty"`
+	SessionIDs   []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
+	// SuccessorHash is nil when Resolution is unresolved; non-nil when
+	// rewritten. It is never populated for Resolution=live (a live ledger
+	// hash is not a ghost).
+	SuccessorHash *string           `json:"successorHash,omitempty" yaml:"successorHash,omitempty"`
+	Resolution    RewriteResolution `json:"resolution" yaml:"resolution" required:"true"`
+	Method        RewriteMethod     `json:"method" yaml:"method" required:"true"`
+	Confidence    Confidence        `json:"confidence" yaml:"confidence" required:"true"`
+}
+
+// Validate checks a single RewrittenCommit's own fields: the resolution and
+// method enums are in-set, SuccessorHash presence matches Resolution, and
+// Method==none iff Resolution==unresolved. It does not check cross-references
+// to a payload's session table or commit set — callers with that context use
+// validateRewrittenCommits.
+func (r RewrittenCommit) Validate() error {
+	if r.GhostHash == "" {
+		return fmt.Errorf("rewritten commit validation failed at schema.RewrittenCommit.Validate during wire-boundary validation: ghostHash is empty; every rewritten commit must name the ghost hash it maps, callers cannot resolve an anonymous ghost")
+	}
+	if r.SessionIDs == nil {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is null; initialize the array (even empty) before serving the payload", r.GhostHash)
+	}
+	if err := r.Resolution.Validate(); err != nil {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
+	}
+	if err := r.Method.Validate(); err != nil {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
+	}
+	if err := r.Confidence.Validate(); err != nil {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
+	}
+	switch r.Resolution {
+	case RewriteResolutionRewritten:
+		if r.SuccessorHash == nil {
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is nil; a rewritten ghost must name its successor commit, or the resolution should be unresolved", r.GhostHash, r.Resolution)
+		}
+	case RewriteResolutionUnresolved:
+		if r.SuccessorHash != nil {
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is %q; an unresolved ghost must not name a successor, or the resolution should be rewritten", r.GhostHash, r.Resolution, *r.SuccessorHash)
+		}
+	}
+	if (r.Method == RewriteMethodNone) != (r.Resolution == RewriteResolutionUnresolved) {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: method %q and resolution %q are inconsistent; method must be none if and only if resolution is unresolved", r.GhostHash, r.Method, r.Resolution)
+	}
+	return nil
+}
+
+// validateRewrittenCommits checks the D2 cross-reference invariants for a
+// payload's RewrittenCommits list against its known session table and known
+// commit hash set: every entry's own fields are well-formed, every
+// SessionID is present in the payload's session table, and SuccessorHash
+// (when set) is present in the payload's commit set. label identifies the
+// owning payload in error messages.
+func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]struct{}, knownCommitHashes map[string]struct{}, label string) error {
+	if commits == nil {
+		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload", label)
+	}
+	for index, ghost := range commits {
+		if err := ghost.Validate(); err != nil {
+			return fmt.Errorf("%s validation: rewrittenCommits[%d]: %w", label, index, err)
+		}
+		for _, sessionID := range ghost.SessionIDs {
+			if _, exists := knownSessions[sessionID]; !exists {
+				return fmt.Errorf("%s validation: rewrittenCommits[%d] (ghost %q) references sessionId %q that is not present in the payload's known sessions; include it in the session table or remove the stale reference", label, index, ghost.GhostHash, sessionID)
+			}
+		}
+		if ghost.SuccessorHash != nil {
+			if _, exists := knownCommitHashes[*ghost.SuccessorHash]; !exists {
+				return fmt.Errorf("%s validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in the payload's commit set; include the successor commit or leave successorHash nil", label, index, ghost.GhostHash, *ghost.SuccessorHash)
+			}
+		}
+	}
+	return nil
+}
+
+// InsightKind classifies a SessionInsight (impl contract §2 D3).
+type InsightKind string
+
+// InsightKind values.
+const (
+	InsightKindDecision  InsightKind = "decision"
+	InsightKindFriction  InsightKind = "friction"
+	InsightKindUnusual   InsightKind = "unusual"
+	InsightKindRetryLoop InsightKind = "retry_loop"
+)
+
+// AllInsightKinds is the canonical list of insight kinds.
+var AllInsightKinds = []InsightKind{
+	InsightKindDecision,
+	InsightKindFriction,
+	InsightKindUnusual,
+	InsightKindRetryLoop,
+}
+
+// String returns the wire representation of the insight kind.
+func (k InsightKind) String() string { return string(k) }
+
+// IsValid reports whether k is one of the defined insight kinds.
+func (k InsightKind) IsValid() bool {
+	switch k {
+	case InsightKindDecision, InsightKindFriction, InsightKindUnusual, InsightKindRetryLoop:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the insight-kind wire boundary.
+func (k InsightKind) Validate() error {
+	if k.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"insight kind validation failed for %q at schema.InsightKind.Validate during wire-boundary validation: the value is not one of decision, friction, unusual, or retry_loop; callers cannot classify the insight; use a member of schema.AllInsightKinds",
+		k,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (InsightKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Insight Kind",
+		"What a SessionInsight observed: a decision, friction, an unusual rate elevation, or a retry loop",
+		AllInsightKinds,
+	), nil
+}
+
+// InsightProvenance classifies how a SessionInsight was produced (impl
+// contract §2 D3): mechanical (rule-derived, this epoch) or mined (from
+// peasant#175, additive — no shape change).
+type InsightProvenance string
+
+// InsightProvenance values.
+const (
+	InsightProvenanceMechanical InsightProvenance = "mechanical"
+	InsightProvenanceMined      InsightProvenance = "mined"
+)
+
+// AllInsightProvenances is the canonical list of insight provenances.
+var AllInsightProvenances = []InsightProvenance{
+	InsightProvenanceMechanical,
+	InsightProvenanceMined,
+}
+
+// String returns the wire representation of the insight provenance.
+func (p InsightProvenance) String() string { return string(p) }
+
+// IsValid reports whether p is one of the defined insight provenances.
+func (p InsightProvenance) IsValid() bool {
+	switch p {
+	case InsightProvenanceMechanical, InsightProvenanceMined:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values that cannot cross the insight-provenance wire
+// boundary.
+func (p InsightProvenance) Validate() error {
+	if p.IsValid() {
+		return nil
+	}
+	return fmt.Errorf(
+		"insight provenance validation failed for %q at schema.InsightProvenance.Validate during wire-boundary validation: the value is not one of mechanical or mined; callers cannot tell whether the insight was rule-derived or mined; use a member of schema.AllInsightProvenances",
+		p,
+	)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (InsightProvenance) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Insight Provenance",
+		"How a SessionInsight was produced: mechanical (rule-derived) or mined",
+		AllInsightProvenances,
+	), nil
+}
+
+// InsightEvidence is one traceability pointer for a SessionInsight: the
+// recorded session (and, when known, the turn / file / commit) that grounds
+// it. Every mechanical insight carries at least one.
+type InsightEvidence struct {
+	SessionID  SessionID `json:"sessionId" yaml:"sessionId" required:"true"`
+	EntryIndex *int      `json:"entryIndex,omitempty" yaml:"entryIndex,omitempty"`
+	File       string    `json:"file,omitempty" yaml:"file,omitempty"`
+	CommitHash string    `json:"commitHash,omitempty" yaml:"commitHash,omitempty"`
+}
+
+// InsightClassification is the taxonomy tuple (category x cause x
+// severity(scope, locus) x resolution) that peasant#175's mining epoch will
+// populate. Declared now, with bare string fields and NO closed-set typing,
+// so the wire shape is stable for mining to fill additively; this epoch's
+// producers never populate it (SessionInsight.Classification MUST be nil —
+// see the SessionInsight.Validate doc).
+type InsightClassification struct {
+	Category      string `json:"category" yaml:"category"`
+	Cause         string `json:"cause" yaml:"cause"`
+	SeverityScope string `json:"severityScope" yaml:"severityScope"`
+	SeverityLocus string `json:"severityLocus" yaml:"severityLocus"`
+	Resolution    string `json:"resolution" yaml:"resolution"`
+}
+
+// SessionInsight is one insight: a (kind x provenance x confidence) envelope
+// with evidence and subjects, additive alongside ChangeDetailPayload's
+// existing Unusual/Frictions signals (impl contract §2 D3). This epoch's
+// interim mechanical producers (unusualSignals, frictionClusters, retry-loop
+// detection) fill it with Classification left nil; peasant#175's mining
+// epoch later fills Provenance=mined and Classification with no shape
+// change.
+type SessionInsight struct {
+	Kind       InsightKind       `json:"kind" yaml:"kind" required:"true"`
+	Provenance InsightProvenance `json:"provenance" yaml:"provenance" required:"true"`
+	Confidence Confidence        `json:"confidence" yaml:"confidence" required:"true"`
+	Title      string            `json:"title" yaml:"title" required:"true"`
+	Summary    string            `json:"summary,omitempty" yaml:"summary,omitempty"`
+	// Subjects names the node ids / file paths the insight is about.
+	Subjects []string `json:"subjects" yaml:"subjects" required:"true" nullable:"false"`
+	// Evidence is the traceability spine: every mechanical insight carries
+	// at least one item.
+	Evidence []InsightEvidence `json:"evidence" yaml:"evidence" required:"true" nullable:"false"`
+	// Classification MUST be nil this epoch (see Validate). No producer here
+	// emits one; the per-field taxonomy enums are peasant#175's to define
+	// once the taxonomy axes settle.
+	Classification *InsightClassification `json:"classification,omitempty" yaml:"classification,omitempty"`
+}
+
+// Validate checks the D3 invariants: Kind/Provenance/Confidence are in-set,
+// Subjects and Evidence are non-nil, every mechanical insight carries at
+// least one evidence item, and — the only real invariant this epoch —
+// Classification MUST be nil. A future peasant#175 revision replaces the
+// must-be-nil rule with real per-field closed sets; the shape does not
+// change.
+func (i SessionInsight) Validate() error {
+	if err := i.Kind.Validate(); err != nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: %w", i.Title, err)
+	}
+	if err := i.Provenance.Validate(); err != nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: %w", i.Title, err)
+	}
+	if err := i.Confidence.Validate(); err != nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: %w", i.Title, err)
+	}
+	if i.Subjects == nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: subjects is null; initialize the array (even empty) before serving the payload", i.Title)
+	}
+	if i.Evidence == nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: evidence is null; initialize the array (even empty) before serving the payload", i.Title)
+	}
+	if i.Provenance == InsightProvenanceMechanical && len(i.Evidence) == 0 {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: provenance is mechanical but evidence is empty; every mechanical insight must cite at least one evidence item so the traceability spine (signal -> file change -> session) holds", i.Title)
+	}
+	if i.Classification != nil {
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: classification is non-nil; no producer this epoch emits a classification (the taxonomy is peasant#175's to define once its axes settle) — leave classification nil until that epoch lands", i.Title)
+	}
+	return nil
+}
+
+// validateSessionInsights runs SessionInsight.Validate over every insight,
+// returning the first failure with its index for locality.
+func validateSessionInsights(insights []SessionInsight) error {
+	for index, insight := range insights {
+		if err := insight.Validate(); err != nil {
+			return fmt.Errorf("insights[%d]: %w", index, err)
+		}
+	}
+	return nil
 }
 
 // --- Tasks (Tasks lens + file filter) ---
@@ -303,6 +1146,11 @@ type ReviewListPayload struct {
 	Changes       []ChangeSummary      `json:"changes" required:"true" nullable:"false"`       // open first, then merged
 	RecentCommits []CommitRef          `json:"recentCommits" required:"true" nullable:"false"` // default-branch, cap 200 (time strip)
 	Sessions      []TimelineSessionRef `json:"sessions" required:"true" nullable:"false"`      // complete visible project timeline identities, including sessions not linked to displayed commits
+	// RewrittenCommits lists the project's ghost commits (session-era history
+	// no longer reachable from the default branch) with their rewrite
+	// resolution (impl contract §2 D2). Additive; empty when the resolver
+	// found no ghosts.
+	RewrittenCommits []RewrittenCommit `json:"rewrittenCommits" required:"true" nullable:"false"`
 }
 
 // TimelineSessionRef is identity and display metadata for a recorded session
@@ -324,10 +1172,11 @@ type TimelineSessionRef struct {
 // initialized to empty (never-nil marshal guarantee).
 func NewReviewListPayload(projectHash ProjectHash) *ReviewListPayload {
 	return &ReviewListPayload{
-		ProjectHash:   projectHash,
-		Changes:       []ChangeSummary{},
-		RecentCommits: []CommitRef{},
-		Sessions:      []TimelineSessionRef{},
+		ProjectHash:      projectHash,
+		Changes:          []ChangeSummary{},
+		RecentCommits:    []CommitRef{},
+		Sessions:         []TimelineSessionRef{},
+		RewrittenCommits: []RewrittenCommit{},
 	}
 }
 
@@ -337,8 +1186,8 @@ func (p ReviewListPayload) Validate() error {
 	if err := p.ProjectHash.Validate(); err != nil {
 		return fmt.Errorf("review list validation: projectHash is invalid: %w; resolve the canonical project identity before serving the payload", err)
 	}
-	if p.Changes == nil || p.RecentCommits == nil || p.Sessions == nil {
-		return fmt.Errorf("review list validation: changes, recentCommits, and sessions must be arrays; initialize the payload with NewReviewListPayload before serving it")
+	if p.Changes == nil || p.RecentCommits == nil || p.Sessions == nil || p.RewrittenCommits == nil {
+		return fmt.Errorf("review list validation: changes, recentCommits, sessions, and rewrittenCommits must be arrays; initialize the payload with NewReviewListPayload before serving it")
 	}
 	knownSessions := make(map[SessionID]TimelineSessionRef, len(p.Sessions))
 	sessionRanks := make(map[SessionID]int, len(p.Sessions))
@@ -374,6 +1223,10 @@ func (p ReviewListPayload) Validate() error {
 			}
 		}
 	}
+	knownSessionSet := make(map[SessionID]struct{}, len(knownSessions))
+	for sessionID := range knownSessions {
+		knownSessionSet[sessionID] = struct{}{}
+	}
 	for commitIndex, commit := range p.RecentCommits {
 		if commit.SessionIDs == nil {
 			return fmt.Errorf("review list validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
@@ -401,8 +1254,25 @@ func (p ReviewListPayload) Validate() error {
 			}
 			previousRank = rank
 		}
+		if err := validateCommitRefAssociations(commit, knownSessionSet); err != nil {
+			return err
+		}
+	}
+	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessionSet, recentCommitHashes(p.RecentCommits), "review list"); err != nil {
+		return err
 	}
 	return nil
+}
+
+// recentCommitHashes returns the set of commit hashes visible in commits, for
+// cross-referencing a RewrittenCommit.SuccessorHash against a payload's
+// known commit set.
+func recentCommitHashes(commits []CommitRef) map[string]struct{} {
+	hashes := make(map[string]struct{}, len(commits))
+	for _, commit := range commits {
+		hashes[commit.Hash] = struct{}{}
+	}
+	return hashes
 }
 
 // ChangeSummary is one row of the Review list: a local branch measured
@@ -454,11 +1324,15 @@ type ChangeDetailPayload struct {
 	// Frictions holds NEUTRAL recurring-friction counts keyed by (kind, file):
 	// "this kind of friction touched this file N times across M conversations"
 	// Facts are for orientation, never a verdict.
-	Frictions    []FrictionCluster `json:"frictions"`
-	LinesAdded   int               `json:"linesAdded"`
-	LinesRemoved int               `json:"linesRemoved"`
-	OutputTokens int64             `json:"outputTokens"` // SUM of output_tokens over bound sessions
-	CostUsd      *float64          `json:"costUsd,omitempty"`
+	Frictions []FrictionCluster `json:"frictions"`
+	// Insights carries the mechanical (and, from peasant#175, mined) insight
+	// envelope for this change (impl contract §2 D3). Additive alongside
+	// Unusual/Frictions above — never a replacement for them.
+	Insights     []SessionInsight `json:"insights" required:"true" nullable:"false"`
+	LinesAdded   int              `json:"linesAdded"`
+	LinesRemoved int              `json:"linesRemoved"`
+	OutputTokens int64            `json:"outputTokens"` // SUM of output_tokens over bound sessions
+	CostUsd      *float64         `json:"costUsd,omitempty"`
 }
 
 // NewChangeDetailPayload returns a ChangeDetailPayload with all slices
@@ -478,7 +1352,22 @@ func NewChangeDetailPayload(branch string) *ChangeDetailPayload {
 		UnrecordedCommits: []CommitRef{},
 		Unusual:           []UnusualSignal{},
 		Frictions:         []FrictionCluster{},
+		Insights:          []SessionInsight{},
 	}
+}
+
+// Validate checks the D3 additive invariant: Insights is non-nil and every
+// entry is well-formed (including the epoch's Classification-must-be-nil
+// rule). It does not (yet) validate the other ChangeDetailPayload slices —
+// those predate this slice and are out of scope for S3.
+func (p ChangeDetailPayload) Validate() error {
+	if p.Insights == nil {
+		return fmt.Errorf("change detail validation: insights must be an array; initialize the payload with NewChangeDetailPayload before serving it")
+	}
+	if err := validateSessionInsights(p.Insights); err != nil {
+		return fmt.Errorf("change detail validation: %w", err)
+	}
+	return nil
 }
 
 // UnusualSignal is one neutral rate-elevation: a per-conversation rate for this

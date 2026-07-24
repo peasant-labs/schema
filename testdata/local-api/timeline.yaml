@@ -6,8 +6,8 @@ cases:
         - {sessionId: session-a, title: first task, harness: claude-code, startMs: 2000, hasCommitBinding: true}
         - {sessionId: session-b, title: second task, harness: codex, startMs: 1000, hasCommitBinding: true}
       commits:
-        - {hash: commit-2, subject: follow-up, hasSession: true, sessionIds: [session-a, session-b]}
-        - {hash: commit-1, subject: setup, hasSession: true, sessionIds: [session-a]}
+        - {hash: commit-2, subject: follow-up, hasSession: true, sessionIds: [session-a, session-b], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-b, kind: candidate, confidence: medium, evidence: touch_only}]}
+        - {hash: commit-1, subject: setup, hasSession: true, sessionIds: [session-a], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: authoritative many-to-many commit bindings}
@@ -18,7 +18,7 @@ cases:
       sessions:
         - {sessionId: session-unlinked, title: exploration, harness: opencode, startMs: 3000, hasCommitBinding: false}
       commits:
-        - {hash: commit-empty, subject: manual change, hasSession: false, sessionIds: []}
+        - {hash: commit-empty, subject: manual change, hasSession: false, sessionIds: [], associations: []}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: unattached sessions remain discoverable}
@@ -29,7 +29,7 @@ cases:
       sessions:
         - {sessionId: session-old, title: older recorded work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-recent, subject: recent manual change, hasSession: false, sessionIds: []}
+        - {hash: commit-recent, subject: recent manual change, hasSession: false, sessionIds: [], associations: []}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: complete binding truth exceeds bounded commit window}
@@ -95,7 +95,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: false, sessionIds: [session-a]}
+        - {hash: commit-a, subject: work, hasSession: false, sessionIds: [session-a], associations: []}
     expected: {error_contains: hasSession must mirror}
     classification: must-fail
     provenance: {source: requirement, ref: compatibility boolean mirrors authoritative bindings}
@@ -106,7 +106,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: false}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: []}
     expected: {error_contains: hasCommitBinding=false}
     classification: must-fail
     provenance: {source: requirement, ref: visible binding proves complete session binding truth}
@@ -116,7 +116,7 @@ cases:
     input:
       sessions: []
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-missing]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-missing], associations: []}
     expected: {error_contains: references unknown sessionId}
     classification: must-fail
     provenance: {source: requirement, ref: commit bindings reference normalized session identities}
@@ -138,7 +138,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-a]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-a], associations: []}
     expected: {error_contains: repeats sessionId}
     classification: must-fail
     provenance: {source: boundary, ref: commit binding set uniqueness}
@@ -148,7 +148,7 @@ cases:
     input:
       sessions: []
       commits:
-        - {hash: commit-a, subject: work, hasSession: false}
+        - {hash: commit-a, subject: work, hasSession: false, associations: []}
     expected: {error_contains: null sessionIds}
     classification: must-fail
     provenance: {source: boundary, ref: non-null commit binding arrays}
@@ -170,8 +170,53 @@ cases:
         - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}
         - {sessionId: session-b, title: second, harness: codex, startMs: 1000, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-b, session-a]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-b, session-a], associations: []}
     expected: {error_contains: noncanonical sessionIds order}
     classification: must-fail
     provenance: {source: boundary, ref: commit bindings follow normalized timeline session rank}
     mutation: {description: reverses two valid bindings relative to the canonical session order}
+  - family: null-associations
+    name: null_associations
+    input:
+      sessions:
+        - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a]}
+    expected: {error_contains: null associations}
+    classification: must-fail
+    provenance: {source: requirement, ref: the non-nil Associations invariant}
+    mutation: {description: omits the required associations array from a commit that has sessionIds}
+  - family: association-count-mismatch
+    name: association_count_does_not_mirror_session_ids
+    input:
+      sessions:
+        - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: []}
+    expected: {error_contains: Associations must mirror SessionIDs}
+    classification: must-fail
+    provenance: {source: requirement, ref: the Associations-mirrors-SessionIDs invariant}
+    mutation: {description: leaves associations empty while sessionIds carries one binding}
+  - family: association-rank-mismatch
+    name: association_rank_order_does_not_match_session_ids
+    input:
+      sessions:
+        - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}
+        - {sessionId: session-b, title: second, harness: codex, startMs: 1000, hasCommitBinding: true}
+      commits:
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-b], associations: [{sessionId: session-b, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+    expected: {error_contains: Associations must equal SessionIDs in the same rank order}
+    classification: must-fail
+    provenance: {source: requirement, ref: the Associations rank-order invariant}
+    mutation: {description: swaps the two associations relative to the canonical sessionIds order}
+  - family: association-invalid-kind
+    name: association_kind_not_in_closed_set
+    input:
+      sessions:
+        - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: [{sessionId: session-a, kind: unknown-kind, confidence: high, evidence: commit_and_touch}]}
+    expected: {error_contains: association kind validation failed}
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllAssociationKinds}
+    mutation: {description: replaces a known association kind with a value outside the closed set}

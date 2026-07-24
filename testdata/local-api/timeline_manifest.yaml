@@ -15,6 +15,10 @@ cases:
   - {family: non-null-commit-bindings, name: null_commit_bindings, classification: must-fail}
   - {family: known-harness, name: unknown_timeline_harness, classification: must-fail}
   - {family: canonical-binding-order, name: noncanonical_binding_order, classification: must-fail}
+  - {family: null-associations, name: null_associations, classification: must-fail}
+  - {family: association-count-mismatch, name: association_count_does_not_mirror_session_ids, classification: must-fail}
+  - {family: association-rank-mismatch, name: association_rank_order_does_not_match_session_ids, classification: must-fail}
+  - {family: association-invalid-kind, name: association_kind_not_in_closed_set, classification: must-fail}
 mutations:
   cases:
     - name: count_preserving_rename_is_rejected

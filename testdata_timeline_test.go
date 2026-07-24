@@ -15,11 +15,11 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadTimelineFixtures: %v", err)
 	}
-	if err := fixtures.CheckMin(16); err != nil {
+	if err := fixtures.CheckMin(20); err != nil {
 		t.Fatal(err)
 	}
-	if len(fixtures.Cases) != 16 {
-		t.Fatalf("timeline fixture has %d cases, want exactly 16", len(fixtures.Cases))
+	if len(fixtures.Cases) != 20 {
+		t.Fatalf("timeline fixture has %d cases, want exactly 20", len(fixtures.Cases))
 	}
 	for _, fixture := range fixtures.Cases {
 		t.Run(fixture.Name, func(t *testing.T) {
