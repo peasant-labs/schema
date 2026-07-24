@@ -17,6 +17,12 @@ type mockGitHubClient struct {
 	collaboratorPermissionFn func(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
 	workflowRunsForCommitFn  func(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
 	pullReviewsFn            func(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
+	refFn                    func(ctx context.Context, repo, ref string) (release.GitRef, error)
+	commitFn                 func(ctx context.Context, repo, sha string) (release.GitCommit, error)
+	pullFn                   func(ctx context.Context, repo string, number int) (release.Pull, error)
+	createCommitFn           func(ctx context.Context, repo string, in release.NewCommit) (release.GitCommit, error)
+	updateRefFastForwardFn   func(ctx context.Context, repo, ref, newSHA string) error
+	tagsFn                   func(ctx context.Context, repo string) ([]release.TagRef, error)
 }
 
 func (m *mockGitHubClient) CollaboratorPermission(ctx context.Context, repo, user string) (release.CollaboratorPermission, error) {
@@ -27,6 +33,27 @@ func (m *mockGitHubClient) WorkflowRunsForCommit(ctx context.Context, repo, work
 }
 func (m *mockGitHubClient) PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error) {
 	return m.pullReviewsFn(ctx, repo, prNumber)
+}
+func (m *mockGitHubClient) Ref(ctx context.Context, repo, ref string) (release.GitRef, error) {
+	return m.refFn(ctx, repo, ref)
+}
+func (m *mockGitHubClient) Commit(ctx context.Context, repo, sha string) (release.GitCommit, error) {
+	return m.commitFn(ctx, repo, sha)
+}
+func (m *mockGitHubClient) Pull(ctx context.Context, repo string, number int) (release.Pull, error) {
+	return m.pullFn(ctx, repo, number)
+}
+func (m *mockGitHubClient) CreateCommit(ctx context.Context, repo string, in release.NewCommit) (release.GitCommit, error) {
+	return m.createCommitFn(ctx, repo, in)
+}
+func (m *mockGitHubClient) UpdateRefFastForward(ctx context.Context, repo, ref, newSHA string) error {
+	return m.updateRefFastForwardFn(ctx, repo, ref, newSHA)
+}
+func (m *mockGitHubClient) Tags(ctx context.Context, repo string) ([]release.TagRef, error) {
+	if m.tagsFn == nil {
+		return nil, nil
+	}
+	return m.tagsFn(ctx, repo)
 }
 
 type mockGitRunner struct {

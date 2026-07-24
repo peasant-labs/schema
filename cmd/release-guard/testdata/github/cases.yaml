@@ -86,3 +86,126 @@ cases:
     pr: 7
     wantReviewCount: 1
     wantApprovers: ["alice"]
+
+  # --- git-data ops (SLICE-1 bubble extension) ---
+
+  - name: ref resolves to the object sha (happy path)
+    method: ref
+    status: 200
+    response: get-ref.json
+    ref: heads/develop
+    wantSHA: aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00
+    wantPath: /repos/peasant-labs/schema/git/ref/heads/develop
+
+  - name: ref 404 fires the actionable wrap
+    method: ref
+    status: 404
+    response: error-not-found.json
+    ref: heads/nope
+    wantErrContains:
+      - "cannot resolve git ref"
+      - "heads/nope"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read"
+
+  - name: commit maps tree sha and parent shas (happy path)
+    method: commit
+    status: 200
+    response: get-commit.json
+    sha: cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
+    wantSHA: cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
+    wantTreeSHA: 5dc4ea0f11223344556677889900aabbccddeeff
+    wantParents: ["aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"]
+    wantMessage: "Squash merge PR #42\n\nSquashed changes."
+
+  - name: commit 404 fires the actionable wrap
+    method: commit
+    status: 404
+    response: error-not-found.json
+    sha: deadbeef
+    wantErrContains:
+      - "cannot read git commit deadbeef"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read"
+
+  - name: pull maps number and title (happy path)
+    method: pull
+    status: 200
+    response: get-pull.json
+    pr: 42
+    wantNumber: 42
+    wantTitle: Add release-guard squash-merge bubble
+
+  - name: pull 404 fires the actionable wrap
+    method: pull
+    status: 404
+    response: error-not-found.json
+    pr: 42
+    wantErrContains:
+      - "cannot read pull request #42"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can read pull requests"
+
+  - name: create commit maps new sha tree and parents (happy path)
+    method: create_commit
+    status: 201
+    response: create-commit.json
+    message: "bubble: merge squash of #42 into develop"
+    tree: 5dc4ea0f11223344556677889900aabbccddeeff
+    parents:
+      - aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00
+      - cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
+    wantSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
+    wantTreeSHA: 5dc4ea0f11223344556677889900aabbccddeeff
+    wantParents:
+      - aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00
+      - cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
+
+  - name: create commit 422 fires the actionable wrap
+    method: create_commit
+    status: 422
+    response: update-ref-other-422.json
+    message: "bubble"
+    tree: badtree
+    parents: ["badparent"]
+    wantErrContains:
+      - "cannot create git commit"
+      - "badtree"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can write"
+
+  - name: update ref fast-forward ok (happy path)
+    method: update_ref
+    status: 200
+    response: update-ref-ok.json
+    ref: heads/develop
+    newSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
+
+  - name: update ref 422 non-fast-forward maps to ErrNotFastForward
+    method: update_ref
+    status: 422
+    response: update-ref-not-ff.json
+    ref: heads/develop
+    newSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
+    wantNotFastForward: true
+
+  - name: update ref 422 other reason is NOT reported as non-fast-forward
+    method: update_ref
+    status: 422
+    response: update-ref-other-422.json
+    ref: heads/develop
+    newSHA: badsha
+    wantErrContains:
+      - "cannot update git ref"
+      - "heads/develop"
+      - "peasant-labs/schema"
+      - "GH_TOKEN can write"
+
+  - name: tags maps name and dereferenced commit sha (happy path)
+    method: tags
+    status: 200
+    response: list-tags.json
+    wantTags:
+      - "v1.2.3=aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"
+      - "v1.2.3-rc1=cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22"
+      - "pkg/schema/v0.2.0=99ee88ff77aa66bb55cc44dd33ee22ff11aa0099"

@@ -61,7 +61,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: release-guard <parse-title|parse-tag|check-final|check-workflow|check-maintainer|check-approval> ...")
+		fatalf("usage: release-guard <parse-title|parse-tag|check-final|check-workflow|check-maintainer|check-approval|bubble> ...")
 	}
 	sub := os.Args[1]
 	args := os.Args[2:]
@@ -85,8 +85,11 @@ func main() {
 	case "check-approval":
 		gh := mustGitHubClient(sub)
 		err = runCheckApproval(ctx, gh, mustRepo(sub), args)
+	case "bubble":
+		gh := mustGitHubClient(sub)
+		err = runBubble(ctx, gh, mustRepo(sub), args)
 	default:
-		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, or check-approval", sub)
+		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, check-approval, or bubble", sub)
 	}
 	if err != nil {
 		fatalf("%v", err)
