@@ -1,19 +1,40 @@
 {
-  "sha": "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099",
-  "node_id": "C_kwDOABCDEF2",
-  "message": "bubble: merge squash of #42 into develop",
-  "tree": {
-    "sha": "5dc4ea0f11223344556677889900aabbccddeeff",
-    "url": "https://api.github.com/repos/peasant-labs/schema/git/trees/5dc4ea0f11223344556677889900aabbccddeeff"
+  "sha": "2b6a8d8821bb368dffa449c7e723e46c0d36b499",
+  "node_id": "C_kwDOS-6kYtoAKDJiNmE4ZDg4MjFiYjM2OGRmZmE0NDljN2U3MjNlNDZjMGQzNmI0OTk",
+  "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/2b6a8d8821bb368dffa449c7e723e46c0d36b499",
+  "html_url": "https://github.com/peasant-labs/schema/commit/2b6a8d8821bb368dffa449c7e723e46c0d36b499",
+  "author": {
+    "name": "peasant-labs-releaser[bot]",
+    "email": "291504229+peasant-labs-releaser[bot]@users.noreply.github.com",
+    "date": "2026-07-24T08:23:07Z"
   },
+  "committer": {
+    "name": "GitHub",
+    "email": "noreply@github.com",
+    "date": "2026-07-24T08:23:07Z"
+  },
+  "tree": {
+    "sha": "e2b98895746fb17be48ec4c12f39dead5b3eab0a",
+    "url": "https://api.github.com/repos/peasant-labs/schema/git/trees/e2b98895746fb17be48ec4c12f39dead5b3eab0a"
+  },
+  "message": "Merge PR #38: ci(release-guard): manual workflow_dispatch seed trigger for bubble --boundary",
   "parents": [
     {
-      "sha": "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00",
-      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"
+      "sha": "245069a38ab8d4b1e78f43c1fc24788bbd87769a",
+      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/245069a38ab8d4b1e78f43c1fc24788bbd87769a",
+      "html_url": "https://github.com/peasant-labs/schema/commit/245069a38ab8d4b1e78f43c1fc24788bbd87769a"
     },
     {
-      "sha": "cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22",
-      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22"
+      "sha": "cb200266fec5cf07f041222002f364be3c1e85d2",
+      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/cb200266fec5cf07f041222002f364be3c1e85d2",
+      "html_url": "https://github.com/peasant-labs/schema/commit/cb200266fec5cf07f041222002f364be3c1e85d2"
     }
-  ]
+  ],
+  "verification": {
+    "verified": true,
+    "reason": "valid",
+    "signature": "-----BEGIN PGP SIGNATURE-----\n\nwsFcBAABCAAQBQJqYyDsCRC1aQ7uu5UhlAAABhgQAKoD5JYBH5qtcj1zWaz/FYqW\nuxjU/1BGOjvD9iYGSF/6NpZnOm+TkxAQ1jlZbPIfd4tn3EvzcZi5+ywjjCUUT3qj\nVdyWI3lWDWhnolcr5iRjjQagMQlXo8blN79CJGxVVYBwE481ZI3p4rKteQSJoZw7\njzOvBugqXRU0lHa8dywrIr0HogiTLHbso7M9wOUJD0/BxSqI3kOBEC9jkd9sNFVY\ng6wqvY3W+9+YHkJWyP58zIky9/OAtRwyaGjY8XYbQG9YMw5pA8xIQA2PsULqUMGf\nI53tBRRRIyj4EqEYwPpTyA947XnnyyYdL6YqBkJM4jCEgtIxPOrxUtNKCnTRrYjH\nUJoxqJZDwPTGR8iLnBQtn/FTHl2ZsGxgN4fsjT7x8zeXb3PYpQtUgE8ZlZnCK2uK\nKSJ/NNEeXS7+q95Dv/OnzWQIFERBu2gIP5b9+iMcS9LtHcMsJc3AwrMC6S5z0nNV\n40+LrgPUWRAIsb75e29AwenentYu992SccStdAaJp2VFcruvUADl/tJGZVi/jjXW\nWFt46vLeJlugDnQqIyhdWvtHEnSdZDpZVGejtprqtEksXQnkkJVm/Ss0mcLFkJDG\nGgGwsILQqFRDIBpwH6zNghkULWZxChdHxf9NGKuSbSAhFHbPUyJlhrpXs91+t0JW\ny6hvgsNQHaSGKi0qocI0\n=GG/9\n-----END PGP SIGNATURE-----\n",
+    "payload": "tree e2b98895746fb17be48ec4c12f39dead5b3eab0a\nparent 245069a38ab8d4b1e78f43c1fc24788bbd87769a\nparent cb200266fec5cf07f041222002f364be3c1e85d2\nauthor peasant-labs-releaser[bot] <291504229+peasant-labs-releaser[bot]@users.noreply.github.com> 1784881387 +0000\ncommitter GitHub <noreply@github.com> 1784881387 +0000\n\nMerge PR #38: ci(release-guard): manual workflow_dispatch seed trigger for bubble --boundary",
+    "verified_at": "2026-07-24T08:23:08Z"
+  }
 }

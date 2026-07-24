@@ -70,7 +70,11 @@ type bubbler struct {
 	// --boundary): the first-parent walk stops when it reaches this commit and
 	// anchors the bubble's first parent T there. It is the explicit override for a
 	// deliberate first-run backfill that the released-history guard would
-	// otherwise refuse.
+	// otherwise refuse. It may be an ABBREVIATED SHA (>= 7 hex chars, validated by
+	// validateBoundary before any API call); it is matched case-insensitively as a
+	// prefix of the full SHAs seen during the walk, and must match exactly one of
+	// them — zero matches and ambiguous matches both fail loud (never a silent
+	// no-op that drains past the intended floor).
 	boundary string
 	logf     func(format string, args ...any)
 }
@@ -221,58 +225,244 @@ func (b *bubbler) buildItems(ctx context.Context, tip release.GitCommit) ([]rele
 	return items, nil
 }
 
+// walkStop records why the first-parent drain walk stopped.
+type walkStop int
+
+const (
+	stopMergeBoundary walkStop = iota // hit a commit with >= 2 parents (the natural boundary T)
+	stopRoot                          // hit a parentless root commit
+	stopWalkBound                     // examined walkBound commits without either
+)
+
+// walkEntry is one commit the drain walk examined, pairing its full SHA with the
+// pendingCommit collected for it. pc is nil ONLY for the stop commit (the merge
+// boundary or root the walk halted at), which by the loop's structure is the
+// LAST entry — so "every examined commit above the floor was collected" is a
+// property of the type, not a parallel-slice index invariant held in a comment.
+type walkEntry struct {
+	sha string
+	pc  *pendingCommit
+}
+
 // collectPending walks first-parents from the tip, collecting the run of
 // single-parent commits (the un-bubbled squashes) until it reaches the merge
 // boundary T (a commit whose parent count != 1). It returns them oldest-first.
 // If no boundary is found within walkBound, it fails loud (R-A) rather than
 // guessing a boundary.
+//
+// When --boundary is set the walk still runs to its natural stop rather than
+// halting at the first prefix hit: the operator may pass an ABBREVIATED SHA, and
+// deciding that an abbreviation is unambiguous requires seeing every candidate in
+// the examined range. The extra reads are bounded by walkBound and only happen on
+// the rare manual seed path, which is the right trade for never silently picking
+// one of several commits an operator might have meant.
+//
+// The walk is recorded as []walkEntry so the sha<->pendingCommit correspondence
+// pendingAboveBoundary relies on is carried by the TYPE, not by parallel-slice
+// index discipline.
 func (b *bubbler) collectPending(ctx context.Context, tip release.GitCommit) ([]pendingCommit, error) {
-	var pending []pendingCommit
-	c := tip
+	var (
+		entries []walkEntry // newest-first; every commit the walk examined
+		stop    = stopWalkBound
+		c       = tip
+	)
 	for steps := 0; steps < b.walkBound; steps++ {
-		if b.boundary != "" && c.SHA == b.boundary {
-			// Reached the operator-supplied drain floor: stop here and anchor the
-			// bubble's first parent T at this commit (it is NOT collected, so the
-			// last pending commit's ParentSHA is this floor). This is the explicit
-			// override that scopes a first-run backfill above the released backlog.
-			reversePending(pending)
-			return pending, nil
-		}
 		if len(c.ParentSHAs) >= 2 {
-			// Reached the merge boundary T: collected commits are the pending
-			// squashes. Reverse to oldest-first.
-			reversePending(pending)
-			return pending, nil
+			// Reached the merge boundary T: it is examined but NOT collected
+			// (pc == nil), and by the break it is the last entry.
+			entries = append(entries, walkEntry{sha: c.SHA})
+			stop = stopMergeBoundary
+			break
 		}
 		if len(c.ParentSHAs) == 0 {
-			// A root commit is NOT a merge boundary. R-A requires a genuine merge
-			// boundary to anchor the first bubble's first parent T; fail loud
-			// rather than treating the root as T.
-			return nil, fmt.Errorf(
-				"drain-all: reached root commit %s with no merge boundary above it on %s; "+
-					"refusing to bubble (R-A) — cannot anchor the bubble's first parent; investigate manually",
-				c.SHA, b.branch,
-			)
+			// A root commit is NOT a merge boundary (see the R-A error below); like
+			// the boundary it is examined but not collected.
+			entries = append(entries, walkEntry{sha: c.SHA})
+			stop = stopRoot
+			break
 		}
-		pending = append(pending, pendingCommit{
+		entries = append(entries, walkEntry{sha: c.SHA, pc: &pendingCommit{
 			squash: release.Squash{
 				SHA:       c.SHA,
 				ParentSHA: c.ParentSHAs[0],
 				TreeSHA:   c.TreeSHA,
 			},
 			message: c.Message,
-		})
+		}})
 		next, err := b.gh.Commit(ctx, b.repo, c.ParentSHAs[0])
 		if err != nil {
 			return nil, fmt.Errorf("drain-all walk: read commit %s: %w", c.ParentSHAs[0], err)
 		}
 		c = next
 	}
-	return nil, fmt.Errorf(
-		"drain-all: examined the walk bound of %d first-parent commits from %s tip %s without reaching a merge boundary; "+
-			"refusing to bubble (R-A) — develop has more than %d single-parent commits above any merge boundary; investigate manually (or pass --boundary <sha> to set an explicit drain floor)",
-		b.walkBound, b.branch, tip.SHA, b.walkBound,
+
+	// An operator-supplied drain floor overrides the natural stop: it scopes the
+	// drain above a released backlog, and is the documented escape hatch for the
+	// root / walk-bound refusals below (so those must not pre-empt it). In
+	// particular, an explicit --boundary that names the ROOT commit deliberately
+	// sanctions root-as-anchor: the stopRoot refusal below exists because a root is
+	// not EVIDENCE of a merge boundary, but with an explicit boundary the operator
+	// IS the evidence, and git happily accepts a root as a merge's first parent.
+	// Do not "fix" this by routing stopRoot around the boundary path — that would
+	// break the escape hatch the stopRoot error message itself advertises.
+	if b.boundary != "" {
+		return b.pendingAboveBoundary(entries, tip)
+	}
+
+	switch stop {
+	case stopMergeBoundary:
+		// The merge boundary is the last entry (the anchor T); the drain is
+		// every entry above it. Route through the SAME collector as the
+		// --boundary path so a mid-walk nil pc fails LOUD in both — never
+		// silently drops a commit from the drain in one path while the other
+		// refuses it.
+		return b.collectAbove(entries, len(entries)-1)
+	case stopRoot:
+		// R-A requires a genuine merge boundary to anchor the first bubble's first
+		// parent T; fail loud rather than treating the root as T. (--boundary set
+		// to the root is the sanctioned way past this — see above.)
+		return nil, fmt.Errorf(
+			"drain-all: reached root commit %s with no merge boundary above it on %s; "+
+				"refusing to bubble (R-A) — cannot anchor the bubble's first parent; investigate manually "+
+				"(or pass --boundary <sha> to set an explicit drain floor)",
+			entries[len(entries)-1].sha, b.branch,
+		)
+	default:
+		return nil, fmt.Errorf(
+			"drain-all: examined the walk bound of %d first-parent commits from %s tip %s without reaching a merge boundary; "+
+				"refusing to bubble (R-A) — develop has more than %d single-parent commits above any merge boundary; investigate manually (or pass --boundary <sha> to set an explicit drain floor)",
+			b.walkBound, b.branch, tip.SHA, b.walkBound,
+		)
+	}
+}
+
+// pendingAboveBoundary resolves the operator-supplied --boundary against the SHAs
+// the walk examined and slices the pending set to the commits ABOVE that floor.
+//
+// The boundary is matched case-insensitively as a PREFIX, so an abbreviated SHA
+// (as an operator under pressure will naturally type) works; a full 40-char SHA
+// degenerates to an exact match. Matching is deliberately total: a boundary that
+// matches nothing, or matches more than one commit, is an ERROR — never a silent
+// no-op. Silently ignoring an unmatched boundary would drain straight past the
+// floor the operator asked for and rely on the released-history guard to catch
+// it, which is exactly the defect this path exists to prevent.
+func (b *bubbler) pendingAboveBoundary(entries []walkEntry, tip release.GitCommit) ([]pendingCommit, error) {
+	prefix := strings.ToLower(b.boundary)
+	var (
+		matches []string
+		floor   = -1
 	)
+	for i, e := range entries {
+		if strings.HasPrefix(strings.ToLower(e.sha), prefix) {
+			matches = append(matches, e.sha)
+			if floor < 0 {
+				floor = i
+			}
+		}
+	}
+
+	oldest := ""
+	if len(entries) > 0 {
+		oldest = entries[len(entries)-1].sha
+	}
+
+	if len(matches) > 1 {
+		return nil, fmt.Errorf(
+			"drain-all: --boundary %q is AMBIGUOUS on %s — it prefix-matches %d commits in the examined range %s..%s: %s. "+
+				"Refusing to bubble: picking one of them would silently choose a drain floor you did not specify, and develop is left unchanged. "+
+				"Re-run with more characters of the intended SHA (or the full 40-char SHA) to disambiguate",
+			b.boundary, b.branch, len(matches), oldest, tip.SHA, strings.Join(matches, ", "),
+		)
+	}
+
+	if len(matches) == 0 {
+		return nil, fmt.Errorf(
+			"drain-all: --boundary %q was NOT FOUND on %s — it matches none of the %d first-parent commits examined "+
+				"in the range %s..%s (walk bound %d). Refusing to bubble: develop is left unchanged (no write). "+
+				"A boundary that matches nothing must never be ignored, because the drain would then run straight past "+
+				"the floor you asked for. Fix: verify the SHA exists and lies on %s's FIRST-PARENT chain at or above the "+
+				"last merge boundary (`git log --first-parent %s`); a commit on a side branch, already below the last "+
+				"merge boundary, or mistyped will not match",
+			b.boundary, b.branch, len(entries), oldest, tip.SHA, b.walkBound, b.branch, b.branch,
+		)
+	}
+
+	// entries[floor] is the drain floor: the commits ABOVE it (entries[:floor])
+	// are the drain set, and the oldest of them has the floor as its ParentSHA,
+	// anchoring the first bubble's parent T.
+	return b.collectAbove(entries, floor)
+}
+
+// collectAbove returns the pendingCommits carried by entries[:floor], oldest
+// first. It is the SINGLE collector shared by both drain-termination paths — the
+// natural merge-boundary stop (floor = the last entry) and the operator
+// --boundary override — so the sha<->pendingCommit invariant is enforced
+// identically in both, and neither can silently truncate the drain.
+//
+// Every entry above the floor must carry a collected pendingCommit; only the
+// walk's stop commit (always the LAST entry) may lack one, and it is never in
+// range here. A nil pc within [0, floor) is a broken invariant and fails LOUD
+// rather than dropping the commit from the drain — the exact silent-truncation
+// the walkEntry representation exists to make impossible.
+func (b *bubbler) collectAbove(entries []walkEntry, floor int) ([]pendingCommit, error) {
+	out := make([]pendingCommit, 0, floor)
+	for _, e := range entries[:floor] {
+		if e.pc == nil {
+			return nil, fmt.Errorf(
+				"drain-all: internal invariant violated: uncollected commit %s above the drain floor %s on %s; "+
+					"refusing to bubble — develop is left unchanged (no write)",
+				e.sha, entries[floor].sha, b.branch,
+			)
+		}
+		out = append(out, *e.pc)
+	}
+	reversePending(out)
+	return out, nil
+}
+
+// boundaryMinLen is the shortest abbreviation --boundary accepts. Git's own
+// default abbreviation is 7, and shorter prefixes collide often enough that
+// accepting them would make an ambiguity refusal the common case rather than the
+// exception.
+const boundaryMinLen = 7
+
+// boundaryHexRE matches a pure-hex string: the shape of every git object name.
+var boundaryHexRE = regexp.MustCompile(`^[0-9a-fA-F]+$`)
+
+// validateBoundary rejects a syntactically impossible --boundary value up front,
+// BEFORE any GitHub API call or ref write, so a typo costs an immediate
+// actionable error instead of a full walk that ends in a confusing miss.
+func validateBoundary(boundary string) error {
+	if boundary == "" {
+		return nil
+	}
+	if !boundaryHexRE.MatchString(boundary) {
+		return fmt.Errorf(
+			"bubble: --boundary %q is not a valid commit SHA: a git commit SHA is hexadecimal (0-9, a-f, case-insensitive), "+
+				"and this value contains other characters. No API call was made and develop is unchanged. "+
+				"Fix: pass the commit SHA itself (e.g. from `git log --first-parent develop` or the GitHub commit URL), "+
+				"not a branch name, tag, or ref expression",
+			boundary,
+		)
+	}
+	if len(boundary) < boundaryMinLen {
+		return fmt.Errorf(
+			"bubble: --boundary %q is too short: %d hex characters, minimum %d. "+
+				"Shorter prefixes collide across a repository's history, so accepting one risks anchoring the drain at "+
+				"the wrong commit. No API call was made and develop is unchanged. "+
+				"Fix: pass at least %d characters of the SHA (the abbreviation `git log --abbrev-commit` prints), "+
+				"or the full 40-char SHA",
+			boundary, len(boundary), boundaryMinLen, boundaryMinLen,
+		)
+	}
+	if len(boundary) > 40 {
+		return fmt.Errorf(
+			"bubble: --boundary %q is too long: %d characters, but a git commit SHA is at most 40. "+
+				"No API call was made and develop is unchanged. Fix: pass the 40-char SHA or a prefix of it",
+			boundary, len(boundary),
+		)
+	}
+	return nil
 }
 
 // releaseTagNameRE recognises a release tag by name: the canonical `vMAJOR.MINOR…`
@@ -678,6 +868,15 @@ func bubbleRun(ctx context.Context, gh GitHubClient, repo string, stdout, stderr
 		if n, err := strconv.Atoi(prFlag); err != nil || n < 1 {
 			return errfTo(stderr, "bubble: --pr must be a positive integer, got %q", prFlag)
 		}
+	}
+
+	// Validate the drain floor's SHAPE before constructing the bubbler, so a
+	// malformed --boundary fails with an actionable error without spending a single
+	// API call — and long before anything could write to develop. Whether the (well
+	// -formed) SHA actually exists on the first-parent chain is resolved later,
+	// during the walk, by pendingAboveBoundary.
+	if err := validateBoundary(boundary); err != nil {
+		return errfTo(stderr, "%v", err)
 	}
 
 	const branch = "develop"
