@@ -1,0 +1,194 @@
+# Segmented multi-axis fixture for SessionInsight (the insight envelope contract): four
+# named behavioral arms sharing one (schema.SessionInsight, bool) shape but a
+# distinct assertion per arm. mechanical/mined exercise the interim producer
+# shapes this epoch actually emits; classification_must_be_nil is the one
+# real invariant this epoch enforces (mutation-provable: peasant#175 later
+# swaps it for real per-field closed sets with no shape change); rejections
+# covers every other closed-set/nil-array failure mode.
+mechanical:
+  cases:
+    - name: mechanical_decision_with_evidence_is_valid
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: high
+        title: chose SQLite over Postgres for local storage
+        subjects: ["internal/store"]
+        evidence:
+          - {sessionId: session-a, entryIndex: 4, file: internal/store/schema.go}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the interim mechanical insight producer: unusualSignals-shaped decision"}
+      mutation: {description: "a mechanical decision insight with one evidence item, no classification"}
+    - name: mechanical_friction_with_evidence_is_valid
+      input:
+        kind: friction
+        provenance: mechanical
+        confidence: medium
+        title: repeated retry on flaky test helper
+        subjects: ["internal/testutil"]
+        evidence:
+          - {sessionId: session-b, file: internal/testutil/fixtures.go, commitHash: abc123}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the interim mechanical insight producer: frictionClusters-shaped friction"}
+      mutation: {description: "a mechanical friction insight citing a commit hash instead of an entry index"}
+    - name: mechanical_unusual_with_evidence_is_valid
+      input:
+        kind: unusual
+        provenance: mechanical
+        confidence: medium
+        title: retry loops well above project baseline
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-c, entryIndex: 12}
+          - {sessionId: session-d, entryIndex: 3}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the interim mechanical insight producer: rate-elevation unusual signal"}
+      mutation: {description: "a mechanical unusual insight with two evidence items from two sessions"}
+    - name: mechanical_retry_loop_with_evidence_is_valid
+      input:
+        kind: retry_loop
+        provenance: mechanical
+        confidence: high
+        title: three-attempt retry loop on the same edit
+        subjects: ["internal/codemap/review.go"]
+        evidence:
+          - {sessionId: session-e, entryIndex: 7, file: internal/codemap/review.go}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the interim mechanical insight producer: retry-loop detection (tasks.go:116-126)"}
+      mutation: {description: "a mechanical retry_loop insight, the fourth of the four InsightKind members"}
+mined:
+  cases:
+    - name: mined_with_evidence_is_valid
+      input:
+        kind: decision
+        provenance: mined
+        confidence: high
+        title: mined decision with supporting evidence
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-f, entryIndex: 2}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "peasant#175 mining epoch: provenance=mined, no shape change"}
+      mutation: {description: "a mined insight that happens to still carry evidence"}
+    - name: mined_with_no_evidence_is_valid
+      input:
+        kind: friction
+        provenance: mined
+        confidence: low
+        title: mined friction with no evidence yet attached
+        subjects: ["internal/ingest"]
+        evidence: []
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "the mechanical-must-carry-evidence rule, scoped to provenance=mechanical only"}
+      mutation: {description: "a mined insight with zero evidence items, which mechanical provenance would reject but mined does not"}
+classification_must_be_nil:
+  cases:
+    - name: mechanical_insight_with_classification_is_rejected
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: high
+        title: an insight carrying a premature classification
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-g, entryIndex: 1}
+        classification: {category: architecture, cause: tradeoff, severityScope: local, severityLocus: module, resolution: accepted}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: "the Classification-must-be-nil rule for this epoch"}
+      mutation: {description: "populates Classification on a mechanical insight before peasant#175's taxonomy exists"}
+    - name: mined_insight_with_classification_is_rejected
+      input:
+        kind: friction
+        provenance: mined
+        confidence: medium
+        title: a mined insight also carrying a premature classification
+        subjects: ["internal/api"]
+        evidence: []
+        classification: {category: process, cause: unknown, severityScope: local, severityLocus: file, resolution: open}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: "the Classification-must-be-nil rule for this epoch (applies to every provenance, not only mechanical)"}
+      mutation: {description: "populates Classification on a mined insight, proving the rule is not scoped to mechanical alone"}
+rejections:
+  cases:
+    - name: kind_outside_closed_set_is_rejected
+      input:
+        kind: unknown-kind
+        provenance: mechanical
+        confidence: high
+        title: bad kind
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-h, entryIndex: 1}
+      expected: false
+      classification: must-fail
+      provenance: {source: enum, ref: schema.AllInsightKinds}
+      mutation: {description: "replaces a known insight kind with a value outside AllInsightKinds"}
+    - name: provenance_outside_closed_set_is_rejected
+      input:
+        kind: decision
+        provenance: unknown-provenance
+        confidence: high
+        title: bad provenance
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-h, entryIndex: 1}
+      expected: false
+      classification: must-fail
+      provenance: {source: enum, ref: schema.AllInsightProvenances}
+      mutation: {description: "replaces a known insight provenance with a value outside AllInsightProvenances"}
+    - name: confidence_outside_closed_set_is_rejected
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: unknown-confidence
+        title: bad confidence
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: session-h, entryIndex: 1}
+      expected: false
+      classification: must-fail
+      provenance: {source: enum, ref: schema.AllConfidences}
+      mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
+    - name: null_subjects_is_rejected
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: high
+        title: null subjects
+        evidence:
+          - {sessionId: session-h, entryIndex: 1}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "SessionInsight.Validate: null subjects"}
+      mutation: {description: "omits the required subjects array"}
+    - name: null_evidence_is_rejected
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: high
+        title: null evidence
+        subjects: ["internal/api"]
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "SessionInsight.Validate: null evidence"}
+      mutation: {description: "omits the required evidence array"}
+    - name: mechanical_with_zero_evidence_is_rejected
+      input:
+        kind: friction
+        provenance: mechanical
+        confidence: medium
+        title: mechanical claim with no supporting evidence
+        subjects: ["internal/api"]
+        evidence: []
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: "the mechanical-insight evidence requirement: at least one evidence item"}
+      mutation: {description: "empties the evidence array on a mechanical insight, breaking the signal -> file change -> session traceability spine"}

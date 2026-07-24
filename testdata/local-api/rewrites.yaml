@@ -1,0 +1,181 @@
+cases:
+  - name: rewritten_with_successor_is_valid
+    input:
+      ghostHash: ghost-1
+      subject: refactor auth module
+      authorTimeMs: 1700000000000
+      sessionIds: [session-a]
+      successorHash: successor-1
+      resolution: rewritten
+      method: patch_id
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the RewrittenCommit contract"}
+    mutation: {description: "the resolver's strongest case: a rewritten ghost with a patch_id-matched successor"}
+  - name: unresolved_with_no_metadata_is_valid
+    input:
+      ghostHash: ghost-2
+      subject: ""
+      sessionIds: [session-b]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the degraded-mode design: ledger rows with no recorded metadata"}
+    mutation: {description: "a degraded-mode ghost with no subject or author time, unresolved with method none"}
+  - name: live_hash_still_reachable_is_valid
+    input:
+      ghostHash: commit-live
+      subject: fix typo
+      authorTimeMs: 1700000001000
+      sessionIds: [session-c]
+      resolution: live
+      method: hash
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 1 (live)"}
+    mutation: {description: "a ledger hash still reachable from the default branch, not a ghost"}
+  - name: rewritten_via_author_identity_is_valid
+    input:
+      ghostHash: ghost-11
+      subject: fix flaky retry test
+      authorTimeMs: 1700000002000
+      sessionIds: [session-d]
+      successorHash: successor-11
+      resolution: rewritten
+      method: author_identity
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 3 (author_identity)"}
+    mutation: {description: "a ghost resolved by matching subject + author_email + author_time against a candidate successor"}
+  - name: rewritten_via_message_embedded_is_valid
+    input:
+      ghostHash: ghost-12
+      subject: bump dependency versions
+      sessionIds: [session-e]
+      successorHash: successor-12
+      resolution: rewritten
+      method: message_embedded
+      confidence: medium
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 4 (message_embedded)"}
+    mutation: {description: "a ghost resolved because its subject line appears inside a squash-merge successor's message body"}
+  - name: rewritten_via_temporal_candidate_is_valid
+    input:
+      ghostHash: ghost-13
+      subject: wip
+      authorTimeMs: 1700000003000
+      sessionIds: [session-f]
+      successorHash: successor-13
+      resolution: rewritten
+      method: temporal
+      confidence: low
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 5, temporal (the only content/metadata-free candidate)"}
+    mutation: {description: "a ghost resolved only by temporal proximity to the same-session's next default-branch commit; confidence low"}
+  - name: rewritten_missing_successor_hash_is_rejected
+    input:
+      ghostHash: ghost-3
+      sessionIds: [session-a]
+      resolution: rewritten
+      method: author_identity
+      confidence: medium
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the rewritten-requires-non-nil-SuccessorHash invariant"}
+    mutation: {description: "marks a ghost rewritten without naming its successor commit"}
+  - name: unresolved_with_successor_hash_is_rejected
+    input:
+      ghostHash: ghost-4
+      sessionIds: [session-a]
+      successorHash: successor-4
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the unresolved-requires-nil-SuccessorHash invariant"}
+    mutation: {description: "names a successor commit for a ghost marked unresolved"}
+  - name: unresolved_with_non_none_method_is_rejected
+    input:
+      ghostHash: ghost-5
+      sessionIds: [session-a]
+      resolution: unresolved
+      method: temporal
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the Method==none-iff-Resolution==unresolved invariant"}
+    mutation: {description: "pairs resolution unresolved with a non-none method"}
+  - name: rewritten_with_none_method_is_rejected
+    input:
+      ghostHash: ghost-6
+      sessionIds: [session-a]
+      successorHash: successor-6
+      resolution: rewritten
+      method: none
+      confidence: medium
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the Method==none-iff-Resolution==unresolved invariant"}
+    mutation: {description: "pairs resolution rewritten with method none, the value reserved for unresolved"}
+  - name: empty_ghost_hash_is_rejected
+    input:
+      ghostHash: ""
+      sessionIds: [session-a]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "RewrittenCommit.Validate: empty ghostHash"}
+    mutation: {description: "clears ghostHash to the empty string, leaving an anonymous ghost"}
+  - name: nil_session_ids_is_rejected
+    input:
+      ghostHash: ghost-7
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "RewrittenCommit.Validate: null sessionIds"}
+    mutation: {description: "omits the required sessionIds array from a ghost commit"}
+  - name: resolution_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-8
+      sessionIds: [session-a]
+      resolution: unknown-resolution
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllRewriteResolutions}
+    mutation: {description: "replaces a known resolution with a value outside AllRewriteResolutions"}
+  - name: method_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-9
+      sessionIds: [session-a]
+      resolution: unresolved
+      method: unknown-method
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllRewriteMethods}
+    mutation: {description: "replaces a known method with a value outside AllRewriteMethods"}
+  - name: confidence_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-10
+      sessionIds: [session-a]
+      resolution: unresolved
+      method: none
+      confidence: unknown-confidence
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllConfidences}
+    mutation: {description: "replaces a known confidence with a value outside AllConfidences"}

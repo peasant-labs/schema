@@ -1,0 +1,55 @@
+cases:
+  - name: bound_high_commit_and_touch_is_valid
+    input: {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the SessionAssociation contract"}
+    mutation: {description: "the strongest, most common association shape: bound + high + commit_and_touch"}
+  - name: candidate_medium_touch_only_is_valid
+    input: {sessionId: session-b, kind: candidate, confidence: medium, evidence: touch_only}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the SessionAssociation contract"}
+    mutation: {description: "a one-arm candidate association with medium confidence"}
+  - name: temporal_low_time_window_is_valid
+    input: {sessionId: session-c, kind: temporal, confidence: low, evidence: time_window}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the SessionAssociation contract"}
+    mutation: {description: "the weakest association shape: temporal + low + time_window"}
+  - name: candidate_high_branch_only_is_valid
+    input: {sessionId: session-d, kind: candidate, confidence: high, evidence: branch_only}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the SessionAssociation contract"}
+    mutation: {description: "a branch-only candidate association"}
+  - name: bound_medium_commit_only_is_valid
+    input: {sessionId: session-e, kind: bound, confidence: medium, evidence: commit_only}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the SessionAssociation contract"}
+    mutation: {description: "a commit-only bound association"}
+  - name: empty_session_id_is_rejected
+    input: {sessionId: "", kind: bound, confidence: high, evidence: commit_and_touch}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "SessionAssociation.Validate: empty sessionId"}
+    mutation: {description: "clears sessionId to the empty string, leaving an anonymous association"}
+  - name: kind_outside_closed_set_is_rejected
+    input: {sessionId: session-a, kind: unknown-kind, confidence: high, evidence: commit_and_touch}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllAssociationKinds}
+    mutation: {description: "replaces a known association kind with a value outside AllAssociationKinds"}
+  - name: confidence_outside_closed_set_is_rejected
+    input: {sessionId: session-a, kind: bound, confidence: unknown-confidence, evidence: commit_and_touch}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllConfidences}
+    mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
+  - name: evidence_outside_closed_set_is_rejected
+    input: {sessionId: session-a, kind: bound, confidence: high, evidence: unknown-evidence}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllAssociationEvidences}
+    mutation: {description: "replaces a known evidence signal with a value outside AllAssociationEvidences"}

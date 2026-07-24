@@ -1,0 +1,37 @@
+cases:
+  - name: complete_attribution_reviewed_state_is_valid
+    input: {readAttribution: complete, readState: reviewed}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the MapNode read-state field contract"}
+    mutation: {description: "a fully attributed node whose current version was reviewed"}
+  - name: partial_attribution_viewed_state_is_valid
+    input: {readAttribution: partial, readState: viewed}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the MapNode read-state field contract"}
+    mutation: {description: "a partially attributed node that was only viewed, not reviewed"}
+  - name: unavailable_attribution_none_state_is_valid
+    input: {readAttribution: unavailable, readState: none}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the honest residual-gap signal design"}
+    mutation: {description: "a node with no recoverable per-file read attribution and no explicit read-state act"}
+  - name: reviewed_in_detail_state_is_valid
+    input: {readAttribution: complete, readState: reviewed_in_detail}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the reviewed_in_detail grade, registered but UI-deferred"}
+    mutation: {description: "the ordinal ceiling grade, registered even though this epoch's UI does not yet surface it"}
+  - name: read_attribution_outside_closed_set_is_rejected
+    input: {readAttribution: unknown-state, readState: none}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllReadAttributionStates}
+    mutation: {description: "replaces a known read attribution state with a value outside AllReadAttributionStates"}
+  - name: read_state_outside_closed_set_is_rejected
+    input: {readAttribution: complete, readState: unknown-grade}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllReadStateGrades}
+    mutation: {description: "replaces a known read-state grade with a value outside AllReadStateGrades"}
