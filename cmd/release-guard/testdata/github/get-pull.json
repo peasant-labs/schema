@@ -1,0 +1,6 @@
+{
+  "number": 42,
+  "state": "closed",
+  "title": "Add release-guard squash-merge bubble",
+  "body": "Bubbles native squash merges into develop as verified merge commits."
+}

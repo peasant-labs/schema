@@ -1,0 +1,19 @@
+{
+  "sha": "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099",
+  "node_id": "C_kwDOABCDEF2",
+  "message": "bubble: merge squash of #42 into develop",
+  "tree": {
+    "sha": "5dc4ea0f11223344556677889900aabbccddeeff",
+    "url": "https://api.github.com/repos/peasant-labs/schema/git/trees/5dc4ea0f11223344556677889900aabbccddeeff"
+  },
+  "parents": [
+    {
+      "sha": "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00",
+      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"
+    },
+    {
+      "sha": "cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22",
+      "url": "https://api.github.com/repos/peasant-labs/schema/git/commits/cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22"
+    }
+  ]
+}

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/google/go-github/v88/github"
@@ -23,6 +25,30 @@ type GitHubClient interface {
 	// PullReviews returns every review on PR prNumber, across all pages, in the
 	// API's ascending order. Backs check-approval (LatestApprovers).
 	PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
+
+	// Ref resolves a git reference (e.g. "heads/develop") to the commit SHA it
+	// points at — the tip the squash-merge bubble reads before fast-forwarding.
+	Ref(ctx context.Context, repo, ref string) (release.GitRef, error)
+	// Commit reads a git commit object, exposing its tree SHA and parent SHAs
+	// (used to test the not-a-squash and already-bubbled bubble decisions).
+	Commit(ctx context.Context, repo, sha string) (release.GitCommit, error)
+	// Pull returns the number/title/body of a single pull request, for building
+	// per-PR provenance in the bubble merge message.
+	Pull(ctx context.Context, repo string, number int) (release.Pull, error)
+	// CreateCommit creates a git commit via the Git Data API and returns it
+	// (including its server-assigned SHA). Commits created this way are signed by
+	// GitHub and show as "Verified".
+	CreateCommit(ctx context.Context, repo string, in release.NewCommit) (release.GitCommit, error)
+	// UpdateRefFastForward advances a git reference to newSHA as a server-side
+	// fast-forward compare-and-swap (force is always false, so mainline history is
+	// never clobbered). It returns release.ErrNotFastForward when GitHub rejects
+	// the update as non-fast-forward (the caller re-reads the tip and retries).
+	UpdateRefFastForward(ctx context.Context, repo, ref, newSHA string) error
+	// Tags lists every tag in repo (all pages) as own-types {Name, CommitSHA}.
+	// Backs the bubble first-run guard, which classifies release tags and refuses
+	// to drain across already-released history. CommitSHA is the commit the tag
+	// points at (GitHub's list-tags endpoint dereferences annotated tags).
+	Tags(ctx context.Context, repo string) ([]release.TagRef, error)
 }
 
 // githubClient is the production GitHubClient: a thin wrapper over the go-github
@@ -144,4 +170,143 @@ func (c *githubClient) PullReviews(ctx context.Context, repo string, prNumber in
 		opts.Page = resp.NextPage
 	}
 	return reviews, nil
+}
+
+func (c *githubClient) Ref(ctx context.Context, repo, ref string) (release.GitRef, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return release.GitRef{}, err
+	}
+	// go-github's GetRef trims a leading "refs/" and escapes each ref segment, so
+	// "heads/develop" (or "refs/heads/develop") both address the same ref.
+	r, _, err := c.gh.Git.GetRef(ctx, owner, name, ref)
+	if err != nil {
+		return release.GitRef{}, fmt.Errorf("github client: cannot resolve git ref %q on %s/%s during release bubble: %w. Confirm the ref exists and GH_TOKEN can read the repository's git data", ref, owner, name, err)
+	}
+	return release.GitRef{SHA: r.GetObject().GetSHA()}, nil
+}
+
+func (c *githubClient) Commit(ctx context.Context, repo, sha string) (release.GitCommit, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return release.GitCommit{}, err
+	}
+	commit, _, err := c.gh.Git.GetCommit(ctx, owner, name, sha)
+	if err != nil {
+		return release.GitCommit{}, fmt.Errorf("github client: cannot read git commit %s on %s/%s during release bubble: %w. Confirm the commit SHA and that GH_TOKEN can read the repository's git data", sha, owner, name, err)
+	}
+	return mapGitCommit(commit), nil
+}
+
+func (c *githubClient) Pull(ctx context.Context, repo string, number int) (release.Pull, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return release.Pull{}, err
+	}
+	pr, _, err := c.gh.PullRequests.Get(ctx, owner, name, number)
+	if err != nil {
+		return release.Pull{}, fmt.Errorf("github client: cannot read pull request #%d on %s/%s during release bubble: %w. Confirm the PR number and that GH_TOKEN can read pull requests", number, owner, name, err)
+	}
+	return release.Pull{
+		Number: pr.GetNumber(),
+		Title:  pr.GetTitle(),
+		Body:   pr.GetBody(),
+	}, nil
+}
+
+func (c *githubClient) CreateCommit(ctx context.Context, repo string, in release.NewCommit) (release.GitCommit, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return release.GitCommit{}, err
+	}
+	parents := make([]*github.Commit, 0, len(in.ParentSHAs))
+	for _, p := range in.ParentSHAs {
+		parents = append(parents, &github.Commit{SHA: github.Ptr(p)})
+	}
+	commit := github.Commit{
+		Message: github.Ptr(in.Message),
+		Tree:    &github.Tree{SHA: github.Ptr(in.TreeSHA)},
+		Parents: parents,
+	}
+	created, _, err := c.gh.Git.CreateCommit(ctx, owner, name, commit, nil)
+	if err != nil {
+		return release.GitCommit{}, fmt.Errorf("github client: cannot create git commit (tree %s over %d parent(s)) on %s/%s during release bubble: %w. Confirm the tree and parent SHAs exist and that GH_TOKEN can write the repository's git data", in.TreeSHA, len(in.ParentSHAs), owner, name, err)
+	}
+	return mapGitCommit(created), nil
+}
+
+func (c *githubClient) UpdateRefFastForward(ctx context.Context, repo, ref, newSHA string) error {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return err
+	}
+	// Force is pinned false so this is a server-side fast-forward compare-and-swap:
+	// a non-fast-forward update (which would rewrite mainline history) is rejected
+	// by GitHub, never forced through.
+	update := github.UpdateRef{SHA: newSHA, Force: github.Ptr(false)}
+	if _, _, err := c.gh.Git.UpdateRef(ctx, owner, name, ref, update); err != nil {
+		// Precisely distinguish "the ref advanced under us" (retryable) from any
+		// other 422 (bad SHA, malformed ref) — keyed on the 422 status AND the
+		// documented "is not a fast forward" message, exactly as the retired
+		// stdlib client keyed on the response body.
+		var errResp *github.ErrorResponse
+		if errors.As(err, &errResp) &&
+			errResp.Response != nil &&
+			errResp.Response.StatusCode == http.StatusUnprocessableEntity &&
+			strings.Contains(strings.ToLower(errResp.Message), "fast forward") {
+			return fmt.Errorf("github client: cannot fast-forward ref %q to %s on %s/%s during release bubble: %w", ref, newSHA, owner, name, release.ErrNotFastForward)
+		}
+		return fmt.Errorf("github client: cannot update git ref %q to %s on %s/%s during release bubble: %w. Confirm the ref and SHA exist and that GH_TOKEN can write the repository's git data", ref, newSHA, owner, name, err)
+	}
+	return nil
+}
+
+func (c *githubClient) Tags(ctx context.Context, repo string) ([]release.TagRef, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return nil, err
+	}
+	// ListTags returns one page at a time; the NextPage loop collects ALL pages so
+	// the first-run guard sees every release tag, not just the first 100.
+	opts := &github.ListOptions{PerPage: 100}
+	var tags []release.TagRef
+	for {
+		page, resp, err := c.gh.Repositories.ListTags(ctx, owner, name, opts)
+		if err != nil {
+			return nil, fmt.Errorf("github client: cannot list tags on %s/%s during the bubble first-run guard: %w. Confirm GH_TOKEN can read the repository's tags", owner, name, err)
+		}
+		for _, t := range page {
+			if t == nil {
+				continue
+			}
+			tags = append(tags, release.TagRef{Name: t.GetName(), CommitSHA: t.GetCommit().GetSHA()})
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	return tags, nil
+}
+
+// mapGitCommit projects a go-github *Commit onto the release.GitCommit own-type,
+// nil-guarding the pointer fields (tree, parents, and each parent's SHA) here at
+// the wrapper boundary so the policy layer never sees a nil deref.
+func mapGitCommit(commit *github.Commit) release.GitCommit {
+	if commit == nil {
+		return release.GitCommit{}
+	}
+	parents := make([]string, 0, len(commit.Parents))
+	for _, p := range commit.Parents {
+		if p == nil {
+			continue
+		}
+		parents = append(parents, p.GetSHA())
+	}
+	return release.GitCommit{
+		SHA:        commit.GetSHA(),
+		TreeSHA:    commit.GetTree().GetSHA(),
+		ParentSHAs: parents,
+		Message:    commit.GetMessage(),
+	}
 }

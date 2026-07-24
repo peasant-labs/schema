@@ -1,0 +1,23 @@
+[
+  {
+    "name": "v1.2.3",
+    "commit": {
+      "sha": "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00",
+      "url": "https://api.github.com/repos/peasant-labs/schema/commits/aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00"
+    }
+  },
+  {
+    "name": "v1.2.3-rc1",
+    "commit": {
+      "sha": "cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22",
+      "url": "https://api.github.com/repos/peasant-labs/schema/commits/cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22"
+    }
+  },
+  {
+    "name": "pkg/schema/v0.2.0",
+    "commit": {
+      "sha": "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099",
+      "url": "https://api.github.com/repos/peasant-labs/schema/commits/99ee88ff77aa66bb55cc44dd33ee22ff11aa0099"
+    }
+  }
+]

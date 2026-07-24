@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,6 +31,20 @@ func newTestGitHubClient(t *testing.T, handler http.Handler) *githubClient {
 	return &githubClient{gh: gh}
 }
 
+// assertStringsEqual fails unless got and want are the same length with equal
+// elements in order.
+func assertStringsEqual(t *testing.T, label string, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s = %v, want %v (length %d != %d)", label, got, want, len(got), len(want))
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Fatalf("%s[%d] = %q, want %q", label, i, got[i], want[i])
+		}
+	}
+}
+
 // assertErrContains fails unless err is non-nil and its message contains every
 // listed substring.
 func assertErrContains(t *testing.T, err error, wants []string) {
@@ -51,8 +68,8 @@ func TestGitHubClient_SeamCases(t *testing.T) {
 	t.Parallel()
 
 	cases := loadGithubSeamCases(t)
-	if len(cases) != 8 {
-		t.Fatalf("github seam fixture has %d cases, want 8 (fixture truncated?)", len(cases))
+	if len(cases) != 20 {
+		t.Fatalf("github seam fixture has %d cases, want 20 (fixture truncated?)", len(cases))
 	}
 
 	for _, tc := range cases {
@@ -124,6 +141,114 @@ func TestGitHubClient_SeamCases(t *testing.T) {
 						t.Fatalf("LatestApprovers[%d] = %q, want %q", i, approvers[i], tc.WantApprovers[i])
 					}
 				}
+
+			case "ref":
+				ref, err := c.Ref(context.Background(), "peasant-labs/schema", tc.Ref)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("Ref: %v", err)
+				}
+				if ref.SHA != tc.WantSHA {
+					t.Fatalf("ref SHA = %q, want %q", ref.SHA, tc.WantSHA)
+				}
+				if tc.WantPath != "" && gotPath != tc.WantPath {
+					t.Fatalf("request path = %q, want %q (owner/repo split + singular git/ref)", gotPath, tc.WantPath)
+				}
+
+			case "commit":
+				commit, err := c.Commit(context.Background(), "peasant-labs/schema", tc.SHA)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("Commit: %v", err)
+				}
+				if commit.SHA != tc.WantSHA {
+					t.Fatalf("commit SHA = %q, want %q", commit.SHA, tc.WantSHA)
+				}
+				if commit.TreeSHA != tc.WantTreeSHA {
+					t.Fatalf("commit TreeSHA = %q, want %q", commit.TreeSHA, tc.WantTreeSHA)
+				}
+				if tc.WantMessage != "" && commit.Message != tc.WantMessage {
+					t.Fatalf("commit Message = %q, want %q", commit.Message, tc.WantMessage)
+				}
+				assertStringsEqual(t, "commit ParentSHAs", commit.ParentSHAs, tc.WantParents)
+
+			case "pull":
+				pull, err := c.Pull(context.Background(), "peasant-labs/schema", tc.PR)
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("Pull: %v", err)
+				}
+				if pull.Number != tc.WantNumber {
+					t.Fatalf("pull Number = %d, want %d", pull.Number, tc.WantNumber)
+				}
+				if pull.Title != tc.WantTitle {
+					t.Fatalf("pull Title = %q, want %q", pull.Title, tc.WantTitle)
+				}
+
+			case "create_commit":
+				commit, err := c.CreateCommit(context.Background(), "peasant-labs/schema", release.NewCommit{
+					Message:    tc.Message,
+					TreeSHA:    tc.Tree,
+					ParentSHAs: tc.Parents,
+				})
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("CreateCommit: %v", err)
+				}
+				if commit.SHA != tc.WantSHA {
+					t.Fatalf("created commit SHA = %q, want %q", commit.SHA, tc.WantSHA)
+				}
+				if commit.TreeSHA != tc.WantTreeSHA {
+					t.Fatalf("created commit TreeSHA = %q, want %q", commit.TreeSHA, tc.WantTreeSHA)
+				}
+				assertStringsEqual(t, "created commit ParentSHAs", commit.ParentSHAs, tc.WantParents)
+
+			case "update_ref":
+				err := c.UpdateRefFastForward(context.Background(), "peasant-labs/schema", tc.Ref, tc.NewSHA)
+				if tc.WantNotFastForward {
+					if !errors.Is(err, release.ErrNotFastForward) {
+						t.Fatalf("UpdateRefFastForward error = %v, want it to wrap release.ErrNotFastForward", err)
+					}
+					return
+				}
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					// A non-fast-forward-reason 422 must NOT be misreported as ErrNotFastForward.
+					if errors.Is(err, release.ErrNotFastForward) {
+						t.Fatalf("a non-FF-reason 422 was misreported as release.ErrNotFastForward: %v", err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatalf("UpdateRefFastForward: %v", err)
+				}
+
+			case "tags":
+				tags, err := c.Tags(context.Background(), "peasant-labs/schema")
+				if len(tc.WantErrContains) > 0 {
+					assertErrContains(t, err, tc.WantErrContains)
+					return
+				}
+				if err != nil {
+					t.Fatalf("Tags: %v", err)
+				}
+				got := make([]string, len(tags))
+				for i, tag := range tags {
+					got[i] = tag.Name + "=" + tag.CommitSHA
+				}
+				assertStringsEqual(t, "tags", got, tc.WantTags)
 
 			default:
 				t.Fatalf("unknown seam method %q in fixture case %q", tc.Method, tc.Name)
@@ -232,6 +357,116 @@ func TestGitHubClient_PullReviews_PaginatesInOrder(t *testing.T) {
 	approvers := release.LatestApprovers(reviews)
 	if len(approvers) != 2 || approvers[0] != "alice" || approvers[1] != "bob" {
 		t.Fatalf("LatestApprovers = %v, want [alice bob]", approvers)
+	}
+}
+
+// TestGitHubClient_CreateCommit_RequestShape pins the write-path request body:
+// POST git/commits must carry the message, the tree SHA, and the parents in
+// order [T, S] (first-parent T). The response is decoded through the real
+// wrapper; here the assertion is on what leaves the client.
+func TestGitHubClient_CreateCommit_RequestShape(t *testing.T) {
+	t.Parallel()
+
+	respBody := readGithubFixture(t, "create-commit.json")
+	var (
+		gotMethod, gotPath string
+		gotReqBody         []byte
+	)
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotReqBody, _ = io.ReadAll(r.Body)
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write(respBody)
+	}))
+
+	const (
+		tip    = "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00" // T (first parent)
+		squash = "cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22" // S (second parent)
+		tree   = "5dc4ea0f11223344556677889900aabbccddeeff"
+		msg    = "bubble: merge squash of #42 into develop"
+	)
+	commit, err := c.CreateCommit(context.Background(), "peasant-labs/schema", release.NewCommit{
+		Message:    msg,
+		TreeSHA:    tree,
+		ParentSHAs: []string{tip, squash},
+	})
+	if err != nil {
+		t.Fatalf("CreateCommit: %v", err)
+	}
+
+	if gotMethod != http.MethodPost {
+		t.Fatalf("method = %q, want POST", gotMethod)
+	}
+	if want := "/repos/peasant-labs/schema/git/commits"; gotPath != want {
+		t.Fatalf("path = %q, want %q", gotPath, want)
+	}
+	// go-github's Commit.MarshalJSON emits parents as a bare SHA array, which is
+	// exactly GitHub's documented POST git/commits request shape.
+	var sent struct {
+		Message string   `json:"message"`
+		Tree    string   `json:"tree"`
+		Parents []string `json:"parents"`
+	}
+	if err := json.Unmarshal(gotReqBody, &sent); err != nil {
+		t.Fatalf("decode request body %q: %v", gotReqBody, err)
+	}
+	if sent.Message != msg {
+		t.Fatalf("request message = %q, want %q", sent.Message, msg)
+	}
+	if sent.Tree != tree {
+		t.Fatalf("request tree = %q, want %q", sent.Tree, tree)
+	}
+	if len(sent.Parents) != 2 || sent.Parents[0] != tip || sent.Parents[1] != squash {
+		t.Fatalf("request parents = %v, want [%s %s] (first-parent T)", sent.Parents, tip, squash)
+	}
+	// The decoded response still maps to the own-type merge commit.
+	if commit.SHA != "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099" {
+		t.Fatalf("created commit SHA = %q, want the fixture merge SHA", commit.SHA)
+	}
+}
+
+// TestGitHubClient_UpdateRefFastForward_RequestShape pins the never-clobber
+// write path: PATCH git/refs/{ref} must send the new SHA with force=false so a
+// forced (history-rewriting) ref update is not even representable.
+func TestGitHubClient_UpdateRefFastForward_RequestShape(t *testing.T) {
+	t.Parallel()
+
+	respBody := readGithubFixture(t, "update-ref-ok.json")
+	var (
+		gotMethod, gotPath string
+		gotReqBody         []byte
+	)
+	c := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod = r.Method
+		gotPath = r.URL.Path
+		gotReqBody, _ = io.ReadAll(r.Body)
+		_, _ = w.Write(respBody)
+	}))
+
+	const newSHA = "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099"
+	if err := c.UpdateRefFastForward(context.Background(), "peasant-labs/schema", "heads/develop", newSHA); err != nil {
+		t.Fatalf("UpdateRefFastForward: %v", err)
+	}
+
+	if gotMethod != http.MethodPatch {
+		t.Fatalf("method = %q, want PATCH", gotMethod)
+	}
+	if want := "/repos/peasant-labs/schema/git/refs/heads/develop"; gotPath != want {
+		t.Fatalf("path = %q, want %q", gotPath, want)
+	}
+	var sent struct {
+		SHA   string `json:"sha"`
+		Force *bool  `json:"force"`
+	}
+	if err := json.Unmarshal(gotReqBody, &sent); err != nil {
+		t.Fatalf("decode request body %q: %v", gotReqBody, err)
+	}
+	if sent.SHA != newSHA {
+		t.Fatalf("request sha = %q, want %q", sent.SHA, newSHA)
+	}
+	if sent.Force == nil || *sent.Force {
+		t.Fatalf("request force = %v, want false (never-clobber fast-forward)", sent.Force)
 	}
 }
 

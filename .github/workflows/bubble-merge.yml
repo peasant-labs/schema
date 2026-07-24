@@ -1,0 +1,87 @@
+name: Bubble merge
+
+# After a PR is squash-merged into develop, "bubble" the resulting single-parent
+# squash S into the merge-commit-triangle landing shape: build M with parents
+# [T, S] (first-parent T, M.tree == S.tree) and fast-forward develop S -> M. The
+# whole operation is the release-guard `bubble` subcommand running purely against
+# the GitHub Git Data API (POST git/commits + PATCH refs force:false FF-CAS) — it
+# never checks out develop and never does working-tree git, so there is NO
+# actions/checkout here. The CLI is run straight from the module via `go run
+# <module>@<sha>` (release-guard lives in this schema module), pinned to the
+# just-merged commit so the bubble always runs the exact tool version present on
+# develop at merge time. Repoint the pin to a published `@vX.Y.Z` tag if
+# reproducibility-pinning is preferred over dogfooding develop.
+#
+# Trigger discipline (B7): the bubble runs ONLY on a native squash-merge of an
+# approved PR — no auto-merge label, no /merge comment. Approval is enforced
+# upstream by branch-protection required-reviews gating the native squash button.
+#
+# Loop guard (B3): the develop advance is a push-class API ref update, which is
+# NOT a pull_request event, so it never re-triggers this workflow. DecideBubble's
+# AlreadyBubbled is defense-in-depth idempotency on top of that event-type break.
+#
+# OPS PREREQUISITES (the USER's, not testable in this file): on peasant-labs/schema
+#   - install the peasant-labs-releaser App with Contents:write + Pull-requests:read,
+#   - configure develop branch-protection to allow that App's fast-forward ref
+#     update (required-PR bypass for the App),
+#   - set repo merge settings to squash-only (disable merge-commit + rebase).
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [develop]
+
+# Serialize bubbles so two merges never race the develop FF-CAS; never cancel an
+# in-flight bubble (cancelling mid-chain could leave develop partially advanced).
+concurrency:
+  group: bubble-develop
+  cancel-in-progress: false
+
+# The workflow's own GITHUB_TOKEN stays read-only; the protected-develop write is
+# done with the minted App token, not GITHUB_TOKEN.
+permissions:
+  contents: read
+
+jobs:
+  bubble:
+    name: bubble squash-merge into develop
+    # Only a real MERGE triggers the bubble; a non-merged close is a no-op.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Mint App token (Contents:write to FF-advance develop; Pull-requests:read for provenance)
+        id: tok
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PEASANT_RELEASER_APP_ID }}
+          private-key: ${{ secrets.PEASANT_RELEASER_APP_PRIVATE_KEY }}
+          owner: peasant-labs
+          repositories: schema
+          permission-contents: write
+          permission-pull-requests: read
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          # No checkout means no local go.mod to read; pin a stable toolchain and
+          # let `go run` auto-upgrade to the fetched module's go directive if needed.
+          go-version: stable
+
+      - name: Bubble the squash-merge into develop (pure Git Data API)
+        env:
+          GH_TOKEN: ${{ steps.tok.outputs.token }}
+          GITHUB_TOKEN: ${{ steps.tok.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # NOTE: no GITHUB_API_URL — the release-guard go-github client targets
+          # api.github.com (the MVP host) and does not read that variable, so
+          # setting it would be dead config that silently misleads on GHES. GHES
+          # support is a future follow-up: wire the host through go-github's
+          # WithEnterpriseURLs in newGitHubClient, then thread github.api_url here.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          TOOL_REF: ${{ github.event.pull_request.merge_commit_sha }}
+          # Fetch the module straight from GitHub (schema is public): the public
+          # module proxy can lag on a just-pushed merge sha and 500/"unknown
+          # revision"; direct fetch resolves the fresh commit deterministically.
+          GOPROXY: direct
+        run: go run "github.com/peasant-labs/schema/cmd/release-guard@${TOOL_REF}" bubble --pr "$PR_NUMBER"
