@@ -162,6 +162,18 @@ jobs:
           # module proxy can lag on a just-pushed merge sha and 500/"unknown
           # revision"; direct fetch resolves the fresh commit deterministically.
           GOPROXY: direct
+          # Disable the checksum database. `go run <module>@<sha>` otherwise
+          # verifies the fetched pseudo-version against sum.golang.org, putting a
+          # public third-party service in the CRITICAL landing path: on #39's
+          # first auto-bubble sum.golang.org returned a transient 500 and the
+          # bubble failed with "verifying module ... reading
+          # https://sum.golang.org/lookup/...: 500 Internal Server Error" — the
+          # merge was left un-bubbled until a manual re-run. We fetch OUR OWN
+          # just-pushed module directly from the same GitHub we are about to
+          # mutate; the checksum DB adds an external SPOF here, not real
+          # supply-chain protection, so turn it off and never let a bubble depend
+          # on sum.golang.org being up.
+          GOSUMDB: "off"
         run: |
           set -euo pipefail
           args=(bubble --pr "$PR_NUMBER")
