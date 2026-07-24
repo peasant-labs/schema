@@ -45,6 +45,11 @@ name: Bubble merge
 #      and only squashes ABOVE it are drained.
 # Leave `boundary` empty to re-run a normal, unguarded bubble by hand.
 #
+# The branch dropdown is NOT cosmetic: a dispatch pins the release-guard version to
+# the launch branch's tip (github.sha), so launching from anywhere but develop would
+# run a foreign tool build against develop. That is enforced — a dispatch from any
+# other ref fails immediately, before the App token is minted.
+#
 # OPS PREREQUISITES (the USER's, not testable in this file): on peasant-labs/schema
 #   - install the peasant-labs-releaser App with Contents:write + Pull-requests:read,
 #   - configure develop branch-protection to allow that App's fast-forward ref
@@ -88,6 +93,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # A dispatch takes its TOOL_REF from github.sha, which is the tip of
+      # WHICHEVER branch the operator picked in the Run-workflow dropdown. Picking
+      # anything but develop would run a different release-guard build against
+      # develop's refs — a tool that mutates develop must be the version develop
+      # actually ships. Fail loud and early rather than skipping the job: a skipped
+      # job renders as success, and the operator would believe the seed ran.
+      - name: Guard — manual dispatch must be launched from develop
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
+        env:
+          LAUNCH_REF: ${{ github.ref }}
+        run: |
+          echo "::error title=Bubble dispatched from the wrong branch::Manual bubble was launched from '${LAUNCH_REF}', not 'refs/heads/develop'."
+          echo "WHAT: this workflow_dispatch run was started from ref '${LAUNCH_REF}'." >&2
+          echo "WHY IT MATTERS: on a dispatch the release-guard version is pinned to github.sha," >&2
+          echo "  i.e. the tip of the launch branch. Launching from '${LAUNCH_REF}' would run THAT" >&2
+          echo "  branch's release-guard against develop's refs, mutating develop with a tool build" >&2
+          echo "  develop does not ship. Refusing before any token is minted or any ref is touched." >&2
+          echo "HOW TO FIX: re-run via Actions -> 'Bubble merge' -> 'Run workflow', selecting branch" >&2
+          echo "  'develop' in the branch dropdown, with the same pr/boundary inputs." >&2
+          exit 1
+
       - name: Mint App token (Contents:write to FF-advance develop; Pull-requests:read for provenance)
         id: tok
         uses: actions/create-github-app-token@v1
