@@ -425,30 +425,188 @@ func TestBubbleRun_GuardDoesNotFalseFireOnFreshSquashes(t *testing.T) {
 	}
 }
 
-// (c) --boundary scopes a deliberate first run above the released backlog.
-func TestBubbleRun_BoundaryOverrideScopesFirstRun(t *testing.T) {
-	g := newFakeGraph()
-	g.addCommit(mergeBoundary("T"))
-	g.addCommit(release.GitCommit{SHA: "Crc5", TreeSHA: "treeRc5", ParentSHAs: []string{"T"}, Message: "release rc5 (#30)"})
-	g.addCommit(release.GitCommit{SHA: "Snew", TreeSHA: "treeNew", ParentSHAs: []string{"Crc5"}, Message: "feat: post-rc5 (#31)"})
-	g.ref = "Snew"
-	g.tags = []release.TagRef{{Name: "v1.0.0-rc5", CommitSHA: "Crc5"}}
-	g.pulls[31] = release.Pull{Number: 31, Title: "Post rc5"}
+// Realistic 40-char hex fixtures for the --boundary tests: the boundary is matched
+// as a prefix of real SHAs, so these must have git-shaped names (unlike the
+// symbolic "T"/"S1" names the topology-only tests use).
+const (
+	shaBoundaryT = "245069a0fedcba9876543210fedcba9876543210" // merge boundary T
+	shaRc5       = "c7fd23f1a2b3c4d5e6f708192a3b4c5d6e7f8091" // released squash (v1.0.0-rc5)
+	shaNew       = "9587d68012345678909876543210abcdefabcdef" // triggering squash above it
+)
 
-	var stdout, stderr bytes.Buffer
-	// Drain floor = Crc5: only Snew is pending, so the guard is not tripped.
-	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr, []string{"--boundary", "Crc5"})
-	if err != nil {
-		t.Fatalf("bubbleRun with --boundary: %v\nstderr:\n%s", err, stderr.String())
-	}
+// boundaryGraph builds T <- rc5(tagged) <- new, the shape the real go-live hit:
+// a released squash sitting between the merge boundary and the new squash, so a
+// drain floor at rc5 is what scopes the run.
+func boundaryGraph() *fakeGraph {
+	g := newFakeGraph()
+	g.addCommit(mergeBoundary(shaBoundaryT))
+	g.addCommit(release.GitCommit{SHA: shaRc5, TreeSHA: "treeRc5", ParentSHAs: []string{shaBoundaryT}, Message: "release rc5 (#30)"})
+	g.addCommit(release.GitCommit{SHA: shaNew, TreeSHA: "treeNew", ParentSHAs: []string{shaRc5}, Message: "feat: post-rc5 (#31)"})
+	g.ref = shaNew
+	g.tags = []release.TagRef{{Name: "v1.0.0-rc5", CommitSHA: shaRc5}}
+	g.pulls[31] = release.Pull{Number: 31, Title: "Post rc5"}
+	return g
+}
+
+// assertScopedToNewSquash asserts the drain was scoped to exactly the one squash
+// above the rc5 floor, with rc5 anchoring the merge's first parent.
+func assertScopedToNewSquash(t *testing.T, g *fakeGraph) {
+	t.Helper()
 	if len(g.created) != 1 {
 		t.Fatalf("--boundary should scope the drain to 1 squash; created=%d", len(g.created))
 	}
-	if got := g.created[0].ParentSHAs; len(got) != 2 || got[0] != "Crc5" || got[1] != "Snew" {
-		t.Fatalf("M.parents = %v, want [Crc5 Snew] (boundary as anchor T)", got)
+	if got := g.created[0].ParentSHAs; len(got) != 2 || got[0] != shaRc5 || got[1] != shaNew {
+		t.Fatalf("M.parents = %v, want [%s %s] (boundary as anchor T)", got, shaRc5, shaNew)
 	}
 	if g.ref != "M1" {
 		t.Fatalf("develop advanced to %q, want M1", g.ref)
+	}
+}
+
+// (c) --boundary scopes a deliberate first run above the released backlog. A FULL
+// 40-char SHA must keep behaving exactly as it always has.
+func TestBubbleRun_BoundaryOverrideScopesFirstRun(t *testing.T) {
+	g := boundaryGraph()
+
+	var stdout, stderr bytes.Buffer
+	// Drain floor = rc5: only the new squash is pending, so the guard is not tripped.
+	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr, []string{"--boundary", shaRc5})
+	if err != nil {
+		t.Fatalf("bubbleRun with full-SHA --boundary: %v\nstderr:\n%s", err, stderr.String())
+	}
+	assertScopedToNewSquash(t, g)
+}
+
+// --- FIX: --boundary must accept abbreviated SHAs, never silently no-op --------
+
+// An ABBREVIATED boundary (what an operator naturally types under pressure) must
+// scope the drain identically to the full SHA. Regression test for the go-live
+// defect where a 7-char --boundary matched nothing and the walk ran straight past
+// the intended floor.
+func TestBubbleRun_BoundaryAcceptsAbbreviatedSHA(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		boundary string
+	}{
+		{"7-char abbreviation", shaRc5[:7]},
+		{"12-char abbreviation", shaRc5[:12]},
+		{"uppercase abbreviation", strings.ToUpper(shaRc5[:7])},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			g := boundaryGraph()
+			var stdout, stderr bytes.Buffer
+			err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr, []string{"--boundary", tc.boundary})
+			if err != nil {
+				t.Fatalf("bubbleRun with --boundary %q: %v\nstderr:\n%s", tc.boundary, err, stderr.String())
+			}
+			assertScopedToNewSquash(t, g)
+		})
+	}
+}
+
+// A malformed --boundary is rejected on SHAPE alone, before a single API call is
+// made — so a typo never costs a walk and can never reach a write.
+func TestBubbleRun_BoundaryValidationRejectsMalformedBeforeAnyAPICall(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		boundary string
+		want     string
+	}{
+		{"too short", "c7fd23", "too short"},
+		{"single char", "c", "too short"},
+		{"non-hex branch name", "develop", "not a valid commit SHA"},
+		{"non-hex with separators", "c7fd23f..HEAD", "not a valid commit SHA"},
+		{"too long", shaRc5 + "ff", "too long"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var calls int
+			gh := &mockGitHubClient{
+				refFn: func(context.Context, string, string) (release.GitRef, error) {
+					calls++
+					return release.GitRef{}, nil
+				},
+			}
+			var stdout, stderr bytes.Buffer
+			err := bubbleRun(context.Background(), gh, "peasant-labs/schema", &stdout, &stderr, []string{"--boundary", tc.boundary})
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("bubbleRun(--boundary %q) error = %v, want it to contain %q", tc.boundary, err, tc.want)
+			}
+			if calls != 0 {
+				t.Fatalf("validation must reject before any API call; ref reads = %d", calls)
+			}
+			// Actionable: says what is wrong, that nothing was touched, and how to fix.
+			for _, want := range []string{"develop is unchanged", "Fix:"} {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("error not actionable (missing %q): %v", want, err)
+				}
+			}
+		})
+	}
+}
+
+// A well-formed boundary that matches NOTHING in the examined range must fail
+// loud. It must NOT be silently ignored: that would drain past the operator's
+// intended floor and leave the released-history guard as the only backstop.
+func TestBubbleRun_BoundaryNeverMatchedFailsLoud(t *testing.T) {
+	g := boundaryGraph()
+
+	var stdout, stderr bytes.Buffer
+	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr,
+		[]string{"--boundary", "deadbeefdeadbeef"})
+	if err == nil {
+		t.Fatalf("bubbleRun succeeded, want a fail-loud unmatched-boundary error")
+	}
+	for _, want := range []string{"NOT FOUND", "deadbeefdeadbeef", "first-parent", "develop is left unchanged"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("unmatched-boundary error not actionable (missing %q): %v", want, err)
+		}
+	}
+	if len(g.created) != 0 || g.upserts != 0 {
+		t.Fatalf("an unmatched boundary must touch no git state; created=%d upserts=%d", len(g.created), g.upserts)
+	}
+	if g.ref != shaNew {
+		t.Fatalf("develop tip = %q, want %s unchanged", g.ref, shaNew)
+	}
+	if !strings.Contains(stdout.String(), "::error::") {
+		t.Fatalf("stdout missing ::error:: annotation:\n%s", stdout.String())
+	}
+}
+
+// An AMBIGUOUS abbreviation must fail loud and name the candidates rather than
+// silently picking one of them as the drain floor.
+func TestBubbleRun_BoundaryAmbiguousPrefixFailsLoud(t *testing.T) {
+	const (
+		twinA = "abc1234aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		twinB = "abc1234bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+		tipC  = "fedcba9876543210fedcba9876543210fedcba98"
+	)
+	g := newFakeGraph()
+	g.addCommit(mergeBoundary(shaBoundaryT))
+	g.addCommit(release.GitCommit{SHA: twinB, TreeSHA: "treeB", ParentSHAs: []string{shaBoundaryT}, Message: "older twin (#10)"})
+	g.addCommit(release.GitCommit{SHA: twinA, TreeSHA: "treeA", ParentSHAs: []string{twinB}, Message: "newer twin (#11)"})
+	g.addCommit(release.GitCommit{SHA: tipC, TreeSHA: "treeC", ParentSHAs: []string{twinA}, Message: "tip (#12)"})
+	g.ref = tipC
+
+	var stdout, stderr bytes.Buffer
+	err := bubbleRun(context.Background(), newBubbleMock(g), "peasant-labs/schema", &stdout, &stderr,
+		[]string{"--boundary", "abc1234"})
+	if err == nil {
+		t.Fatalf("bubbleRun succeeded, want a fail-loud ambiguous-boundary error")
+	}
+	if !strings.Contains(err.Error(), "AMBIGUOUS") {
+		t.Fatalf("ambiguous-boundary error missing the ambiguity verdict: %v", err)
+	}
+	// Both candidates must be named so the operator can disambiguate.
+	for _, want := range []string{twinA, twinB, "more characters"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("ambiguous-boundary error must name %q: %v", want, err)
+		}
+	}
+	if len(g.created) != 0 || g.upserts != 0 {
+		t.Fatalf("an ambiguous boundary must touch no git state; created=%d upserts=%d", len(g.created), g.upserts)
+	}
+	if g.ref != tipC {
+		t.Fatalf("develop tip = %q, want %s unchanged", g.ref, tipC)
 	}
 }
 
