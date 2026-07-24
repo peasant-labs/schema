@@ -4,9 +4,12 @@ import { zAnnotationDatatype, type AnnotationDatatype as AnnotationDatatypeContr
 import { zAnnotationPushStatus, type AnnotationPushStatus as AnnotationPushStatusContract } from "./contract/zod.gen.js";
 import { zAnnotationStatus, type AnnotationStatus as AnnotationStatusContract } from "./contract/zod.gen.js";
 import { zAnnotatorKind, type AnnotatorKind as AnnotatorKindContract } from "./contract/zod.gen.js";
+import { zAssociationEvidence, type AssociationEvidence as AssociationEvidenceContract } from "./contract/zod.gen.js";
+import { zAssociationKind, type AssociationKind as AssociationKindContract } from "./contract/zod.gen.js";
 import { zBuiltinCommand, type BuiltinCommand as BuiltinCommandContract } from "./contract/zod.gen.js";
 import { zChangeBinding, type ChangeBinding as ChangeBindingContract } from "./contract/zod.gen.js";
 import { zChannelTopic, type ChannelTopic as ChannelTopicContract } from "./contract/zod.gen.js";
+import { zConfidence, type Confidence as ConfidenceContract } from "./contract/zod.gen.js";
 import { zContentKind, type ContentKind as ContentKindContract } from "./contract/zod.gen.js";
 import { zDecayLevel, type DecayLevel as DecayLevelContract } from "./contract/zod.gen.js";
 import { zDiffLineKind, type DiffLineKind as DiffLineKindContract } from "./contract/zod.gen.js";
@@ -14,10 +17,16 @@ import { zEdgeViolationKind, type EdgeViolationKind as EdgeViolationKindContract
 import { zEntryType, type EntryType as EntryTypeContract } from "./contract/zod.gen.js";
 import { zFileChangeStatus, type FileChangeStatus as FileChangeStatusContract } from "./contract/zod.gen.js";
 import { zHarness, type Harness as HarnessContract } from "./contract/zod.gen.js";
+import { zInsightKind, type InsightKind as InsightKindContract } from "./contract/zod.gen.js";
+import { zInsightProvenance, type InsightProvenance as InsightProvenanceContract } from "./contract/zod.gen.js";
 import { zInteractionType, type InteractionType as InteractionTypeContract } from "./contract/zod.gen.js";
 import { zLicense, type License as LicenseContract } from "./contract/zod.gen.js";
 import { zMapNodeKind, type MapNodeKind as MapNodeKindContract } from "./contract/zod.gen.js";
 import { zMessageType, type MessageType as MessageTypeContract } from "./contract/zod.gen.js";
+import { zReadAttributionState, type ReadAttributionState as ReadAttributionStateContract } from "./contract/zod.gen.js";
+import { zReadStateGrade, type ReadStateGrade as ReadStateGradeContract } from "./contract/zod.gen.js";
+import { zRewriteMethod, type RewriteMethod as RewriteMethodContract } from "./contract/zod.gen.js";
+import { zRewriteResolution, type RewriteResolution as RewriteResolutionContract } from "./contract/zod.gen.js";
 import { zRole, type Role as RoleContract } from "./contract/zod.gen.js";
 import { zScaleKind, type ScaleKind as ScaleKindContract } from "./contract/zod.gen.js";
 import { zSessionOutcome, type SessionOutcome as SessionOutcomeContract } from "./contract/zod.gen.js";
@@ -87,6 +96,30 @@ export function isAnnotatorKind(value: unknown): value is AnnotatorKind {
   return zAnnotatorKind.safeParse(value).success;
 }
 
+export type AssociationEvidence = AssociationEvidenceContract;
+export const AssociationEvidence = Object.freeze({
+  CommitAndTouch: zAssociationEvidence.parse("commit_and_touch"),
+  CommitOnly: zAssociationEvidence.parse("commit_only"),
+  TouchOnly: zAssociationEvidence.parse("touch_only"),
+  BranchOnly: zAssociationEvidence.parse("branch_only"),
+  TimeWindow: zAssociationEvidence.parse("time_window"),
+} as const);
+export const AllAssociationEvidences = Object.freeze([AssociationEvidence.CommitAndTouch, AssociationEvidence.CommitOnly, AssociationEvidence.TouchOnly, AssociationEvidence.BranchOnly, AssociationEvidence.TimeWindow]) as readonly AssociationEvidence[];
+export function isAssociationEvidence(value: unknown): value is AssociationEvidence {
+  return zAssociationEvidence.safeParse(value).success;
+}
+
+export type AssociationKind = AssociationKindContract;
+export const AssociationKind = Object.freeze({
+  Bound: zAssociationKind.parse("bound"),
+  Candidate: zAssociationKind.parse("candidate"),
+  Temporal: zAssociationKind.parse("temporal"),
+} as const);
+export const AllAssociationKinds = Object.freeze([AssociationKind.Bound, AssociationKind.Candidate, AssociationKind.Temporal]) as readonly AssociationKind[];
+export function isAssociationKind(value: unknown): value is AssociationKind {
+  return zAssociationKind.safeParse(value).success;
+}
+
 export type BuiltinCommand = BuiltinCommandContract;
 export const BuiltinCommand = Object.freeze({
   Exit: zBuiltinCommand.parse("exit"),
@@ -144,6 +177,17 @@ export const ChannelTopic = Object.freeze({
 export const AllChannelTopics = Object.freeze([ChannelTopic.Dashboard, ChannelTopic.Sessions, ChannelTopic.SessionDetail, ChannelTopic.Trends, ChannelTopic.Quality, ChannelTopic.Annotations, ChannelTopic.ProjectFamiliarity]) as readonly ChannelTopic[];
 export function isChannelTopic(value: unknown): value is ChannelTopic {
   return zChannelTopic.safeParse(value).success;
+}
+
+export type Confidence = ConfidenceContract;
+export const Confidence = Object.freeze({
+  High: zConfidence.parse("high"),
+  Medium: zConfidence.parse("medium"),
+  Low: zConfidence.parse("low"),
+} as const);
+export const AllConfidences = Object.freeze([Confidence.High, Confidence.Medium, Confidence.Low]) as readonly Confidence[];
+export function isConfidence(value: unknown): value is Confidence {
+  return zConfidence.safeParse(value).success;
 }
 
 export type ContentKind = ContentKindContract;
@@ -234,6 +278,28 @@ export function isHarness(value: unknown): value is Harness {
   return zHarness.safeParse(value).success;
 }
 
+export type InsightKind = InsightKindContract;
+export const InsightKind = Object.freeze({
+  Decision: zInsightKind.parse("decision"),
+  Friction: zInsightKind.parse("friction"),
+  Unusual: zInsightKind.parse("unusual"),
+  RetryLoop: zInsightKind.parse("retry_loop"),
+} as const);
+export const AllInsightKinds = Object.freeze([InsightKind.Decision, InsightKind.Friction, InsightKind.Unusual, InsightKind.RetryLoop]) as readonly InsightKind[];
+export function isInsightKind(value: unknown): value is InsightKind {
+  return zInsightKind.safeParse(value).success;
+}
+
+export type InsightProvenance = InsightProvenanceContract;
+export const InsightProvenance = Object.freeze({
+  Mechanical: zInsightProvenance.parse("mechanical"),
+  Mined: zInsightProvenance.parse("mined"),
+} as const);
+export const AllInsightProvenances = Object.freeze([InsightProvenance.Mechanical, InsightProvenance.Mined]) as readonly InsightProvenance[];
+export function isInsightProvenance(value: unknown): value is InsightProvenance {
+  return zInsightProvenance.safeParse(value).success;
+}
+
 export type InteractionType = InteractionTypeContract;
 export const InteractionType = Object.freeze({
   Mentioned: zInteractionType.parse("mentioned"),
@@ -285,6 +351,54 @@ export const MessageType = Object.freeze({
 export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error]) as readonly MessageType[];
 export function isMessageType(value: unknown): value is MessageType {
   return zMessageType.safeParse(value).success;
+}
+
+export type ReadAttributionState = ReadAttributionStateContract;
+export const ReadAttributionState = Object.freeze({
+  Complete: zReadAttributionState.parse("complete"),
+  Partial: zReadAttributionState.parse("partial"),
+  Unavailable: zReadAttributionState.parse("unavailable"),
+} as const);
+export const AllReadAttributionStates = Object.freeze([ReadAttributionState.Complete, ReadAttributionState.Partial, ReadAttributionState.Unavailable]) as readonly ReadAttributionState[];
+export function isReadAttributionState(value: unknown): value is ReadAttributionState {
+  return zReadAttributionState.safeParse(value).success;
+}
+
+export type ReadStateGrade = ReadStateGradeContract;
+export const ReadStateGrade = Object.freeze({
+  None: zReadStateGrade.parse("none"),
+  Viewed: zReadStateGrade.parse("viewed"),
+  Reviewed: zReadStateGrade.parse("reviewed"),
+  ReviewedInDetail: zReadStateGrade.parse("reviewed_in_detail"),
+} as const);
+export const AllReadStateGrades = Object.freeze([ReadStateGrade.None, ReadStateGrade.Viewed, ReadStateGrade.Reviewed, ReadStateGrade.ReviewedInDetail]) as readonly ReadStateGrade[];
+export function isReadStateGrade(value: unknown): value is ReadStateGrade {
+  return zReadStateGrade.safeParse(value).success;
+}
+
+export type RewriteMethod = RewriteMethodContract;
+export const RewriteMethod = Object.freeze({
+  Hash: zRewriteMethod.parse("hash"),
+  PatchID: zRewriteMethod.parse("patch_id"),
+  AuthorIdentity: zRewriteMethod.parse("author_identity"),
+  MessageEmbedded: zRewriteMethod.parse("message_embedded"),
+  Temporal: zRewriteMethod.parse("temporal"),
+  None: zRewriteMethod.parse("none"),
+} as const);
+export const AllRewriteMethods = Object.freeze([RewriteMethod.Hash, RewriteMethod.PatchID, RewriteMethod.AuthorIdentity, RewriteMethod.MessageEmbedded, RewriteMethod.Temporal, RewriteMethod.None]) as readonly RewriteMethod[];
+export function isRewriteMethod(value: unknown): value is RewriteMethod {
+  return zRewriteMethod.safeParse(value).success;
+}
+
+export type RewriteResolution = RewriteResolutionContract;
+export const RewriteResolution = Object.freeze({
+  Live: zRewriteResolution.parse("live"),
+  Rewritten: zRewriteResolution.parse("rewritten"),
+  Unresolved: zRewriteResolution.parse("unresolved"),
+} as const);
+export const AllRewriteResolutions = Object.freeze([RewriteResolution.Live, RewriteResolution.Rewritten, RewriteResolution.Unresolved]) as readonly RewriteResolution[];
+export function isRewriteResolution(value: unknown): value is RewriteResolution {
+  return zRewriteResolution.safeParse(value).success;
 }
 
 export type Role = RoleContract;
@@ -350,8 +464,9 @@ export const TargetKind = Object.freeze({
   Entry: zTargetKind.parse("entry"),
   Annotation: zTargetKind.parse("annotation"),
   Project: zTargetKind.parse("project"),
+  FileVersion: zTargetKind.parse("file_version"),
 } as const);
-export const AllTargetKinds = Object.freeze([TargetKind.Session, TargetKind.Entry, TargetKind.Annotation, TargetKind.Project]) as readonly TargetKind[];
+export const AllTargetKinds = Object.freeze([TargetKind.Session, TargetKind.Entry, TargetKind.Annotation, TargetKind.Project, TargetKind.FileVersion]) as readonly TargetKind[];
 export function isTargetKind(value: unknown): value is TargetKind {
   return zTargetKind.safeParse(value).success;
 }

@@ -7,6 +7,37 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.5.0 (`PeasantLocalAPIVersion`), Village API 0.7.0, and Types 0.4.0:
+  the git+session timeline and insight-first code map wire surface, all additive.
+  - `CommitRef` gains `Associations []SessionAssociation` (decomposed
+    `AssociationKind` x `Confidence` x `AssociationEvidence`, mirroring
+    `SessionIDs` one-for-one in the same rank order) and `HasSession`/`SessionIDs`
+    keep their existing compatibility-mirror semantics unchanged.
+  - `ReviewListPayload` and `MapNodeDetailPayload` gain `RewrittenCommits
+    []RewrittenCommit`: ghost-commit rewrite resolution (`RewriteResolution` x
+    `RewriteMethod` x `Confidence`).
+  - `MapNodeDetailPayload` and `ChangeDetailPayload` gain `Insights
+    []SessionInsight`, a (`InsightKind` x `InsightProvenance` x `Confidence`)
+    envelope with evidence and subjects, alongside the existing
+    `Unusual`/`Frictions` signals (retained unchanged). `Classification` is
+    declared on the wire but MUST be nil this epoch; a future revision
+    populates it with no shape change.
+  - `MapNode` gains node-grain comprehension signals: `AgentEditedCount`,
+    `ReadCount`, `ReadAttribution` (`ReadAttributionState`), the composed
+    `ReadState` (`ReadStateGrade`, ordinal `none < viewed < reviewed <
+    reviewed_in_detail`), and the per-node region-coverage counts
+    `ChangedRegionCount`/`AttributedRegionCount`/`ReviewedRegionCount`.
+  - `TaskSummary` gains `ReadFiles []string`, the per-file derivation of
+    `ReadCount`, mirroring `EditedFiles`'s sorted-distinct-non-nil invariants.
+  - `TargetKind` gains a `file_version` member (a whole-file, content-hash
+    keyed read-state receipt target); `AnnotationSummary` gains
+    `TargetFilePath`/`TargetContentHash` as its discriminator pair.
+  - Ten new enum-exhaustion corpora, a segmented insight fixture (mechanical /
+    mined / classification-must-be-nil / rejections), and an extended project
+    timeline corpus back every new closed set and cross-reference invariant.
+  - `types-0.3.0`, `peasantlocal-api-0.4.0`, and `village-api-0.6.0` are
+    retired and byte-frozen.
+
 - Automated npm publication of `@peasant-labs/schema` in the release ceremony.
   `release.yml` gains an `npm-publish` job, gated behind the same guard →
   nix-vendor-hash → contract-gates chain as the GitHub Release publish job and

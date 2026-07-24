@@ -25,22 +25,34 @@ const (
 	// Bumped to 0.6.0 when shared operation components adopted exact canonical
 	// Types schemas and the stricter publish HTTP body gained a distinct component
 	// identity instead of shadowing the canonical PublishRequest.
+	// Bumped to 0.7.0 when TargetKind gained the file_version member and
+	// AnnotationSummary gained TargetFilePath/TargetContentHash —
+	// harmonizeSharedTypeComponents propagates both into this spec's embedded
+	// annotation components (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.6.0"
+	VillageAPIVersion = "0.7.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
 	// timeline gained normalized session identities and authoritative many-to-many
 	// commit bindings. Bumped to 0.4.0 when file-change statuses and diff-line
 	// kinds became named closed sets while retaining their existing JSON tokens.
+	// Bumped to 0.5.0 when the git+session timeline and insight-first code map
+	// surface landed: decomposed session<->commit associations, ghost/rewrite
+	// mapping, the mechanical insight envelope, node-grain
+	// read-state/comprehension signals, and TaskSummary.ReadFiles (all
+	// additive).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.4.0"
+	PeasantLocalAPIVersion = "0.5.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
 	// cross-language contract surface instead of a small set of seed types.
 	// Bumped to 0.3.0 when the map/review diff string fields became named closed
 	// sets with generated runtime inventories and predicates.
-	TypesVersion = "0.3.0"
+	// Bumped to 0.4.0 when the Local API 0.5.0 surface's new catalog types
+	// (SessionAssociation, RewrittenCommit, SessionInsight and their closed
+	// sets) and the widened TargetKind landed (additive = minor bump).
+	TypesVersion = "0.4.0"
 )

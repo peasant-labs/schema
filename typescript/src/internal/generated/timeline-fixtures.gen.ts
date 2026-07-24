@@ -31,6 +31,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-a",
               "session-b"
+            ],
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              },
+              {
+                "sessionId": "session-b",
+                "kind": "candidate",
+                "confidence": "medium",
+                "evidence": "touch_only"
+              }
             ]
           },
           {
@@ -39,6 +53,14 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hasSession": true,
             "sessionIds": [
               "session-a"
+            ],
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
             ]
           }
         ]
@@ -71,7 +93,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hash": "commit-empty",
             "subject": "manual change",
             "hasSession": false,
-            "sessionIds": []
+            "sessionIds": [],
+            "associations": []
           }
         ]
       },
@@ -102,7 +125,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hash": "commit-recent",
             "subject": "recent manual change",
             "hasSession": false,
-            "sessionIds": []
+            "sessionIds": [],
+            "associations": []
           }
         ]
       },
@@ -298,7 +322,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hasSession": false,
             "sessionIds": [
               "session-a"
-            ]
+            ],
+            "associations": []
           }
         ]
       },
@@ -333,7 +358,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hasSession": true,
             "sessionIds": [
               "session-a"
-            ]
+            ],
+            "associations": []
           }
         ]
       },
@@ -361,7 +387,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hasSession": true,
             "sessionIds": [
               "session-missing"
-            ]
+            ],
+            "associations": []
           }
         ]
       },
@@ -429,7 +456,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-a",
               "session-a"
-            ]
+            ],
+            "associations": []
           }
         ]
       },
@@ -455,6 +483,7 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "hash": "commit-a",
             "subject": "work",
             "hasSession": false,
+            "associations": [],
             "sessionIds": null
           }
         ]
@@ -525,7 +554,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-b",
               "session-a"
-            ]
+            ],
+            "associations": []
           }
         ]
       },
@@ -539,6 +569,179 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
       },
       "mutation": {
         "description": "reverses two valid bindings relative to the canonical session order"
+      }
+    },
+    {
+      "family": "null-associations",
+      "name": "null_associations",
+      "input": {
+        "sessions": [
+          {
+            "sessionId": "session-a",
+            "title": "work",
+            "harness": "claude-code",
+            "hasCommitBinding": true
+          }
+        ],
+        "commits": [
+          {
+            "hash": "commit-a",
+            "subject": "work",
+            "hasSession": true,
+            "sessionIds": [
+              "session-a"
+            ],
+            "associations": null
+          }
+        ]
+      },
+      "expected": {
+        "errorContains": "null associations"
+      },
+      "classification": "must-fail",
+      "provenance": {
+        "source": "requirement",
+        "ref": "the non-nil Associations invariant"
+      },
+      "mutation": {
+        "description": "omits the required associations array from a commit that has sessionIds"
+      }
+    },
+    {
+      "family": "association-count-mismatch",
+      "name": "association_count_does_not_mirror_session_ids",
+      "input": {
+        "sessions": [
+          {
+            "sessionId": "session-a",
+            "title": "work",
+            "harness": "claude-code",
+            "hasCommitBinding": true
+          }
+        ],
+        "commits": [
+          {
+            "hash": "commit-a",
+            "subject": "work",
+            "hasSession": true,
+            "sessionIds": [
+              "session-a"
+            ],
+            "associations": []
+          }
+        ]
+      },
+      "expected": {
+        "errorContains": "Associations must mirror SessionIDs"
+      },
+      "classification": "must-fail",
+      "provenance": {
+        "source": "requirement",
+        "ref": "the Associations-mirrors-SessionIDs invariant"
+      },
+      "mutation": {
+        "description": "leaves associations empty while sessionIds carries one binding"
+      }
+    },
+    {
+      "family": "association-rank-mismatch",
+      "name": "association_rank_order_does_not_match_session_ids",
+      "input": {
+        "sessions": [
+          {
+            "sessionId": "session-a",
+            "title": "first",
+            "harness": "claude-code",
+            "startMs": 2000,
+            "hasCommitBinding": true
+          },
+          {
+            "sessionId": "session-b",
+            "title": "second",
+            "harness": "codex",
+            "startMs": 1000,
+            "hasCommitBinding": true
+          }
+        ],
+        "commits": [
+          {
+            "hash": "commit-a",
+            "subject": "work",
+            "hasSession": true,
+            "sessionIds": [
+              "session-a",
+              "session-b"
+            ],
+            "associations": [
+              {
+                "sessionId": "session-b",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              },
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "errorContains": "Associations must equal SessionIDs in the same rank order"
+      },
+      "classification": "must-fail",
+      "provenance": {
+        "source": "requirement",
+        "ref": "the Associations rank-order invariant"
+      },
+      "mutation": {
+        "description": "swaps the two associations relative to the canonical sessionIds order"
+      }
+    },
+    {
+      "family": "association-invalid-kind",
+      "name": "association_kind_not_in_closed_set",
+      "input": {
+        "sessions": [
+          {
+            "sessionId": "session-a",
+            "title": "work",
+            "harness": "claude-code",
+            "hasCommitBinding": true
+          }
+        ],
+        "commits": [
+          {
+            "hash": "commit-a",
+            "subject": "work",
+            "hasSession": true,
+            "sessionIds": [
+              "session-a"
+            ],
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "unknown-kind",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "errorContains": "association kind validation failed"
+      },
+      "classification": "must-fail",
+      "provenance": {
+        "source": "enum",
+        "ref": "schema.AllAssociationKinds"
+      },
+      "mutation": {
+        "description": "replaces a known association kind with a value outside the closed set"
       }
     }
   ]

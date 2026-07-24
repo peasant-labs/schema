@@ -124,6 +124,34 @@ export const zAnnotatorSummary = z.object({
 
 export type AnnotatorSummary = z.infer<typeof zAnnotatorSummary>;
 
+/**
+ * Association Evidence
+ *
+ * Which signal(s) produced a session<->commit association
+ */
+export const zAssociationEvidence = z.enum([
+    'commit_and_touch',
+    'commit_only',
+    'touch_only',
+    'branch_only',
+    'time_window'
+]);
+
+export type AssociationEvidence = z.infer<typeof zAssociationEvidence>;
+
+/**
+ * Association Kind
+ *
+ * Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal
+ */
+export const zAssociationKind = z.enum([
+    'bound',
+    'candidate',
+    'temporal'
+]);
+
+export type AssociationKind = z.infer<typeof zAssociationKind>;
+
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
     failingIndex: z.int()
@@ -253,6 +281,19 @@ export const zCommitInfo = z.object({
 });
 
 export type CommitInfo = z.infer<typeof zCommitInfo>;
+
+/**
+ * Confidence
+ *
+ * Strength of evidence behind a derived relationship: high, medium, or low
+ */
+export const zConfidence = z.enum([
+    'high',
+    'medium',
+    'low'
+]);
+
+export type Confidence = z.infer<typeof zConfidence>;
 
 /**
  * Content Kind
@@ -527,6 +568,39 @@ export const zHostSlug = z.string().regex(/^[a-zA-Z0-9._<>-]+$/);
 
 export type HostSlug = z.infer<typeof zHostSlug>;
 
+export const zInsightClassification = z.object({
+    category: z.string(),
+    cause: z.string(),
+    resolution: z.string(),
+    severityLocus: z.string(),
+    severityScope: z.string()
+});
+
+export type InsightClassification = z.infer<typeof zInsightClassification>;
+
+/**
+ * Insight Kind
+ *
+ * What a SessionInsight observed: a decision, friction, an unusual rate elevation, or a retry loop
+ */
+export const zInsightKind = z.enum([
+    'decision',
+    'friction',
+    'unusual',
+    'retry_loop'
+]);
+
+export type InsightKind = z.infer<typeof zInsightKind>;
+
+/**
+ * Insight Provenance
+ *
+ * How a SessionInsight was produced: mechanical (rule-derived) or mined
+ */
+export const zInsightProvenance = z.enum(['mechanical', 'mined']);
+
+export type InsightProvenance = z.infer<typeof zInsightProvenance>;
+
 /**
  * Interaction Type
  *
@@ -574,32 +648,6 @@ export const zMapNodeKind = z.enum([
 ]);
 
 export type MapNodeKind = z.infer<typeof zMapNodeKind>;
-
-export const zMapNode = z.object({
-    effortDensity: z.number(),
-    fileCount: z.int(),
-    id: z.string(),
-    kind: zMapNodeKind,
-    language: z.string().optional(),
-    layer: z.int(),
-    loc: z.int(),
-    name: z.string(),
-    order: z.int(),
-    parent: z.string().optional(),
-    recordedFiles: z.int(),
-    totalFiles: z.int(),
-    touchCount: z.int()
-});
-
-export type MapNode = z.infer<typeof zMapNode>;
-
-export const zMapSlice = z.object({
-    activityEdges: z.array(zActivityEdge).nullable(),
-    nodes: z.array(zMapNode).nullable(),
-    structureEdges: z.array(zMapEdge).nullable()
-});
-
-export type MapSlice = z.infer<typeof zMapSlice>;
 
 /**
  * Message Type
@@ -665,21 +713,6 @@ export const zProjectHash = z.string().regex(/^[0-9a-f]{64}$/).brand<'ProjectHas
 
 export type ProjectHash = z.infer<typeof zProjectHash>;
 
-export const zMapGraphPayload = z.object({
-    activityEdges: z.array(zActivityEdge).nullable(),
-    atCommit: z.string().optional(),
-    generatedAtMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
-    nodes: z.array(zMapNode).nullable(),
-    parsedLanguages: z.array(z.string()).nullable(),
-    projectHash: zProjectHash,
-    repoFound: z.boolean(),
-    repoPath: z.string().optional(),
-    structureEdges: z.array(zMapEdge).nullable(),
-    violations: z.array(zEdgeViolation).nullable()
-});
-
-export type MapGraphPayload = z.infer<typeof zMapGraphPayload>;
-
 export const zProjectContext = z.object({
     filePath: z.string().optional(),
     hash: zProjectHash,
@@ -733,6 +766,81 @@ export const zPublishResponse = z.object({
 
 export type PublishResponse = z.infer<typeof zPublishResponse>;
 
+/**
+ * Read Attribution State
+ *
+ * Whether per-file read attribution is recoverable for a node's editing sessions: complete, partial, or unavailable
+ */
+export const zReadAttributionState = z.enum([
+    'complete',
+    'partial',
+    'unavailable'
+]);
+
+export type ReadAttributionState = z.infer<typeof zReadAttributionState>;
+
+/**
+ * Read State Grade
+ *
+ * Ordinal explicit read-state act: none, viewed, reviewed, or reviewed_in_detail
+ */
+export const zReadStateGrade = z.enum([
+    'none',
+    'viewed',
+    'reviewed',
+    'reviewed_in_detail'
+]);
+
+export type ReadStateGrade = z.infer<typeof zReadStateGrade>;
+
+export const zMapNode = z.object({
+    agentEditedCount: z.int(),
+    attributedRegionCount: z.int(),
+    changedRegionCount: z.int(),
+    effortDensity: z.number(),
+    fileCount: z.int(),
+    id: z.string(),
+    kind: zMapNodeKind,
+    language: z.string().optional(),
+    layer: z.int(),
+    loc: z.int(),
+    name: z.string(),
+    order: z.int(),
+    parent: z.string().optional(),
+    readAttribution: zReadAttributionState,
+    readCount: z.int(),
+    readState: zReadStateGrade,
+    recordedFiles: z.int(),
+    reviewedRegionCount: z.int(),
+    totalFiles: z.int(),
+    touchCount: z.int()
+});
+
+export type MapNode = z.infer<typeof zMapNode>;
+
+export const zMapGraphPayload = z.object({
+    activityEdges: z.array(zActivityEdge).nullable(),
+    atCommit: z.string().optional(),
+    generatedAtMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    nodes: z.array(zMapNode).nullable(),
+    parsedLanguages: z.array(z.string()).nullable(),
+    projectHash: zProjectHash,
+    repoFound: z.boolean(),
+    repoPath: z.string().optional(),
+    structureEdges: z.array(zMapEdge).nullable(),
+    violations: z.array(zEdgeViolation).nullable()
+});
+
+export type MapGraphPayload = z.infer<typeof zMapGraphPayload>;
+
+export const zMapSlice = z.object({
+    activityEdges: z.array(zActivityEdge).nullable(),
+    nodes: z.array(zMapNode).nullable(),
+    structureEdges: z.array(zMapEdge).nullable()
+});
+
+export type MapSlice = z.infer<typeof zMapSlice>;
+
 export const zRedactionInfo = z.object({
     applied: z.boolean(),
     content_hash_at_redact: z.string().optional(),
@@ -751,6 +859,35 @@ export const zReviewSuggestion = z.object({
 });
 
 export type ReviewSuggestion = z.infer<typeof zReviewSuggestion>;
+
+/**
+ * Rewrite Method
+ *
+ * Mechanism the resolver used to map a ghost commit to its successor
+ */
+export const zRewriteMethod = z.enum([
+    'hash',
+    'patch_id',
+    'author_identity',
+    'message_embedded',
+    'temporal',
+    'none'
+]);
+
+export type RewriteMethod = z.infer<typeof zRewriteMethod>;
+
+/**
+ * Rewrite Resolution
+ *
+ * Whether a ledger-observed commit hash is live, was rewritten, or could not be resolved
+ */
+export const zRewriteResolution = z.enum([
+    'live',
+    'rewritten',
+    'unresolved'
+]);
+
+export type RewriteResolution = z.infer<typeof zRewriteResolution>;
 
 /**
  * Role
@@ -831,7 +968,39 @@ export const zSessionID = z.string().regex(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 
 export type SessionID = z.infer<typeof zSessionID>;
 
+export const zInsightEvidence = z.object({
+    commitHash: z.string().optional(),
+    entryIndex: z.int().nullish(),
+    file: z.string().optional(),
+    sessionId: zSessionID
+});
+
+export type InsightEvidence = z.infer<typeof zInsightEvidence>;
+
+export const zRewrittenCommit = z.object({
+    authorTimeMs: z.int().nullish(),
+    confidence: zConfidence,
+    ghostHash: z.string(),
+    method: zRewriteMethod,
+    resolution: zRewriteResolution,
+    sessionIds: z.array(zSessionID),
+    subject: z.string(),
+    successorHash: z.string().nullish()
+});
+
+export type RewrittenCommit = z.infer<typeof zRewrittenCommit>;
+
+export const zSessionAssociation = z.object({
+    confidence: zConfidence,
+    evidence: zAssociationEvidence,
+    kind: zAssociationKind,
+    sessionId: zSessionID
+});
+
+export type SessionAssociation = z.infer<typeof zSessionAssociation>;
+
 export const zCommitRef = z.object({
+    associations: z.array(zSessionAssociation),
     hasSession: z.boolean(),
     hash: z.string(),
     sessionIds: z.array(zSessionID),
@@ -848,6 +1017,19 @@ export const zSessionIdentity = z.object({
 });
 
 export type SessionIdentity = z.infer<typeof zSessionIdentity>;
+
+export const zSessionInsight = z.object({
+    classification: zInsightClassification.nullish(),
+    confidence: zConfidence,
+    evidence: z.array(zInsightEvidence),
+    kind: zInsightKind,
+    provenance: zInsightProvenance,
+    subjects: z.array(z.string()),
+    summary: z.string().optional(),
+    title: z.string()
+});
+
+export type SessionInsight = z.infer<typeof zSessionInsight>;
 
 /**
  * Session Outcome
@@ -1011,13 +1193,14 @@ export type SubagentRef = z.infer<typeof zSubagentRef>;
 /**
  * Target Kind
  *
- * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, or project-level
+ * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)
  */
 export const zTargetKind = z.enum([
     'session',
     'entry',
     'annotation',
-    'project'
+    'project',
+    'file_version'
 ]);
 
 export type TargetKind = z.infer<typeof zTargetKind>;
@@ -1059,8 +1242,10 @@ export const zAnnotationSummary = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
     targetKind: zTargetKind,
     targetProjectHash: zProjectHash.nullish(),
     targetSessionId: z.string().nullish(),
@@ -1093,8 +1278,10 @@ export const zPullAnnotation = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
     targetKind: zTargetKind.optional(),
     targetProjectHash: zProjectHash.optional(),
     targetSessionId: z.string().nullish(),
@@ -1145,6 +1332,7 @@ export const zTaskSummary = z.object({
     labels: z.array(z.string()).nullable(),
     outcome: z.string().optional(),
     readCount: z.int(),
+    readFiles: z.array(z.string()),
     retryLoop: z.boolean(),
     sessionId: z.string(),
     startMs: z.int().nullish(),
@@ -1167,6 +1355,7 @@ export type ChangeSession = z.infer<typeof zChangeSession>;
 export const zMapNodeDetailPayload = z.object({
     costUsd: z.number().nullish(),
     dependsOn: z.array(z.string()).nullable(),
+    insights: z.array(zSessionInsight),
     kind: zMapNodeKind,
     language: z.string().optional(),
     lastTouchMs: z.int().nullish(),
@@ -1176,6 +1365,7 @@ export const zMapNodeDetailPayload = z.object({
     recentCommits: z.array(zCommitRef).nullable(),
     recordedFiles: z.int(),
     retryLoops: z.int(),
+    rewrittenCommits: z.array(zRewrittenCommit),
     sessionCount: z.int(),
     shapedBy: z.array(zTaskSummary).nullable(),
     taskCount: z.int(),
@@ -1209,6 +1399,7 @@ export const zReviewListPayload = z.object({
     projectHash: zProjectHash,
     recentCommits: z.array(zCommitRef),
     repoFound: z.boolean(),
+    rewrittenCommits: z.array(zRewrittenCommit),
     sessions: z.array(zTimelineSessionRef)
 });
 
@@ -1453,6 +1644,7 @@ export const zChangeDetailPayload = z.object({
     defaultBranch: z.string(),
     files: z.array(zFileChange).nullable(),
     frictions: z.array(zFrictionCluster).nullable(),
+    insights: z.array(zSessionInsight),
     linesAdded: z.int(),
     linesRemoved: z.int(),
     newEdges: z.array(zMapEdge).nullable(),

@@ -312,9 +312,10 @@ export interface components {
         SchemaSubagentRef: Schema.SubagentRef;
         /**
          * Target Kind
-         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, or project-level
+         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)
          * @example session
          * @example entry
+         * @example file_version
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;

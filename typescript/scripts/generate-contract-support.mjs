@@ -201,6 +201,7 @@ function renderTimelineFixtures(source) {
   for (const testCase of fixtures.cases ?? []) {
     for (const commit of testCase.input?.commits ?? []) {
       if (!("sessionIds" in commit)) commit.sessionIds = null;
+      if (!("associations" in commit)) commit.associations = null;
     }
   }
   return `${header()}import type { TimelineFixtureCorpus } from "../../fixtures/timeline.js";\n\nexport const canonicalTimelineFixtures: TimelineFixtureCorpus = ${JSON.stringify(fixtures, null, 2)};\n`;
