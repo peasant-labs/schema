@@ -20,6 +20,36 @@ name: Bubble merge
 # NOT a pull_request event, so it never re-triggers this workflow. DecideBubble's
 # AlreadyBubbled is defense-in-depth idempotency on top of that event-type break.
 #
+# MANUAL SEED / GUARD-REFUSAL ESCAPE HATCH (workflow_dispatch):
+# The drain is guarded — if the first-parent walk back to the last merge boundary
+# would cross already-released history (a release tag on a pending squash), the
+# bubble REFUSES and leaves develop untouched. That is correct behaviour, and the
+# only intended resolution is an operator deciding, explicitly, where the drain
+# floor should sit. `--boundary <sha>` does exactly that, but it cannot be passed
+# from the pull_request path (nothing there to type it into), and the operator
+# generally cannot run release-guard locally — the develop advance needs the
+# peasant-labs-releaser App token, which only lives in Actions.
+#
+# So this workflow is ALSO manually dispatchable. Procedure, for ANY guard
+# refusal (first run on a repo with pre-existing squashes, a release cut between
+# bubbles, an aborted bubble — not just the first time):
+#   1. Read the refusal message in the failed bubble run; it names the commits it
+#      refused to cross.
+#   2. Note the CURRENT develop tip SHA (Code → commits, or
+#      `gh api repos/peasant-labs/schema/git/ref/heads/develop`). Everything at or
+#      below it is what you are declaring "already landed, do not re-bubble".
+#   3. Actions → "Bubble merge" → Run workflow (from branch `develop`) with
+#        pr       = the PR number that should be bubbled
+#        boundary = that develop tip SHA
+#      The walk then stops at `boundary` instead of walking into released history,
+#      and only squashes ABOVE it are drained.
+# Leave `boundary` empty to re-run a normal, unguarded bubble by hand.
+#
+# The branch dropdown is NOT cosmetic: a dispatch pins the release-guard version to
+# the launch branch's tip (github.sha), so launching from anywhere but develop would
+# run a foreign tool build against develop. That is enforced — a dispatch from any
+# other ref fails immediately, before the App token is minted.
+#
 # OPS PREREQUISITES (the USER's, not testable in this file): on peasant-labs/schema
 #   - install the peasant-labs-releaser App with Contents:write + Pull-requests:read,
 #   - configure develop branch-protection to allow that App's fast-forward ref
@@ -30,6 +60,17 @@ on:
   pull_request:
     types: [closed]
     branches: [develop]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to bubble (its squash must be on develop already)"
+        required: true
+        type: string
+      boundary:
+        description: "Optional drain-floor commit SHA (--boundary). Usually the current develop tip. Leave empty for a normal bubble."
+        required: false
+        default: ""
+        type: string
 
 # Serialize bubbles so two merges never race the develop FF-CAS; never cancel an
 # in-flight bubble (cancelling mid-chain could leave develop partially advanced).
@@ -45,11 +86,34 @@ permissions:
 jobs:
   bubble:
     name: bubble squash-merge into develop
-    # Only a real MERGE triggers the bubble; a non-merged close is a no-op.
-    if: github.event.pull_request.merged == true
+    # Only a real MERGE triggers the automatic bubble; a non-merged close is a
+    # no-op. The merged== check is scoped to the pull_request event so it never
+    # suppresses a manual workflow_dispatch seed run (which has no PR payload).
+    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # A dispatch takes its TOOL_REF from github.sha, which is the tip of
+      # WHICHEVER branch the operator picked in the Run-workflow dropdown. Picking
+      # anything but develop would run a different release-guard build against
+      # develop's refs — a tool that mutates develop must be the version develop
+      # actually ships. Fail loud and early rather than skipping the job: a skipped
+      # job renders as success, and the operator would believe the seed ran.
+      - name: Guard — manual dispatch must be launched from develop
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/develop'
+        env:
+          LAUNCH_REF: ${{ github.ref }}
+        run: |
+          echo "::error title=Bubble dispatched from the wrong branch::Manual bubble was launched from '${LAUNCH_REF}', not 'refs/heads/develop'."
+          echo "WHAT: this workflow_dispatch run was started from ref '${LAUNCH_REF}'." >&2
+          echo "WHY IT MATTERS: on a dispatch the release-guard version is pinned to github.sha," >&2
+          echo "  i.e. the tip of the launch branch. Launching from '${LAUNCH_REF}' would run THAT" >&2
+          echo "  branch's release-guard against develop's refs, mutating develop with a tool build" >&2
+          echo "  develop does not ship. Refusing before any token is minted or any ref is touched." >&2
+          echo "HOW TO FIX: re-run via Actions -> 'Bubble merge' -> 'Run workflow', selecting branch" >&2
+          echo "  'develop' in the branch dropdown, with the same pr/boundary inputs." >&2
+          exit 1
+
       - name: Mint App token (Contents:write to FF-advance develop; Pull-requests:read for provenance)
         id: tok
         uses: actions/create-github-app-token@v1
@@ -78,10 +142,23 @@ jobs:
           # setting it would be dead config that silently misleads on GHES. GHES
           # support is a future follow-up: wire the host through go-github's
           # WithEnterpriseURLs in newGitHubClient, then thread github.api_url here.
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          TOOL_REF: ${{ github.event.pull_request.merge_commit_sha }}
+          # Per-event resolution. pull_request: the merged PR and its squash sha
+          # (the tool version present on develop at merge time). workflow_dispatch:
+          # the operator-supplied PR number, and github.sha — for a dispatch on
+          # develop that IS the develop tip, i.e. still the tool version on develop.
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr || github.event.pull_request.number }}
+          TOOL_REF: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.pull_request.merge_commit_sha }}
+          # Drain floor, manual path only; empty on pull_request and on a dispatch
+          # that left the input blank. Emitted as --boundary ONLY when non-empty.
+          BOUNDARY: ${{ github.event_name == 'workflow_dispatch' && inputs.boundary || '' }}
           # Fetch the module straight from GitHub (schema is public): the public
           # module proxy can lag on a just-pushed merge sha and 500/"unknown
           # revision"; direct fetch resolves the fresh commit deterministically.
           GOPROXY: direct
-        run: go run "github.com/peasant-labs/schema/cmd/release-guard@${TOOL_REF}" bubble --pr "$PR_NUMBER"
+        run: |
+          set -euo pipefail
+          args=(bubble --pr "$PR_NUMBER")
+          if [ -n "$BOUNDARY" ]; then
+            args+=(--boundary "$BOUNDARY")
+          fi
+          go run "github.com/peasant-labs/schema/cmd/release-guard@${TOOL_REF}" "${args[@]}"
