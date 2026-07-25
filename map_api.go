@@ -830,10 +830,10 @@ func (r RewrittenCommit) Validate() error {
 		return fmt.Errorf("rewritten commit validation failed at schema.RewrittenCommit.Validate during wire-boundary validation: ghostHash is empty; every rewritten commit must name the ghost hash it maps, callers cannot resolve an anonymous ghost; populate GhostHash before validating or serving the rewrite")
 	}
 	if r.SessionIDs == nil {
-		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is null; a rewritten commit without an originating session cannot be placed on a timeline lane; initialize sessionIds with at least one originating session ID before serving the payload; initialize sessionIds before serving the payload", r.GhostHash)
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is null; a rewritten commit without an originating session cannot be placed on a timeline lane; initialize sessionIds with at least one originating session ID before serving the payload", r.GhostHash)
 	}
 	if len(r.SessionIDs) == 0 {
-		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload; include at least one originating session ID before serving the payload", r.GhostHash)
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload", r.GhostHash)
 	}
 	if err := r.Resolution.Validate(); err != nil {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
