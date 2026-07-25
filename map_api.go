@@ -248,7 +248,7 @@ func (g ReadStateGrade) Validate() error {
 		return nil
 	}
 	return fmt.Errorf(
-		"read state grade validation failed for %q at schema.ReadStateGrade.Validate during wire-boundary validation: the value is not one of none, viewed, reviewed, or reviewed_in_detail; callers cannot render the comprehension-debt tag's clear/partial state; use a member of schema.AllReadStateGrades",
+		"read state grade validation failed for %q at schema.ReadStateGrade.Validate during wire-boundary validation: the value is not one of none, viewed, reviewed, or reviewed_in_detail; callers cannot render the comprehension-debt tag's clear/partial state; use a member of schema.AllReadStateGrades before serving the payload",
 		g,
 	)
 }
@@ -821,10 +821,10 @@ type RewrittenCommit struct {
 }
 
 // Validate checks a single RewrittenCommit's own fields: the resolution and
-// method enums are in-set, SuccessorHash presence matches Resolution, and
-// Method==none iff Resolution==unresolved. It does not check cross-references
-// to a payload's session table or commit set; callers with that context use
-// validateRewrittenCommits.
+// method enums are in-set, SessionIDs are present and non-empty, SuccessorHash
+// presence matches Resolution, and Method==none iff Resolution==unresolved. It
+// does not check cross-references to a payload's session table or commit set;
+// callers with that context use validateRewrittenCommits.
 func (r RewrittenCommit) Validate() error {
 	if r.GhostHash == "" {
 		return fmt.Errorf("rewritten commit validation failed at schema.RewrittenCommit.Validate during wire-boundary validation: ghostHash is empty; every rewritten commit must name the ghost hash it maps, callers cannot resolve an anonymous ghost; populate GhostHash before validating or serving the rewrite")
@@ -834,6 +834,11 @@ func (r RewrittenCommit) Validate() error {
 	}
 	if len(r.SessionIDs) == 0 {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload", r.GhostHash)
+	}
+	for index, sessionID := range r.SessionIDs {
+		if sessionID == "" {
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds[%d] is empty; a rewritten commit without a recorded session identity cannot be placed on a timeline lane; provide a non-empty recorded session ID at sessionIds[%d] before serving the payload", r.GhostHash, index, index)
+		}
 	}
 	if err := r.Resolution.Validate(); err != nil {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
@@ -1002,6 +1007,14 @@ type InsightEvidence struct {
 	CommitHash string    `json:"commitHash,omitempty" yaml:"commitHash,omitempty"`
 }
 
+// Validate checks that the evidence item carries a traceable session identity.
+func (e InsightEvidence) Validate() error {
+	if e.SessionID == "" {
+		return fmt.Errorf("insight evidence validation failed at schema.InsightEvidence.Validate during wire-boundary validation: sessionId is empty; an evidence item without a recorded session identity cannot anchor the traceability spine; provide a non-empty recorded session ID before serving the insight")
+	}
+	return nil
+}
+
 // InsightClassification is the reserved taxonomy tuple (category x cause x
 // severity(scope, locus) x resolution). Its bare string fields keep the wire
 // shape stable for future closed sets. The current contract requires
@@ -1036,10 +1049,10 @@ type SessionInsight struct {
 }
 
 // Validate checks the insight invariants: Kind/Provenance/Confidence are in-set,
-// Subjects and Evidence are non-nil, every mechanical insight carries at
-// least one evidence item, and Classification is nil. A future contract may
-// replace the must-be-nil rule with per-field closed sets without changing
-// the shape.
+// Subjects and Evidence are non-nil, every evidence item carries a non-empty
+// session identity, every mechanical insight carries at least one evidence
+// item, and Classification is nil. A future contract may replace the
+// must-be-nil rule with per-field closed sets without changing the shape.
 func (i SessionInsight) Validate() error {
 	if err := i.Kind.Validate(); err != nil {
 		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: %w", i.Title, err)
@@ -1058,6 +1071,11 @@ func (i SessionInsight) Validate() error {
 	}
 	if i.Provenance == InsightProvenanceMechanical && len(i.Evidence) == 0 {
 		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: provenance is mechanical but evidence is empty; every mechanical insight must cite at least one evidence item so the traceability spine (signal -> file change -> session) holds; include at least one evidence item before serving a mechanical insight", i.Title)
+	}
+	for index, evidence := range i.Evidence {
+		if err := evidence.Validate(); err != nil {
+			return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: evidence[%d]: %w", i.Title, index, err)
+		}
 	}
 	if i.Classification != nil {
 		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: classification is non-nil, but the current contract has no closed classification sets and consumers cannot validate those values; leave classification nil until the contract defines its category, cause, severity, and resolution sets; clear Classification before serving the insight", i.Title)

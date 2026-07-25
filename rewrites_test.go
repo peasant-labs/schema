@@ -23,6 +23,7 @@ type rewriteRepairMutationKind string
 const (
 	rewriteRepairClearSuccessorHash rewriteRepairMutationKind = "clear_successor_hash"
 	rewriteRepairAppendSessionID    rewriteRepairMutationKind = "append_session_id"
+	rewriteRepairReplaceSessionID   rewriteRepairMutationKind = "replace_session_id"
 )
 
 type rewriteRepairMutation struct {
@@ -68,8 +69,11 @@ func loadRewriteFixtures(t *testing.T) rewriteFixtures {
 	}
 
 	corpus := testcase.Corpus[schema.RewrittenCommit, bool]{Cases: fixtures.Cases}
-	assert.RequireMin(t, corpus, 17)
+	assert.RequireMin(t, corpus, 18)
 	assert.RequireValid(t, corpus)
+	if got := len(corpus.Cases); got != 18 {
+		t.Fatalf("rewrites corpus has %d cases, want exactly 18", got)
+	}
 	assert.RequireValid(t, fixtures.Repairs)
 	requireRewriteRepairInventory(t, fixtures)
 	return fixtures
@@ -181,6 +185,14 @@ func applyRewriteRepair(input *schema.RewrittenCommit, mutation rewriteRepairMut
 			return fmt.Errorf("repair %q requires a non-empty session ID input", mutation.Kind)
 		}
 		input.SessionIDs = append(input.SessionIDs, schema.SessionID(mutation.Input))
+	case rewriteRepairReplaceSessionID:
+		if strings.TrimSpace(mutation.Input) == "" {
+			return fmt.Errorf("repair %q requires a non-empty session ID input", mutation.Kind)
+		}
+		if len(input.SessionIDs) == 0 {
+			return fmt.Errorf("repair %q requires a sessionIds element to replace", mutation.Kind)
+		}
+		input.SessionIDs[0] = schema.SessionID(mutation.Input)
 	default:
 		return fmt.Errorf("unknown rewrite repair mutation %q", mutation.Kind)
 	}

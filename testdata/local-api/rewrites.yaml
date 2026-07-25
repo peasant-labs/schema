@@ -170,6 +170,17 @@ cases:
     classification: must-fail
     provenance: {source: bug, ref: "RewrittenCommit.Validate accepted an empty sessionIds array"}
     mutation: {description: "empties the originating session list; adding one session ID must restore validity"}
+  - name: empty_session_id_element_is_rejected
+    input:
+      ghostHash: ghost-empty-session-id
+      sessionIds: [""]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted an empty sessionIds element"}
+    mutation: {description: "replaces the recorded session identity with an empty string, leaving the ghost untraceable"}
   - name: resolution_outside_closed_set_is_rejected
     input:
       ghostHash: ghost-8
@@ -204,10 +215,11 @@ cases:
     provenance: {source: enum, ref: schema.AllConfidences}
     mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
 repairManifest:
-  expectedCaseCount: 2
+  expectedCaseCount: 3
   requiredCaseNames:
     - clear_live_successor_hash_restores_validity
     - append_session_id_restores_validity
+    - replace_empty_session_id_restores_validity
 repairs:
   cases:
     - name: clear_live_successor_hash_restores_validity
@@ -230,3 +242,13 @@ repairs:
       classification: must-pass
       provenance: {source: bug, ref: "RewrittenCommit.Validate rejected an empty originating session list"}
       mutation: {description: "appends one originating session ID and requires the same input to become valid"}
+    - name: replace_empty_session_id_restores_validity
+      input:
+        sourceCase: empty_session_id_element_is_rejected
+        mutation: {kind: replace_session_id, input: session-a}
+      expected:
+        originalErrorContains: sessionIds[0] is empty
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected an empty sessionIds element"}
+      mutation: {description: "replaces the anonymous session identity with a recorded session ID"}

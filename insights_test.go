@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	_ "embed"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -31,8 +32,30 @@ type insightFixtures struct {
 	// every case here is must-fail, and each mutation is "populate
 	// Classification", proving the rule is not vacuous.
 	ClassificationMustBeNil testcase.Corpus[schema.SessionInsight, bool] `yaml:"classification_must_be_nil"`
-	// Rejections covers every other closed-set/nil-array failure mode.
+	// Rejections covers every other closed-set/nil-array/traceability failure mode.
 	Rejections testcase.Corpus[schema.SessionInsight, bool] `yaml:"rejections"`
+	// Repairs is the one representative mutation-proof row for the nested
+	// session identity traceability hole.
+	Repairs testcase.Corpus[insightRepairFixtureInput, insightRepairFixtureExpected] `yaml:"repairs"`
+}
+
+type insightRepairMutationKind string
+
+const insightRepairReplaceSessionID insightRepairMutationKind = "replace_session_id"
+
+type insightRepairMutation struct {
+	Kind  insightRepairMutationKind `yaml:"kind"`
+	Input string                    `yaml:"input"`
+}
+
+type insightRepairFixtureInput struct {
+	SourceCase string                `yaml:"sourceCase"`
+	Mutation   insightRepairMutation `yaml:"mutation"`
+}
+
+type insightRepairFixtureExpected struct {
+	OriginalErrorContains string `yaml:"originalErrorContains"`
+	PostMutationValid     bool   `yaml:"postMutationValid"`
 }
 
 func loadInsightFixtures(t *testing.T) insightFixtures {
@@ -47,8 +70,16 @@ func loadInsightFixtures(t *testing.T) insightFixtures {
 	assert.RequireValid(t, fx.Mined)
 	assert.RequireMin(t, fx.ClassificationMustBeNil, 2)
 	assert.RequireValid(t, fx.ClassificationMustBeNil)
-	assert.RequireMin(t, fx.Rejections, 5)
+	assert.RequireMin(t, fx.Rejections, 7)
 	assert.RequireValid(t, fx.Rejections)
+	if got := len(fx.Rejections.Cases); got != 7 {
+		t.Fatalf("insights rejections corpus has %d cases, want exactly 7", got)
+	}
+	assert.RequireMin(t, fx.Repairs, 1)
+	assert.RequireValid(t, fx.Repairs)
+	if got := len(fx.Repairs.Cases); got != 1 {
+		t.Fatalf("insights repairs corpus has %d cases, want exactly 1", got)
+	}
 	return fx
 }
 
@@ -68,6 +99,37 @@ func runInsightArm(t *testing.T, arm string, corpus testcase.Corpus[schema.Sessi
 			})
 		}
 	})
+}
+
+func cloneSessionInsight(input schema.SessionInsight) schema.SessionInsight {
+	cloned := input
+	if input.Subjects != nil {
+		cloned.Subjects = append([]string{}, input.Subjects...)
+	}
+	if input.Evidence != nil {
+		cloned.Evidence = append([]schema.InsightEvidence{}, input.Evidence...)
+	}
+	if input.Classification != nil {
+		classification := *input.Classification
+		cloned.Classification = &classification
+	}
+	return cloned
+}
+
+func applyInsightRepair(input *schema.SessionInsight, mutation insightRepairMutation) error {
+	switch mutation.Kind {
+	case insightRepairReplaceSessionID:
+		if strings.TrimSpace(mutation.Input) == "" {
+			return fmt.Errorf("repair %q requires a non-empty session ID input", mutation.Kind)
+		}
+		if len(input.Evidence) == 0 {
+			return fmt.Errorf("repair %q requires at least one evidence item", mutation.Kind)
+		}
+		input.Evidence[0].SessionID = schema.SessionID(mutation.Input)
+	default:
+		return fmt.Errorf("unknown insight repair mutation %q", mutation.Kind)
+	}
+	return nil
 }
 
 // TestSessionInsight_FixtureContract drives every arm of the segmented
@@ -119,6 +181,47 @@ func TestSessionInsight_ClassificationMustBeNilArmIsMutationProvable(t *testing.
 			cleared.Classification = nil
 			if err := cleared.Validate(); err != nil {
 				t.Fatalf("clearing Classification still failed validation: %v; the case must fail for exactly the must-be-nil reason", err)
+			}
+		})
+	}
+}
+
+// TestSessionInsight_RepairCorpus executes the one representative repair row
+// for the nested session-id traceability hole. The invalid source case must
+// fail for the declared reason, and the mutation must restore validity.
+func TestSessionInsight_RepairCorpus(t *testing.T) {
+	fx := loadInsightFixtures(t)
+	sources := make(map[string]testcase.Case[schema.SessionInsight, bool], len(fx.Rejections.Cases))
+	for _, fixture := range fx.Rejections.Cases {
+		sources[fixture.Name] = fixture
+	}
+
+	for _, repair := range fx.Repairs.Cases {
+		t.Run(repair.Name, func(t *testing.T) {
+			source, exists := sources[repair.Input.SourceCase]
+			if !exists {
+				t.Fatalf("source case %q does not exist", repair.Input.SourceCase)
+			}
+			if source.Classification != testcase.MustFail || source.Expected {
+				t.Fatalf("source case %q must describe a rejected input", repair.Input.SourceCase)
+			}
+			if repair.Classification != testcase.MustPass || !repair.Expected.PostMutationValid {
+				t.Fatal("repair must be must-pass with postMutationValid=true")
+			}
+			if strings.TrimSpace(repair.Expected.OriginalErrorContains) == "" {
+				t.Fatal("repair must declare originalErrorContains")
+			}
+
+			input := cloneSessionInsight(source.Input)
+			originalErr := input.Validate()
+			requireActionableValidationError(t, originalErr, repair.Expected.OriginalErrorContains)
+			if err := applyInsightRepair(&input, repair.Input.Mutation); err != nil {
+				t.Fatalf("apply repair mutation: %v", err)
+			}
+
+			postMutationErr := input.Validate()
+			if (postMutationErr == nil) != repair.Expected.PostMutationValid {
+				t.Fatalf("post-mutation Validate() error=%v, want valid=%v", postMutationErr, repair.Expected.PostMutationValid)
 			}
 		})
 	}

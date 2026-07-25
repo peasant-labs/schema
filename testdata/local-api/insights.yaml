@@ -3,8 +3,9 @@
 # distinct assertion per arm. mechanical/mined exercise the current and
 # reserved producer shapes; classification_must_be_nil is the current
 # mutation-provable invariant. A later contract can replace it with per-field
-# closed sets without changing the shape. rejections
-# covers every other closed-set/nil-array failure mode.
+# closed sets without changing the shape. rejections covers the other
+# closed-set/nil-array/traceability failure modes, and repairs proves the one
+# representative nested session-id fix.
 mechanical:
   cases:
     - name: mechanical_decision_with_evidence_is_valid
@@ -192,3 +193,28 @@ rejections:
       classification: must-fail
       provenance: {source: requirement, ref: "the mechanical-insight evidence requirement: at least one evidence item"}
       mutation: {description: "empties the evidence array on a mechanical insight, breaking the signal -> file change -> session traceability spine"}
+    - name: mechanical_with_empty_evidence_session_id_is_rejected
+      input:
+        kind: decision
+        provenance: mechanical
+        confidence: high
+        title: mechanical insight with anonymous evidence
+        subjects: ["internal/api"]
+        evidence:
+          - {sessionId: "", entryIndex: 1}
+      expected: false
+      classification: must-fail
+      provenance: {source: bug, ref: "SessionInsight.Validate accepted an empty evidence sessionId"}
+      mutation: {description: "empties the evidence sessionId so the insight loses its traceability anchor"}
+repairs:
+  cases:
+    - name: replace_empty_evidence_session_id_restores_validity
+      input:
+        sourceCase: mechanical_with_empty_evidence_session_id_is_rejected
+        mutation: {kind: replace_session_id, input: session-a}
+      expected:
+        originalErrorContains: sessionId is empty
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "SessionInsight.Validate rejected an empty evidence sessionId"}
+      mutation: {description: "replaces the anonymous evidence sessionId with a recorded session identity"}

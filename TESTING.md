@@ -135,7 +135,7 @@ named set, and the full variation catalog.
 
 The project timeline corpus uses the same schema-owned path. Each row in
 `timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`
-validates exactly 16 families with 5 accepted and 11 rejected relationship
+validates exactly 20 families with 5 accepted and 15 rejected relationship
 cases. A separate schema-repo-only oracle and count-preserving rename and
 replacement mutations prove the public corpus has the exact intended identities;
 that review scaffolding is not generated or published. Generation emits only the
