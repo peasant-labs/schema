@@ -284,8 +284,10 @@ func ValidateScaleDomainCombo(scale ScaleKind, domain ValueDomainKind) error {
 
 // --- TargetKind ---
 
-// TargetKind identifies what is being annotated.
-// Derived from the 4-arm exclusive arc on the annotations table.
+// TargetKind identifies which of an annotation's five target arms is
+// populated: session, transcript entry, annotation, project, or file_version.
+// The file_version arm identifies one repository-relative file at one content
+// hash.
 type TargetKind string
 
 const (

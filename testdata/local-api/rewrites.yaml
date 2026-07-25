@@ -203,3 +203,30 @@ cases:
     classification: must-fail
     provenance: {source: enum, ref: schema.AllConfidences}
     mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
+repairManifest:
+  expectedCaseCount: 2
+  requiredCaseNames:
+    - clear_live_successor_hash_restores_validity
+    - append_session_id_restores_validity
+repairs:
+  cases:
+    - name: clear_live_successor_hash_restores_validity
+      input:
+        sourceCase: live_with_successor_hash_is_rejected
+        mutation: {kind: clear_successor_hash, input: ""}
+      expected:
+        originalErrorContains: 'resolution is "live" but successorHash'
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected a live commit only after successorHash was prohibited"}
+      mutation: {description: "clears successorHash from the rejected live commit and requires the same input to become valid"}
+    - name: append_session_id_restores_validity
+      input:
+        sourceCase: empty_session_ids_is_rejected
+        mutation: {kind: append_session_id, input: session-a}
+      expected:
+        originalErrorContains: sessionIds is empty
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected an empty originating session list"}
+      mutation: {description: "appends one originating session ID and requires the same input to become valid"}

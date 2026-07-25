@@ -2,7 +2,6 @@ package schema_test
 
 import (
 	_ "embed"
-	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema"
@@ -38,11 +37,7 @@ func TestSessionAssociation_FixtureContract(t *testing.T) {
 			continue
 		}
 		if c.Classification == testcase.MustFail {
-			for _, required := range []string{" at schema.", "during wire-boundary validation"} {
-				if !strings.Contains(err.Error(), required) {
-					t.Errorf("%s: validation error %q is not actionable; missing %q", c.Name, err, required)
-				}
-			}
+			requireActionableValidationError(t, err)
 			continue
 		}
 		coveredKinds[c.Input.Kind] = true

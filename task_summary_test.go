@@ -2,7 +2,6 @@ package schema_test
 
 import (
 	_ "embed"
-	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema"
@@ -41,11 +40,7 @@ func TestTaskSummary_ReadFilesFixtureContract(t *testing.T) {
 				t.Fatalf("Validate() error=%v (valid=%v), want valid=%v", err, valid, c.Expected)
 			}
 			if c.Classification == testcase.MustFail {
-				for _, required := range []string{" at schema.", "during wire-boundary validation"} {
-					if !strings.Contains(err.Error(), required) {
-						t.Errorf("validation error %q is not actionable; missing %q", err, required)
-					}
-				}
+				requireActionableValidationError(t, err)
 			}
 		})
 	}
