@@ -42,22 +42,23 @@ type retiredSpec struct {
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
 // released-versions-immutability guard.
 //
-// This registry covers RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.4.0, village-api-0.6.0, types-0.3.0,
-// publish-request-0.6.0) are deliberately EXCLUDED — they stay under the
-// codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
-// them from the Go source on every run. Pinning a current version's hash here would
-// false-fail `make check` on every legitimate regen. The partition key is simply
-// "is this version still generated?": still-generated => freshness (mutable-by-regen);
+// This registry covers RETIRED versions ONLY. CURRENT-generated specs (the
+// artifacts derived from PeasantLocalAPIVersion, VillageAPIVersion, and
+// TypesVersion, plus the publish-request schema derived from VillageAPIVersion)
+// are deliberately EXCLUDED — they stay under the codegen-freshness gate
+// (TestCodegenFreshness_SpecsMatchSource), which regenerates them from the Go
+// source on every run. Pinning a current version's hash here would false-fail
+// `make check` on every legitimate regen. The partition key is simply "is this
+// version still generated?": still-generated => freshness (mutable-by-regen);
 // retired => this guard (immutable/frozen).
 //
 // REGISTER-AT-FREEZE-TIME: a version is MOVED into this registry at the moment it is
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
 // window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
 // (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
-// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). The
-// Each row now lives in testdata/retired_specs.yaml so adding a newly frozen
-// version extends the fixture rather than an inline test matrix.
+// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). Each
+// row now lives in testdata/retired_specs.yaml so adding a newly frozen version
+// extends the fixture rather than an inline test matrix.
 func loadRetiredSpecRegistry(t *testing.T, root string) []retiredSpec {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))

@@ -35,8 +35,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - Ten new enum-exhaustion corpora, a segmented insight fixture (mechanical /
     mined / classification-must-be-nil / rejections), and an extended project
     timeline corpus back every new closed set and cross-reference invariant.
-  - `types-0.3.0`, `peasantlocal-api-0.4.0`, and `village-api-0.6.0` are
-    retired and byte-frozen.
+  - `types-0.3.0`, `peasantlocal-api-0.4.0`, `village-api-0.6.0`, and
+    `publish-request-0.6.0.schema` are retired and byte-frozen.
 
 - Automated npm publication of `@peasant-labs/schema` in the release ceremony.
   `release.yml` gains an `npm-publish` job, gated behind the same guard →
