@@ -20,14 +20,14 @@ var insightsCasesYAML []byte
 // one (schema.SessionInsight, bool) shape but a distinct behavioral role
 // each, per the module's segmented-fixture convention (TESTING.md).
 type insightFixtures struct {
-	// Mechanical covers every InsightKind under the interim mechanical
-	// producers this epoch actually ships (unusualSignals, frictionClusters,
+	// Mechanical covers every InsightKind under the current mechanical
+	// producers (unusualSignals, frictionClusters,
 	// retry-loop detection).
 	Mechanical testcase.Corpus[schema.SessionInsight, bool] `yaml:"mechanical"`
-	// Mined previews peasant#175's shape with no evidence-count requirement
+	// Mined previews the reserved mined shape with no evidence-count requirement
 	// (that requirement is scoped to provenance=mechanical only).
 	Mined testcase.Corpus[schema.SessionInsight, bool] `yaml:"mined"`
-	// ClassificationMustBeNil is the one real invariant this epoch enforces:
+	// ClassificationMustBeNil enforces the current contract invariant:
 	// every case here is must-fail, and each mutation is "populate
 	// Classification", proving the rule is not vacuous.
 	ClassificationMustBeNil testcase.Corpus[schema.SessionInsight, bool] `yaml:"classification_must_be_nil"`
@@ -107,7 +107,7 @@ func TestSessionInsight_MechanicalArmCoversEveryInsightKind(t *testing.T) {
 // classification_must_be_nil arm is not vacuous: every case there must-fail
 // specifically because Classification is non-nil (not for some unrelated
 // reason), and clearing Classification on each case's input must make it
-// pass. This is the fixture-level mutation proof the epoch's one real
+// pass. This is the fixture-level mutation proof the current contract
 // invariant needs.
 func TestSessionInsight_ClassificationMustBeNilArmIsMutationProvable(t *testing.T) {
 	fx := loadInsightFixtures(t)

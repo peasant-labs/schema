@@ -1,0 +1,11 @@
+expectedCaseCount: 9
+requiredCaseNames:
+  - map_successor_present_in_recent_commits_passes
+  - map_missing_successor_in_recent_commits_is_rejected
+  - map_non_nil_classification_is_rejected
+  - change_non_nil_classification_is_rejected
+  - map_nil_insights_is_rejected
+  - change_nil_insights_is_rejected
+  - map_nil_rewritten_commits_is_rejected
+  - map_empty_arrays_baseline_passes
+  - change_empty_insights_baseline_passes

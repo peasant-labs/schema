@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  description: Shared domain type catalog for Peasant APIs. No operations — register
+  description: Shared domain type catalog for Peasant APIs. No operations; register
     these components for SDK code generation and cross-API type sharing.
   title: Peasant Types
   version: 0.4.0

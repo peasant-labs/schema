@@ -20,7 +20,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     []SessionInsight`, a (`InsightKind` x `InsightProvenance` x `Confidence`)
     envelope with evidence and subjects, alongside the existing
     `Unusual`/`Frictions` signals (retained unchanged). `Classification` is
-    declared on the wire but MUST be nil this epoch; a future revision
+    declared on the wire but MUST be nil until a future revision
     populates it with no shape change.
   - `MapNode` gains node-grain comprehension signals: `AgentEditedCount`,
     `ReadCount`, `ReadAttribution` (`ReadAttributionState`), the composed

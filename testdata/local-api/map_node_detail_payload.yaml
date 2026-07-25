@@ -1,0 +1,165 @@
+cases:
+  - name: map_successor_present_in_recent_commits_passes
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: [successor-1]
+      rewrittenCommits:
+        - ghostHash: ghost-1
+          sessionIds: [session-a]
+          successorHash: successor-1
+          resolution: rewritten
+          method: patch_id
+          confidence: high
+      insights: []
+      nilSlice: none
+    expected:
+      valid: true
+      mutation: remove_successor_commit
+      mutatedValid: false
+      mutatedErrorContains: not present in recentCommits
+    classification: must-pass
+    provenance: {source: requirement, ref: "MapNodeDetailPayload successor cross-reference"}
+    mutation: {description: "removes the referenced successor from recentCommits so the cross-reference must fail"}
+  - name: map_missing_successor_in_recent_commits_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: []
+      rewrittenCommits:
+        - ghostHash: ghost-2
+          sessionIds: [session-a]
+          successorHash: successor-2
+          resolution: rewritten
+          method: patch_id
+          confidence: high
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: not present in recentCommits
+      mutation: add_successor_commit
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: requirement, ref: "MapNodeDetailPayload successor cross-reference"}
+    mutation: {description: "adds the missing successor to recentCommits, which must repair the only invalid cross-reference"}
+  - name: map_non_nil_classification_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: []
+      rewrittenCommits: []
+      insights:
+        - kind: decision
+          provenance: mechanical
+          confidence: high
+          title: classified map insight
+          subjects: [internal/api]
+          evidence: [{sessionId: session-a}]
+          classification: {category: architecture}
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: classification is non-nil
+      mutation: clear_classification
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: requirement, ref: "MapNodeDetailPayload propagates SessionInsight validation"}
+    mutation: {description: "clears the unsupported classification so the same map payload must pass"}
+  - name: change_non_nil_classification_is_rejected
+    input:
+      payload: change_detail
+      path: feat/timeline
+      insights:
+        - kind: friction
+          provenance: mined
+          confidence: medium
+          title: classified change insight
+          subjects: [internal/api]
+          evidence: []
+          classification: {category: process}
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: classification is non-nil
+      mutation: clear_classification
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: requirement, ref: "ChangeDetailPayload propagates SessionInsight validation"}
+    mutation: {description: "clears the unsupported classification so the same change payload must pass"}
+  - name: map_nil_insights_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: []
+      rewrittenCommits: []
+      insights: []
+      nilSlice: insights
+    expected:
+      valid: false
+      errorContains: must be arrays
+      mutation: initialize_insights
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload.Validate rejects a null insights array"}
+    mutation: {description: "initializes insights to an empty array, which must repair the nil-slice failure"}
+  - name: change_nil_insights_is_rejected
+    input:
+      payload: change_detail
+      path: feat/timeline
+      insights: []
+      nilSlice: insights
+    expected:
+      valid: false
+      errorContains: insights must be an array
+      mutation: initialize_insights
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "ChangeDetailPayload.Validate rejects a null insights array"}
+    mutation: {description: "initializes insights to an empty array, which must repair the nil-slice failure"}
+  - name: map_nil_rewritten_commits_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: []
+      rewrittenCommits: []
+      insights: []
+      nilSlice: rewritten_commits
+    expected:
+      valid: false
+      errorContains: must be arrays
+      mutation: initialize_rewritten_commits
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload.Validate rejects a null rewrittenCommits array"}
+    mutation: {description: "initializes rewrittenCommits to an empty array, which must repair the nil-slice failure"}
+  - name: map_empty_arrays_baseline_passes
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommitHashes: []
+      rewrittenCommits: []
+      insights: []
+      nilSlice: none
+    expected:
+      valid: true
+      mutation: nil_insights
+      mutatedValid: false
+      mutatedErrorContains: must be arrays
+    classification: must-pass
+    provenance: {source: requirement, ref: "NewMapNodeDetailPayload non-nil array baseline"}
+    mutation: {description: "sets the baseline insights array to nil so validation must reject it"}
+  - name: change_empty_insights_baseline_passes
+    input:
+      payload: change_detail
+      path: feat/timeline
+      insights: []
+      nilSlice: none
+    expected:
+      valid: true
+      mutation: nil_insights
+      mutatedValid: false
+      mutatedErrorContains: insights must be an array
+    classification: must-pass
+    provenance: {source: requirement, ref: "NewChangeDetailPayload non-nil insights baseline"}
+    mutation: {description: "sets the baseline insights array to nil so validation must reject it"}

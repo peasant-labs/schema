@@ -4,10 +4,9 @@
 // that package), so it writes each CommittedPath relative to the package
 // directory.
 //
-// Regenerate with `go generate ./...` (or `go run ./cmd/gen-enum-corpora`
-// from the enumcorpus directory) whenever one of the ten registered closed
-// sets changes, then commit the result. The freshness gate fails if a
-// committed file drifts from a fresh render.
+// From the module root, regenerate with `go generate ./...` whenever one of
+// the ten registered closed sets changes, then commit the result. The
+// freshness gate fails if a committed file drifts from a fresh render.
 package main
 
 import (

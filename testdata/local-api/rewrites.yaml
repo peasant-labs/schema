@@ -38,6 +38,19 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "the rewrite resolver's step 1 (live)"}
     mutation: {description: "a ledger hash still reachable from the default branch, not a ghost"}
+  - name: live_with_successor_hash_is_rejected
+    input:
+      ghostHash: commit-live-with-successor
+      subject: reachable commit cannot map to a successor
+      sessionIds: [session-c]
+      successorHash: successor-live
+      resolution: live
+      method: hash
+      confidence: high
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted successorHash for resolution live"}
+    mutation: {description: "adds a successorHash to an otherwise valid live commit; clearing successorHash must restore validity"}
   - name: rewritten_via_author_identity_is_valid
     input:
       ghostHash: ghost-11
@@ -146,6 +159,17 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "RewrittenCommit.Validate: null sessionIds"}
     mutation: {description: "omits the required sessionIds array from a ghost commit"}
+  - name: empty_session_ids_is_rejected
+    input:
+      ghostHash: ghost-empty-sessions
+      sessionIds: []
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted an empty sessionIds array"}
+    mutation: {description: "empties the originating session list; adding one session ID must restore validity"}
   - name: resolution_outside_closed_set_is_rejected
     input:
       ghostHash: ghost-8

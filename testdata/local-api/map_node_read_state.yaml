@@ -22,7 +22,7 @@ cases:
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: "the reviewed_in_detail grade, registered but UI-deferred"}
-    mutation: {description: "the ordinal ceiling grade, registered even though this epoch's UI does not yet surface it"}
+    mutation: {description: "the ordinal ceiling grade, registered even though the current UI does not yet surface it"}
   - name: read_attribution_outside_closed_set_is_rejected
     input: {readAttribution: unknown-state, readState: none}
     expected: false

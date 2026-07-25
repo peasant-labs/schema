@@ -26,7 +26,7 @@ const (
 	// Types schemas and the stricter publish HTTP body gained a distinct component
 	// identity instead of shadowing the canonical PublishRequest.
 	// Bumped to 0.7.0 when TargetKind gained the file_version member and
-	// AnnotationSummary gained TargetFilePath/TargetContentHash —
+	// AnnotationSummary gained TargetFilePath/TargetContentHash;
 	// harmonizeSharedTypeComponents propagates both into this spec's embedded
 	// annotation components (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the

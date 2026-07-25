@@ -1,9 +1,9 @@
 # Segmented multi-axis fixture for SessionInsight (the insight envelope contract): four
 # named behavioral arms sharing one (schema.SessionInsight, bool) shape but a
-# distinct assertion per arm. mechanical/mined exercise the interim producer
-# shapes this epoch actually emits; classification_must_be_nil is the one
-# real invariant this epoch enforces (mutation-provable: peasant#175 later
-# swaps it for real per-field closed sets with no shape change); rejections
+# distinct assertion per arm. mechanical/mined exercise the current and
+# reserved producer shapes; classification_must_be_nil is the current
+# mutation-provable invariant. A later contract can replace it with per-field
+# closed sets without changing the shape. rejections
 # covers every other closed-set/nil-array failure mode.
 mechanical:
   cases:
@@ -73,7 +73,7 @@ mined:
           - {sessionId: session-f, entryIndex: 2}
       expected: true
       classification: must-pass
-      provenance: {source: requirement, ref: "peasant#175 mining epoch: provenance=mined, no shape change"}
+      provenance: {source: requirement, ref: "reserved mined provenance shape with no envelope change"}
       mutation: {description: "a mined insight that happens to still carry evidence"}
     - name: mined_with_no_evidence_is_valid
       input:
@@ -101,8 +101,8 @@ classification_must_be_nil:
         classification: {category: architecture, cause: tradeoff, severityScope: local, severityLocus: module, resolution: accepted}
       expected: false
       classification: must-fail
-      provenance: {source: requirement, ref: "the Classification-must-be-nil rule for this epoch"}
-      mutation: {description: "populates Classification on a mechanical insight before peasant#175's taxonomy exists"}
+      provenance: {source: requirement, ref: "the current Classification-must-be-nil contract rule"}
+      mutation: {description: "populates Classification on a mechanical insight before the contract defines closed taxonomy sets"}
     - name: mined_insight_with_classification_is_rejected
       input:
         kind: friction
@@ -114,7 +114,7 @@ classification_must_be_nil:
         classification: {category: process, cause: unknown, severityScope: local, severityLocus: file, resolution: open}
       expected: false
       classification: must-fail
-      provenance: {source: requirement, ref: "the Classification-must-be-nil rule for this epoch (applies to every provenance, not only mechanical)"}
+      provenance: {source: requirement, ref: "the current Classification-must-be-nil rule applies to every provenance"}
       mutation: {description: "populates Classification on a mined insight, proving the rule is not scoped to mechanical alone"}
 rejections:
   cases:

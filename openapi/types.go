@@ -110,9 +110,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	registerHarnessSchema(r)
 	r.Spec.Info.
 		WithTitle("Peasant Types").
-		// Derived from TypesVersion (single source — see package doc).
+		// Derived from TypesVersion (single source; see package doc).
 		WithVersion(TypesVersion).
-		WithDescription("Shared domain type catalog for Peasant APIs. No operations — register these " +
+		WithDescription("Shared domain type catalog for Peasant APIs. No operations; register these " +
 			"components for SDK code generation and cross-API type sharing.")
 
 	jsr := r.JSONSchemaReflector()
