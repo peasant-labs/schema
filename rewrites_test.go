@@ -215,8 +215,7 @@ func TestRewrittenCommit_RepairCorpus(t *testing.T) {
 
 			input := cloneRewrittenCommit(source.Input)
 			originalErr := input.Validate()
-			requireValidationErrorContains(t, originalErr, repair.Expected.OriginalErrorContains)
-			requireActionableValidationError(t, originalErr)
+			requireActionableValidationError(t, originalErr, repair.Expected.OriginalErrorContains)
 			if err := applyRewriteRepair(&input, repair.Input.Mutation); err != nil {
 				t.Fatalf("apply repair mutation: %v", err)
 			}

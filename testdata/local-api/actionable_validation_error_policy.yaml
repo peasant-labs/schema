@@ -1,0 +1,16 @@
+baseline:
+  validator: read_state_grade
+  input: unknown-grade
+mutations:
+  - name: remove what
+    dimension: what
+  - name: remove why
+    dimension: why
+  - name: remove where
+    dimension: where
+  - name: remove when
+    dimension: when
+  - name: remove meaning
+    dimension: meaning
+  - name: remove remediation
+    dimension: remediation

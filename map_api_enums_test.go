@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/peasant-labs/schema/internal/testutil"
 	"github.com/peasant-labs/schema/testcase"
 	"github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
@@ -157,15 +158,7 @@ func TestMapDiffEnumsFixtureContract(t *testing.T) {
 			}
 			continue
 		}
-		if validationErr == nil || !strings.Contains(validationErr.Error(), fixture.Expected.ErrorContains) {
-			t.Errorf("%s: validation error=%v, want text containing %q", fixture.Name, validationErr, fixture.Expected.ErrorContains)
-			continue
-		}
-		for _, required := range []string{" at schema.", "during wire-boundary validation", "callers cannot", "use a member of schema.All"} {
-			if !strings.Contains(validationErr.Error(), required) {
-				t.Errorf("%s: validation error %q is not actionable; missing %q", fixture.Name, validationErr, required)
-			}
-		}
+		testutil.RequireActionableValidationError(t, validationErr, fixture.Expected.ErrorContains)
 	}
 
 	for _, status := range AllFileChangeStatuses {
