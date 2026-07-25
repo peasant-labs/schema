@@ -1,8 +1,11 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -31,10 +34,8 @@ type actionableValidationErrorPolicyMutation struct {
 
 func loadActionableValidationErrorPolicy(t *testing.T) actionableValidationErrorPolicyFixture {
 	t.Helper()
-	var fx actionableValidationErrorPolicyFixture
-	decoder := yaml.NewDecoder(strings.NewReader(string(actionableValidationErrorPolicyYAML)))
-	decoder.KnownFields(true)
-	if err := decoder.Decode(&fx); err != nil {
+	fx, err := decodeActionableValidationErrorPolicy(actionableValidationErrorPolicyYAML)
+	if err != nil {
 		t.Fatalf("load actionable validation error policy fixture: %v", err)
 	}
 	if len(fx.Mutations) != 6 {
@@ -51,6 +52,23 @@ func loadActionableValidationErrorPolicy(t *testing.T) actionableValidationError
 		seen[mutation.Dimension] = struct{}{}
 	}
 	return fx
+}
+
+func decodeActionableValidationErrorPolicy(data []byte) (actionableValidationErrorPolicyFixture, error) {
+	var fx actionableValidationErrorPolicyFixture
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fx); err != nil {
+		return actionableValidationErrorPolicyFixture{}, fmt.Errorf("decode actionable validation error policy fixture: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return actionableValidationErrorPolicyFixture{}, fmt.Errorf("decode trailing actionable validation error policy fixture document: %w", err)
+		}
+		return actionableValidationErrorPolicyFixture{}, fmt.Errorf("decode actionable validation error policy fixture: multiple YAML documents are not allowed")
+	}
+	return fx, nil
 }
 
 func baselineActionableValidationError(t *testing.T, fx actionableValidationErrorPolicyBaseline) error {
@@ -101,5 +119,19 @@ func TestActionableValidationErrorPolicyMutationProof(t *testing.T) {
 				t.Fatalf("mutated actionable validation error still satisfied the guard after removing %q", mutation.Dimension)
 			}
 		})
+	}
+}
+
+func TestActionableValidationErrorPolicyLoaderRejectsUnknownField(t *testing.T) {
+	_, err := decodeActionableValidationErrorPolicy(append(append([]byte{}, actionableValidationErrorPolicyYAML...), []byte("\nunexpected: true\n")...))
+	if err == nil {
+		t.Fatal("decodeActionableValidationErrorPolicy accepted an unknown top-level field")
+	}
+}
+
+func TestActionableValidationErrorPolicyLoaderRejectsTrailingDocument(t *testing.T) {
+	_, err := decodeActionableValidationErrorPolicy(append(append([]byte{}, actionableValidationErrorPolicyYAML...), []byte("\n---\nextra: true\n")...))
+	if err == nil {
+		t.Fatal("decodeActionableValidationErrorPolicy accepted a trailing YAML document")
 	}
 }

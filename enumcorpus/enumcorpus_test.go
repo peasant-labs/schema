@@ -184,7 +184,7 @@ func TestEnumCorpora_ExhaustiveCoverageAndFreshness(t *testing.T) {
 }
 
 // TestReadStateGradeRegistrySeedCrossCheck pins this module's half of the
-// the read-state grade / registry-seed cross-check: AllReadStateGrades with "none" removed
+// read-state grade / registry-seed cross-check: AllReadStateGrades with "none" removed
 // byte-equals ReadStateGradeRegistrySeedPermissibleValues, in the same
 // ascending order. The consumer-side read-state registry seed test
 // pins the other half against ReadStateGradeRegistrySeedPermissibleValues.

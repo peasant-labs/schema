@@ -323,7 +323,14 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-a"
             ],
-            "associations": []
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
           }
         ]
       },
@@ -359,7 +366,14 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-a"
             ],
-            "associations": []
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
           }
         ]
       },
@@ -388,7 +402,14 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-missing"
             ],
-            "associations": []
+            "associations": [
+              {
+                "sessionId": "session-missing",
+                "kind": "candidate",
+                "confidence": "medium",
+                "evidence": "commit_only"
+              }
+            ]
           }
         ]
       },
@@ -457,7 +478,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
               "session-a",
               "session-a"
             ],
-            "associations": []
+            "associations": [
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              },
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
           }
         ]
       },
@@ -555,7 +589,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
               "session-b",
               "session-a"
             ],
-            "associations": []
+            "associations": [
+              {
+                "sessionId": "session-b",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              },
+              {
+                "sessionId": "session-a",
+                "kind": "bound",
+                "confidence": "high",
+                "evidence": "commit_and_touch"
+              }
+            ]
           }
         ]
       },

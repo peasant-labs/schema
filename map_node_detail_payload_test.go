@@ -41,6 +41,7 @@ type payloadMutationKind string
 const (
 	payloadMutationRemoveSuccessorCommit      payloadMutationKind = "remove_successor_commit"
 	payloadMutationAddSuccessorCommit         payloadMutationKind = "add_successor_commit"
+	payloadMutationRepairCommitRefShape       payloadMutationKind = "repair_commit_ref_shape"
 	payloadMutationClearClassification        payloadMutationKind = "clear_classification"
 	payloadMutationNilInsights                payloadMutationKind = "nil_insights"
 	payloadMutationInitializeInsights         payloadMutationKind = "initialize_insights"
@@ -51,7 +52,9 @@ type payloadValidationFixtureInput struct {
 	Payload            payloadValidationKind    `yaml:"payload"`
 	Path               string                   `yaml:"path"`
 	RecentCommitHashes []string                 `yaml:"recentCommitHashes"`
+	RecentCommits      []schema.CommitRef       `yaml:"recentCommits"`
 	RewrittenCommits   []schema.RewrittenCommit `yaml:"rewrittenCommits"`
+	UnrecordedCommits  []schema.CommitRef       `yaml:"unrecordedCommits"`
 	Insights           []schema.SessionInsight  `yaml:"insights"`
 	NilSlice           payloadNilSlice          `yaml:"nilSlice"`
 }
@@ -139,9 +142,13 @@ func newPayloadValidationSubject(input payloadValidationFixtureInput) (*payloadV
 	switch input.Payload {
 	case payloadValidationMapNodeDetail:
 		payload := schema.NewMapNodeDetailPayload(input.Path)
-		payload.RecentCommits = make([]schema.CommitRef, 0, len(input.RecentCommitHashes))
-		for _, hash := range input.RecentCommitHashes {
-			payload.RecentCommits = append(payload.RecentCommits, schema.NewCommitRef(hash, "fixture successor"))
+		if input.RecentCommits != nil {
+			payload.RecentCommits = append([]schema.CommitRef{}, input.RecentCommits...)
+		} else {
+			payload.RecentCommits = make([]schema.CommitRef, 0, len(input.RecentCommitHashes))
+			for _, hash := range input.RecentCommitHashes {
+				payload.RecentCommits = append(payload.RecentCommits, schema.NewCommitRef(hash, "fixture successor"))
+			}
 		}
 		payload.RewrittenCommits = append([]schema.RewrittenCommit{}, input.RewrittenCommits...)
 		payload.Insights = append([]schema.SessionInsight{}, input.Insights...)
@@ -157,6 +164,9 @@ func newPayloadValidationSubject(input payloadValidationFixtureInput) (*payloadV
 		return &payloadValidationSubject{mapNodeDetail: payload}, nil
 	case payloadValidationChangeDetail:
 		payload := schema.NewChangeDetailPayload(input.Path)
+		if input.UnrecordedCommits != nil {
+			payload.UnrecordedCommits = append([]schema.CommitRef{}, input.UnrecordedCommits...)
+		}
 		payload.Insights = append([]schema.SessionInsight{}, input.Insights...)
 		switch input.NilSlice {
 		case "", payloadNilSliceNone:
@@ -200,6 +210,22 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 		}
 		hash := *s.mapNodeDetail.RewrittenCommits[0].SuccessorHash
 		s.mapNodeDetail.RecentCommits = append(s.mapNodeDetail.RecentCommits, schema.NewCommitRef(hash, "fixture successor"))
+	case payloadMutationRepairCommitRefShape:
+		if s.mapNodeDetail != nil {
+			if len(s.mapNodeDetail.RecentCommits) == 0 {
+				return fmt.Errorf("mutation %q requires a map node detail payload with a recent commit", kind)
+			}
+			commit := s.mapNodeDetail.RecentCommits[0]
+			s.mapNodeDetail.RecentCommits[0] = schema.NewCommitRef(commit.Hash, commit.Subject)
+		} else if s.changeDetail != nil {
+			if len(s.changeDetail.UnrecordedCommits) == 0 {
+				return fmt.Errorf("mutation %q requires a change detail payload with an unrecorded commit", kind)
+			}
+			commit := s.changeDetail.UnrecordedCommits[0]
+			s.changeDetail.UnrecordedCommits[0] = schema.NewCommitRef(commit.Hash, commit.Subject)
+		} else {
+			return fmt.Errorf("mutation %q requires a payload", kind)
+		}
 	case payloadMutationClearClassification:
 		if s.mapNodeDetail != nil {
 			clearInsightClassifications(s.mapNodeDetail.Insights)

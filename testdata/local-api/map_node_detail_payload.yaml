@@ -163,3 +163,55 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "NewChangeDetailPayload non-nil insights baseline"}
     mutation: {description: "sets the baseline insights array to nil so validation must reject it"}
+  - name: map_recent_commit_has_session_mirror_mismatch_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommits:
+        - hash: recent-1
+          subject: fixture successor
+          hasSession: false
+          sessionIds: [session-a]
+          associations:
+            - sessionId: session-a
+              kind: bound
+              confidence: high
+              evidence: commit_and_touch
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: hasSession must mirror
+      mutation: repair_commit_ref_shape
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: bug, ref: "MapNodeDetailPayload.RecentCommits validates CommitRef shape"}
+    mutation: {description: "repairs the malformed recent commit back to constructor shape"}
+  - name: change_unrecorded_commit_associations_out_of_order_is_rejected
+    input:
+      payload: change_detail
+      path: feat/timeline
+      unrecordedCommits:
+        - hash: unrecorded-1
+          subject: fixture successor
+          hasSession: true
+          sessionIds: [session-a, session-b]
+          associations:
+            - sessionId: session-b
+              kind: candidate
+              confidence: medium
+              evidence: commit_only
+            - sessionId: session-a
+              kind: bound
+              confidence: high
+              evidence: commit_and_touch
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: Associations must equal SessionIDs
+      mutation: repair_commit_ref_shape
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: bug, ref: "ChangeDetailPayload.UnrecordedCommits validates CommitRef shape"}
+    mutation: {description: "repairs the out-of-order unrecorded commit back to constructor shape"}

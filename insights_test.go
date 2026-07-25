@@ -1,8 +1,10 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -60,8 +62,8 @@ type insightRepairFixtureExpected struct {
 
 func loadInsightFixtures(t *testing.T) insightFixtures {
 	t.Helper()
-	var fx insightFixtures
-	if err := yaml.Unmarshal(insightsCasesYAML, &fx); err != nil {
+	fx, err := decodeInsightFixtures(insightsCasesYAML)
+	if err != nil {
 		t.Fatalf("load insights fixtures (testdata/local-api/insights.yaml): %v", err)
 	}
 	assert.RequireMin(t, fx.Mechanical, len(schema.AllInsightKinds))
@@ -81,6 +83,23 @@ func loadInsightFixtures(t *testing.T) insightFixtures {
 		t.Fatalf("insights repairs corpus has %d cases, want exactly 1", got)
 	}
 	return fx
+}
+
+func decodeInsightFixtures(data []byte) (insightFixtures, error) {
+	var fx insightFixtures
+	decoder := yaml.NewDecoder(bytes.NewReader(data))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fx); err != nil {
+		return insightFixtures{}, fmt.Errorf("decode insights fixtures: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return insightFixtures{}, fmt.Errorf("decode trailing insights fixture document: %w", err)
+		}
+		return insightFixtures{}, fmt.Errorf("decode insights fixtures: multiple YAML documents are not allowed")
+	}
+	return fx, nil
 }
 
 func runInsightArm(t *testing.T, arm string, corpus testcase.Corpus[schema.SessionInsight, bool]) {
@@ -224,5 +243,19 @@ func TestSessionInsight_RepairCorpus(t *testing.T) {
 				t.Fatalf("post-mutation Validate() error=%v, want valid=%v", postMutationErr, repair.Expected.PostMutationValid)
 			}
 		})
+	}
+}
+
+func TestInsightFixturesLoaderRejectsUnknownField(t *testing.T) {
+	_, err := decodeInsightFixtures(append(append([]byte{}, insightsCasesYAML...), []byte("\nunexpected: true\n")...))
+	if err == nil {
+		t.Fatal("decodeInsightFixtures accepted an unknown top-level field")
+	}
+}
+
+func TestInsightFixturesLoaderRejectsTrailingDocument(t *testing.T) {
+	_, err := decodeInsightFixtures(append(append([]byte{}, insightsCasesYAML...), []byte("\n---\nextra: true\n")...))
+	if err == nil {
+		t.Fatal("decodeInsightFixtures accepted a trailing YAML document")
 	}
 }

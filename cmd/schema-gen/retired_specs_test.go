@@ -134,7 +134,7 @@ func assertFrozen(t *testing.T, path, wantSHA string) {
 // actionable error if the committed file at path is ABSENT or its sha256 does not
 // match wantSHA, and nil only when the file is present AND byte-frozen to wantSHA.
 // Returning an error (rather than calling t.Errorf) is what lets TestCheckFrozen_
-// NegativeControl prove the guard actually FAILS on a wrong-hash / missing input —
+// NegativeControl prove the guard actually FAILS on a wrong-hash / missing input -
 // locking the guard's own correctness against a regression that made it always-pass.
 func checkFrozen(path, wantSHA string) error {
 	got, err := os.ReadFile(path)

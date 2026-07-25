@@ -368,16 +368,21 @@ func NewMapNodeDetailPayload(path string) *MapNodeDetailPayload {
 	}
 }
 
-// Validate checks the additive rewrite and insight invariants: slices are non-nil, every
-// RewrittenCommit's own fields are well-formed and its SuccessorHash (when
-// set) is present in RecentCommits, and every SessionInsight is well-formed
-// (including the Classification-must-be-nil rule). Unlike
-// ReviewListPayload, a node detail payload carries no independent session
-// table, so RewrittenCommits.SessionIDs are checked for well-formedness only
-// (not cross-referenced against a session list this payload does not have).
+// Validate checks the additive rewrite and insight invariants: slices are non-nil,
+// every RecentCommit and RewrittenCommit is well-formed, every RewrittenCommit's
+// SuccessorHash (when set) is present in RecentCommits, and every SessionInsight
+// is well-formed (including the Classification-must-be-nil rule). Unlike
+// ReviewListPayload, a node detail payload carries no independent session table,
+// so RewrittenCommits.SessionIDs are checked for well-formedness only (not
+// cross-referenced against a session list this payload does not have).
 func (p MapNodeDetailPayload) Validate() error {
 	if p.DependsOn == nil || p.UsedBy == nil || p.ShapedBy == nil || p.RecentCommits == nil || p.RewrittenCommits == nil || p.Insights == nil {
 		return fmt.Errorf("map node detail validation: dependsOn, usedBy, shapedBy, recentCommits, rewrittenCommits, and insights must be arrays; initialize the payload with NewMapNodeDetailPayload before serving it")
+	}
+	for index, commit := range p.RecentCommits {
+		if err := validateCommitRefShape(commit, "map node detail"); err != nil {
+			return fmt.Errorf("map node detail validation: recentCommits[%d]: %w", index, err)
+		}
 	}
 	for index, ghost := range p.RewrittenCommits {
 		if err := ghost.Validate(); err != nil {
@@ -647,8 +652,9 @@ type SessionAssociation struct {
 }
 
 // Validate checks a single association's own fields are well-formed. It does
-// not check cross-references to a payload's session table or rank order;
-// callers with that context use validateCommitRefAssociations.
+// not check cross-references to a payload's session table or the surrounding
+// CommitRef shape; callers with that context use validateCommitRefShape before
+// checking payload-level session membership.
 func (a SessionAssociation) Validate() error {
 	if a.SessionID == "" {
 		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links, callers cannot resolve an anonymous association; set SessionID before validating or serving the association")
@@ -665,26 +671,49 @@ func (a SessionAssociation) Validate() error {
 	return nil
 }
 
-// validateCommitRefAssociations checks the association cross-reference invariants for
-// one commit's Associations against the payload's known session table:
-// every association's own fields are well-formed, every SessionID is present
-// in the payload's session table, and Associations mirrors SessionIDs
-// one-for-one in the same rank order (preserving the existing HasSession
-// mirror and rank-order invariants).
-func validateCommitRefAssociations(commit CommitRef, knownSessions map[SessionID]struct{}) error {
+// validateCommitRefShape checks one CommitRef's own shape: SessionIDs and
+// Associations are non-nil, HasSession mirrors SessionIDs, SessionIDs contain
+// no empty or duplicate values, Associations mirrors SessionIDs one-for-one in
+// the same rank order, and every association is individually valid.
+func validateCommitRefShape(commit CommitRef, label string) error {
+	if commit.SessionIDs == nil {
+		return fmt.Errorf("%s validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", label, commit.Hash)
+	}
+	if commit.HasSession != (len(commit.SessionIDs) > 0) {
+		return fmt.Errorf("%s validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", label, commit.Hash, commit.HasSession, len(commit.SessionIDs))
+	}
+	seen := make(map[SessionID]struct{}, len(commit.SessionIDs))
+	for index, sessionID := range commit.SessionIDs {
+		if sessionID == "" {
+			return fmt.Errorf("%s validation: commit %q has sessionIds[%d] empty; every binding must name a recorded session identity", label, commit.Hash, index)
+		}
+		if _, exists := seen[sessionID]; exists {
+			return fmt.Errorf("%s validation: commit %q repeats sessionId %q at sessionIds[%d]; deduplicate bindings before serving the payload", label, commit.Hash, sessionID, index)
+		}
+		seen[sessionID] = struct{}{}
+	}
 	if commit.Associations == nil {
-		return fmt.Errorf("review list validation: commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", commit.Hash)
+		return fmt.Errorf("%s validation: commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", label, commit.Hash)
 	}
 	if len(commit.Associations) != len(commit.SessionIDs) {
-		return fmt.Errorf("review list validation: commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", commit.Hash, len(commit.Associations), len(commit.SessionIDs))
+		return fmt.Errorf("%s validation: commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", label, commit.Hash, len(commit.Associations), len(commit.SessionIDs))
 	}
 	for index, association := range commit.Associations {
 		if err := association.Validate(); err != nil {
-			return fmt.Errorf("review list validation: commit %q at association index %d: %w", commit.Hash, index, err)
+			return fmt.Errorf("%s validation: commit %q at association index %d: %w", label, commit.Hash, index, err)
 		}
 		if association.SessionID != commit.SessionIDs[index] {
-			return fmt.Errorf("review list validation: commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
+			return fmt.Errorf("%s validation: commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", label, commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
 		}
+	}
+	return nil
+}
+
+// validateCommitRefAssociations checks the association cross-reference
+// invariants for one commit's Associations against the payload's known session
+// table: every association SessionID is present in the payload's session table.
+func validateCommitRefAssociations(commit CommitRef, knownSessions map[SessionID]struct{}) error {
+	for _, association := range commit.Associations {
 		if _, exists := knownSessions[association.SessionID]; !exists {
 			return fmt.Errorf("review list validation: commit %q references association sessionId %q that is not present in sessions; include it once in ReviewListPayload.Sessions or remove the stale association", commit.Hash, association.SessionID)
 		}
@@ -1193,7 +1222,9 @@ func NewReviewListPayload(projectHash ProjectHash) *ReviewListPayload {
 }
 
 // Validate checks the normalized timeline relationship and compatibility
-// invariants. It does not infer candidate or temporal associations.
+// invariants. It does not infer candidate or temporal associations, and it
+// validates each CommitRef's shape before checking timeline membership and
+// rank-order rules.
 func (p ReviewListPayload) Validate() error {
 	if err := p.ProjectHash.Validate(); err != nil {
 		return fmt.Errorf("review list validation: projectHash is invalid: %w; resolve the canonical project identity before serving the payload", err)
@@ -1240,19 +1271,11 @@ func (p ReviewListPayload) Validate() error {
 		knownSessionSet[sessionID] = struct{}{}
 	}
 	for commitIndex, commit := range p.RecentCommits {
-		if commit.SessionIDs == nil {
-			return fmt.Errorf("review list validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
+		if err := validateCommitRefShape(commit, "review list"); err != nil {
+			return err
 		}
-		if commit.HasSession != (len(commit.SessionIDs) > 0) {
-			return fmt.Errorf("review list validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", commit.Hash, commit.HasSession, len(commit.SessionIDs))
-		}
-		seen := make(map[SessionID]bool, len(commit.SessionIDs))
 		previousRank := -1
 		for bindingIndex, sessionID := range commit.SessionIDs {
-			if seen[sessionID] {
-				return fmt.Errorf("review list validation: commit %q repeats sessionId %q; deduplicate bindings before serving the payload", commit.Hash, sessionID)
-			}
-			seen[sessionID] = true
 			session, exists := knownSessions[sessionID]
 			if !exists {
 				return fmt.Errorf("review list validation: commit %q references unknown sessionId %q; include it once in sessions or remove the stale binding", commit.Hash, sessionID)
@@ -1369,11 +1392,17 @@ func NewChangeDetailPayload(branch string) *ChangeDetailPayload {
 }
 
 // Validate checks that Insights is non-nil and every entry is well-formed,
-// including the Classification-must-be-nil rule. Other
-// ChangeDetailPayload fields do not currently define validation rules here.
+// including the Classification-must-be-nil rule. It also validates each
+// UnrecordedCommit's shape. Other ChangeDetailPayload fields do not currently
+// define validation rules here.
 func (p ChangeDetailPayload) Validate() error {
 	if p.Insights == nil {
 		return fmt.Errorf("change detail validation: insights must be an array; initialize the payload with NewChangeDetailPayload before serving it")
+	}
+	for index, commit := range p.UnrecordedCommits {
+		if err := validateCommitRefShape(commit, "change detail"); err != nil {
+			return fmt.Errorf("change detail validation: unrecordedCommits[%d]: %w", index, err)
+		}
 	}
 	if err := validateSessionInsights(p.Insights); err != nil {
 		return fmt.Errorf("change detail validation: %w", err)
