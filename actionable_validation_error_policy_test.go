@@ -64,6 +64,16 @@ func baselineActionableValidationError(t *testing.T, fx actionableValidationErro
 	}
 }
 
+func requireActionableValidationErrorFails(t *testing.T, err error, wantContains ...string) bool {
+	t.Helper()
+	return testing.RunTests(func(_, _ string) (bool, error) { return true, nil }, []testing.InternalTest{{
+		Name: "RequireActionableValidationError",
+		F: func(t *testing.T) {
+			testutil.RequireActionableValidationError(t, err, wantContains...)
+		},
+	}})
+}
+
 func TestActionableValidationErrorPolicyMutationProof(t *testing.T) {
 	fx := loadActionableValidationErrorPolicy(t)
 	baselineErr := baselineActionableValidationError(t, fx.Baseline)
@@ -80,6 +90,12 @@ func TestActionableValidationErrorPolicyMutationProof(t *testing.T) {
 				t.Fatalf("strip %q dimension: %v", mutation.Dimension, err)
 			}
 			mutatedErr := errors.New(mutatedMsg)
+			if mutation.Dimension == testutil.ActionableValidationErrorRemediation {
+				if ok := requireActionableValidationErrorFails(t, mutatedErr, parts.Fragments()...); ok {
+					t.Fatal("remediation-stripped actionable validation error unexpectedly satisfied RequireActionableValidationError")
+				}
+				return
+			}
 			missing := testutil.ActionableValidationErrorViolations(mutatedErr, parts.Fragments()...)
 			if len(missing) == 0 {
 				t.Fatalf("mutated actionable validation error still satisfied the guard after removing %q", mutation.Dimension)

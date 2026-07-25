@@ -89,6 +89,9 @@ func ParseActionableValidationError(msg string) (ActionableValidationErrorParts,
 	if parts.What == "" || parts.Why == "" || parts.Where == "" || parts.When == "" || parts.Meaning == "" {
 		return ActionableValidationErrorParts{}, fmt.Errorf("incomplete actionable validation error")
 	}
+	if parts.Remediation == "" {
+		return ActionableValidationErrorParts{}, fmt.Errorf("missing actionable validation remediation clause")
+	}
 	return parts, nil
 }
 
@@ -112,7 +115,11 @@ func StripActionableValidationDimension(msg string, d ActionableValidationErrorD
 		if parts.Remediation == "" {
 			return "", fmt.Errorf("baseline actionable validation error has no remediation clause to strip")
 		}
-		return strings.Replace(msg, parts.Remediation, "opaque remediation", 1), nil
+		remediationClause := "; " + parts.Remediation
+		if idx := strings.LastIndex(msg, remediationClause); idx >= 0 {
+			return strings.TrimSpace(msg[:idx]), nil
+		}
+		return "", fmt.Errorf("baseline actionable validation error has no remediation clause to strip")
 	default:
 		return "", fmt.Errorf("unknown actionable validation dimension %q", d)
 	}
@@ -125,6 +132,9 @@ func ActionableValidationErrorViolations(err error, wantContains ...string) []st
 	msg := err.Error()
 	parts, parseErr := ParseActionableValidationError(msg)
 	if parseErr != nil {
+		if strings.Contains(parseErr.Error(), string(ActionableValidationErrorRemediation)) {
+			return []string{string(ActionableValidationErrorRemediation)}
+		}
 		return []string{parseErr.Error()}
 	}
 
@@ -144,7 +154,7 @@ func ActionableValidationErrorViolations(err error, wantContains ...string) []st
 	if parts.Meaning == "" {
 		missing = append(missing, string(ActionableValidationErrorMeaning))
 	}
-	if strings.Count(msg, ";") >= 2 && parts.Remediation == "" {
+	if parts.Remediation == "" {
 		missing = append(missing, string(ActionableValidationErrorRemediation))
 	}
 	for _, want := range wantContains {

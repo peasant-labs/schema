@@ -440,14 +440,14 @@ func NewTaskSummary(sessionID string, entryIndex int) TaskSummary {
 // already expected to carry).
 func (t TaskSummary) Validate() error {
 	if t.ReadFiles == nil {
-		return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is null; initialize the array (even empty) with NewTaskSummary before serving it", t.SessionID, t.EntryIndex)
+		return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is null; initialize the array (even empty) with NewTaskSummary before serving it; create the TaskSummary with NewTaskSummary before filling readFiles", t.SessionID, t.EntryIndex)
 	}
 	for i := 1; i < len(t.ReadFiles); i++ {
 		switch {
 		case t.ReadFiles[i] == t.ReadFiles[i-1]:
-			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles has a duplicate entry %q; the derivation must deduplicate by repo-relative path before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i])
+			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles has a duplicate entry %q; the derivation must deduplicate by repo-relative path before serving the payload; deduplicate readFiles before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i])
 		case t.ReadFiles[i] < t.ReadFiles[i-1]:
-			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is not sorted ascending (%q precedes %q); sort repo-relative paths before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i-1], t.ReadFiles[i])
+			return fmt.Errorf("task summary validation failed for session %q entry %d at schema.TaskSummary.Validate during wire-boundary validation: readFiles is not sorted ascending (%q precedes %q); sort repo-relative paths before serving the payload; sort readFiles in ascending repo-relative order before serving the payload", t.SessionID, t.EntryIndex, t.ReadFiles[i-1], t.ReadFiles[i])
 		}
 	}
 	return nil
@@ -651,7 +651,7 @@ type SessionAssociation struct {
 // callers with that context use validateCommitRefAssociations.
 func (a SessionAssociation) Validate() error {
 	if a.SessionID == "" {
-		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links, callers cannot resolve an anonymous association")
+		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links, callers cannot resolve an anonymous association; set SessionID before validating or serving the association")
 	}
 	if err := a.Kind.Validate(); err != nil {
 		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
@@ -827,13 +827,13 @@ type RewrittenCommit struct {
 // validateRewrittenCommits.
 func (r RewrittenCommit) Validate() error {
 	if r.GhostHash == "" {
-		return fmt.Errorf("rewritten commit validation failed at schema.RewrittenCommit.Validate during wire-boundary validation: ghostHash is empty; every rewritten commit must name the ghost hash it maps, callers cannot resolve an anonymous ghost")
+		return fmt.Errorf("rewritten commit validation failed at schema.RewrittenCommit.Validate during wire-boundary validation: ghostHash is empty; every rewritten commit must name the ghost hash it maps, callers cannot resolve an anonymous ghost; populate GhostHash before validating or serving the rewrite")
 	}
 	if r.SessionIDs == nil {
-		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is null; a rewritten commit without an originating session cannot be placed on a timeline lane; initialize sessionIds with at least one originating session ID before serving the payload", r.GhostHash)
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is null; a rewritten commit without an originating session cannot be placed on a timeline lane; initialize sessionIds with at least one originating session ID before serving the payload; initialize sessionIds before serving the payload", r.GhostHash)
 	}
 	if len(r.SessionIDs) == 0 {
-		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload", r.GhostHash)
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload; include at least one originating session ID before serving the payload", r.GhostHash)
 	}
 	if err := r.Resolution.Validate(); err != nil {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
@@ -851,15 +851,15 @@ func (r RewrittenCommit) Validate() error {
 		}
 	case RewriteResolutionRewritten:
 		if r.SuccessorHash == nil {
-			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is nil; a rewritten ghost must name its successor commit, or the resolution should be unresolved", r.GhostHash, r.Resolution)
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is nil; a rewritten ghost must name its successor commit, or the resolution should be unresolved; set successorHash when resolution is rewritten", r.GhostHash, r.Resolution)
 		}
 	case RewriteResolutionUnresolved:
 		if r.SuccessorHash != nil {
-			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is %q; an unresolved ghost must not name a successor, or the resolution should be rewritten", r.GhostHash, r.Resolution, *r.SuccessorHash)
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: resolution is %q but successorHash is %q; an unresolved ghost must not name a successor, or the resolution should be rewritten; clear successorHash when resolution is unresolved", r.GhostHash, r.Resolution, *r.SuccessorHash)
 		}
 	}
 	if (r.Method == RewriteMethodNone) != (r.Resolution == RewriteResolutionUnresolved) {
-		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: method %q and resolution %q are inconsistent; method must be none if and only if resolution is unresolved", r.GhostHash, r.Method, r.Resolution)
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: method %q and resolution %q are inconsistent; method must be none if and only if resolution is unresolved; pair method none with unresolved resolution, or use a non-none method with a rewritten resolution", r.GhostHash, r.Method, r.Resolution)
 	}
 	return nil
 }
@@ -872,7 +872,7 @@ func (r RewrittenCommit) Validate() error {
 // owning payload in error messages.
 func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]struct{}, knownCommitHashes map[string]struct{}, label string) error {
 	if commits == nil {
-		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload", label)
+		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload; initialize the payload with NewReviewListPayload before serving it", label)
 	}
 	for index, ghost := range commits {
 		if err := ghost.Validate(); err != nil {
@@ -1051,16 +1051,16 @@ func (i SessionInsight) Validate() error {
 		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: %w", i.Title, err)
 	}
 	if i.Subjects == nil {
-		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: subjects is null; initialize the array (even empty) before serving the payload", i.Title)
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: subjects is null; initialize the array (even empty) before serving the payload; initialize Subjects before serving the insight", i.Title)
 	}
 	if i.Evidence == nil {
-		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: evidence is null; initialize the array (even empty) before serving the payload", i.Title)
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: evidence is null; initialize the array (even empty) before serving the payload; initialize Evidence before serving the insight", i.Title)
 	}
 	if i.Provenance == InsightProvenanceMechanical && len(i.Evidence) == 0 {
-		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: provenance is mechanical but evidence is empty; every mechanical insight must cite at least one evidence item so the traceability spine (signal -> file change -> session) holds", i.Title)
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: provenance is mechanical but evidence is empty; every mechanical insight must cite at least one evidence item so the traceability spine (signal -> file change -> session) holds; include at least one evidence item before serving a mechanical insight", i.Title)
 	}
 	if i.Classification != nil {
-		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: classification is non-nil, but the current contract has no closed classification sets and consumers cannot validate those values; leave classification nil until the contract defines its category, cause, severity, and resolution sets", i.Title)
+		return fmt.Errorf("session insight validation failed for %q at schema.SessionInsight.Validate during wire-boundary validation: classification is non-nil, but the current contract has no closed classification sets and consumers cannot validate those values; leave classification nil until the contract defines its category, cause, severity, and resolution sets; clear Classification before serving the insight", i.Title)
 	}
 	return nil
 }
