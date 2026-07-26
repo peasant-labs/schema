@@ -294,6 +294,11 @@ func assertCommitRefRepairPreservesBindingIdentity(t *testing.T, before, after s
 	if after.HasSession != (len(after.SessionIDs) > 0) {
 		t.Fatalf("repair left hasSession=%v for %d sessionIds", after.HasSession, len(after.SessionIDs))
 	}
+	beforeAssociationsBySessionID := sessionAssociationsBySessionID(before)
+	afterAssociationsBySessionID := sessionAssociationsBySessionID(after)
+	if !reflect.DeepEqual(beforeAssociationsBySessionID, afterAssociationsBySessionID) {
+		t.Fatalf("repair changed session associations by sessionId: before=%v after=%v", beforeAssociationsBySessionID, afterAssociationsBySessionID)
+	}
 	afterAssociationSessionIDs := make([]schema.SessionID, len(after.Associations))
 	for index, association := range after.Associations {
 		afterAssociationSessionIDs[index] = association.SessionID
@@ -301,6 +306,14 @@ func assertCommitRefRepairPreservesBindingIdentity(t *testing.T, before, after s
 	if !reflect.DeepEqual(afterAssociationSessionIDs, after.SessionIDs) {
 		t.Fatalf("repair left associations out of sync with sessionIds: associations=%v sessionIds=%v", afterAssociationSessionIDs, after.SessionIDs)
 	}
+}
+
+func sessionAssociationsBySessionID(commit schema.CommitRef) map[schema.SessionID]schema.SessionAssociation {
+	bySessionID := make(map[schema.SessionID]schema.SessionAssociation, len(commit.Associations))
+	for _, association := range commit.Associations {
+		bySessionID[association.SessionID] = association
+	}
+	return bySessionID
 }
 
 func assertPayloadValidationResult(t *testing.T, label string, err error, valid bool, errorContains string) {

@@ -36,6 +36,9 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), fixture.Expected.ErrorContains) {
 					t.Fatalf("Validate error = %v, want containing %q", err, fixture.Expected.ErrorContains)
 				}
+				if fixture.Name == "null_associations" {
+					assertSinglePayloadContextPrefix(t, err, "review list validation:")
+				}
 			default:
 				t.Fatalf("unsupported classification %q", fixture.Classification)
 			}
