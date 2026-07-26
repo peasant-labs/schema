@@ -1030,10 +1030,21 @@ export const zSessionAssociation = z.object({
     confidence: zConfidence,
     evidence: z.array(zAssociationEvidenceObservation).min(1),
     id: zAssociationID,
-    sessionId: zSessionID
+    sessionId: z.string().min(1)
 }).superRefine((value, context) => {
     const kindOrder = ["recorded_commit", "touched_file", "branch_membership", "time_window"];
-    const compareStrings = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
+    const compareStrings = (left: string, right: string) => {
+        const leftBytes = new TextEncoder().encode(left);
+        const rightBytes = new TextEncoder().encode(right);
+        const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+        for (let index = 0; index < sharedLength; index += 1) {
+            const leftByte = leftBytes[index]!;
+            const rightByte = rightBytes[index]!;
+            if (leftByte < rightByte) return -1;
+            if (leftByte > rightByte) return 1;
+        }
+        return compareNumbers(leftBytes.length, rightBytes.length);
+    };
     const compareNumbers = (left: number, right: number) => left < right ? -1 : left > right ? 1 : 0;
     const compareObservations = (left: AssociationEvidenceObservation, right: AssociationEvidenceObservation): number => {
         const leftKindOrder = kindOrder.indexOf(left.kind);

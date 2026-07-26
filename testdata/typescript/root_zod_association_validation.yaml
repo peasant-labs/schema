@@ -248,3 +248,9 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
     mutation: {description: adds an association target to an otherwise valid file version annotation}
+  - name: global session ID remains stricter than association session identity
+    input: {schema: session-id, value: session-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: only SessionAssociation accepts a general non-empty session identity}
+    mutation: {description: supplies a Go-valid association session ID to the globally branded SessionID schema}

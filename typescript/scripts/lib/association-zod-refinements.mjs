@@ -1,6 +1,7 @@
 export function applyAssociationZodRefinements(source) {
   let refined = source;
   refined = replaceExactly(refined, /    evidence: z\.array\(zAssociationEvidenceObservation\),/, "    evidence: z.array(zAssociationEvidenceObservation).min(1),", "zSessionAssociation.evidence");
+  refined = replaceSessionAssociationSessionID(refined);
   refined = appendRefinement(refined, "zAssociationEvidenceObservation", associationEvidenceObservationRefinement());
   refined = appendRefinement(refined, "zSessionAssociation", sessionAssociationRefinement());
   refined = appendRefinement(refined, "zAnnotationSummary", annotationSummaryRefinement());
@@ -13,6 +14,15 @@ function replaceExactly(source, pattern, replacement, name) {
     throw new Error(`TypeScript Zod refinement generation could not locate exactly one ${name} declaration; the pinned Hey API output shape changed, so association validation was not emitted; inspect the generator output and update typescript/scripts/lib/association-zod-refinements.mjs before publishing.`);
   }
   return source.replace(pattern, replacement);
+}
+
+function replaceSessionAssociationSessionID(source) {
+  const pattern = /(export const zSessionAssociation = z\.object\(\{[\s\S]*?\n    sessionId: )zSessionID(\n\}\);)/g;
+  const matches = source.match(pattern) ?? [];
+  if (matches.length !== 1) {
+    throw new Error("TypeScript Zod refinement generation could not locate exactly one zSessionAssociation.sessionId declaration; the pinned Hey API output shape changed, so Go-compatible association session IDs were not emitted; inspect the generator output and update typescript/scripts/lib/association-zod-refinements.mjs before publishing.");
+  }
+  return source.replace(pattern, "$1z.string().min(1)$2");
 }
 
 function appendRefinement(source, schemaName, refinement) {
@@ -65,7 +75,18 @@ function associationEvidenceObservationRefinement() {
 function sessionAssociationRefinement() {
   return `.superRefine((value, context) => {
     const kindOrder = ["recorded_commit", "touched_file", "branch_membership", "time_window"];
-    const compareStrings = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
+    const compareStrings = (left: string, right: string) => {
+        const leftBytes = new TextEncoder().encode(left);
+        const rightBytes = new TextEncoder().encode(right);
+        const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+        for (let index = 0; index < sharedLength; index += 1) {
+            const leftByte = leftBytes[index]!;
+            const rightByte = rightBytes[index]!;
+            if (leftByte < rightByte) return -1;
+            if (leftByte > rightByte) return 1;
+        }
+        return compareNumbers(leftBytes.length, rightBytes.length);
+    };
     const compareNumbers = (left: number, right: number) => left < right ? -1 : left > right ? 1 : 0;
     const compareObservations = (left: AssociationEvidenceObservation, right: AssociationEvidenceObservation): number => {
         const leftKindOrder = kindOrder.indexOf(left.kind);
