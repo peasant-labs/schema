@@ -108,15 +108,8 @@ func TestActionableValidationErrorPolicyMutationProof(t *testing.T) {
 				t.Fatalf("strip %q dimension: %v", mutation.Dimension, err)
 			}
 			mutatedErr := errors.New(mutatedMsg)
-			if mutation.Dimension == testutil.ActionableValidationErrorRemediation {
-				if ok := requireActionableValidationErrorFails(t, mutatedErr, parts.Fragments()...); ok {
-					t.Fatal("remediation-stripped actionable validation error unexpectedly satisfied RequireActionableValidationError")
-				}
-				return
-			}
-			missing := testutil.ActionableValidationErrorViolations(mutatedErr, parts.Fragments()...)
-			if len(missing) == 0 {
-				t.Fatalf("mutated actionable validation error still satisfied the guard after removing %q", mutation.Dimension)
+			if ok := requireActionableValidationErrorFails(t, mutatedErr, parts.Fragments()...); ok {
+				t.Fatalf("mutated actionable validation error unexpectedly satisfied RequireActionableValidationError after removing %q", mutation.Dimension)
 			}
 		})
 	}
