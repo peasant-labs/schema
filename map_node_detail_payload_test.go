@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -215,14 +216,12 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 			if len(s.mapNodeDetail.RecentCommits) == 0 {
 				return fmt.Errorf("mutation %q requires a map node detail payload with a recent commit", kind)
 			}
-			commit := s.mapNodeDetail.RecentCommits[0]
-			s.mapNodeDetail.RecentCommits[0] = schema.NewCommitRef(commit.Hash, commit.Subject)
+			repairCommitRefShape(&s.mapNodeDetail.RecentCommits[0])
 		} else if s.changeDetail != nil {
 			if len(s.changeDetail.UnrecordedCommits) == 0 {
 				return fmt.Errorf("mutation %q requires a change detail payload with an unrecorded commit", kind)
 			}
-			commit := s.changeDetail.UnrecordedCommits[0]
-			s.changeDetail.UnrecordedCommits[0] = schema.NewCommitRef(commit.Hash, commit.Subject)
+			repairCommitRefShape(&s.changeDetail.UnrecordedCommits[0])
 		} else {
 			return fmt.Errorf("mutation %q requires a payload", kind)
 		}
@@ -259,6 +258,49 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 		return fmt.Errorf("unknown payload mutation %q", kind)
 	}
 	return nil
+}
+
+func repairCommitRefShape(commit *schema.CommitRef) {
+	commit.HasSession = len(commit.SessionIDs) > 0
+	if len(commit.SessionIDs) == 0 || len(commit.Associations) != len(commit.SessionIDs) {
+		return
+	}
+	bySessionID := make(map[schema.SessionID]schema.SessionAssociation, len(commit.Associations))
+	for _, association := range commit.Associations {
+		bySessionID[association.SessionID] = association
+	}
+	for index, sessionID := range commit.SessionIDs {
+		if association, exists := bySessionID[sessionID]; exists {
+			commit.Associations[index] = association
+		}
+	}
+}
+
+func assertSinglePayloadContextPrefix(t *testing.T, err error, prefix string) {
+	t.Helper()
+	if got := strings.Count(err.Error(), prefix); got != 1 {
+		t.Fatalf("Validate() error=%q, want exactly one %q prefix", err, prefix)
+	}
+}
+
+func assertCommitRefRepairPreservesBindingIdentity(t *testing.T, before, after schema.CommitRef) {
+	t.Helper()
+	if before.Hash != after.Hash || before.Subject != after.Subject {
+		t.Fatalf("repair changed commit identity: before hash=%q subject=%q, after hash=%q subject=%q", before.Hash, before.Subject, after.Hash, after.Subject)
+	}
+	if !reflect.DeepEqual(before.SessionIDs, after.SessionIDs) {
+		t.Fatalf("repair changed sessionIds: before=%v after=%v", before.SessionIDs, after.SessionIDs)
+	}
+	if after.HasSession != (len(after.SessionIDs) > 0) {
+		t.Fatalf("repair left hasSession=%v for %d sessionIds", after.HasSession, len(after.SessionIDs))
+	}
+	afterAssociationSessionIDs := make([]schema.SessionID, len(after.Associations))
+	for index, association := range after.Associations {
+		afterAssociationSessionIDs[index] = association.SessionID
+	}
+	if !reflect.DeepEqual(afterAssociationSessionIDs, after.SessionIDs) {
+		t.Fatalf("repair left associations out of sync with sessionIds: associations=%v sessionIds=%v", afterAssociationSessionIDs, after.SessionIDs)
+	}
 }
 
 func assertPayloadValidationResult(t *testing.T, label string, err error, valid bool, errorContains string) {
@@ -300,11 +342,44 @@ func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 			if err != nil {
 				t.Fatalf("construct fixture payload: %v", err)
 			}
-			assertPayloadValidationResult(t, "original", subject.validate(), fixture.Expected.Valid, fixture.Expected.ErrorContains)
+			var originalCommit schema.CommitRef
+			var prefix string
+			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
+				switch {
+				case subject.mapNodeDetail != nil:
+					if len(subject.mapNodeDetail.RecentCommits) == 0 {
+						t.Fatal("repair proof requires a recent commit")
+					}
+					originalCommit = subject.mapNodeDetail.RecentCommits[0]
+					prefix = "map node detail validation:"
+				case subject.changeDetail != nil:
+					if len(subject.changeDetail.UnrecordedCommits) == 0 {
+						t.Fatal("repair proof requires an unrecorded commit")
+					}
+					originalCommit = subject.changeDetail.UnrecordedCommits[0]
+					prefix = "change detail validation:"
+				}
+			}
+			originalErr := subject.validate()
+			assertPayloadValidationResult(t, "original", originalErr, fixture.Expected.Valid, fixture.Expected.ErrorContains)
+			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
+				assertSinglePayloadContextPrefix(t, originalErr, prefix)
+			}
 			if err := subject.mutate(fixture.Expected.Mutation); err != nil {
 				t.Fatalf("apply mutation: %v", err)
 			}
-			assertPayloadValidationResult(t, "mutated", subject.validate(), fixture.Expected.MutatedValid, fixture.Expected.MutatedErrorContains)
+			mutatedErr := subject.validate()
+			assertPayloadValidationResult(t, "mutated", mutatedErr, fixture.Expected.MutatedValid, fixture.Expected.MutatedErrorContains)
+			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
+				var repairedCommit schema.CommitRef
+				switch {
+				case subject.mapNodeDetail != nil:
+					repairedCommit = subject.mapNodeDetail.RecentCommits[0]
+				case subject.changeDetail != nil:
+					repairedCommit = subject.changeDetail.UnrecordedCommits[0]
+				}
+				assertCommitRefRepairPreservesBindingIdentity(t, originalCommit, repairedCommit)
+			}
 		})
 	}
 }

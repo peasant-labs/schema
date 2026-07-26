@@ -380,7 +380,7 @@ func (p MapNodeDetailPayload) Validate() error {
 		return fmt.Errorf("map node detail validation: dependsOn, usedBy, shapedBy, recentCommits, rewrittenCommits, and insights must be arrays; initialize the payload with NewMapNodeDetailPayload before serving it")
 	}
 	for index, commit := range p.RecentCommits {
-		if err := validateCommitRefShape(commit, "map node detail"); err != nil {
+		if err := validateCommitRefShape(commit); err != nil {
 			return fmt.Errorf("map node detail validation: recentCommits[%d]: %w", index, err)
 		}
 	}
@@ -674,48 +674,37 @@ func (a SessionAssociation) Validate() error {
 // validateCommitRefShape checks one CommitRef's own shape: SessionIDs and
 // Associations are non-nil, HasSession mirrors SessionIDs, SessionIDs contain
 // no empty or duplicate values, Associations mirrors SessionIDs one-for-one in
-// the same rank order, and every association is individually valid.
-func validateCommitRefShape(commit CommitRef, label string) error {
+// the same rank order, and every association is individually valid. Callers own
+// payload context and wrap any returned error with their surface label.
+func validateCommitRefShape(commit CommitRef) error {
 	if commit.SessionIDs == nil {
-		return fmt.Errorf("%s validation: commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", label, commit.Hash)
+		return fmt.Errorf("commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
 	}
 	if commit.HasSession != (len(commit.SessionIDs) > 0) {
-		return fmt.Errorf("%s validation: commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", label, commit.Hash, commit.HasSession, len(commit.SessionIDs))
+		return fmt.Errorf("commit %q has hasSession=%t but %d sessionIds; hasSession must mirror whether the authoritative binding list is non-empty", commit.Hash, commit.HasSession, len(commit.SessionIDs))
 	}
 	seen := make(map[SessionID]struct{}, len(commit.SessionIDs))
 	for index, sessionID := range commit.SessionIDs {
 		if sessionID == "" {
-			return fmt.Errorf("%s validation: commit %q has sessionIds[%d] empty; every binding must name a recorded session identity", label, commit.Hash, index)
+			return fmt.Errorf("commit %q has sessionIds[%d] empty; every binding must name a recorded session identity", commit.Hash, index)
 		}
 		if _, exists := seen[sessionID]; exists {
-			return fmt.Errorf("%s validation: commit %q repeats sessionId %q at sessionIds[%d]; deduplicate bindings before serving the payload", label, commit.Hash, sessionID, index)
+			return fmt.Errorf("commit %q repeats sessionId %q at sessionIds[%d]; deduplicate bindings before serving the payload", commit.Hash, sessionID, index)
 		}
 		seen[sessionID] = struct{}{}
 	}
 	if commit.Associations == nil {
-		return fmt.Errorf("%s validation: commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", label, commit.Hash)
+		return fmt.Errorf("commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", commit.Hash)
 	}
 	if len(commit.Associations) != len(commit.SessionIDs) {
-		return fmt.Errorf("%s validation: commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", label, commit.Hash, len(commit.Associations), len(commit.SessionIDs))
+		return fmt.Errorf("commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", commit.Hash, len(commit.Associations), len(commit.SessionIDs))
 	}
 	for index, association := range commit.Associations {
 		if err := association.Validate(); err != nil {
-			return fmt.Errorf("%s validation: commit %q at association index %d: %w", label, commit.Hash, index, err)
+			return fmt.Errorf("commit %q at association index %d: %w", commit.Hash, index, err)
 		}
 		if association.SessionID != commit.SessionIDs[index] {
-			return fmt.Errorf("%s validation: commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", label, commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
-		}
-	}
-	return nil
-}
-
-// validateCommitRefAssociations checks the association cross-reference
-// invariants for one commit's Associations against the payload's known session
-// table: every association SessionID is present in the payload's session table.
-func validateCommitRefAssociations(commit CommitRef, knownSessions map[SessionID]struct{}) error {
-	for _, association := range commit.Associations {
-		if _, exists := knownSessions[association.SessionID]; !exists {
-			return fmt.Errorf("review list validation: commit %q references association sessionId %q that is not present in sessions; include it once in ReviewListPayload.Sessions or remove the stale association", commit.Hash, association.SessionID)
+			return fmt.Errorf("commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
 		}
 	}
 	return nil
@@ -1270,8 +1259,8 @@ func (p ReviewListPayload) Validate() error {
 		knownSessionSet[sessionID] = struct{}{}
 	}
 	for commitIndex, commit := range p.RecentCommits {
-		if err := validateCommitRefShape(commit, "review list"); err != nil {
-			return err
+		if err := validateCommitRefShape(commit); err != nil {
+			return fmt.Errorf("review list validation: recentCommits[%d]: %w", commitIndex, err)
 		}
 		previousRank := -1
 		for bindingIndex, sessionID := range commit.SessionIDs {
@@ -1287,9 +1276,6 @@ func (p ReviewListPayload) Validate() error {
 				return fmt.Errorf("review list validation: commit %q at index %d has noncanonical sessionIds order at binding %d; order every binding by the strictly increasing rank of ReviewListPayload.Sessions", commit.Hash, commitIndex, bindingIndex)
 			}
 			previousRank = rank
-		}
-		if err := validateCommitRefAssociations(commit, knownSessionSet); err != nil {
-			return err
 		}
 	}
 	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessionSet, recentCommitHashes(p.RecentCommits), "review list"); err != nil {
@@ -1399,7 +1385,7 @@ func (p ChangeDetailPayload) Validate() error {
 		return fmt.Errorf("change detail validation: insights must be an array; initialize the payload with NewChangeDetailPayload before serving it")
 	}
 	for index, commit := range p.UnrecordedCommits {
-		if err := validateCommitRefShape(commit, "change detail"); err != nil {
+		if err := validateCommitRefShape(commit); err != nil {
 			return fmt.Errorf("change detail validation: unrecordedCommits[%d]: %w", index, err)
 		}
 	}
