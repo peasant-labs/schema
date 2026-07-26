@@ -232,15 +232,29 @@ A gate that can never fail is worthless, so the gates have their own tests.
 `internal/contractgates/synthetic_break_test.go` proves they fire:
 `TestOasdiffSyntheticBreak` removes an endpoint from a committed golden spec and
 asserts `oasdiff breaking --fail-on ERR` exits non-zero, while
-`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. Three of the
-six `TestGoAPIDiff*` tests run the real `go-apidiff` binary end-to-end:
-`TestGoAPIDiffSyntheticBreak` (removes an exported func, asserts an incompatible
-change is reported), `TestGoAPIDiffStampExemption`, and `TestGoAPIDiffGateRunner`.
-The other three drive the decision seams (`evaluate-apidiff` /
-`extract-compatible`) with canned real-format output:
-`TestGoAPIDiffStampExemptionFilter` (the stamp-bump exemption cannot mask a real
-break), `TestGoAPIDiffCompatibleExtraction`, and
-`TestGoAPIDiffGateRunnerFailClosed` (the unparseable-section fail-closed path).
+`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. The eleven
+`TestGoAPIDiff*` regressions cover both the real tool and the runner's failure
+boundaries. `TestGoAPIDiffSyntheticBreak`, `TestGoAPIDiffStampExemption`, and
+`TestGoAPIDiffGateRunner` run the real binary against throwaway repositories;
+the first proves a removed export is reported, the second anchors the
+stamp-exemption format, and the third verifies warning, clean, and compatible
+signals. `TestGoAPIDiffGateRunnerLinkedWorktree` runs the real binary from a
+clean linked worktree and proves the runner uses a standalone clone instead of
+letting `go-apidiff` inspect linked-worktree metadata.
+
+`TestGoAPIDiffStampExemptionFilter` and
+`TestGoAPIDiffCompatibleExtraction` drive the shipped decision seams with
+canned real-format output, including the unparseable-section fail-closed path
+and separate compatible/incompatible channels. The remaining five runner tests
+use controlled fakes: `TestGoAPIDiffGateRunnerFailClosed` rejects an unparseable
+report without writing either signal; `TestGoAPIDiffGateRunnerInvocationFailure`
+rejects a non-zero tool invocation; `TestGoAPIDiffGateRunnerIsolatedCloneCleanup`
+verifies immutable base/head hashes reach a standalone `--no-local` clone with
+no alternates and that successful cleanup removes it;
+`TestGoAPIDiffGateRunnerTimeoutFailsClosed` rejects a timed-out isolated run;
+and `TestGoAPIDiffGateRunnerCleanupFailureFailsClosed` rejects failed cleanup
+without publishing signals. The runner validates a whole-second timeout from 1
+through 600 seconds and fails closed for isolated setup or cleanup errors.
 
 ### Leaf-purity audit and vendor-hash stability
 
