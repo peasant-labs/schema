@@ -124,6 +124,100 @@ export const zAnnotatorSummary = z.object({
 
 export type AnnotatorSummary = z.infer<typeof zAnnotatorSummary>;
 
+/**
+ * Association Conclusion
+ *
+ * Producer-supplied conclusion for a session-to-commit association: confirmed or candidate
+ */
+export const zAssociationConclusion = z.enum(['confirmed', 'candidate']);
+
+export type AssociationConclusion = z.infer<typeof zAssociationConclusion>;
+
+/**
+ * Association Evidence Kind
+ *
+ * Atomic observation supporting a session-to-commit association
+ */
+export const zAssociationEvidenceKind = z.enum([
+    'recorded_commit',
+    'touched_file',
+    'branch_membership',
+    'time_window'
+]);
+
+export type AssociationEvidenceKind = z.infer<typeof zAssociationEvidenceKind>;
+
+export const zAssociationEvidenceObservation = z.object({
+    branchName: z.string().nullish(),
+    kind: zAssociationEvidenceKind,
+    recordedCommitHash: z.string().nullish(),
+    touchedFilePath: z.string().nullish(),
+    windowEndMs: z.int().nullish(),
+    windowStartMs: z.int().nullish()
+}).superRefine((value, context) => {
+    const isAbsent = (detail: unknown) => detail === undefined || detail === null;
+    const isGoWhitespace = (codePoint: number) => (codePoint >= 0x0009 && codePoint <= 0x000D)
+        || codePoint === 0x0020
+        || codePoint === 0x0085
+        || codePoint === 0x00A0
+        || codePoint === 0x1680
+        || (codePoint >= 0x2000 && codePoint <= 0x200A)
+        || codePoint === 0x2028
+        || codePoint === 0x2029
+        || codePoint === 0x202F
+        || codePoint === 0x205F
+        || codePoint === 0x3000;
+    const hasNonEmptyString = (detail: unknown) => {
+        if (typeof detail !== "string") return false;
+        for (const character of detail) {
+            const codePoint = character.codePointAt(0);
+            if (codePoint !== undefined && !isGoWhitespace(codePoint)) return true;
+        }
+        return false;
+    };
+    const hasValidTouchedFilePath = (detail: unknown) => typeof detail === "string"
+        && detail !== ""
+        && !detail.startsWith("/")
+        && !detail.startsWith("\\")
+        && !detail.includes("\\")
+        && !/^[A-Za-z]:\//.test(detail)
+        && !detail.split("/").some((segment) => segment === "" || segment === "." || segment === "..");
+    const addIssue = (message: string) => context.addIssue({ code: "custom", message });
+    switch (value.kind) {
+        case "recorded_commit":
+            if (!hasNonEmptyString(value.recordedCommitHash)) addIssue("recorded_commit evidence requires a non-empty recordedCommitHash");
+            if (!isAbsent(value.touchedFilePath) || !isAbsent(value.branchName) || !isAbsent(value.windowStartMs) || !isAbsent(value.windowEndMs)) addIssue("recorded_commit evidence must not populate another detail arm");
+            return;
+        case "touched_file":
+            if (!hasValidTouchedFilePath(value.touchedFilePath)) addIssue("touched_file evidence requires a non-empty repository-relative touchedFilePath");
+            if (!isAbsent(value.recordedCommitHash) || !isAbsent(value.branchName) || !isAbsent(value.windowStartMs) || !isAbsent(value.windowEndMs)) addIssue("touched_file evidence must not populate another detail arm");
+            return;
+        case "branch_membership":
+            if (!hasNonEmptyString(value.branchName)) addIssue("branch_membership evidence requires a non-empty branchName");
+            if (!isAbsent(value.recordedCommitHash) || !isAbsent(value.touchedFilePath) || !isAbsent(value.windowStartMs) || !isAbsent(value.windowEndMs)) addIssue("branch_membership evidence must not populate another detail arm");
+            return;
+        case "time_window":
+            if (value.windowStartMs === undefined || value.windowStartMs === null || value.windowEndMs === undefined || value.windowEndMs === null) {
+                addIssue("time_window evidence requires windowStartMs and windowEndMs");
+            } else if (value.windowStartMs > value.windowEndMs) {
+                addIssue("time_window evidence requires windowStartMs less than or equal to windowEndMs");
+            }
+            if (!isAbsent(value.recordedCommitHash) || !isAbsent(value.touchedFilePath) || !isAbsent(value.branchName)) addIssue("time_window evidence must not populate another detail arm");
+            return;
+    }
+});
+
+export type AssociationEvidenceObservation = z.infer<typeof zAssociationEvidenceObservation>;
+
+/**
+ * Association ID
+ *
+ * Opaque durable Peasant identifier for one session-to-commit association
+ */
+export const zAssociationID = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/);
+
+export type AssociationID = z.infer<typeof zAssociationID>;
+
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
     failingIndex: z.int()
@@ -253,6 +347,19 @@ export const zCommitInfo = z.object({
 });
 
 export type CommitInfo = z.infer<typeof zCommitInfo>;
+
+/**
+ * Confidence
+ *
+ * Strength of evidence behind a derived relationship: high, medium, or low
+ */
+export const zConfidence = z.enum([
+    'high',
+    'medium',
+    'low'
+]);
+
+export type Confidence = z.infer<typeof zConfidence>;
 
 /**
  * Content Kind
@@ -527,6 +634,39 @@ export const zHostSlug = z.string().regex(/^[a-zA-Z0-9._<>-]+$/);
 
 export type HostSlug = z.infer<typeof zHostSlug>;
 
+export const zInsightClassification = z.object({
+    category: z.string(),
+    cause: z.string(),
+    resolution: z.string(),
+    severityLocus: z.string(),
+    severityScope: z.string()
+});
+
+export type InsightClassification = z.infer<typeof zInsightClassification>;
+
+/**
+ * Insight Kind
+ *
+ * What a SessionInsight observed: a decision, friction, an unusual rate elevation, or a retry loop
+ */
+export const zInsightKind = z.enum([
+    'decision',
+    'friction',
+    'unusual',
+    'retry_loop'
+]);
+
+export type InsightKind = z.infer<typeof zInsightKind>;
+
+/**
+ * Insight Provenance
+ *
+ * How a SessionInsight was produced: mechanical (rule-derived) or mined
+ */
+export const zInsightProvenance = z.enum(['mechanical', 'mined']);
+
+export type InsightProvenance = z.infer<typeof zInsightProvenance>;
+
 /**
  * Interaction Type
  *
@@ -574,32 +714,6 @@ export const zMapNodeKind = z.enum([
 ]);
 
 export type MapNodeKind = z.infer<typeof zMapNodeKind>;
-
-export const zMapNode = z.object({
-    effortDensity: z.number(),
-    fileCount: z.int(),
-    id: z.string(),
-    kind: zMapNodeKind,
-    language: z.string().optional(),
-    layer: z.int(),
-    loc: z.int(),
-    name: z.string(),
-    order: z.int(),
-    parent: z.string().optional(),
-    recordedFiles: z.int(),
-    totalFiles: z.int(),
-    touchCount: z.int()
-});
-
-export type MapNode = z.infer<typeof zMapNode>;
-
-export const zMapSlice = z.object({
-    activityEdges: z.array(zActivityEdge).nullable(),
-    nodes: z.array(zMapNode).nullable(),
-    structureEdges: z.array(zMapEdge).nullable()
-});
-
-export type MapSlice = z.infer<typeof zMapSlice>;
 
 /**
  * Message Type
@@ -665,21 +779,6 @@ export const zProjectHash = z.string().regex(/^[0-9a-f]{64}$/).brand<'ProjectHas
 
 export type ProjectHash = z.infer<typeof zProjectHash>;
 
-export const zMapGraphPayload = z.object({
-    activityEdges: z.array(zActivityEdge).nullable(),
-    atCommit: z.string().optional(),
-    generatedAtMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
-    nodes: z.array(zMapNode).nullable(),
-    parsedLanguages: z.array(z.string()).nullable(),
-    projectHash: zProjectHash,
-    repoFound: z.boolean(),
-    repoPath: z.string().optional(),
-    structureEdges: z.array(zMapEdge).nullable(),
-    violations: z.array(zEdgeViolation).nullable()
-});
-
-export type MapGraphPayload = z.infer<typeof zMapGraphPayload>;
-
 export const zProjectContext = z.object({
     filePath: z.string().optional(),
     hash: zProjectHash,
@@ -733,6 +832,81 @@ export const zPublishResponse = z.object({
 
 export type PublishResponse = z.infer<typeof zPublishResponse>;
 
+/**
+ * Read Attribution State
+ *
+ * Whether per-file read attribution is recoverable for a node's editing sessions: complete, partial, or unavailable
+ */
+export const zReadAttributionState = z.enum([
+    'complete',
+    'partial',
+    'unavailable'
+]);
+
+export type ReadAttributionState = z.infer<typeof zReadAttributionState>;
+
+/**
+ * Read State Grade
+ *
+ * Ordinal explicit read-state act: none, viewed, reviewed, or reviewed_in_detail
+ */
+export const zReadStateGrade = z.enum([
+    'none',
+    'viewed',
+    'reviewed',
+    'reviewed_in_detail'
+]);
+
+export type ReadStateGrade = z.infer<typeof zReadStateGrade>;
+
+export const zMapNode = z.object({
+    agentEditedCount: z.int(),
+    attributedRegionCount: z.int(),
+    changedRegionCount: z.int(),
+    effortDensity: z.number(),
+    fileCount: z.int(),
+    id: z.string(),
+    kind: zMapNodeKind,
+    language: z.string().optional(),
+    layer: z.int(),
+    loc: z.int(),
+    name: z.string(),
+    order: z.int(),
+    parent: z.string().optional(),
+    readAttribution: zReadAttributionState,
+    readCount: z.int(),
+    readState: zReadStateGrade,
+    recordedFiles: z.int(),
+    reviewedRegionCount: z.int(),
+    totalFiles: z.int(),
+    touchCount: z.int()
+});
+
+export type MapNode = z.infer<typeof zMapNode>;
+
+export const zMapGraphPayload = z.object({
+    activityEdges: z.array(zActivityEdge).nullable(),
+    atCommit: z.string().optional(),
+    generatedAtMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    nodes: z.array(zMapNode).nullable(),
+    parsedLanguages: z.array(z.string()).nullable(),
+    projectHash: zProjectHash,
+    repoFound: z.boolean(),
+    repoPath: z.string().optional(),
+    structureEdges: z.array(zMapEdge).nullable(),
+    violations: z.array(zEdgeViolation).nullable()
+});
+
+export type MapGraphPayload = z.infer<typeof zMapGraphPayload>;
+
+export const zMapSlice = z.object({
+    activityEdges: z.array(zActivityEdge).nullable(),
+    nodes: z.array(zMapNode).nullable(),
+    structureEdges: z.array(zMapEdge).nullable()
+});
+
+export type MapSlice = z.infer<typeof zMapSlice>;
+
 export const zRedactionInfo = z.object({
     applied: z.boolean(),
     content_hash_at_redact: z.string().optional(),
@@ -751,6 +925,35 @@ export const zReviewSuggestion = z.object({
 });
 
 export type ReviewSuggestion = z.infer<typeof zReviewSuggestion>;
+
+/**
+ * Rewrite Method
+ *
+ * Mechanism the resolver used to map a ghost commit to its successor
+ */
+export const zRewriteMethod = z.enum([
+    'hash',
+    'patch_id',
+    'author_identity',
+    'message_embedded',
+    'temporal',
+    'none'
+]);
+
+export type RewriteMethod = z.infer<typeof zRewriteMethod>;
+
+/**
+ * Rewrite Resolution
+ *
+ * Whether a ledger-observed commit hash is live, was rewritten, or could not be resolved
+ */
+export const zRewriteResolution = z.enum([
+    'live',
+    'rewritten',
+    'unresolved'
+]);
+
+export type RewriteResolution = z.infer<typeof zRewriteResolution>;
 
 /**
  * Role
@@ -831,7 +1034,65 @@ export const zSessionID = z.string().regex(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 
 export type SessionID = z.infer<typeof zSessionID>;
 
+export const zInsightEvidence = z.object({
+    commitHash: z.string().optional(),
+    entryIndex: z.int().nullish(),
+    file: z.string().optional(),
+    sessionId: zSessionID
+});
+
+export type InsightEvidence = z.infer<typeof zInsightEvidence>;
+
+export const zSessionAssociation = z.object({
+    conclusion: zAssociationConclusion,
+    confidence: zConfidence,
+    evidence: z.array(zAssociationEvidenceObservation).min(1),
+    id: zAssociationID,
+    sessionId: z.string().min(1)
+}).superRefine((value, context) => {
+    const kindOrder = ["recorded_commit", "touched_file", "branch_membership", "time_window"];
+    const compareStrings = (left: string, right: string) => {
+        const leftBytes = new TextEncoder().encode(left);
+        const rightBytes = new TextEncoder().encode(right);
+        const sharedLength = Math.min(leftBytes.length, rightBytes.length);
+        for (let index = 0; index < sharedLength; index += 1) {
+            const leftByte = leftBytes[index]!;
+            const rightByte = rightBytes[index]!;
+            if (leftByte < rightByte) return -1;
+            if (leftByte > rightByte) return 1;
+        }
+        return compareNumbers(leftBytes.length, rightBytes.length);
+    };
+    const compareNumbers = (left: number, right: number) => left < right ? -1 : left > right ? 1 : 0;
+    const compareObservations = (left: AssociationEvidenceObservation, right: AssociationEvidenceObservation): number => {
+        const leftKindOrder = kindOrder.indexOf(left.kind);
+        const rightKindOrder = kindOrder.indexOf(right.kind);
+        if (leftKindOrder !== rightKindOrder) return compareNumbers(leftKindOrder, rightKindOrder);
+        switch (left.kind) {
+            case "recorded_commit": return compareStrings(typeof left.recordedCommitHash === "string" ? left.recordedCommitHash : "", typeof right.recordedCommitHash === "string" ? right.recordedCommitHash : "");
+            case "touched_file": return compareStrings(typeof left.touchedFilePath === "string" ? left.touchedFilePath : "", typeof right.touchedFilePath === "string" ? right.touchedFilePath : "");
+            case "branch_membership": return compareStrings(typeof left.branchName === "string" ? left.branchName : "", typeof right.branchName === "string" ? right.branchName : "");
+            case "time_window": {
+                const startOrder = compareNumbers(left.windowStartMs ?? 0, right.windowStartMs ?? 0);
+                return startOrder === 0 ? compareNumbers(left.windowEndMs ?? 0, right.windowEndMs ?? 0) : startOrder;
+            }
+        }
+        return 0;
+    };
+    for (let index = 1; index < value.evidence.length; index += 1) {
+        const previous = value.evidence[index - 1];
+        const current = value.evidence[index];
+        if (previous === undefined || current === undefined) continue;
+        if (compareObservations(previous, current) >= 0) {
+            context.addIssue({ code: "custom", message: "association evidence must be duplicate-free and in canonical kind/detail order" });
+        }
+    }
+});
+
+export type SessionAssociation = z.infer<typeof zSessionAssociation>;
+
 export const zCommitRef = z.object({
+    associations: z.array(zSessionAssociation),
     hasSession: z.boolean(),
     hash: z.string(),
     sessionIds: z.array(zSessionID),
@@ -841,6 +1102,20 @@ export const zCommitRef = z.object({
 
 export type CommitRef = z.infer<typeof zCommitRef>;
 
+export const zRewrittenCommit = z.object({
+    associations: z.array(zSessionAssociation),
+    authorTimeMs: z.int().nullish(),
+    confidence: zConfidence,
+    ghostHash: z.string(),
+    method: zRewriteMethod,
+    resolution: zRewriteResolution,
+    sessionIds: z.array(zSessionID),
+    subject: z.string(),
+    successorHash: z.string().nullish()
+});
+
+export type RewrittenCommit = z.infer<typeof zRewrittenCommit>;
+
 export const zSessionIdentity = z.object({
     parentUuid: zSessionID.nullish(),
     schemaVersion: z.int(),
@@ -848,6 +1123,19 @@ export const zSessionIdentity = z.object({
 });
 
 export type SessionIdentity = z.infer<typeof zSessionIdentity>;
+
+export const zSessionInsight = z.object({
+    classification: zInsightClassification.nullish(),
+    confidence: zConfidence,
+    evidence: z.array(zInsightEvidence),
+    kind: zInsightKind,
+    provenance: zInsightProvenance,
+    subjects: z.array(z.string()),
+    summary: z.string().optional(),
+    title: z.string()
+});
+
+export type SessionInsight = z.infer<typeof zSessionInsight>;
 
 /**
  * Session Outcome
@@ -1011,13 +1299,15 @@ export type SubagentRef = z.infer<typeof zSubagentRef>;
 /**
  * Target Kind
  *
- * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, or project-level
+ * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
  */
 export const zTargetKind = z.enum([
     'session',
     'entry',
     'annotation',
-    'project'
+    'project',
+    'file_version',
+    'association'
 ]);
 
 export type TargetKind = z.infer<typeof zTargetKind>;
@@ -1059,14 +1349,61 @@ export const zAnnotationSummary = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.nullish(),
+    targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
     targetKind: zTargetKind,
     targetProjectHash: zProjectHash.nullish(),
     targetSessionId: z.string().nullish(),
     typeId: z.string(),
     typeName: z.string(),
     value: z.string()
+}).superRefine((value, context) => {
+    const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
+    const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
+    const hasOnly = (allowed: readonly string[]) => {
+        const targetFields: readonly [string, unknown][] = [
+            ["targetAssociationId", value.targetAssociationId],
+            ["targetSessionId", value.targetSessionId],
+            ["targetEntryIndex", value.targetEntryIndex],
+            ["targetEntryEndIndex", value.targetEntryEndIndex],
+            ["targetAnnotationId", value.targetAnnotationId],
+            ["targetProjectHash", value.targetProjectHash],
+            ["targetFilePath", value.targetFilePath],
+            ["targetContentHash", value.targetContentHash]
+        ];
+        return targetFields.every(([name, detail]) => allowed.includes(name) || !isPresent(detail));
+    };
+    const addIssue = (message: string) => context.addIssue({ code: "custom", message });
+    switch (value.targetKind) {
+        case "association":
+            if (!isPresent(value.targetAssociationId)) addIssue("association annotations require targetAssociationId");
+            if (!hasOnly(["targetAssociationId"])) addIssue("association annotations must not mix target arms");
+            return;
+        case "session":
+            if (!hasNonEmptyString(value.targetSessionId)) addIssue("session annotations require a non-empty targetSessionId");
+            if (!hasOnly(["targetSessionId"])) addIssue("session annotations must not mix target arms");
+            return;
+        case "entry":
+            if (!hasNonEmptyString(value.targetSessionId) || !isPresent(value.targetEntryIndex)) addIssue("entry annotations require targetSessionId and targetEntryIndex");
+            if (!hasOnly(["targetSessionId", "targetEntryIndex", "targetEntryEndIndex"])) addIssue("entry annotations must not mix target arms");
+            if (value.targetEntryIndex !== undefined && value.targetEntryIndex !== null && value.targetEntryEndIndex !== undefined && value.targetEntryEndIndex !== null && value.targetEntryEndIndex <= value.targetEntryIndex) addIssue("entry annotation targetEntryEndIndex must be greater than targetEntryIndex");
+            return;
+        case "annotation":
+            if (!hasNonEmptyString(value.targetAnnotationId)) addIssue("annotation targets require a non-empty targetAnnotationId");
+            if (!hasOnly(["targetAnnotationId"])) addIssue("annotation targets must not mix target arms");
+            return;
+        case "project":
+            if (!isPresent(value.targetProjectHash)) addIssue("project annotations require targetProjectHash");
+            if (!hasOnly(["targetProjectHash"])) addIssue("project annotations must not mix target arms");
+            return;
+        case "file_version":
+            if (!hasNonEmptyString(value.targetFilePath) || !hasNonEmptyString(value.targetContentHash)) addIssue("file_version annotations require non-empty targetFilePath and targetContentHash");
+            if (!hasOnly(["targetFilePath", "targetContentHash"])) addIssue("file_version annotations must not mix target arms");
+            return;
+    }
 });
 
 export type AnnotationSummary = z.infer<typeof zAnnotationSummary>;
@@ -1093,8 +1430,11 @@ export const zPullAnnotation = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.optional(),
+    targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
     targetKind: zTargetKind.optional(),
     targetProjectHash: zProjectHash.optional(),
     targetSessionId: z.string().nullish(),
@@ -1145,6 +1485,7 @@ export const zTaskSummary = z.object({
     labels: z.array(z.string()).nullable(),
     outcome: z.string().optional(),
     readCount: z.int(),
+    readFiles: z.array(z.string()),
     retryLoop: z.boolean(),
     sessionId: z.string(),
     startMs: z.int().nullish(),
@@ -1167,6 +1508,7 @@ export type ChangeSession = z.infer<typeof zChangeSession>;
 export const zMapNodeDetailPayload = z.object({
     costUsd: z.number().nullish(),
     dependsOn: z.array(z.string()).nullable(),
+    insights: z.array(zSessionInsight),
     kind: zMapNodeKind,
     language: z.string().optional(),
     lastTouchMs: z.int().nullish(),
@@ -1176,6 +1518,7 @@ export const zMapNodeDetailPayload = z.object({
     recentCommits: z.array(zCommitRef).nullable(),
     recordedFiles: z.int(),
     retryLoops: z.int(),
+    rewrittenCommits: z.array(zRewrittenCommit),
     sessionCount: z.int(),
     shapedBy: z.array(zTaskSummary).nullable(),
     taskCount: z.int(),
@@ -1209,6 +1552,7 @@ export const zReviewListPayload = z.object({
     projectHash: zProjectHash,
     recentCommits: z.array(zCommitRef),
     repoFound: z.boolean(),
+    rewrittenCommits: z.array(zRewrittenCommit),
     sessions: z.array(zTimelineSessionRef)
 });
 
@@ -1453,6 +1797,7 @@ export const zChangeDetailPayload = z.object({
     defaultBranch: z.string(),
     files: z.array(zFileChange).nullable(),
     frictions: z.array(zFrictionCluster).nullable(),
+    insights: z.array(zSessionInsight),
     linesAdded: z.int(),
     linesRemoved: z.int(),
     newEdges: z.array(zMapEdge).nullable(),

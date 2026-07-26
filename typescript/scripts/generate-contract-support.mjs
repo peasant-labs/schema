@@ -7,6 +7,7 @@ import ts from "typescript";
 import { parse } from "yaml";
 
 import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
+import { applyAssociationZodRefinements } from "./lib/association-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -29,6 +30,7 @@ const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
+await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
@@ -37,6 +39,12 @@ await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineF
 await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
 await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
 await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
+
+async function refineRootZodContract() {
+  const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
+  const source = await readFile(zodPath, "utf8");
+  await writeFile(zodPath, applyAssociationZodRefinements(source));
+}
 
 function renderVersions(values) {
   return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
@@ -201,6 +209,7 @@ function renderTimelineFixtures(source) {
   for (const testCase of fixtures.cases ?? []) {
     for (const commit of testCase.input?.commits ?? []) {
       if (!("sessionIds" in commit)) commit.sessionIds = null;
+      if (!("associations" in commit)) commit.associations = null;
     }
   }
   return `${header()}import type { TimelineFixtureCorpus } from "../../fixtures/timeline.js";\n\nexport const canonicalTimelineFixtures: TimelineFixtureCorpus = ${JSON.stringify(fixtures, null, 2)};\n`;

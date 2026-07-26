@@ -10,6 +10,19 @@ import { parse } from "yaml";
 const fixture = parse(await readFile(new URL("../tests/fixtures/public-subpaths.yaml", import.meta.url), "utf8"));
 assert.deepEqual(Object.keys(fixture), ["subpaths"]);
 assert.ok(Array.isArray(fixture.subpaths));
+const publicExports = parse(await readFile(new URL("../../testdata/typescript/public_exports.yaml", import.meta.url), "utf8"));
+const typesVersion = publicExports.constants?.find((constant) => constant.name === "TypesVersion")?.value;
+assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
+const spec = JSON.parse(await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8"));
+const enumCatalog = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(enumCatalog.enums) && enumCatalog.enums.length > 0, "enums.yaml must provide at least one enum facade for the packed-package runtime probe");
+const enumName = enumCatalog.enums[0].name;
+assert.match(enumName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "enums.yaml representative enum name must be a JavaScript identifier");
+const enumNames = new Set(enumCatalog.enums.map((enumCase) => enumCase.name));
+const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !enumNames.has(name));
+assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
+assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
+const schemaExportName = `z${schemaName}`;
 
 const temp = await mkdtemp(join(tmpdir(), "peasant-labs-schema-package-"));
 try {
@@ -39,7 +52,12 @@ try {
     stdio: "inherit",
   });
 
-  const probe = fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`).join("\n");
+  const probe = [
+    `import { ${enumName}, ${schemaExportName} } from ${JSON.stringify(packageManifest.name)};`,
+    ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
+    `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
+    `if (typeof ${schemaExportName}.safeParse !== "function") throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${schemaExportName} is not a Zod schema`)});`,
+  ].join("\n");
   await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
   execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });
 

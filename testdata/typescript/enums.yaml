@@ -37,6 +37,20 @@ enums:
       - {name: Agent, value: "agent"}
       - {name: Rule, value: "rule"}
     all_values: ["human", "agent", "rule"]
+  - name: AssociationConclusion
+    all_name: AllAssociationConclusions
+    members:
+      - {name: Confirmed, value: "confirmed"}
+      - {name: Candidate, value: "candidate"}
+    all_values: ["confirmed", "candidate"]
+  - name: AssociationEvidenceKind
+    all_name: AllAssociationEvidenceKinds
+    members:
+      - {name: RecordedCommit, value: "recorded_commit"}
+      - {name: TouchedFile, value: "touched_file"}
+      - {name: BranchMembership, value: "branch_membership"}
+      - {name: TimeWindow, value: "time_window"}
+    all_values: ["recorded_commit", "touched_file", "branch_membership", "time_window"]
   - name: BuiltinCommand
     all_name: AllClaudeBuiltinCmds
     members:
@@ -84,6 +98,13 @@ enums:
       - {name: Annotations, value: "annotations"}
       - {name: ProjectFamiliarity, value: "project_familiarity"}
     all_values: ["dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity"]
+  - name: Confidence
+    all_name: AllConfidences
+    members:
+      - {name: High, value: "high"}
+      - {name: Medium, value: "medium"}
+      - {name: Low, value: "low"}
+    all_values: ["high", "medium", "low"]
   - name: ContentKind
     all_name: AllContentKinds
     members:
@@ -139,6 +160,20 @@ enums:
       - {name: Cursor, value: "cursor"}
       - {name: Antigravity, value: "antigravity"}
     all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor"]
+  - name: InsightKind
+    all_name: AllInsightKinds
+    members:
+      - {name: Decision, value: "decision"}
+      - {name: Friction, value: "friction"}
+      - {name: Unusual, value: "unusual"}
+      - {name: RetryLoop, value: "retry_loop"}
+    all_values: ["decision", "friction", "unusual", "retry_loop"]
+  - name: InsightProvenance
+    all_name: AllInsightProvenances
+    members:
+      - {name: Mechanical, value: "mechanical"}
+      - {name: Mined, value: "mined"}
+    all_values: ["mechanical", "mined"]
   - name: InteractionType
     all_name: AllInteractionTypes
     members:
@@ -176,6 +211,38 @@ enums:
       - {name: Connected, value: "connected"}
       - {name: Error, value: "error"}
     all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error"]
+  - name: ReadAttributionState
+    all_name: AllReadAttributionStates
+    members:
+      - {name: Complete, value: "complete"}
+      - {name: Partial, value: "partial"}
+      - {name: Unavailable, value: "unavailable"}
+    all_values: ["complete", "partial", "unavailable"]
+  - name: ReadStateGrade
+    all_name: AllReadStateGrades
+    members:
+      - {name: None, value: "none"}
+      - {name: Viewed, value: "viewed"}
+      - {name: Reviewed, value: "reviewed"}
+      - {name: ReviewedInDetail, value: "reviewed_in_detail"}
+    all_values: ["none", "viewed", "reviewed", "reviewed_in_detail"]
+  - name: RewriteMethod
+    all_name: AllRewriteMethods
+    members:
+      - {name: Hash, value: "hash"}
+      - {name: PatchID, value: "patch_id"}
+      - {name: AuthorIdentity, value: "author_identity"}
+      - {name: MessageEmbedded, value: "message_embedded"}
+      - {name: Temporal, value: "temporal"}
+      - {name: None, value: "none"}
+    all_values: ["hash", "patch_id", "author_identity", "message_embedded", "temporal", "none"]
+  - name: RewriteResolution
+    all_name: AllRewriteResolutions
+    members:
+      - {name: Live, value: "live"}
+      - {name: Rewritten, value: "rewritten"}
+      - {name: Unresolved, value: "unresolved"}
+    all_values: ["live", "rewritten", "unresolved"]
   - name: Role
     all_name: AllRoles
     members:
@@ -220,7 +287,9 @@ enums:
       - {name: Entry, value: "entry"}
       - {name: Annotation, value: "annotation"}
       - {name: Project, value: "project"}
-    all_values: ["session", "entry", "annotation", "project"]
+      - {name: FileVersion, value: "file_version"}
+      - {name: Association, value: "association"}
+    all_values: ["session", "entry", "annotation", "project", "file_version", "association"]
   - name: ToolCallKind
     all_name: AllToolCallKinds
     members:

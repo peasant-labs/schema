@@ -21,7 +21,9 @@ const fixtureSource = await readFile(new URL("../../testdata/typescript/public_e
 const fixture = parse(fixtureSource);
 assert.deepEqual(Object.keys(fixture).sort(), ["aliases", "constants", "forbidden", "functions"]);
 
-const specSource = await readFile(new URL(`../../generated/types-${root.TypesVersion}.json`, import.meta.url), "utf8");
+const typesVersion = fixture.constants.find((constant) => constant.name === "TypesVersion")?.value;
+assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare the TypesVersion string used to locate the canonical OpenAPI catalog");
+const specSource = await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8");
 const spec = JSON.parse(specSource);
 const catalogNames = Object.keys(spec.components?.schemas ?? {});
 assert.ok(catalogNames.length > 0, "the Types OpenAPI catalog backing the canonical type entries is empty");
@@ -36,10 +38,13 @@ const localApiSource = await readFile(new URL("../src/local-api.ts", import.meta
 const villageApiSource = await readFile(new URL("../src/village-api.ts", import.meta.url), "utf8");
 
 const canonicalTypeEntries = toEntries(catalogNames.filter((name) => !enumNames.includes(name)));
-const canonicalValueEntries = [
-  ...toEntries(enumNames),
-  ...fixture.constants.map((constant) => ({ name: constant.name, target: String(root[constant.name]) })),
+const canonicalRuntimeEntries = [
+  ...toEntries(catalogNames.map((name) => `z${name}`)),
+  ...toEntries(enumCatalog.enums.flatMap((enumCase) => [enumCase.name, enumCase.all_name, `is${enumCase.name}`])),
+  ...toEntries(fixture.functions.map((fn) => fn.name)),
+  ...fixture.constants.map((constant) => ({ name: constant.name, target: String(constant.value) })),
 ];
+const canonicalRuntimeNames = canonicalRuntimeEntries.map((entry) => entry.name).sort();
 
 test("root, local-api, and village-api runtime exports match the strict shared fixture", async (t) => {
   for (const constant of fixture.constants) {
@@ -78,9 +83,9 @@ test("root, local-api, and village-api type-only aliases are wired in source", a
   }
 });
 
-test("public export catalogs are internally consistent before mutation", () => {
-  assert.equal(validateExportEntries(canonicalTypeEntries, canonicalTypeEntries), true);
-  assert.equal(validateExportEntries(canonicalValueEntries, canonicalValueEntries), true);
+test("root runtime facade exactly matches the independent contract catalogs", () => {
+  assert.equal(new Set(canonicalRuntimeNames).size, canonicalRuntimeNames.length, "catalog-derived root runtime export names must not collide");
+  assert.deepEqual(Object.keys(root).sort(), canonicalRuntimeNames);
 });
 
 test("root public export catalog rejects the strict shared mutation corpus", async (t) => {
@@ -108,7 +113,7 @@ test("root public export catalog rejects the strict shared mutation corpus", asy
 
   for (const testCase of mutationFixture.cases) {
     await t.test(testCase.name, () => {
-      const canonical = testCase.input.namespace === "type" ? canonicalTypeEntries : canonicalValueEntries;
+      const canonical = testCase.input.namespace === "type" ? canonicalTypeEntries : canonicalRuntimeEntries;
       const mutated = applyMutation(canonical, testCase.input);
       assert.equal(validateExportEntries(mutated, canonical), testCase.expected);
     });

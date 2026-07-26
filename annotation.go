@@ -44,25 +44,35 @@ type AnnotationTypeSummary struct {
 // AnnotationSummary is the wire format for annotations in API responses.
 // TargetKind is derived via TPT child table JOINs (annotations_with_target view).
 type AnnotationSummary struct {
-	ID                  string        `json:"id"`
-	TargetKind          TargetKind    `json:"targetKind"`
-	TargetSessionID     *string       `json:"targetSessionId,omitempty"`
-	TargetEntryIndex    *int          `json:"targetEntryIndex,omitempty"`
-	TargetEntryEndIndex *int          `json:"targetEntryEndIndex,omitempty"` // V16: half-open [start, end)
-	TargetAnnotID       *string       `json:"targetAnnotationId,omitempty"`
-	TargetProjectHash   *ProjectHash  `json:"targetProjectHash,omitempty"`
-	IsPrimary           bool          `json:"isPrimary"`
-	AnnotatorKind       AnnotatorKind `json:"annotatorKind"`
-	AnnotatorName       string        `json:"annotatorName"`
-	TypeID              string        `json:"typeId"`
-	TypeName            string        `json:"typeName"`
-	Value               string        `json:"value"`
-	Confidence          *float64      `json:"confidence,omitempty"`
-	Reason              *string       `json:"reason,omitempty"`
-	Provenance          *Provenance   `json:"provenance,omitempty"`
-	ContentHash         *string       `json:"contentHash,omitempty"` // V16: push dedup
-	CreatedAt           int64         `json:"createdAt"`
-	SupersededBy        *string       `json:"supersededBy,omitempty"`
+	ID                  string       `json:"id"`
+	TargetKind          TargetKind   `json:"targetKind" yaml:"targetKind"`
+	TargetSessionID     *string      `json:"targetSessionId,omitempty" yaml:"targetSessionId,omitempty"`
+	TargetEntryIndex    *int         `json:"targetEntryIndex,omitempty" yaml:"targetEntryIndex,omitempty"`
+	TargetEntryEndIndex *int         `json:"targetEntryEndIndex,omitempty" yaml:"targetEntryEndIndex,omitempty"` // V16: half-open [start, end)
+	TargetAnnotID       *string      `json:"targetAnnotationId,omitempty" yaml:"targetAnnotationId,omitempty"`
+	TargetProjectHash   *ProjectHash `json:"targetProjectHash,omitempty" yaml:"targetProjectHash,omitempty"`
+	// TargetAssociationID identifies a durable session-to-commit association.
+	// It is an ID target, never an embedded association copy.
+	TargetAssociationID *AssociationID `json:"targetAssociationId,omitempty" yaml:"targetAssociationId,omitempty"`
+	// TargetFilePath and TargetContentHash discriminate a TargetFileVersion
+	// annotation (the 5th TPT arm): a whole-file
+	// read-state receipt keyed to a specific content hash of a specific
+	// repo-relative path, so an agent edit that changes the content hash
+	// invalidates the receipt without deleting it.
+	TargetFilePath    *string       `json:"targetFilePath,omitempty" yaml:"targetFilePath,omitempty"`
+	TargetContentHash *string       `json:"targetContentHash,omitempty" yaml:"targetContentHash,omitempty"`
+	IsPrimary         bool          `json:"isPrimary"`
+	AnnotatorKind     AnnotatorKind `json:"annotatorKind"`
+	AnnotatorName     string        `json:"annotatorName"`
+	TypeID            string        `json:"typeId"`
+	TypeName          string        `json:"typeName"`
+	Value             string        `json:"value"`
+	Confidence        *float64      `json:"confidence,omitempty"`
+	Reason            *string       `json:"reason,omitempty"`
+	Provenance        *Provenance   `json:"provenance,omitempty"`
+	ContentHash       *string       `json:"contentHash,omitempty"` // V16: push dedup
+	CreatedAt         int64         `json:"createdAt"`
+	SupersededBy      *string       `json:"supersededBy,omitempty"`
 }
 
 // AnnotatorSummary is the wire format for annotators in API responses.

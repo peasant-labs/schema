@@ -1,0 +1,37 @@
+cases:
+  - name: empty_read_files_is_valid
+    input: {readFiles: []}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the TaskSummary.ReadFiles contract"}
+    mutation: {description: "a task that read nothing: an empty, non-nil array"}
+  - name: single_read_file_is_valid
+    input: {readFiles: ["internal/api/server.go"]}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the TaskSummary.ReadFiles contract"}
+    mutation: {description: "a task that read exactly one file"}
+  - name: sorted_distinct_read_files_is_valid
+    input: {readFiles: ["internal/api/server.go", "internal/codemap/review.go", "internal/store/schema.go"]}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the retroactive per-file read derivation design"}
+    mutation: {description: "three sorted, distinct repo-relative paths"}
+  - name: null_read_files_is_rejected
+    input: {}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the non-nil ReadFiles invariant, mirroring EditedFiles"}
+    mutation: {description: "omits the required readFiles array entirely"}
+  - name: duplicate_read_file_is_rejected
+    input: {readFiles: ["internal/api/server.go", "internal/api/server.go"]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "TaskSummary.Validate: readFiles must be deduplicated"}
+    mutation: {description: "repeats the same repo-relative path twice"}
+  - name: unsorted_read_files_is_rejected
+    input: {readFiles: ["internal/store/schema.go", "internal/api/server.go"]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "TaskSummary.Validate: readFiles must be sorted ascending"}
+    mutation: {description: "places a lexicographically later path before an earlier one"}

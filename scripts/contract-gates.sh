@@ -22,13 +22,19 @@
 #              informational channel; the DECISION still consumes only the incompatible
 #              section. An unparseable "Incompatible changes" section FAILS CLOSED
 #              (exit 1) — a blind gate must stop the line. See gate_go_apidiff /
-#              stamp_exempt_regex for the full rationale.
+#              stamp_exempt_regex for the full rationale. go-apidiff's go-git
+#              implementation cannot safely inspect a linked Git worktree, so the gate
+#              resolves immutable commits in the caller repository and performs the diff
+#              in a temporary standalone --no-local clone instead.
 #
 #              CI hand-off (env-gated; the vars are unset locally, so nothing is written
-#              off-CI): the runner encodes go-apidiff's OWN outcome as a TRI-STATE in
-#              APIDIFF_CHANGES_FILE — a non-empty file = WARN (the incompatible payload),
-#              an EMPTY file = cleanliness established, an ABSENT file = fail-closed /
-#              gate blind — and writes the compatible bullets to APIDIFF_COMPATIBLE_FILE.
+#              off-CI): after go-apidiff completes its comparison, the runner encodes its
+#              outcome as a TRI-STATE in APIDIFF_CHANGES_FILE — a non-empty file = WARN
+#              (the incompatible payload), an EMPTY file = cleanliness established, an
+#              ABSENT file = fail-closed / gate blind — and writes the compatible bullets
+#              to APIDIFF_COMPATIBLE_FILE. An unexpected non-zero go-apidiff exit, including
+#              exit 1 without the required incompatible-report header, is fail-closed even
+#              when it emitted output that looks otherwise parseable.
 #
 # Usage:
 #   contract-gates.sh vacuum
@@ -203,6 +209,116 @@ extract_go_apidiff_compatible() {
   '
 }
 
+# resolve_go_apidiff_commit resolves a caller-repository reference to the immutable commit
+# hash that the isolated invocation receives. Resolving before cloning prevents a moving
+# branch ref from changing either side of the comparison while setup is in progress.
+resolve_go_apidiff_commit() {
+  local ref="$1" label="$2" resolved
+  if ! resolved="$(git -C "${repo_root}" rev-parse --verify "${ref}^{commit}" 2>&1)"; then
+    echo "::error::go-apidiff could not resolve ${label} reference ${ref@Q} in ${repo_root}." >&2
+    echo "  why: the comparison needs an immutable commit for each side; the reference is missing or is not a commit." >&2
+    echo "  fix: fetch or correct ${label}, then rerun make gates BASE_REF=<commit-or-ref>. git said: ${resolved}" >&2
+    return 1
+  fi
+  printf '%s\n' "${resolved}"
+}
+
+# go_apidiff_timeout_seconds validates the bounded timeout used for the isolated tool
+# process. The environment knob is deliberately constrained so a malformed or unbounded
+# value cannot turn the contract gate into a hanging CI step.
+go_apidiff_timeout_seconds() {
+  local seconds="${GO_APIDIFF_TIMEOUT_SECONDS:-120}"
+  if ! [[ "${seconds}" =~ ^[1-9][0-9]*$ ]] || [[ "${#seconds}" -gt 3 ]] || (( 10#${seconds} > 600 )); then
+    echo "::error::GO_APIDIFF_TIMEOUT_SECONDS=${seconds@Q} is invalid for the go-apidiff gate." >&2
+    echo "  why: isolated API comparison must have a bounded whole-second timeout from 1 through 600." >&2
+    echo "  fix: unset GO_APIDIFF_TIMEOUT_SECONDS or set it to an integer in that range, then rerun the gate." >&2
+    return 1
+  fi
+  printf '%s\n' "${seconds}"
+}
+
+# run_go_apidiff_isolated runs go-apidiff only in a temporary standalone clone. go-apidiff
+# v0.8.3 uses go-git's worktree status and destructive checkout/reset operations, which
+# misread linked-worktree gitdir/index topology. A clone made with --no-local (never
+# --shared) gives go-git an ordinary .git directory and avoids alternates that it cannot
+# safely traverse. This function preserves go-apidiff's stdout, stderr, and exit status;
+# setup or cleanup failures use 125 so callers never mistake them for its advisory exit 1.
+run_go_apidiff_isolated() (
+  local base_hash="$1" head_hash="$2" timeout_seconds="$3"
+  local temp_parent="${TMPDIR:-/tmp}" temp_root="" clone_root="" clone_head
+
+  isolated_go_apidiff_fail() {
+    local step="$1" reason="$2"
+    echo "::error::go-apidiff isolated ${step} failed." >&2
+    echo "  why: ${reason}" >&2
+    echo "  where: temporary clone for ${base_hash} -> ${head_hash}." >&2
+    echo "  fix: inspect the command output above, repair Git or temporary-directory access, then rerun make gates." >&2
+    exit 125
+  }
+
+  cleanup_isolated_go_apidiff_clone() {
+    local original_status=$?
+    trap - EXIT
+    if [[ -z "${temp_root}" || ! -d "${temp_root}" || "${temp_root}" != "${temp_parent%/}/schema-go-apidiff."* ]]; then
+      echo "::error::go-apidiff isolated cleanup precondition failed." >&2
+      echo "  why: the temporary clone directory was missing or did not match the directory created for this comparison." >&2
+      echo "  where: expected ${temp_parent%/}/schema-go-apidiff.* after comparing ${base_hash} -> ${head_hash}." >&2
+      echo "  fix: inspect temporary-directory permissions and remove the abandoned clone before rerunning the gate." >&2
+      exit 125
+    fi
+    if ! rm -rf -- "${temp_root}"; then
+      echo "::error::go-apidiff isolated cleanup failed for ${temp_root}." >&2
+      echo "  why: the temporary standalone clone could not be removed after the comparison." >&2
+      echo "  fix: remove the directory manually, repair temporary-directory permissions, then rerun the gate." >&2
+      exit 125
+    fi
+    exit "${original_status}"
+  }
+
+  if ! temp_root="$(mktemp -d "${temp_parent%/}/schema-go-apidiff.XXXXXXXX")"; then
+    isolated_go_apidiff_fail "temporary-directory creation" "mktemp could not create an isolated clone directory under ${temp_parent}."
+  fi
+  trap cleanup_isolated_go_apidiff_clone EXIT
+  clone_root="${temp_root}/repository"
+
+  if ! git clone --no-local --no-checkout "${repo_root}" "${clone_root}"; then
+    isolated_go_apidiff_fail "clone" "git clone --no-local --no-checkout could not copy the caller repository."
+  fi
+  if [[ ! -d "${clone_root}/.git" ]]; then
+    isolated_go_apidiff_fail "clone verification" "the clone does not have a standalone .git directory."
+  fi
+  if [[ -e "${clone_root}/.git/objects/info/alternates" || -L "${clone_root}/.git/objects/info/alternates" ]]; then
+    isolated_go_apidiff_fail "clone verification" "the clone contains an objects/info/alternates file; shared object storage is prohibited."
+  fi
+  if ! git -C "${clone_root}" cat-file -e "${base_hash}^{commit}"; then
+    isolated_go_apidiff_fail "base verification" "the standalone clone does not contain resolved base commit ${base_hash}."
+  fi
+  if ! git -C "${clone_root}" cat-file -e "${head_hash}^{commit}"; then
+    isolated_go_apidiff_fail "head verification" "the standalone clone does not contain resolved head commit ${head_hash}."
+  fi
+  if ! git -C "${clone_root}" checkout --detach --quiet "${head_hash}"; then
+    isolated_go_apidiff_fail "detached checkout" "Git could not detach the standalone clone at resolved head ${head_hash}."
+  fi
+  if ! clone_head="$(git -C "${clone_root}" rev-parse --verify HEAD^{commit})" || [[ "${clone_head}" != "${head_hash}" ]]; then
+    isolated_go_apidiff_fail "detached checkout verification" "the standalone clone is not detached at resolved head ${head_hash}."
+  fi
+
+  local tool_status
+  if (
+    cd "${clone_root}"
+    timeout --kill-after=5s "${timeout_seconds}s" go-apidiff "${base_hash}" "${head_hash}" --print-compatible --repo-path "${clone_root}"
+  ); then
+    exit 0
+  else
+    tool_status=$?
+  fi
+  if [[ "${tool_status}" -eq 124 ]]; then
+    echo "::error::go-apidiff timed out after ${timeout_seconds}s while comparing ${base_hash} to ${head_hash} in the isolated clone." >&2
+    echo "  fix: inspect module analysis or increase GO_APIDIFF_TIMEOUT_SECONDS up to 600, then rerun the gate." >&2
+  fi
+  exit "${tool_status}"
+)
+
 # gate_go_apidiff runs the exported-Go-API diff vs the base ref and applies the pre-1.0
 # ADVISORY policy: incompatible changes WARN (exit 0), an unparseable incompatible
 # section FAILS CLOSED (exit 1), and compatible changes are surfaced on a separate
@@ -215,17 +331,57 @@ extract_go_apidiff_compatible() {
 # when the env var is unset (the local / non-CI path writes no files).
 gate_go_apidiff() {
   require_bin go-apidiff
+  require_bin git
+  require_bin mktemp
+  require_bin rm
+  require_bin timeout
   local base_ref="$1"
   if [[ -z "${base_ref}" ]]; then
     echo ">> go-apidiff: no BASE_REF given; skipping the exported-API breaking diff (nothing prior to compare)."
     return 0
   fi
-  echo ">> go-apidiff ${base_ref} (exported Go API of the module vs base; +compatible for reviewers)"
-  local out
+  local base_hash head_hash timeout_seconds
+  if ! base_hash="$(resolve_go_apidiff_commit "${base_ref}" "BASE_REF")"; then
+    return 1
+  fi
+  if ! head_hash="$(resolve_go_apidiff_commit "HEAD" "HEAD")"; then
+    return 1
+  fi
+  if ! timeout_seconds="$(go_apidiff_timeout_seconds)"; then
+    return 1
+  fi
+
+  echo ">> go-apidiff ${base_hash} -> ${head_hash} (isolated standalone clone; +compatible for reviewers)"
+  local out tool_rc
   # --print-compatible: emit BOTH sections so reviewers see additive changes; the
-  # DECISION below still consumes only the incompatible section.
-  out="$(go-apidiff "${base_ref}" --print-compatible --repo-path "${repo_root}" 2>&1)" || true
+  # DECISION below still consumes only the incompatible section. The wrapper returns the
+  # real tool status while reserving 125 for clone, checkout, and cleanup failures.
+  if out="$(run_go_apidiff_isolated "${base_hash}" "${head_hash}" "${timeout_seconds}" 2>&1)"; then
+    tool_rc=0
+  else
+    tool_rc=$?
+  fi
   printf '%s\n' "${out}"
+
+  # go-apidiff uses exit 1 for a completed comparison that found incompatible API
+  # changes. Preserve the pre-1.0 advisory policy only for that documented report form.
+  # The isolated wrapper reserves 125 for setup/cleanup failures and timeout returns 124;
+  # both, an exit 1 without the incompatible-report header, and any other non-zero exit
+  # fail before the parser and before either CI signal file can be written.
+  if [[ "${tool_rc}" -ne 0 ]]; then
+    if [[ "${tool_rc}" -eq 1 ]] && printf '%s\n' "${out}" | grep -qE '^[[:space:]]*Incompatible changes:'; then
+      echo "go-apidiff: exited 1 after reporting incompatible exported-Go-API changes; evaluating the advisory report." >&2
+    else
+      case "${tool_rc}" in
+        124) echo "::error::go-apidiff timed out before it established an API report; refusing to write API-diff signals." >&2 ;;
+        125) echo "::error::go-apidiff isolated setup or cleanup failed before it established an API report; refusing to write API-diff signals." >&2 ;;
+        *)   echo "::error::go-apidiff invocation did not produce the required incompatible-change report header in gate_go_apidiff while comparing ${base_hash} to ${head_hash} (exit ${tool_rc}); refusing to parse its output or write API-diff signals." >&2 ;;
+      esac
+      echo "  why: exit 1 is advisory only for go-apidiff's parseable incompatible report; all other exits are tooling, timeout, setup, or cleanup failures." >&2
+      echo "  fix: inspect the go-apidiff output above, repair the reported failure, then rerun make gates BASE_REF=${base_ref}." >&2
+      return 1
+    fi
+  fi
 
   # Pure INCOMPATIBLE decision: STDOUT = non-exempt incompatible payload (empty = clean);
   # exit 0 = warn/clean, 1 = fail-closed.

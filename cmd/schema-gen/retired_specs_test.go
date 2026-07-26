@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -42,50 +44,81 @@ type retiredSpec struct {
 // retiredSpecRegistry is the set of RETIRED spec versions under the generic
 // released-versions-immutability guard.
 //
-// This registry covers RETIRED versions ONLY. CURRENT-generated specs
-// (peasantlocal-api-0.4.0, village-api-0.6.0, types-0.3.0,
-// publish-request-0.6.0) are deliberately EXCLUDED — they stay under the
-// codegen-freshness gate (TestCodegenFreshness_SpecsMatchSource), which regenerates
-// them from the Go source on every run. Pinning a current version's hash here would
-// false-fail `make check` on every legitimate regen. The partition key is simply
-// "is this version still generated?": still-generated => freshness (mutable-by-regen);
+// This registry covers RETIRED versions ONLY. CURRENT-generated specs (the
+// artifacts derived from PeasantLocalAPIVersion, VillageAPIVersion, and
+// TypesVersion, plus the publish-request schema derived from VillageAPIVersion)
+// are deliberately EXCLUDED; they stay under the codegen-freshness gate
+// (TestCodegenFreshness_SpecsMatchSource), which regenerates them from the Go
+// source on every run. Pinning a current version's hash here would false-fail
+// `make check` on every legitimate regen. The partition key is simply "is this
+// version still generated?": still-generated => freshness (mutable-by-regen);
 // retired => this guard (immutable/frozen).
 //
 // REGISTER-AT-FREEZE-TIME: a version is MOVED into this registry at the moment it is
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
 // window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
 // (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
-// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). The
-// Each row now lives in testdata/retired_specs.yaml so adding a newly frozen
-// version extends the fixture rather than an inline test matrix.
+// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). Each
+// row now lives in testdata/retired_specs.yaml so adding a newly frozen version
+// extends the fixture rather than an inline test matrix.
 func loadRetiredSpecRegistry(t *testing.T, root string) []retiredSpec {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))
 	if err != nil {
 		t.Fatalf("read retired spec registry fixture: %v", err)
 	}
+	retiredSpecs, err := decodeRetiredSpecRegistry(data)
+	if err != nil {
+		t.Fatalf("decode retired spec registry fixture: %v", err)
+	}
+	return retiredSpecs
+}
+
+func decodeRetiredSpecRegistry(data []byte) ([]retiredSpec, error) {
 	var fixture struct {
 		Specs []retiredSpec `yaml:"specs"`
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&fixture); err != nil {
-		t.Fatalf("decode retired spec registry fixture: %v", err)
+		return nil, fmt.Errorf("decode retired spec registry fixture: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return nil, fmt.Errorf("decode trailing retired spec registry document: %w", err)
+		}
+		return nil, fmt.Errorf("decode retired spec registry fixture: multiple YAML documents are not allowed")
 	}
 	if len(fixture.Specs) == 0 {
-		t.Fatal("retired spec registry fixture is empty: register every frozen version")
+		return nil, fmt.Errorf("retired spec registry fixture is empty: register every frozen version")
 	}
 	seen := make(map[string]struct{}, len(fixture.Specs))
 	for _, spec := range fixture.Specs {
 		if spec.Name == "" || spec.JSONSHA256 == "" || (!spec.JSONOnly && spec.YAMLSHA256 == "") {
-			t.Fatalf("retired spec registry row %q is incomplete; provide every required frozen hash", spec.Name)
+			return nil, fmt.Errorf("retired spec registry row %q is incomplete; provide every required frozen hash", spec.Name)
 		}
 		if _, duplicate := seen[spec.Name]; duplicate {
-			t.Fatalf("retired spec registry repeats %q", spec.Name)
+			return nil, fmt.Errorf("retired spec registry repeats %q", spec.Name)
 		}
 		seen[spec.Name] = struct{}{}
 	}
-	return fixture.Specs
+	return fixture.Specs, nil
+}
+
+func TestRetiredSpecRegistryRejectsTrailingDocument(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatalf("find module root: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))
+	if err != nil {
+		t.Fatalf("read retired spec registry fixture: %v", err)
+	}
+	withTrailing := append(append([]byte(nil), data...), []byte("\n---\n{}\n")...)
+	if _, err := decodeRetiredSpecRegistry(withTrailing); err == nil || !strings.Contains(err.Error(), "multiple YAML documents") {
+		t.Fatalf("decodeRetiredSpecRegistry accepted a trailing YAML document: err=%v", err)
+	}
 }
 
 // TestRetiredSpecsImmutable is the generic released-versions-immutability guard. It
@@ -133,7 +166,7 @@ func assertFrozen(t *testing.T, path, wantSHA string) {
 // actionable error if the committed file at path is ABSENT or its sha256 does not
 // match wantSHA, and nil only when the file is present AND byte-frozen to wantSHA.
 // Returning an error (rather than calling t.Errorf) is what lets TestCheckFrozen_
-// NegativeControl prove the guard actually FAILS on a wrong-hash / missing input —
+// NegativeControl prove the guard actually FAILS on a wrong-hash / missing input -
 // locking the guard's own correctness against a regression that made it always-pass.
 func checkFrozen(path, wantSHA string) error {
 	got, err := os.ReadFile(path)

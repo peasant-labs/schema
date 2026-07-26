@@ -13,9 +13,16 @@ import (
 )
 
 type timelineFixtureOracleEntry struct {
-	Family         string                  `yaml:"family"`
-	Name           string                  `yaml:"name"`
-	Classification testcase.Classification `yaml:"classification"`
+	Family                  string                           `yaml:"family"`
+	Name                    string                           `yaml:"name"`
+	Classification          testcase.Classification          `yaml:"classification"`
+	RequiredRewrittenCommit *timelineRequiredRewrittenCommit `yaml:"required_rewritten_commit"`
+	RequiredRepairKind      timelineFixtureRepairKind        `yaml:"required_repair_kind"`
+	LedgerTargetSessionID   SessionID                        `yaml:"ledger_target_session_id"`
+}
+
+type timelineRequiredRewrittenCommit struct {
+	GhostHash string `yaml:"ghost_hash"`
 }
 
 type timelineOracleMutationInput struct {
@@ -58,7 +65,7 @@ func TestTimelineFixtureValidationRejectsMissingCanonicalCase(t *testing.T) {
 		t.Fatalf("LoadTimelineFixtures: %v", err)
 	}
 	fixtures.Cases = fixtures.Cases[:len(fixtures.Cases)-1]
-	if err := validateTimelineFixtures(fixtures); err == nil || !strings.Contains(err.Error(), "want at least 16") {
+	if err := validateTimelineFixtures(fixtures); err == nil || !strings.Contains(err.Error(), "want exactly 24") {
 		t.Fatalf("missing-case error = %v, want exact-count rejection", err)
 	}
 }
@@ -143,6 +150,73 @@ func validateTimelineFixtureOracle(fixtures TimelineFixtureCorpus, oracle timeli
 		if fixture.Family != expected.Family || fixture.Name != expected.Name || fixture.Classification != expected.Classification {
 			return fmt.Errorf("timeline row %d identity=(%q,%q,%q), want test-only oracle identity=(%q,%q,%q)", index, fixture.Family, fixture.Name, fixture.Classification, expected.Family, expected.Name, expected.Classification)
 		}
+		if err := validateTimelineFixtureOracleSemantics(fixture, expected); err != nil {
+			return fmt.Errorf("timeline row %d %q semantic oracle: %w", index, fixture.Name, err)
+		}
 	}
 	return nil
+}
+
+func validateTimelineFixtureOracleSemantics(fixture TimelineFixtureCase, expected timelineFixtureOracleEntry) error {
+	switch expected.Name {
+	case "rewrite_ledger_references_bound_session":
+		if expected.RequiredRewrittenCommit == nil {
+			return fmt.Errorf("required_rewritten_commit is absent; declare the rewrite-ledger identity this row protects")
+		}
+	case "rewrite_ledger_reference_requires_binding_truth":
+		if expected.RequiredRepairKind == "" {
+			return fmt.Errorf("required_repair_kind is absent; declare the repair this row protects")
+		}
+		if expected.LedgerTargetSessionID == "" {
+			return fmt.Errorf("ledger_target_session_id is absent; declare the ledger-referenced repair target")
+		}
+	}
+	if expected.RequiredRewrittenCommit != nil {
+		if strings.TrimSpace(expected.RequiredRewrittenCommit.GhostHash) == "" {
+			return fmt.Errorf("required_rewritten_commit.ghost_hash is empty")
+		}
+		if !timelineInputHasRewrittenCommit(fixture.Input, expected.RequiredRewrittenCommit.GhostHash) {
+			return fmt.Errorf("requires rewritten commit with ghostHash %q, but the fixture input does not contain it", expected.RequiredRewrittenCommit.GhostHash)
+		}
+	}
+	if expected.RequiredRepairKind != "" {
+		if fixture.Expected.Repair == nil {
+			return fmt.Errorf("requires repair kind %q, but the fixture has no expected repair", expected.RequiredRepairKind)
+		}
+		if fixture.Expected.Repair.Kind != expected.RequiredRepairKind {
+			return fmt.Errorf("repair kind=%q, want %q", fixture.Expected.Repair.Kind, expected.RequiredRepairKind)
+		}
+	}
+	if expected.LedgerTargetSessionID != "" {
+		if !timelineInputRewriteLedgerReferencesSession(fixture.Input, expected.LedgerTargetSessionID) {
+			return fmt.Errorf("ledger target sessionId %q is not referenced by any rewritten commit", expected.LedgerTargetSessionID)
+		}
+		if fixture.Expected.Repair == nil {
+			return fmt.Errorf("ledger target sessionId %q requires an expected repair", expected.LedgerTargetSessionID)
+		}
+		if fixture.Expected.Repair.SessionID != expected.LedgerTargetSessionID {
+			return fmt.Errorf("repair sessionId=%q, want ledger target sessionId %q", fixture.Expected.Repair.SessionID, expected.LedgerTargetSessionID)
+		}
+	}
+	return nil
+}
+
+func timelineInputHasRewrittenCommit(input TimelineFixtureInput, ghostHash string) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		if rewrittenCommit.GhostHash == ghostHash {
+			return true
+		}
+	}
+	return false
+}
+
+func timelineInputRewriteLedgerReferencesSession(input TimelineFixtureInput, sessionID SessionID) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		for _, rewrittenSessionID := range rewrittenCommit.SessionIDs {
+			if rewrittenSessionID == sessionID {
+				return true
+			}
+		}
+	}
+	return false
 }
