@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const timelineFixtureCaseCount = 22
+const timelineFixtureCaseCount = 23
 
 // TimelineFixtureInput is one normalized session and commit relationship.
 type TimelineFixtureInput struct {
@@ -166,8 +166,8 @@ func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
 	if err := generic.Validate(); err != nil {
 		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
-	if passCount != 6 || failCount != 16 {
-		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 6 and 16", passCount, failCount)
+	if passCount != 6 || failCount != 17 {
+		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 6 and 17", passCount, failCount)
 	}
 	return nil
 }

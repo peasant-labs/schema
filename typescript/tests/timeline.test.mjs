@@ -7,10 +7,10 @@ import { loadTimelineFixtures } from "../dist/fixtures/timeline.js";
 
 test("timeline fixtures expose the complete Go-validated corpus", () => {
   const fixtures = loadTimelineFixtures();
-  assert.equal(fixtures.cases.length, 22);
+  assert.equal(fixtures.cases.length, 23);
   assert.equal(fixtures.cases.filter((fixture) => fixture.classification === Classification.MustPass).length, 6);
-  assert.equal(fixtures.cases.filter((fixture) => fixture.classification === Classification.MustFail).length, 16);
-  assert.equal(new Set(fixtures.cases.map((fixture) => fixture.family)).size, 22);
+  assert.equal(fixtures.cases.filter((fixture) => fixture.classification === Classification.MustFail).length, 17);
+  assert.equal(new Set(fixtures.cases.map((fixture) => fixture.family)).size, 23);
   assert.equal(fixtures.cases[0]?.name, "many_to_many_bindings");
   assert.deepEqual(fixtures.cases[0]?.input.commits[0]?.sessionIds, ["session-a", "session-b"]);
 });

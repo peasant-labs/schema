@@ -904,7 +904,7 @@ func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[Sessi
 		for _, sessionID := range ghost.SessionIDs {
 			session, exists := knownSessions[sessionID]
 			if !exists {
-				return fmt.Errorf("%s validation: rewrittenCommits[%d] (ghost %q) references sessionId %q that is not present in the payload's known sessions; include it in the session table or remove the stale reference", label, index, ghost.GhostHash, sessionID)
+				return fmt.Errorf("%s rewrittenCommits validation failed at schema.ReviewListPayload.Validate/validateRewrittenCommits during wire-boundary validation: rewrittenCommits[%d] (ghost %q) references sessionId %q but that session is absent from sessions; every rewrite-ledger session ID must name a TimelineSessionRef; callers cannot place the ghost consistently on a session lane; add session %q to sessions or remove/correct the stale ledger reference before serving the payload", label, index, ghost.GhostHash, sessionID, sessionID)
 			}
 			if !session.HasCommitBinding {
 				return fmt.Errorf("%s rewrittenCommits validation failed at schema.ReviewListPayload.Validate/validateRewrittenCommits during wire-boundary validation: rewrittenCommits[%d] (ghost %q) references sessionId %q but that session has hasCommitBinding=false; a rewrite ledger row proves an authoritative session commit binding and cannot point at an unbound timeline session; callers would render contradictory timeline traceability for the same session; set hasCommitBinding=true for session %q or remove/correct the stale ledger reference before serving the payload", label, index, ghost.GhostHash, sessionID, sessionID)

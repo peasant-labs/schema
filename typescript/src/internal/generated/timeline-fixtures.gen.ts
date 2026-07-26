@@ -238,6 +238,46 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
       }
     },
     {
+      "family": "rewrite-ledger-missing-session",
+      "name": "rewrite_ledger_references_missing_session",
+      "input": {
+        "sessions": [],
+        "commits": [
+          {
+            "hash": "successor-missing-session",
+            "subject": "stale successor",
+            "hasSession": false,
+            "sessionIds": [],
+            "associations": []
+          }
+        ],
+        "rewrittenCommits": [
+          {
+            "ghostHash": "ghost-missing-session",
+            "subject": "stale ledger",
+            "sessionIds": [
+              "session-rewrite-missing"
+            ],
+            "successorHash": "successor-missing-session",
+            "resolution": "rewritten",
+            "method": "patch_id",
+            "confidence": "high"
+          }
+        ]
+      },
+      "expected": {
+        "errorContains": "references sessionId \"session-rewrite-missing\" but that session is absent from sessions"
+      },
+      "classification": "must-fail",
+      "provenance": {
+        "source": "bug",
+        "ref": "rewrite ledger session references must name timeline sessions"
+      },
+      "mutation": {
+        "description": "points a rewrite ledger row at a session absent from the timeline session catalog"
+      }
+    },
+    {
       "family": "non-default-branch-binding",
       "name": "binding_on_non_default_branch",
       "input": {

@@ -4,6 +4,7 @@ cases:
   - {family: binding-outside-window, name: binding_outside_default_branch_window, classification: must-pass}
   - {family: rewrite-ledger-bound-session, name: rewrite_ledger_references_bound_session, classification: must-pass}
   - {family: rewrite-ledger-binding-truth, name: rewrite_ledger_reference_requires_binding_truth, classification: must-fail}
+  - {family: rewrite-ledger-missing-session, name: rewrite_ledger_references_missing_session, classification: must-fail}
   - {family: non-default-branch-binding, name: binding_on_non_default_branch, classification: must-pass}
   - {family: stable-session-order, name: stable_equal_timestamp_and_missing_timestamp_order, classification: must-pass}
   - {family: descending-timestamp-order, name: newer_timestamp_must_precede_older, classification: must-fail}

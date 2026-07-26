@@ -15,11 +15,11 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadTimelineFixtures: %v", err)
 	}
-	if err := fixtures.CheckMin(22); err != nil {
+	if err := fixtures.CheckMin(23); err != nil {
 		t.Fatal(err)
 	}
-	if len(fixtures.Cases) != 22 {
-		t.Fatalf("timeline fixture has %d cases, want exactly 22", len(fixtures.Cases))
+	if len(fixtures.Cases) != 23 {
+		t.Fatalf("timeline fixture has %d cases, want exactly 23", len(fixtures.Cases))
 	}
 	for _, fixture := range fixtures.Cases {
 		t.Run(fixture.Name, func(t *testing.T) {
@@ -43,6 +43,9 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 					if (repairedErr == nil) != fixture.Expected.Repair.PostMutationValid {
 						t.Fatalf("repaired Validate error = %v, want valid=%v", repairedErr, fixture.Expected.Repair.PostMutationValid)
 					}
+				}
+				if fixture.Name == "rewrite_ledger_references_missing_session" {
+					requireActionableValidationError(t, err, fixture.Expected.ErrorContains)
 				}
 				if fixture.Name == "null_associations" {
 					assertSinglePayloadContextPrefix(t, err, "review list validation:")

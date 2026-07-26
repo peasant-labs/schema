@@ -79,7 +79,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc6` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.6.0` · peasant local API `0.4.0` · types `0.3.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.7.0` · PublishRequest `0.7.0` · peasant local API `0.5.0` · types `0.4.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -213,13 +213,15 @@ enforces it; peasant mirrors it in two SQLite CHECK constraints.
 
 `go run ./cmd/schema-gen` renders the Go source into OpenAPI 3.1 specs, committed as
 byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
-(draft 2020-12). Three spec families are emitted, from the builders in `openapi/`:
+(draft 2020-12). Three OpenAPI spec families and one standalone JSON Schema are
+emitted from the builders in `openapi/`:
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.6.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.4.0` |
-| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.3.0` |
+| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.7.0` |
+| **PublishRequest JSON Schema** | `BuildPublishRequestSchema` | the standalone publish request validator schema | `0.7.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.5.0` |
+| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.4.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Two
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
@@ -273,11 +275,10 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0`, and
-types `0.1.0` / `0.2.0`. The
-still-generated current versions (village API `0.6.0`, PublishRequest `0.6.0`,
-peasant local API `0.4.0`, types `0.3.0`) live under the freshness gate instead.
+Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0`,
+PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`, and
+types `0.1.0` / `0.2.0` / `0.3.0`. The still-generated current versions (village API `0.7.0`,
+PublishRequest `0.7.0`, peasant local API `0.5.0`, types `0.4.0`) live under the freshness gate instead.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
@@ -333,7 +334,7 @@ The `typescript/` directory is the source of the `@peasant-labs/schema`
 package, first shipped with the module's `v0.1.0-rc6` tag. It mirrors the Go
 contract architecture:
 
-- the package root is the canonical Types 0.3 projection of the complete public
+- the package root is the canonical Types 0.4 projection of the complete public
   Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
   and guards;
 - `/local-api` and `/village-api` retain type-only OpenAPI `paths` and
