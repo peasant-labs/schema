@@ -4,8 +4,8 @@ cases:
       component: SessionDetailPayload
       required: [id, harness, turns]
       optional: [schemaVersion, scorecard]
-      nullable: [scorecard]
-      nonnullable: [schemaVersion]
+      nullable: [turns, scorecard]
+      nonnullable: [id, harness, schemaVersion]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
@@ -16,7 +16,7 @@ cases:
       required: [schemaVersion, parentUuid, diagnostics]
       optional: [cwd, derivedAt]
       nullable: [parentUuid, derivedAt]
-      nonnullable: [cwd]
+      nonnullable: [schemaVersion, diagnostics, cwd]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
@@ -27,7 +27,7 @@ cases:
       required: [identity, model, diagnostics]
       optional: [quality, license]
       nullable: [quality]
-      nonnullable: [license]
+      nonnullable: [identity, model, diagnostics, license]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
@@ -38,7 +38,7 @@ cases:
       required: [contractVersion, kind]
       optional: [sessionDetail]
       nullable: [sessionDetail]
-      nonnullable: [kind]
+      nonnullable: [contractVersion, kind]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
@@ -57,10 +57,10 @@ cases:
   - name: review timeline payload
     input:
       component: ReviewListPayload
-      required: [projectHash, changes, recentCommits, sessions]
+      required: [projectHash, changes, recentCommits, sessions, rewrittenCommits]
       optional: [defaultBranch]
       nullable: []
-      nonnullable: [changes, recentCommits, sessions]
+      nonnullable: [projectHash, changes, recentCommits, sessions, rewrittenCommits, defaultBranch]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: timeline collections are required non-null arrays}
@@ -68,10 +68,10 @@ cases:
   - name: commit session bindings
     input:
       component: CommitRef
-      required: [hash, subject, hasSession, sessionIds]
+      required: [hash, subject, hasSession, sessionIds, associations]
       optional: [timeMs]
       nullable: [timeMs]
-      nonnullable: [sessionIds]
+      nonnullable: [hash, subject, hasSession, sessionIds, associations]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: authoritative commit bindings are a required non-null array}

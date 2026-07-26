@@ -14,8 +14,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     `SessionIDs` one-for-one in the same rank order) and `HasSession`/`SessionIDs`
     keep their existing compatibility-mirror semantics unchanged.
   - `ReviewListPayload` and `MapNodeDetailPayload` gain `RewrittenCommits
-    []RewrittenCommit`: ghost-commit rewrite resolution (`RewriteResolution` x
-    `RewriteMethod` x `Confidence`).
+    []RewrittenCommit`: the session-era commit resolution ledger
+    (`RewriteResolution` x `RewriteMethod` x `Confidence`). `live` remains a
+    valid ledger row and only non-live rows render as ghosts; frozen field and
+    enum names remain unchanged.
   - `MapNodeDetailPayload` and `ChangeDetailPayload` gain `Insights
     []SessionInsight`, a (`InsightKind` x `InsightProvenance` x `Confidence`)
     envelope with evidence and subjects, alongside the existing
@@ -111,6 +113,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   generated nominal identity plus `newProjectHash`, `isProjectHash`, and
   `validateProjectHash`. Root payloads and Local/Village operations carry the
   brand, so plain strings cannot silently cross a project-identity boundary.
+- The TypeScript package docs now spell out the validation boundary: generated
+  Zod schemas cover structural shape only; Go `Validate` owns cross-field
+  semantics at the trust boundary, and consumer adapters remain responsible for
+  any post-parse semantic handling.
 - The bespoke Go-to-TypeScript emitter is removed. TypeScript `testcase`
   `Classification` and `ProvenanceSource` closed sets are generated from
   `testcase.go`'s `AllClassifications`/`AllProvenanceSources`; only the

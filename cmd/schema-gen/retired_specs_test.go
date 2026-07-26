@@ -5,8 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -65,28 +67,58 @@ func loadRetiredSpecRegistry(t *testing.T, root string) []retiredSpec {
 	if err != nil {
 		t.Fatalf("read retired spec registry fixture: %v", err)
 	}
+	retiredSpecs, err := decodeRetiredSpecRegistry(data)
+	if err != nil {
+		t.Fatalf("decode retired spec registry fixture: %v", err)
+	}
+	return retiredSpecs
+}
+
+func decodeRetiredSpecRegistry(data []byte) ([]retiredSpec, error) {
 	var fixture struct {
 		Specs []retiredSpec `yaml:"specs"`
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&fixture); err != nil {
-		t.Fatalf("decode retired spec registry fixture: %v", err)
+		return nil, fmt.Errorf("decode retired spec registry fixture: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return nil, fmt.Errorf("decode trailing retired spec registry document: %w", err)
+		}
+		return nil, fmt.Errorf("decode retired spec registry fixture: multiple YAML documents are not allowed")
 	}
 	if len(fixture.Specs) == 0 {
-		t.Fatal("retired spec registry fixture is empty: register every frozen version")
+		return nil, fmt.Errorf("retired spec registry fixture is empty: register every frozen version")
 	}
 	seen := make(map[string]struct{}, len(fixture.Specs))
 	for _, spec := range fixture.Specs {
 		if spec.Name == "" || spec.JSONSHA256 == "" || (!spec.JSONOnly && spec.YAMLSHA256 == "") {
-			t.Fatalf("retired spec registry row %q is incomplete; provide every required frozen hash", spec.Name)
+			return nil, fmt.Errorf("retired spec registry row %q is incomplete; provide every required frozen hash", spec.Name)
 		}
 		if _, duplicate := seen[spec.Name]; duplicate {
-			t.Fatalf("retired spec registry repeats %q", spec.Name)
+			return nil, fmt.Errorf("retired spec registry repeats %q", spec.Name)
 		}
 		seen[spec.Name] = struct{}{}
 	}
-	return fixture.Specs
+	return fixture.Specs, nil
+}
+
+func TestRetiredSpecRegistryRejectsTrailingDocument(t *testing.T) {
+	root, err := findModuleRoot()
+	if err != nil {
+		t.Fatalf("find module root: %v", err)
+	}
+	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))
+	if err != nil {
+		t.Fatalf("read retired spec registry fixture: %v", err)
+	}
+	withTrailing := append(append([]byte(nil), data...), []byte("\n---\n{}\n")...)
+	if _, err := decodeRetiredSpecRegistry(withTrailing); err == nil || !strings.Contains(err.Error(), "multiple YAML documents") {
+		t.Fatalf("decodeRetiredSpecRegistry accepted a trailing YAML document: err=%v", err)
+	}
 }
 
 // TestRetiredSpecsImmutable is the generic released-versions-immutability guard. It

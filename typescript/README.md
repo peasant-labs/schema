@@ -22,6 +22,12 @@ same closed-set shape as Go (`Role.User`, `AllRoles`, `isRole`) without
 maintaining a handwritten second contract. The retired `@peasant-labs/types`
 package must not receive new wire definitions.
 
+The generated Zod schemas are structural parsers for the wire shape. They
+validate object, array, and enum shape, but they do not replace the Go
+`Validate` methods that enforce cross-field semantics at the trust boundary.
+TypeScript consumer adapters remain responsible for any post-parse semantic
+handling.
+
 `ProjectHash` is a nominal string identity matching Go's validated newtype.
 Construct values with `newProjectHash`, narrow unknown wire values with
 `isProjectHash`, or assert a trust boundary with `validateProjectHash`.

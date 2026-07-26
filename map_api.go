@@ -830,9 +830,9 @@ func (RewriteMethod) JSONSchema() (jsonschema.Schema, error) {
 	), nil
 }
 
-// RewrittenCommit is one ghost commit: a session-era commit hash no longer
-// reachable from the default branch, with the resolver's best mapping to a
-// successor.
+// RewrittenCommit is one session-era commit resolution ledger row. The row may
+// record a live commit, a rewritten ghost, or an unresolved ghost; only
+// non-live rows render as ghosts in timeline views.
 type RewrittenCommit struct {
 	GhostHash string `json:"ghostHash" yaml:"ghostHash" required:"true"`
 	// Subject and AuthorTimeMs are "" / nil when the ledger row never
@@ -899,9 +899,9 @@ func (r RewrittenCommit) Validate() error {
 }
 
 // validateRewrittenCommits checks the rewrite cross-reference invariants for a
-// payload's RewrittenCommits list against its known session table and known
-// commit hash set: every entry's own fields are well-formed, every
-// SessionID is present in the payload's session table, and SuccessorHash
+// payload's session-era commit resolution ledger against its known session
+// table and known commit hash set: every entry's own fields are well-formed,
+// every SessionID is present in the payload's session table, and SuccessorHash
 // (when set) is present in the payload's commit set. label identifies the
 // owning payload in error messages.
 func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]struct{}, knownCommitHashes map[string]struct{}, label string) error {
@@ -1187,10 +1187,9 @@ type ReviewListPayload struct {
 	Changes       []ChangeSummary      `json:"changes" required:"true" nullable:"false"`       // open first, then merged
 	RecentCommits []CommitRef          `json:"recentCommits" required:"true" nullable:"false"` // default-branch, cap 200 (time strip)
 	Sessions      []TimelineSessionRef `json:"sessions" required:"true" nullable:"false"`      // complete visible project timeline identities, including sessions not linked to displayed commits
-	// RewrittenCommits lists the project's ghost commits (session-era history
-	// no longer reachable from the default branch) with their rewrite
-	// resolution. It is empty when the resolver
-	// found no ghosts.
+	// RewrittenCommits lists the project's full session-era commit resolution
+	// ledger. Only non-live rows render as ghosts; live rows remain valid history
+	// entries. It is empty when the resolver found no relevant session-era rows.
 	RewrittenCommits []RewrittenCommit `json:"rewrittenCommits" required:"true" nullable:"false"`
 }
 
