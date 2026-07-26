@@ -380,11 +380,14 @@ func TestGitHubClient_CreateCommit_RequestShape(t *testing.T) {
 		_, _ = w.Write(respBody)
 	}))
 
+	// These mirror what the bubbler actually POSTed to mint M2 during the live
+	// bubble seed run, so the request asserted here and the harvested response in
+	// create-commit.json are a matched real pair (see cases.yaml PROVENANCE).
 	const (
-		tip    = "aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00" // T (first parent)
-		squash = "cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22" // S (second parent)
-		tree   = "5dc4ea0f11223344556677889900aabbccddeeff"
-		msg    = "bubble: merge squash of #42 into develop"
+		tip    = "245069a38ab8d4b1e78f43c1fc24788bbd87769a" // T (first parent): the prior bubble M1
+		squash = "cb200266fec5cf07f041222002f364be3c1e85d2" // S (second parent): the squash of PR #38
+		tree   = "e2b98895746fb17be48ec4c12f39dead5b3eab0a"
+		msg    = "Merge PR #38: ci(release-guard): manual workflow_dispatch seed trigger for bubble --boundary"
 	)
 	commit, err := c.CreateCommit(context.Background(), "peasant-labs/schema", release.NewCommit{
 		Message:    msg,
@@ -421,7 +424,7 @@ func TestGitHubClient_CreateCommit_RequestShape(t *testing.T) {
 		t.Fatalf("request parents = %v, want [%s %s] (first-parent T)", sent.Parents, tip, squash)
 	}
 	// The decoded response still maps to the own-type merge commit.
-	if commit.SHA != "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099" {
+	if commit.SHA != "2b6a8d8821bb368dffa449c7e723e46c0d36b499" {
 		t.Fatalf("created commit SHA = %q, want the fixture merge SHA", commit.SHA)
 	}
 }
@@ -444,7 +447,9 @@ func TestGitHubClient_UpdateRefFastForward_RequestShape(t *testing.T) {
 		_, _ = w.Write(respBody)
 	}))
 
-	const newSHA = "99ee88ff77aa66bb55cc44dd33ee22ff11aa0099"
+	// The M2 sha the live bubble's fast-forward compare-and-swap actually advanced
+	// develop to, matching the harvested update-ref-ok.json body.
+	const newSHA = "2b6a8d8821bb368dffa449c7e723e46c0d36b499"
 	if err := c.UpdateRefFastForward(context.Background(), "peasant-labs/schema", "heads/develop", newSHA); err != nil {
 		t.Fatalf("UpdateRefFastForward: %v", err)
 	}

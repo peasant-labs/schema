@@ -13,6 +13,37 @@
 # The multi-page pagination happy paths are NOT here — they keep their inline
 # Link-header handlers (sourcing page bodies from runs-page*.json /
 # reviews-page*.json) because they assert page-count + ordering behavior.
+#
+# --- FIXTURE PROVENANCE -------------------------------------------------------
+#
+# Fixtures come in two grades, and it matters which is which: a DOCUMENTED-SHAPE
+# body was hand-authored from GitHub's REST docs and only proves we parse what the
+# docs describe, whereas a HARVESTED body is a verbatim capture of what the API
+# really returned and additionally proves the docs match reality.
+#
+# HARVESTED (captured 2026-07-24 from peasant-labs/schema, a public repo, with
+# read-only `gh api` GETs — no mutation was performed to obtain them):
+#
+#   create-commit.json
+#     GET /repos/peasant-labs/schema/git/commits/2b6a8d8821bb368dffa449c7e723e46c0d36b499
+#     This is M2, a merge commit our own CreateCommit call minted during the live
+#     bubble seed (Actions run 30078583417). Harvesting it read-only is sound
+#     because `POST git/commits` and `GET git/commits/{sha}` return the SAME
+#     commit-object schema — the response body a create returns is the object a
+#     get returns.
+#
+#   update-ref-ok.json
+#     GET /repos/peasant-labs/schema/git/ref/heads/develop
+#     develop's reference object as our fast-forward compare-and-swap left it in
+#     that same run. Same reasoning: `PATCH git/refs/{ref}` and `GET git/ref/{ref}`
+#     share the reference-object schema.
+#
+# DOCUMENTED-SHAPE (still hand-authored — no authentic capture exists yet):
+#   update-ref-not-ff.json  — the 422 non-fast-forward body. Capturing a real one
+#     means LOSING a compare-and-swap race, which has never happened in
+#     production. Pending a deliberate sandbox recording.
+#   update-ref-other-422.json, error-*.json, get-*.json, list-tags.json,
+#   runs-*.json, reviews-*.json, permission-admin.json.
 
 cases:
   - name: collaborator permission admin (happy path)
@@ -146,20 +177,23 @@ cases:
       - "peasant-labs/schema"
       - "GH_TOKEN can read pull requests"
 
-  - name: create commit maps new sha tree and parents (happy path)
+  # Real body (see PROVENANCE): the M2 bubble merge our own CreateCommit minted.
+  # Inputs mirror what the bubbler actually POSTed for it, so request and response
+  # are a matched pair rather than an invented one.
+  - name: create commit maps new sha tree and parents (happy path, real body)
     method: create_commit
     status: 201
     response: create-commit.json
-    message: "bubble: merge squash of #42 into develop"
-    tree: 5dc4ea0f11223344556677889900aabbccddeeff
+    message: "Merge PR #38: ci(release-guard): manual workflow_dispatch seed trigger for bubble --boundary"
+    tree: e2b98895746fb17be48ec4c12f39dead5b3eab0a
     parents:
-      - aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00
-      - cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
-    wantSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
-    wantTreeSHA: 5dc4ea0f11223344556677889900aabbccddeeff
+      - 245069a38ab8d4b1e78f43c1fc24788bbd87769a
+      - cb200266fec5cf07f041222002f364be3c1e85d2
+    wantSHA: 2b6a8d8821bb368dffa449c7e723e46c0d36b499
+    wantTreeSHA: e2b98895746fb17be48ec4c12f39dead5b3eab0a
     wantParents:
-      - aa11bb22cc33dd44ee55ff66aa77bb88cc99dd00
-      - cc33dd44ee55ff66aa77bb88cc99dd00aa11bb22
+      - 245069a38ab8d4b1e78f43c1fc24788bbd87769a
+      - cb200266fec5cf07f041222002f364be3c1e85d2
 
   - name: create commit 422 fires the actionable wrap
     method: create_commit
@@ -174,19 +208,26 @@ cases:
       - "peasant-labs/schema"
       - "GH_TOKEN can write"
 
-  - name: update ref fast-forward ok (happy path)
+  # Real body (see PROVENANCE): develop's ref exactly as our FF-CAS left it, so
+  # newSHA is the M2 sha the successful advance actually moved develop to.
+  - name: update ref fast-forward ok (happy path, real body)
     method: update_ref
     status: 200
     response: update-ref-ok.json
     ref: heads/develop
-    newSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
+    newSHA: 2b6a8d8821bb368dffa449c7e723e46c0d36b499
 
+  # NOTE: update-ref-not-ff.json is still a DOCUMENTED-SHAPE body, not harvested.
+  # A real one requires losing a compare-and-swap race against develop, which has
+  # never happened in production — there is nothing authentic to capture. It stays
+  # documented-shape pending a deliberate sandbox recording (two racing ref
+  # updates against a throwaway repo).
   - name: update ref 422 non-fast-forward maps to ErrNotFastForward
     method: update_ref
     status: 422
     response: update-ref-not-ff.json
     ref: heads/develop
-    newSHA: 99ee88ff77aa66bb55cc44dd33ee22ff11aa0099
+    newSHA: 2b6a8d8821bb368dffa449c7e723e46c0d36b499
     wantNotFastForward: true
 
   - name: update ref 422 other reason is NOT reported as non-fast-forward
