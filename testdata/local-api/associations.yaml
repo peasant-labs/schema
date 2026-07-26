@@ -11,6 +11,12 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: candidate associations preserve every atomic observation in canonical order}
     mutation: {description: "uses all four atom kinds in their canonical order"}
+  - name: candidate_with_same_kind_recorded_commit_observations_in_detail_order_is_valid
+    input: {id: assoc-repeated-recorded-commits, sessionId: session-repeated-recorded-commits, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-alpha}, {kind: recorded_commit, recordedCommitHash: commit-beta}]}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: canonical evidence order compares distinct detail tuples within one atomic kind}
+    mutation: {description: "orders two distinct recorded_commit hash details lexicographically"}
   - name: candidate_low_branch_observation_is_valid
     input: {id: assoc-c, sessionId: session-c, conclusion: candidate, confidence: low, evidence: [{kind: branch_membership, branchName: topic/branch}]}
     expected: true
@@ -59,6 +65,12 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: atomic evidence has a canonical kind order}
     mutation: {description: "places touched_file before recorded_commit"}
+  - name: reversed_same_kind_recorded_commit_observations_is_rejected
+    input: {id: assoc-reversed-recorded-commits, sessionId: session-reversed-recorded-commits, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-beta}, {kind: recorded_commit, recordedCommitHash: commit-alpha}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: canonical evidence order compares detail tuples within the same atomic kind}
+    mutation: {description: "reverses two distinct recorded_commit hash details"}
   - name: duplicate_evidence_is_rejected
     input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
     expected: false
@@ -101,9 +113,12 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: time_window start must not follow end}
     mutation: {description: "reverses the time window bounds"}
+caseManifest:
+  expectedCaseCount: 19
+  requiredCaseNames: [confirmed_recorded_commit_only_is_valid, candidate_with_ordered_atomic_observations_is_valid, candidate_with_same_kind_recorded_commit_observations_in_detail_order_is_valid, candidate_low_branch_observation_is_valid, empty_session_id_is_rejected, invalid_association_id_is_rejected, unknown_conclusion_is_rejected, unknown_confidence_is_rejected, null_evidence_is_rejected, empty_evidence_is_rejected, unsorted_evidence_is_rejected, reversed_same_kind_recorded_commit_observations_is_rejected, duplicate_evidence_is_rejected, recorded_commit_without_hash_is_rejected, recorded_commit_with_extra_detail_is_rejected, touched_file_with_invalid_path_is_rejected, branch_membership_without_name_is_rejected, time_window_without_end_is_rejected, time_window_with_descending_bounds_is_rejected]
 repairManifest:
-  expectedCaseCount: 3
-  requiredCaseNames: [replace_invalid_association_id_restores_validity, remove_duplicate_observation_restores_validity, clear_extra_detail_restores_validity]
+  expectedCaseCount: 4
+  requiredCaseNames: [replace_invalid_association_id_restores_validity, remove_duplicate_observation_restores_validity, clear_extra_detail_restores_validity, swap_reversed_same_kind_recorded_commit_observations_restores_validity]
 repairs:
   cases:
     - name: replace_invalid_association_id_restores_validity
@@ -124,3 +139,9 @@ repairs:
       classification: must-pass
       provenance: {source: boundary, ref: evidence detail exclusivity repair}
       mutation: {description: "clears the non-selected detail arm"}
+    - name: swap_reversed_same_kind_recorded_commit_observations_restores_validity
+      input: {sourceCase: reversed_same_kind_recorded_commit_observations_is_rejected, mutation: {kind: swap_evidence, input: ""}}
+      expected: {originalErrorContains: "outside canonical kind/detail order", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: same-kind canonical evidence order repair}
+      mutation: {description: "swaps only the two reversed evidence observations"}

@@ -23,6 +23,7 @@ const (
 	associationRepairReplaceID            associationRepairMutationKind = "replace_id"
 	associationRepairDropLastEvidence     associationRepairMutationKind = "drop_last_evidence"
 	associationRepairClearTouchedFilePath associationRepairMutationKind = "clear_touched_file_path"
+	associationRepairSwapEvidence         associationRepairMutationKind = "swap_evidence"
 )
 
 type associationRepairMutation struct {
@@ -40,14 +41,15 @@ type associationRepairExpected struct {
 	PostMutationValid     bool   `yaml:"postMutationValid"`
 }
 
-type associationRepairManifest struct {
+type associationFixtureManifest struct {
 	ExpectedCaseCount int      `yaml:"expectedCaseCount"`
 	RequiredCaseNames []string `yaml:"requiredCaseNames"`
 }
 
 type associationFixtures struct {
 	Cases          []testcase.Case[schema.SessionAssociation, bool]                   `yaml:"cases"`
-	RepairManifest associationRepairManifest                                          `yaml:"repairManifest"`
+	CaseManifest   associationFixtureManifest                                         `yaml:"caseManifest"`
+	RepairManifest associationFixtureManifest                                         `yaml:"repairManifest"`
 	Repairs        testcase.Corpus[associationRepairInput, associationRepairExpected] `yaml:"repairs"`
 }
 
@@ -69,35 +71,51 @@ func loadAssociationFixtures(t *testing.T) associationFixtures {
 	corpus := testcase.Corpus[schema.SessionAssociation, bool]{Cases: fixtures.Cases}
 	assert.RequireMin(t, corpus, len(schema.AllAssociationConclusions)+len(schema.AllAssociationEvidenceKinds)+10)
 	assert.RequireValid(t, corpus)
+	requireAssociationFixtureInventory(t, "case", fixtures.CaseManifest, associationCaseNames(fixtures.Cases))
 	assert.RequireValid(t, fixtures.Repairs)
-	requireAssociationRepairInventory(t, fixtures)
+	requireAssociationFixtureInventory(t, "repair", fixtures.RepairManifest, associationRepairNames(fixtures.Repairs.Cases))
 	return fixtures
 }
 
-func requireAssociationRepairInventory(t *testing.T, fixtures associationFixtures) {
+func associationCaseNames(cases []testcase.Case[schema.SessionAssociation, bool]) []string {
+	names := make([]string, len(cases))
+	for index, fixture := range cases {
+		names[index] = fixture.Name
+	}
+	return names
+}
+
+func associationRepairNames(cases []testcase.Case[associationRepairInput, associationRepairExpected]) []string {
+	names := make([]string, len(cases))
+	for index, repair := range cases {
+		names[index] = repair.Name
+	}
+	return names
+}
+
+func requireAssociationFixtureInventory(t *testing.T, inventory string, manifest associationFixtureManifest, names []string) {
 	t.Helper()
-	manifest := fixtures.RepairManifest
-	if manifest.ExpectedCaseCount <= 0 || len(manifest.RequiredCaseNames) != manifest.ExpectedCaseCount || len(fixtures.Repairs.Cases) != manifest.ExpectedCaseCount {
-		t.Fatalf("association repair manifest and corpus must contain exactly %d cases", manifest.ExpectedCaseCount)
+	if manifest.ExpectedCaseCount <= 0 || len(manifest.RequiredCaseNames) != manifest.ExpectedCaseCount || len(names) != manifest.ExpectedCaseCount {
+		t.Fatalf("association %s manifest and corpus must contain exactly %d cases", inventory, manifest.ExpectedCaseCount)
 	}
 	required := make(map[string]struct{}, len(manifest.RequiredCaseNames))
 	for _, name := range manifest.RequiredCaseNames {
 		if strings.TrimSpace(name) == "" {
-			t.Fatal("association repair manifest contains an empty case name")
+			t.Fatalf("association %s manifest contains an empty case name", inventory)
 		}
 		if _, exists := required[name]; exists {
-			t.Fatalf("association repair manifest repeats case name %q", name)
+			t.Fatalf("association %s manifest repeats case name %q", inventory, name)
 		}
 		required[name] = struct{}{}
 	}
-	for _, repair := range fixtures.Repairs.Cases {
-		if _, exists := required[repair.Name]; !exists {
-			t.Fatalf("association repair corpus contains unregistered case %q", repair.Name)
+	for _, name := range names {
+		if _, exists := required[name]; !exists {
+			t.Fatalf("association %s corpus contains unregistered case %q", inventory, name)
 		}
-		delete(required, repair.Name)
+		delete(required, name)
 	}
 	for name := range required {
-		t.Fatalf("association repair corpus is missing required case %q", name)
+		t.Fatalf("association %s corpus is missing required case %q", inventory, name)
 	}
 }
 
@@ -188,6 +206,11 @@ func applyAssociationRepair(input *schema.SessionAssociation, mutation associati
 			return fmt.Errorf("repair %q requires exactly one observation and no input", mutation.Kind)
 		}
 		input.Evidence[0].TouchedFilePath = nil
+	case associationRepairSwapEvidence:
+		if mutation.Input != "" || len(input.Evidence) != 2 {
+			return fmt.Errorf("repair %q requires exactly two observations and no input", mutation.Kind)
+		}
+		input.Evidence[0], input.Evidence[1] = input.Evidence[1], input.Evidence[0]
 	default:
 		return fmt.Errorf("unknown association repair mutation %q", mutation.Kind)
 	}
@@ -207,6 +230,12 @@ func TestSessionAssociation_RepairCorpus(t *testing.T) {
 			source, exists := sources[repair.Input.SourceCase]
 			if !exists || source.Classification != testcase.MustFail || source.Expected {
 				t.Fatalf("repair source %q must be a rejected fixture", repair.Input.SourceCase)
+			}
+			if repair.Classification != testcase.MustPass || !repair.Expected.PostMutationValid {
+				t.Fatal("repair must be must-pass with postMutationValid=true")
+			}
+			if strings.TrimSpace(repair.Expected.OriginalErrorContains) == "" {
+				t.Fatal("repair must declare originalErrorContains")
 			}
 			input := cloneAssociation(source.Input)
 			originalErr := input.Validate()
