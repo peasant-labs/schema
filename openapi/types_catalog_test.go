@@ -106,11 +106,12 @@ type requirednessInput struct {
 	Nonnullable []string `yaml:"nonnullable"`
 }
 
-// TestTypesCatalogPreservesGoJSONRequiredness keeps the representative fixture
-// matrix honest: every property named in a case must be classified exactly once
-// on the presence axis (required or optional) and exactly once on the
-// nullability axis (nullable or nonnullable).
-func TestTypesCatalogPreservesGoJSONRequiredness(t *testing.T) {
+// TestTypesCatalogPreservesListedPropertyRequiredness keeps the representative
+// fixture honest: every property listed in a case must be classified exactly
+// once on the presence axis (required or optional) and exactly once on the
+// nullability axis (nullable or nonnullable). This is representative coverage,
+// not an exhaustive catalog of every emitted property.
+func TestTypesCatalogPreservesListedPropertyRequiredness(t *testing.T) {
 	var fixture testcase.Corpus[requirednessInput, bool]
 	decodeStrictFixture(t, "testdata/typescript_requiredness.yaml", &fixture)
 	if err := fixture.Validate(); err != nil {
@@ -127,11 +128,11 @@ func TestTypesCatalogPreservesGoJSONRequiredness(t *testing.T) {
 		if !tc.Expected {
 			t.Fatalf("requiredness fixture %q must expect parity", tc.Name)
 		}
-		requireExactRequirednessClassification(t, tc.Input.Component, spec.Components.Schemas[tc.Input.Component], tc.Input)
+		requireListedPropertyRequirednessClassification(t, tc.Input.Component, spec.Components.Schemas[tc.Input.Component], tc.Input)
 	}
 }
 
-func requireExactRequirednessClassification(t *testing.T, component string, schemaMap map[string]interface{}, input requirednessInput) {
+func requireListedPropertyRequirednessClassification(t *testing.T, component string, schemaMap map[string]interface{}, input requirednessInput) {
 	t.Helper()
 
 	properties, ok := schemaMap["properties"].(map[string]interface{})
@@ -145,14 +146,14 @@ func requireExactRequirednessClassification(t *testing.T, component string, sche
 	nullable := collectUniqueNames(t, component, "nullable", input.Nullable)
 	nonnullable := collectUniqueNames(t, component, "nonnullable", input.Nonnullable)
 
-	selected := map[string]struct{}{}
+	listed := map[string]struct{}{}
 	for _, set := range []map[string]struct{}{required, optional, nullable, nonnullable} {
 		for name := range set {
-			selected[name] = struct{}{}
+			listed[name] = struct{}{}
 		}
 	}
 
-	for name := range selected {
+	for name := range listed {
 		prop, ok := properties[name]
 		if !ok {
 			t.Fatalf("component %s fixture references property %q that the spec does not emit", component, name)

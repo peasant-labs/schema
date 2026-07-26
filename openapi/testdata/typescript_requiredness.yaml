@@ -57,10 +57,10 @@ cases:
   - name: review timeline payload
     input:
       component: ReviewListPayload
-      required: [projectHash, changes, recentCommits, sessions, rewrittenCommits]
+      required: [projectHash, changes, recentCommits, sessions, rewrittenCommits, repoFound]
       optional: [defaultBranch]
       nullable: []
-      nonnullable: [projectHash, changes, recentCommits, sessions, rewrittenCommits, defaultBranch]
+      nonnullable: [projectHash, changes, recentCommits, sessions, rewrittenCommits, repoFound, defaultBranch]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: timeline collections are required non-null arrays}
