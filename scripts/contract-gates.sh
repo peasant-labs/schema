@@ -25,12 +25,12 @@
 #              stamp_exempt_regex for the full rationale.
 #
 #              CI hand-off (env-gated; the vars are unset locally, so nothing is written
-#              off-CI): after a SUCCESSFUL go-apidiff invocation, the runner encodes its
+#              off-CI): after go-apidiff completes its comparison, the runner encodes its
 #              outcome as a TRI-STATE in APIDIFF_CHANGES_FILE — a non-empty file = WARN
 #              (the incompatible payload), an EMPTY file = cleanliness established, an
 #              ABSENT file = fail-closed / gate blind — and writes the compatible bullets
 #              to APIDIFF_COMPATIBLE_FILE. An unexpected non-zero go-apidiff exit, including
-#              exit 1 without a parseable incompatible-report header, is fail-closed even
+#              exit 1 without the required incompatible-report header, is fail-closed even
 #              when it emitted output that looks otherwise parseable.
 #
 # Usage:
@@ -243,7 +243,7 @@ gate_go_apidiff() {
     if [[ "${tool_rc}" -eq 1 ]] && printf '%s\n' "${out}" | grep -qE '^[[:space:]]*Incompatible changes:'; then
       echo "go-apidiff: exited 1 after reporting incompatible exported-Go-API changes; evaluating the advisory report." >&2
     else
-      echo "::error::go-apidiff invocation did not produce a valid incompatible-change report in gate_go_apidiff while comparing ${base_ref} to the current module (exit ${tool_rc}); refusing to parse its output or write API-diff signals." >&2
+      echo "::error::go-apidiff invocation did not produce the required incompatible-change report header in gate_go_apidiff while comparing ${base_ref} to the current module (exit ${tool_rc}); refusing to parse its output or write API-diff signals." >&2
       echo "  why: exit 1 is only an expected comparison result when go-apidiff emitted its incompatible-report header; any other non-zero result is a tooling or module-analysis failure." >&2
       echo "  fix: inspect the go-apidiff output above, repair the tool, repository, or module-analysis failure, then rerun make gates BASE_REF=${base_ref}." >&2
       return 1

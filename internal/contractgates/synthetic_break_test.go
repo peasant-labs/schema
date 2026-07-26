@@ -876,10 +876,10 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 }
 
 // TestGoAPIDiffGateRunnerInvocationFailure proves that the SHIPPED runner treats a
-// non-zero go-apidiff exit as a tooling failure rather than parsing its potentially
-// partial output. The fake emits an ordinary-looking compatible report before exiting
-// non-zero, so restoring output-suppressing error handling would incorrectly make this
-// test green and write the clean/compatible signals.
+// non-zero go-apidiff exit without an incompatible-report header as a tooling failure
+// rather than parsing its potentially partial output. The fake emits an ordinary-looking
+// compatible report before exiting non-zero, so restoring output-suppressing error
+// handling would incorrectly make this test green and write the clean/compatible signals.
 func TestGoAPIDiffGateRunnerInvocationFailure(t *testing.T) {
 	skipIfMissing(t, "bash")
 	bashPath, err := exec.LookPath("bash")
