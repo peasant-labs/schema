@@ -206,6 +206,12 @@ export interface components {
          * @enum {string}
          */
         SchemaAnnotatorKind: Schema.AnnotatorKind;
+        /**
+         * Association ID
+         * @description Opaque durable Peasant identifier for one session-to-commit association
+         * @example assoc-20260726:session-a:commit-1
+         */
+        SchemaAssociationID: Schema.AssociationID;
         SchemaCommitInfo: Schema.CommitInfo;
         SchemaDiagnosticEntry: Schema.DiagnosticEntry;
         SchemaDiagnosticsInfo: Schema.DiagnosticsInfo;
@@ -312,10 +318,11 @@ export interface components {
         SchemaSubagentRef: Schema.SubagentRef;
         /**
          * Target Kind
-         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)
+         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
          * @example session
          * @example entry
          * @example file_version
+         * @example association
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;

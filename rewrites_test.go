@@ -21,9 +21,11 @@ var rewritesCasesYAML []byte
 type rewriteRepairMutationKind string
 
 const (
-	rewriteRepairClearSuccessorHash rewriteRepairMutationKind = "clear_successor_hash"
-	rewriteRepairAppendSessionID    rewriteRepairMutationKind = "append_session_id"
-	rewriteRepairReplaceSessionID   rewriteRepairMutationKind = "replace_session_id"
+	rewriteRepairClearSuccessorHash   rewriteRepairMutationKind = "clear_successor_hash"
+	rewriteRepairAppendSessionID      rewriteRepairMutationKind = "append_session_id"
+	rewriteRepairReplaceSessionID     rewriteRepairMutationKind = "replace_session_id"
+	rewriteRepairSwapAssociations     rewriteRepairMutationKind = "swap_associations"
+	rewriteRepairReplaceAssociationID rewriteRepairMutationKind = "replace_association_id"
 )
 
 type rewriteRepairMutation struct {
@@ -69,10 +71,10 @@ func loadRewriteFixtures(t *testing.T) rewriteFixtures {
 	}
 
 	corpus := testcase.Corpus[schema.RewrittenCommit, bool]{Cases: fixtures.Cases}
-	assert.RequireMin(t, corpus, 18)
+	assert.RequireMin(t, corpus, 20)
 	assert.RequireValid(t, corpus)
-	if got := len(corpus.Cases); got != 18 {
-		t.Fatalf("rewrites corpus has %d cases, want exactly 18", got)
+	if got := len(corpus.Cases); got != 20 {
+		t.Fatalf("rewrites corpus has %d cases, want exactly 20", got)
 	}
 	assert.RequireValid(t, fixtures.Repairs)
 	requireRewriteRepairInventory(t, fixtures)
@@ -167,6 +169,7 @@ func cloneRewrittenCommit(input schema.RewrittenCommit) schema.RewrittenCommit {
 		successor := *input.SuccessorHash
 		cloned.SuccessorHash = &successor
 	}
+	cloned.Associations = append([]schema.SessionAssociation(nil), input.Associations...)
 	return cloned
 }
 
@@ -185,6 +188,16 @@ func applyRewriteRepair(input *schema.RewrittenCommit, mutation rewriteRepairMut
 			return fmt.Errorf("repair %q requires a non-empty session ID input", mutation.Kind)
 		}
 		input.SessionIDs = append(input.SessionIDs, schema.SessionID(mutation.Input))
+		input.Associations = append(input.Associations, schema.SessionAssociation{
+			ID:         schema.AssociationID("assoc-repaired-" + mutation.Input),
+			SessionID:  schema.SessionID(mutation.Input),
+			Conclusion: schema.AssociationConclusionConfirmed,
+			Confidence: schema.ConfidenceHigh,
+			Evidence: []schema.AssociationEvidenceObservation{{
+				Kind:               schema.AssociationEvidenceRecordedCommit,
+				RecordedCommitHash: &input.GhostHash,
+			}},
+		})
 	case rewriteRepairReplaceSessionID:
 		if strings.TrimSpace(mutation.Input) == "" {
 			return fmt.Errorf("repair %q requires a non-empty session ID input", mutation.Kind)
@@ -193,6 +206,20 @@ func applyRewriteRepair(input *schema.RewrittenCommit, mutation rewriteRepairMut
 			return fmt.Errorf("repair %q requires a sessionIds element to replace", mutation.Kind)
 		}
 		input.SessionIDs[0] = schema.SessionID(mutation.Input)
+		if len(input.Associations) == 0 {
+			return fmt.Errorf("repair %q requires an association to preserve the parent mirror", mutation.Kind)
+		}
+		input.Associations[0].SessionID = schema.SessionID(mutation.Input)
+	case rewriteRepairSwapAssociations:
+		if mutation.Input != "" || len(input.Associations) != 2 {
+			return fmt.Errorf("repair %q requires exactly two associations and no input", mutation.Kind)
+		}
+		input.Associations[0], input.Associations[1] = input.Associations[1], input.Associations[0]
+	case rewriteRepairReplaceAssociationID:
+		if strings.TrimSpace(mutation.Input) == "" || len(input.Associations) < 2 {
+			return fmt.Errorf("repair %q requires at least two associations and a non-empty ID input", mutation.Kind)
+		}
+		input.Associations[1].ID = schema.AssociationID(mutation.Input)
 	default:
 		return fmt.Errorf("unknown rewrite repair mutation %q", mutation.Kind)
 	}

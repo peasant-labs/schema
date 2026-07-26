@@ -401,6 +401,16 @@
               }
             ]
           },
+          "targetAssociationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssociationID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "targetContentHash": {
             "anyOf": [
               {
@@ -678,38 +688,121 @@
         ],
         "type": "object"
       },
-      "AssociationEvidence": {
-        "description": "Which signal(s) produced a session\u003c-\u003ecommit association",
+      "AssociationConclusion": {
+        "description": "Producer-supplied conclusion for a session-to-commit association: confirmed or candidate",
         "enum": [
-          "commit_and_touch",
-          "commit_only",
-          "touch_only",
-          "branch_only",
-          "time_window"
+          "confirmed",
+          "candidate"
         ],
         "examples": [
-          "commit_and_touch",
-          "commit_only",
-          "touch_only",
-          "branch_only",
-          "time_window"
+          "confirmed",
+          "candidate"
         ],
-        "title": "Association Evidence",
+        "title": "Association Conclusion",
         "type": "string"
       },
-      "AssociationKind": {
-        "description": "Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal",
+      "AssociationEvidenceKind": {
+        "description": "Atomic observation supporting a session-to-commit association",
         "enum": [
-          "bound",
-          "candidate",
-          "temporal"
+          "recorded_commit",
+          "touched_file",
+          "branch_membership",
+          "time_window"
         ],
         "examples": [
-          "bound",
-          "candidate",
-          "temporal"
+          "recorded_commit",
+          "touched_file",
+          "branch_membership",
+          "time_window"
         ],
-        "title": "Association Kind",
+        "title": "Association Evidence Kind",
+        "type": "string"
+      },
+      "AssociationEvidenceObservation": {
+        "properties": {
+          "branchName": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/AssociationEvidenceKind"
+          },
+          "recordedCommitHash": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "touchedFilePath": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "windowEndMs": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "windowStartMs": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "AssociationID": {
+        "description": "Opaque durable Peasant identifier for one session-to-commit association",
+        "examples": [
+          "assoc-20260726:session-a:commit-1"
+        ],
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+        "title": "Association ID",
         "type": "string"
       },
       "BatchCreateAnnotationsErrorResponse": {
@@ -2961,6 +3054,9 @@
               "string"
             ]
           },
+          "targetAssociationId": {
+            "$ref": "#/components/schemas/AssociationID"
+          },
           "targetContentHash": {
             "type": [
               "null",
@@ -4020,6 +4116,12 @@
       },
       "RewrittenCommit": {
         "properties": {
+          "associations": {
+            "items": {
+              "$ref": "#/components/schemas/SessionAssociation"
+            },
+            "type": "array"
+          },
           "authorTimeMs": {
             "anyOf": [
               {
@@ -4072,6 +4174,7 @@
           "ghostHash",
           "subject",
           "sessionIds",
+          "associations",
           "resolution",
           "method",
           "confidence"
@@ -4238,22 +4341,29 @@
       },
       "SessionAssociation": {
         "properties": {
+          "conclusion": {
+            "$ref": "#/components/schemas/AssociationConclusion"
+          },
           "confidence": {
             "$ref": "#/components/schemas/Confidence"
           },
           "evidence": {
-            "$ref": "#/components/schemas/AssociationEvidence"
+            "items": {
+              "$ref": "#/components/schemas/AssociationEvidenceObservation"
+            },
+            "type": "array"
           },
-          "kind": {
-            "$ref": "#/components/schemas/AssociationKind"
+          "id": {
+            "$ref": "#/components/schemas/AssociationID"
           },
           "sessionId": {
             "$ref": "#/components/schemas/SessionID"
           }
         },
         "required": [
+          "id",
           "sessionId",
-          "kind",
+          "conclusion",
           "confidence",
           "evidence"
         ],
@@ -5094,18 +5204,20 @@
         "type": "object"
       },
       "TargetKind": {
-        "description": "What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)",
+        "description": "What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association",
         "enum": [
           "session",
           "entry",
           "annotation",
           "project",
-          "file_version"
+          "file_version",
+          "association"
         ],
         "examples": [
           "session",
           "entry",
-          "file_version"
+          "file_version",
+          "association"
         ],
         "title": "Target Kind",
         "type": "string"

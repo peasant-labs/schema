@@ -10,7 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const timelineFixtureCaseCount = 23
+const timelineFixtureCaseCount = 24
 
 // TimelineFixtureInput is one normalized session and commit relationship.
 type TimelineFixtureInput struct {
@@ -106,11 +106,11 @@ func LoadTimelineFixtures() (TimelineFixtureCorpus, error) {
 }
 
 func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
-	if err := fixtures.CheckMin(timelineFixtureCaseCount); err != nil {
-		return fmt.Errorf("load timeline fixtures: %w", err)
-	}
 	if len(fixtures.Cases) != timelineFixtureCaseCount {
 		return fmt.Errorf("load timeline fixtures: corpus has %d cases, want exactly %d canonical relationship cases", len(fixtures.Cases), timelineFixtureCaseCount)
+	}
+	if err := fixtures.CheckMin(timelineFixtureCaseCount); err != nil {
+		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
 	generic := testcase.Corpus[TimelineFixtureInput, TimelineFixtureExpected]{
 		Cases: make([]testcase.Case[TimelineFixtureInput, TimelineFixtureExpected], len(fixtures.Cases)),
@@ -166,8 +166,8 @@ func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
 	if err := generic.Validate(); err != nil {
 		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
-	if passCount != 6 || failCount != 17 {
-		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 6 and 17", passCount, failCount)
+	if passCount != 7 || failCount != 17 {
+		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 7 and 17", passCount, failCount)
 	}
 	return nil
 }

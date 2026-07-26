@@ -9,10 +9,15 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 - Local API 0.5.0 (`PeasantLocalAPIVersion`), Village API 0.7.0, and Types 0.4.0:
   the git+session timeline and insight-first code map wire surface, all additive.
-  - `CommitRef` gains `Associations []SessionAssociation` (decomposed
-    `AssociationKind` x `Confidence` x `AssociationEvidence`, mirroring
-    `SessionIDs` one-for-one in the same rank order) and `HasSession`/`SessionIDs`
-    keep their existing compatibility-mirror semantics unchanged.
+   - `CommitRef` and `RewrittenCommit` carry `Associations
+     []SessionAssociation`, each mirroring `SessionIDs` one-for-one in the same
+     rank order. A `SessionAssociation` has a durable opaque `AssociationID`, a
+     closed `AssociationConclusion`, `Confidence`, and a non-empty canonical
+     sequence of atomic `AssociationEvidenceObservation` values. The atomic
+     kinds are `recorded_commit`, `touched_file`, `branch_membership`, and
+     `time_window`; a confirmed association may use one authoritative
+     `recorded_commit` observation. `HasSession`/`SessionIDs` keep their
+     existing compatibility-mirror semantics unchanged.
   - `ReviewListPayload` and `MapNodeDetailPayload` gain `RewrittenCommits
     []RewrittenCommit`: the session-era commit resolution ledger
     (`RewriteResolution` x `RewriteMethod` x `Confidence`). `live` remains a
@@ -31,9 +36,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     `ChangedRegionCount`/`AttributedRegionCount`/`ReviewedRegionCount`.
   - `TaskSummary` gains `ReadFiles []string`, the per-file derivation of
     `ReadCount`, mirroring `EditedFiles`'s sorted-distinct-non-nil invariants.
-  - `TargetKind` gains a `file_version` member (a whole-file, content-hash
-    keyed read-state receipt target); `AnnotationSummary` gains
-    `TargetFilePath`/`TargetContentHash` as its discriminator pair.
+   - `TargetKind` gains a `file_version` member (a whole-file, content-hash
+     keyed read-state receipt target) and an `association` member. An
+     association annotation uses only `AnnotationSummary.TargetAssociationID`;
+     it never embeds an association copy. `AnnotationSummary` retains
+     `TargetFilePath`/`TargetContentHash` as the file-version discriminator pair.
   - Ten new enum-exhaustion corpora, a segmented insight fixture (mechanical /
     mined / classification-must-be-nil / rejections), and an extended project
     timeline corpus back every new closed set and cross-reference invariant.

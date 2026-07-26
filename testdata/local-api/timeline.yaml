@@ -6,8 +6,8 @@ cases:
         - {sessionId: session-a, title: first task, harness: claude-code, startMs: 2000, hasCommitBinding: true}
         - {sessionId: session-b, title: second task, harness: codex, startMs: 1000, hasCommitBinding: true}
       commits:
-        - {hash: commit-2, subject: follow-up, hasSession: true, sessionIds: [session-a, session-b], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-b, kind: candidate, confidence: medium, evidence: touch_only}]}
-        - {hash: commit-1, subject: setup, hasSession: true, sessionIds: [session-a], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-2, subject: follow-up, hasSession: true, sessionIds: [session-a, session-b], associations: [{id: assoc-commit-2-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-2}]}, {id: assoc-commit-2-b, sessionId: session-b, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: src/main.go}]}]}
+        - {hash: commit-1, subject: setup, hasSession: true, sessionIds: [session-a], associations: [{id: assoc-commit-1-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-1}]}]}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: authoritative many-to-many commit bindings}
@@ -42,7 +42,7 @@ cases:
       commits:
         - {hash: successor-bound, subject: squash successor, hasSession: false, sessionIds: [], associations: []}
       rewrittenCommits:
-        - {ghostHash: ghost-bound, subject: squash repair, sessionIds: [session-rewrite-bound], successorHash: successor-bound, resolution: rewritten, method: patch_id, confidence: high}
+        - {ghostHash: ghost-bound, subject: squash repair, sessionIds: [session-rewrite-bound], associations: [{id: assoc-ghost-bound, sessionId: session-rewrite-bound, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-bound}]}], successorHash: successor-bound, resolution: rewritten, method: patch_id, confidence: high}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: rewrite ledger references require authoritative binding truth}
@@ -55,13 +55,26 @@ cases:
       commits:
         - {hash: successor-unbound, subject: stale successor, hasSession: false, sessionIds: [], associations: []}
       rewrittenCommits:
-        - {ghostHash: ghost-unbound, subject: stale ledger, sessionIds: [session-rewrite-unbound], successorHash: successor-unbound, resolution: rewritten, method: patch_id, confidence: high}
+        - {ghostHash: ghost-unbound, subject: stale ledger, sessionIds: [session-rewrite-unbound], associations: [{id: assoc-ghost-unbound, sessionId: session-rewrite-unbound, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-unbound}]}], successorHash: successor-unbound, resolution: rewritten, method: patch_id, confidence: high}
     expected:
       error_contains: hasCommitBinding=false
       repair: {kind: set_session_binding_true, sessionId: session-rewrite-unbound, postMutationValid: true}
     classification: must-fail
     provenance: {source: bug, ref: ReviewListPayload rewrite ledger references must imply HasCommitBinding}
     mutation: {description: points a rewrite ledger row at an existing timeline session whose binding truth is false}
+  - family: rewrite-successor-association-identity
+    name: rewrite_successor_preserves_association_identity
+    input:
+      sessions:
+        - {sessionId: session-rewrite-preserved, title: preserved relationship, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-preserved, subject: squash successor, hasSession: true, sessionIds: [session-rewrite-preserved], associations: [{id: assoc-rewrite-preserved, sessionId: session-rewrite-preserved, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-preserved}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-preserved, subject: original recorded commit, sessionIds: [session-rewrite-preserved], associations: [{id: assoc-rewrite-preserved, sessionId: session-rewrite-preserved, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-preserved}]}], successorHash: successor-preserved, resolution: rewritten, method: patch_id, confidence: high}
+    expected: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: displayed rewrite successors preserve the first-class association object when they represent the binding}
+    mutation: {description: "carries the same durable association ID, conclusion, confidence, and observation from the ledger to its displayed successor"}
   - family: rewrite-ledger-missing-session
     name: rewrite_ledger_references_missing_session
     input:
@@ -69,7 +82,7 @@ cases:
       commits:
         - {hash: successor-missing-session, subject: stale successor, hasSession: false, sessionIds: [], associations: []}
       rewrittenCommits:
-        - {ghostHash: ghost-missing-session, subject: stale ledger, sessionIds: [session-rewrite-missing], successorHash: successor-missing-session, resolution: rewritten, method: patch_id, confidence: high}
+        - {ghostHash: ghost-missing-session, subject: stale ledger, sessionIds: [session-rewrite-missing], associations: [{id: assoc-ghost-missing, sessionId: session-rewrite-missing, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-missing-session}]}], successorHash: successor-missing-session, resolution: rewritten, method: patch_id, confidence: high}
     expected: {error_contains: references sessionId "session-rewrite-missing" but that session is absent from sessions}
     classification: must-fail
     provenance: {source: bug, ref: rewrite ledger session references must name timeline sessions}
@@ -135,7 +148,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: false, sessionIds: [session-a], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-a, subject: work, hasSession: false, sessionIds: [session-a], associations: [{id: assoc-boolean-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: hasSession must mirror}
     classification: must-fail
     provenance: {source: requirement, ref: compatibility boolean mirrors authoritative bindings}
@@ -146,7 +159,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: false}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: [{id: assoc-binding-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: hasCommitBinding=false}
     classification: must-fail
     provenance: {source: requirement, ref: visible binding proves complete session binding truth}
@@ -156,7 +169,7 @@ cases:
     input:
       sessions: []
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-missing], associations: [{sessionId: session-missing, kind: candidate, confidence: medium, evidence: commit_only}]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-missing], associations: [{id: assoc-missing, sessionId: session-missing, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: references unknown sessionId}
     classification: must-fail
     provenance: {source: requirement, ref: commit bindings reference normalized session identities}
@@ -178,7 +191,7 @@ cases:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-a], associations: [{sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-a], associations: [{id: assoc-duplicate-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}, {id: assoc-duplicate-b, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: repeats sessionId}
     classification: must-fail
     provenance: {source: boundary, ref: commit binding set uniqueness}
@@ -210,7 +223,7 @@ cases:
         - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}
         - {sessionId: session-b, title: second, harness: codex, startMs: 1000, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-b, session-a], associations: [{sessionId: session-b, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-b, session-a], associations: [{id: assoc-order-b, sessionId: session-b, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}, {id: assoc-order-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: noncanonical sessionIds order}
     classification: must-fail
     provenance: {source: boundary, ref: commit bindings follow normalized timeline session rank}
@@ -244,19 +257,19 @@ cases:
         - {sessionId: session-a, title: first, harness: claude-code, startMs: 2000, hasCommitBinding: true}
         - {sessionId: session-b, title: second, harness: codex, startMs: 1000, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-b], associations: [{sessionId: session-b, kind: bound, confidence: high, evidence: commit_and_touch}, {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}]}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a, session-b], associations: [{id: assoc-rank-b, sessionId: session-b, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}, {id: assoc-rank-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
     expected: {error_contains: Associations must equal SessionIDs in the same rank order}
     classification: must-fail
     provenance: {source: requirement, ref: the Associations rank-order invariant}
     mutation: {description: swaps the two associations relative to the canonical sessionIds order}
-  - family: association-invalid-kind
-    name: association_kind_not_in_closed_set
+  - family: association-invalid-conclusion
+    name: association_conclusion_not_in_closed_set
     input:
       sessions:
         - {sessionId: session-a, title: work, harness: claude-code, hasCommitBinding: true}
       commits:
-        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: [{sessionId: session-a, kind: unknown-kind, confidence: high, evidence: commit_and_touch}]}
-    expected: {error_contains: association kind validation failed}
+        - {hash: commit-a, subject: work, hasSession: true, sessionIds: [session-a], associations: [{id: assoc-invalid-conclusion, sessionId: session-a, conclusion: unknown-conclusion, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}]}
+    expected: {error_contains: association conclusion validation failed}
     classification: must-fail
-    provenance: {source: enum, ref: schema.AllAssociationKinds}
-    mutation: {description: replaces a known association kind with a value outside the closed set}
+    provenance: {source: enum, ref: schema.AllAssociationConclusions}
+    mutation: {description: "replaces a known association conclusion with a value outside the closed set"}

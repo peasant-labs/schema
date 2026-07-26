@@ -76,6 +76,39 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: authoritative commit bindings are a required non-null array}
     mutation: {description: contrasts required binding identity with an optional commit timestamp}
+  - name: session association observations
+    input:
+      component: SessionAssociation
+      required: [id, sessionId, conclusion, confidence, evidence]
+      optional: []
+      nullable: []
+      nonnullable: [id, sessionId, conclusion, confidence, evidence]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: associations carry durable identity and required atomic observations}
+    mutation: {description: "pins all association axes and the non-null evidence array"}
+  - name: rewritten commit associations
+    input:
+      component: RewrittenCommit
+      required: [ghostHash, subject, sessionIds, associations, resolution, method, confidence]
+      optional: [authorTimeMs, successorHash]
+      nullable: [authorTimeMs, successorHash]
+      nonnullable: [ghostHash, subject, sessionIds, associations, resolution, method, confidence]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: rewrite ledger rows retain authoritative association arrays}
+    mutation: {description: "contrasts required session-era association bindings with optional rewrite metadata"}
+  - name: annotation association target
+    input:
+      component: AnnotationSummary
+      required: [id, targetKind, isPrimary, annotatorKind, annotatorName, typeId, typeName, value, createdAt]
+      optional: [targetAssociationId]
+      nullable: [targetAssociationId]
+      nonnullable: [id, targetKind, isPrimary, annotatorKind, annotatorName, typeId, typeName, value, createdAt]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: association annotations use an optional opaque target ID field}
+    mutation: {description: "classifies the association target ID as optional and nullable on the generated wire schema"}
   - name: project resolution payload
     input:
       component: ProjectResolutionPayload

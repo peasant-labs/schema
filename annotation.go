@@ -45,19 +45,22 @@ type AnnotationTypeSummary struct {
 // TargetKind is derived via TPT child table JOINs (annotations_with_target view).
 type AnnotationSummary struct {
 	ID                  string       `json:"id"`
-	TargetKind          TargetKind   `json:"targetKind"`
-	TargetSessionID     *string      `json:"targetSessionId,omitempty"`
-	TargetEntryIndex    *int         `json:"targetEntryIndex,omitempty"`
-	TargetEntryEndIndex *int         `json:"targetEntryEndIndex,omitempty"` // V16: half-open [start, end)
-	TargetAnnotID       *string      `json:"targetAnnotationId,omitempty"`
-	TargetProjectHash   *ProjectHash `json:"targetProjectHash,omitempty"`
+	TargetKind          TargetKind   `json:"targetKind" yaml:"targetKind"`
+	TargetSessionID     *string      `json:"targetSessionId,omitempty" yaml:"targetSessionId,omitempty"`
+	TargetEntryIndex    *int         `json:"targetEntryIndex,omitempty" yaml:"targetEntryIndex,omitempty"`
+	TargetEntryEndIndex *int         `json:"targetEntryEndIndex,omitempty" yaml:"targetEntryEndIndex,omitempty"` // V16: half-open [start, end)
+	TargetAnnotID       *string      `json:"targetAnnotationId,omitempty" yaml:"targetAnnotationId,omitempty"`
+	TargetProjectHash   *ProjectHash `json:"targetProjectHash,omitempty" yaml:"targetProjectHash,omitempty"`
+	// TargetAssociationID identifies a durable session-to-commit association.
+	// It is an ID target, never an embedded association copy.
+	TargetAssociationID *AssociationID `json:"targetAssociationId,omitempty" yaml:"targetAssociationId,omitempty"`
 	// TargetFilePath and TargetContentHash discriminate a TargetFileVersion
 	// annotation (the 5th TPT arm): a whole-file
 	// read-state receipt keyed to a specific content hash of a specific
 	// repo-relative path, so an agent edit that changes the content hash
 	// invalidates the receipt without deleting it.
-	TargetFilePath    *string       `json:"targetFilePath,omitempty"`
-	TargetContentHash *string       `json:"targetContentHash,omitempty"`
+	TargetFilePath    *string       `json:"targetFilePath,omitempty" yaml:"targetFilePath,omitempty"`
+	TargetContentHash *string       `json:"targetContentHash,omitempty" yaml:"targetContentHash,omitempty"`
 	IsPrimary         bool          `json:"isPrimary"`
 	AnnotatorKind     AnnotatorKind `json:"annotatorKind"`
 	AnnotatorName     string        `json:"annotatorName"`

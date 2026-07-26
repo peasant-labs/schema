@@ -28,22 +28,22 @@ type registration struct {
 func registrations() []registration {
 	return []registration{
 		{
-			path: "testdata/association_kind_corpus.yaml",
+			path: "testdata/association_conclusion_corpus.yaml",
 			render: func() ([]byte, error) {
 				return enumcorpus.RenderCorpus(
-					"AssociationKind", "schema.AllAssociationKinds",
-					schema.AllAssociationKinds, schema.AssociationKind("unknown-kind"),
-					`accepting "unknown-kind" would silently widen the closed association-kind set beyond AllAssociationKinds.`,
+					"AssociationConclusion", "schema.AllAssociationConclusions",
+					schema.AllAssociationConclusions, schema.AssociationConclusion("unknown-conclusion"),
+					`accepting "unknown-conclusion" would silently widen the closed association-conclusion set beyond AllAssociationConclusions.`,
 				)
 			},
 		},
 		{
-			path: "testdata/association_evidence_corpus.yaml",
+			path: "testdata/association_evidence_kind_corpus.yaml",
 			render: func() ([]byte, error) {
 				return enumcorpus.RenderCorpus(
-					"AssociationEvidence", "schema.AllAssociationEvidences",
-					schema.AllAssociationEvidences, schema.AssociationEvidence("unknown-evidence"),
-					`accepting "unknown-evidence" would silently widen the closed association-evidence set beyond AllAssociationEvidences.`,
+					"AssociationEvidenceKind", "schema.AllAssociationEvidenceKinds",
+					schema.AllAssociationEvidenceKinds, schema.AssociationEvidenceKind("unknown-evidence-kind"),
+					`accepting "unknown-evidence-kind" would silently widen the closed association-evidence-kind set beyond AllAssociationEvidenceKinds.`,
 				)
 			},
 		},

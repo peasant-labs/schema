@@ -48,6 +48,15 @@ cases:
         ref: schema.AllTargetKinds
       mutation:
         description: removing file_version from schema.AllTargetKinds would reject a value the wire still accepts.
+    - name: TargetKind association is valid
+      input: association
+      expected: true
+      classification: must-pass
+      provenance:
+        source: enum
+        ref: schema.AllTargetKinds
+      mutation:
+        description: removing association from schema.AllTargetKinds would reject a value the wire still accepts.
     - name: TargetKind outside the closed set is rejected
       input: unknown-target
       expected: false

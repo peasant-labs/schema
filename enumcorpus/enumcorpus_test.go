@@ -91,22 +91,22 @@ func runExhaustionAndFreshness[T enumcorpus.ClosedEnum](t *testing.T, c enumExha
 // set widens without the corpus regenerated (ExhaustiveCoverage) or if the
 // committed file drifts from the generator (Freshness).
 func TestEnumCorpora_ExhaustiveCoverageAndFreshness(t *testing.T) {
-	runExhaustionAndFreshness(t, enumExhaustionCase[schema.AssociationKind]{
-		enumName: "AssociationKind", path: "testdata/association_kind_corpus.yaml",
-		all: schema.AllAssociationKinds, negative: schema.AssociationKind("unknown-kind"),
+	runExhaustionAndFreshness(t, enumExhaustionCase[schema.AssociationConclusion]{
+		enumName: "AssociationConclusion", path: "testdata/association_conclusion_corpus.yaml",
+		all: schema.AllAssociationConclusions, negative: schema.AssociationConclusion("unknown-conclusion"),
 		render: func() ([]byte, error) {
-			return enumcorpus.RenderCorpus("AssociationKind", "schema.AllAssociationKinds",
-				schema.AllAssociationKinds, schema.AssociationKind("unknown-kind"),
-				`accepting "unknown-kind" would silently widen the closed association-kind set beyond AllAssociationKinds.`)
+			return enumcorpus.RenderCorpus("AssociationConclusion", "schema.AllAssociationConclusions",
+				schema.AllAssociationConclusions, schema.AssociationConclusion("unknown-conclusion"),
+				`accepting "unknown-conclusion" would silently widen the closed association-conclusion set beyond AllAssociationConclusions.`)
 		},
 	})
-	runExhaustionAndFreshness(t, enumExhaustionCase[schema.AssociationEvidence]{
-		enumName: "AssociationEvidence", path: "testdata/association_evidence_corpus.yaml",
-		all: schema.AllAssociationEvidences, negative: schema.AssociationEvidence("unknown-evidence"),
+	runExhaustionAndFreshness(t, enumExhaustionCase[schema.AssociationEvidenceKind]{
+		enumName: "AssociationEvidenceKind", path: "testdata/association_evidence_kind_corpus.yaml",
+		all: schema.AllAssociationEvidenceKinds, negative: schema.AssociationEvidenceKind("unknown-evidence-kind"),
 		render: func() ([]byte, error) {
-			return enumcorpus.RenderCorpus("AssociationEvidence", "schema.AllAssociationEvidences",
-				schema.AllAssociationEvidences, schema.AssociationEvidence("unknown-evidence"),
-				`accepting "unknown-evidence" would silently widen the closed association-evidence set beyond AllAssociationEvidences.`)
+			return enumcorpus.RenderCorpus("AssociationEvidenceKind", "schema.AllAssociationEvidenceKinds",
+				schema.AllAssociationEvidenceKinds, schema.AssociationEvidenceKind("unknown-evidence-kind"),
+				`accepting "unknown-evidence-kind" would silently widen the closed association-evidence-kind set beyond AllAssociationEvidenceKinds.`)
 		},
 	})
 	runExhaustionAndFreshness(t, enumExhaustionCase[schema.Confidence]{

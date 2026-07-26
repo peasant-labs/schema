@@ -37,22 +37,20 @@ enums:
       - {name: Agent, value: "agent"}
       - {name: Rule, value: "rule"}
     all_values: ["human", "agent", "rule"]
-  - name: AssociationEvidence
-    all_name: AllAssociationEvidences
+  - name: AssociationConclusion
+    all_name: AllAssociationConclusions
     members:
-      - {name: CommitAndTouch, value: "commit_and_touch"}
-      - {name: CommitOnly, value: "commit_only"}
-      - {name: TouchOnly, value: "touch_only"}
-      - {name: BranchOnly, value: "branch_only"}
-      - {name: TimeWindow, value: "time_window"}
-    all_values: ["commit_and_touch", "commit_only", "touch_only", "branch_only", "time_window"]
-  - name: AssociationKind
-    all_name: AllAssociationKinds
-    members:
-      - {name: Bound, value: "bound"}
+      - {name: Confirmed, value: "confirmed"}
       - {name: Candidate, value: "candidate"}
-      - {name: Temporal, value: "temporal"}
-    all_values: ["bound", "candidate", "temporal"]
+    all_values: ["confirmed", "candidate"]
+  - name: AssociationEvidenceKind
+    all_name: AllAssociationEvidenceKinds
+    members:
+      - {name: RecordedCommit, value: "recorded_commit"}
+      - {name: TouchedFile, value: "touched_file"}
+      - {name: BranchMembership, value: "branch_membership"}
+      - {name: TimeWindow, value: "time_window"}
+    all_values: ["recorded_commit", "touched_file", "branch_membership", "time_window"]
   - name: BuiltinCommand
     all_name: AllClaudeBuiltinCmds
     members:
@@ -290,7 +288,8 @@ enums:
       - {name: Annotation, value: "annotation"}
       - {name: Project, value: "project"}
       - {name: FileVersion, value: "file_version"}
-    all_values: ["session", "entry", "annotation", "project", "file_version"]
+      - {name: Association, value: "association"}
+    all_values: ["session", "entry", "annotation", "project", "file_version", "association"]
   - name: ToolCallKind
     all_name: AllToolCallKinds
     members:

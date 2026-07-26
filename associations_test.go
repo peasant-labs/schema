@@ -1,35 +1,114 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
+	"fmt"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase"
 	"github.com/peasant-labs/schema/testcase/assert"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed testdata/local-api/associations.yaml
 var associationsCasesYAML []byte
 
-// TestSessionAssociation_FixtureContract drives every
-// SessionAssociation case in testdata/local-api/associations.yaml against
-// the real SessionAssociation.Validate, and confirms every member of the
-// three closed sets it composes (AssociationKind, Confidence,
-// AssociationEvidence) has at least one must-pass covering case.
-func TestSessionAssociation_FixtureContract(t *testing.T) {
-	corpus, err := testcase.LoadCorpus[schema.SessionAssociation, bool](associationsCasesYAML)
-	if err != nil {
-		t.Fatalf("load associations corpus: %v", err)
+type associationRepairMutationKind string
+
+const (
+	associationRepairReplaceID            associationRepairMutationKind = "replace_id"
+	associationRepairDropLastEvidence     associationRepairMutationKind = "drop_last_evidence"
+	associationRepairClearTouchedFilePath associationRepairMutationKind = "clear_touched_file_path"
+)
+
+type associationRepairMutation struct {
+	Kind  associationRepairMutationKind `yaml:"kind"`
+	Input string                        `yaml:"input"`
+}
+
+type associationRepairInput struct {
+	SourceCase string                    `yaml:"sourceCase"`
+	Mutation   associationRepairMutation `yaml:"mutation"`
+}
+
+type associationRepairExpected struct {
+	OriginalErrorContains string `yaml:"originalErrorContains"`
+	PostMutationValid     bool   `yaml:"postMutationValid"`
+}
+
+type associationRepairManifest struct {
+	ExpectedCaseCount int      `yaml:"expectedCaseCount"`
+	RequiredCaseNames []string `yaml:"requiredCaseNames"`
+}
+
+type associationFixtures struct {
+	Cases          []testcase.Case[schema.SessionAssociation, bool]                   `yaml:"cases"`
+	RepairManifest associationRepairManifest                                          `yaml:"repairManifest"`
+	Repairs        testcase.Corpus[associationRepairInput, associationRepairExpected] `yaml:"repairs"`
+}
+
+func loadAssociationFixtures(t *testing.T) associationFixtures {
+	t.Helper()
+	var fixtures associationFixtures
+	decoder := yaml.NewDecoder(bytes.NewReader(associationsCasesYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixtures); err != nil {
+		t.Fatalf("decode associations fixtures: %v", err)
 	}
-	assert.RequireMin(t, corpus, len(schema.AllAssociationKinds)+1)
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			t.Fatalf("decode trailing associations fixture document: %v", err)
+		}
+		t.Fatal("decode associations fixtures: multiple YAML documents are not allowed")
+	}
+	corpus := testcase.Corpus[schema.SessionAssociation, bool]{Cases: fixtures.Cases}
+	assert.RequireMin(t, corpus, len(schema.AllAssociationConclusions)+len(schema.AllAssociationEvidenceKinds)+10)
 	assert.RequireValid(t, corpus)
+	assert.RequireValid(t, fixtures.Repairs)
+	requireAssociationRepairInventory(t, fixtures)
+	return fixtures
+}
 
-	coveredKinds := map[schema.AssociationKind]bool{}
+func requireAssociationRepairInventory(t *testing.T, fixtures associationFixtures) {
+	t.Helper()
+	manifest := fixtures.RepairManifest
+	if manifest.ExpectedCaseCount <= 0 || len(manifest.RequiredCaseNames) != manifest.ExpectedCaseCount || len(fixtures.Repairs.Cases) != manifest.ExpectedCaseCount {
+		t.Fatalf("association repair manifest and corpus must contain exactly %d cases", manifest.ExpectedCaseCount)
+	}
+	required := make(map[string]struct{}, len(manifest.RequiredCaseNames))
+	for _, name := range manifest.RequiredCaseNames {
+		if strings.TrimSpace(name) == "" {
+			t.Fatal("association repair manifest contains an empty case name")
+		}
+		if _, exists := required[name]; exists {
+			t.Fatalf("association repair manifest repeats case name %q", name)
+		}
+		required[name] = struct{}{}
+	}
+	for _, repair := range fixtures.Repairs.Cases {
+		if _, exists := required[repair.Name]; !exists {
+			t.Fatalf("association repair corpus contains unregistered case %q", repair.Name)
+		}
+		delete(required, repair.Name)
+	}
+	for name := range required {
+		t.Fatalf("association repair corpus is missing required case %q", name)
+	}
+}
+
+// TestSessionAssociation_FixtureContract drives the public association validator
+// and covers every conclusion, confidence, and atomic evidence kind.
+func TestSessionAssociation_FixtureContract(t *testing.T) {
+	fixtures := loadAssociationFixtures(t)
+	coveredConclusions := map[schema.AssociationConclusion]bool{}
 	coveredConfidences := map[schema.Confidence]bool{}
-	coveredEvidence := map[schema.AssociationEvidence]bool{}
-
-	for _, c := range corpus.Cases {
+	coveredEvidenceKinds := map[schema.AssociationEvidenceKind]bool{}
+	for _, c := range fixtures.Cases {
 		err := c.Input.Validate()
 		valid := err == nil
 		if valid != c.Expected {
@@ -40,14 +119,15 @@ func TestSessionAssociation_FixtureContract(t *testing.T) {
 			requireActionableValidationError(t, err)
 			continue
 		}
-		coveredKinds[c.Input.Kind] = true
+		coveredConclusions[c.Input.Conclusion] = true
 		coveredConfidences[c.Input.Confidence] = true
-		coveredEvidence[c.Input.Evidence] = true
+		for _, observation := range c.Input.Evidence {
+			coveredEvidenceKinds[observation.Kind] = true
+		}
 	}
-
-	for _, kind := range schema.AllAssociationKinds {
-		if !coveredKinds[kind] {
-			t.Errorf("AssociationKind member %q has no must-pass fixture case", kind)
+	for _, conclusion := range schema.AllAssociationConclusions {
+		if !coveredConclusions[conclusion] {
+			t.Errorf("AssociationConclusion member %q has no must-pass fixture case", conclusion)
 		}
 	}
 	for _, confidence := range schema.AllConfidences {
@@ -55,9 +135,88 @@ func TestSessionAssociation_FixtureContract(t *testing.T) {
 			t.Errorf("Confidence member %q has no must-pass fixture case", confidence)
 		}
 	}
-	for _, evidence := range schema.AllAssociationEvidences {
-		if !coveredEvidence[evidence] {
-			t.Errorf("AssociationEvidence member %q has no must-pass fixture case", evidence)
+	for _, kind := range schema.AllAssociationEvidenceKinds {
+		if !coveredEvidenceKinds[kind] {
+			t.Errorf("AssociationEvidenceKind member %q has no must-pass fixture case", kind)
 		}
+	}
+}
+
+func cloneAssociation(input schema.SessionAssociation) schema.SessionAssociation {
+	cloned := input
+	cloned.Evidence = append([]schema.AssociationEvidenceObservation(nil), input.Evidence...)
+	for index := range cloned.Evidence {
+		observation := &cloned.Evidence[index]
+		if observation.RecordedCommitHash != nil {
+			value := *observation.RecordedCommitHash
+			observation.RecordedCommitHash = &value
+		}
+		if observation.TouchedFilePath != nil {
+			value := *observation.TouchedFilePath
+			observation.TouchedFilePath = &value
+		}
+		if observation.BranchName != nil {
+			value := *observation.BranchName
+			observation.BranchName = &value
+		}
+		if observation.WindowStartMs != nil {
+			value := *observation.WindowStartMs
+			observation.WindowStartMs = &value
+		}
+		if observation.WindowEndMs != nil {
+			value := *observation.WindowEndMs
+			observation.WindowEndMs = &value
+		}
+	}
+	return cloned
+}
+
+func applyAssociationRepair(input *schema.SessionAssociation, mutation associationRepairMutation) error {
+	switch mutation.Kind {
+	case associationRepairReplaceID:
+		if strings.TrimSpace(mutation.Input) == "" {
+			return fmt.Errorf("repair %q requires a non-empty association ID", mutation.Kind)
+		}
+		input.ID = schema.AssociationID(mutation.Input)
+	case associationRepairDropLastEvidence:
+		if mutation.Input != "" || len(input.Evidence) == 0 {
+			return fmt.Errorf("repair %q requires non-empty evidence and no input", mutation.Kind)
+		}
+		input.Evidence = input.Evidence[:len(input.Evidence)-1]
+	case associationRepairClearTouchedFilePath:
+		if mutation.Input != "" || len(input.Evidence) != 1 {
+			return fmt.Errorf("repair %q requires exactly one observation and no input", mutation.Kind)
+		}
+		input.Evidence[0].TouchedFilePath = nil
+	default:
+		return fmt.Errorf("unknown association repair mutation %q", mutation.Kind)
+	}
+	return nil
+}
+
+// TestSessionAssociation_RepairCorpus proves representative invalid inputs are
+// repaired through the same public validator rather than a test-only path.
+func TestSessionAssociation_RepairCorpus(t *testing.T) {
+	fixtures := loadAssociationFixtures(t)
+	sources := make(map[string]testcase.Case[schema.SessionAssociation, bool], len(fixtures.Cases))
+	for _, fixture := range fixtures.Cases {
+		sources[fixture.Name] = fixture
+	}
+	for _, repair := range fixtures.Repairs.Cases {
+		t.Run(repair.Name, func(t *testing.T) {
+			source, exists := sources[repair.Input.SourceCase]
+			if !exists || source.Classification != testcase.MustFail || source.Expected {
+				t.Fatalf("repair source %q must be a rejected fixture", repair.Input.SourceCase)
+			}
+			input := cloneAssociation(source.Input)
+			originalErr := input.Validate()
+			requireActionableValidationError(t, originalErr, repair.Expected.OriginalErrorContains)
+			if err := applyAssociationRepair(&input, repair.Input.Mutation); err != nil {
+				t.Fatalf("apply repair mutation: %v", err)
+			}
+			if err := input.Validate(); (err == nil) != repair.Expected.PostMutationValid {
+				t.Fatalf("post-mutation Validate() error=%v, want valid=%v", err, repair.Expected.PostMutationValid)
+			}
+		})
 	}
 }

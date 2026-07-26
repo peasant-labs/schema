@@ -1,6 +1,6 @@
 // Package enumcorpus generates the enum-exhaustion test corpora for the
 // Local API 0.5.0 git+session timeline and insight-first code map closed sets
-// (AssociationKind, AssociationEvidence, Confidence, RewriteResolution,
+// (AssociationConclusion, AssociationEvidenceKind, Confidence, RewriteResolution,
 // RewriteMethod, InsightKind, InsightProvenance, ReadAttributionState,
 // ReadStateGrade) plus a regenerated TargetKind corpus (the file_version
 // member added in the same tag).

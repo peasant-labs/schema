@@ -1,55 +1,126 @@
 cases:
-  - name: bound_high_commit_and_touch_is_valid
-    input: {sessionId: session-a, kind: bound, confidence: high, evidence: commit_and_touch}
+  - name: confirmed_recorded_commit_only_is_valid
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: "the SessionAssociation contract"}
-    mutation: {description: "the strongest, most common association shape: bound + high + commit_and_touch"}
-  - name: candidate_medium_touch_only_is_valid
-    input: {sessionId: session-b, kind: candidate, confidence: medium, evidence: touch_only}
+    provenance: {source: requirement, ref: confirmed associations may rely on one persisted recorded_commit observation}
+    mutation: {description: "uses one authoritative recorded commit observation without invented corroboration"}
+  - name: candidate_with_ordered_atomic_observations_is_valid
+    input: {id: assoc-b, sessionId: session-b, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-b}, {kind: touched_file, touchedFilePath: src/main.go}, {kind: branch_membership, branchName: feature/association}, {kind: time_window, windowStartMs: 1000, windowEndMs: 2000}]}
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: "the SessionAssociation contract"}
-    mutation: {description: "a one-arm candidate association with medium confidence"}
-  - name: temporal_low_time_window_is_valid
-    input: {sessionId: session-c, kind: temporal, confidence: low, evidence: time_window}
+    provenance: {source: requirement, ref: candidate associations preserve every atomic observation in canonical order}
+    mutation: {description: "uses all four atom kinds in their canonical order"}
+  - name: candidate_low_branch_observation_is_valid
+    input: {id: assoc-c, sessionId: session-c, conclusion: candidate, confidence: low, evidence: [{kind: branch_membership, branchName: topic/branch}]}
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: "the SessionAssociation contract"}
-    mutation: {description: "the weakest association shape: temporal + low + time_window"}
-  - name: candidate_high_branch_only_is_valid
-    input: {sessionId: session-d, kind: candidate, confidence: high, evidence: branch_only}
-    expected: true
-    classification: must-pass
-    provenance: {source: requirement, ref: "the SessionAssociation contract"}
-    mutation: {description: "a branch-only candidate association"}
-  - name: bound_medium_commit_only_is_valid
-    input: {sessionId: session-e, kind: bound, confidence: medium, evidence: commit_only}
-    expected: true
-    classification: must-pass
-    provenance: {source: requirement, ref: "the SessionAssociation contract"}
-    mutation: {description: "a commit-only bound association"}
+    provenance: {source: requirement, ref: every confidence remains independently valid}
+    mutation: {description: "uses low confidence without adding an inference-policy constraint"}
   - name: empty_session_id_is_rejected
-    input: {sessionId: "", kind: bound, confidence: high, evidence: commit_and_touch}
+    input: {id: assoc-a, sessionId: "", conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
     expected: false
     classification: must-fail
-    provenance: {source: boundary, ref: "SessionAssociation.Validate: empty sessionId"}
-    mutation: {description: "clears sessionId to the empty string, leaving an anonymous association"}
-  - name: kind_outside_closed_set_is_rejected
-    input: {sessionId: session-a, kind: unknown-kind, confidence: high, evidence: commit_and_touch}
+    provenance: {source: boundary, ref: SessionAssociation.Validate requires sessionId}
+    mutation: {description: "clears the association's session identity"}
+  - name: invalid_association_id_is_rejected
+    input: {id: " invalid", sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
     expected: false
     classification: must-fail
-    provenance: {source: enum, ref: schema.AllAssociationKinds}
-    mutation: {description: "replaces a known association kind with a value outside AllAssociationKinds"}
-  - name: confidence_outside_closed_set_is_rejected
-    input: {sessionId: session-a, kind: bound, confidence: unknown-confidence, evidence: commit_and_touch}
+    provenance: {source: boundary, ref: AssociationID structural grammar}
+    mutation: {description: "prefixes the opaque identifier with whitespace"}
+  - name: unknown_conclusion_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: inferred, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllAssociationConclusions}
+    mutation: {description: "replaces a conclusion with an out-of-set token"}
+  - name: unknown_confidence_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: unknown-confidence, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
     expected: false
     classification: must-fail
     provenance: {source: enum, ref: schema.AllConfidences}
-    mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
-  - name: evidence_outside_closed_set_is_rejected
-    input: {sessionId: session-a, kind: bound, confidence: high, evidence: unknown-evidence}
+    mutation: {description: "replaces confidence with an out-of-set token"}
+  - name: null_evidence_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: null}
     expected: false
     classification: must-fail
-    provenance: {source: enum, ref: schema.AllAssociationEvidences}
-    mutation: {description: "replaces a known evidence signal with a value outside AllAssociationEvidences"}
+    provenance: {source: boundary, ref: SessionAssociation evidence is required and non-null}
+    mutation: {description: "omits the required evidence array"}
+  - name: empty_evidence_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: []}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: SessionAssociation evidence has a non-empty minimum}
+    mutation: {description: "empties the atomic evidence array"}
+  - name: unsorted_evidence_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: high, evidence: [{kind: touched_file, touchedFilePath: src/main.go}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: atomic evidence has a canonical kind order}
+    mutation: {description: "places touched_file before recorded_commit"}
+  - name: duplicate_evidence_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: atomic evidence must be duplicate-free}
+    mutation: {description: "repeats the same recorded commit observation"}
+  - name: recorded_commit_without_hash_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: recorded_commit requires its selected detail}
+    mutation: {description: "removes the required recordedCommitHash detail"}
+  - name: recorded_commit_with_extra_detail_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a, touchedFilePath: src/main.go}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: selected evidence arm excludes all other detail fields}
+    mutation: {description: "adds touchedFilePath to a recorded_commit observation"}
+  - name: touched_file_with_invalid_path_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: ../secret.go}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: touched_file paths are repo-relative without traversal segments}
+    mutation: {description: "uses a dot-dot path segment"}
+  - name: branch_membership_without_name_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: branch_membership}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: branch_membership requires branchName}
+    mutation: {description: "removes the branch name detail"}
+  - name: time_window_without_end_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: time_window, windowStartMs: 1000}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: time_window requires both timestamps}
+    mutation: {description: "removes the interval end"}
+  - name: time_window_with_descending_bounds_is_rejected
+    input: {id: assoc-a, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: time_window, windowStartMs: 2000, windowEndMs: 1000}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: time_window start must not follow end}
+    mutation: {description: "reverses the time window bounds"}
+repairManifest:
+  expectedCaseCount: 3
+  requiredCaseNames: [replace_invalid_association_id_restores_validity, remove_duplicate_observation_restores_validity, clear_extra_detail_restores_validity]
+repairs:
+  cases:
+    - name: replace_invalid_association_id_restores_validity
+      input: {sourceCase: invalid_association_id_is_rejected, mutation: {kind: replace_id, input: assoc-a}}
+      expected: {originalErrorContains: "association ID validation failed", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: AssociationID invalid-input repair}
+      mutation: {description: "replaces the malformed opaque ID with a structural value"}
+    - name: remove_duplicate_observation_restores_validity
+      input: {sourceCase: duplicate_evidence_is_rejected, mutation: {kind: drop_last_evidence, input: ""}}
+      expected: {originalErrorContains: "duplicates evidence", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: canonical evidence duplicate repair}
+      mutation: {description: "removes the repeated atomic observation"}
+    - name: clear_extra_detail_restores_validity
+      input: {sourceCase: recorded_commit_with_extra_detail_is_rejected, mutation: {kind: clear_touched_file_path, input: ""}}
+      expected: {originalErrorContains: "another evidence arm", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: evidence detail exclusivity repair}
+      mutation: {description: "clears the non-selected detail arm"}

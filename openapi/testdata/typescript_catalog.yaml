@@ -242,13 +242,21 @@ types:
     disposition: catalog
     component: ActivityEdge
     reason: public wire or domain contract type
-  - go_name: AssociationEvidence
+  - go_name: AssociationConclusion
     disposition: catalog
-    component: AssociationEvidence
+    component: AssociationConclusion
     reason: public wire or domain contract type
-  - go_name: AssociationKind
+  - go_name: AssociationEvidenceKind
     disposition: catalog
-    component: AssociationKind
+    component: AssociationEvidenceKind
+    reason: public wire or domain contract type
+  - go_name: AssociationEvidenceObservation
+    disposition: catalog
+    component: AssociationEvidenceObservation
+    reason: public wire or domain contract type
+  - go_name: AssociationID
+    disposition: catalog
+    component: AssociationID
     reason: public wire or domain contract type
   - go_name: ChangeBinding
     disposition: catalog

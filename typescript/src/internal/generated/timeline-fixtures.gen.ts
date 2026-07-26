@@ -34,16 +34,28 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-commit-2-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-2"
+                  }
+                ]
               },
               {
+                "id": "assoc-commit-2-b",
                 "sessionId": "session-b",
-                "kind": "candidate",
+                "conclusion": "candidate",
                 "confidence": "medium",
-                "evidence": "touch_only"
+                "evidence": [
+                  {
+                    "kind": "touched_file",
+                    "touchedFilePath": "src/main.go"
+                  }
+                ]
               }
             ]
           },
@@ -56,10 +68,16 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-commit-1-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-1"
+                  }
+                ]
               }
             ]
           }
@@ -168,6 +186,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-rewrite-bound"
             ],
+            "associations": [
+              {
+                "id": "assoc-ghost-bound",
+                "sessionId": "session-rewrite-bound",
+                "conclusion": "confirmed",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "ghost-bound"
+                  }
+                ]
+              }
+            ],
             "successorHash": "successor-bound",
             "resolution": "rewritten",
             "method": "patch_id",
@@ -213,6 +245,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "sessionIds": [
               "session-rewrite-unbound"
             ],
+            "associations": [
+              {
+                "id": "assoc-ghost-unbound",
+                "sessionId": "session-rewrite-unbound",
+                "conclusion": "confirmed",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "ghost-unbound"
+                  }
+                ]
+              }
+            ],
             "successorHash": "successor-unbound",
             "resolution": "rewritten",
             "method": "patch_id",
@@ -238,6 +284,80 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
       }
     },
     {
+      "family": "rewrite-successor-association-identity",
+      "name": "rewrite_successor_preserves_association_identity",
+      "input": {
+        "sessions": [
+          {
+            "sessionId": "session-rewrite-preserved",
+            "title": "preserved relationship",
+            "harness": "claude-code",
+            "hasCommitBinding": true
+          }
+        ],
+        "commits": [
+          {
+            "hash": "successor-preserved",
+            "subject": "squash successor",
+            "hasSession": true,
+            "sessionIds": [
+              "session-rewrite-preserved"
+            ],
+            "associations": [
+              {
+                "id": "assoc-rewrite-preserved",
+                "sessionId": "session-rewrite-preserved",
+                "conclusion": "confirmed",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "ghost-preserved"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "rewrittenCommits": [
+          {
+            "ghostHash": "ghost-preserved",
+            "subject": "original recorded commit",
+            "sessionIds": [
+              "session-rewrite-preserved"
+            ],
+            "associations": [
+              {
+                "id": "assoc-rewrite-preserved",
+                "sessionId": "session-rewrite-preserved",
+                "conclusion": "confirmed",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "ghost-preserved"
+                  }
+                ]
+              }
+            ],
+            "successorHash": "successor-preserved",
+            "resolution": "rewritten",
+            "method": "patch_id",
+            "confidence": "high"
+          }
+        ]
+      },
+      "expected": {},
+      "classification": "must-pass",
+      "provenance": {
+        "source": "requirement",
+        "ref": "displayed rewrite successors preserve the first-class association object when they represent the binding"
+      },
+      "mutation": {
+        "description": "carries the same durable association ID, conclusion, confidence, and observation from the ledger to its displayed successor"
+      }
+    },
+    {
       "family": "rewrite-ledger-missing-session",
       "name": "rewrite_ledger_references_missing_session",
       "input": {
@@ -257,6 +377,20 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             "subject": "stale ledger",
             "sessionIds": [
               "session-rewrite-missing"
+            ],
+            "associations": [
+              {
+                "id": "assoc-ghost-missing",
+                "sessionId": "session-rewrite-missing",
+                "conclusion": "confirmed",
+                "confidence": "high",
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "ghost-missing-session"
+                  }
+                ]
+              }
             ],
             "successorHash": "successor-missing-session",
             "resolution": "rewritten",
@@ -462,10 +596,16 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-boolean-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -505,10 +645,16 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-binding-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -541,10 +687,16 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-missing",
                 "sessionId": "session-missing",
-                "kind": "candidate",
+                "conclusion": "candidate",
                 "confidence": "medium",
-                "evidence": "commit_only"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -617,16 +769,28 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-duplicate-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               },
               {
+                "id": "assoc-duplicate-b",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -728,16 +892,28 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-order-b",
                 "sessionId": "session-b",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               },
               {
+                "id": "assoc-order-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -858,16 +1034,28 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-rank-b",
                 "sessionId": "session-b",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               },
               {
+                "id": "assoc-rank-a",
                 "sessionId": "session-a",
-                "kind": "bound",
+                "conclusion": "confirmed",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
@@ -886,8 +1074,8 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
       }
     },
     {
-      "family": "association-invalid-kind",
-      "name": "association_kind_not_in_closed_set",
+      "family": "association-invalid-conclusion",
+      "name": "association_conclusion_not_in_closed_set",
       "input": {
         "sessions": [
           {
@@ -907,25 +1095,31 @@ export const canonicalTimelineFixtures: TimelineFixtureCorpus = {
             ],
             "associations": [
               {
+                "id": "assoc-invalid-conclusion",
                 "sessionId": "session-a",
-                "kind": "unknown-kind",
+                "conclusion": "unknown-conclusion",
                 "confidence": "high",
-                "evidence": "commit_and_touch"
+                "evidence": [
+                  {
+                    "kind": "recorded_commit",
+                    "recordedCommitHash": "commit-a"
+                  }
+                ]
               }
             ]
           }
         ]
       },
       "expected": {
-        "errorContains": "association kind validation failed"
+        "errorContains": "association conclusion validation failed"
       },
       "classification": "must-fail",
       "provenance": {
         "source": "enum",
-        "ref": "schema.AllAssociationKinds"
+        "ref": "schema.AllAssociationConclusions"
       },
       "mutation": {
-        "description": "replaces a known association kind with a value outside the closed set"
+        "description": "replaces a known association conclusion with a value outside the closed set"
       }
     }
   ]

@@ -2,6 +2,8 @@ package schema
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -467,9 +469,9 @@ type CommitRef struct {
 	// SessionIDs names authoritative session_commits bindings in the same
 	// strictly increasing rank order as ReviewListPayload.Sessions.
 	SessionIDs []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
-	// Associations decomposes each SessionIDs binding into its kind,
-	// confidence, and evidence instead of one flat
-	// badge. It mirrors SessionIDs one-for-one in the same rank order:
+	// Associations keeps each SessionIDs binding as a first-class durable
+	// relationship with its conclusion, confidence, and atomic observations. It
+	// mirrors SessionIDs one-for-one in the same rank order:
 	// Associations[i].SessionID == SessionIDs[i] for every i.
 	Associations []SessionAssociation `json:"associations" yaml:"associations" required:"true" nullable:"false"`
 }
@@ -480,56 +482,146 @@ func NewCommitRef(hash, subject string) CommitRef {
 	return CommitRef{Hash: hash, Subject: subject, SessionIDs: []SessionID{}, Associations: []SessionAssociation{}}
 }
 
-// AssociationKind classifies the strength of evidence linking a recorded
-// session to a commit. An association is never a flat badge.
-type AssociationKind string
+// AssociationID is Peasant's opaque, durable identifier for one association
+// between a project, session, and observed session-era commit. Consumers treat
+// it as an identifier only: they do not derive, parse, rank, or recompute it.
+type AssociationID string
 
-// AssociationKind values. bound = commit-in-branch AND touch overlap;
-// candidate = one arm matched; temporal = time-window proximity only.
-const (
-	AssociationKindBound     AssociationKind = "bound"
-	AssociationKindCandidate AssociationKind = "candidate"
-	AssociationKindTemporal  AssociationKind = "temporal"
-)
+const associationIDPatternText = `^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`
 
-// AllAssociationKinds is the canonical list of session<->commit association
-// kinds.
-var AllAssociationKinds = []AssociationKind{
-	AssociationKindBound,
-	AssociationKindCandidate,
-	AssociationKindTemporal,
+var associationIDPattern = regexp.MustCompile(associationIDPatternText)
+
+// NewAssociationID validates and constructs an opaque association identifier.
+func NewAssociationID(raw string) (AssociationID, error) {
+	id := AssociationID(raw)
+	if err := id.Validate(); err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
-// String returns the wire representation of the association kind.
-func (k AssociationKind) String() string { return string(k) }
+// String returns the wire representation of the association identifier.
+func (id AssociationID) String() string { return string(id) }
 
-// IsValid reports whether k is one of the defined association kinds.
-func (k AssociationKind) IsValid() bool {
-	switch k {
-	case AssociationKindBound, AssociationKindCandidate, AssociationKindTemporal:
+// Validate rejects an association identifier that cannot cross the wire
+// boundary. The identifier is ASCII-only, one to 128 bytes, starts
+// alphanumerically, and thereafter uses only alphanumeric, dot, underscore,
+// colon, or hyphen characters.
+func (id AssociationID) Validate() error {
+	raw := string(id)
+	if !associationIDPattern.MatchString(raw) {
+		return fmt.Errorf("association ID validation failed for %q at schema.AssociationID.Validate during wire-boundary validation: the value must be 1-128 ASCII bytes, start with an ASCII letter or digit, and then use only ASCII letters, digits, dot, underscore, colon, or hyphen; callers cannot stably address the association across rewrite display; assign a producer-owned opaque ID matching %s", id, associationIDPatternText)
+	}
+	return nil
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (AssociationID) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("Association ID")
+	s.WithDescription("Opaque durable Peasant identifier for one session-to-commit association")
+	s.WithPattern(associationIDPatternText)
+	s.WithMinLength(1)
+	s.WithMaxLength(128)
+	s.WithExamples("assoc-20260726:session-a:commit-1")
+	return s, nil
+}
+
+// AssociationConclusion is the producer-supplied conclusion for a session to
+// commit relationship. Schema validates the closed set, not the inference
+// policy that produced the conclusion.
+type AssociationConclusion string
+
+// AssociationConclusion values.
+const (
+	AssociationConclusionConfirmed AssociationConclusion = "confirmed"
+	AssociationConclusionCandidate AssociationConclusion = "candidate"
+)
+
+// AllAssociationConclusions is the canonical list of association conclusions.
+var AllAssociationConclusions = []AssociationConclusion{
+	AssociationConclusionConfirmed,
+	AssociationConclusionCandidate,
+}
+
+// String returns the wire representation of the association conclusion.
+func (c AssociationConclusion) String() string { return string(c) }
+
+// IsValid reports whether c is a defined association conclusion.
+func (c AssociationConclusion) IsValid() bool {
+	switch c {
+	case AssociationConclusionConfirmed, AssociationConclusionCandidate:
 		return true
 	}
 	return false
 }
 
-// Validate rejects values that cannot cross the association-kind wire
-// boundary.
-func (k AssociationKind) Validate() error {
-	if k.IsValid() {
+// Validate rejects values outside the closed association-conclusion set.
+func (c AssociationConclusion) Validate() error {
+	if c.IsValid() {
 		return nil
 	}
-	return fmt.Errorf(
-		"association kind validation failed for %q at schema.AssociationKind.Validate during wire-boundary validation: the value is not one of bound, candidate, or temporal; callers cannot classify the session<->commit relationship; use a member of schema.AllAssociationKinds",
-		k,
-	)
+	return fmt.Errorf("association conclusion validation failed for %q at schema.AssociationConclusion.Validate during wire-boundary validation: the value is not one of confirmed or candidate; callers cannot render the producer's relationship conclusion; use a member of schema.AllAssociationConclusions", c)
 }
 
 // JSONSchema implements jsonschema.Exposer.
-func (AssociationKind) JSONSchema() (jsonschema.Schema, error) {
+func (AssociationConclusion) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema(
-		"Association Kind",
-		"Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal",
-		AllAssociationKinds,
+		"Association Conclusion",
+		"Producer-supplied conclusion for a session-to-commit association: confirmed or candidate",
+		AllAssociationConclusions,
+	), nil
+}
+
+// AssociationEvidenceKind identifies one atomic observation supporting a
+// session-to-commit association. The order in AllAssociationEvidenceKinds is
+// also the required canonical evidence order.
+type AssociationEvidenceKind string
+
+// AssociationEvidenceKind values.
+const (
+	AssociationEvidenceRecordedCommit   AssociationEvidenceKind = "recorded_commit"
+	AssociationEvidenceTouchedFile      AssociationEvidenceKind = "touched_file"
+	AssociationEvidenceBranchMembership AssociationEvidenceKind = "branch_membership"
+	AssociationEvidenceTimeWindow       AssociationEvidenceKind = "time_window"
+)
+
+// AllAssociationEvidenceKinds is the canonical list and order of atomic
+// association evidence observations.
+var AllAssociationEvidenceKinds = []AssociationEvidenceKind{
+	AssociationEvidenceRecordedCommit,
+	AssociationEvidenceTouchedFile,
+	AssociationEvidenceBranchMembership,
+	AssociationEvidenceTimeWindow,
+}
+
+// String returns the wire representation of the association evidence kind.
+func (k AssociationEvidenceKind) String() string { return string(k) }
+
+// IsValid reports whether k is a defined association evidence kind.
+func (k AssociationEvidenceKind) IsValid() bool {
+	switch k {
+	case AssociationEvidenceRecordedCommit, AssociationEvidenceTouchedFile, AssociationEvidenceBranchMembership, AssociationEvidenceTimeWindow:
+		return true
+	}
+	return false
+}
+
+// Validate rejects values outside the closed association-evidence-kind set.
+func (k AssociationEvidenceKind) Validate() error {
+	if k.IsValid() {
+		return nil
+	}
+	return fmt.Errorf("association evidence kind validation failed for %q at schema.AssociationEvidenceKind.Validate during wire-boundary validation: the value is not one of recorded_commit, touched_file, branch_membership, or time_window; callers cannot interpret the atomic observation; use a member of schema.AllAssociationEvidenceKinds", k)
+}
+
+// JSONSchema implements jsonschema.Exposer.
+func (AssociationEvidenceKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Association Evidence Kind",
+		"Atomic observation supporting a session-to-commit association",
+		AllAssociationEvidenceKinds,
 	), nil
 }
 
@@ -584,89 +676,168 @@ func (Confidence) JSONSchema() (jsonschema.Schema, error) {
 	), nil
 }
 
-// AssociationEvidence names which signal(s) produced a session<->commit
-// association. Producers preserve every matching arm instead of collapsing
-// them.
-type AssociationEvidence string
-
-// AssociationEvidence values.
-const (
-	AssociationEvidenceCommitAndTouch AssociationEvidence = "commit_and_touch"
-	AssociationEvidenceCommitOnly     AssociationEvidence = "commit_only"
-	AssociationEvidenceTouchOnly      AssociationEvidence = "touch_only"
-	AssociationEvidenceBranchOnly     AssociationEvidence = "branch_only"
-	AssociationEvidenceTimeWindow     AssociationEvidence = "time_window"
-)
-
-// AllAssociationEvidences is the canonical list of association evidence
-// signals.
-var AllAssociationEvidences = []AssociationEvidence{
-	AssociationEvidenceCommitAndTouch,
-	AssociationEvidenceCommitOnly,
-	AssociationEvidenceTouchOnly,
-	AssociationEvidenceBranchOnly,
-	AssociationEvidenceTimeWindow,
+// AssociationEvidenceObservation is one atomic, typed observation supporting
+// a session-to-commit association. Exactly the fields for Kind's selected arm
+// are populated; producers must send canonical order and never rely on schema
+// to normalize a wire value.
+type AssociationEvidenceObservation struct {
+	Kind               AssociationEvidenceKind `json:"kind" yaml:"kind" required:"true"`
+	RecordedCommitHash *string                 `json:"recordedCommitHash,omitempty" yaml:"recordedCommitHash,omitempty"`
+	TouchedFilePath    *string                 `json:"touchedFilePath,omitempty" yaml:"touchedFilePath,omitempty"`
+	BranchName         *string                 `json:"branchName,omitempty" yaml:"branchName,omitempty"`
+	WindowStartMs      *int64                  `json:"windowStartMs,omitempty" yaml:"windowStartMs,omitempty"`
+	WindowEndMs        *int64                  `json:"windowEndMs,omitempty" yaml:"windowEndMs,omitempty"`
 }
 
-// String returns the wire representation of the association evidence.
-func (e AssociationEvidence) String() string { return string(e) }
-
-// IsValid reports whether e is one of the defined association evidence
-// signals.
-func (e AssociationEvidence) IsValid() bool {
-	switch e {
-	case AssociationEvidenceCommitAndTouch, AssociationEvidenceCommitOnly, AssociationEvidenceTouchOnly, AssociationEvidenceBranchOnly, AssociationEvidenceTimeWindow:
-		return true
+// Validate checks that Kind selects exactly one structurally valid detail arm.
+// Git hash and branch-name grammars are producer policy; schema only requires
+// that their supplied strings are non-empty.
+func (o AssociationEvidenceObservation) Validate() error {
+	if err := o.Kind.Validate(); err != nil {
+		return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: %w", err)
 	}
-	return false
-}
-
-// Validate rejects values that cannot cross the association-evidence wire
-// boundary.
-func (e AssociationEvidence) Validate() error {
-	if e.IsValid() {
-		return nil
+	noOtherDetail := func() bool {
+		return o.RecordedCommitHash == nil && o.TouchedFilePath == nil && o.BranchName == nil && o.WindowStartMs == nil && o.WindowEndMs == nil
 	}
-	return fmt.Errorf(
-		"association evidence validation failed for %q at schema.AssociationEvidence.Validate during wire-boundary validation: the value is not one of commit_and_touch, commit_only, touch_only, branch_only, or time_window; callers cannot explain why the association was made; use a member of schema.AllAssociationEvidences",
-		e,
-	)
+	switch o.Kind {
+	case AssociationEvidenceRecordedCommit:
+		if o.RecordedCommitHash == nil || strings.TrimSpace(*o.RecordedCommitHash) == "" {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: recorded_commit requires a non-empty recordedCommitHash; callers cannot identify the authoritative recorded commit observation; set recordedCommitHash to the observed commit hash and leave every other detail arm nil")
+		}
+		if o.TouchedFilePath != nil || o.BranchName != nil || o.WindowStartMs != nil || o.WindowEndMs != nil {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: recorded_commit populated a detail field from another evidence arm; callers cannot unambiguously interpret the observation; keep only recordedCommitHash for kind recorded_commit")
+		}
+	case AssociationEvidenceTouchedFile:
+		if o.TouchedFilePath == nil || !validAssociationTouchedFilePath(*o.TouchedFilePath) {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: touched_file requires a non-empty repo-relative touchedFilePath without absolute, empty, dot, or dot-dot segments; callers cannot safely locate the observed file; supply a slash-separated repo-relative path and leave every other detail arm nil")
+		}
+		if o.RecordedCommitHash != nil || o.BranchName != nil || o.WindowStartMs != nil || o.WindowEndMs != nil {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: touched_file populated a detail field from another evidence arm; callers cannot unambiguously interpret the observation; keep only touchedFilePath for kind touched_file")
+		}
+	case AssociationEvidenceBranchMembership:
+		if o.BranchName == nil || strings.TrimSpace(*o.BranchName) == "" {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: branch_membership requires a non-empty branchName; callers cannot identify the observed branch membership; set branchName and leave every other detail arm nil")
+		}
+		if o.RecordedCommitHash != nil || o.TouchedFilePath != nil || o.WindowStartMs != nil || o.WindowEndMs != nil {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: branch_membership populated a detail field from another evidence arm; callers cannot unambiguously interpret the observation; keep only branchName for kind branch_membership")
+		}
+	case AssociationEvidenceTimeWindow:
+		if o.WindowStartMs == nil || o.WindowEndMs == nil || *o.WindowStartMs > *o.WindowEndMs {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: time_window requires windowStartMs and windowEndMs with start less than or equal to end; callers cannot place the observation on a coherent interval; set both timestamps in ascending order and leave every other detail arm nil")
+		}
+		if o.RecordedCommitHash != nil || o.TouchedFilePath != nil || o.BranchName != nil {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: time_window populated a detail field from another evidence arm; callers cannot unambiguously interpret the observation; keep only windowStartMs and windowEndMs for kind time_window")
+		}
+	default:
+		if noOtherDetail() {
+			return fmt.Errorf("association evidence observation validation failed at schema.AssociationEvidenceObservation.Validate during wire-boundary validation: no supported evidence detail arm was selected; callers cannot interpret the observation; use a member of schema.AllAssociationEvidenceKinds with its matching detail fields")
+		}
+	}
+	return nil
 }
 
-// JSONSchema implements jsonschema.Exposer.
-func (AssociationEvidence) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema(
-		"Association Evidence",
-		"Which signal(s) produced a session<->commit association",
-		AllAssociationEvidences,
-	), nil
+func validAssociationTouchedFilePath(value string) bool {
+	if value == "" || strings.HasPrefix(value, "/") || strings.HasPrefix(value, "\\") || strings.Contains(value, "\\") {
+		return false
+	}
+	if len(value) >= 3 && ((value[0] >= 'A' && value[0] <= 'Z') || (value[0] >= 'a' && value[0] <= 'z')) && value[1] == ':' && value[2] == '/' {
+		return false
+	}
+	for _, segment := range strings.Split(value, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+	}
+	return true
 }
 
-// SessionAssociation decomposes a session<->commit relationship into three
-// independent axes instead of one flat badge.
+// compareAssociationEvidenceObservation returns the canonical ordering between
+// two observations after each has passed Validate.
+func compareAssociationEvidenceObservation(left, right AssociationEvidenceObservation) int {
+	leftKind, rightKind := associationEvidenceKindOrder(left.Kind), associationEvidenceKindOrder(right.Kind)
+	if leftKind < rightKind {
+		return -1
+	}
+	if leftKind > rightKind {
+		return 1
+	}
+	switch left.Kind {
+	case AssociationEvidenceRecordedCommit:
+		return strings.Compare(*left.RecordedCommitHash, *right.RecordedCommitHash)
+	case AssociationEvidenceTouchedFile:
+		return strings.Compare(*left.TouchedFilePath, *right.TouchedFilePath)
+	case AssociationEvidenceBranchMembership:
+		return strings.Compare(*left.BranchName, *right.BranchName)
+	case AssociationEvidenceTimeWindow:
+		if *left.WindowStartMs < *right.WindowStartMs {
+			return -1
+		}
+		if *left.WindowStartMs > *right.WindowStartMs {
+			return 1
+		}
+		if *left.WindowEndMs < *right.WindowEndMs {
+			return -1
+		}
+		if *left.WindowEndMs > *right.WindowEndMs {
+			return 1
+		}
+	}
+	return 0
+}
+
+func associationEvidenceKindOrder(kind AssociationEvidenceKind) int {
+	for index, canonical := range AllAssociationEvidenceKinds {
+		if kind == canonical {
+			return index
+		}
+	}
+	return len(AllAssociationEvidenceKinds)
+}
+
+// SessionAssociation keeps an authoritative session-to-commit relationship as
+// a durable identity, producer conclusion, confidence, and ordered atomic
+// evidence observations.
 type SessionAssociation struct {
-	SessionID  SessionID           `json:"sessionId" yaml:"sessionId" required:"true"`
-	Kind       AssociationKind     `json:"kind" yaml:"kind" required:"true"`
-	Confidence Confidence          `json:"confidence" yaml:"confidence" required:"true"`
-	Evidence   AssociationEvidence `json:"evidence" yaml:"evidence" required:"true"`
+	ID         AssociationID                    `json:"id" yaml:"id" required:"true"`
+	SessionID  SessionID                        `json:"sessionId" yaml:"sessionId" required:"true"`
+	Conclusion AssociationConclusion            `json:"conclusion" yaml:"conclusion" required:"true"`
+	Confidence Confidence                       `json:"confidence" yaml:"confidence" required:"true"`
+	Evidence   []AssociationEvidenceObservation `json:"evidence" yaml:"evidence" required:"true" nullable:"false"`
 }
 
 // Validate checks a single association's own fields are well-formed. It does
-// not check cross-references to a payload's session table or the surrounding
-// CommitRef shape; callers with that context use validateCommitRefShape before
-// checking payload-level session membership.
+// not check cross-references to a payload's session table or its surrounding
+// parent shape.
 func (a SessionAssociation) Validate() error {
 	if a.SessionID == "" {
-		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links, callers cannot resolve an anonymous association; set SessionID before validating or serving the association")
+		return fmt.Errorf("session association validation failed at schema.SessionAssociation.Validate during wire-boundary validation: sessionId is empty; every association must name the session it links; callers cannot resolve an anonymous association; set sessionId before validating or serving the association")
 	}
-	if err := a.Kind.Validate(); err != nil {
+	if err := a.ID.Validate(); err != nil {
+		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
+	}
+	if err := a.Conclusion.Validate(); err != nil {
 		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
 	}
 	if err := a.Confidence.Validate(); err != nil {
 		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
 	}
-	if err := a.Evidence.Validate(); err != nil {
-		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: %w", a.SessionID, err)
+	if a.Evidence == nil || len(a.Evidence) == 0 {
+		return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: evidence is null or empty; every association needs at least one atomic observation; callers cannot explain the supplied conclusion; provide a non-empty canonical evidence array", a.SessionID)
+	}
+	for index, observation := range a.Evidence {
+		if err := observation.Validate(); err != nil {
+			return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: evidence[%d]: %w", a.SessionID, index, err)
+		}
+		if index == 0 {
+			continue
+		}
+		comparison := compareAssociationEvidenceObservation(a.Evidence[index-1], observation)
+		if comparison == 0 {
+			return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: evidence[%d] duplicates evidence[%d]; callers cannot distinguish repeated observations; deduplicate evidence before serving the association", a.SessionID, index, index-1)
+		}
+		if comparison > 0 {
+			return fmt.Errorf("session association validation failed for session %q at schema.SessionAssociation.Validate during wire-boundary validation: evidence[%d] precedes evidence[%d] outside canonical kind/detail order; callers require deterministic atomic observations; sort evidence by recorded_commit, touched_file, branch_membership, time_window and then by each kind's detail tuple", a.SessionID, index, index-1)
+		}
 	}
 	return nil
 }
@@ -674,8 +845,9 @@ func (a SessionAssociation) Validate() error {
 // validateCommitRefShape checks one CommitRef's own shape: SessionIDs and
 // Associations are non-nil, HasSession mirrors SessionIDs, SessionIDs contain
 // no empty or duplicate values, Associations mirrors SessionIDs one-for-one in
-// the same rank order, and every association is individually valid. Callers own
-// payload context and wrap any returned error with their surface label.
+// the same rank order with unique association IDs, and every association is
+// individually valid. Callers own payload context and wrap any returned error
+// with their surface label.
 func validateCommitRefShape(commit CommitRef) error {
 	if commit.SessionIDs == nil {
 		return fmt.Errorf("commit %q has null sessionIds; initialize every CommitRef with NewCommitRef, including commits with no sessions", commit.Hash)
@@ -693,19 +865,31 @@ func validateCommitRefShape(commit CommitRef) error {
 		}
 		seen[sessionID] = struct{}{}
 	}
-	if commit.Associations == nil {
-		return fmt.Errorf("commit %q has null associations; initialize every CommitRef with NewCommitRef, including commits with no associations", commit.Hash)
+	return validateAssociationBindings(fmt.Sprintf("commit %q", commit.Hash), commit.SessionIDs, commit.Associations)
+}
+
+// validateAssociationBindings validates the authoritative relationship array
+// shared by commit references and rewrite-ledger rows. The arrays must retain
+// the same session order and first-class association identities.
+func validateAssociationBindings(parent string, sessionIDs []SessionID, associations []SessionAssociation) error {
+	if associations == nil {
+		return fmt.Errorf("%s has null associations; callers cannot retain authoritative relationship identities; initialize the required association array, including parents with no associations", parent)
 	}
-	if len(commit.Associations) != len(commit.SessionIDs) {
-		return fmt.Errorf("commit %q has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order", commit.Hash, len(commit.Associations), len(commit.SessionIDs))
+	if len(associations) != len(sessionIDs) {
+		return fmt.Errorf("%s has %d associations but %d sessionIds; Associations must mirror SessionIDs one-for-one in the same rank order; callers cannot align authoritative associations with their session bindings; make Associations mirror SessionIDs one-for-one in the same rank order", parent, len(associations), len(sessionIDs))
 	}
-	for index, association := range commit.Associations {
+	seenIDs := make(map[AssociationID]struct{}, len(associations))
+	for index, association := range associations {
 		if err := association.Validate(); err != nil {
-			return fmt.Errorf("commit %q at association index %d: %w", commit.Hash, index, err)
+			return fmt.Errorf("%s at association index %d: %w", parent, index, err)
 		}
-		if association.SessionID != commit.SessionIDs[index] {
-			return fmt.Errorf("commit %q has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order", commit.Hash, index, association.SessionID, index, commit.SessionIDs[index])
+		if association.SessionID != sessionIDs[index] {
+			return fmt.Errorf("%s has associations[%d].sessionId %q but sessionIds[%d] is %q; Associations must equal SessionIDs in the same rank order; callers cannot align authoritative associations with their session bindings; make Associations equal SessionIDs in the same rank order", parent, index, association.SessionID, index, sessionIDs[index])
 		}
+		if _, exists := seenIDs[association.ID]; exists {
+			return fmt.Errorf("%s repeats association ID %q at associations[%d]; callers cannot unambiguously target a relationship; assign a unique association ID within this parent", parent, association.ID, index)
+		}
+		seenIDs[association.ID] = struct{}{}
 	}
 	return nil
 }
@@ -829,6 +1013,10 @@ type RewrittenCommit struct {
 	Subject      string      `json:"subject" yaml:"subject"`
 	AuthorTimeMs *int64      `json:"authorTimeMs,omitempty" yaml:"authorTimeMs,omitempty"`
 	SessionIDs   []SessionID `json:"sessionIds" yaml:"sessionIds" required:"true" nullable:"false"`
+	// Associations mirrors SessionIDs one-for-one in the same order. These are
+	// the original session-era relationships and retain their IDs even when a
+	// successor commit is displayed.
+	Associations []SessionAssociation `json:"associations" yaml:"associations" required:"true" nullable:"false"`
 	// SuccessorHash is nil when Resolution is unresolved; non-nil when
 	// rewritten. It is never populated for Resolution=live (a live ledger
 	// hash is not a ghost).
@@ -853,10 +1041,18 @@ func (r RewrittenCommit) Validate() error {
 	if len(r.SessionIDs) == 0 {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds is empty; a rewritten commit without an originating session cannot be placed on a timeline lane; include at least one originating session ID before serving the payload", r.GhostHash)
 	}
+	seenSessions := make(map[SessionID]struct{}, len(r.SessionIDs))
 	for index, sessionID := range r.SessionIDs {
 		if sessionID == "" {
 			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds[%d] is empty; a rewritten commit without a recorded session identity cannot be placed on a timeline lane; provide a non-empty recorded session ID at sessionIds[%d] before serving the payload", r.GhostHash, index, index)
 		}
+		if _, exists := seenSessions[sessionID]; exists {
+			return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: sessionIds[%d] repeats sessionId %q; a rewrite ledger row must retain one binding per recorded session; deduplicate sessionIds before serving the payload", r.GhostHash, index, sessionID)
+		}
+		seenSessions[sessionID] = struct{}{}
+	}
+	if err := validateAssociationBindings(fmt.Sprintf("rewritten commit %q", r.GhostHash), r.SessionIDs, r.Associations); err != nil {
+		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)
 	}
 	if err := r.Resolution.Validate(); err != nil {
 		return fmt.Errorf("rewritten commit validation failed for ghost %q at schema.RewrittenCommit.Validate during wire-boundary validation: %w", r.GhostHash, err)

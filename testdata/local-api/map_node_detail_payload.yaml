@@ -7,6 +7,7 @@ cases:
       rewrittenCommits:
         - ghostHash: ghost-1
           sessionIds: [session-a]
+          associations: [{id: assoc-map-ghost-1, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-1}]}]
           successorHash: successor-1
           resolution: rewritten
           method: patch_id
@@ -29,6 +30,7 @@ cases:
       rewrittenCommits:
         - ghostHash: ghost-2
           sessionIds: [session-a]
+          associations: [{id: assoc-map-ghost-2, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-2}]}]
           successorHash: successor-2
           resolution: rewritten
           method: patch_id
@@ -173,10 +175,11 @@ cases:
           hasSession: false
           sessionIds: [session-a]
           associations:
-            - sessionId: session-a
-              kind: bound
+            - id: assoc-recent-a
+              sessionId: session-a
+              conclusion: confirmed
               confidence: high
-              evidence: commit_and_touch
+              evidence: [{kind: recorded_commit, recordedCommitHash: recent-1}]
       insights: []
       nilSlice: none
     expected:
@@ -197,14 +200,16 @@ cases:
           hasSession: true
           sessionIds: [session-a, session-b]
           associations:
-            - sessionId: session-b
-              kind: candidate
+            - id: assoc-unrecorded-b
+              sessionId: session-b
+              conclusion: candidate
               confidence: medium
-              evidence: commit_only
-            - sessionId: session-a
-              kind: bound
+              evidence: [{kind: recorded_commit, recordedCommitHash: unrecorded-1}]
+            - id: assoc-unrecorded-a
+              sessionId: session-a
+              conclusion: confirmed
               confidence: high
-              evidence: commit_and_touch
+              evidence: [{kind: recorded_commit, recordedCommitHash: unrecorded-1}]
       insights: []
       nilSlice: none
     expected:

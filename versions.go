@@ -25,8 +25,9 @@ const (
 	// Bumped to 0.6.0 when shared operation components adopted exact canonical
 	// Types schemas and the stricter publish HTTP body gained a distinct component
 	// identity instead of shadowing the canonical PublishRequest.
-	// Bumped to 0.7.0 when TargetKind gained the file_version member and
-	// AnnotationSummary gained TargetFilePath/TargetContentHash;
+	// Bumped to 0.7.0 when TargetKind gained the file_version and association
+	// members and AnnotationSummary gained TargetFilePath/TargetContentHash and
+	// TargetAssociationID;
 	// harmonizeSharedTypeComponents propagates both into this spec's embedded
 	// annotation components (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
@@ -39,7 +40,7 @@ const (
 	// commit bindings. Bumped to 0.4.0 when file-change statuses and diff-line
 	// kinds became named closed sets while retaining their existing JSON tokens.
 	// Bumped to 0.5.0 when the git+session timeline and insight-first code map
-	// surface landed: decomposed session<->commit associations, ghost/rewrite
+	// surface landed: durable atomic session-to-commit associations, ghost/rewrite
 	// mapping, the mechanical insight envelope, node-grain
 	// read-state/comprehension signals, and TaskSummary.ReadFiles (all
 	// additive).

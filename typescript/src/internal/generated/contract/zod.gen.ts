@@ -125,32 +125,47 @@ export const zAnnotatorSummary = z.object({
 export type AnnotatorSummary = z.infer<typeof zAnnotatorSummary>;
 
 /**
- * Association Evidence
+ * Association Conclusion
  *
- * Which signal(s) produced a session<->commit association
+ * Producer-supplied conclusion for a session-to-commit association: confirmed or candidate
  */
-export const zAssociationEvidence = z.enum([
-    'commit_and_touch',
-    'commit_only',
-    'touch_only',
-    'branch_only',
+export const zAssociationConclusion = z.enum(['confirmed', 'candidate']);
+
+export type AssociationConclusion = z.infer<typeof zAssociationConclusion>;
+
+/**
+ * Association Evidence Kind
+ *
+ * Atomic observation supporting a session-to-commit association
+ */
+export const zAssociationEvidenceKind = z.enum([
+    'recorded_commit',
+    'touched_file',
+    'branch_membership',
     'time_window'
 ]);
 
-export type AssociationEvidence = z.infer<typeof zAssociationEvidence>;
+export type AssociationEvidenceKind = z.infer<typeof zAssociationEvidenceKind>;
+
+export const zAssociationEvidenceObservation = z.object({
+    branchName: z.string().nullish(),
+    kind: zAssociationEvidenceKind,
+    recordedCommitHash: z.string().nullish(),
+    touchedFilePath: z.string().nullish(),
+    windowEndMs: z.int().nullish(),
+    windowStartMs: z.int().nullish()
+});
+
+export type AssociationEvidenceObservation = z.infer<typeof zAssociationEvidenceObservation>;
 
 /**
- * Association Kind
+ * Association ID
  *
- * Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal
+ * Opaque durable Peasant identifier for one session-to-commit association
  */
-export const zAssociationKind = z.enum([
-    'bound',
-    'candidate',
-    'temporal'
-]);
+export const zAssociationID = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/);
 
-export type AssociationKind = z.infer<typeof zAssociationKind>;
+export type AssociationID = z.infer<typeof zAssociationID>;
 
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
@@ -977,23 +992,11 @@ export const zInsightEvidence = z.object({
 
 export type InsightEvidence = z.infer<typeof zInsightEvidence>;
 
-export const zRewrittenCommit = z.object({
-    authorTimeMs: z.int().nullish(),
-    confidence: zConfidence,
-    ghostHash: z.string(),
-    method: zRewriteMethod,
-    resolution: zRewriteResolution,
-    sessionIds: z.array(zSessionID),
-    subject: z.string(),
-    successorHash: z.string().nullish()
-});
-
-export type RewrittenCommit = z.infer<typeof zRewrittenCommit>;
-
 export const zSessionAssociation = z.object({
+    conclusion: zAssociationConclusion,
     confidence: zConfidence,
-    evidence: zAssociationEvidence,
-    kind: zAssociationKind,
+    evidence: z.array(zAssociationEvidenceObservation),
+    id: zAssociationID,
     sessionId: zSessionID
 });
 
@@ -1009,6 +1012,20 @@ export const zCommitRef = z.object({
 });
 
 export type CommitRef = z.infer<typeof zCommitRef>;
+
+export const zRewrittenCommit = z.object({
+    associations: z.array(zSessionAssociation),
+    authorTimeMs: z.int().nullish(),
+    confidence: zConfidence,
+    ghostHash: z.string(),
+    method: zRewriteMethod,
+    resolution: zRewriteResolution,
+    sessionIds: z.array(zSessionID),
+    subject: z.string(),
+    successorHash: z.string().nullish()
+});
+
+export type RewrittenCommit = z.infer<typeof zRewrittenCommit>;
 
 export const zSessionIdentity = z.object({
     parentUuid: zSessionID.nullish(),
@@ -1193,14 +1210,15 @@ export type SubagentRef = z.infer<typeof zSubagentRef>;
 /**
  * Target Kind
  *
- * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)
+ * What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
  */
 export const zTargetKind = z.enum([
     'session',
     'entry',
     'annotation',
     'project',
-    'file_version'
+    'file_version',
+    'association'
 ]);
 
 export type TargetKind = z.infer<typeof zTargetKind>;
@@ -1242,6 +1260,7 @@ export const zAnnotationSummary = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.nullish(),
     targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),
@@ -1278,6 +1297,7 @@ export const zPullAnnotation = z.object({
     reason: z.string().nullish(),
     supersededBy: z.string().nullish(),
     targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.optional(),
     targetContentHash: z.string().nullish(),
     targetEntryEndIndex: z.int().nullish(),
     targetEntryIndex: z.int().nullish(),

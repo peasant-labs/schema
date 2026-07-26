@@ -3,13 +3,21 @@ import { canonicalTimelineFixtures } from "../internal/generated/timeline-fixtur
 import type { Case } from "../testcase.js";
 
 export type TimelineFixtureSessionInput = Omit<TimelineSessionRef, "harness"> & { harness: string };
-// SessionAssociation's kind/confidence/evidence fields are widened to plain
+// SessionAssociation's conclusion/confidence/evidence fields are widened to plain
 // string so the fixture corpus can carry must-fail negatives (a value
 // outside the closed set) without violating the strict generated union.
-export type TimelineFixtureAssociationInput = Omit<SessionAssociation, "kind" | "confidence" | "evidence"> & {
+export interface TimelineFixtureEvidenceObservation {
   kind: string;
+  recordedCommitHash?: string;
+  touchedFilePath?: string;
+  branchName?: string;
+  windowStartMs?: number;
+  windowEndMs?: number;
+}
+export type TimelineFixtureAssociationInput = Omit<SessionAssociation, "conclusion" | "confidence" | "evidence"> & {
+  conclusion: string;
   confidence: string;
-  evidence: string;
+  evidence: TimelineFixtureEvidenceObservation[] | null;
 };
 export type TimelineFixtureCommitInput = Omit<CommitRef, "sessionIds" | "associations"> & {
   sessionIds: SessionID[] | null;

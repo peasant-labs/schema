@@ -4,8 +4,8 @@ import { zAnnotationDatatype, type AnnotationDatatype as AnnotationDatatypeContr
 import { zAnnotationPushStatus, type AnnotationPushStatus as AnnotationPushStatusContract } from "./contract/zod.gen.js";
 import { zAnnotationStatus, type AnnotationStatus as AnnotationStatusContract } from "./contract/zod.gen.js";
 import { zAnnotatorKind, type AnnotatorKind as AnnotatorKindContract } from "./contract/zod.gen.js";
-import { zAssociationEvidence, type AssociationEvidence as AssociationEvidenceContract } from "./contract/zod.gen.js";
-import { zAssociationKind, type AssociationKind as AssociationKindContract } from "./contract/zod.gen.js";
+import { zAssociationConclusion, type AssociationConclusion as AssociationConclusionContract } from "./contract/zod.gen.js";
+import { zAssociationEvidenceKind, type AssociationEvidenceKind as AssociationEvidenceKindContract } from "./contract/zod.gen.js";
 import { zBuiltinCommand, type BuiltinCommand as BuiltinCommandContract } from "./contract/zod.gen.js";
 import { zChangeBinding, type ChangeBinding as ChangeBindingContract } from "./contract/zod.gen.js";
 import { zChannelTopic, type ChannelTopic as ChannelTopicContract } from "./contract/zod.gen.js";
@@ -96,28 +96,26 @@ export function isAnnotatorKind(value: unknown): value is AnnotatorKind {
   return zAnnotatorKind.safeParse(value).success;
 }
 
-export type AssociationEvidence = AssociationEvidenceContract;
-export const AssociationEvidence = Object.freeze({
-  CommitAndTouch: zAssociationEvidence.parse("commit_and_touch"),
-  CommitOnly: zAssociationEvidence.parse("commit_only"),
-  TouchOnly: zAssociationEvidence.parse("touch_only"),
-  BranchOnly: zAssociationEvidence.parse("branch_only"),
-  TimeWindow: zAssociationEvidence.parse("time_window"),
+export type AssociationConclusion = AssociationConclusionContract;
+export const AssociationConclusion = Object.freeze({
+  Confirmed: zAssociationConclusion.parse("confirmed"),
+  Candidate: zAssociationConclusion.parse("candidate"),
 } as const);
-export const AllAssociationEvidences = Object.freeze([AssociationEvidence.CommitAndTouch, AssociationEvidence.CommitOnly, AssociationEvidence.TouchOnly, AssociationEvidence.BranchOnly, AssociationEvidence.TimeWindow]) as readonly AssociationEvidence[];
-export function isAssociationEvidence(value: unknown): value is AssociationEvidence {
-  return zAssociationEvidence.safeParse(value).success;
+export const AllAssociationConclusions = Object.freeze([AssociationConclusion.Confirmed, AssociationConclusion.Candidate]) as readonly AssociationConclusion[];
+export function isAssociationConclusion(value: unknown): value is AssociationConclusion {
+  return zAssociationConclusion.safeParse(value).success;
 }
 
-export type AssociationKind = AssociationKindContract;
-export const AssociationKind = Object.freeze({
-  Bound: zAssociationKind.parse("bound"),
-  Candidate: zAssociationKind.parse("candidate"),
-  Temporal: zAssociationKind.parse("temporal"),
+export type AssociationEvidenceKind = AssociationEvidenceKindContract;
+export const AssociationEvidenceKind = Object.freeze({
+  RecordedCommit: zAssociationEvidenceKind.parse("recorded_commit"),
+  TouchedFile: zAssociationEvidenceKind.parse("touched_file"),
+  BranchMembership: zAssociationEvidenceKind.parse("branch_membership"),
+  TimeWindow: zAssociationEvidenceKind.parse("time_window"),
 } as const);
-export const AllAssociationKinds = Object.freeze([AssociationKind.Bound, AssociationKind.Candidate, AssociationKind.Temporal]) as readonly AssociationKind[];
-export function isAssociationKind(value: unknown): value is AssociationKind {
-  return zAssociationKind.safeParse(value).success;
+export const AllAssociationEvidenceKinds = Object.freeze([AssociationEvidenceKind.RecordedCommit, AssociationEvidenceKind.TouchedFile, AssociationEvidenceKind.BranchMembership, AssociationEvidenceKind.TimeWindow]) as readonly AssociationEvidenceKind[];
+export function isAssociationEvidenceKind(value: unknown): value is AssociationEvidenceKind {
+  return zAssociationEvidenceKind.safeParse(value).success;
 }
 
 export type BuiltinCommand = BuiltinCommandContract;
@@ -465,8 +463,9 @@ export const TargetKind = Object.freeze({
   Annotation: zTargetKind.parse("annotation"),
   Project: zTargetKind.parse("project"),
   FileVersion: zTargetKind.parse("file_version"),
+  Association: zTargetKind.parse("association"),
 } as const);
-export const AllTargetKinds = Object.freeze([TargetKind.Session, TargetKind.Entry, TargetKind.Annotation, TargetKind.Project, TargetKind.FileVersion]) as readonly TargetKind[];
+export const AllTargetKinds = Object.freeze([TargetKind.Session, TargetKind.Entry, TargetKind.Annotation, TargetKind.Project, TargetKind.FileVersion, TargetKind.Association]) as readonly TargetKind[];
 export function isTargetKind(value: unknown): value is TargetKind {
   return zTargetKind.safeParse(value).success;
 }

@@ -78,7 +78,7 @@ script) behind it.
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish (GitHub Release or npm) behind an un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
-| Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationKind`, `AssociationEvidence`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
+| Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
 | `ReadStateGrade` registry-seed cross-check | `enumcorpus/enumcorpus_test.go` (`TestReadStateGradeRegistrySeedCrossCheck`) | **Hard.** `schema.ReadStateGradeRegistrySeedPermissibleValues` must byte-equal `AllReadStateGrades` minus `none`; the peasant-side read-state registry seed pins the other half against this exported value. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
@@ -135,7 +135,7 @@ named set, and the full variation catalog.
 
 The project timeline corpus uses the same schema-owned path. Each row in
 `timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`
-validates exactly 23 families with 6 accepted and 17 rejected relationship
+validates exactly 24 families with 7 accepted and 17 rejected relationship
 cases. A separate schema-repo-only oracle and count-preserving rename and
 replacement mutations prove the public corpus has the exact intended identities;
 that review scaffolding is not generated or published. Generation emits only the

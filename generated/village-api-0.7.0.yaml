@@ -380,6 +380,15 @@ components:
       - rule
       title: Annotator Kind
       type: string
+    SchemaAssociationID:
+      description: Opaque durable Peasant identifier for one session-to-commit association
+      examples:
+      - assoc-20260726:session-a:commit-1
+      maxLength: 128
+      minLength: 1
+      pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$
+      title: Association ID
+      type: string
     SchemaCommitInfo:
       properties:
         authorEmail:
@@ -652,6 +661,8 @@ components:
           type:
           - "null"
           - string
+        targetAssociationId:
+          $ref: '#/components/schemas/SchemaAssociationID'
         targetContentHash:
           type:
           - "null"
@@ -1354,18 +1365,20 @@ components:
       type: object
     SchemaTargetKind:
       description: 'What is being annotated: session-level, entry-level (turn/tool
-        call), meta-annotation, project-level, or a specific file version (content-hash
-        keyed read-state receipt)'
+        call), meta-annotation, project-level, a specific file version (content-hash
+        keyed read-state receipt), or a durable session-to-commit association'
       enum:
       - session
       - entry
       - annotation
       - project
       - file_version
+      - association
       examples:
       - session
       - entry
       - file_version
+      - association
       title: Target Kind
       type: string
     SchemaTimestampInfo:

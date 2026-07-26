@@ -327,25 +327,30 @@ export interface components {
          */
         SchemaAnnotatorKind: Schema.AnnotatorKind;
         /**
-         * Association Evidence
-         * @description Which signal(s) produced a session<->commit association
-         * @example commit_and_touch
-         * @example commit_only
-         * @example touch_only
-         * @example branch_only
+         * Association Conclusion
+         * @description Producer-supplied conclusion for a session-to-commit association: confirmed or candidate
+         * @example confirmed
+         * @example candidate
+         * @enum {string}
+         */
+        SchemaAssociationConclusion: Schema.AssociationConclusion;
+        /**
+         * Association Evidence Kind
+         * @description Atomic observation supporting a session-to-commit association
+         * @example recorded_commit
+         * @example touched_file
+         * @example branch_membership
          * @example time_window
          * @enum {string}
          */
-        SchemaAssociationEvidence: Schema.AssociationEvidence;
+        SchemaAssociationEvidenceKind: Schema.AssociationEvidenceKind;
+        SchemaAssociationEvidenceObservation: Schema.AssociationEvidenceObservation;
         /**
-         * Association Kind
-         * @description Strength of evidence linking a recorded session to a commit: bound, candidate, or temporal
-         * @example bound
-         * @example candidate
-         * @example temporal
-         * @enum {string}
+         * Association ID
+         * @description Opaque durable Peasant identifier for one session-to-commit association
+         * @example assoc-20260726:session-a:commit-1
          */
-        SchemaAssociationKind: Schema.AssociationKind;
+        SchemaAssociationID: Schema.AssociationID;
         /**
          * Change Binding
          * @description Strength of the evidence connecting a recorded session to a code change
@@ -589,10 +594,11 @@ export interface components {
         SchemaStopReason: Schema.StopReason;
         /**
          * Target Kind
-         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, or a specific file version (content-hash keyed read-state receipt)
+         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
          * @example session
          * @example entry
          * @example file_version
+         * @example association
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;
