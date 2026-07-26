@@ -36,3 +36,6 @@ files:
   - dist/village-api.d.ts
   - dist/village-api.js
   - package.json
+repository:
+  type: git
+  url: https://github.com/peasant-labs/schema

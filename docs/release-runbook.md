@@ -215,6 +215,11 @@ tooling does not assert post-publish registry state.
   fail on the PR before it ever reaches a tag; if it doesn't, the policy file
   drifted from the workflow - see `.github/release-guard.policy.yml`). Restore
   both and cut a new release PR.
+- **npm provenance rejects the package manifest's repository metadata** -
+  `typescript/package.json` must retain `repository.type: "git"` and
+  `repository.url: "https://github.com/peasant-labs/schema"`. The
+  `package:audit` gate checks this exact metadata before publication; restore it
+  and cut a new release PR.
 - **`E409` / "cannot publish over the previously published version"** - the tag's
   stripped version (`${GITHUB_REF_NAME#v}`) already exists on the npm registry.
   This means the tag was already published (check `npm view @peasant-labs/schema
