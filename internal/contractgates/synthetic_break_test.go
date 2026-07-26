@@ -596,6 +596,84 @@ func readIfExists(t *testing.T, path string) (bool, string) {
 	return true, string(b)
 }
 
+// buildIsolatedGateRepo creates a clean two-commit Go module containing the committed
+// gate script. The commits have identical exported APIs, so callers can exercise the
+// production isolation path without manufacturing an advisory API change.
+func buildIsolatedGateRepo(t *testing.T) (repo, base, head string) {
+	t.Helper()
+	root := moduleRoot(t)
+	committed, err := os.ReadFile(filepath.Join(root, "scripts", "contract-gates.sh"))
+	if err != nil {
+		t.Fatalf("read committed gate script: %v", err)
+	}
+
+	repo = filepath.Join(t.TempDir(), "source")
+	writeFile := func(name, content string) {
+		t.Helper()
+		path := filepath.Join(repo, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+	git := func(args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repo
+		cmd.Env = append(os.Environ(),
+			"GIT_CONFIG_GLOBAL=/dev/null",
+			"GIT_AUTHOR_NAME=isolatedgate", "GIT_AUTHOR_EMAIL=isolatedgate@invalid",
+			"GIT_COMMITTER_NAME=isolatedgate", "GIT_COMMITTER_EMAIL=isolatedgate@invalid",
+		)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+
+	writeFile(filepath.Join("scripts", "contract-gates.sh"), string(committed))
+	writeFile("go.mod", "module example.com/isolatedgate\n\ngo 1.25\n")
+	writeFile("api.go", `package isolatedgate
+
+// Stable exists in both commits.
+func Stable() string { return "stable" }
+`)
+	git("init", "-q")
+	git("add", ".")
+	git("commit", "-q", "-m", "base")
+	base = git("rev-parse", "HEAD")
+
+	// The head commit changes repository content but leaves the exported API unchanged.
+	writeFile("README", "isolated gate synthetic repository\n")
+	git("add", ".")
+	git("commit", "-q", "-m", "head")
+	head = git("rev-parse", "HEAD")
+	return repo, base, head
+}
+
+// runIsolatedGate executes the shipped gate from a synthetic repository and returns its
+// normalized exit code and combined output. An empty env entry is deliberately not
+// needed: callers provide only the isolation-specific variables they need to exercise.
+func runIsolatedGate(t *testing.T, repo, base string, env ...string) (int, string) {
+	t.Helper()
+	cmd := exec.Command("bash", filepath.Join(repo, "scripts", "contract-gates.sh"), "go-apidiff", base)
+	cmd.Dir = repo
+	cmd.Env = append(append(os.Environ(), "GOFLAGS=-mod=mod", "GIT_CONFIG_GLOBAL=/dev/null"), env...)
+	out, err := cmd.CombinedOutput()
+	t.Logf("isolated gate output (exit %v):\n%s", err, out)
+	if err == nil {
+		return 0, string(out)
+	}
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("isolated gate failed to run: %v\n%s", err, out)
+	}
+	return exitErr.ExitCode(), string(out)
+}
+
 // TestGoAPIDiffGateRunner drives the SHIPPED runner (gate_go_apidiff) end-to-end across
 // the tri-state incompatible signal (APIDIFF_CHANGES_FILE) and the compatible channel
 // (APIDIFF_COMPATIBLE_FILE). It copies the COMMITTED contract-gates.sh (real shipped
@@ -802,6 +880,8 @@ func Added() string { return "added" }
 // write. No real go-apidiff binary is needed.
 func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 	skipIfMissing(t, "bash")
+	skipIfMissing(t, "git")
+	skipIfMissing(t, "timeout")
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		t.Fatalf(
@@ -812,20 +892,7 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 		)
 	}
 
-	dir := t.TempDir()
-	root := moduleRoot(t)
-	committed, err := os.ReadFile(filepath.Join(root, "scripts", "contract-gates.sh"))
-	if err != nil {
-		t.Fatalf("read committed gate script: %v", err)
-	}
-	scriptsDir := filepath.Join(dir, "scripts")
-	if err := os.MkdirAll(scriptsDir, 0o755); err != nil {
-		t.Fatalf("mkdir scripts: %v", err)
-	}
-	script := filepath.Join(scriptsDir, "contract-gates.sh")
-	if err := os.WriteFile(script, committed, 0o644); err != nil {
-		t.Fatalf("write gate script: %v", err)
-	}
+	dir, base, _ := buildIsolatedGateRepo(t)
 
 	// PATH shim: a fake go-apidiff that emits a header with no parseable bullets. This is
 	// the UNPARSEABLE incompatible section that must trip the fail-closed guard.
@@ -844,26 +911,16 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 	changesFile := filepath.Join(dir, "changes.txt")
 	compatFile := filepath.Join(dir, "compat.txt")
 
-	cmd := exec.Command("bash", script, "go-apidiff", "dummybase")
-	cmd.Dir = dir
-	cmd.Env = append(os.Environ(),
+	exit, out := runIsolatedGate(t, dir, base,
 		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
 		"APIDIFF_CHANGES_FILE="+changesFile,
 		"APIDIFF_COMPATIBLE_FILE="+compatFile,
 	)
-	out, err := cmd.CombinedOutput()
-	t.Logf("fail-closed runner output (exit %v):\n%s", err, out)
-
-	exit := 0
-	if err != nil {
-		ee, ok := err.(*exec.ExitError)
-		if !ok {
-			t.Fatalf("fail-closed runner failed to run: %v\n%s", err, out)
-		}
-		exit = ee.ExitCode()
-	}
 	if exit != 1 {
 		t.Fatalf("fail-closed: exit = %d, want 1 (the gate must stop the line when it can no longer parse the incompatible section)", exit)
+	}
+	if !strings.Contains(out, "no change bullets could be parsed") {
+		t.Fatalf("fail-closed: expected the shipped parser failure, got:\n%s", out)
 	}
 	if _, statErr := os.Stat(changesFile); !os.IsNotExist(statErr) {
 		t.Fatalf("fail-closed: APIDIFF_CHANGES_FILE was written (stat err = %v); want ABSENT (established nothing)", statErr)
@@ -872,5 +929,275 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 	// writes, so a fail-closed run touches neither channel.
 	if _, statErr := os.Stat(compatFile); !os.IsNotExist(statErr) {
 		t.Fatalf("fail-closed: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT", statErr)
+	}
+}
+
+// TestGoAPIDiffGateRunnerInvocationFailure proves that the SHIPPED runner treats a
+// non-zero go-apidiff exit without an incompatible-report header as a tooling failure
+// rather than parsing its potentially partial output. The fake emits an ordinary-looking
+// compatible report before exiting non-zero, so restoring output-suppressing error
+// handling would incorrectly make this test green and write the clean/compatible signals.
+func TestGoAPIDiffGateRunnerInvocationFailure(t *testing.T) {
+	skipIfMissing(t, "bash")
+	skipIfMissing(t, "git")
+	skipIfMissing(t, "timeout")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf(
+			"resolve bash for TestGoAPIDiffGateRunnerInvocationFailure after its interpreter precondition: %v; "+
+				"the hermetic fake go-apidiff cannot be constructed or executed, so the caller cannot verify that an invocation failure fails closed; "+
+				"make bash available on PATH and rerun the test",
+			err,
+		)
+	}
+
+	dir, base, _ := buildIsolatedGateRepo(t)
+
+	// PATH shim: ordinary-looking compatible output is not a valid report when the
+	// tool itself exits non-zero. The runner must return before parsing or signaling.
+	binDir := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	shim := "#!" + bashPath + "\n" +
+		"printf '%s\\n' 'example.com/x'\n" +
+		"printf '%s\\n' '  Compatible changes:'\n" +
+		"printf '%s\\n' '  - Added: example.com/x.New'\n" +
+		"exit 1\n"
+	if err := os.WriteFile(filepath.Join(binDir, "go-apidiff"), []byte(shim), 0o755); err != nil {
+		t.Fatalf("write go-apidiff shim: %v", err)
+	}
+
+	changesFile := filepath.Join(dir, "changes.txt")
+	compatFile := filepath.Join(dir, "compat.txt")
+	exit, out := runIsolatedGate(t, dir, base,
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"APIDIFF_CHANGES_FILE="+changesFile,
+		"APIDIFF_COMPATIBLE_FILE="+compatFile,
+	)
+	if exit != 1 {
+		t.Fatalf("invocation failure: exit = %d, want 1 (a non-zero go-apidiff exit must fail closed)", exit)
+	}
+	if !strings.Contains(out, "Compatible changes") || !strings.Contains(out, "exit 1") {
+		t.Fatalf("invocation failure: expected ordinary-looking tool output and the captured exit status, got:\n%s", out)
+	}
+	if _, statErr := os.Stat(changesFile); !os.IsNotExist(statErr) {
+		t.Fatalf("invocation failure: APIDIFF_CHANGES_FILE was written (stat err = %v); want ABSENT (tool did not establish a report)", statErr)
+	}
+	if _, statErr := os.Stat(compatFile); !os.IsNotExist(statErr) {
+		t.Fatalf("invocation failure: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT (tool did not establish a report)", statErr)
+	}
+}
+
+// TestGoAPIDiffGateRunnerLinkedWorktree proves the production path succeeds from a
+// genuinely linked worktree that plain Git reports clean. This reproduces the topology
+// go-apidiff's go-git implementation misreads when called directly; the shipped runner
+// must instead clone and inspect a standalone repository.
+func TestGoAPIDiffGateRunnerLinkedWorktree(t *testing.T) {
+	skipIfMissing(t, "bash")
+	skipIfMissing(t, "git")
+	skipIfMissing(t, "go")
+	skipIfMissing(t, "go-apidiff")
+	skipIfMissing(t, "timeout")
+
+	repo, base, head := buildIsolatedGateRepo(t)
+	linked := filepath.Join(filepath.Dir(repo), "linked")
+	worktree := exec.Command("git", "worktree", "add", "--detach", linked, head)
+	worktree.Dir = repo
+	worktree.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null")
+	worktreeOut, err := worktree.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git worktree add linked checkout: %v\n%s", err, worktreeOut)
+	}
+
+	status := exec.Command("git", "status", "--porcelain")
+	status.Dir = linked
+	status.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null")
+	statusOut, err := status.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git status linked worktree: %v\n%s", err, statusOut)
+	}
+	if strings.TrimSpace(string(statusOut)) != "" {
+		t.Fatalf("linked worktree must be clean before the gate runs, got:\n%s", statusOut)
+	}
+
+	exit, out := runIsolatedGate(t, linked, base)
+	if exit != 0 {
+		t.Fatalf("linked worktree gate exit = %d, want 0; direct go-apidiff must never inspect this topology:\n%s", exit, out)
+	}
+	if !strings.Contains(out, "isolated standalone clone") {
+		t.Fatalf("linked worktree gate did not report isolated execution:\n%s", out)
+	}
+}
+
+// TestGoAPIDiffGateRunnerIsolatedCloneCleanup uses a committed-script fake to verify
+// the wrapper passes immutable hashes to a standalone --no-local clone, rejects
+// alternates by construction, and removes that clone after a successful comparison.
+func TestGoAPIDiffGateRunnerIsolatedCloneCleanup(t *testing.T) {
+	skipIfMissing(t, "bash")
+	skipIfMissing(t, "timeout")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf("resolve bash for isolated clone fake: %v", err)
+	}
+
+	repo, base, _ := buildIsolatedGateRepo(t)
+	binDir := filepath.Join(repo, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	cloneLog := filepath.Join(t.TempDir(), "clone-path.txt")
+	shim := "#!" + bashPath + "\n" +
+		"base=$1\n" +
+		"head=$2\n" +
+		"repo=''\n" +
+		"while [[ $# -gt 0 ]]; do\n" +
+		"  case \"$1\" in\n" +
+		"    --repo-path) repo=$2; shift 2 ;;\n" +
+		"    *) shift ;;\n" +
+		"  esac\n" +
+		"done\n" +
+		"if [[ -z \"$repo\" || ! -d \"$repo/.git\" ]]; then printf '%s\\n' 'expected standalone clone' >&2; exit 42; fi\n" +
+		"if [[ \"$base\" != \"$(git -C \"$repo\" rev-parse --verify \"$base^{commit}\")\" || \"$head\" != \"$(git -C \"$repo\" rev-parse --verify \"$head^{commit}\")\" ]]; then printf '%s\\n' 'expected immutable full hashes' >&2; exit 41; fi\n" +
+		"if [[ -e \"$repo/.git/objects/info/alternates\" || -L \"$repo/.git/objects/info/alternates\" ]]; then printf '%s\\n' 'alternates are prohibited' >&2; exit 43; fi\n" +
+		"printf '%s\\n' \"$repo\" > \"$GO_APIDIFF_TEST_CLONE_PATH\"\n" +
+		"printf '%s\\n' 'isolated clone has no alternates'\n"
+	if err := os.WriteFile(filepath.Join(binDir, "go-apidiff"), []byte(shim), 0o755); err != nil {
+		t.Fatalf("write go-apidiff shim: %v", err)
+	}
+
+	changesFile := filepath.Join(repo, "changes.txt")
+	compatFile := filepath.Join(repo, "compat.txt")
+	exit, out := runIsolatedGate(t, repo, base,
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"GO_APIDIFF_TEST_CLONE_PATH="+cloneLog,
+		"APIDIFF_CHANGES_FILE="+changesFile,
+		"APIDIFF_COMPATIBLE_FILE="+compatFile,
+	)
+	if exit != 0 {
+		t.Fatalf("isolated clone fake exit = %d, want 0:\n%s", exit, out)
+	}
+	if !strings.Contains(out, "isolated clone has no alternates") {
+		t.Fatalf("isolated clone fake did not verify the standalone repository:\n%s", out)
+	}
+	clonePathBytes, err := os.ReadFile(cloneLog)
+	if err != nil {
+		t.Fatalf("read isolated clone path: %v", err)
+	}
+	clonePath := strings.TrimSpace(string(clonePathBytes))
+	if _, statErr := os.Stat(clonePath); !os.IsNotExist(statErr) {
+		t.Fatalf("successful comparison left isolated clone %q behind (stat err = %v)", clonePath, statErr)
+	}
+	if exists, body := readIfExists(t, changesFile); !exists || strings.TrimSpace(body) != "" {
+		t.Fatalf("isolated clean comparison changes signal exists=%v body=%q; want EXISTS + EMPTY", exists, body)
+	}
+	if exists, body := readIfExists(t, compatFile); !exists || strings.TrimSpace(body) != "" {
+		t.Fatalf("isolated clean comparison compatible signal exists=%v body=%q; want EXISTS + EMPTY", exists, body)
+	}
+}
+
+// TestGoAPIDiffGateRunnerTimeoutFailsClosed proves a bounded isolated invocation cannot
+// turn a hanging tool into a clean signal. The fake receives the production invocation,
+// sleeps past the one-second test timeout, and must leave both signal files absent.
+func TestGoAPIDiffGateRunnerTimeoutFailsClosed(t *testing.T) {
+	skipIfMissing(t, "bash")
+	skipIfMissing(t, "timeout")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf("resolve bash for timeout fake: %v", err)
+	}
+
+	repo, base, _ := buildIsolatedGateRepo(t)
+	binDir := filepath.Join(repo, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(binDir, "go-apidiff"), []byte("#!"+bashPath+"\nsleep 30\n"), 0o755); err != nil {
+		t.Fatalf("write go-apidiff timeout shim: %v", err)
+	}
+
+	changesFile := filepath.Join(repo, "changes.txt")
+	compatFile := filepath.Join(repo, "compat.txt")
+	exit, out := runIsolatedGate(t, repo, base,
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"GO_APIDIFF_TIMEOUT_SECONDS=1",
+		"APIDIFF_CHANGES_FILE="+changesFile,
+		"APIDIFF_COMPATIBLE_FILE="+compatFile,
+	)
+	if exit != 1 {
+		t.Fatalf("timeout: exit = %d, want 1:\n%s", exit, out)
+	}
+	if !strings.Contains(out, "timed out") {
+		t.Fatalf("timeout: expected actionable timeout output, got:\n%s", out)
+	}
+	if _, statErr := os.Stat(changesFile); !os.IsNotExist(statErr) {
+		t.Fatalf("timeout: APIDIFF_CHANGES_FILE was written (stat err = %v); want ABSENT", statErr)
+	}
+	if _, statErr := os.Stat(compatFile); !os.IsNotExist(statErr) {
+		t.Fatalf("timeout: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT", statErr)
+	}
+}
+
+// TestGoAPIDiffGateRunnerCleanupFailureFailsClosed proves an unsuccessful temporary
+// clone removal cannot publish a clean result. The fake rm refuses only the wrapper's
+// cleanup command; the test then removes the retained directory itself to avoid a leak.
+func TestGoAPIDiffGateRunnerCleanupFailureFailsClosed(t *testing.T) {
+	skipIfMissing(t, "bash")
+	skipIfMissing(t, "timeout")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf("resolve bash for cleanup fake: %v", err)
+	}
+
+	repo, base, _ := buildIsolatedGateRepo(t)
+	binDir := filepath.Join(repo, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	cloneLog := filepath.Join(t.TempDir(), "retained-clone.txt")
+	goAPIDiffShim := "#!" + bashPath + "\n" +
+		"repo=''\n" +
+		"while [[ $# -gt 0 ]]; do case \"$1\" in --repo-path) repo=$2; shift 2 ;; *) shift ;; esac; done\n" +
+		"printf '%s\\n' \"$repo\" > \"$GO_APIDIFF_TEST_CLONE_PATH\"\n"
+	if err := os.WriteFile(filepath.Join(binDir, "go-apidiff"), []byte(goAPIDiffShim), 0o755); err != nil {
+		t.Fatalf("write go-apidiff cleanup shim: %v", err)
+	}
+	rmShim := "#!" + bashPath + "\n" +
+		"if [[ \"$1\" == '-rf' && \"$2\" == '--' ]]; then exit 1; fi\n" +
+		"exec /bin/rm \"$@\"\n"
+	if err := os.WriteFile(filepath.Join(binDir, "rm"), []byte(rmShim), 0o755); err != nil {
+		t.Fatalf("write rm cleanup shim: %v", err)
+	}
+
+	changesFile := filepath.Join(repo, "changes.txt")
+	compatFile := filepath.Join(repo, "compat.txt")
+	exit, out := runIsolatedGate(t, repo, base,
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"GO_APIDIFF_TEST_CLONE_PATH="+cloneLog,
+		"APIDIFF_CHANGES_FILE="+changesFile,
+		"APIDIFF_COMPATIBLE_FILE="+compatFile,
+	)
+	if exit != 1 {
+		t.Fatalf("cleanup failure: exit = %d, want 1:\n%s", exit, out)
+	}
+	if !strings.Contains(out, "isolated cleanup failed") {
+		t.Fatalf("cleanup failure: expected actionable cleanup output, got:\n%s", out)
+	}
+	clonePathBytes, err := os.ReadFile(cloneLog)
+	if err != nil {
+		t.Fatalf("read retained clone path: %v", err)
+	}
+	clonePath := strings.TrimSpace(string(clonePathBytes))
+	if _, statErr := os.Stat(clonePath); statErr != nil {
+		t.Fatalf("cleanup failure did not retain the clone for the regression proof: %v", statErr)
+	}
+	if err := os.RemoveAll(filepath.Dir(clonePath)); err != nil {
+		t.Fatalf("remove retained isolated clone after regression proof: %v", err)
+	}
+	if _, statErr := os.Stat(changesFile); !os.IsNotExist(statErr) {
+		t.Fatalf("cleanup failure: APIDIFF_CHANGES_FILE was written (stat err = %v); want ABSENT", statErr)
+	}
+	if _, statErr := os.Stat(compatFile); !os.IsNotExist(statErr) {
+		t.Fatalf("cleanup failure: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT", statErr)
 	}
 }

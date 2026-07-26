@@ -1,0 +1,317 @@
+cases:
+  - name: rewritten_with_successor_is_valid
+    input:
+      ghostHash: ghost-1
+      subject: refactor auth module
+      authorTimeMs: 1700000000000
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-1, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-1}]}]
+      successorHash: successor-1
+      resolution: rewritten
+      method: patch_id
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the RewrittenCommit contract"}
+    mutation: {description: "the resolver's strongest case: a rewritten ghost with a patch_id-matched successor"}
+  - name: unresolved_with_no_metadata_is_valid
+    input:
+      ghostHash: ghost-2
+      subject: ""
+      sessionIds: [session-b]
+      associations: [{id: assoc-ghost-2, sessionId: session-b, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-2}]}]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the degraded-mode design: ledger rows with no recorded metadata"}
+    mutation: {description: "a degraded-mode ghost with no subject or author time, unresolved with method none"}
+  - name: live_hash_still_reachable_is_valid
+    input:
+      ghostHash: commit-live
+      subject: fix typo
+      authorTimeMs: 1700000001000
+      sessionIds: [session-c]
+      associations: [{id: assoc-live, sessionId: session-c, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-live}]}]
+      resolution: live
+      method: hash
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 1 (live)"}
+    mutation: {description: "a ledger hash still reachable from the default branch, not a ghost"}
+  - name: live_with_successor_hash_is_rejected
+    input:
+      ghostHash: commit-live-with-successor
+      subject: reachable commit cannot map to a successor
+      sessionIds: [session-c]
+      associations: [{id: assoc-live-successor, sessionId: session-c, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-live-with-successor}]}]
+      successorHash: successor-live
+      resolution: live
+      method: hash
+      confidence: high
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted successorHash for resolution live"}
+    mutation: {description: "adds a successorHash to an otherwise valid live commit; clearing successorHash must restore validity"}
+  - name: rewritten_via_author_identity_is_valid
+    input:
+      ghostHash: ghost-11
+      subject: fix flaky retry test
+      authorTimeMs: 1700000002000
+      sessionIds: [session-d]
+      associations: [{id: assoc-ghost-11, sessionId: session-d, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-11}]}]
+      successorHash: successor-11
+      resolution: rewritten
+      method: author_identity
+      confidence: high
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 3 (author_identity)"}
+    mutation: {description: "a ghost resolved by matching subject + author_email + author_time against a candidate successor"}
+  - name: rewritten_via_message_embedded_is_valid
+    input:
+      ghostHash: ghost-12
+      subject: bump dependency versions
+      sessionIds: [session-e]
+      associations: [{id: assoc-ghost-12, sessionId: session-e, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-12}]}]
+      successorHash: successor-12
+      resolution: rewritten
+      method: message_embedded
+      confidence: medium
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 4 (message_embedded)"}
+    mutation: {description: "a ghost resolved because its subject line appears inside a squash-merge successor's message body"}
+  - name: rewritten_via_temporal_candidate_is_valid
+    input:
+      ghostHash: ghost-13
+      subject: wip
+      authorTimeMs: 1700000003000
+      sessionIds: [session-f]
+      associations: [{id: assoc-ghost-13, sessionId: session-f, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-13}]}]
+      successorHash: successor-13
+      resolution: rewritten
+      method: temporal
+      confidence: low
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the rewrite resolver's step 5, temporal (the only content/metadata-free candidate)"}
+    mutation: {description: "a ghost resolved only by temporal proximity to the same-session's next default-branch commit; confidence low"}
+  - name: rewritten_missing_successor_hash_is_rejected
+    input:
+      ghostHash: ghost-3
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-3, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-3}]}]
+      resolution: rewritten
+      method: author_identity
+      confidence: medium
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the rewritten-requires-non-nil-SuccessorHash invariant"}
+    mutation: {description: "marks a ghost rewritten without naming its successor commit"}
+  - name: unresolved_with_successor_hash_is_rejected
+    input:
+      ghostHash: ghost-4
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-4, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-4}]}]
+      successorHash: successor-4
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the unresolved-requires-nil-SuccessorHash invariant"}
+    mutation: {description: "names a successor commit for a ghost marked unresolved"}
+  - name: unresolved_with_non_none_method_is_rejected
+    input:
+      ghostHash: ghost-5
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-5, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-5}]}]
+      resolution: unresolved
+      method: temporal
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the Method==none-iff-Resolution==unresolved invariant"}
+    mutation: {description: "pairs resolution unresolved with a non-none method"}
+  - name: rewritten_with_none_method_is_rejected
+    input:
+      ghostHash: ghost-6
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-6, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-6}]}]
+      successorHash: successor-6
+      resolution: rewritten
+      method: none
+      confidence: medium
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: "the Method==none-iff-Resolution==unresolved invariant"}
+    mutation: {description: "pairs resolution rewritten with method none, the value reserved for unresolved"}
+  - name: empty_ghost_hash_is_rejected
+    input:
+      ghostHash: ""
+      sessionIds: [session-a]
+      associations: [{id: assoc-empty-ghost, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-empty}]}]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "RewrittenCommit.Validate: empty ghostHash"}
+    mutation: {description: "clears ghostHash to the empty string, leaving an anonymous ghost"}
+  - name: nil_session_ids_is_rejected
+    input:
+      ghostHash: ghost-7
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: "RewrittenCommit.Validate: null sessionIds"}
+    mutation: {description: "omits the required sessionIds array from a ghost commit"}
+  - name: empty_session_ids_is_rejected
+    input:
+      ghostHash: ghost-empty-sessions
+      sessionIds: []
+      associations: []
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted an empty sessionIds array"}
+    mutation: {description: "empties the originating session list; adding one session ID must restore validity"}
+  - name: empty_session_id_element_is_rejected
+    input:
+      ghostHash: ghost-empty-session-id
+      sessionIds: [""]
+      associations: [{id: assoc-empty-session, sessionId: "", conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-empty-session-id}]}]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: "RewrittenCommit.Validate accepted an empty sessionIds element"}
+    mutation: {description: "replaces the recorded session identity with an empty string, leaving the ghost untraceable"}
+  - name: resolution_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-8
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-8, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-8}]}]
+      resolution: unknown-resolution
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllRewriteResolutions}
+    mutation: {description: "replaces a known resolution with a value outside AllRewriteResolutions"}
+  - name: method_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-9
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-9, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-9}]}]
+      resolution: unresolved
+      method: unknown-method
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllRewriteMethods}
+    mutation: {description: "replaces a known method with a value outside AllRewriteMethods"}
+  - name: confidence_outside_closed_set_is_rejected
+    input:
+      ghostHash: ghost-10
+      sessionIds: [session-a]
+      associations: [{id: assoc-ghost-10, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-10}]}]
+      resolution: unresolved
+      method: none
+      confidence: unknown-confidence
+    expected: false
+    classification: must-fail
+    provenance: {source: enum, ref: schema.AllConfidences}
+    mutation: {description: "replaces a known confidence with a value outside AllConfidences"}
+  - name: rewritten_association_order_mismatch_is_rejected
+    input:
+      ghostHash: ghost-association-order
+      sessionIds: [session-a, session-b]
+      associations: [{id: assoc-order-b, sessionId: session-b, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-association-order}]}, {id: assoc-order-a, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-association-order}]}]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: RewrittenCommit associations mirror sessionIds in the same order}
+    mutation: {description: "swaps two valid associations without changing their session-era binding IDs"}
+  - name: rewritten_duplicate_association_id_is_rejected
+    input:
+      ghostHash: ghost-duplicate-association-id
+      sessionIds: [session-a, session-b]
+      associations: [{id: assoc-duplicate, sessionId: session-a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-duplicate-association-id}]}, {id: assoc-duplicate, sessionId: session-b, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: src/main.go}]}]
+      resolution: unresolved
+      method: none
+      confidence: low
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: RewrittenCommit association IDs are unique within the parent}
+    mutation: {description: "repeats a durable association ID across two session bindings"}
+repairManifest:
+  expectedCaseCount: 5
+  requiredCaseNames:
+    - clear_live_successor_hash_restores_validity
+    - append_session_id_restores_validity
+    - replace_empty_session_id_restores_validity
+    - restore_rewritten_association_order
+    - replace_duplicate_rewritten_association_id
+repairs:
+  cases:
+    - name: clear_live_successor_hash_restores_validity
+      input:
+        sourceCase: live_with_successor_hash_is_rejected
+        mutation: {kind: clear_successor_hash, input: ""}
+      expected:
+        originalErrorContains: 'resolution is "live" but successorHash'
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected a live commit only after successorHash was prohibited"}
+      mutation: {description: "clears successorHash from the rejected live commit and requires the same input to become valid"}
+    - name: append_session_id_restores_validity
+      input:
+        sourceCase: empty_session_ids_is_rejected
+        mutation: {kind: append_session_id, input: session-a}
+      expected:
+        originalErrorContains: sessionIds is empty
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected an empty originating session list"}
+      mutation: {description: "appends one originating session ID and requires the same input to become valid"}
+    - name: replace_empty_session_id_restores_validity
+      input:
+        sourceCase: empty_session_id_element_is_rejected
+        mutation: {kind: replace_session_id, input: session-a}
+      expected:
+        originalErrorContains: sessionIds[0] is empty
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: bug, ref: "RewrittenCommit.Validate rejected an empty sessionIds element"}
+      mutation: {description: "replaces the anonymous session identity with a recorded session ID"}
+    - name: restore_rewritten_association_order
+      input:
+        sourceCase: rewritten_association_order_mismatch_is_rejected
+        mutation: {kind: swap_associations, input: ""}
+      expected:
+        originalErrorContains: Associations must equal SessionIDs
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: boundary, ref: RewrittenCommit association mirror repair}
+      mutation: {description: "restores association array order to the authoritative sessionIds order"}
+    - name: replace_duplicate_rewritten_association_id
+      input:
+        sourceCase: rewritten_duplicate_association_id_is_rejected
+        mutation: {kind: replace_association_id, input: assoc-duplicate-b}
+      expected:
+        originalErrorContains: repeats association ID
+        postMutationValid: true
+      classification: must-pass
+      provenance: {source: boundary, ref: RewrittenCommit association ID uniqueness repair}
+      mutation: {description: "assigns a distinct durable ID to the second association"}

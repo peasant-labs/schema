@@ -284,21 +284,25 @@ func ValidateScaleDomainCombo(scale ScaleKind, domain ValueDomainKind) error {
 
 // --- TargetKind ---
 
-// TargetKind identifies what is being annotated.
-// Derived from the 4-arm exclusive arc on the annotations table.
+// TargetKind identifies which of an annotation's six target arms is populated:
+// session, transcript entry, annotation, project, file_version, or association.
+// The file_version arm identifies one repository-relative file at one content
+// hash; the association arm identifies a durable association ID.
 type TargetKind string
 
 const (
-	TargetSession    TargetKind = "session"
-	TargetEntry      TargetKind = "entry"      // turn, tool call, tool result
-	TargetAnnotation TargetKind = "annotation" // meta-annotation
-	TargetProject    TargetKind = "project"    // project-level annotation
+	TargetSession     TargetKind = "session"
+	TargetEntry       TargetKind = "entry"      // turn, tool call, tool result
+	TargetAnnotation  TargetKind = "annotation" // meta-annotation
+	TargetProject     TargetKind = "project"    // project-level annotation
+	TargetFileVersion TargetKind = "file_version"
+	TargetAssociation TargetKind = "association"
 )
 
 // IsValid returns true if the target kind is one of the known variants.
 func (k TargetKind) IsValid() bool {
 	switch k {
-	case TargetSession, TargetEntry, TargetAnnotation, TargetProject:
+	case TargetSession, TargetEntry, TargetAnnotation, TargetProject, TargetFileVersion, TargetAssociation:
 		return true
 	}
 	return false
@@ -308,7 +312,7 @@ func (k TargetKind) String() string { return string(k) }
 
 // AllTargetKinds is the canonical list of all known target kinds.
 var AllTargetKinds = []TargetKind{
-	TargetSession, TargetEntry, TargetAnnotation, TargetProject,
+	TargetSession, TargetEntry, TargetAnnotation, TargetProject, TargetFileVersion, TargetAssociation,
 }
 
 // JSONSchema implements jsonschema.Exposer.
@@ -316,8 +320,8 @@ func (TargetKind) JSONSchema() (jsonschema.Schema, error) {
 	s := jsonschema.Schema{}
 	s.AddType(jsonschema.String)
 	s.WithTitle("Target Kind")
-	s.WithDescription("What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, or project-level")
-	s.WithEnum("session", "entry", "annotation", "project")
-	s.WithExamples("session", "entry")
+	s.WithDescription("What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association")
+	s.WithEnum("session", "entry", "annotation", "project", "file_version", "association")
+	s.WithExamples("session", "entry", "file_version", "association")
 	return s, nil
 }

@@ -327,6 +327,31 @@ export interface components {
          */
         SchemaAnnotatorKind: Schema.AnnotatorKind;
         /**
+         * Association Conclusion
+         * @description Producer-supplied conclusion for a session-to-commit association: confirmed or candidate
+         * @example confirmed
+         * @example candidate
+         * @enum {string}
+         */
+        SchemaAssociationConclusion: Schema.AssociationConclusion;
+        /**
+         * Association Evidence Kind
+         * @description Atomic observation supporting a session-to-commit association
+         * @example recorded_commit
+         * @example touched_file
+         * @example branch_membership
+         * @example time_window
+         * @enum {string}
+         */
+        SchemaAssociationEvidenceKind: Schema.AssociationEvidenceKind;
+        SchemaAssociationEvidenceObservation: Schema.AssociationEvidenceObservation;
+        /**
+         * Association ID
+         * @description Opaque durable Peasant identifier for one session-to-commit association
+         * @example assoc-20260726:session-a:commit-1
+         */
+        SchemaAssociationID: Schema.AssociationID;
+        /**
          * Change Binding
          * @description Strength of the evidence connecting a recorded session to a code change
          * @example bound
@@ -354,6 +379,15 @@ export interface components {
         SchemaChannelTopic: Schema.ChannelTopic;
         SchemaChildSessionRef: Schema.ChildSessionRef;
         SchemaCommitRef: Schema.CommitRef;
+        /**
+         * Confidence
+         * @description Strength of evidence behind a derived relationship: high, medium, or low
+         * @example high
+         * @example medium
+         * @example low
+         * @enum {string}
+         */
+        SchemaConfidence: Schema.Confidence;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;
@@ -399,6 +433,26 @@ export interface components {
         SchemaFileChangeStatus: Schema.FileChangeStatus;
         SchemaFrictionCluster: Schema.FrictionCluster;
         SchemaHealthResponse: Schema.HealthResponse;
+        SchemaInsightClassification: Schema.InsightClassification;
+        SchemaInsightEvidence: Schema.InsightEvidence;
+        /**
+         * Insight Kind
+         * @description What a SessionInsight observed: a decision, friction, an unusual rate elevation, or a retry loop
+         * @example decision
+         * @example friction
+         * @example unusual
+         * @example retry_loop
+         * @enum {string}
+         */
+        SchemaInsightKind: Schema.InsightKind;
+        /**
+         * Insight Provenance
+         * @description How a SessionInsight was produced: mechanical (rule-derived) or mined
+         * @example mechanical
+         * @example mined
+         * @enum {string}
+         */
+        SchemaInsightProvenance: Schema.InsightProvenance;
         SchemaMapEdge: Schema.MapEdge;
         SchemaMapGraphPayload: Schema.MapGraphPayload;
         SchemaMapNode: Schema.MapNode;
@@ -443,7 +497,48 @@ export interface components {
         SchemaProjectTasksPayload: Schema.ProjectTasksPayload;
         SchemaProvenance: Schema.Provenance;
         SchemaQualitySession: Schema.QualitySession;
+        /**
+         * Read Attribution State
+         * @description Whether per-file read attribution is recoverable for a node's editing sessions: complete, partial, or unavailable
+         * @example complete
+         * @example partial
+         * @example unavailable
+         * @enum {string}
+         */
+        SchemaReadAttributionState: Schema.ReadAttributionState;
+        /**
+         * Read State Grade
+         * @description Ordinal explicit read-state act: none, viewed, reviewed, or reviewed_in_detail
+         * @example none
+         * @example viewed
+         * @example reviewed
+         * @example reviewed_in_detail
+         * @enum {string}
+         */
+        SchemaReadStateGrade: Schema.ReadStateGrade;
         SchemaReviewListPayload: Schema.ReviewListPayload;
+        /**
+         * Rewrite Method
+         * @description Mechanism the resolver used to map a ghost commit to its successor
+         * @example hash
+         * @example patch_id
+         * @example author_identity
+         * @example message_embedded
+         * @example temporal
+         * @example none
+         * @enum {string}
+         */
+        SchemaRewriteMethod: Schema.RewriteMethod;
+        /**
+         * Rewrite Resolution
+         * @description Whether a ledger-observed commit hash is live, was rewritten, or could not be resolved
+         * @example live
+         * @example rewritten
+         * @example unresolved
+         * @enum {string}
+         */
+        SchemaRewriteResolution: Schema.RewriteResolution;
+        SchemaRewrittenCommit: Schema.RewrittenCommit;
         /**
          * Role
          * @description Sender role of a message turn
@@ -463,6 +558,7 @@ export interface components {
         SchemaScaleKind: Schema.ScaleKind;
         SchemaSearchPayload: Schema.SearchPayload;
         SchemaSearchResult: Schema.SearchResult;
+        SchemaSessionAssociation: Schema.SessionAssociation;
         SchemaSessionDetailPayload: Schema.SessionDetailPayload;
         /**
          * Session ID
@@ -474,6 +570,7 @@ export interface components {
          * @example sess_3cd91f52effeXd3QAJ54jOyzv5
          */
         SchemaSessionID: Schema.SessionID;
+        SchemaSessionInsight: Schema.SessionInsight;
         /**
          * Session Outcome
          * @description Resolution status of the session
@@ -497,9 +594,11 @@ export interface components {
         SchemaStopReason: Schema.StopReason;
         /**
          * Target Kind
-         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, or project-level
+         * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
          * @example session
          * @example entry
+         * @example file_version
+         * @example association
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;

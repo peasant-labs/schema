@@ -139,6 +139,79 @@ annotation_summaries:
     value: "detected"
     createdAt: 1700000010000
 
+# AnnotationSummary target-arm validation fixtures. The association target is
+# intentionally an opaque ID, not an embedded association payload.
+annotation_target_validations:
+  cases:
+    - name: association_target_is_valid
+      input: {targetKind: association, targetAssociationId: assoc-session-a:commit-1}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: association annotations target a durable association ID exclusively}
+      mutation: {description: "uses the association discriminator with its only allowed target field"}
+    - name: association_target_missing_id_is_rejected
+      input: {targetKind: association}
+      expected: false
+      classification: must-fail
+      provenance: {source: bug, ref: association target annotations must name their durable association ID}
+      mutation: {description: "removes targetAssociationId from an otherwise valid association target"}
+    - name: association_target_with_invalid_id_is_rejected
+      input: {targetKind: association, targetAssociationId: " invalid"}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: AssociationID grammar applies at the annotation target boundary}
+      mutation: {description: "adds leading whitespace to the opaque association ID"}
+    - name: association_target_mixed_with_session_is_rejected
+      input: {targetKind: association, targetAssociationId: assoc-session-a:commit-1, targetSessionId: session-a}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: annotation target arms are exactly one-of}
+      mutation: {description: "adds a session target to an otherwise valid association target"}
+    - name: session_target_with_association_id_is_rejected
+      input: {targetKind: session, targetSessionId: session-a, targetAssociationId: assoc-session-a:commit-1}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: non-association target arms forbid targetAssociationId}
+      mutation: {description: "adds an association ID to a session target"}
+    - name: entry_target_with_association_id_is_rejected
+      input: {targetKind: entry, targetSessionId: session-a, targetEntryIndex: 2, targetAssociationId: assoc-session-a:commit-1}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: non-association target arms forbid targetAssociationId}
+      mutation: {description: "adds an association ID to an entry target"}
+    - name: annotation_target_with_association_id_is_rejected
+      input: {targetKind: annotation, targetAnnotationId: annotation-a, targetAssociationId: assoc-session-a:commit-1}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: non-association target arms forbid targetAssociationId}
+      mutation: {description: "adds an association ID to an annotation target"}
+    - name: project_target_with_association_id_is_rejected
+      input: {targetKind: project, targetProjectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, targetAssociationId: assoc-session-a:commit-1}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: non-association target arms forbid targetAssociationId}
+      mutation: {description: "adds an association ID to a project target"}
+    - name: file_version_target_with_association_id_is_rejected
+      input: {targetKind: file_version, targetFilePath: src/main.go, targetContentHash: content-a, targetAssociationId: assoc-session-a:commit-1}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: non-association target arms forbid targetAssociationId}
+      mutation: {description: "adds an association ID to a file-version target"}
+annotation_target_repairs:
+  cases:
+    - name: clear_mixed_session_target_restores_validity
+      input: {sourceCase: association_target_mixed_with_session_is_rejected, kind: clear_target_session_id}
+      expected: {originalErrorContains: "mixes targetAssociationId", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: association target exclusivity repair}
+      mutation: {description: "clears the competing session target while preserving the durable association ID"}
+    - name: set_missing_association_id_restores_validity
+      input: {sourceCase: association_target_missing_id_is_rejected, kind: set_target_association_id, targetAssociationId: assoc-session-a:commit-1}
+      expected: {originalErrorContains: "targetAssociationId", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: bug, ref: missing association target ID regression repair}
+      mutation: {description: "sets the required durable association ID on the rejected association target"}
+
 # Subscription validation test cases (Go-only)
 subscription_validations:
   # Happy paths

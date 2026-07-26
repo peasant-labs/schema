@@ -7,6 +7,46 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.5.0 (`PeasantLocalAPIVersion`), Village API 0.7.0, and Types 0.4.0:
+  the git+session timeline and insight-first code map wire surface, all additive.
+   - `CommitRef` and `RewrittenCommit` carry `Associations
+     []SessionAssociation`, each mirroring `SessionIDs` one-for-one in the same
+     rank order. A `SessionAssociation` has a durable opaque `AssociationID`, a
+     closed `AssociationConclusion`, `Confidence`, and a non-empty canonical
+     sequence of atomic `AssociationEvidenceObservation` values. The atomic
+     kinds are `recorded_commit`, `touched_file`, `branch_membership`, and
+     `time_window`; a confirmed association may use one authoritative
+     `recorded_commit` observation. `HasSession`/`SessionIDs` keep their
+     existing compatibility-mirror semantics unchanged.
+  - `ReviewListPayload` and `MapNodeDetailPayload` gain `RewrittenCommits
+    []RewrittenCommit`: the session-era commit resolution ledger
+    (`RewriteResolution` x `RewriteMethod` x `Confidence`). `live` remains a
+    valid ledger row and only non-live rows render as ghosts; frozen field and
+    enum names remain unchanged.
+  - `MapNodeDetailPayload` and `ChangeDetailPayload` gain `Insights
+    []SessionInsight`, a (`InsightKind` x `InsightProvenance` x `Confidence`)
+    envelope with evidence and subjects, alongside the existing
+    `Unusual`/`Frictions` signals (retained unchanged). `Classification` is
+    declared on the wire but MUST be nil until a future revision
+    populates it with no shape change.
+  - `MapNode` gains node-grain comprehension signals: `AgentEditedCount`,
+    `ReadCount`, `ReadAttribution` (`ReadAttributionState`), the composed
+    `ReadState` (`ReadStateGrade`, ordinal `none < viewed < reviewed <
+    reviewed_in_detail`), and the per-node region-coverage counts
+    `ChangedRegionCount`/`AttributedRegionCount`/`ReviewedRegionCount`.
+  - `TaskSummary` gains `ReadFiles []string`, the per-file derivation of
+    `ReadCount`, mirroring `EditedFiles`'s sorted-distinct-non-nil invariants.
+   - `TargetKind` gains a `file_version` member (a whole-file, content-hash
+     keyed read-state receipt target) and an `association` member. An
+     association annotation uses only `AnnotationSummary.TargetAssociationID`;
+     it never embeds an association copy. `AnnotationSummary` retains
+     `TargetFilePath`/`TargetContentHash` as the file-version discriminator pair.
+  - Ten new enum-exhaustion corpora, a segmented insight fixture (mechanical /
+    mined / classification-must-be-nil / rejections), and an extended project
+    timeline corpus back every new closed set and cross-reference invariant.
+  - `types-0.3.0`, `peasantlocal-api-0.4.0`, `village-api-0.6.0`, and
+    `publish-request-0.6.0.schema` are retired and byte-frozen.
+
 - Automated npm publication of `@peasant-labs/schema` in the release ceremony.
   `release.yml` gains an `npm-publish` job, gated behind the same guard →
   nix-vendor-hash → contract-gates chain as the GitHub Release publish job and
@@ -80,6 +120,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   generated nominal identity plus `newProjectHash`, `isProjectHash`, and
   `validateProjectHash`. Root payloads and Local/Village operations carry the
   brand, so plain strings cannot silently cross a project-identity boundary.
+- The TypeScript package docs now spell out the validation boundary: generated
+  Zod schemas cover structural shape only; Go `Validate` owns cross-field
+  semantics at the trust boundary, and consumer adapters remain responsible for
+  any post-parse semantic handling.
 - The bespoke Go-to-TypeScript emitter is removed. TypeScript `testcase`
   `Classification` and `ProvenanceSource` closed sets are generated from
   `testcase.go`'s `AllClassifications`/`AllProvenanceSources`; only the

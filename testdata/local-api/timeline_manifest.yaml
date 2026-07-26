@@ -2,6 +2,10 @@ cases:
   - {family: many-to-many-bindings, name: many_to_many_bindings, classification: must-pass}
   - {family: unattached-session, name: session_not_linked_to_commit, classification: must-pass}
   - {family: binding-outside-window, name: binding_outside_default_branch_window, classification: must-pass}
+  - {family: rewrite-ledger-bound-session, name: rewrite_ledger_references_bound_session, classification: must-pass, required_rewritten_commit: {ghost_hash: ghost-bound}}
+  - {family: rewrite-ledger-binding-truth, name: rewrite_ledger_reference_requires_binding_truth, classification: must-fail, required_repair_kind: set_session_binding_true, ledger_target_session_id: session-rewrite-unbound}
+  - {family: rewrite-successor-association-identity, name: rewrite_successor_preserves_association_identity, classification: must-pass, required_rewritten_commit: {ghost_hash: ghost-preserved}}
+  - {family: rewrite-ledger-missing-session, name: rewrite_ledger_references_missing_session, classification: must-fail}
   - {family: non-default-branch-binding, name: binding_on_non_default_branch, classification: must-pass}
   - {family: stable-session-order, name: stable_equal_timestamp_and_missing_timestamp_order, classification: must-pass}
   - {family: descending-timestamp-order, name: newer_timestamp_must_precede_older, classification: must-fail}
@@ -15,6 +19,10 @@ cases:
   - {family: non-null-commit-bindings, name: null_commit_bindings, classification: must-fail}
   - {family: known-harness, name: unknown_timeline_harness, classification: must-fail}
   - {family: canonical-binding-order, name: noncanonical_binding_order, classification: must-fail}
+  - {family: null-associations, name: null_associations, classification: must-fail}
+  - {family: association-count-mismatch, name: association_count_does_not_mirror_session_ids, classification: must-fail}
+  - {family: association-rank-mismatch, name: association_rank_order_does_not_match_session_ids, classification: must-fail}
+  - {family: association-invalid-conclusion, name: association_conclusion_not_in_closed_set, classification: must-fail}
 mutations:
   cases:
     - name: count_preserving_rename_is_rejected

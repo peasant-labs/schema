@@ -78,6 +78,8 @@ script) behind it.
 | Release grammar + guard | `internal/release/*_test.go`, `cmd/release-guard/*_test.go` | **Hard.** A malformed release title/tag, or a publish (GitHub Release or npm) behind an un-gated workflow, is rejected. |
 | License menu exhaustive coverage | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_ExhaustiveCoverage`) | **Hard.** Widening `schema.AllLicenses` without regenerating the corpus fails (a menu member with no case). |
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
+| Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
+| `ReadStateGrade` registry-seed cross-check | `enumcorpus/enumcorpus_test.go` (`TestReadStateGradeRegistrySeedCrossCheck`) | **Hard.** `schema.ReadStateGradeRegistrySeedPermissibleValues` must byte-equal `AllReadStateGrades` minus `none`; the peasant-side read-state registry seed pins the other half against this exported value. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
@@ -133,7 +135,7 @@ named set, and the full variation catalog.
 
 The project timeline corpus uses the same schema-owned path. Each row in
 `timeline.yaml` carries its stable family identity, and `LoadTimelineFixtures`
-validates exactly 16 families with 5 accepted and 11 rejected relationship
+validates exactly 24 families with 7 accepted and 17 rejected relationship
 cases. A separate schema-repo-only oracle and count-preserving rename and
 replacement mutations prove the public corpus has the exact intended identities;
 that review scaffolding is not generated or published. Generation emits only the
@@ -230,15 +232,29 @@ A gate that can never fail is worthless, so the gates have their own tests.
 `internal/contractgates/synthetic_break_test.go` proves they fire:
 `TestOasdiffSyntheticBreak` removes an endpoint from a committed golden spec and
 asserts `oasdiff breaking --fail-on ERR` exits non-zero, while
-`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. Three of the
-six `TestGoAPIDiff*` tests run the real `go-apidiff` binary end-to-end:
-`TestGoAPIDiffSyntheticBreak` (removes an exported func, asserts an incompatible
-change is reported), `TestGoAPIDiffStampExemption`, and `TestGoAPIDiffGateRunner`.
-The other three drive the decision seams (`evaluate-apidiff` /
-`extract-compatible`) with canned real-format output:
-`TestGoAPIDiffStampExemptionFilter` (the stamp-bump exemption cannot mask a real
-break), `TestGoAPIDiffCompatibleExtraction`, and
-`TestGoAPIDiffGateRunnerFailClosed` (the unparseable-section fail-closed path).
+`TestOasdiffNoBreakOnIdenticalSpec` pins the no-false-positive side. The eleven
+`TestGoAPIDiff*` regressions cover both the real tool and the runner's failure
+boundaries. `TestGoAPIDiffSyntheticBreak`, `TestGoAPIDiffStampExemption`, and
+`TestGoAPIDiffGateRunner` run the real binary against throwaway repositories;
+the first proves a removed export is reported, the second anchors the
+stamp-exemption format, and the third verifies warning, clean, and compatible
+signals. `TestGoAPIDiffGateRunnerLinkedWorktree` runs the real binary from a
+clean linked worktree and proves the runner uses a standalone clone instead of
+letting `go-apidiff` inspect linked-worktree metadata.
+
+`TestGoAPIDiffStampExemptionFilter` and
+`TestGoAPIDiffCompatibleExtraction` drive the shipped decision seams with
+canned real-format output, including the unparseable-section fail-closed path
+and separate compatible/incompatible channels. The remaining five runner tests
+use controlled fakes: `TestGoAPIDiffGateRunnerFailClosed` rejects an unparseable
+report without writing either signal; `TestGoAPIDiffGateRunnerInvocationFailure`
+rejects a non-zero tool invocation; `TestGoAPIDiffGateRunnerIsolatedCloneCleanup`
+verifies immutable base/head hashes reach a standalone `--no-local` clone with
+no alternates and that successful cleanup removes it;
+`TestGoAPIDiffGateRunnerTimeoutFailsClosed` rejects a timed-out isolated run;
+and `TestGoAPIDiffGateRunnerCleanupFailureFailsClosed` rejects failed cleanup
+without publishing signals. The runner validates a whole-second timeout from 1
+through 600 seconds and fails closed for isolated setup or cleanup errors.
 
 ### Leaf-purity audit and vendor-hash stability
 

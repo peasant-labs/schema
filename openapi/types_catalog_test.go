@@ -106,14 +106,19 @@ type requirednessInput struct {
 	Nonnullable []string `yaml:"nonnullable"`
 }
 
-func TestTypesCatalogPreservesGoJSONRequiredness(t *testing.T) {
+// TestTypesCatalogPreservesListedPropertyRequiredness keeps the representative
+// fixture honest: every property listed in a case must be classified exactly
+// once on the presence axis (required or optional) and exactly once on the
+// nullability axis (nullable or nonnullable). This is representative coverage,
+// not an exhaustive catalog of every emitted property.
+func TestTypesCatalogPreservesListedPropertyRequiredness(t *testing.T) {
 	var fixture testcase.Corpus[requirednessInput, bool]
 	decodeStrictFixture(t, "testdata/typescript_requiredness.yaml", &fixture)
 	if err := fixture.Validate(); err != nil {
 		t.Fatalf("validate requiredness fixture: %v", err)
 	}
-	if len(fixture.Cases) != 8 {
-		t.Fatalf("requiredness fixture has %d rows, want exactly 8 representative structures", len(fixture.Cases))
+	if len(fixture.Cases) != 11 {
+		t.Fatalf("requiredness fixture has %d rows, want exactly 11 representative structures", len(fixture.Cases))
 	}
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {
@@ -123,43 +128,125 @@ func TestTypesCatalogPreservesGoJSONRequiredness(t *testing.T) {
 		if !tc.Expected {
 			t.Fatalf("requiredness fixture %q must expect parity", tc.Name)
 		}
-		input := tc.Input
-		schemaMap := spec.Components.Schemas[input.Component]
-		required := map[string]struct{}{}
-		switch raw := schemaMap["required"].(type) {
-		case []interface{}:
-			for _, value := range raw {
-				required[value.(string)] = struct{}{}
-			}
-		case []string:
-			for _, value := range raw {
-				required[value] = struct{}{}
-			}
-		default:
-			t.Fatalf("component %s has no required array", input.Component)
-		}
-		for _, name := range input.Required {
-			if _, ok := required[name]; !ok {
-				t.Errorf("component %s field %s is optional in Types but required by Go JSON", input.Component, name)
-			}
-		}
-		for _, name := range input.Optional {
-			if _, ok := required[name]; ok {
-				t.Errorf("component %s field %s is required in Types but uses omitempty in Go JSON", input.Component, name)
-			}
-		}
-		properties := schemaMap["properties"].(map[string]interface{})
-		for _, name := range input.Nullable {
-			if !schemaAllowsNull(properties[name].(map[string]interface{})) {
-				t.Errorf("component %s field %s is a Go pointer but Types rejects null", input.Component, name)
-			}
-		}
-		for _, name := range input.Nonnullable {
-			if schemaAllowsNull(properties[name].(map[string]interface{})) {
-				t.Errorf("component %s field %s is not a Go pointer but Types allows null", input.Component, name)
-			}
+		requireListedPropertyRequirednessClassification(t, tc.Input.Component, spec.Components.Schemas[tc.Input.Component], tc.Input)
+	}
+}
+
+func requireListedPropertyRequirednessClassification(t *testing.T, component string, schemaMap map[string]interface{}, input requirednessInput) {
+	t.Helper()
+
+	properties, ok := schemaMap["properties"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("component %s has no properties map", component)
+	}
+	requiredNames := schemaRequiredNames(t, component, schemaMap)
+
+	required := collectUniqueNames(t, component, "required", input.Required)
+	optional := collectUniqueNames(t, component, "optional", input.Optional)
+	nullable := collectUniqueNames(t, component, "nullable", input.Nullable)
+	nonnullable := collectUniqueNames(t, component, "nonnullable", input.Nonnullable)
+
+	listed := map[string]struct{}{}
+	for _, set := range []map[string]struct{}{required, optional, nullable, nonnullable} {
+		for name := range set {
+			listed[name] = struct{}{}
 		}
 	}
+
+	for name := range listed {
+		prop, ok := properties[name]
+		if !ok {
+			t.Fatalf("component %s fixture references property %q that the spec does not emit", component, name)
+		}
+
+		presenceCount := 0
+		if _, ok := required[name]; ok {
+			presenceCount++
+		}
+		if _, ok := optional[name]; ok {
+			presenceCount++
+		}
+		if presenceCount != 1 {
+			t.Fatalf("component %s property %q is classified %d times on the presence axis; want exactly once as required or optional", component, name, presenceCount)
+		}
+
+		nullabilityCount := 0
+		if _, ok := nullable[name]; ok {
+			nullabilityCount++
+		}
+		if _, ok := nonnullable[name]; ok {
+			nullabilityCount++
+		}
+		if nullabilityCount != 1 {
+			t.Fatalf("component %s property %q is classified %d times on the nullability axis; want exactly once as nullable or nonnullable", component, name, nullabilityCount)
+		}
+
+		if _, ok := required[name]; ok {
+			if _, ok := requiredNames[name]; !ok {
+				t.Fatalf("component %s property %q is required in the fixture but not required in the generated Types spec", component, name)
+			}
+		} else if _, ok := requiredNames[name]; ok {
+			t.Fatalf("component %s property %q is optional in the fixture but required in the generated Types spec", component, name)
+		}
+
+		propertySchema, ok := prop.(map[string]interface{})
+		if !ok {
+			t.Fatalf("component %s property %q has unexpected schema type %T", component, name, prop)
+		}
+		allowsNull := schemaAllowsNull(propertySchema)
+		if _, ok := nullable[name]; ok {
+			if !allowsNull {
+				t.Fatalf("component %s property %q is classified nullable in the fixture but the Types schema rejects null", component, name)
+			}
+		} else if allowsNull {
+			t.Fatalf("component %s property %q is classified nonnullable in the fixture but the Types schema allows null", component, name)
+		}
+	}
+}
+
+func schemaRequiredNames(t *testing.T, component string, schemaMap map[string]interface{}) map[string]struct{} {
+	t.Helper()
+
+	required := map[string]struct{}{}
+	switch raw := schemaMap["required"].(type) {
+	case []interface{}:
+		for _, value := range raw {
+			name, ok := value.(string)
+			if !ok {
+				t.Fatalf("component %s has non-string required entry of type %T", component, value)
+			}
+			required[name] = struct{}{}
+		}
+	case []string:
+		for _, name := range raw {
+			required[name] = struct{}{}
+		}
+	case nil:
+		return required
+	default:
+		t.Fatalf("component %s has unexpected required-list type %T", component, raw)
+	}
+	return required
+}
+
+func collectUniqueNames(t *testing.T, component, axis string, values []string) map[string]struct{} {
+	t.Helper()
+
+	set := make(map[string]struct{}, len(values))
+	for _, raw := range values {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			t.Fatalf("component %s has a blank %s property name", component, axis)
+		}
+		if name != raw {
+			t.Fatalf("component %s property %q on the %s axis has surrounding whitespace", component, raw, axis)
+		}
+		if _, duplicate := set[name]; duplicate {
+			t.Fatalf("component %s repeats %s property %q", component, axis, name)
+		}
+		set[name] = struct{}{}
+	}
+	return set
 }
 
 func schemaAllowsNull(schemaMap map[string]interface{}) bool {
