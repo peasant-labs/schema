@@ -1,0 +1,10 @@
+expectedCaseCount: 8
+requiredCaseNames:
+  - go_valid_non_empty_session_id_is_accepted
+  - distinct_same_kind_recorded_commit_observations_in_canonical_order_are_accepted
+  - unicode_e000_then_10000_utf8_order_is_accepted
+  - unicode_10000_then_e000_utf8_order_is_rejected
+  - nel_only_recorded_commit_hash_is_rejected
+  - nel_only_branch_name_is_rejected
+  - bom_only_recorded_commit_hash_is_accepted
+  - bom_only_branch_name_is_accepted

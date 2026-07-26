@@ -23,3 +23,27 @@ cases:
     classification: must-fail
     provenance: {source: bug, ref: Go string ordering compares UTF-8 bytes rather than JavaScript UTF-16 code units}
     mutation: {description: reverses the required UTF-8 byte order of U+E000 and U+10000}
+  - name: nel_only_recorded_commit_hash_is_rejected
+    input: {id: assoc-nel-recorded-commit, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: "\u0085"}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: Go strings.TrimSpace treats NEL-only recorded commit hashes as empty}
+    mutation: {description: replaces a recorded commit hash with the Go whitespace code point U+0085}
+  - name: nel_only_branch_name_is_rejected
+    input: {id: assoc-nel-branch, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: branch_membership, branchName: "\u0085"}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: Go strings.TrimSpace treats NEL-only branch names as empty}
+    mutation: {description: replaces a branch name with the Go whitespace code point U+0085}
+  - name: bom_only_recorded_commit_hash_is_accepted
+    input: {id: assoc-bom-recorded-commit, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: "\uFEFF"}]}
+    expected: true
+    classification: must-pass
+    provenance: {source: bug, ref: Go strings.TrimSpace preserves a BOM-only recorded commit hash}
+    mutation: {description: uses U+FEFF as a non-whitespace recorded commit hash without normalization}
+  - name: bom_only_branch_name_is_accepted
+    input: {id: assoc-bom-branch, sessionId: session-a, conclusion: candidate, confidence: medium, evidence: [{kind: branch_membership, branchName: "\uFEFF"}]}
+    expected: true
+    classification: must-pass
+    provenance: {source: bug, ref: Go strings.TrimSpace preserves a BOM-only branch name}
+    mutation: {description: uses U+FEFF as a non-whitespace branch name without normalization}

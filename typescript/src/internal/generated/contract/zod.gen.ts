@@ -156,7 +156,25 @@ export const zAssociationEvidenceObservation = z.object({
     windowStartMs: z.int().nullish()
 }).superRefine((value, context) => {
     const isAbsent = (detail: unknown) => detail === undefined || detail === null;
-    const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail.trim() !== "";
+    const isGoWhitespace = (codePoint: number) => (codePoint >= 0x0009 && codePoint <= 0x000D)
+        || codePoint === 0x0020
+        || codePoint === 0x0085
+        || codePoint === 0x00A0
+        || codePoint === 0x1680
+        || (codePoint >= 0x2000 && codePoint <= 0x200A)
+        || codePoint === 0x2028
+        || codePoint === 0x2029
+        || codePoint === 0x202F
+        || codePoint === 0x205F
+        || codePoint === 0x3000;
+    const hasNonEmptyString = (detail: unknown) => {
+        if (typeof detail !== "string") return false;
+        for (const character of detail) {
+            const codePoint = character.codePointAt(0);
+            if (codePoint !== undefined && !isGoWhitespace(codePoint)) return true;
+        }
+        return false;
+    };
     const hasValidTouchedFilePath = (detail: unknown) => typeof detail === "string"
         && detail !== ""
         && !detail.startsWith("/")

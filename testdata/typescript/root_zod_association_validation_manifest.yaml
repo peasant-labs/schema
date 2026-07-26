@@ -1,0 +1,33 @@
+expectedCaseCount: 31
+requiredCaseNames:
+  - ordered atomic evidence is accepted
+  - empty evidence is rejected
+  - recorded commit without hash is rejected
+  - recorded commit with touched file detail is rejected
+  - touched file without path is rejected
+  - touched file with branch detail is rejected
+  - touched file with traversal path is rejected
+  - branch membership without name is rejected
+  - branch membership with time detail is rejected
+  - time window without end is rejected
+  - time window with recorded commit detail is rejected
+  - time window with descending bounds is rejected
+  - evidence out of kind order is rejected
+  - evidence out of same kind detail order is rejected
+  - duplicate evidence is rejected
+  - invalid association ID is rejected
+  - association annotation target is accepted
+  - association annotation missing ID is rejected
+  - association annotation invalid ID is rejected
+  - association annotation mixed with session target is rejected
+  - session annotation target is accepted
+  - session annotation mixed with association target is rejected
+  - entry annotation target is accepted
+  - entry annotation mixed with association target is rejected
+  - annotation annotation target is accepted
+  - annotation annotation mixed with association target is rejected
+  - project annotation target is accepted
+  - project annotation mixed with association target is rejected
+  - file version annotation target is accepted
+  - file version annotation mixed with association target is rejected
+  - global session ID remains stricter than association session identity
