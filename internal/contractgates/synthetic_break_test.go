@@ -874,3 +874,84 @@ func TestGoAPIDiffGateRunnerFailClosed(t *testing.T) {
 		t.Fatalf("fail-closed: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT", statErr)
 	}
 }
+
+// TestGoAPIDiffGateRunnerInvocationFailure proves that the SHIPPED runner treats a
+// non-zero go-apidiff exit as a tooling failure rather than parsing its potentially
+// partial output. The fake emits an ordinary-looking compatible report before exiting
+// non-zero, so restoring output-suppressing error handling would incorrectly make this
+// test green and write the clean/compatible signals.
+func TestGoAPIDiffGateRunnerInvocationFailure(t *testing.T) {
+	skipIfMissing(t, "bash")
+	bashPath, err := exec.LookPath("bash")
+	if err != nil {
+		t.Fatalf(
+			"resolve bash for TestGoAPIDiffGateRunnerInvocationFailure after its interpreter precondition: %v; "+
+				"the hermetic fake go-apidiff cannot be constructed or executed, so the caller cannot verify that an invocation failure fails closed; "+
+				"make bash available on PATH and rerun the test",
+			err,
+		)
+	}
+
+	dir := t.TempDir()
+	root := moduleRoot(t)
+	committed, err := os.ReadFile(filepath.Join(root, "scripts", "contract-gates.sh"))
+	if err != nil {
+		t.Fatalf("read committed gate script: %v", err)
+	}
+	scriptsDir := filepath.Join(dir, "scripts")
+	if err := os.MkdirAll(scriptsDir, 0o755); err != nil {
+		t.Fatalf("mkdir scripts: %v", err)
+	}
+	script := filepath.Join(scriptsDir, "contract-gates.sh")
+	if err := os.WriteFile(script, committed, 0o644); err != nil {
+		t.Fatalf("write gate script: %v", err)
+	}
+
+	// PATH shim: ordinary-looking compatible output is not a valid report when the
+	// tool itself exits non-zero. The runner must return before parsing or signaling.
+	binDir := filepath.Join(dir, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+	shim := "#!" + bashPath + "\n" +
+		"printf '%s\\n' 'example.com/x'\n" +
+		"printf '%s\\n' '  Compatible changes:'\n" +
+		"printf '%s\\n' '  - Added: example.com/x.New'\n" +
+		"exit 1\n"
+	if err := os.WriteFile(filepath.Join(binDir, "go-apidiff"), []byte(shim), 0o755); err != nil {
+		t.Fatalf("write go-apidiff shim: %v", err)
+	}
+
+	changesFile := filepath.Join(dir, "changes.txt")
+	compatFile := filepath.Join(dir, "compat.txt")
+	cmd := exec.Command("bash", script, "go-apidiff", "dummybase")
+	cmd.Dir = dir
+	cmd.Env = append(os.Environ(),
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"APIDIFF_CHANGES_FILE="+changesFile,
+		"APIDIFF_COMPATIBLE_FILE="+compatFile,
+	)
+	out, err := cmd.CombinedOutput()
+	t.Logf("invocation-failure runner output (exit %v):\n%s", err, out)
+
+	exit := 0
+	if err != nil {
+		ee, ok := err.(*exec.ExitError)
+		if !ok {
+			t.Fatalf("invocation-failure runner failed to run: %v\n%s", err, out)
+		}
+		exit = ee.ExitCode()
+	}
+	if exit != 1 {
+		t.Fatalf("invocation failure: exit = %d, want 1 (a non-zero go-apidiff exit must fail closed)", exit)
+	}
+	if !strings.Contains(string(out), "Compatible changes") || !strings.Contains(string(out), "exit 1") {
+		t.Fatalf("invocation failure: expected ordinary-looking tool output and the captured exit status, got:\n%s", out)
+	}
+	if _, statErr := os.Stat(changesFile); !os.IsNotExist(statErr) {
+		t.Fatalf("invocation failure: APIDIFF_CHANGES_FILE was written (stat err = %v); want ABSENT (tool did not establish a report)", statErr)
+	}
+	if _, statErr := os.Stat(compatFile); !os.IsNotExist(statErr) {
+		t.Fatalf("invocation failure: APIDIFF_COMPATIBLE_FILE was written (stat err = %v); want ABSENT (tool did not establish a report)", statErr)
+	}
+}

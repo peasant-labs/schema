@@ -25,10 +25,13 @@
 #              stamp_exempt_regex for the full rationale.
 #
 #              CI hand-off (env-gated; the vars are unset locally, so nothing is written
-#              off-CI): the runner encodes go-apidiff's OWN outcome as a TRI-STATE in
-#              APIDIFF_CHANGES_FILE — a non-empty file = WARN (the incompatible payload),
-#              an EMPTY file = cleanliness established, an ABSENT file = fail-closed /
-#              gate blind — and writes the compatible bullets to APIDIFF_COMPATIBLE_FILE.
+#              off-CI): after a SUCCESSFUL go-apidiff invocation, the runner encodes its
+#              outcome as a TRI-STATE in APIDIFF_CHANGES_FILE — a non-empty file = WARN
+#              (the incompatible payload), an EMPTY file = cleanliness established, an
+#              ABSENT file = fail-closed / gate blind — and writes the compatible bullets
+#              to APIDIFF_COMPATIBLE_FILE. An unexpected non-zero go-apidiff exit, including
+#              exit 1 without a parseable incompatible-report header, is fail-closed even
+#              when it emitted output that looks otherwise parseable.
 #
 # Usage:
 #   contract-gates.sh vacuum
@@ -221,11 +224,31 @@ gate_go_apidiff() {
     return 0
   fi
   echo ">> go-apidiff ${base_ref} (exported Go API of the module vs base; +compatible for reviewers)"
-  local out
+  local out tool_rc
   # --print-compatible: emit BOTH sections so reviewers see additive changes; the
   # DECISION below still consumes only the incompatible section.
-  out="$(go-apidiff "${base_ref}" --print-compatible --repo-path "${repo_root}" 2>&1)" || true
+  if out="$(go-apidiff "${base_ref}" --print-compatible --repo-path "${repo_root}" 2>&1)"; then
+    tool_rc=0
+  else
+    tool_rc=$?
+  fi
   printf '%s\n' "${out}"
+
+  # go-apidiff uses exit 1 for a completed comparison that found incompatible API
+  # changes. Preserve the pre-1.0 advisory policy for that documented report form, but
+  # do not mistake partial output from an invocation failure for an API-diff report. An
+  # exit 1 without the incompatible-report header, or any other non-zero exit, fails
+  # before the parser and before either CI signal file can be written.
+  if [[ "${tool_rc}" -ne 0 ]]; then
+    if [[ "${tool_rc}" -eq 1 ]] && printf '%s\n' "${out}" | grep -qE '^[[:space:]]*Incompatible changes:'; then
+      echo "go-apidiff: exited 1 after reporting incompatible exported-Go-API changes; evaluating the advisory report." >&2
+    else
+      echo "::error::go-apidiff invocation did not produce a valid incompatible-change report in gate_go_apidiff while comparing ${base_ref} to the current module (exit ${tool_rc}); refusing to parse its output or write API-diff signals." >&2
+      echo "  why: exit 1 is only an expected comparison result when go-apidiff emitted its incompatible-report header; any other non-zero result is a tooling or module-analysis failure." >&2
+      echo "  fix: inspect the go-apidiff output above, repair the tool, repository, or module-analysis failure, then rerun make gates BASE_REF=${base_ref}." >&2
+      return 1
+    fi
+  fi
 
   # Pure INCOMPATIBLE decision: STDOUT = non-exempt incompatible payload (empty = clean);
   # exit 0 = warn/clean, 1 = fail-closed.
