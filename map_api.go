@@ -372,10 +372,11 @@ func NewMapNodeDetailPayload(path string) *MapNodeDetailPayload {
 
 // Validate checks the additive rewrite and insight invariants: slices are non-nil,
 // every RecentCommit and RewrittenCommit is well-formed, every RewrittenCommit's
-// SuccessorHash (when set) is present in RecentCommits, and every SessionInsight
-// is well-formed (including the Classification-must-be-nil rule). Unlike
-// ReviewListPayload, a node detail payload carries no independent session table,
-// so RewrittenCommits.SessionIDs are checked for well-formedness only (not
+// SuccessorHash (when set) is present in RecentCommits, shared successor and
+// ledger associations are identical, and every SessionInsight is well-formed
+// (including the Classification-must-be-nil rule). Unlike ReviewListPayload, a
+// node detail payload carries no independent session table, so
+// RewrittenCommits.SessionIDs are checked for well-formedness only (not
 // cross-referenced against a session list this payload does not have).
 func (p MapNodeDetailPayload) Validate() error {
 	if p.DependsOn == nil || p.UsedBy == nil || p.ShapedBy == nil || p.RecentCommits == nil || p.RewrittenCommits == nil || p.Insights == nil {
@@ -390,18 +391,9 @@ func (p MapNodeDetailPayload) Validate() error {
 		if err := ghost.Validate(); err != nil {
 			return fmt.Errorf("map node detail validation: rewrittenCommits[%d]: %w", index, err)
 		}
-		if ghost.SuccessorHash != nil {
-			found := false
-			for _, commit := range p.RecentCommits {
-				if commit.Hash == *ghost.SuccessorHash {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fmt.Errorf("map node detail validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in recentCommits; include the successor commit or leave successorHash nil", index, ghost.GhostHash, *ghost.SuccessorHash)
-			}
-		}
+	}
+	if err := validateRewrittenCommitSuccessorMirrors(p.RewrittenCommits, indexCommitRefsByHash(p.RecentCommits), "map node detail", "recentCommits"); err != nil {
+		return err
 	}
 	if err := validateSessionInsights(p.Insights); err != nil {
 		return fmt.Errorf("map node detail validation: %w", err)
@@ -1085,11 +1077,12 @@ func (r RewrittenCommit) Validate() error {
 
 // validateRewrittenCommits checks the rewrite cross-reference invariants for a
 // review-list session-era commit resolution ledger against its authoritative
-// session table and known commit hash set: every entry's own fields are
+// session table and displayed successor commits: every entry's own fields are
 // well-formed, every SessionID is present in the payload's session table and
-// has commit-binding truth, and SuccessorHash (when set) is present in the
-// payload's commit set. label identifies the owning payload in error messages.
-func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]TimelineSessionRef, knownCommitHashes map[string]struct{}, label string) error {
+// has commit-binding truth, and shared successor associations mirror the
+// authoritative ledger object. label identifies the owning payload in error
+// messages.
+func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]TimelineSessionRef, successors map[string]CommitRef, label string) error {
 	if commits == nil {
 		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload; initialize the payload with NewReviewListPayload before serving it", label)
 	}
@@ -1106,13 +1099,78 @@ func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[Sessi
 				return fmt.Errorf("%s rewrittenCommits validation failed at schema.ReviewListPayload.Validate/validateRewrittenCommits during wire-boundary validation: rewrittenCommits[%d] (ghost %q) references sessionId %q but that session has hasCommitBinding=false; a rewrite ledger row proves an authoritative session commit binding and cannot point at an unbound timeline session; callers would render contradictory timeline traceability for the same session; set hasCommitBinding=true for session %q or remove/correct the stale ledger reference before serving the payload", label, index, ghost.GhostHash, sessionID, sessionID)
 			}
 		}
-		if ghost.SuccessorHash != nil {
-			if _, exists := knownCommitHashes[*ghost.SuccessorHash]; !exists {
-				return fmt.Errorf("%s validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in the payload's commit set; include the successor commit or leave successorHash nil", label, index, ghost.GhostHash, *ghost.SuccessorHash)
+	}
+	return validateRewrittenCommitSuccessorMirrors(commits, successors, label, "the payload's commit set")
+}
+
+// validateRewrittenCommitSuccessorMirrors checks that a displayed rewrite
+// successor never creates a second authority for an association retained in a
+// rewrite ledger row. A successor may omit a ledger association entirely, but
+// an association sharing either the durable ID or the session binding must be
+// the same complete relationship object.
+func validateRewrittenCommitSuccessorMirrors(commits []RewrittenCommit, successors map[string]CommitRef, label, successorCollection string) error {
+	for rewrittenIndex, rewritten := range commits {
+		if rewritten.SuccessorHash == nil {
+			continue
+		}
+		successor, exists := successors[*rewritten.SuccessorHash]
+		if !exists {
+			return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in %s; include the successor commit or leave successorHash nil", label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, successorCollection)
+		}
+		for ledgerAssociationIndex, ledgerAssociation := range rewritten.Associations {
+			for successorAssociationIndex, successorAssociation := range successor.Associations {
+				if ledgerAssociation.ID != successorAssociation.ID && ledgerAssociation.SessionID != successorAssociation.SessionID {
+					continue
+				}
+				if sessionAssociationsEqual(ledgerAssociation, successorAssociation) {
+					continue
+				}
+				return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) successorHash %q associations[%d] shares association ID or session binding with ledger associations[%d] but does not exactly mirror the rewrite-ledger association; ID, sessionId, conclusion, confidence, and ordered evidence must match so consumers receive one authoritative relationship; copy the ledger association to the displayed successor or omit the successor association", label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, successorAssociationIndex, ledgerAssociationIndex)
 			}
 		}
 	}
 	return nil
+}
+
+// sessionAssociationsEqual compares the full wire value. Validation has already
+// established the evidence arrays as non-nil and canonical; this comparison
+// deliberately preserves their order rather than inferring or normalizing a
+// relationship from its individual observations.
+func sessionAssociationsEqual(left, right SessionAssociation) bool {
+	if left.ID != right.ID || left.SessionID != right.SessionID || left.Conclusion != right.Conclusion || left.Confidence != right.Confidence || len(left.Evidence) != len(right.Evidence) {
+		return false
+	}
+	for index := range left.Evidence {
+		if !associationEvidenceObservationsEqual(left.Evidence[index], right.Evidence[index]) {
+			return false
+		}
+	}
+	return true
+}
+
+// associationEvidenceObservationsEqual compares every wire field in one
+// ordered atomic observation without using producer inference rules.
+func associationEvidenceObservationsEqual(left, right AssociationEvidenceObservation) bool {
+	return left.Kind == right.Kind &&
+		equalStringPointers(left.RecordedCommitHash, right.RecordedCommitHash) &&
+		equalStringPointers(left.TouchedFilePath, right.TouchedFilePath) &&
+		equalStringPointers(left.BranchName, right.BranchName) &&
+		equalInt64Pointers(left.WindowStartMs, right.WindowStartMs) &&
+		equalInt64Pointers(left.WindowEndMs, right.WindowEndMs)
+}
+
+func equalStringPointers(left, right *string) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
+}
+
+func equalInt64Pointers(left, right *int64) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return *left == *right
 }
 
 // InsightKind classifies a SessionInsight.
@@ -1474,21 +1532,21 @@ func (p ReviewListPayload) Validate() error {
 			previousRank = rank
 		}
 	}
-	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessions, recentCommitHashes(p.RecentCommits), "review list"); err != nil {
+	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessions, indexCommitRefsByHash(p.RecentCommits), "review list"); err != nil {
 		return err
 	}
 	return nil
 }
 
-// recentCommitHashes returns the set of commit hashes visible in commits, for
-// cross-referencing a RewrittenCommit.SuccessorHash against a payload's
-// known commit set.
-func recentCommitHashes(commits []CommitRef) map[string]struct{} {
-	hashes := make(map[string]struct{}, len(commits))
+// indexCommitRefsByHash indexes displayed commits by hash so rewrite
+// cross-reference validation can compare a successor's complete authoritative
+// association objects rather than merely accepting its hash.
+func indexCommitRefsByHash(commits []CommitRef) map[string]CommitRef {
+	byHash := make(map[string]CommitRef, len(commits))
 	for _, commit := range commits {
-		hashes[commit.Hash] = struct{}{}
+		byHash[commit.Hash] = commit
 	}
-	return hashes
+	return byHash
 }
 
 // ChangeSummary is one row of the Review list: a local branch measured

@@ -10,7 +10,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const timelineFixtureCaseCount = 24
+const (
+	timelineFixtureCaseCount                       = 24
+	timelineSuccessorAssociationMirrorFixtureCount = 5
+)
 
 // TimelineFixtureInput is one normalized session and commit relationship.
 type TimelineFixtureInput struct {
@@ -27,6 +30,9 @@ const (
 	// timelineRepairSetSessionBindingTrue flips one timeline session's
 	// HasCommitBinding flag in place.
 	timelineRepairSetSessionBindingTrue timelineFixtureRepairKind = "set_session_binding_true"
+	// timelineRepairReplaceSuccessorAssociation restores one displayed
+	// successor association from its authoritative rewrite-ledger counterpart.
+	timelineRepairReplaceSuccessorAssociation timelineFixtureRepairKind = "replace_successor_association"
 )
 
 // timelineFixtureRepair records the in-place repair expected for a rejected
@@ -34,6 +40,9 @@ const (
 type timelineFixtureRepair struct {
 	Kind              timelineFixtureRepairKind `json:"kind" yaml:"kind"`
 	SessionID         SessionID                 `json:"sessionId" yaml:"sessionId"`
+	GhostHash         string                    `json:"ghostHash" yaml:"ghostHash"`
+	SuccessorHash     string                    `json:"successorHash" yaml:"successorHash"`
+	AssociationID     AssociationID             `json:"associationId" yaml:"associationId"`
 	PostMutationValid bool                      `json:"postMutationValid" yaml:"postMutationValid"`
 }
 
@@ -43,13 +52,64 @@ func (r *timelineFixtureRepair) Apply(payload *ReviewListPayload) error {
 	if r == nil {
 		return fmt.Errorf("timeline fixture repair apply: repair is nil; call Apply only when a repair is declared")
 	}
-	for index := range payload.Sessions {
-		if payload.Sessions[index].SessionID == r.SessionID {
-			payload.Sessions[index].HasCommitBinding = true
-			return nil
+	switch r.Kind {
+	case timelineRepairSetSessionBindingTrue:
+		for index := range payload.Sessions {
+			if payload.Sessions[index].SessionID == r.SessionID {
+				payload.Sessions[index].HasCommitBinding = true
+				return nil
+			}
+		}
+		return fmt.Errorf("timeline fixture repair apply: sessionId %q not found in payload sessions; the declared repair cannot be applied", r.SessionID)
+	case timelineRepairReplaceSuccessorAssociation:
+		return r.replaceSuccessorAssociation(payload)
+	default:
+		return fmt.Errorf("timeline fixture repair apply: unknown repair kind %q", r.Kind)
+	}
+}
+
+func (r *timelineFixtureRepair) replaceSuccessorAssociation(payload *ReviewListPayload) error {
+	ledgerIndex := -1
+	for index := range payload.RewrittenCommits {
+		if payload.RewrittenCommits[index].GhostHash == r.GhostHash {
+			ledgerIndex = index
+			break
 		}
 	}
-	return fmt.Errorf("timeline fixture repair apply: sessionId %q not found in payload sessions; the declared repair cannot be applied", r.SessionID)
+	if ledgerIndex < 0 {
+		return fmt.Errorf("timeline fixture repair apply: ghostHash %q is not present in rewrittenCommits; the declared successor-association repair cannot be applied", r.GhostHash)
+	}
+	ledger := payload.RewrittenCommits[ledgerIndex]
+	if ledger.SuccessorHash == nil || *ledger.SuccessorHash != r.SuccessorHash {
+		return fmt.Errorf("timeline fixture repair apply: ghostHash %q does not name successorHash %q; the declared successor-association repair cannot be applied", r.GhostHash, r.SuccessorHash)
+	}
+	ledgerAssociationIndex := -1
+	for index, association := range ledger.Associations {
+		if association.ID == r.AssociationID {
+			ledgerAssociationIndex = index
+			break
+		}
+	}
+	if ledgerAssociationIndex < 0 {
+		return fmt.Errorf("timeline fixture repair apply: rewrite ledger ghostHash %q has no associationId %q; the declared successor-association repair cannot be applied", r.GhostHash, r.AssociationID)
+	}
+	ledgerAssociation := ledger.Associations[ledgerAssociationIndex]
+	for commitIndex := range payload.RecentCommits {
+		commit := &payload.RecentCommits[commitIndex]
+		if commit.Hash != r.SuccessorHash {
+			continue
+		}
+		for associationIndex, association := range commit.Associations {
+			if association.ID != ledgerAssociation.ID && association.SessionID != ledgerAssociation.SessionID {
+				continue
+			}
+			commit.Associations[associationIndex] = ledgerAssociation
+			commit.SessionIDs[associationIndex] = ledgerAssociation.SessionID
+			return nil
+		}
+		return fmt.Errorf("timeline fixture repair apply: successorHash %q has no association sharing associationId %q or sessionId %q with rewrite ledger ghostHash %q; the declared successor-association repair cannot be applied", r.SuccessorHash, ledgerAssociation.ID, ledgerAssociation.SessionID, r.GhostHash)
+	}
+	return fmt.Errorf("timeline fixture repair apply: successorHash %q is not present in recentCommits; the declared successor-association repair cannot be applied", r.SuccessorHash)
 }
 
 // TimelineFixtureExpected records the validation error for a rejected input.
@@ -73,7 +133,8 @@ type TimelineFixtureCase struct {
 
 // TimelineFixtureCorpus is the project Git timeline validation corpus.
 type TimelineFixtureCorpus struct {
-	Cases []TimelineFixtureCase `json:"cases" yaml:"cases"`
+	Cases                           []TimelineFixtureCase `json:"cases" yaml:"cases"`
+	SuccessorAssociationMirrorCases []TimelineFixtureCase `json:"successorAssociationMirrorCases" yaml:"successorAssociationMirrorCases"`
 }
 
 // CheckMin rejects a timeline corpus smaller than the required behavioral floor.
@@ -112,12 +173,33 @@ func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
 	if err := fixtures.CheckMin(timelineFixtureCaseCount); err != nil {
 		return fmt.Errorf("load timeline fixtures: %w", err)
 	}
-	generic := testcase.Corpus[TimelineFixtureInput, TimelineFixtureExpected]{
-		Cases: make([]testcase.Case[TimelineFixtureInput, TimelineFixtureExpected], len(fixtures.Cases)),
+	passCount, failCount, err := validateTimelineFixtureCases(fixtures.Cases)
+	if err != nil {
+		return fmt.Errorf("load timeline fixtures: canonical relationship cases: %w", err)
 	}
-	families := make(map[string]struct{}, len(fixtures.Cases))
+	if passCount != 7 || failCount != 17 {
+		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 7 and 17", passCount, failCount)
+	}
+	if len(fixtures.SuccessorAssociationMirrorCases) != timelineSuccessorAssociationMirrorFixtureCount {
+		return fmt.Errorf("load timeline fixtures: successor association mirror corpus has %d cases, want exactly %d field mutations", len(fixtures.SuccessorAssociationMirrorCases), timelineSuccessorAssociationMirrorFixtureCount)
+	}
+	mirrorPassCount, mirrorFailCount, err := validateTimelineFixtureCases(fixtures.SuccessorAssociationMirrorCases)
+	if err != nil {
+		return fmt.Errorf("load timeline fixtures: successor association mirror cases: %w", err)
+	}
+	if mirrorPassCount != 0 || mirrorFailCount != timelineSuccessorAssociationMirrorFixtureCount {
+		return fmt.Errorf("load timeline fixtures: successor association mirror outcome coverage changed; got %d must-pass and %d must-fail cases, want 0 and %d", mirrorPassCount, mirrorFailCount, timelineSuccessorAssociationMirrorFixtureCount)
+	}
+	return nil
+}
+
+func validateTimelineFixtureCases(fixtures []TimelineFixtureCase) (int, int, error) {
+	generic := testcase.Corpus[TimelineFixtureInput, TimelineFixtureExpected]{
+		Cases: make([]testcase.Case[TimelineFixtureInput, TimelineFixtureExpected], len(fixtures)),
+	}
+	families := make(map[string]struct{}, len(fixtures))
 	passCount, failCount := 0, 0
-	for index, fixture := range fixtures.Cases {
+	for index, fixture := range fixtures {
 		generic.Cases[index] = testcase.Case[TimelineFixtureInput, TimelineFixtureExpected]{
 			Name:           fixture.Name,
 			Input:          fixture.Input,
@@ -127,47 +209,60 @@ func validateTimelineFixtures(fixtures TimelineFixtureCorpus) error {
 			Mutation:       fixture.Mutation,
 		}
 		if strings.TrimSpace(fixture.Family) == "" {
-			return fmt.Errorf("load timeline fixtures: case %q has an empty family; identify the behavior this row protects", fixture.Name)
+			return 0, 0, fmt.Errorf("case %q has an empty family; identify the behavior this row protects", fixture.Name)
 		}
 		if _, duplicate := families[fixture.Family]; duplicate {
-			return fmt.Errorf("load timeline fixtures: duplicate family %q; each canonical behavior must have one row", fixture.Family)
+			return 0, 0, fmt.Errorf("duplicate family %q; each canonical behavior must have one row", fixture.Family)
 		}
 		families[fixture.Family] = struct{}{}
 		if len(fixture.Input.Sessions) == 0 && len(fixture.Input.Commits) == 0 {
-			return fmt.Errorf("load timeline fixtures: case %q has no sessions or commits; add relationship data so the case cannot pass vacuously", fixture.Name)
+			return 0, 0, fmt.Errorf("case %q has no sessions or commits; add relationship data so the case cannot pass vacuously", fixture.Name)
 		}
 		switch fixture.Classification {
 		case testcase.MustPass:
 			passCount++
 			if strings.TrimSpace(fixture.Expected.ErrorContains) != "" {
-				return fmt.Errorf("load timeline fixtures: must-pass case %q unexpectedly declares error_contains; remove the contradictory error expectation", fixture.Name)
+				return 0, 0, fmt.Errorf("must-pass case %q unexpectedly declares error_contains; remove the contradictory error expectation", fixture.Name)
 			}
 		case testcase.MustFail:
 			failCount++
 			if strings.TrimSpace(fixture.Expected.ErrorContains) == "" {
-				return fmt.Errorf("load timeline fixtures: must-fail case %q has no error_contains; name the validation failure the mutation must trigger", fixture.Name)
+				return 0, 0, fmt.Errorf("must-fail case %q has no error_contains; name the validation failure the mutation must trigger", fixture.Name)
 			}
 		}
 		if fixture.Expected.Repair != nil {
 			if fixture.Classification != testcase.MustFail {
-				return fmt.Errorf("load timeline fixtures: case %q declares a repair but is not must-fail; repairs must start from a rejected input", fixture.Name)
+				return 0, 0, fmt.Errorf("case %q declares a repair but is not must-fail; repairs must start from a rejected input", fixture.Name)
 			}
-			if fixture.Expected.Repair.Kind != timelineRepairSetSessionBindingTrue {
-				return fmt.Errorf("load timeline fixtures: case %q declares unknown repair kind %q", fixture.Name, fixture.Expected.Repair.Kind)
-			}
-			if fixture.Expected.Repair.SessionID == "" {
-				return fmt.Errorf("load timeline fixtures: case %q repair has an empty sessionId", fixture.Name)
+			if err := validateTimelineFixtureRepair(fixture.Name, fixture.Expected.Repair); err != nil {
+				return 0, 0, err
 			}
 			if !fixture.Expected.Repair.PostMutationValid {
-				return fmt.Errorf("load timeline fixtures: case %q repair must declare postMutationValid=true", fixture.Name)
+				return 0, 0, fmt.Errorf("case %q repair must declare postMutationValid=true", fixture.Name)
 			}
 		}
 	}
 	if err := generic.Validate(); err != nil {
-		return fmt.Errorf("load timeline fixtures: %w", err)
+		return 0, 0, err
 	}
-	if passCount != 7 || failCount != 17 {
-		return fmt.Errorf("load timeline fixtures: canonical outcome coverage changed; got %d must-pass and %d must-fail cases, want 7 and 17", passCount, failCount)
+	return passCount, failCount, nil
+}
+
+func validateTimelineFixtureRepair(name string, repair *timelineFixtureRepair) error {
+	switch repair.Kind {
+	case timelineRepairSetSessionBindingTrue:
+		if repair.SessionID == "" {
+			return fmt.Errorf("case %q repair has an empty sessionId", name)
+		}
+	case timelineRepairReplaceSuccessorAssociation:
+		if strings.TrimSpace(repair.GhostHash) == "" || strings.TrimSpace(repair.SuccessorHash) == "" {
+			return fmt.Errorf("case %q successor-association repair must name non-empty ghostHash and successorHash values", name)
+		}
+		if err := repair.AssociationID.Validate(); err != nil {
+			return fmt.Errorf("case %q successor-association repair has invalid associationId: %w", name, err)
+		}
+	default:
+		return fmt.Errorf("case %q declares unknown repair kind %q", name, repair.Kind)
 	}
 	return nil
 }

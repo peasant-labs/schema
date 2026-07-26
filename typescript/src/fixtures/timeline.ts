@@ -26,11 +26,26 @@ export type TimelineFixtureCommitInput = Omit<CommitRef, "sessionIds" | "associa
   // how sessionIds models the null-sessionIds negative case above.
   associations: TimelineFixtureAssociationInput[] | null;
 };
-export type TimelineFixtureRepairKind = "set_session_binding_true";
-export interface TimelineFixtureRepair { kind: TimelineFixtureRepairKind; sessionId: SessionID; postMutationValid: boolean; }
+export type TimelineFixtureRepairKind = "set_session_binding_true" | "replace_successor_association";
+export interface TimelineFixtureSetSessionBindingRepair {
+  kind: "set_session_binding_true";
+  sessionId: SessionID;
+  postMutationValid: boolean;
+}
+export interface TimelineFixtureReplaceSuccessorAssociationRepair {
+  kind: "replace_successor_association";
+  ghostHash: string;
+  successorHash: string;
+  associationId: SessionAssociation["id"];
+  postMutationValid: boolean;
+}
+export type TimelineFixtureRepair = TimelineFixtureSetSessionBindingRepair | TimelineFixtureReplaceSuccessorAssociationRepair;
 export interface TimelineFixtureInput { sessions: TimelineFixtureSessionInput[]; commits: TimelineFixtureCommitInput[]; rewrittenCommits?: RewrittenCommit[]; }
 export interface TimelineFixtureExpected { errorContains?: string; repair?: TimelineFixtureRepair; }
 export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected> & { family: string };
-export interface TimelineFixtureCorpus { cases: TimelineFixtureCase[]; }
+export interface TimelineFixtureCorpus {
+  cases: TimelineFixtureCase[];
+  successorAssociationMirrorCases: TimelineFixtureCase[];
+}
 
 export function loadTimelineFixtures(): TimelineFixtureCorpus { return structuredClone(canonicalTimelineFixtures); }

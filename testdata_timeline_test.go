@@ -1,7 +1,6 @@
 package schema_test
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
@@ -22,8 +21,16 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 	if len(fixtures.Cases) != 24 {
 		t.Fatalf("timeline fixture has %d cases, want exactly 24", len(fixtures.Cases))
 	}
-	preservedAssociations := 0
-	for _, fixture := range fixtures.Cases {
+	if len(fixtures.SuccessorAssociationMirrorCases) != 5 {
+		t.Fatalf("timeline successor association mirror fixture has %d cases, want exactly 5", len(fixtures.SuccessorAssociationMirrorCases))
+	}
+	validateTimelineFixtureRelationships(t, fixtures.Cases)
+	validateTimelineFixtureRelationships(t, fixtures.SuccessorAssociationMirrorCases)
+}
+
+func validateTimelineFixtureRelationships(t *testing.T, fixtures []schema.TimelineFixtureCase) {
+	t.Helper()
+	for _, fixture := range fixtures {
 		t.Run(fixture.Name, func(t *testing.T) {
 			payload := reviewListPayloadFromTimelineFixture(fixture)
 			err := payload.Validate()
@@ -73,29 +80,6 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 				t.Fatalf("unsupported classification %q", fixture.Classification)
 			}
 		})
-		for _, rewritten := range fixture.Input.RewrittenCommits {
-			if rewritten.SuccessorHash == nil {
-				continue
-			}
-			for _, commit := range fixture.Input.Commits {
-				if commit.Hash != *rewritten.SuccessorHash {
-					continue
-				}
-				for _, association := range rewritten.Associations {
-					for _, successorAssociation := range commit.Associations {
-						if association.SessionID == successorAssociation.SessionID {
-							preservedAssociations++
-							if !reflect.DeepEqual(association, successorAssociation) {
-								t.Fatalf("successor %q changed association for session %q: ledger=%+v successor=%+v", commit.Hash, association.SessionID, association, successorAssociation)
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	if preservedAssociations == 0 {
-		t.Fatal("timeline fixture corpus has no rewrite successor association identity to verify")
 	}
 }
 

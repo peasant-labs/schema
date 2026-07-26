@@ -45,6 +45,44 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "MapNodeDetailPayload successor cross-reference"}
     mutation: {description: "adds the missing successor to recentCommits, which must repair the only invalid cross-reference"}
+  - name: map_successor_association_drift_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommits:
+        - hash: successor-mirror
+          subject: fixture successor
+          hasSession: true
+          sessionIds: [session-mirror]
+          associations:
+            - id: assoc-map-mirror
+              sessionId: session-mirror
+              conclusion: candidate
+              confidence: high
+              evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror}]
+      rewrittenCommits:
+        - ghostHash: ghost-mirror
+          sessionIds: [session-mirror]
+          associations:
+            - id: assoc-map-mirror
+              sessionId: session-mirror
+              conclusion: confirmed
+              confidence: high
+              evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror}]
+          successorHash: successor-mirror
+          resolution: rewritten
+          method: patch_id
+          confidence: high
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: does not exactly mirror the rewrite-ledger association
+      mutation: repair_successor_association_mirror
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload displayed successors preserve rewrite-ledger association identity"}
+    mutation: {description: "changes only the displayed successor conclusion, then restores that successor association from the rewrite ledger"}
   - name: map_non_nil_classification_is_rejected
     input:
       payload: map_node_detail

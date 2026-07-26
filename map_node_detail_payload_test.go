@@ -42,6 +42,7 @@ type payloadMutationKind string
 const (
 	payloadMutationRemoveSuccessorCommit      payloadMutationKind = "remove_successor_commit"
 	payloadMutationAddSuccessorCommit         payloadMutationKind = "add_successor_commit"
+	payloadMutationRepairSuccessorAssociation payloadMutationKind = "repair_successor_association_mirror"
 	payloadMutationRepairCommitRefShape       payloadMutationKind = "repair_commit_ref_shape"
 	payloadMutationClearClassification        payloadMutationKind = "clear_classification"
 	payloadMutationNilInsights                payloadMutationKind = "nil_insights"
@@ -211,6 +212,13 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 		}
 		hash := *s.mapNodeDetail.RewrittenCommits[0].SuccessorHash
 		s.mapNodeDetail.RecentCommits = append(s.mapNodeDetail.RecentCommits, schema.NewCommitRef(hash, "fixture successor"))
+	case payloadMutationRepairSuccessorAssociation:
+		if s.mapNodeDetail == nil {
+			return fmt.Errorf("mutation %q requires a map node detail payload", kind)
+		}
+		if err := repairMapSuccessorAssociationMirror(s.mapNodeDetail); err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
+		}
 	case payloadMutationRepairCommitRefShape:
 		if s.mapNodeDetail != nil {
 			if len(s.mapNodeDetail.RecentCommits) == 0 {
@@ -258,6 +266,34 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 		return fmt.Errorf("unknown payload mutation %q", kind)
 	}
 	return nil
+}
+
+func repairMapSuccessorAssociationMirror(payload *schema.MapNodeDetailPayload) error {
+	for rewrittenIndex := range payload.RewrittenCommits {
+		rewritten := payload.RewrittenCommits[rewrittenIndex]
+		if rewritten.SuccessorHash == nil {
+			continue
+		}
+		for commitIndex := range payload.RecentCommits {
+			commit := &payload.RecentCommits[commitIndex]
+			if commit.Hash != *rewritten.SuccessorHash {
+				continue
+			}
+			for _, ledgerAssociation := range rewritten.Associations {
+				for successorAssociationIndex, successorAssociation := range commit.Associations {
+					if ledgerAssociation.ID != successorAssociation.ID && ledgerAssociation.SessionID != successorAssociation.SessionID {
+						continue
+					}
+					commit.Associations[successorAssociationIndex] = ledgerAssociation
+					commit.SessionIDs[successorAssociationIndex] = ledgerAssociation.SessionID
+					return nil
+				}
+				return fmt.Errorf("recentCommits successorHash %q has no association sharing associationId %q or sessionId %q with rewrittenCommits[%d]; cannot restore the declared mirror", commit.Hash, ledgerAssociation.ID, ledgerAssociation.SessionID, rewrittenIndex)
+			}
+		}
+		return fmt.Errorf("rewrittenCommits[%d] successorHash %q is absent from recentCommits; cannot restore the declared mirror", rewrittenIndex, *rewritten.SuccessorHash)
+	}
+	return fmt.Errorf("payload has no rewritten commit with a displayed successor; cannot restore a successor association mirror")
 }
 
 func repairCommitRefShape(commit *schema.CommitRef) {

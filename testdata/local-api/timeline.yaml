@@ -273,3 +273,80 @@ cases:
     classification: must-fail
     provenance: {source: enum, ref: schema.AllAssociationConclusions}
     mutation: {description: "replaces a known association conclusion with a value outside the closed set"}
+successorAssociationMirrorCases:
+  - family: rewrite-successor-association-id-mirror
+    name: rewrite_successor_association_id_drift_is_rejected
+    input:
+      sessions:
+        - {sessionId: session-mirror-id, title: mirrored identifier, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-mirror-id, subject: squash successor, hasSession: true, sessionIds: [session-mirror-id], associations: [{id: assoc-mirror-id-successor, sessionId: session-mirror-id, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-id}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-mirror-id, subject: original recorded commit, sessionIds: [session-mirror-id], associations: [{id: assoc-mirror-id-ledger, sessionId: session-mirror-id, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-id}]}], successorHash: successor-mirror-id, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: does not exactly mirror the rewrite-ledger association
+      repair: {kind: replace_successor_association, ghostHash: ghost-mirror-id, successorHash: successor-mirror-id, associationId: assoc-mirror-id-ledger, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: displayed rewrite successors preserve durable association IDs}
+    mutation: {description: "changes only the successor association ID while retaining the same session binding"}
+  - family: rewrite-successor-association-session-mirror
+    name: rewrite_successor_association_session_drift_is_rejected
+    input:
+      sessions:
+        - {sessionId: session-mirror-session-ledger, title: ledger session, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-mirror-session-successor, title: successor session, harness: codex, hasCommitBinding: true}
+      commits:
+        - {hash: successor-mirror-session, subject: squash successor, hasSession: true, sessionIds: [session-mirror-session-successor], associations: [{id: assoc-mirror-session, sessionId: session-mirror-session-successor, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-session}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-mirror-session, subject: original recorded commit, sessionIds: [session-mirror-session-ledger], associations: [{id: assoc-mirror-session, sessionId: session-mirror-session-ledger, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-session}]}], successorHash: successor-mirror-session, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: does not exactly mirror the rewrite-ledger association
+      repair: {kind: replace_successor_association, ghostHash: ghost-mirror-session, successorHash: successor-mirror-session, associationId: assoc-mirror-session, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: displayed rewrite successors preserve the ledger session binding for a durable association ID}
+    mutation: {description: "changes only the successor binding session while retaining the durable association ID"}
+  - family: rewrite-successor-association-conclusion-mirror
+    name: rewrite_successor_association_conclusion_drift_is_rejected
+    input:
+      sessions:
+        - {sessionId: session-mirror-conclusion, title: mirrored conclusion, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-mirror-conclusion, subject: squash successor, hasSession: true, sessionIds: [session-mirror-conclusion], associations: [{id: assoc-mirror-conclusion, sessionId: session-mirror-conclusion, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-conclusion}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-mirror-conclusion, subject: original recorded commit, sessionIds: [session-mirror-conclusion], associations: [{id: assoc-mirror-conclusion, sessionId: session-mirror-conclusion, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-conclusion}]}], successorHash: successor-mirror-conclusion, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: does not exactly mirror the rewrite-ledger association
+      repair: {kind: replace_successor_association, ghostHash: ghost-mirror-conclusion, successorHash: successor-mirror-conclusion, associationId: assoc-mirror-conclusion, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: displayed rewrite successors preserve the ledger conclusion}
+    mutation: {description: "changes only the successor association conclusion"}
+  - family: rewrite-successor-association-confidence-mirror
+    name: rewrite_successor_association_confidence_drift_is_rejected
+    input:
+      sessions:
+        - {sessionId: session-mirror-confidence, title: mirrored confidence, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-mirror-confidence, subject: squash successor, hasSession: true, sessionIds: [session-mirror-confidence], associations: [{id: assoc-mirror-confidence, sessionId: session-mirror-confidence, conclusion: confirmed, confidence: low, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-confidence}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-mirror-confidence, subject: original recorded commit, sessionIds: [session-mirror-confidence], associations: [{id: assoc-mirror-confidence, sessionId: session-mirror-confidence, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-confidence}]}], successorHash: successor-mirror-confidence, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: does not exactly mirror the rewrite-ledger association
+      repair: {kind: replace_successor_association, ghostHash: ghost-mirror-confidence, successorHash: successor-mirror-confidence, associationId: assoc-mirror-confidence, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: displayed rewrite successors preserve the ledger confidence}
+    mutation: {description: "changes only the successor association confidence"}
+  - family: rewrite-successor-association-evidence-mirror
+    name: rewrite_successor_association_evidence_drift_is_rejected
+    input:
+      sessions:
+        - {sessionId: session-mirror-evidence, title: mirrored evidence, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-mirror-evidence, subject: squash successor, hasSession: true, sessionIds: [session-mirror-evidence], associations: [{id: assoc-mirror-evidence, sessionId: session-mirror-evidence, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: successor-mirror-evidence}, {kind: touched_file, touchedFilePath: internal/api/review.go}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-mirror-evidence, subject: original recorded commit, sessionIds: [session-mirror-evidence], associations: [{id: assoc-mirror-evidence, sessionId: session-mirror-evidence, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-mirror-evidence}, {kind: touched_file, touchedFilePath: internal/api/review.go}]}], successorHash: successor-mirror-evidence, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: does not exactly mirror the rewrite-ledger association
+      repair: {kind: replace_successor_association, ghostHash: ghost-mirror-evidence, successorHash: successor-mirror-evidence, associationId: assoc-mirror-evidence, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: displayed rewrite successors preserve ordered atomic evidence}
+    mutation: {description: "changes only the recorded commit detail in otherwise canonical ordered successor evidence"}
