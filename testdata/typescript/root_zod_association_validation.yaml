@@ -1,0 +1,250 @@
+cases:
+  - name: ordered atomic evidence is accepted
+    input:
+      schema: session-association
+      value:
+        id: assoc-ordered
+        sessionId: sess_a
+        conclusion: candidate
+        confidence: medium
+        evidence:
+          - {kind: recorded_commit, recordedCommitHash: commit-a}
+          - {kind: touched_file, touchedFilePath: src/main.go}
+          - {kind: branch_membership, branchName: feature/association}
+          - {kind: time_window, windowStartMs: 1000, windowEndMs: 2000}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: associations carry ordered atomic evidence observations}
+    mutation: {description: supplies one valid observation for every evidence arm in canonical order}
+  - name: empty evidence is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-empty, sessionId: sess_a, conclusion: confirmed, confidence: high, evidence: []}
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: associations require at least one atomic observation}
+    mutation: {description: removes the only evidence observation from an otherwise valid association}
+  - name: recorded commit without hash is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-recorded-missing, sessionId: sess_a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: recorded_commit selects a required recordedCommitHash detail}
+    mutation: {description: removes the selected recorded commit detail}
+  - name: recorded commit with touched file detail is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-recorded-extra, sessionId: sess_a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a, touchedFilePath: src/main.go}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: evidence observations select exactly one detail arm}
+    mutation: {description: adds a touched_file detail to a recorded_commit observation}
+  - name: touched file without path is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-touch-missing, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: touched_file selects a required repository-relative path detail}
+    mutation: {description: removes the selected touched file detail}
+  - name: touched file with branch detail is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-touch-extra, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: src/main.go, branchName: feature/association}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: evidence observations select exactly one detail arm}
+    mutation: {description: adds a branch_membership detail to a touched_file observation}
+  - name: touched file with traversal path is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-touch-traversal, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: ../secret.go}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: touched_file paths are repository-relative without traversal segments}
+    mutation: {description: replaces a repository-relative touched file path with a parent traversal path}
+  - name: branch membership without name is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-branch-missing, sessionId: sess_a, conclusion: candidate, confidence: low, evidence: [{kind: branch_membership}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: branch_membership selects a required branchName detail}
+    mutation: {description: removes the selected branch name detail}
+  - name: branch membership with time detail is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-branch-extra, sessionId: sess_a, conclusion: candidate, confidence: low, evidence: [{kind: branch_membership, branchName: feature/association, windowStartMs: 1000}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: evidence observations select exactly one detail arm}
+    mutation: {description: adds a time_window detail to a branch_membership observation}
+  - name: time window without end is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-window-missing, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: time_window, windowStartMs: 1000}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: time_window selects both interval boundaries}
+    mutation: {description: removes the selected time window end detail}
+  - name: time window with recorded commit detail is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-window-extra, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: time_window, windowStartMs: 1000, windowEndMs: 2000, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: evidence observations select exactly one detail arm}
+    mutation: {description: adds a recorded_commit detail to a time_window observation}
+  - name: time window with descending bounds is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-window-descending, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: time_window, windowStartMs: 2000, windowEndMs: 1000}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: time_window bounds are inclusive and ascending}
+    mutation: {description: swaps the valid time window bounds into descending order}
+  - name: evidence out of kind order is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-kind-order, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: touched_file, touchedFilePath: src/main.go}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: association evidence uses the canonical evidence-kind order}
+    mutation: {description: reverses the recorded_commit and touched_file observations}
+  - name: evidence out of same kind detail order is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-detail-order, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-z}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: same-kind association evidence uses canonical detail order}
+    mutation: {description: reverses lexicographically ordered recorded commit hashes}
+  - name: duplicate evidence is rejected
+    input:
+      schema: session-association
+      value: {id: assoc-duplicate, sessionId: sess_a, conclusion: candidate, confidence: medium, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}, {kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: association evidence is duplicate-free}
+    mutation: {description: repeats an otherwise valid recorded commit observation}
+  - name: invalid association ID is rejected
+    input:
+      schema: session-association
+      value: {id: -assoc-invalid, sessionId: sess_a, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: commit-a}]}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: AssociationID uses the durable opaque identifier grammar}
+    mutation: {description: prefixes an otherwise valid association ID with a hyphen}
+  - name: association annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-association, targetKind: association, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: association annotations name only their durable association ID}
+    mutation: {description: supplies the association target discriminator and its sole target field}
+  - name: association annotation missing ID is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-association-missing, targetKind: association, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: association annotations require targetAssociationId}
+    mutation: {description: removes targetAssociationId from an otherwise valid association annotation}
+  - name: association annotation invalid ID is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-association-invalid, targetKind: association, targetAssociationId: -assoc-invalid, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: association targets use AssociationID validation}
+    mutation: {description: supplies an association target ID with an invalid leading character}
+  - name: association annotation mixed with session target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-association-mixed, targetKind: association, targetAssociationId: assoc-session-a:commit-1, targetSessionId: sess_a, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds a session target to an otherwise valid association annotation}
+  - name: session annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-session, targetKind: session, targetSessionId: sess_a, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: session annotations name only their session target}
+    mutation: {description: supplies the session target discriminator and its sole target field}
+  - name: session annotation mixed with association target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-session-mixed, targetKind: session, targetSessionId: sess_a, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds an association target to an otherwise valid session annotation}
+  - name: entry annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-entry, targetKind: entry, targetSessionId: sess_a, targetEntryIndex: 2, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: entry annotations name their session and entry index only}
+    mutation: {description: supplies the entry target discriminator and required fields}
+  - name: entry annotation mixed with association target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-entry-mixed, targetKind: entry, targetSessionId: sess_a, targetEntryIndex: 2, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds an association target to an otherwise valid entry annotation}
+  - name: annotation annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-annotation, targetKind: annotation, targetAnnotationId: ann-parent, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: annotation annotations name only their parent annotation target}
+    mutation: {description: supplies the annotation target discriminator and its sole target field}
+  - name: annotation annotation mixed with association target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-annotation-mixed, targetKind: annotation, targetAnnotationId: ann-parent, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds an association target to an otherwise valid annotation target}
+  - name: project annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-project, targetKind: project, targetProjectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: project annotations name only their project target}
+    mutation: {description: supplies the project target discriminator and its sole target field}
+  - name: project annotation mixed with association target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-project-mixed, targetKind: project, targetProjectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds an association target to an otherwise valid project annotation}
+  - name: file version annotation target is accepted
+    input:
+      schema: annotation-summary
+      value: {id: ann-file, targetKind: file_version, targetFilePath: src/main.go, targetContentHash: content-a, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: file version annotations name their path and content hash only}
+    mutation: {description: supplies the file version target discriminator and required fields}
+  - name: file version annotation mixed with association target is rejected
+    input:
+      schema: annotation-summary
+      value: {id: ann-file-mixed, targetKind: file_version, targetFilePath: src/main.go, targetContentHash: content-a, targetAssociationId: assoc-session-a:commit-1, isPrimary: false, annotatorKind: human, annotatorName: reviewer, typeId: review.note, typeName: Review Note, value: noted, createdAt: 1}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminator arms are exclusive}
+    mutation: {description: adds an association target to an otherwise valid file version annotation}
