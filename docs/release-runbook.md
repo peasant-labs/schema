@@ -199,6 +199,12 @@ minutes after a publish; a `npm view`/website check run immediately after a
 publish can read as "not there yet" even on a successful publish, so this repo's
 tooling does not assert post-publish registry state.
 
+Before its TypeScript package gates run, the `npm-publish` job stamps only the
+working-copy version and removes `private`; neither change is committed. The
+package audit then reads `package/package.json` from a real tarball made from
+that staged manifest, including the exact repository metadata npm provenance
+requires.
+
 **Troubleshooting `npm-publish`:**
 
 - **`pnpm publish` fails to authenticate / npm rejects the OIDC exchange
