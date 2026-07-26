@@ -283,21 +283,20 @@ func assertSinglePayloadContextPrefix(t *testing.T, err error, prefix string) {
 	}
 }
 
-func assertCommitRefRepairPreservesBindingIdentity(t *testing.T, before, after schema.CommitRef) {
+func assertCommitRefRepairPreservesBindingIdentity(t *testing.T, before schema.CommitRef, beforeSessionIDs []schema.SessionID, beforeAssociations map[schema.SessionID]schema.SessionAssociation, after schema.CommitRef) {
 	t.Helper()
 	if before.Hash != after.Hash || before.Subject != after.Subject {
 		t.Fatalf("repair changed commit identity: before hash=%q subject=%q, after hash=%q subject=%q", before.Hash, before.Subject, after.Hash, after.Subject)
 	}
-	if !reflect.DeepEqual(before.SessionIDs, after.SessionIDs) {
-		t.Fatalf("repair changed sessionIds: before=%v after=%v", before.SessionIDs, after.SessionIDs)
+	if !reflect.DeepEqual(beforeSessionIDs, after.SessionIDs) {
+		t.Fatalf("repair changed sessionIds: before=%v after=%v", beforeSessionIDs, after.SessionIDs)
 	}
 	if after.HasSession != (len(after.SessionIDs) > 0) {
 		t.Fatalf("repair left hasSession=%v for %d sessionIds", after.HasSession, len(after.SessionIDs))
 	}
-	beforeAssociationsBySessionID := sessionAssociationsBySessionID(before)
 	afterAssociationsBySessionID := sessionAssociationsBySessionID(after)
-	if !reflect.DeepEqual(beforeAssociationsBySessionID, afterAssociationsBySessionID) {
-		t.Fatalf("repair changed session associations by sessionId: before=%v after=%v", beforeAssociationsBySessionID, afterAssociationsBySessionID)
+	if !reflect.DeepEqual(beforeAssociations, afterAssociationsBySessionID) {
+		t.Fatalf("repair changed session associations by sessionId: before=%v after=%v", beforeAssociations, afterAssociationsBySessionID)
 	}
 	afterAssociationSessionIDs := make([]schema.SessionID, len(after.Associations))
 	for index, association := range after.Associations {
@@ -356,6 +355,8 @@ func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 				t.Fatalf("construct fixture payload: %v", err)
 			}
 			var originalCommit schema.CommitRef
+			var originalSessionIDs []schema.SessionID
+			var originalAssociations map[schema.SessionID]schema.SessionAssociation
 			var prefix string
 			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
 				switch {
@@ -364,12 +365,16 @@ func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 						t.Fatal("repair proof requires a recent commit")
 					}
 					originalCommit = subject.mapNodeDetail.RecentCommits[0]
+					originalSessionIDs = append([]schema.SessionID(nil), originalCommit.SessionIDs...)
+					originalAssociations = sessionAssociationsBySessionID(originalCommit)
 					prefix = "map node detail validation:"
 				case subject.changeDetail != nil:
 					if len(subject.changeDetail.UnrecordedCommits) == 0 {
 						t.Fatal("repair proof requires an unrecorded commit")
 					}
 					originalCommit = subject.changeDetail.UnrecordedCommits[0]
+					originalSessionIDs = append([]schema.SessionID(nil), originalCommit.SessionIDs...)
+					originalAssociations = sessionAssociationsBySessionID(originalCommit)
 					prefix = "change detail validation:"
 				}
 			}
@@ -391,7 +396,7 @@ func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 				case subject.changeDetail != nil:
 					repairedCommit = subject.changeDetail.UnrecordedCommits[0]
 				}
-				assertCommitRefRepairPreservesBindingIdentity(t, originalCommit, repairedCommit)
+				assertCommitRefRepairPreservesBindingIdentity(t, originalCommit, originalSessionIDs, originalAssociations, repairedCommit)
 			}
 		})
 	}
