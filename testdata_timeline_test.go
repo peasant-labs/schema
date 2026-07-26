@@ -36,8 +36,25 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 				}
 				if fixture.Expected.Repair != nil {
 					requireActionableValidationError(t, err, fixture.Expected.ErrorContains)
+					var ledgerTargetSessionID schema.SessionID
+					if fixture.Name == "rewrite_ledger_reference_requires_binding_truth" {
+						ledgerTargetSessionID = requireSingleRewriteLedgerSessionID(t, fixture.Input.RewrittenCommits)
+						if fixture.Expected.Repair.SessionID != ledgerTargetSessionID {
+							t.Fatalf("repair sessionId=%q, want ledger-referenced sessionId %q", fixture.Expected.Repair.SessionID, ledgerTargetSessionID)
+						}
+						before := requireTimelineSession(t, payload.Sessions, ledgerTargetSessionID)
+						if before.HasCommitBinding {
+							t.Fatalf("ledger-referenced session %q hasCommitBinding=true before repair, want false", ledgerTargetSessionID)
+						}
+					}
 					if err := fixture.Expected.Repair.Apply(payload); err != nil {
 						t.Fatalf("Apply repair: %v", err)
+					}
+					if ledgerTargetSessionID != "" {
+						after := requireTimelineSession(t, payload.Sessions, ledgerTargetSessionID)
+						if !after.HasCommitBinding {
+							t.Fatalf("ledger-referenced session %q hasCommitBinding=false after repair, want true", ledgerTargetSessionID)
+						}
 					}
 					repairedErr := payload.Validate()
 					if (repairedErr == nil) != fixture.Expected.Repair.PostMutationValid {
@@ -65,4 +82,31 @@ func reviewListPayloadFromTimelineFixture(fixture schema.TimelineFixtureCase) *s
 		payload.RewrittenCommits = fixture.Input.RewrittenCommits
 	}
 	return payload
+}
+
+func requireSingleRewriteLedgerSessionID(t *testing.T, rewrittenCommits []schema.RewrittenCommit) schema.SessionID {
+	t.Helper()
+	var sessionID schema.SessionID
+	count := 0
+	for _, rewrittenCommit := range rewrittenCommits {
+		for _, referencedSessionID := range rewrittenCommit.SessionIDs {
+			sessionID = referencedSessionID
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("rewrite ledger references %d session IDs, want exactly one repair target", count)
+	}
+	return sessionID
+}
+
+func requireTimelineSession(t *testing.T, sessions []schema.TimelineSessionRef, sessionID schema.SessionID) schema.TimelineSessionRef {
+	t.Helper()
+	for _, session := range sessions {
+		if session.SessionID == sessionID {
+			return session
+		}
+	}
+	t.Fatalf("timeline session %q not found", sessionID)
+	return schema.TimelineSessionRef{}
 }

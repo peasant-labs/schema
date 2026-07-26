@@ -19,6 +19,26 @@ type TimelineFixtureInput struct {
 	RewrittenCommits []RewrittenCommit    `json:"rewrittenCommits,omitempty" yaml:"rewrittenCommits,omitempty"`
 }
 
+func (input TimelineFixtureInput) hasRewrittenCommit(ghostHash string) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		if rewrittenCommit.GhostHash == ghostHash {
+			return true
+		}
+	}
+	return false
+}
+
+func (input TimelineFixtureInput) rewriteLedgerReferencesSession(sessionID SessionID) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		for _, rewrittenSessionID := range rewrittenCommit.SessionIDs {
+			if rewrittenSessionID == sessionID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // timelineFixtureRepairKind names a fixture-owned repair for one rejected
 // timeline input.
 type timelineFixtureRepairKind string
