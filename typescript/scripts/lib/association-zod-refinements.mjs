@@ -1,38 +1,146 @@
+const rawEvidence = "    evidence: z.array(zAssociationEvidenceObservation),";
+const refinedEvidence = "    evidence: z.array(zAssociationEvidenceObservation).min(1),";
+const rawSessionID = "    sessionId: zSessionID";
+const refinedSessionID = "    sessionId: z.string().min(1)";
+
 export function applyAssociationZodRefinements(source) {
-  let refined = source;
-  refined = replaceExactly(refined, /    evidence: z\.array\(zAssociationEvidenceObservation\),/, "    evidence: z.array(zAssociationEvidenceObservation).min(1),", "zSessionAssociation.evidence");
-  refined = replaceSessionAssociationSessionID(refined);
-  refined = appendRefinement(refined, "zAssociationEvidenceObservation", associationEvidenceObservationRefinement());
-  refined = appendRefinement(refined, "zSessionAssociation", sessionAssociationRefinement());
-  refined = appendRefinement(refined, "zAnnotationSummary", annotationSummaryRefinement());
-  return refined;
+  const declarations = {
+    zAssociationEvidenceObservation: uniqueObjectDeclaration(source, "zAssociationEvidenceObservation"),
+    zSessionAssociation: uniqueObjectDeclaration(source, "zSessionAssociation"),
+    zAnnotationSummary: uniqueObjectDeclaration(source, "zAnnotationSummary"),
+  };
+  const refinements = {
+    zAssociationEvidenceObservation: associationEvidenceObservationRefinement(),
+    zSessionAssociation: sessionAssociationRefinement(),
+    zAnnotationSummary: annotationSummaryRefinement(),
+  };
+  const signals = [
+    propertySignal("zSessionAssociation.evidence", declarations.zSessionAssociation, rawEvidence, refinedEvidence),
+    propertySignal("zSessionAssociation.sessionId", declarations.zSessionAssociation, rawSessionID, refinedSessionID),
+    refinementSignal("zAssociationEvidenceObservation", declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
+    refinementSignal("zSessionAssociation", declarations.zSessionAssociation, refinements.zSessionAssociation),
+    refinementSignal("zAnnotationSummary", declarations.zAnnotationSummary, refinements.zAnnotationSummary),
+  ];
+
+  if (signals.every((signal) => signal.state === "raw")) {
+    return refineRawSource(source, declarations, refinements);
+  }
+  if (signals.every((signal) => signal.state === "refined")) return source;
+
+  throw new Error(refinementStateError(signals));
 }
 
-function replaceExactly(source, pattern, replacement, name) {
-  const matches = source.match(new RegExp(pattern, "g")) ?? [];
-  if (matches.length !== 1) {
-    throw new Error(`TypeScript Zod refinement generation could not locate exactly one ${name} declaration; the pinned Hey API output shape changed, so association validation was not emitted; inspect the generator output and update typescript/scripts/lib/association-zod-refinements.mjs before publishing.`);
-  }
-  return source.replace(pattern, replacement);
+function refineRawSource(source, declarations, refinements) {
+  const sessionAssociation = replaceSingleText(
+    replaceSingleText(declarations.zSessionAssociation.text, rawEvidence, refinedEvidence),
+    rawSessionID,
+    refinedSessionID,
+  );
+  return replaceDeclarations(source, [
+    refinedDeclaration(declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
+    refinedDeclaration({ ...declarations.zSessionAssociation, text: sessionAssociation }, refinements.zSessionAssociation),
+    refinedDeclaration(declarations.zAnnotationSummary, refinements.zAnnotationSummary),
+  ]);
 }
 
-function replaceSessionAssociationSessionID(source) {
-  const pattern = /(export const zSessionAssociation = z\.object\(\{[\s\S]*?\n    sessionId: )zSessionID(\n\}\);)/g;
-  const matches = source.match(pattern) ?? [];
-  if (matches.length !== 1) {
-    throw new Error("TypeScript Zod refinement generation could not locate exactly one zSessionAssociation.sessionId declaration; the pinned Hey API output shape changed, so Go-compatible association session IDs were not emitted; inspect the generator output and update typescript/scripts/lib/association-zod-refinements.mjs before publishing.");
+function uniqueObjectDeclaration(source, schemaName) {
+  const marker = `export const ${schemaName} = z.object({`;
+  const starts = allIndexes(source, marker);
+  if (starts.length !== 1) {
+    return invalidDeclaration(schemaName, `found ${starts.length} declaration starts, expected exactly one`);
   }
-  return source.replace(pattern, "$1z.string().min(1)$2");
+  const start = starts[0];
+  const end = source.indexOf("\n});", start);
+  if (end === -1) {
+    return invalidDeclaration(schemaName, "could not find the declaration terminator");
+  }
+  return { schemaName, start, end: end + "\n});".length, text: source.slice(start, end + "\n});".length) };
 }
 
-function appendRefinement(source, schemaName, refinement) {
-  const pattern = new RegExp(`export const ${schemaName} = z\\.object\\(\\{[\\s\\S]*?\\n\\}\\);`, "g");
-  const matches = source.match(pattern) ?? [];
-  if (matches.length !== 1) {
-    throw new Error(`TypeScript Zod refinement generation could not locate exactly one ${schemaName} object declaration; the pinned Hey API output shape changed, so the root runtime contract would lose its structural validation; inspect the generator output and update typescript/scripts/lib/association-zod-refinements.mjs before publishing.`);
+function invalidDeclaration(schemaName, reason) {
+  return { schemaName, reason };
+}
+
+function propertySignal(name, declaration, raw, refined) {
+  if (declaration.reason !== undefined) {
+    return invalidSignal(name, `declaration unavailable: ${declaration.reason}`);
   }
-  const declaration = matches[0];
-  return source.replace(pattern, `${declaration.slice(0, -1)}${refinement};`);
+  const rawCount = countText(declaration.text, raw);
+  const refinedCount = countText(declaration.text, refined);
+  if (rawCount === 1 && refinedCount === 0) return { name, state: "raw" };
+  if (rawCount === 0 && refinedCount === 1) return { name, state: "refined" };
+  return invalidSignal(name, `raw=${rawCount}, refined=${refinedCount}`);
+}
+
+function refinementSignal(name, declaration, refinement) {
+  if (declaration.reason !== undefined) {
+    return invalidSignal(name, `declaration unavailable: ${declaration.reason}`);
+  }
+  const rawCount = Number(isRawObjectDeclaration(declaration, name));
+  const refinementCount = countText(declaration.text, refinement);
+  const refined = refinementCount === 1 && isRefinedObjectDeclaration(declaration, name, refinement);
+  if (rawCount === 1 && refinementCount === 0) return { name, state: "raw" };
+  if (refined) return { name, state: "refined" };
+  return invalidSignal(name, `raw=${rawCount}, refined=${refinementCount}, exactRefinement=${refined}`);
+}
+
+function isRawObjectDeclaration(declaration, schemaName) {
+  return declaration.text.startsWith(`export const ${schemaName} = z.object({`)
+    && declaration.text.endsWith("\n});")
+    && countText(declaration.text, ".superRefine(") === 0;
+}
+
+function isRefinedObjectDeclaration(declaration, schemaName, refinement) {
+  const suffix = `${refinement};`;
+  if (!declaration.text.endsWith(suffix)) return false;
+  const rawCandidate = {
+    ...declaration,
+    text: `${declaration.text.slice(0, -suffix.length)};`,
+  };
+  return isRawObjectDeclaration(rawCandidate, schemaName);
+}
+
+function refinedDeclaration(declaration, refinement) {
+  return {
+    ...declaration,
+    replacement: `${declaration.text.slice(0, -1)}${refinement};`,
+  };
+}
+
+function replaceDeclarations(source, declarations) {
+  return [...declarations]
+    .sort((left, right) => right.start - left.start)
+    .reduce((result, declaration) => (
+      `${result.slice(0, declaration.start)}${declaration.replacement}${result.slice(declaration.end)}`
+    ), source);
+}
+
+function replaceSingleText(source, raw, refined) {
+  const index = source.indexOf(raw);
+  return `${source.slice(0, index)}${refined}${source.slice(index + raw.length)}`;
+}
+
+function allIndexes(source, text) {
+  const indexes = [];
+  let index = source.indexOf(text);
+  while (index !== -1) {
+    indexes.push(index);
+    index = source.indexOf(text, index + text.length);
+  }
+  return indexes;
+}
+
+function countText(source, text) {
+  return allIndexes(source, text).length;
+}
+
+function invalidSignal(name, detail) {
+  return { name, state: "invalid", detail };
+}
+
+function refinementStateError(signals) {
+  const observed = signals.map((signal) => `${signal.name}=${signal.state}${signal.detail === undefined ? "" : `(${signal.detail})`}`).join("; ");
+  return `TypeScript root Zod generation/refinement operation in typescript/scripts/lib/association-zod-refinements.mjs rejected a partial, mixed, duplicate, missing, or drifted declaration state; observed signals: ${observed}; the pinned Hey API output or generated zod.gen.ts file drifted, so callers have no trustworthy root Zod output; inspect the generated source, update this postprocessor for the pinned Hey API shape, then regenerate.`;
 }
 
 function associationEvidenceObservationRefinement() {
