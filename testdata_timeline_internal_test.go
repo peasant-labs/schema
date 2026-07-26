@@ -175,7 +175,7 @@ func validateTimelineFixtureOracleSemantics(fixture TimelineFixtureCase, expecte
 		if strings.TrimSpace(expected.RequiredRewrittenCommit.GhostHash) == "" {
 			return fmt.Errorf("required_rewritten_commit.ghost_hash is empty")
 		}
-		if !fixture.Input.hasRewrittenCommit(expected.RequiredRewrittenCommit.GhostHash) {
+		if !timelineInputHasRewrittenCommit(fixture.Input, expected.RequiredRewrittenCommit.GhostHash) {
 			return fmt.Errorf("requires rewritten commit with ghostHash %q, but the fixture input does not contain it", expected.RequiredRewrittenCommit.GhostHash)
 		}
 	}
@@ -188,7 +188,7 @@ func validateTimelineFixtureOracleSemantics(fixture TimelineFixtureCase, expecte
 		}
 	}
 	if expected.LedgerTargetSessionID != "" {
-		if !fixture.Input.rewriteLedgerReferencesSession(expected.LedgerTargetSessionID) {
+		if !timelineInputRewriteLedgerReferencesSession(fixture.Input, expected.LedgerTargetSessionID) {
 			return fmt.Errorf("ledger target sessionId %q is not referenced by any rewritten commit", expected.LedgerTargetSessionID)
 		}
 		if fixture.Expected.Repair == nil {
@@ -199,4 +199,24 @@ func validateTimelineFixtureOracleSemantics(fixture TimelineFixtureCase, expecte
 		}
 	}
 	return nil
+}
+
+func timelineInputHasRewrittenCommit(input TimelineFixtureInput, ghostHash string) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		if rewrittenCommit.GhostHash == ghostHash {
+			return true
+		}
+	}
+	return false
+}
+
+func timelineInputRewriteLedgerReferencesSession(input TimelineFixtureInput, sessionID SessionID) bool {
+	for _, rewrittenCommit := range input.RewrittenCommits {
+		for _, rewrittenSessionID := range rewrittenCommit.SessionIDs {
+			if rewrittenSessionID == sessionID {
+				return true
+			}
+		}
+	}
+	return false
 }
