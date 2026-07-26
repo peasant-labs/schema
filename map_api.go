@@ -392,7 +392,11 @@ func (p MapNodeDetailPayload) Validate() error {
 			return fmt.Errorf("map node detail validation: rewrittenCommits[%d]: %w", index, err)
 		}
 	}
-	if err := validateRewrittenCommitSuccessorMirrors(p.RewrittenCommits, indexCommitRefsByHash(p.RecentCommits), "map node detail", "recentCommits"); err != nil {
+	successors, err := indexCommitRefsByHash(p.RecentCommits, "map node detail", "recentCommits")
+	if err != nil {
+		return err
+	}
+	if err := validateRewrittenCommitSuccessorMirrors(p.RewrittenCommits, successors, "map node detail", "recentCommits"); err != nil {
 		return err
 	}
 	if err := validateSessionInsights(p.Insights); err != nil {
@@ -1082,7 +1086,7 @@ func (r RewrittenCommit) Validate() error {
 // has commit-binding truth, and shared successor associations mirror the
 // authoritative ledger object. label identifies the owning payload in error
 // messages.
-func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]TimelineSessionRef, successors map[string]CommitRef, label string) error {
+func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]TimelineSessionRef, successors map[string]displayedSuccessor, label string) error {
 	if commits == nil {
 		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload; initialize the payload with NewReviewListPayload before serving it", label)
 	}
@@ -1108,7 +1112,7 @@ func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[Sessi
 // rewrite ledger row. A successor may omit a ledger association entirely, but
 // an association sharing either the durable ID or the session binding must be
 // the same complete relationship object.
-func validateRewrittenCommitSuccessorMirrors(commits []RewrittenCommit, successors map[string]CommitRef, label, successorCollection string) error {
+func validateRewrittenCommitSuccessorMirrors(commits []RewrittenCommit, successors map[string]displayedSuccessor, label, successorCollection string) error {
 	for rewrittenIndex, rewritten := range commits {
 		if rewritten.SuccessorHash == nil {
 			continue
@@ -1118,18 +1122,32 @@ func validateRewrittenCommitSuccessorMirrors(commits []RewrittenCommit, successo
 			return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) has successorHash %q that is not present in %s; include the successor commit or leave successorHash nil", label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, successorCollection)
 		}
 		for ledgerAssociationIndex, ledgerAssociation := range rewritten.Associations {
-			for successorAssociationIndex, successorAssociation := range successor.Associations {
-				if ledgerAssociation.ID != successorAssociation.ID && ledgerAssociation.SessionID != successorAssociation.SessionID {
-					continue
+			byID, hasID := successor.associationIndex.byID[ledgerAssociation.ID]
+			bySessionID, hasSessionID := successor.associationIndex.bySessionID[ledgerAssociation.SessionID]
+			if hasID && hasSessionID && byID != bySessionID {
+				return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) successorHash %q resolves ledger associations[%d] association ID %q to successor associations[%d] but sessionId %q to successor associations[%d]; the displayed successor has conflicting association keys and cannot select one authoritative relationship; restore the ledger association as one complete successor object or omit both conflicting successor associations", label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, ledgerAssociationIndex, ledgerAssociation.ID, byID, ledgerAssociation.SessionID, bySessionID)
+			}
+			if hasID {
+				if err := validateSuccessorAssociationMirror(label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, ledgerAssociationIndex, byID, ledgerAssociation, successor.commit.Associations[byID]); err != nil {
+					return err
 				}
-				if sessionAssociationsEqual(ledgerAssociation, successorAssociation) {
-					continue
+				continue
+			}
+			if hasSessionID {
+				if err := validateSuccessorAssociationMirror(label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, ledgerAssociationIndex, bySessionID, ledgerAssociation, successor.commit.Associations[bySessionID]); err != nil {
+					return err
 				}
-				return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) successorHash %q associations[%d] shares association ID or session binding with ledger associations[%d] but does not exactly mirror the rewrite-ledger association; ID, sessionId, conclusion, confidence, and ordered evidence must match so consumers receive one authoritative relationship; copy the ledger association to the displayed successor or omit the successor association", label, rewrittenIndex, rewritten.GhostHash, *rewritten.SuccessorHash, successorAssociationIndex, ledgerAssociationIndex)
 			}
 		}
 	}
 	return nil
+}
+
+func validateSuccessorAssociationMirror(label string, rewrittenIndex int, ghostHash, successorHash string, ledgerAssociationIndex, successorAssociationIndex int, ledgerAssociation, successorAssociation SessionAssociation) error {
+	if sessionAssociationsEqual(ledgerAssociation, successorAssociation) {
+		return nil
+	}
+	return fmt.Errorf("%s validation failed at schema.validateRewrittenCommitSuccessorMirrors during wire-boundary validation: rewrittenCommits[%d] (ghost %q) successorHash %q associations[%d] shares association ID or session binding with ledger associations[%d] but does not exactly mirror the rewrite-ledger association; ID, sessionId, conclusion, confidence, and ordered evidence must match so consumers receive one authoritative relationship; copy the ledger association to the displayed successor or omit the successor association", label, rewrittenIndex, ghostHash, successorHash, successorAssociationIndex, ledgerAssociationIndex)
 }
 
 // sessionAssociationsEqual compares the full wire value. Validation has already
@@ -1532,21 +1550,75 @@ func (p ReviewListPayload) Validate() error {
 			previousRank = rank
 		}
 	}
-	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessions, indexCommitRefsByHash(p.RecentCommits), "review list"); err != nil {
+	successors, err := indexCommitRefsByHash(p.RecentCommits, "review list", "the payload's commit set")
+	if err != nil {
+		return err
+	}
+	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessions, successors, "review list"); err != nil {
 		return err
 	}
 	return nil
 }
 
-// indexCommitRefsByHash indexes displayed commits by hash so rewrite
-// cross-reference validation can compare a successor's complete authoritative
-// association objects rather than merely accepting its hash.
-func indexCommitRefsByHash(commits []CommitRef) map[string]CommitRef {
-	byHash := make(map[string]CommitRef, len(commits))
-	for _, commit := range commits {
-		byHash[commit.Hash] = commit
+// displayedSuccessor contains one displayed commit and the two bounded indexes
+// needed to compare its associations with rewrite-ledger entries. The indexes
+// keep mirror validation linear in the number of displayed and ledger
+// relationships rather than scanning every pair.
+type displayedSuccessor struct {
+	commit           CommitRef
+	associationIndex displayedSuccessorAssociationIndex
+}
+
+type displayedSuccessorAssociationIndex struct {
+	byID        map[AssociationID]int
+	bySessionID map[SessionID]int
+}
+
+// indexCommitRefsByHash rejects duplicate non-empty displayed hashes before it
+// builds any successor association indexes. A blank commit hash cannot identify
+// a rewrite successor and is deliberately left out of the successor index.
+func indexCommitRefsByHash(commits []CommitRef, label, successorCollection string) (map[string]displayedSuccessor, error) {
+	seenHashes := make(map[string]int, len(commits))
+	for commitIndex, commit := range commits {
+		if commit.Hash == "" {
+			continue
+		}
+		if firstIndex, exists := seenHashes[commit.Hash]; exists {
+			return nil, fmt.Errorf("%s validation failed at schema.indexCommitRefsByHash during wire-boundary validation: %s[%d] duplicates non-empty commit hash %q from %s[%d]; a rewrite successor lookup would be ambiguous and could select a different association authority; deduplicate displayed commit hashes before serving the payload", label, successorCollection, commitIndex, commit.Hash, successorCollection, firstIndex)
+		}
+		seenHashes[commit.Hash] = commitIndex
 	}
-	return byHash
+
+	byHash := make(map[string]displayedSuccessor, len(seenHashes))
+	for _, commit := range commits {
+		if commit.Hash == "" {
+			continue
+		}
+		associationIndex, err := indexDisplayedSuccessorAssociations(commit, label, successorCollection)
+		if err != nil {
+			return nil, err
+		}
+		byHash[commit.Hash] = displayedSuccessor{commit: commit, associationIndex: associationIndex}
+	}
+	return byHash, nil
+}
+
+func indexDisplayedSuccessorAssociations(commit CommitRef, label, successorCollection string) (displayedSuccessorAssociationIndex, error) {
+	index := displayedSuccessorAssociationIndex{
+		byID:        make(map[AssociationID]int, len(commit.Associations)),
+		bySessionID: make(map[SessionID]int, len(commit.Associations)),
+	}
+	for associationIndex, association := range commit.Associations {
+		if firstIndex, exists := index.byID[association.ID]; exists {
+			return displayedSuccessorAssociationIndex{}, fmt.Errorf("%s validation failed at schema.indexDisplayedSuccessorAssociations during wire-boundary validation: %s commit %q associations[%d] and associations[%d] share association ID %q; a rewrite successor lookup would select conflicting relationship keys; assign unique association IDs before serving the payload", label, successorCollection, commit.Hash, firstIndex, associationIndex, association.ID)
+		}
+		if firstIndex, exists := index.bySessionID[association.SessionID]; exists {
+			return displayedSuccessorAssociationIndex{}, fmt.Errorf("%s validation failed at schema.indexDisplayedSuccessorAssociations during wire-boundary validation: %s commit %q associations[%d] and associations[%d] share sessionId %q; a rewrite successor lookup would select conflicting relationship keys; make associations mirror unique session bindings before serving the payload", label, successorCollection, commit.Hash, firstIndex, associationIndex, association.SessionID)
+		}
+		index.byID[association.ID] = associationIndex
+		index.bySessionID[association.SessionID] = associationIndex
+	}
+	return index, nil
 }
 
 // ChangeSummary is one row of the Review list: a local branch measured

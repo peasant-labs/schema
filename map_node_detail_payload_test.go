@@ -27,6 +27,7 @@ type payloadValidationKind string
 const (
 	payloadValidationMapNodeDetail payloadValidationKind = "map_node_detail"
 	payloadValidationChangeDetail  payloadValidationKind = "change_detail"
+	payloadValidationReviewList    payloadValidationKind = "review_list"
 )
 
 type payloadNilSlice string
@@ -42,7 +43,9 @@ type payloadMutationKind string
 const (
 	payloadMutationRemoveSuccessorCommit      payloadMutationKind = "remove_successor_commit"
 	payloadMutationAddSuccessorCommit         payloadMutationKind = "add_successor_commit"
+	payloadMutationRemoveDuplicateSuccessor   payloadMutationKind = "remove_duplicate_successor_commit"
 	payloadMutationRepairSuccessorAssociation payloadMutationKind = "repair_successor_association_mirror"
+	payloadMutationDriftSuccessorAssociation  payloadMutationKind = "drift_successor_association_conclusion"
 	payloadMutationRepairCommitRefShape       payloadMutationKind = "repair_commit_ref_shape"
 	payloadMutationClearClassification        payloadMutationKind = "clear_classification"
 	payloadMutationNilInsights                payloadMutationKind = "nil_insights"
@@ -51,22 +54,28 @@ const (
 )
 
 type payloadValidationFixtureInput struct {
-	Payload            payloadValidationKind    `yaml:"payload"`
-	Path               string                   `yaml:"path"`
-	RecentCommitHashes []string                 `yaml:"recentCommitHashes"`
-	RecentCommits      []schema.CommitRef       `yaml:"recentCommits"`
-	RewrittenCommits   []schema.RewrittenCommit `yaml:"rewrittenCommits"`
-	UnrecordedCommits  []schema.CommitRef       `yaml:"unrecordedCommits"`
-	Insights           []schema.SessionInsight  `yaml:"insights"`
-	NilSlice           payloadNilSlice          `yaml:"nilSlice"`
+	Payload            payloadValidationKind       `yaml:"payload"`
+	Path               string                      `yaml:"path"`
+	RecentCommitHashes []string                    `yaml:"recentCommitHashes"`
+	RecentCommits      []schema.CommitRef          `yaml:"recentCommits"`
+	RewrittenCommits   []schema.RewrittenCommit    `yaml:"rewrittenCommits"`
+	Sessions           []schema.TimelineSessionRef `yaml:"sessions"`
+	UnrecordedCommits  []schema.CommitRef          `yaml:"unrecordedCommits"`
+	Insights           []schema.SessionInsight     `yaml:"insights"`
+	NilSlice           payloadNilSlice             `yaml:"nilSlice"`
 }
 
 type payloadValidationFixtureExpected struct {
-	Valid                bool                `yaml:"valid"`
-	ErrorContains        string              `yaml:"errorContains"`
-	Mutation             payloadMutationKind `yaml:"mutation"`
-	MutatedValid         bool                `yaml:"mutatedValid"`
-	MutatedErrorContains string              `yaml:"mutatedErrorContains"`
+	Valid                          bool                         `yaml:"valid"`
+	ErrorContains                  string                       `yaml:"errorContains"`
+	Mutation                       payloadMutationKind          `yaml:"mutation"`
+	MutatedValid                   bool                         `yaml:"mutatedValid"`
+	MutatedErrorContains           string                       `yaml:"mutatedErrorContains"`
+	Repair                         payloadMutationKind          `yaml:"repair"`
+	RepairedValid                  bool                         `yaml:"repairedValid"`
+	SuccessorAssociationID         schema.AssociationID         `yaml:"successorAssociationId"`
+	SuccessorAssociationConclusion schema.AssociationConclusion `yaml:"successorAssociationConclusion"`
+	DuplicateSuccessorIndex        int                          `yaml:"duplicateSuccessorIndex"`
 }
 
 type payloadValidationManifest struct {
@@ -77,6 +86,7 @@ type payloadValidationManifest struct {
 type payloadValidationSubject struct {
 	mapNodeDetail *schema.MapNodeDetailPayload
 	changeDetail  *schema.ChangeDetailPayload
+	reviewList    *schema.ReviewListPayload
 }
 
 func decodePayloadValidationManifest(data []byte) (payloadValidationManifest, error) {
@@ -178,6 +188,14 @@ func newPayloadValidationSubject(input payloadValidationFixtureInput) (*payloadV
 			return nil, fmt.Errorf("change_detail fixture has unsupported nilSlice %q", input.NilSlice)
 		}
 		return &payloadValidationSubject{changeDetail: payload}, nil
+	case payloadValidationReviewList:
+		payload := schema.NewReviewListPayload(payloadValidationProjectHash)
+		payload.Sessions = append([]schema.TimelineSessionRef{}, input.Sessions...)
+		if input.RecentCommits != nil {
+			payload.RecentCommits = append([]schema.CommitRef{}, input.RecentCommits...)
+		}
+		payload.RewrittenCommits = append([]schema.RewrittenCommit{}, input.RewrittenCommits...)
+		return &payloadValidationSubject{reviewList: payload}, nil
 	default:
 		return nil, fmt.Errorf("fixture has unknown payload %q", input.Payload)
 	}
@@ -190,6 +208,9 @@ func (s *payloadValidationSubject) validate() error {
 	if s.changeDetail != nil {
 		return s.changeDetail.Validate()
 	}
+	if s.reviewList != nil {
+		return s.reviewList.Validate()
+	}
 	return fmt.Errorf("payload validation fixture did not construct a payload")
 }
 
@@ -199,7 +220,7 @@ func clearInsightClassifications(insights []schema.SessionInsight) {
 	}
 }
 
-func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
+func (s *payloadValidationSubject) mutate(kind payloadMutationKind, associationID schema.AssociationID, conclusion schema.AssociationConclusion, duplicateSuccessorIndex int) error {
 	switch kind {
 	case payloadMutationRemoveSuccessorCommit:
 		if s.mapNodeDetail == nil {
@@ -212,11 +233,28 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 		}
 		hash := *s.mapNodeDetail.RewrittenCommits[0].SuccessorHash
 		s.mapNodeDetail.RecentCommits = append(s.mapNodeDetail.RecentCommits, schema.NewCommitRef(hash, "fixture successor"))
-	case payloadMutationRepairSuccessorAssociation:
-		if s.mapNodeDetail == nil {
-			return fmt.Errorf("mutation %q requires a map node detail payload", kind)
+	case payloadMutationRemoveDuplicateSuccessor:
+		recentCommits, err := s.successorCommits()
+		if err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
 		}
-		if err := repairMapSuccessorAssociationMirror(s.mapNodeDetail); err != nil {
+		if err := removeDuplicateSuccessorCommit(recentCommits, duplicateSuccessorIndex); err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
+		}
+	case payloadMutationRepairSuccessorAssociation:
+		recentCommits, err := s.successorCommits()
+		if err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
+		}
+		if err := repairSuccessorAssociationMirror(recentCommits, s.rewrittenCommits()); err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
+		}
+	case payloadMutationDriftSuccessorAssociation:
+		recentCommits, err := s.successorCommits()
+		if err != nil {
+			return fmt.Errorf("mutation %q: %w", kind, err)
+		}
+		if err := driftSuccessorAssociationConclusion(recentCommits, associationID, conclusion); err != nil {
 			return fmt.Errorf("mutation %q: %w", kind, err)
 		}
 	case payloadMutationRepairCommitRefShape:
@@ -268,32 +306,128 @@ func (s *payloadValidationSubject) mutate(kind payloadMutationKind) error {
 	return nil
 }
 
-func repairMapSuccessorAssociationMirror(payload *schema.MapNodeDetailPayload) error {
-	for rewrittenIndex := range payload.RewrittenCommits {
-		rewritten := payload.RewrittenCommits[rewrittenIndex]
+const payloadValidationProjectHash schema.ProjectHash = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+func (s *payloadValidationSubject) successorCommits() (*[]schema.CommitRef, error) {
+	switch {
+	case s.mapNodeDetail != nil:
+		return &s.mapNodeDetail.RecentCommits, nil
+	case s.reviewList != nil:
+		return &s.reviewList.RecentCommits, nil
+	default:
+		return nil, fmt.Errorf("requires a map node detail or review list payload")
+	}
+}
+
+func (s *payloadValidationSubject) rewrittenCommits() []schema.RewrittenCommit {
+	if s.mapNodeDetail != nil {
+		return s.mapNodeDetail.RewrittenCommits
+	}
+	if s.reviewList != nil {
+		return s.reviewList.RewrittenCommits
+	}
+	return nil
+}
+
+func removeDuplicateSuccessorCommit(recentCommits *[]schema.CommitRef, duplicateSuccessorIndex int) error {
+	if duplicateSuccessorIndex < 0 || duplicateSuccessorIndex >= len(*recentCommits) {
+		return fmt.Errorf("duplicate successor index %d is outside %d recentCommits", duplicateSuccessorIndex, len(*recentCommits))
+	}
+	targetHash := (*recentCommits)[duplicateSuccessorIndex].Hash
+	if targetHash == "" {
+		return fmt.Errorf("recentCommits[%d] has an empty hash and is not a duplicate successor authority", duplicateSuccessorIndex)
+	}
+	occurrences := 0
+	for _, commit := range *recentCommits {
+		if commit.Hash == targetHash {
+			occurrences++
+		}
+	}
+	if occurrences < 2 {
+		return fmt.Errorf("recentCommits[%d] hash %q is not duplicated", duplicateSuccessorIndex, targetHash)
+	}
+	*recentCommits = append((*recentCommits)[:duplicateSuccessorIndex], (*recentCommits)[duplicateSuccessorIndex+1:]...)
+	return nil
+}
+
+func repairSuccessorAssociationMirror(recentCommits *[]schema.CommitRef, rewrittenCommits []schema.RewrittenCommit) error {
+	successors := indexPayloadSuccessorAssociations(*recentCommits)
+	for rewrittenIndex := range rewrittenCommits {
+		rewritten := rewrittenCommits[rewrittenIndex]
 		if rewritten.SuccessorHash == nil {
 			continue
 		}
-		for commitIndex := range payload.RecentCommits {
-			commit := &payload.RecentCommits[commitIndex]
-			if commit.Hash != *rewritten.SuccessorHash {
+		successor, exists := successors[*rewritten.SuccessorHash]
+		if !exists {
+			return fmt.Errorf("rewrittenCommits[%d] successorHash %q is absent from recentCommits; cannot restore the declared mirror", rewrittenIndex, *rewritten.SuccessorHash)
+		}
+		for _, ledgerAssociation := range rewritten.Associations {
+			associationIndex, hasAssociationID := successor.byID[ledgerAssociation.ID]
+			sessionAssociationIndex, hasSessionID := successor.bySessionID[ledgerAssociation.SessionID]
+			if hasAssociationID && hasSessionID && associationIndex != sessionAssociationIndex {
+				displacedAssociation := successor.commit.Associations[associationIndex]
+				displacedSessionID := displacedAssociation.SessionID
+				successor.commit.Associations[associationIndex] = ledgerAssociation
+				successor.commit.SessionIDs[associationIndex] = ledgerAssociation.SessionID
+				displacedSessionAssociation := successor.commit.Associations[sessionAssociationIndex]
+				displacedSessionAssociation.SessionID = displacedSessionID
+				successor.commit.Associations[sessionAssociationIndex] = displacedSessionAssociation
+				successor.commit.SessionIDs[sessionAssociationIndex] = displacedSessionID
+				return nil
+			}
+			if !hasAssociationID {
+				associationIndex = sessionAssociationIndex
+			}
+			exists := hasAssociationID || hasSessionID
+			if !exists {
+				return fmt.Errorf("recentCommits successorHash %q has no association sharing associationId %q or sessionId %q with rewrittenCommits[%d]; cannot restore the declared mirror", successor.commit.Hash, ledgerAssociation.ID, ledgerAssociation.SessionID, rewrittenIndex)
+			}
+			if reflect.DeepEqual(successor.commit.Associations[associationIndex], ledgerAssociation) {
 				continue
 			}
-			for _, ledgerAssociation := range rewritten.Associations {
-				for successorAssociationIndex, successorAssociation := range commit.Associations {
-					if ledgerAssociation.ID != successorAssociation.ID && ledgerAssociation.SessionID != successorAssociation.SessionID {
-						continue
-					}
-					commit.Associations[successorAssociationIndex] = ledgerAssociation
-					commit.SessionIDs[successorAssociationIndex] = ledgerAssociation.SessionID
-					return nil
-				}
-				return fmt.Errorf("recentCommits successorHash %q has no association sharing associationId %q or sessionId %q with rewrittenCommits[%d]; cannot restore the declared mirror", commit.Hash, ledgerAssociation.ID, ledgerAssociation.SessionID, rewrittenIndex)
-			}
+			successor.commit.Associations[associationIndex] = ledgerAssociation
+			successor.commit.SessionIDs[associationIndex] = ledgerAssociation.SessionID
+			return nil
 		}
-		return fmt.Errorf("rewrittenCommits[%d] successorHash %q is absent from recentCommits; cannot restore the declared mirror", rewrittenIndex, *rewritten.SuccessorHash)
 	}
 	return fmt.Errorf("payload has no rewritten commit with a displayed successor; cannot restore a successor association mirror")
+}
+
+type payloadSuccessorAssociationIndex struct {
+	commit      *schema.CommitRef
+	byID        map[schema.AssociationID]int
+	bySessionID map[schema.SessionID]int
+}
+
+func indexPayloadSuccessorAssociations(commits []schema.CommitRef) map[string]payloadSuccessorAssociationIndex {
+	indexed := make(map[string]payloadSuccessorAssociationIndex, len(commits))
+	for commitIndex := range commits {
+		commit := &commits[commitIndex]
+		byID := make(map[schema.AssociationID]int, len(commit.Associations))
+		bySessionID := make(map[schema.SessionID]int, len(commit.Associations))
+		for associationIndex, association := range commit.Associations {
+			byID[association.ID] = associationIndex
+			bySessionID[association.SessionID] = associationIndex
+		}
+		indexed[commit.Hash] = payloadSuccessorAssociationIndex{commit: commit, byID: byID, bySessionID: bySessionID}
+	}
+	return indexed
+}
+
+func driftSuccessorAssociationConclusion(recentCommits *[]schema.CommitRef, associationID schema.AssociationID, conclusion schema.AssociationConclusion) error {
+	if err := associationID.Validate(); err != nil {
+		return fmt.Errorf("successor association ID: %w", err)
+	}
+	if err := conclusion.Validate(); err != nil {
+		return fmt.Errorf("successor association conclusion: %w", err)
+	}
+	for _, successor := range indexPayloadSuccessorAssociations(*recentCommits) {
+		if associationIndex, exists := successor.byID[associationID]; exists {
+			successor.commit.Associations[associationIndex].Conclusion = conclusion
+			return nil
+		}
+	}
+	return fmt.Errorf("recentCommits has no associationId %q to drift", associationID)
 }
 
 func repairCommitRefShape(commit *schema.CommitRef) {
@@ -370,10 +504,11 @@ func assertPayloadValidationResult(t *testing.T, label string, err error, valid 
 	}
 }
 
-// TestMapNodeDetailPayload_FixtureContract drives the MapNodeDetailPayload and
-// ChangeDetailPayload validators through the typed corpus. Every case also
-// applies its fixture-declared mutation and requires the expected validity
-// transition, proving the positive and negative assertions are non-vacuous.
+// TestMapNodeDetailPayload_FixtureContract drives the MapNodeDetailPayload,
+// ChangeDetailPayload, and ReviewListPayload validators through the typed
+// corpus. Every case also applies its fixture-declared mutation and requires
+// the expected validity transition, proving the positive and negative
+// assertions are non-vacuous.
 func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 	corpus, _ := loadPayloadValidationFixtures(t)
 	for _, fixture := range corpus.Cases {
@@ -419,11 +554,20 @@ func TestMapNodeDetailPayload_FixtureContract(t *testing.T) {
 			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
 				assertSinglePayloadContextPrefix(t, originalErr, prefix)
 			}
-			if err := subject.mutate(fixture.Expected.Mutation); err != nil {
+			if err := subject.mutate(fixture.Expected.Mutation, fixture.Expected.SuccessorAssociationID, fixture.Expected.SuccessorAssociationConclusion, fixture.Expected.DuplicateSuccessorIndex); err != nil {
 				t.Fatalf("apply mutation: %v", err)
 			}
 			mutatedErr := subject.validate()
 			assertPayloadValidationResult(t, "mutated", mutatedErr, fixture.Expected.MutatedValid, fixture.Expected.MutatedErrorContains)
+			if fixture.Expected.Repair != "" {
+				if !fixture.Expected.Valid || fixture.Expected.MutatedValid || !fixture.Expected.RepairedValid {
+					t.Fatalf("repair %q must prove valid -> invalid -> valid, got original=%v mutated=%v repaired=%v", fixture.Expected.Repair, fixture.Expected.Valid, fixture.Expected.MutatedValid, fixture.Expected.RepairedValid)
+				}
+				if err := subject.mutate(fixture.Expected.Repair, "", "", 0); err != nil {
+					t.Fatalf("apply repair %q: %v", fixture.Expected.Repair, err)
+				}
+				assertPayloadValidationResult(t, "repaired", subject.validate(), fixture.Expected.RepairedValid, "")
+			}
 			if fixture.Expected.Mutation == payloadMutationRepairCommitRefShape {
 				var repairedCommit schema.CommitRef
 				switch {

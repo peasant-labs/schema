@@ -1,8 +1,15 @@
-expectedCaseCount: 12
+expectedCaseCount: 19
 requiredCaseNames:
   - map_successor_present_in_recent_commits_passes
   - map_missing_successor_in_recent_commits_is_rejected
   - map_successor_association_drift_is_rejected
+  - map_duplicate_successor_hash_first_conflict_is_rejected
+  - map_duplicate_successor_hash_last_conflict_is_rejected
+  - map_successor_association_key_conflict_is_rejected
+  - map_high_cardinality_successor_index_preserves_mirrors
+  - review_duplicate_successor_hash_first_conflict_is_rejected
+  - review_duplicate_successor_hash_last_conflict_is_rejected
+  - review_high_cardinality_successor_index_preserves_mirrors
   - map_non_nil_classification_is_rejected
   - change_non_nil_classification_is_rejected
   - map_nil_insights_is_rejected

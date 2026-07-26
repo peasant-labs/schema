@@ -83,6 +83,218 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "MapNodeDetailPayload displayed successors preserve rewrite-ledger association identity"}
     mutation: {description: "changes only the displayed successor conclusion, then restores that successor association from the rewrite ledger"}
+  - name: map_duplicate_successor_hash_first_conflict_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommits:
+        - {hash: successor-map-duplicate, subject: first conflicting successor, hasSession: true, sessionIds: [session-map-duplicate], associations: [{id: assoc-map-duplicate, sessionId: session-map-duplicate, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate}]}]}
+        - {hash: successor-map-duplicate, subject: second mirrored successor, hasSession: true, sessionIds: [session-map-duplicate], associations: [{id: assoc-map-duplicate, sessionId: session-map-duplicate, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-map-duplicate, sessionIds: [session-map-duplicate], associations: [{id: assoc-map-duplicate, sessionId: session-map-duplicate, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate}]}], successorHash: successor-map-duplicate, resolution: rewritten, method: patch_id, confidence: high}
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: duplicates non-empty commit hash
+      mutation: remove_duplicate_successor_commit
+      duplicateSuccessorIndex: 0
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload displayed successor hashes identify exactly one association authority"}
+    mutation: {description: "removes the first conflicting duplicate displayed successor so the rewrite ledger retains exactly one mirrored commit"}
+  - name: map_duplicate_successor_hash_last_conflict_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommits:
+        - {hash: successor-map-duplicate-last, subject: first mirrored successor, hasSession: true, sessionIds: [session-map-duplicate-last], associations: [{id: assoc-map-duplicate-last, sessionId: session-map-duplicate-last, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate-last}]}]}
+        - {hash: successor-map-duplicate-last, subject: second conflicting successor, hasSession: true, sessionIds: [session-map-duplicate-last], associations: [{id: assoc-map-duplicate-last, sessionId: session-map-duplicate-last, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate-last}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-map-duplicate-last, sessionIds: [session-map-duplicate-last], associations: [{id: assoc-map-duplicate-last, sessionId: session-map-duplicate-last, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-duplicate-last}]}], successorHash: successor-map-duplicate-last, resolution: rewritten, method: patch_id, confidence: high}
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: duplicates non-empty commit hash
+      mutation: remove_duplicate_successor_commit
+      duplicateSuccessorIndex: 1
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload rejects both first and last conflicting duplicate successor authorities"}
+    mutation: {description: "removes the last conflicting duplicate displayed successor so the rewrite ledger retains exactly one mirrored commit"}
+  - name: map_successor_association_key_conflict_is_rejected
+    input:
+      payload: map_node_detail
+      path: internal/api
+      recentCommits:
+        - hash: successor-map-key-conflict
+          subject: conflicting association indexes
+          hasSession: true
+          sessionIds: [session-map-key-other, session-map-key-ledger]
+          associations:
+            - {id: assoc-map-key-ledger, sessionId: session-map-key-other, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-key-conflict}]}
+            - {id: assoc-map-key-other, sessionId: session-map-key-ledger, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-key-conflict}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-map-key-conflict, sessionIds: [session-map-key-ledger], associations: [{id: assoc-map-key-ledger, sessionId: session-map-key-ledger, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-key-conflict}]}], successorHash: successor-map-key-conflict, resolution: rewritten, method: patch_id, confidence: high}
+      insights: []
+      nilSlice: none
+    expected:
+      valid: false
+      errorContains: resolves ledger associations
+      mutation: repair_successor_association_mirror
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "MapNodeDetailPayload rejects association ID and session binding indexes that identify different displayed successor objects"}
+    mutation: {description: "restores the complete ledger association and its displaced session binding so both successor indexes name unambiguous objects"}
+  - name: map_high_cardinality_successor_index_preserves_mirrors
+    input:
+      payload: map_node_detail
+      path: internal/api
+      rewrittenCommits:
+        - ghostHash: ghost-map-index
+          sessionIds: [session-map-index-01, session-map-index-02, session-map-index-03, session-map-index-04, session-map-index-05, session-map-index-06, session-map-index-07, session-map-index-08, session-map-index-09, session-map-index-10, session-map-index-11, session-map-index-12, session-map-index-13, session-map-index-14, session-map-index-15, session-map-index-16]
+          associations:
+            - &map-index-association-01 {id: assoc-map-index-01, sessionId: session-map-index-01, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-02 {id: assoc-map-index-02, sessionId: session-map-index-02, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-03 {id: assoc-map-index-03, sessionId: session-map-index-03, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-04 {id: assoc-map-index-04, sessionId: session-map-index-04, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-05 {id: assoc-map-index-05, sessionId: session-map-index-05, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-06 {id: assoc-map-index-06, sessionId: session-map-index-06, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-07 {id: assoc-map-index-07, sessionId: session-map-index-07, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-08 {id: assoc-map-index-08, sessionId: session-map-index-08, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-09 {id: assoc-map-index-09, sessionId: session-map-index-09, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-10 {id: assoc-map-index-10, sessionId: session-map-index-10, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-11 {id: assoc-map-index-11, sessionId: session-map-index-11, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-12 {id: assoc-map-index-12, sessionId: session-map-index-12, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-13 {id: assoc-map-index-13, sessionId: session-map-index-13, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-14 {id: assoc-map-index-14, sessionId: session-map-index-14, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-15 {id: assoc-map-index-15, sessionId: session-map-index-15, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+            - &map-index-association-16 {id: assoc-map-index-16, sessionId: session-map-index-16, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-map-index}]}
+          successorHash: successor-map-index
+          resolution: rewritten
+          method: patch_id
+          confidence: high
+      recentCommits:
+        - hash: successor-map-index
+          subject: reversed indexed successor
+          hasSession: true
+          sessionIds: [session-map-index-16, session-map-index-15, session-map-index-14, session-map-index-13, session-map-index-12, session-map-index-11, session-map-index-10, session-map-index-09, session-map-index-08, session-map-index-07, session-map-index-06, session-map-index-05, session-map-index-04, session-map-index-03, session-map-index-02, session-map-index-01]
+          associations: [*map-index-association-16, *map-index-association-15, *map-index-association-14, *map-index-association-13, *map-index-association-12, *map-index-association-11, *map-index-association-10, *map-index-association-09, *map-index-association-08, *map-index-association-07, *map-index-association-06, *map-index-association-05, *map-index-association-04, *map-index-association-03, *map-index-association-02, *map-index-association-01]
+      insights: []
+      nilSlice: none
+    expected:
+      valid: true
+      mutation: drift_successor_association_conclusion
+      successorAssociationId: assoc-map-index-09
+      successorAssociationConclusion: candidate
+      mutatedValid: false
+      mutatedErrorContains: does not exactly mirror the rewrite-ledger association
+      repair: repair_successor_association_mirror
+      repairedValid: true
+    classification: must-pass
+    provenance: {source: boundary, ref: "MapNodeDetailPayload indexes a reversed high-cardinality successor by durable association ID and session binding"}
+    mutation: {description: "changes one indexed successor association conclusion, then restores the full ledger association after the production validator rejects the drift"}
+  - name: review_duplicate_successor_hash_first_conflict_is_rejected
+    input:
+      payload: review_list
+      sessions:
+        - {sessionId: session-review-duplicate, title: duplicate successor authority, harness: claude-code, hasCommitBinding: true}
+      recentCommits:
+        - {hash: successor-review-duplicate, subject: first conflicting successor, hasSession: true, sessionIds: [session-review-duplicate], associations: [{id: assoc-review-duplicate, sessionId: session-review-duplicate, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate}]}]}
+        - {hash: successor-review-duplicate, subject: second mirrored successor, hasSession: true, sessionIds: [session-review-duplicate], associations: [{id: assoc-review-duplicate, sessionId: session-review-duplicate, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-review-duplicate, sessionIds: [session-review-duplicate], associations: [{id: assoc-review-duplicate, sessionId: session-review-duplicate, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate}]}], successorHash: successor-review-duplicate, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      valid: false
+      errorContains: duplicates non-empty commit hash
+      mutation: remove_duplicate_successor_commit
+      duplicateSuccessorIndex: 0
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "ReviewListPayload displayed successor hashes identify exactly one association authority"}
+    mutation: {description: "removes the first conflicting duplicate displayed successor so the review rewrite ledger retains exactly one mirrored commit"}
+  - name: review_duplicate_successor_hash_last_conflict_is_rejected
+    input:
+      payload: review_list
+      sessions:
+        - {sessionId: session-review-duplicate-last, title: duplicate successor authority, harness: claude-code, hasCommitBinding: true}
+      recentCommits:
+        - {hash: successor-review-duplicate-last, subject: first mirrored successor, hasSession: true, sessionIds: [session-review-duplicate-last], associations: [{id: assoc-review-duplicate-last, sessionId: session-review-duplicate-last, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate-last}]}]}
+        - {hash: successor-review-duplicate-last, subject: second conflicting successor, hasSession: true, sessionIds: [session-review-duplicate-last], associations: [{id: assoc-review-duplicate-last, sessionId: session-review-duplicate-last, conclusion: candidate, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate-last}]}]}
+      rewrittenCommits:
+        - {ghostHash: ghost-review-duplicate-last, sessionIds: [session-review-duplicate-last], associations: [{id: assoc-review-duplicate-last, sessionId: session-review-duplicate-last, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-duplicate-last}]}], successorHash: successor-review-duplicate-last, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      valid: false
+      errorContains: duplicates non-empty commit hash
+      mutation: remove_duplicate_successor_commit
+      duplicateSuccessorIndex: 1
+      mutatedValid: true
+    classification: must-fail
+    provenance: {source: boundary, ref: "ReviewListPayload rejects both first and last conflicting duplicate successor authorities"}
+    mutation: {description: "removes the last conflicting duplicate displayed successor so the review rewrite ledger retains exactly one mirrored commit"}
+  - name: review_high_cardinality_successor_index_preserves_mirrors
+    input:
+      payload: review_list
+      sessions:
+        - {sessionId: session-review-index-01, title: indexed review 01, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-02, title: indexed review 02, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-03, title: indexed review 03, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-04, title: indexed review 04, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-05, title: indexed review 05, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-06, title: indexed review 06, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-07, title: indexed review 07, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-08, title: indexed review 08, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-09, title: indexed review 09, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-10, title: indexed review 10, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-11, title: indexed review 11, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-12, title: indexed review 12, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-13, title: indexed review 13, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-14, title: indexed review 14, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-15, title: indexed review 15, harness: claude-code, hasCommitBinding: true}
+        - {sessionId: session-review-index-16, title: indexed review 16, harness: claude-code, hasCommitBinding: true}
+      rewrittenCommits:
+        - ghostHash: ghost-review-index
+          sessionIds: [session-review-index-16, session-review-index-15, session-review-index-14, session-review-index-13, session-review-index-12, session-review-index-11, session-review-index-10, session-review-index-09, session-review-index-08, session-review-index-07, session-review-index-06, session-review-index-05, session-review-index-04, session-review-index-03, session-review-index-02, session-review-index-01]
+          associations:
+            - &review-index-association-16 {id: assoc-review-index-16, sessionId: session-review-index-16, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-15 {id: assoc-review-index-15, sessionId: session-review-index-15, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-14 {id: assoc-review-index-14, sessionId: session-review-index-14, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-13 {id: assoc-review-index-13, sessionId: session-review-index-13, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-12 {id: assoc-review-index-12, sessionId: session-review-index-12, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-11 {id: assoc-review-index-11, sessionId: session-review-index-11, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-10 {id: assoc-review-index-10, sessionId: session-review-index-10, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-09 {id: assoc-review-index-09, sessionId: session-review-index-09, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-08 {id: assoc-review-index-08, sessionId: session-review-index-08, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-07 {id: assoc-review-index-07, sessionId: session-review-index-07, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-06 {id: assoc-review-index-06, sessionId: session-review-index-06, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-05 {id: assoc-review-index-05, sessionId: session-review-index-05, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-04 {id: assoc-review-index-04, sessionId: session-review-index-04, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-03 {id: assoc-review-index-03, sessionId: session-review-index-03, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-02 {id: assoc-review-index-02, sessionId: session-review-index-02, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+            - &review-index-association-01 {id: assoc-review-index-01, sessionId: session-review-index-01, conclusion: confirmed, confidence: high, evidence: [{kind: recorded_commit, recordedCommitHash: ghost-review-index}]}
+          successorHash: successor-review-index
+          resolution: rewritten
+          method: patch_id
+          confidence: high
+      recentCommits:
+        - hash: successor-review-index
+          subject: indexed review successor
+          hasSession: true
+          sessionIds: [session-review-index-01, session-review-index-02, session-review-index-03, session-review-index-04, session-review-index-05, session-review-index-06, session-review-index-07, session-review-index-08, session-review-index-09, session-review-index-10, session-review-index-11, session-review-index-12, session-review-index-13, session-review-index-14, session-review-index-15, session-review-index-16]
+          associations: [*review-index-association-01, *review-index-association-02, *review-index-association-03, *review-index-association-04, *review-index-association-05, *review-index-association-06, *review-index-association-07, *review-index-association-08, *review-index-association-09, *review-index-association-10, *review-index-association-11, *review-index-association-12, *review-index-association-13, *review-index-association-14, *review-index-association-15, *review-index-association-16]
+    expected:
+      valid: true
+      mutation: drift_successor_association_conclusion
+      successorAssociationId: assoc-review-index-09
+      successorAssociationConclusion: candidate
+      mutatedValid: false
+      mutatedErrorContains: does not exactly mirror the rewrite-ledger association
+      repair: repair_successor_association_mirror
+      repairedValid: true
+    classification: must-pass
+    provenance: {source: boundary, ref: "ReviewListPayload indexes reversed high-cardinality rewrite-ledger associations by durable association ID and session binding"}
+    mutation: {description: "changes one indexed displayed association conclusion, then restores the full ledger association after the production validator rejects the drift"}
   - name: map_non_nil_classification_is_rejected
     input:
       payload: map_node_detail
