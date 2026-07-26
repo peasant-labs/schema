@@ -15,7 +15,7 @@ func TestAnnotationSummary_TargetFixtureContract(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAnnotationFixtures: %v", err)
 	}
-	assert.RequireMin(t, fixtures.TargetValidations, 8)
+	assert.RequireMin(t, fixtures.TargetValidations, 9)
 	assert.RequireValid(t, fixtures.TargetValidations)
 	for _, fixture := range fixtures.TargetValidations.Cases {
 		err := fixture.Input.Validate()
@@ -35,6 +35,8 @@ func TestAnnotationSummary_TargetRepairCorpus(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAnnotationFixtures: %v", err)
 	}
+	assert.RequireMin(t, fixtures.TargetRepairs, 2)
+	assert.RequireValid(t, fixtures.TargetRepairs)
 	sources := make(map[string]testcase.Case[schema.AnnotationSummary, bool], len(fixtures.TargetValidations.Cases))
 	for _, fixture := range fixtures.TargetValidations.Cases {
 		sources[fixture.Name] = fixture
@@ -50,7 +52,16 @@ func TestAnnotationSummary_TargetRepairCorpus(t *testing.T) {
 			requireActionableValidationError(t, originalErr, repair.Expected.OriginalErrorContains)
 			switch string(repair.Input.Kind) {
 			case "clear_target_session_id":
+				if repair.Input.TargetAssociationID != nil {
+					t.Fatalf("repair kind %q must not declare targetAssociationId", repair.Input.Kind)
+				}
 				input.TargetSessionID = nil
+			case "set_target_association_id":
+				if repair.Input.TargetAssociationID == nil {
+					t.Fatalf("repair kind %q requires targetAssociationId", repair.Input.Kind)
+				}
+				associationID := *repair.Input.TargetAssociationID
+				input.TargetAssociationID = &associationID
 			default:
 				t.Fatalf("unknown annotation target repair kind %q", repair.Input.Kind)
 			}

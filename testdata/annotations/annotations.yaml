@@ -149,6 +149,12 @@ annotation_target_validations:
       classification: must-pass
       provenance: {source: requirement, ref: association annotations target a durable association ID exclusively}
       mutation: {description: "uses the association discriminator with its only allowed target field"}
+    - name: association_target_missing_id_is_rejected
+      input: {targetKind: association}
+      expected: false
+      classification: must-fail
+      provenance: {source: bug, ref: association target annotations must name their durable association ID}
+      mutation: {description: "removes targetAssociationId from an otherwise valid association target"}
     - name: association_target_with_invalid_id_is_rejected
       input: {targetKind: association, targetAssociationId: " invalid"}
       expected: false
@@ -199,6 +205,12 @@ annotation_target_repairs:
       classification: must-pass
       provenance: {source: requirement, ref: association target exclusivity repair}
       mutation: {description: "clears the competing session target while preserving the durable association ID"}
+    - name: set_missing_association_id_restores_validity
+      input: {sourceCase: association_target_missing_id_is_rejected, kind: set_target_association_id, targetAssociationId: assoc-session-a:commit-1}
+      expected: {originalErrorContains: "targetAssociationId", postMutationValid: true}
+      classification: must-pass
+      provenance: {source: bug, ref: missing association target ID regression repair}
+      mutation: {description: "sets the required durable association ID on the rejected association target"}
 
 # Subscription validation test cases (Go-only)
 subscription_validations:

@@ -90,14 +90,37 @@ func (f *AnnotationFixtureSummary) ToAnnotationSummary() AnnotationSummary {
 type annotationTargetRepairKind string
 
 const (
-	annotationTargetRepairClearSessionID annotationTargetRepairKind = "clear_target_session_id"
+	annotationTargetRepairClearSessionID   annotationTargetRepairKind = "clear_target_session_id"
+	annotationTargetRepairSetAssociationID annotationTargetRepairKind = "set_target_association_id"
 )
 
 // annotationTargetRepairInput selects a rejected target-validation fixture and
 // declares the one repair applied to it.
 type annotationTargetRepairInput struct {
-	SourceCase string                     `yaml:"sourceCase"`
-	Kind       annotationTargetRepairKind `yaml:"kind"`
+	SourceCase          string                     `yaml:"sourceCase"`
+	Kind                annotationTargetRepairKind `yaml:"kind"`
+	TargetAssociationID *AssociationID             `yaml:"targetAssociationId,omitempty"`
+}
+
+// Validate checks that a fixture-declared target repair has exactly the inputs
+// required by its closed repair discriminator.
+func (input annotationTargetRepairInput) Validate() error {
+	switch input.Kind {
+	case annotationTargetRepairClearSessionID:
+		if input.TargetAssociationID != nil {
+			return fmt.Errorf("annotation target repair %q does not accept targetAssociationId", input.Kind)
+		}
+	case annotationTargetRepairSetAssociationID:
+		if input.TargetAssociationID == nil {
+			return fmt.Errorf("annotation target repair %q requires targetAssociationId", input.Kind)
+		}
+		if err := input.TargetAssociationID.Validate(); err != nil {
+			return fmt.Errorf("annotation target repair %q has invalid targetAssociationId: %w", input.Kind, err)
+		}
+	default:
+		return fmt.Errorf("annotation target repair kind %q is not supported", input.Kind)
+	}
+	return nil
 }
 
 // annotationTargetRepairExpected records the production validator result
@@ -136,6 +159,11 @@ func LoadAnnotationFixtures() (*AnnotationFixtures, error) {
 	}
 	if err := f.TargetRepairs.Validate(); err != nil {
 		return nil, fmt.Errorf("validate annotation target repair fixtures: %w", err)
+	}
+	for _, repair := range f.TargetRepairs.Cases {
+		if err := repair.Input.Validate(); err != nil {
+			return nil, fmt.Errorf("validate annotation target repair fixture %q: %w", repair.Name, err)
+		}
 	}
 	return &f, nil
 }
