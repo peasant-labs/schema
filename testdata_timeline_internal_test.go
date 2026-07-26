@@ -58,7 +58,7 @@ func TestTimelineFixtureValidationRejectsMissingCanonicalCase(t *testing.T) {
 		t.Fatalf("LoadTimelineFixtures: %v", err)
 	}
 	fixtures.Cases = fixtures.Cases[:len(fixtures.Cases)-1]
-	if err := validateTimelineFixtures(fixtures); err == nil || !strings.Contains(err.Error(), "want at least 20") {
+	if err := validateTimelineFixtures(fixtures); err == nil || !strings.Contains(err.Error(), "want at least 22") {
 		t.Fatalf("missing-case error = %v, want exact-count rejection", err)
 	}
 }

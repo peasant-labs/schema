@@ -888,12 +888,12 @@ func (r RewrittenCommit) Validate() error {
 }
 
 // validateRewrittenCommits checks the rewrite cross-reference invariants for a
-// payload's session-era commit resolution ledger against its known session
-// table and known commit hash set: every entry's own fields are well-formed,
-// every SessionID is present in the payload's session table, and SuccessorHash
-// (when set) is present in the payload's commit set. label identifies the
-// owning payload in error messages.
-func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]struct{}, knownCommitHashes map[string]struct{}, label string) error {
+// review-list session-era commit resolution ledger against its authoritative
+// session table and known commit hash set: every entry's own fields are
+// well-formed, every SessionID is present in the payload's session table and
+// has commit-binding truth, and SuccessorHash (when set) is present in the
+// payload's commit set. label identifies the owning payload in error messages.
+func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[SessionID]TimelineSessionRef, knownCommitHashes map[string]struct{}, label string) error {
 	if commits == nil {
 		return fmt.Errorf("%s validation: rewrittenCommits is null; initialize the array (even empty) before serving the payload; initialize the payload with NewReviewListPayload before serving it", label)
 	}
@@ -902,8 +902,12 @@ func validateRewrittenCommits(commits []RewrittenCommit, knownSessions map[Sessi
 			return fmt.Errorf("%s validation: rewrittenCommits[%d]: %w", label, index, err)
 		}
 		for _, sessionID := range ghost.SessionIDs {
-			if _, exists := knownSessions[sessionID]; !exists {
+			session, exists := knownSessions[sessionID]
+			if !exists {
 				return fmt.Errorf("%s validation: rewrittenCommits[%d] (ghost %q) references sessionId %q that is not present in the payload's known sessions; include it in the session table or remove the stale reference", label, index, ghost.GhostHash, sessionID)
+			}
+			if !session.HasCommitBinding {
+				return fmt.Errorf("%s rewrittenCommits validation failed at schema.ReviewListPayload.Validate/validateRewrittenCommits during wire-boundary validation: rewrittenCommits[%d] (ghost %q) references sessionId %q but that session has hasCommitBinding=false; a rewrite ledger row proves an authoritative session commit binding and cannot point at an unbound timeline session; callers would render contradictory timeline traceability for the same session; set hasCommitBinding=true for session %q or remove/correct the stale ledger reference before serving the payload", label, index, ghost.GhostHash, sessionID, sessionID)
 			}
 		}
 		if ghost.SuccessorHash != nil {
@@ -1254,10 +1258,6 @@ func (p ReviewListPayload) Validate() error {
 			}
 		}
 	}
-	knownSessionSet := make(map[SessionID]struct{}, len(knownSessions))
-	for sessionID := range knownSessions {
-		knownSessionSet[sessionID] = struct{}{}
-	}
 	for commitIndex, commit := range p.RecentCommits {
 		if err := validateCommitRefShape(commit); err != nil {
 			return fmt.Errorf("review list validation: recentCommits[%d]: %w", commitIndex, err)
@@ -1278,7 +1278,7 @@ func (p ReviewListPayload) Validate() error {
 			previousRank = rank
 		}
 	}
-	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessionSet, recentCommitHashes(p.RecentCommits), "review list"); err != nil {
+	if err := validateRewrittenCommits(p.RewrittenCommits, knownSessions, recentCommitHashes(p.RecentCommits), "review list"); err != nil {
 		return err
 	}
 	return nil

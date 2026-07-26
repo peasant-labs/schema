@@ -34,6 +34,34 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: complete binding truth exceeds bounded commit window}
     mutation: {description: keeps binding truth when the associated commit is outside the returned window}
+  - family: rewrite-ledger-bound-session
+    name: rewrite_ledger_references_bound_session
+    input:
+      sessions:
+        - {sessionId: session-rewrite-bound, title: squash repair, harness: claude-code, hasCommitBinding: true}
+      commits:
+        - {hash: successor-bound, subject: squash successor, hasSession: false, sessionIds: [], associations: []}
+      rewrittenCommits:
+        - {ghostHash: ghost-bound, subject: squash repair, sessionIds: [session-rewrite-bound], successorHash: successor-bound, resolution: rewritten, method: patch_id, confidence: high}
+    expected: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: rewrite ledger references require authoritative binding truth}
+    mutation: {description: references a bound timeline session from the rewrite ledger and names a visible successor}
+  - family: rewrite-ledger-binding-truth
+    name: rewrite_ledger_reference_requires_binding_truth
+    input:
+      sessions:
+        - {sessionId: session-rewrite-unbound, title: stale ledger, harness: codex, hasCommitBinding: false}
+      commits:
+        - {hash: successor-unbound, subject: stale successor, hasSession: false, sessionIds: [], associations: []}
+      rewrittenCommits:
+        - {ghostHash: ghost-unbound, subject: stale ledger, sessionIds: [session-rewrite-unbound], successorHash: successor-unbound, resolution: rewritten, method: patch_id, confidence: high}
+    expected:
+      error_contains: hasCommitBinding=false
+      repair: {kind: set_session_binding_true, sessionId: session-rewrite-unbound, postMutationValid: true}
+    classification: must-fail
+    provenance: {source: bug, ref: ReviewListPayload rewrite ledger references must imply HasCommitBinding}
+    mutation: {description: points a rewrite ledger row at an existing timeline session whose binding truth is false}
   - family: non-default-branch-binding
     name: binding_on_non_default_branch
     input:

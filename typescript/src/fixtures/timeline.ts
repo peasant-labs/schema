@@ -1,4 +1,4 @@
-import type { CommitRef, SessionAssociation, SessionID, TimelineSessionRef } from "../index.js";
+import type { CommitRef, RewrittenCommit, SessionAssociation, SessionID, TimelineSessionRef } from "../index.js";
 import { canonicalTimelineFixtures } from "../internal/generated/timeline-fixtures.gen.js";
 import type { Case } from "../testcase.js";
 
@@ -18,8 +18,10 @@ export type TimelineFixtureCommitInput = Omit<CommitRef, "sessionIds" | "associa
   // how sessionIds models the null-sessionIds negative case above.
   associations: TimelineFixtureAssociationInput[] | null;
 };
-export interface TimelineFixtureInput { sessions: TimelineFixtureSessionInput[]; commits: TimelineFixtureCommitInput[]; }
-export interface TimelineFixtureExpected { errorContains?: string; }
+export type TimelineFixtureRepairKind = "set_session_binding_true";
+export interface TimelineFixtureRepair { kind: TimelineFixtureRepairKind; sessionId: SessionID; postMutationValid: boolean; }
+export interface TimelineFixtureInput { sessions: TimelineFixtureSessionInput[]; commits: TimelineFixtureCommitInput[]; rewrittenCommits?: RewrittenCommit[]; }
+export interface TimelineFixtureExpected { errorContains?: string; repair?: TimelineFixtureRepair; }
 export type TimelineFixtureCase = Case<TimelineFixtureInput, TimelineFixtureExpected> & { family: string };
 export interface TimelineFixtureCorpus { cases: TimelineFixtureCase[]; }
 

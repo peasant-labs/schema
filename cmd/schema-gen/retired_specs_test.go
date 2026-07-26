@@ -47,7 +47,7 @@ type retiredSpec struct {
 // This registry covers RETIRED versions ONLY. CURRENT-generated specs (the
 // artifacts derived from PeasantLocalAPIVersion, VillageAPIVersion, and
 // TypesVersion, plus the publish-request schema derived from VillageAPIVersion)
-// are deliberately EXCLUDED — they stay under the codegen-freshness gate
+// are deliberately EXCLUDED; they stay under the codegen-freshness gate
 // (TestCodegenFreshness_SpecsMatchSource), which regenerates them from the Go
 // source on every run. Pinning a current version's hash here would false-fail
 // `make check` on every legitimate regen. The partition key is simply "is this

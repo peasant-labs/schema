@@ -15,17 +15,15 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadTimelineFixtures: %v", err)
 	}
-	if err := fixtures.CheckMin(20); err != nil {
+	if err := fixtures.CheckMin(22); err != nil {
 		t.Fatal(err)
 	}
-	if len(fixtures.Cases) != 20 {
-		t.Fatalf("timeline fixture has %d cases, want exactly 20", len(fixtures.Cases))
+	if len(fixtures.Cases) != 22 {
+		t.Fatalf("timeline fixture has %d cases, want exactly 22", len(fixtures.Cases))
 	}
 	for _, fixture := range fixtures.Cases {
 		t.Run(fixture.Name, func(t *testing.T) {
-			payload := schema.NewReviewListPayload(canonicalTimelineProjectHash)
-			payload.Sessions = fixture.Input.Sessions
-			payload.RecentCommits = fixture.Input.Commits
+			payload := reviewListPayloadFromTimelineFixture(fixture)
 			err := payload.Validate()
 			switch fixture.Classification {
 			case testcase.MustPass:
@@ -36,6 +34,16 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 				if err == nil || !strings.Contains(err.Error(), fixture.Expected.ErrorContains) {
 					t.Fatalf("Validate error = %v, want containing %q", err, fixture.Expected.ErrorContains)
 				}
+				if fixture.Expected.Repair != nil {
+					requireActionableValidationError(t, err, fixture.Expected.ErrorContains)
+					if err := fixture.Expected.Repair.Apply(payload); err != nil {
+						t.Fatalf("Apply repair: %v", err)
+					}
+					repairedErr := payload.Validate()
+					if (repairedErr == nil) != fixture.Expected.Repair.PostMutationValid {
+						t.Fatalf("repaired Validate error = %v, want valid=%v", repairedErr, fixture.Expected.Repair.PostMutationValid)
+					}
+				}
 				if fixture.Name == "null_associations" {
 					assertSinglePayloadContextPrefix(t, err, "review list validation:")
 				}
@@ -44,4 +52,14 @@ func TestTimelineFixturesValidateRelationships(t *testing.T) {
 			}
 		})
 	}
+}
+
+func reviewListPayloadFromTimelineFixture(fixture schema.TimelineFixtureCase) *schema.ReviewListPayload {
+	payload := schema.NewReviewListPayload(canonicalTimelineProjectHash)
+	payload.Sessions = fixture.Input.Sessions
+	payload.RecentCommits = fixture.Input.Commits
+	if fixture.Input.RewrittenCommits != nil {
+		payload.RewrittenCommits = fixture.Input.RewrittenCommits
+	}
+	return payload
 }
