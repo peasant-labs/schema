@@ -35,7 +35,7 @@ test("association Zod refinement postprocessor rejects a missing generated signa
 
 function restoreRawState(source) {
   let raw = replaceExactly(source, refinedEvidence, rawEvidence);
-  raw = replaceExactly(raw, refinedSessionID, rawSessionID);
+  raw = replaceExactlyInDeclaration(raw, "zSessionAssociation", refinedSessionID, rawSessionID);
   raw = removeRefinement(raw, "zAssociationEvidenceObservation");
   raw = removeRefinement(raw, "zSessionAssociation");
   raw = removeRefinement(raw, "zGitContext");
@@ -45,18 +45,19 @@ function restoreRawState(source) {
 }
 
 function removeRefinement(source, schemaName) {
-  const marker = `export const ${schemaName} = z.object({`;
+  const marker = `export const ${schemaName} =`;
   const start = source.indexOf(marker);
   assert.notEqual(start, -1, `${schemaName}: generated source is missing the object declaration`);
   assert.equal(source.indexOf(marker, start + marker.length), -1, `${schemaName}: generated source must contain one object declaration`);
-  const end = source.indexOf("\n});", start);
-  assert.notEqual(end, -1, `${schemaName}: generated source is missing the declaration terminator`);
-  const declaration = source.slice(start, end + "\n});".length);
-  const refinementStart = declaration.indexOf("}).superRefine(");
+  const typeMarker = `\n\nexport type ${schemaName.slice(1)} =`;
+  const end = source.indexOf(typeMarker, start);
+  assert.notEqual(end, -1, `${schemaName}: generated source is missing the following type declaration`);
+  const declaration = source.slice(start, end);
+  const refinementStart = declaration.indexOf(".superRefine(");
   assert.notEqual(refinementStart, -1, `${schemaName}: generated source is missing the expected refinement`);
-  assert.equal(declaration.indexOf("}).superRefine(", refinementStart + 1), -1, `${schemaName}: generated source must contain one refinement`);
-  const rawDeclaration = `${declaration.slice(0, refinementStart + "})".length)};`;
-  return `${source.slice(0, start)}${rawDeclaration}${source.slice(end + "\n});".length)}`;
+  assert.equal(declaration.indexOf(".superRefine(", refinementStart + 1), -1, `${schemaName}: generated source must contain one refinement`);
+  const rawDeclaration = `${declaration.slice(0, refinementStart)};`;
+  return `${source.slice(0, start)}${rawDeclaration}${source.slice(end)}`;
 }
 
 function assertActionableDriftError(source, expectedSignal) {
@@ -77,4 +78,16 @@ function assertActionableDriftError(source, expectedSignal) {
 function replaceExactly(source, before, after) {
   assert.equal(source.split(before).length - 1, 1, `mutation target ${JSON.stringify(before)} must occur exactly once`);
   return source.replace(before, after);
+}
+
+function replaceExactlyInDeclaration(source, schemaName, before, after) {
+  const marker = `export const ${schemaName} =`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `${schemaName}: generated source is missing the declaration`);
+  const typeMarker = `\n\nexport type ${schemaName.slice(1)} =`;
+  const end = source.indexOf(typeMarker, start);
+  assert.notEqual(end, -1, `${schemaName}: generated source is missing the following type declaration`);
+  const declaration = source.slice(start, end);
+  assert.equal(declaration.split(before).length - 1, 1, `${schemaName}: mutation target ${JSON.stringify(before)} must occur exactly once`);
+  return `${source.slice(0, start)}${declaration.replace(before, after)}${source.slice(end)}`;
 }

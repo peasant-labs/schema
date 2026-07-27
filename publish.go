@@ -85,7 +85,7 @@ type AnnotationEntryTarget struct {
 // retired are sent, so a foreign machine's annotation can never be retracted.
 // omitempty preserves the prior wire shape for clients that send no retractions.
 type AnnotationPushRequest struct {
-	Annotations []AnnotationPushItem `json:"annotations"`
+	Annotations []AnnotationPushItem `json:"annotations" required:"true" nullable:"false"`
 	Retractions []string             `json:"retractions,omitempty"`
 }
 

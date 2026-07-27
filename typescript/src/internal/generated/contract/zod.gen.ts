@@ -1341,7 +1341,28 @@ export const zTargetKind = z.enum([
 
 export type TargetKind = z.infer<typeof zTargetKind>;
 
-export const zAnnotationPushItem = z.object({
+export const zAnnotationPushItem = z.intersection(z.union([
+    z.object({
+        targetAssociationId: zAssociationID,
+        targetKind: z.literal('association')
+    }),
+    z.object({
+        sessionId: z.string().min(1),
+        targetKind: z.literal('session')
+    }),
+    z.object({
+        entryTarget: zAnnotationEntryTarget,
+        targetKind: z.literal('entry')
+    }),
+    z.object({
+        annotationId: z.string().min(1),
+        targetKind: z.literal('annotation')
+    }),
+    z.object({
+        projectHash: zProjectHash,
+        targetKind: z.literal('project')
+    })
+]), z.object({
     annotationId: z.string().nullish(),
     annotatorName: z.string().optional(),
     confidence: z.number().nullish(),
@@ -1356,7 +1377,7 @@ export const zAnnotationPushItem = z.object({
     targetKind: zTargetKind,
     typeId: z.string(),
     value: z.string()
-}).superRefine((value, context) => {
+})).superRefine((value, context) => {
     const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
     const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
     const hasOnly = (allowed: readonly string[]) => {
@@ -1391,16 +1412,13 @@ export const zAnnotationPushItem = z.object({
             if (!isPresent(value.projectHash)) addIssue("project annotations require projectHash");
             if (!hasOnly(["projectHash"])) addIssue("project annotations must not mix target arms");
             return;
-        case "file_version":
-            addIssue("file_version annotations have no AnnotationPushItem target representation");
-            return;
     }
 });
 
 export type AnnotationPushItem = z.infer<typeof zAnnotationPushItem>;
 
 export const zAnnotationPushRequest = z.object({
-    annotations: z.array(zAnnotationPushItem).nullable(),
+    annotations: z.array(zAnnotationPushItem),
     retractions: z.array(z.string()).optional()
 });
 

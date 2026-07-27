@@ -21,10 +21,22 @@ test("built root Zod schemas enforce published association and annotation ingres
         value: "fixture-value",
         isPrimary: false,
       };
-      const accepted = schema.zGitContext.safeParse({ associations: testCase.input.associations }).success
-        && schema.zAnnotationPushItem.safeParse(item).success;
-      assert.equal(accepted, testCase.expected, `${testCase.name}: root Zod ingress verdict must match the shared corpus`);
-      assert.equal(testCase.classification, testCase.expected ? Classification.MustPass : Classification.MustFail, `${testCase.name}: classification must agree with the asserted verdict`);
+      const publishAccepted = schema.zGitContext.safeParse({ associations: testCase.input.associations }).success;
+      const annotationAccepted = schema.zAnnotationPushItem.safeParse(item).success;
+      assert.equal(publishAccepted, testCase.expected.publishRequestValid, `${testCase.name}: root Zod published-association verdict must match the shared corpus`);
+      assert.equal(annotationAccepted, testCase.expected.annotationRequestValid, `${testCase.name}: root Zod annotation target verdict must match the shared corpus`);
+      assert.equal(testCase.classification, publishAccepted && annotationAccepted ? Classification.MustPass : Classification.MustFail, `${testCase.name}: classification must agree with the combined asserted verdict`);
+    });
+  }
+});
+
+test("built root Zod annotation request schema rejects null and accepts an empty batch", async (t) => {
+  assert.ok(fixture.annotationRequestShapes.cases.length >= 2, "annotation request shape corpus must retain its validation floor");
+  for (const testCase of fixture.annotationRequestShapes.cases) {
+    await t.test(testCase.name, () => {
+      const accepted = schema.zAnnotationPushRequest.safeParse(testCase.input).success;
+      assert.equal(accepted, testCase.expected, `${testCase.name}: root Zod annotation request verdict must match the shared corpus`);
+      assert.equal(testCase.classification, accepted ? Classification.MustPass : Classification.MustFail, `${testCase.name}: classification must agree with the asserted verdict`);
     });
   }
 });
@@ -52,10 +64,16 @@ function loadIngressFixture(raw) {
   assert.ok(document !== undefined, "association annotation ingress fixture parser returned no document");
   assert.equal(document.errors.length, 0, `association annotation ingress fixture YAML parsing failed: ${document.errors.map((error) => error.message).join("; ")}`);
   const value = document.toJS({ maxAliasCount: 0 });
-  const root = requireExactRecord(value, "association annotation ingress fixture", ["cases", "strict_decoding"]);
+  const root = requireExactRecord(value, "association annotation ingress fixture", ["cases", "annotation_request_shapes", "strict_decoding"]);
   return {
     cases: loadCorpus(stringify({ cases: root.cases }), {
       decodeInput: decodeIngressInput,
+      decodeExpected: decodeIngressExpected,
+    }),
+    annotationRequestShapes: loadCorpus(stringify({ cases: root.annotation_request_shapes.cases }), {
+      decodeInput(value, path) {
+        return requireExactRecord(value, path, ["annotations"]);
+      },
       decodeExpected: decodeExpectedBoolean,
     }),
     strictDecoding: loadCorpus(stringify({ cases: root.strict_decoding.cases }), {
@@ -87,6 +105,13 @@ function decodeIngressInput(value, path) {
 function decodeExpectedBoolean(value, path) {
   if (typeof value !== "boolean") throw new TypeError(`${path}: must be a boolean`);
   return value;
+}
+
+function decodeIngressExpected(value, path) {
+  const expected = requireExactRecord(value, path, ["publishRequestValid", "annotationRequestValid"]);
+  if (typeof expected.publishRequestValid !== "boolean") throw new TypeError(`${path}.publishRequestValid: must be a boolean`);
+  if (typeof expected.annotationRequestValid !== "boolean") throw new TypeError(`${path}.annotationRequestValid: must be a boolean`);
+  return expected;
 }
 
 function requireExactRecord(value, path, keys) {

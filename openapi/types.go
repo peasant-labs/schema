@@ -164,6 +164,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 			fixSharedDefinitionRefs(schemaMap)
 		}
 	}
+	if err := applyAnnotationPushIngressConstraints(r.Spec); err != nil {
+		return nil, err
+	}
 
 	return r.Spec, nil
 }

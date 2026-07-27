@@ -402,6 +402,99 @@ components:
       - digest
       type: object
     SchemaAnnotationPushItem:
+      oneOf:
+      - not:
+          anyOf:
+          - required:
+            - sessionId
+          - required:
+            - entryTarget
+          - required:
+            - annotationId
+          - required:
+            - projectHash
+        properties:
+          targetAssociationId:
+            $ref: '#/components/schemas/SchemaAssociationID'
+          targetKind:
+            const: association
+        required:
+        - targetKind
+        - targetAssociationId
+      - not:
+          anyOf:
+          - required:
+            - targetAssociationId
+          - required:
+            - entryTarget
+          - required:
+            - annotationId
+          - required:
+            - projectHash
+        properties:
+          sessionId:
+            minLength: 1
+            type: string
+          targetKind:
+            const: session
+        required:
+        - targetKind
+        - sessionId
+      - not:
+          anyOf:
+          - required:
+            - targetAssociationId
+          - required:
+            - sessionId
+          - required:
+            - annotationId
+          - required:
+            - projectHash
+        properties:
+          entryTarget:
+            $ref: '#/components/schemas/SchemaAnnotationEntryTarget'
+          targetKind:
+            const: entry
+        required:
+        - targetKind
+        - entryTarget
+      - not:
+          anyOf:
+          - required:
+            - targetAssociationId
+          - required:
+            - sessionId
+          - required:
+            - entryTarget
+          - required:
+            - projectHash
+        properties:
+          annotationId:
+            minLength: 1
+            type: string
+          targetKind:
+            const: annotation
+        required:
+        - targetKind
+        - annotationId
+      - not:
+          anyOf:
+          - required:
+            - targetAssociationId
+          - required:
+            - sessionId
+          - required:
+            - entryTarget
+          - required:
+            - annotationId
+        properties:
+          projectHash:
+            $ref: '#/components/schemas/SchemaProjectHash'
+          targetKind:
+            const: project
+        required:
+        - targetKind
+        - projectHash
       properties:
         annotationId:
           anyOf:
@@ -467,9 +560,7 @@ components:
         annotations:
           items:
             $ref: '#/components/schemas/SchemaAnnotationPushItem'
-          type:
-          - array
-          - "null"
+          type: array
         retractions:
           items:
             type: string

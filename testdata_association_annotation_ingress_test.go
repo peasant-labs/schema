@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -15,6 +16,8 @@ func TestAssociationAnnotationIngressFixtureContract(t *testing.T) {
 	cases := fixtures.CaseCorpus()
 	assert.RequireMin(t, cases, 9)
 	assert.RequireValid(t, cases)
+	assert.RequireMin(t, fixtures.AnnotationRequestShapes, 2)
+	assert.RequireValid(t, fixtures.AnnotationRequestShapes)
 	assert.RequireMin(t, fixtures.StrictDecoding, 4)
 	assert.RequireValid(t, fixtures.StrictDecoding)
 
@@ -25,31 +28,67 @@ func TestAssociationAnnotationIngressFixtureContract(t *testing.T) {
 	requireAssociationAnnotationIngressCase(t, fixtures, "association annotation missing target ID is rejected")
 	requireAssociationAnnotationIngressCase(t, fixtures, "association annotation mixed with session target is rejected")
 	requireAssociationAnnotationIngressCase(t, fixtures, "malformed association annotation target is rejected")
+	requireAssociationAnnotationIngressCase(t, fixtures, "exact durable replay is represented by one canonical association")
 }
 
-func TestAssociationAnnotationIngressTypedValidatorsAndHashes(t *testing.T) {
+func TestAssociationAnnotationIngressTypedAndPublishBoundaryValidators(t *testing.T) {
 	fixtures := loadAssociationAnnotationIngressFixtures(t)
 	for _, fixture := range fixtures.CaseCorpus().Cases {
 		t.Run(fixture.Name, func(t *testing.T) {
 			item := annotationPushItem(fixture.Input.Annotation)
-			publishErr := (schema.PublishRequest{Git: schema.GitContext{Associations: publishedAssociations(fixture.Input.Associations)}}).Validate()
+			publishRequest := schema.PublishRequest{Git: schema.GitContext{Associations: publishedAssociations(fixture.Input.Associations)}}
+			publishErr := publishRequest.Validate()
 			annotationErr := (schema.AnnotationPushRequest{Annotations: []schema.AnnotationPushItem{item}}).Validate()
-			gotValid := publishErr == nil && annotationErr == nil
-			if gotValid != fixture.Expected {
-				t.Fatalf("PublishRequest.Validate() error=%v, AnnotationPushRequest.Validate() error=%v, combined valid=%t, want %t", publishErr, annotationErr, gotValid, fixture.Expected)
+			if got := publishErr == nil; got != fixture.Expected.PublishRequestValid {
+				t.Fatalf("PublishRequest.Validate() error=%v, valid=%t, want %t", publishErr, got, fixture.Expected.PublishRequestValid)
+			}
+			if got := annotationErr == nil; got != fixture.Expected.AnnotationRequestValid {
+				t.Fatalf("AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", annotationErr, got, fixture.Expected.AnnotationRequestValid)
+			}
+			boundaryErr := publishRequestBoundaryError(t, fixture.Input)
+			if got := boundaryErr == nil; got != fixture.Expected.PublishRequestValid {
+				t.Fatalf("ValidatePublishRequest() error=%v, valid=%t, want %t", boundaryErr, got, fixture.Expected.PublishRequestValid)
+			}
+			wantCombined := fixture.Expected.PublishRequestValid && fixture.Expected.AnnotationRequestValid
+			if (fixture.Classification == testcase.MustPass) != wantCombined {
+				t.Fatalf("classification %q does not agree with combined expected validity %t", fixture.Classification, wantCombined)
+			}
+		})
+	}
+}
+
+func TestAssociationAnnotationIngressHashDistinctTargetIsMandatory(t *testing.T) {
+	fixtures := loadAssociationAnnotationIngressFixtures(t)
+	fixture := requireAssociationAnnotationIngressCase(t, fixtures, "durable association and association annotation are valid")
+	if fixture.Input.HashComparison == nil {
+		t.Fatal("hash-distinct association target fixture is missing hashComparison")
+	}
+	if !fixture.Input.HashComparison.Distinct {
+		t.Fatal("hash-distinct association target fixture must require a distinct hash")
+	}
+	item := annotationPushItem(fixture.Input.Annotation)
+	comparison := item
+	alternate := schema.AssociationID(fixture.Input.HashComparison.AlternateTargetAssociationID)
+	comparison.TargetAssociationID = &alternate
+	if item.ComputeContentHash() == comparison.ComputeContentHash() {
+		t.Fatal("ComputeContentHash did not distinguish the mandatory alternate association target")
+	}
+}
+
+func TestAssociationAnnotationIngressAnnotationRequestNullability(t *testing.T) {
+	fixtures := loadAssociationAnnotationIngressFixtures(t)
+	for _, fixture := range fixtures.AnnotationRequestShapes.Cases {
+		t.Run(fixture.Name, func(t *testing.T) {
+			var annotations []schema.AnnotationPushItem
+			if fixture.Input.Annotations != nil {
+				annotations = make([]schema.AnnotationPushItem, len(fixture.Input.Annotations))
+			}
+			err := (schema.AnnotationPushRequest{Annotations: annotations}).Validate()
+			if got := err == nil; got != fixture.Expected {
+				t.Fatalf("AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", err, got, fixture.Expected)
 			}
 			if (fixture.Classification == testcase.MustPass) != fixture.Expected {
 				t.Fatalf("classification %q does not agree with expected validity %t", fixture.Classification, fixture.Expected)
-			}
-			if fixture.Input.HashComparison == nil {
-				return
-			}
-			comparison := item
-			alternate := schema.AssociationID(fixture.Input.HashComparison.AlternateTargetAssociationID)
-			comparison.TargetAssociationID = &alternate
-			gotDistinct := item.ComputeContentHash() != comparison.ComputeContentHash()
-			if gotDistinct != fixture.Input.HashComparison.Distinct {
-				t.Fatalf("ComputeContentHash target distinction=%t, want %t", gotDistinct, fixture.Input.HashComparison.Distinct)
 			}
 		})
 	}
@@ -70,14 +109,27 @@ func TestAssociationAnnotationIngressFixtureStrictDecoding(t *testing.T) {
 	}
 }
 
-func requireAssociationAnnotationIngressCase(t *testing.T, fixtures *testutil.AssociationAnnotationIngressFixtures, name string) {
+func requireAssociationAnnotationIngressCase(t *testing.T, fixtures *testutil.AssociationAnnotationIngressFixtures, name string) testcase.Case[testutil.AssociationAnnotationIngressInput, testutil.AssociationAnnotationIngressExpected] {
 	t.Helper()
 	for _, fixture := range fixtures.CaseCorpus().Cases {
 		if fixture.Name == name {
-			return
+			return fixture
 		}
 	}
 	t.Fatalf("association annotation ingress corpus is missing required case %q; the relevant validator behavior would be untested", name)
+	return testcase.Case[testutil.AssociationAnnotationIngressInput, testutil.AssociationAnnotationIngressExpected]{}
+}
+
+func publishRequestBoundaryError(t *testing.T, input testutil.AssociationAnnotationIngressInput) error {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{
+		"model": map[string]string{"harness": "claude-code", "model": "fixture-model"},
+		"git":   map[string]any{"associations": publishedAssociations(input.Associations)},
+	})
+	if err != nil {
+		t.Fatalf("marshal fixture publish body: %v", err)
+	}
+	return schema.ValidatePublishRequest(body)
 }
 
 func TestAssociationAnnotationIngressFixtureStrictDecodingErrorsAreActionable(t *testing.T) {

@@ -75,6 +75,53 @@ func TestBuildVillageAPISpec_AnnotationPushIngress(t *testing.T) {
 	}
 }
 
+// TestBuildVillageAPISpec_AnnotationPushOperationSchema runs the shared corpus
+// through the actual generated operation request schema. It extracts the
+// operation's request-body component and its generated component graph rather
+// than recreating a test-only validator.
+func TestBuildVillageAPISpec_AnnotationPushOperationSchema(t *testing.T) {
+	fixtures, err := testutil.DecodeAssociationAnnotationIngressFixtures(schema.AssociationAnnotationIngressYAML)
+	if err != nil {
+		t.Fatalf("DecodeAssociationAnnotationIngressFixtures: %v", err)
+	}
+	cases := fixtures.CaseCorpus()
+	assert.RequireMin(t, cases, 9)
+	assert.RequireValid(t, cases)
+	assert.RequireMin(t, fixtures.AnnotationRequestShapes, 2)
+	assert.RequireValid(t, fixtures.AnnotationRequestShapes)
+
+	spec, err := specpkg.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatalf("BuildVillageAPISpec: %v", err)
+	}
+	raw, err := spec.MarshalJSON()
+	if err != nil {
+		t.Fatalf("marshal Village API spec: %v", err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatalf("decode Village API spec: %v", err)
+	}
+	operationSchema := compileSchema(t, "village-annotation-push.json", standaloneOperationRequestSchema(t, document))
+
+	for _, fixture := range cases.Cases {
+		t.Run(fixture.Name, func(t *testing.T) {
+			body := mustJSONBytes(t, map[string]any{"annotations": []any{annotationPushItemBody(fixture.Input.Annotation)}})
+			if got := accepts(t, operationSchema, body); got != fixture.Expected.AnnotationRequestValid {
+				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected.AnnotationRequestValid)
+			}
+		})
+	}
+	for _, fixture := range fixtures.AnnotationRequestShapes.Cases {
+		t.Run(fixture.Name, func(t *testing.T) {
+			body := mustJSONBytes(t, map[string]any{"annotations": fixture.Input.Annotations})
+			if got := accepts(t, operationSchema, body); got != fixture.Expected {
+				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected)
+			}
+		})
+	}
+}
+
 func villageAnnotationPushOperation(t *testing.T, document map[string]any) map[string]any {
 	t.Helper()
 	paths, ok := document["paths"].(map[string]any)
@@ -119,6 +166,110 @@ func villageComponent(t *testing.T, document map[string]any, canonicalName strin
 func operationReferencesComponent(operation map[string]any, component string) bool {
 	raw, err := json.Marshal(operation)
 	return err == nil && strings.Contains(string(raw), component)
+}
+
+func standaloneOperationRequestSchema(t *testing.T, document map[string]any) []byte {
+	t.Helper()
+	operation := villageAnnotationPushOperation(t, document)
+	requestBody, ok := operation["requestBody"].(map[string]any)
+	if !ok {
+		t.Fatal("Village annotation push operation has no request body")
+	}
+	content, ok := requestBody["content"].(map[string]any)
+	if !ok {
+		t.Fatal("Village annotation push operation request body has no content")
+	}
+	jsonContent, ok := content["application/json"].(map[string]any)
+	if !ok {
+		t.Fatal("Village annotation push operation has no application/json request schema")
+	}
+	requestSchema, ok := jsonContent["schema"].(map[string]any)
+	if !ok {
+		t.Fatal("Village annotation push operation application/json content has no schema")
+	}
+	ref, ok := requestSchema["$ref"].(string)
+	if !ok {
+		t.Fatal("Village annotation push operation request schema is not a component reference")
+	}
+	components, ok := document["components"].(map[string]any)
+	if !ok {
+		t.Fatal("Village API spec has no components")
+	}
+	schemas, ok := components["schemas"].(map[string]any)
+	if !ok {
+		t.Fatal("Village API spec has no component schemas")
+	}
+	standalone := map[string]any{
+		"$schema": "https://json-schema.org/draft/2020-12/schema",
+		"$ref":    rewriteOperationComponentRef(ref),
+		"$defs":   rewriteOperationComponentRefs(schemas),
+	}
+	return mustJSONBytes(t, standalone)
+}
+
+func rewriteOperationComponentRefs(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		copy := make(map[string]any, len(typed))
+		for key, child := range typed {
+			if key == "$ref" {
+				if ref, ok := child.(string); ok {
+					copy[key] = rewriteOperationComponentRef(ref)
+					continue
+				}
+			}
+			copy[key] = rewriteOperationComponentRefs(child)
+		}
+		return copy
+	case []any:
+		copy := make([]any, len(typed))
+		for index, child := range typed {
+			copy[index] = rewriteOperationComponentRefs(child)
+		}
+		return copy
+	default:
+		return value
+	}
+}
+
+func rewriteOperationComponentRef(ref string) string {
+	const componentPrefix = "#/components/schemas/"
+	if strings.HasPrefix(ref, componentPrefix) {
+		return "#/$defs/" + strings.TrimPrefix(ref, componentPrefix)
+	}
+	return ref
+}
+
+func annotationPushItemBody(fixture testutil.AssociationAnnotationIngressAnnotation) map[string]any {
+	item := map[string]any{
+		"contentHash": "fixture-content-hash",
+		"targetKind":  fixture.TargetKind,
+		"typeId":      "fixture.annotation",
+		"value":       "fixture-value",
+		"isPrimary":   false,
+	}
+	if fixture.TargetAssociationID != nil {
+		item["targetAssociationId"] = *fixture.TargetAssociationID
+	}
+	if fixture.SessionID != nil {
+		item["sessionId"] = *fixture.SessionID
+	}
+	if fixture.AnnotationID != nil {
+		item["annotationId"] = *fixture.AnnotationID
+	}
+	if fixture.ProjectHash != nil {
+		item["projectHash"] = *fixture.ProjectHash
+	}
+	return item
+}
+
+func mustJSONBytes(t *testing.T, value any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal test JSON: %v", err)
+	}
+	return raw
 }
 
 func mustJSON(t *testing.T, value any) string {

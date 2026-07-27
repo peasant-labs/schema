@@ -7,7 +7,7 @@ cases:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
       hashComparison: {alternateTargetAssociationId: assoc-session-a:commit-b, distinct: true}
-    expected: true
+    expected: {publishRequestValid: true, annotationRequestValid: true}
     classification: must-pass
     provenance: {source: requirement, ref: published associations carry one producer-owned ID and observed commit hash}
     mutation: {description: provides one canonical association and an annotation naming only that association}
@@ -17,7 +17,7 @@ cases:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-b}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
-    expected: false
+    expected: {publishRequestValid: false, annotationRequestValid: true}
     classification: must-fail
     provenance: {source: requirement, ref: association IDs are request-local unique durable identities}
     mutation: {description: repeats a producer-owned association ID with a different observed commit hash}
@@ -27,7 +27,7 @@ cases:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
         - {id: assoc-session-a:commit-a-alias, observedCommitHash: commit-a}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
-    expected: false
+    expected: {publishRequestValid: false, annotationRequestValid: true}
     classification: must-fail
     provenance: {source: requirement, ref: one owner transcript observed commit relationship has one durable association ID}
     mutation: {description: assigns a second opaque ID to the same observed commit hash}
@@ -36,7 +36,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: ""}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
-    expected: false
+    expected: {publishRequestValid: false, annotationRequestValid: true}
     classification: must-fail
     provenance: {source: boundary, ref: published associations need an observed commit hash}
     mutation: {description: clears the observed commit hash from an otherwise valid association}
@@ -45,7 +45,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
-    expected: true
+    expected: {publishRequestValid: true, annotationRequestValid: true}
     classification: must-pass
     provenance: {source: requirement, ref: consumer replay is idempotent for an unchanged owner ID transcript and observed hash binding}
     mutation: {description: repeats the unchanged canonical relationship as a new publish request rather than aliasing it inside one request}
@@ -54,7 +54,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: association}
-    expected: false
+    expected: {publishRequestValid: true, annotationRequestValid: false}
     classification: must-fail
     provenance: {source: requirement, ref: association annotations must name their durable association target}
     mutation: {description: removes targetAssociationId from an association annotation}
@@ -63,7 +63,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a, sessionId: session-a}
-    expected: false
+    expected: {publishRequestValid: true, annotationRequestValid: false}
     classification: must-fail
     provenance: {source: requirement, ref: annotation target discriminators select exactly one target arm}
     mutation: {description: adds a session target to an otherwise valid association annotation}
@@ -72,7 +72,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: association, targetAssociationId: " invalid"}
-    expected: false
+    expected: {publishRequestValid: true, annotationRequestValid: false}
     classification: must-fail
     provenance: {source: boundary, ref: association annotation targets use AssociationID grammar}
     mutation: {description: adds leading whitespace to the opaque association target ID}
@@ -81,16 +81,33 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: session, sessionId: session-a, targetAssociationId: assoc-session-a:commit-a}
-    expected: false
+    expected: {publishRequestValid: true, annotationRequestValid: false}
     classification: must-fail
     provenance: {source: requirement, ref: non-association annotation targets must not carry targetAssociationId}
     mutation: {description: adds an association target ID to a session annotation}
+
+annotation_request_shapes:
+  cases:
+    - name: null annotations batch is rejected
+      input: {annotations: null}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: annotation push batches require a non-null annotations array}
+      mutation: {description: replaces an empty annotation array with null}
+    - name: empty annotations batch is accepted
+      input: {annotations: []}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: annotation push batches permit an empty annotations array}
+      mutation: {description: supplies an empty non-null annotation array}
 
 strict_decoding:
   cases:
     - name: canonical ingress corpus shape is accepted
       input: |
         cases: []
+        annotation_request_shapes:
+          cases: []
         strict_decoding:
           cases: []
       expected: true
@@ -100,6 +117,8 @@ strict_decoding:
     - name: unknown ingress corpus field is rejected
       input: |
         cases: []
+        annotation_request_shapes:
+          cases: []
         strict_decoding:
           cases: []
         unexpected: true
@@ -111,6 +130,8 @@ strict_decoding:
       input: |
         cases: []
         cases: []
+        annotation_request_shapes:
+          cases: []
         strict_decoding:
           cases: []
       expected: false
@@ -120,10 +141,14 @@ strict_decoding:
     - name: trailing ingress corpus document is rejected
       input: |
         cases: []
+        annotation_request_shapes:
+          cases: []
         strict_decoding:
           cases: []
         ---
         cases: []
+        annotation_request_shapes:
+          cases: []
         strict_decoding:
           cases: []
       expected: false

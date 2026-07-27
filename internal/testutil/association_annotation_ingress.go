@@ -12,15 +12,16 @@ import (
 // AssociationAnnotationIngressFixtures is the typed form of the shared YAML
 // corpus for association publication and annotation ingress validation.
 type AssociationAnnotationIngressFixtures struct {
-	Cases          []testcase.Case[AssociationAnnotationIngressInput, bool] `yaml:"cases"`
-	StrictDecoding testcase.Corpus[string, bool]                            `yaml:"strict_decoding"`
+	Cases                   []testcase.Case[AssociationAnnotationIngressInput, AssociationAnnotationIngressExpected] `yaml:"cases"`
+	AnnotationRequestShapes testcase.Corpus[AnnotationRequestShape, bool]                                            `yaml:"annotation_request_shapes"`
+	StrictDecoding          testcase.Corpus[string, bool]                                                            `yaml:"strict_decoding"`
 }
 
 // CaseCorpus returns the typed main validation arm in the same canonical form
 // as the nested strict-decoding arm. The YAML keeps its main cases at the
 // top-level so TypeScript can consume the one cross-language corpus directly.
-func (f *AssociationAnnotationIngressFixtures) CaseCorpus() testcase.Corpus[AssociationAnnotationIngressInput, bool] {
-	return testcase.Corpus[AssociationAnnotationIngressInput, bool]{Cases: f.Cases}
+func (f *AssociationAnnotationIngressFixtures) CaseCorpus() testcase.Corpus[AssociationAnnotationIngressInput, AssociationAnnotationIngressExpected] {
+	return testcase.Corpus[AssociationAnnotationIngressInput, AssociationAnnotationIngressExpected]{Cases: f.Cases}
 }
 
 // AssociationAnnotationIngressInput is one producer request fragment and one
@@ -30,6 +31,19 @@ type AssociationAnnotationIngressInput struct {
 	Associations   []PublishedAssociationFixture               `yaml:"associations"`
 	Annotation     AssociationAnnotationIngressAnnotation      `yaml:"annotation"`
 	HashComparison *AssociationAnnotationIngressHashComparison `yaml:"hashComparison,omitempty"`
+}
+
+// AssociationAnnotationIngressExpected records the independent request
+// boundary verdicts that one shared ingress row must exercise.
+type AssociationAnnotationIngressExpected struct {
+	PublishRequestValid    bool `yaml:"publishRequestValid"`
+	AnnotationRequestValid bool `yaml:"annotationRequestValid"`
+}
+
+// AnnotationRequestShape is the nullability arm of the shared ingress corpus.
+// A nil slice represents YAML null; an allocated empty slice represents [].
+type AnnotationRequestShape struct {
+	Annotations []any `yaml:"annotations"`
 }
 
 // PublishedAssociationFixture preserves the fixture's exact wire names before
@@ -76,6 +90,9 @@ func DecodeAssociationAnnotationIngressFixtures(data []byte) (*AssociationAnnota
 	}
 	if err := fixtures.CaseCorpus().Validate(); err != nil {
 		return nil, fmt.Errorf("validate association annotation ingress cases: %w", err)
+	}
+	if err := fixtures.AnnotationRequestShapes.Validate(); err != nil {
+		return nil, fmt.Errorf("validate annotation request shape cases: %w", err)
 	}
 	if err := fixtures.StrictDecoding.Validate(); err != nil {
 		return nil, fmt.Errorf("validate association annotation ingress strict decoding cases: %w", err)

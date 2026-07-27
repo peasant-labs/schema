@@ -8,7 +8,7 @@ export function applyAssociationZodRefinements(source) {
     zAssociationEvidenceObservation: uniqueObjectDeclaration(source, "zAssociationEvidenceObservation"),
     zSessionAssociation: uniqueObjectDeclaration(source, "zSessionAssociation"),
     zGitContext: uniqueObjectDeclaration(source, "zGitContext"),
-    zAnnotationPushItem: uniqueObjectDeclaration(source, "zAnnotationPushItem"),
+    zAnnotationPushItem: uniqueIntersectionDeclaration(source, "zAnnotationPushItem"),
     zAnnotationSummary: uniqueObjectDeclaration(source, "zAnnotationSummary"),
   };
   const refinements = {
@@ -24,7 +24,7 @@ export function applyAssociationZodRefinements(source) {
     refinementSignal("zAssociationEvidenceObservation", declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
     refinementSignal("zSessionAssociation", declarations.zSessionAssociation, refinements.zSessionAssociation),
     refinementSignal("zGitContext", declarations.zGitContext, refinements.zGitContext),
-    refinementSignal("zAnnotationPushItem", declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
+    intersectionRefinementSignal("zAnnotationPushItem", declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
     refinementSignal("zAnnotationSummary", declarations.zAnnotationSummary, refinements.zAnnotationSummary),
   ];
 
@@ -53,16 +53,29 @@ function refineRawSource(source, declarations, refinements) {
 
 function uniqueObjectDeclaration(source, schemaName) {
   const marker = `export const ${schemaName} = z.object({`;
+  const declaration = uniqueDeclaration(source, schemaName, marker);
+  if (declaration.reason !== undefined) return declaration;
+  return declaration;
+}
+
+function uniqueIntersectionDeclaration(source, schemaName) {
+  const marker = `export const ${schemaName} = z.intersection(z.union([`;
+  return uniqueDeclaration(source, schemaName, marker);
+}
+
+function uniqueDeclaration(source, schemaName, marker) {
   const starts = allIndexes(source, marker);
   if (starts.length !== 1) {
     return invalidDeclaration(schemaName, `found ${starts.length} declaration starts, expected exactly one`);
   }
   const start = starts[0];
-  const end = source.indexOf("\n});", start);
+  const typeName = schemaName.slice(1);
+  const typeMarker = `\n\nexport type ${typeName} =`;
+  const end = source.indexOf(typeMarker, start);
   if (end === -1) {
-    return invalidDeclaration(schemaName, "could not find the declaration terminator");
+    return invalidDeclaration(schemaName, `could not find the ${typeName} type declaration following the schema`);
   }
-  return { schemaName, start, end: end + "\n});".length, text: source.slice(start, end + "\n});".length) };
+  return { schemaName, start, end, text: source.slice(start, end) };
 }
 
 function invalidDeclaration(schemaName, reason) {
@@ -92,9 +105,27 @@ function refinementSignal(name, declaration, refinement) {
   return invalidSignal(name, `raw=${rawCount}, refined=${refinementCount}, exactRefinement=${refined}`);
 }
 
+function intersectionRefinementSignal(name, declaration, refinement) {
+  if (declaration.reason !== undefined) {
+    return invalidSignal(name, `declaration unavailable: ${declaration.reason}`);
+  }
+  const rawCount = Number(isRawIntersectionDeclaration(declaration, name));
+  const refinementCount = countText(declaration.text, refinement);
+  const refined = refinementCount === 1 && isRefinedIntersectionDeclaration(declaration, name, refinement);
+  if (rawCount === 1 && refinementCount === 0) return { name, state: "raw" };
+  if (refined) return { name, state: "refined" };
+  return invalidSignal(name, `raw=${rawCount}, refined=${refinementCount}, exactRefinement=${refined}`);
+}
+
 function isRawObjectDeclaration(declaration, schemaName) {
   return declaration.text.startsWith(`export const ${schemaName} = z.object({`)
     && declaration.text.endsWith("\n});")
+    && countText(declaration.text, ".superRefine(") === 0;
+}
+
+function isRawIntersectionDeclaration(declaration, schemaName) {
+  return declaration.text.startsWith(`export const ${schemaName} = z.intersection(z.union([`)
+    && declaration.text.endsWith("\n}));")
     && countText(declaration.text, ".superRefine(") === 0;
 }
 
@@ -106,6 +137,16 @@ function isRefinedObjectDeclaration(declaration, schemaName, refinement) {
     text: `${declaration.text.slice(0, -suffix.length)};`,
   };
   return isRawObjectDeclaration(rawCandidate, schemaName);
+}
+
+function isRefinedIntersectionDeclaration(declaration, schemaName, refinement) {
+  const suffix = `${refinement};`;
+  if (!declaration.text.endsWith(suffix)) return false;
+  const rawCandidate = {
+    ...declaration,
+    text: `${declaration.text.slice(0, -suffix.length)};`,
+  };
+  return isRawIntersectionDeclaration(rawCandidate, schemaName);
 }
 
 function refinedDeclaration(declaration, refinement) {
@@ -331,9 +372,6 @@ function annotationPushItemRefinement() {
         case "project":
             if (!isPresent(value.projectHash)) addIssue("project annotations require projectHash");
             if (!hasOnly(["projectHash"])) addIssue("project annotations must not mix target arms");
-            return;
-        case "file_version":
-            addIssue("file_version annotations have no AnnotationPushItem target representation");
             return;
     }
 })`;
