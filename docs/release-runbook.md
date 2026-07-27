@@ -199,6 +199,12 @@ minutes after a publish; a `npm view`/website check run immediately after a
 publish can read as "not there yet" even on a successful publish, so this repo's
 tooling does not assert post-publish registry state.
 
+Before its TypeScript package gates run, the `npm-publish` job stamps only the
+working-copy version and removes `private`; neither change is committed. The
+package audit then reads `package/package.json` from a real tarball made from
+that staged manifest, including the exact repository metadata npm provenance
+requires.
+
 **Troubleshooting `npm-publish`:**
 
 - **`pnpm publish` fails to authenticate / npm rejects the OIDC exchange
@@ -215,6 +221,11 @@ tooling does not assert post-publish registry state.
   fail on the PR before it ever reaches a tag; if it doesn't, the policy file
   drifted from the workflow - see `.github/release-guard.policy.yml`). Restore
   both and cut a new release PR.
+- **npm provenance rejects the package manifest's repository metadata** -
+  `typescript/package.json` must retain `repository.type: "git"` and
+  `repository.url: "https://github.com/peasant-labs/schema"`. The
+  `package:audit` gate checks this exact metadata before publication; restore it
+  and cut a new release PR.
 - **`E409` / "cannot publish over the previously published version"** - the tag's
   stripped version (`${GITHUB_REF_NAME#v}`) already exists on the npm registry.
   This means the tag was already published (check `npm view @peasant-labs/schema

@@ -220,7 +220,21 @@ jobs:
       - name: Install locked TypeScript dependencies
         run: nix develop -c pnpm --dir typescript install --frozen-lockfile --ignore-scripts
 
-      - name: Run the TypeScript package gates (typecheck, test, package:audit, package:smoke)
+      - name: Stamp the package version (working copy only, never committed)
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          nix develop -c node -e '
+            const fs = require("fs");
+            const pkgPath = "typescript/package.json";
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+            pkg.version = process.argv[1];
+            delete pkg.private;
+            fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+          ' "$version"
+          echo "::notice::stamped typescript/package.json to version ${version} for this publish only; develop keeps 0.0.0-development / private"
+
+      - name: Run the TypeScript package gates against the staged publish manifest (typecheck, test, package:audit, package:smoke)
         run: |
           nix develop -c pnpm --dir typescript run typecheck
           nix develop -c pnpm --dir typescript test
@@ -242,20 +256,6 @@ jobs:
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Stamp the package version (working copy only, never committed)
-        run: |
-          set -euo pipefail
-          version="${TAG#v}"
-          nix develop -c node -e '
-            const fs = require("fs");
-            const pkgPath = "typescript/package.json";
-            const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-            pkg.version = process.argv[1];
-            delete pkg.private;
-            fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
-          ' "$version"
-          echo "::notice::stamped typescript/package.json to version ${version} for this publish only; develop keeps 0.0.0-development / private"
 
       - name: Publish @peasant-labs/schema to npm (OIDC trusted publishing)
         run: |

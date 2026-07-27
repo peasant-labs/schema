@@ -1,0 +1,23 @@
+cases:
+  - name: canonical repository metadata is accepted
+    input:
+      repository: {type: git, url: https://github.com/peasant-labs/schema}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: npm provenance identifies the peasant-labs/schema repository}
+    mutation: {description: preserves the canonical repository metadata in the packed manifest}
+
+  - name: missing repository metadata is rejected
+    input: {}
+    expected: false
+    classification: must-fail
+    provenance: {source: bug, ref: npm provenance rejected the package without repository.url}
+    mutation: {description: removes the repository object from the packed manifest}
+
+  - name: wrong repository metadata is rejected
+    input:
+      repository: {type: git, url: https://github.com/peasant-labs/other}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: npm provenance requires the exact publishing repository}
+    mutation: {description: redirects the repository URL to a different peasant-labs repository}
