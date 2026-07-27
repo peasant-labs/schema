@@ -186,6 +186,10 @@ func TestAssociationAnnotationIngressAnnotationRequestNullability(t *testing.T) 
 			if got := err == nil; got != fixture.Expected {
 				t.Fatalf("AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", err, got, fixture.Expected)
 			}
+			boundaryErr := annotationRequestShapeBoundaryError(t, fixture.Input)
+			if got := boundaryErr == nil; got != fixture.Expected {
+				t.Fatalf("ValidateAnnotationPushRequest() error=%v, valid=%t, want %t", boundaryErr, got, fixture.Expected)
+			}
 			if (fixture.Classification == testcase.MustPass) != fixture.Expected {
 				t.Fatalf("classification %q does not agree with expected validity %t", fixture.Classification, fixture.Expected)
 			}
@@ -241,6 +245,15 @@ func annotationPushRequestBoundaryError(t *testing.T, annotation testutil.Associ
 	body, err := json.Marshal(map[string]any{"annotations": []any{item}})
 	if err != nil {
 		t.Fatalf("marshal fixture annotation body: %v", err)
+	}
+	return schema.ValidateAnnotationPushRequest(body)
+}
+
+func annotationRequestShapeBoundaryError(t *testing.T, input testutil.AnnotationRequestShape) error {
+	t.Helper()
+	body, err := json.Marshal(map[string]any{"annotations": input.Annotations})
+	if err != nil {
+		t.Fatalf("marshal fixture annotation request body: %v", err)
 	}
 	return schema.ValidateAnnotationPushRequest(body)
 }
