@@ -580,21 +580,49 @@
             "not": {
               "anyOf": [
                 {
+                  "properties": {
+                    "sessionId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "sessionId"
                   ]
                 },
                 {
+                  "properties": {
+                    "entryTarget": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "entryTarget"
                   ]
                 },
                 {
+                  "properties": {
+                    "annotationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "annotationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "projectHash": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "projectHash"
                   ]
@@ -618,21 +646,49 @@
             "not": {
               "anyOf": [
                 {
+                  "properties": {
+                    "targetAssociationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "targetAssociationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "entryTarget": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "entryTarget"
                   ]
                 },
                 {
+                  "properties": {
+                    "annotationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "annotationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "projectHash": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "projectHash"
                   ]
@@ -657,21 +713,49 @@
             "not": {
               "anyOf": [
                 {
+                  "properties": {
+                    "targetAssociationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "targetAssociationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "sessionId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "sessionId"
                   ]
                 },
                 {
+                  "properties": {
+                    "annotationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "annotationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "projectHash": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "projectHash"
                   ]
@@ -695,21 +779,49 @@
             "not": {
               "anyOf": [
                 {
+                  "properties": {
+                    "targetAssociationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "targetAssociationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "sessionId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "sessionId"
                   ]
                 },
                 {
+                  "properties": {
+                    "entryTarget": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "entryTarget"
                   ]
                 },
                 {
+                  "properties": {
+                    "projectHash": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "projectHash"
                   ]
@@ -734,21 +846,49 @@
             "not": {
               "anyOf": [
                 {
+                  "properties": {
+                    "targetAssociationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "targetAssociationId"
                   ]
                 },
                 {
+                  "properties": {
+                    "sessionId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "sessionId"
                   ]
                 },
                 {
+                  "properties": {
+                    "entryTarget": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "entryTarget"
                   ]
                 },
                 {
+                  "properties": {
+                    "annotationId": {
+                      "not": {
+                        "type": "null"
+                      }
+                    }
+                  },
                   "required": [
                     "annotationId"
                   ]

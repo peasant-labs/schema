@@ -405,13 +405,29 @@ components:
       oneOf:
       - not:
           anyOf:
-          - required:
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
             - sessionId
-          - required:
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
             - entryTarget
-          - required:
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
             - annotationId
-          - required:
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
             - projectHash
         properties:
           targetAssociationId:
@@ -423,13 +439,29 @@ components:
         - targetAssociationId
       - not:
           anyOf:
-          - required:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
             - targetAssociationId
-          - required:
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
             - entryTarget
-          - required:
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
             - annotationId
-          - required:
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
             - projectHash
         properties:
           sessionId:
@@ -442,13 +474,29 @@ components:
         - sessionId
       - not:
           anyOf:
-          - required:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
             - targetAssociationId
-          - required:
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
             - sessionId
-          - required:
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
             - annotationId
-          - required:
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
             - projectHash
         properties:
           entryTarget:
@@ -460,13 +508,29 @@ components:
         - entryTarget
       - not:
           anyOf:
-          - required:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
             - targetAssociationId
-          - required:
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
             - sessionId
-          - required:
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
             - entryTarget
-          - required:
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
             - projectHash
         properties:
           annotationId:
@@ -479,13 +543,29 @@ components:
         - annotationId
       - not:
           anyOf:
-          - required:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
             - targetAssociationId
-          - required:
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
             - sessionId
-          - required:
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
             - entryTarget
-          - required:
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
             - annotationId
         properties:
           projectHash:

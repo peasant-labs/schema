@@ -22,7 +22,7 @@ func TestBuildVillageAPISpec_AnnotationPushIngress(t *testing.T) {
 		t.Fatalf("LoadAssociationAnnotationIngressFixtures: %v", err)
 	}
 	cases := fixtures.CaseCorpus()
-	assert.RequireMin(t, cases, 9)
+	assert.RequireMin(t, cases, 11)
 	assert.RequireValid(t, cases)
 
 	spec, err := specpkg.BuildVillageAPISpec()
@@ -85,7 +85,7 @@ func TestBuildVillageAPISpec_AnnotationPushOperationSchema(t *testing.T) {
 		t.Fatalf("DecodeAssociationAnnotationIngressFixtures: %v", err)
 	}
 	cases := fixtures.CaseCorpus()
-	assert.RequireMin(t, cases, 9)
+	assert.RequireMin(t, cases, 11)
 	assert.RequireValid(t, cases)
 	assert.RequireMin(t, fixtures.AnnotationRequestShapes, 2)
 	assert.RequireValid(t, fixtures.AnnotationRequestShapes)
@@ -106,7 +106,13 @@ func TestBuildVillageAPISpec_AnnotationPushOperationSchema(t *testing.T) {
 
 	for _, fixture := range cases.Cases {
 		t.Run(fixture.Name, func(t *testing.T) {
-			body := mustJSONBytes(t, map[string]any{"annotations": []any{annotationPushItemBody(fixture.Input.Annotation)}})
+			item := testutil.AnnotationPushItemTargetJSON(fixture.Input.Annotation)
+			item["contentHash"] = "fixture-content-hash"
+			item["typeId"] = "fixture.annotation"
+			item["value"] = "fixture-value"
+			item["isPrimary"] = false
+			requireExplicitNullTargetFields(t, fixture.Input.Annotation, item)
+			body := mustJSONBytes(t, map[string]any{"annotations": []any{item}})
 			if got := accepts(t, operationSchema, body); got != fixture.Expected.AnnotationRequestValid {
 				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected.AnnotationRequestValid)
 			}
@@ -119,6 +125,19 @@ func TestBuildVillageAPISpec_AnnotationPushOperationSchema(t *testing.T) {
 				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected)
 			}
 		})
+	}
+}
+
+func requireExplicitNullTargetFields(t *testing.T, fixture testutil.AssociationAnnotationIngressAnnotation, item map[string]any) {
+	t.Helper()
+	for _, field := range []string{"targetAssociationId", "sessionId", "entryTarget", "annotationId", "projectHash"} {
+		if !fixture.HasExplicitNullTargetField(field) {
+			continue
+		}
+		value, present := item[field]
+		if !present || value != nil {
+			t.Fatalf("fixture explicit-null target field %q must remain an explicit JSON null in the Village operation body, got present=%t value=%v", field, present, value)
+		}
 	}
 }
 
@@ -238,29 +257,6 @@ func rewriteOperationComponentRef(ref string) string {
 		return "#/$defs/" + strings.TrimPrefix(ref, componentPrefix)
 	}
 	return ref
-}
-
-func annotationPushItemBody(fixture testutil.AssociationAnnotationIngressAnnotation) map[string]any {
-	item := map[string]any{
-		"contentHash": "fixture-content-hash",
-		"targetKind":  fixture.TargetKind,
-		"typeId":      "fixture.annotation",
-		"value":       "fixture-value",
-		"isPrimary":   false,
-	}
-	if fixture.TargetAssociationID != nil {
-		item["targetAssociationId"] = *fixture.TargetAssociationID
-	}
-	if fixture.SessionID != nil {
-		item["sessionId"] = *fixture.SessionID
-	}
-	if fixture.AnnotationID != nil {
-		item["annotationId"] = *fixture.AnnotationID
-	}
-	if fixture.ProjectHash != nil {
-		item["projectHash"] = *fixture.ProjectHash
-	}
-	return item
 }
 
 func mustJSONBytes(t *testing.T, value any) []byte {

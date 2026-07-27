@@ -11,7 +11,7 @@ const source = await readFile(new URL("../../testdata/publish/association_annota
 const fixture = loadIngressFixture(source);
 
 test("built root Zod schemas enforce published association and annotation ingress invariants", async (t) => {
-  assert.ok(fixture.cases.cases.length >= 9, "association annotation ingress corpus must retain its validation floor");
+  assert.ok(fixture.cases.cases.length >= 11, "association annotation ingress corpus must retain its validation floor");
   for (const testCase of fixture.cases.cases) {
     await t.test(testCase.name, () => {
       const item = {
@@ -38,6 +38,35 @@ test("built root Zod annotation request schema rejects null and accepts an empty
       assert.equal(accepted, testCase.expected, `${testCase.name}: root Zod annotation request verdict must match the shared corpus`);
       assert.equal(testCase.classification, accepted ? Classification.MustPass : Classification.MustFail, `${testCase.name}: classification must agree with the asserted verdict`);
     });
+  }
+});
+
+test("association annotation ingress corpus covers every target-kind arm", () => {
+  const expectedKinds = new Set(schema.AllTargetKinds);
+  const coverage = new Map();
+  for (const testCase of fixture.cases.cases) {
+    const kind = testCase.input.annotation.targetKind;
+    assert.ok(expectedKinds.has(kind), `${testCase.name}: fixture has an unexpected target kind ${JSON.stringify(kind)}`);
+    const observed = coverage.get(kind) ?? { valid: 0, invalid: 0 };
+    if (testCase.expected.annotationRequestValid) observed.valid += 1;
+    else observed.invalid += 1;
+    if (["targetAssociationId", "sessionId", "entryTarget", "annotationId", "projectHash"].some((field) => Object.hasOwn(testCase.input.annotation, field) && testCase.input.annotation[field] === null)) {
+      observed.explicitNull = (observed.explicitNull ?? 0) + 1;
+    }
+    coverage.set(kind, observed);
+  }
+  assert.deepEqual([...coverage.keys()].sort(), [...expectedKinds].sort(), "fixture target kinds must exactly match the public TargetKind catalog");
+  for (const kind of schema.AllTargetKinds) {
+    const observed = coverage.get(kind);
+    assert.ok(observed, `fixture target kinds are missing ${kind}`);
+    if (kind === schema.TargetKind.FileVersion) {
+      assert.equal(observed.valid, 0, "file_version must have no valid AnnotationPushItem representation");
+      assert.ok(observed.invalid > 0, "file_version must retain a rejection case");
+      continue;
+    }
+    assert.ok(observed.valid > 0, `${kind} must retain a valid AnnotationPushItem case`);
+    assert.ok(observed.invalid > 0, `${kind} must retain an invalid AnnotationPushItem case`);
+    assert.ok((observed.explicitNull ?? 0) > 0, `${kind} must retain an explicit-null inactive-arm case`);
   }
 });
 
@@ -95,7 +124,10 @@ function decodeIngressInput(value, path) {
   for (const [index, association] of input.associations.entries()) {
     requireExactRecord(association, `${path}.associations[${index}]`, ["id", "observedCommitHash"]);
   }
-  requireRecord(input.annotation, `${path}.annotation`, ["targetKind", "targetAssociationId", "sessionId", "annotationId", "projectHash"]);
+  const annotation = requireRecord(input.annotation, `${path}.annotation`, ["targetKind", "targetAssociationId", "sessionId", "entryTarget", "annotationId", "projectHash"]);
+  if (annotation.entryTarget !== undefined && annotation.entryTarget !== null) {
+    requireExactRecord(annotation.entryTarget, `${path}.annotation.entryTarget`, ["sessionId", "entryIndex", "endIndex"]);
+  }
   if (input.hashComparison !== undefined) {
     requireExactRecord(input.hashComparison, `${path}.hashComparison`, ["alternateTargetAssociationId", "distinct"]);
   }

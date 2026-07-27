@@ -64,12 +64,28 @@ func annotationPushTargetArm(kind, requiredField string, constrainedProperties m
 		if field == requiredField {
 			continue
 		}
-		forbidden = append(forbidden, map[string]interface{}{"required": []interface{}{field}})
+		forbidden = append(forbidden, requiredNonNullProperty(field))
 	}
 	return map[string]interface{}{
 		"properties": properties,
 		"required":   []interface{}{"targetKind", requiredField},
 		"not":        map[string]interface{}{"anyOf": forbidden},
+	}
+}
+
+// requiredNonNullProperty matches an inactive target only when its wire value
+// is present and non-null. Go pointer decoding and the generated root Zod
+// contract both treat an explicit JSON null as absent, so the served schema
+// must preserve that acceptance policy rather than treating key presence alone
+// as a competing target arm.
+func requiredNonNullProperty(name string) map[string]interface{} {
+	return map[string]interface{}{
+		"required": []interface{}{name},
+		"properties": map[string]interface{}{
+			name: map[string]interface{}{
+				"not": map[string]interface{}{"type": "null"},
+			},
+		},
 	}
 }
 

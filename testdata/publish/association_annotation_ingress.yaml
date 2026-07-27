@@ -85,6 +85,123 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: non-association annotation targets must not carry targetAssociationId}
     mutation: {description: adds an association target ID to a session annotation}
+  - name: association annotation permits null inactive session target
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a, sessionId: null}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: explicit null inactive targets decode as absent at every ingress boundary}
+    mutation: {description: supplies a null session target alongside an association target}
+  - name: session annotation is valid
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: session, sessionId: session-a}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: session annotations name one non-empty session target}
+    mutation: {description: supplies the session target arm without competing fields}
+  - name: session annotation permits null inactive association target
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: session, sessionId: session-a, targetAssociationId: null}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: explicit null inactive targets decode as absent at every ingress boundary}
+    mutation: {description: supplies a null association target alongside a session target}
+  - name: entry annotation is valid
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 3, endIndex: 4}}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: entry annotations name one non-empty half-open entry range}
+    mutation: {description: supplies the entry target arm without competing fields}
+  - name: entry annotation permits null inactive association target
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 3, endIndex: 4}, targetAssociationId: null}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: explicit null inactive targets decode as absent at every ingress boundary}
+    mutation: {description: supplies a null association target alongside an entry target}
+  - name: entry annotation rejects association target ID
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 3, endIndex: 4}, targetAssociationId: assoc-session-a:commit-a}
+    expected: {publishRequestValid: true, annotationRequestValid: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: entry annotations must not carry targetAssociationId}
+    mutation: {description: adds an association target ID to an entry annotation}
+  - name: annotation target is valid
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: annotation, annotationId: annotation-a}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: annotation targets name one non-empty annotation ID}
+    mutation: {description: supplies the annotation target arm without competing fields}
+  - name: annotation target permits null inactive association target
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: annotation, annotationId: annotation-a, targetAssociationId: null}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: explicit null inactive targets decode as absent at every ingress boundary}
+    mutation: {description: supplies a null association target alongside an annotation target}
+  - name: annotation target rejects association target ID
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: annotation, annotationId: annotation-a, targetAssociationId: assoc-session-a:commit-a}
+    expected: {publishRequestValid: true, annotationRequestValid: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation targets must not carry targetAssociationId}
+    mutation: {description: adds an association target ID to an annotation target}
+  - name: project annotation is valid
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: project, projectHash: "0000000000000000000000000000000000000000000000000000000000000000"}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: project annotations name one canonical project hash}
+    mutation: {description: supplies the project target arm without competing fields}
+  - name: project annotation permits null inactive association target
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: project, projectHash: "0000000000000000000000000000000000000000000000000000000000000000", targetAssociationId: null}
+    expected: {publishRequestValid: true, annotationRequestValid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: explicit null inactive targets decode as absent at every ingress boundary}
+    mutation: {description: supplies a null association target alongside a project target}
+  - name: project annotation rejects association target ID
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: project, projectHash: "0000000000000000000000000000000000000000000000000000000000000000", targetAssociationId: assoc-session-a:commit-a}
+    expected: {publishRequestValid: true, annotationRequestValid: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: project annotations must not carry targetAssociationId}
+    mutation: {description: adds an association target ID to a project annotation}
+  - name: file version annotation push is rejected
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: file_version}
+    expected: {publishRequestValid: true, annotationRequestValid: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation push has no file-version target representation}
+    mutation: {description: selects the unsupported file-version target kind}
 
 annotation_request_shapes:
   cases:

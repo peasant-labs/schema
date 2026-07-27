@@ -57,11 +57,138 @@ type PublishedAssociationFixture struct {
 // AnnotationPushItem. It keeps YAML field names explicit without importing the
 // root contract package into this shared test helper.
 type AssociationAnnotationIngressAnnotation struct {
-	TargetKind          string  `yaml:"targetKind"`
-	TargetAssociationID *string `yaml:"targetAssociationId,omitempty"`
-	SessionID           *string `yaml:"sessionId,omitempty"`
-	AnnotationID        *string `yaml:"annotationId,omitempty"`
-	ProjectHash         *string `yaml:"projectHash,omitempty"`
+	TargetKind          string                        `yaml:"targetKind"`
+	TargetAssociationID *string                       `yaml:"targetAssociationId,omitempty"`
+	SessionID           *string                       `yaml:"sessionId,omitempty"`
+	EntryTarget         *AnnotationEntryTargetFixture `yaml:"entryTarget,omitempty"`
+	AnnotationID        *string                       `yaml:"annotationId,omitempty"`
+	ProjectHash         *string                       `yaml:"projectHash,omitempty"`
+
+	explicitNullTargetFields map[string]struct{}
+}
+
+// AnnotationEntryTargetFixture is the fixture-shaped entry target before tests
+// convert it to the public AnnotationEntryTarget wire type.
+type AnnotationEntryTargetFixture struct {
+	SessionID  string `yaml:"sessionId"`
+	EntryIndex int    `yaml:"entryIndex"`
+	EndIndex   int    `yaml:"endIndex"`
+}
+
+type associationAnnotationIngressAnnotationWire struct {
+	TargetKind          string                        `yaml:"targetKind"`
+	TargetAssociationID *string                       `yaml:"targetAssociationId,omitempty"`
+	SessionID           *string                       `yaml:"sessionId,omitempty"`
+	EntryTarget         *AnnotationEntryTargetFixture `yaml:"entryTarget,omitempty"`
+	AnnotationID        *string                       `yaml:"annotationId,omitempty"`
+	ProjectHash         *string                       `yaml:"projectHash,omitempty"`
+}
+
+// UnmarshalYAML preserves whether a nullable target was explicitly supplied as
+// null. The typed Go validator receives the same nil pointer either way, while
+// the JSON-backed OpenAPI test must retain explicit null to verify parity with
+// the served schema.
+func (a *AssociationAnnotationIngressAnnotation) UnmarshalYAML(node *yaml.Node) error {
+	if err := requireExactFixtureMapping(node, "annotation", []string{"targetKind", "targetAssociationId", "sessionId", "entryTarget", "annotationId", "projectHash"}); err != nil {
+		return err
+	}
+	for index := 0; index < len(node.Content); index += 2 {
+		if node.Content[index].Value != "entryTarget" || node.Content[index+1].Tag == "!!null" {
+			continue
+		}
+		if err := requireExactFixtureMapping(node.Content[index+1], "annotation.entryTarget", []string{"sessionId", "entryIndex", "endIndex"}); err != nil {
+			return err
+		}
+	}
+
+	var wire associationAnnotationIngressAnnotationWire
+	if err := node.Decode(&wire); err != nil {
+		return fmt.Errorf("decode annotation: %w", err)
+	}
+	*a = AssociationAnnotationIngressAnnotation{
+		TargetKind:          wire.TargetKind,
+		TargetAssociationID: wire.TargetAssociationID,
+		SessionID:           wire.SessionID,
+		EntryTarget:         wire.EntryTarget,
+		AnnotationID:        wire.AnnotationID,
+		ProjectHash:         wire.ProjectHash,
+	}
+	for index := 0; index < len(node.Content); index += 2 {
+		name, value := node.Content[index].Value, node.Content[index+1]
+		if value.Tag != "!!null" || !isAnnotationTargetField(name) {
+			continue
+		}
+		if a.explicitNullTargetFields == nil {
+			a.explicitNullTargetFields = make(map[string]struct{})
+		}
+		a.explicitNullTargetFields[name] = struct{}{}
+	}
+	return nil
+}
+
+// HasExplicitNullTargetField reports whether the fixture explicitly contained
+// a JSON-null value for the named target property.
+func (a AssociationAnnotationIngressAnnotation) HasExplicitNullTargetField(name string) bool {
+	_, exists := a.explicitNullTargetFields[name]
+	return exists
+}
+
+// AnnotationPushItemTargetJSON returns the fixture's exact target fields for
+// a real AnnotationPushItem JSON body, retaining explicit null target values.
+func AnnotationPushItemTargetJSON(annotation AssociationAnnotationIngressAnnotation) map[string]any {
+	item := map[string]any{"targetKind": annotation.TargetKind}
+	addNullableStringTarget(item, "targetAssociationId", annotation.TargetAssociationID, annotation.HasExplicitNullTargetField("targetAssociationId"))
+	addNullableStringTarget(item, "sessionId", annotation.SessionID, annotation.HasExplicitNullTargetField("sessionId"))
+	if annotation.EntryTarget != nil {
+		item["entryTarget"] = map[string]any{
+			"sessionId":  annotation.EntryTarget.SessionID,
+			"entryIndex": annotation.EntryTarget.EntryIndex,
+			"endIndex":   annotation.EntryTarget.EndIndex,
+		}
+	} else if annotation.HasExplicitNullTargetField("entryTarget") {
+		item["entryTarget"] = nil
+	}
+	addNullableStringTarget(item, "annotationId", annotation.AnnotationID, annotation.HasExplicitNullTargetField("annotationId"))
+	addNullableStringTarget(item, "projectHash", annotation.ProjectHash, annotation.HasExplicitNullTargetField("projectHash"))
+	return item
+}
+
+func addNullableStringTarget(item map[string]any, name string, value *string, explicitNull bool) {
+	if value != nil {
+		item[name] = *value
+	} else if explicitNull {
+		item[name] = nil
+	}
+}
+
+func isAnnotationTargetField(name string) bool {
+	switch name {
+	case "targetAssociationId", "sessionId", "entryTarget", "annotationId", "projectHash":
+		return true
+	}
+	return false
+}
+
+func requireExactFixtureMapping(node *yaml.Node, location string, allowed []string) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("%s must be a mapping", location)
+	}
+	allowedFields := make(map[string]struct{}, len(allowed))
+	for _, name := range allowed {
+		allowedFields[name] = struct{}{}
+	}
+	seen := make(map[string]struct{}, len(node.Content)/2)
+	for index := 0; index < len(node.Content); index += 2 {
+		name := node.Content[index].Value
+		if _, exists := allowedFields[name]; !exists {
+			return fmt.Errorf("%s has unknown field %q", location, name)
+		}
+		if _, exists := seen[name]; exists {
+			return fmt.Errorf("%s repeats field %q", location, name)
+		}
+		seen[name] = struct{}{}
+	}
+	return nil
 }
 
 // AssociationAnnotationIngressHashComparison declares a target-ID mutation
