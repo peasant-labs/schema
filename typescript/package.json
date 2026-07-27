@@ -4,6 +4,10 @@
   "private": true,
   "description": "Generated TypeScript contract bindings for the peasant-labs schema module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/peasant-labs/schema"
+  },
   "type": "module",
   "sideEffects": false,
   "files": [
