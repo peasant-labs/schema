@@ -25,6 +25,18 @@ func applyAnnotationPushIngressConstraints(spec *openapi31.Spec) error {
 			return fmt.Errorf("annotation push schema generation found AnnotationPushItem without target property %q", name)
 		}
 	}
+	entryTarget, ok := schemas["AnnotationEntryTarget"]
+	if !ok {
+		return fmt.Errorf("annotation push schema generation cannot find AnnotationEntryTarget in the canonical Types catalog")
+	}
+	entryProperties, ok := entryTarget["properties"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("annotation push schema generation found AnnotationEntryTarget without properties")
+	}
+	if _, exists := entryProperties["sessionId"]; !exists {
+		return fmt.Errorf("annotation push schema generation found AnnotationEntryTarget without sessionId")
+	}
+	entryProperties["sessionId"] = nonEmptyStringSchema()
 
 	item["oneOf"] = []interface{}{
 		annotationPushTargetArm("association", "targetAssociationId", map[string]interface{}{

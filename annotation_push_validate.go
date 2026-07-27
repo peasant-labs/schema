@@ -25,8 +25,8 @@ func (item AnnotationPushItem) Validate() error {
 		if item.SessionID != nil || item.EntryTarget == nil || item.AnnotationID != nil || item.ProjectHash != nil {
 			return annotationTargetValidationErrorAt("schema.AnnotationPushItem.Validate", "targetKind entry does not exclusively contain entryTarget", "the entry arm requires exactly one entry target", "set only entryTarget for targetKind entry")
 		}
-		if item.EntryTarget.SessionID == "" || item.EntryTarget.EndIndex <= item.EntryTarget.EntryIndex {
-			return annotationTargetValidationErrorAt("schema.AnnotationPushItem.Validate", "targetKind entry has an empty sessionId or non-positive entry range", "an entry target requires a session and a half-open range containing at least one entry", "set entryTarget.sessionId and an endIndex greater than entryIndex")
+		if err := item.EntryTarget.Validate(); err != nil {
+			return fmt.Errorf("annotation push item validation failed at schema.AnnotationPushItem.Validate during wire-boundary validation: %w", err)
 		}
 	case TargetAnnotation:
 		if item.SessionID != nil || item.EntryTarget != nil || item.AnnotationID == nil || *item.AnnotationID == "" || item.ProjectHash != nil {
@@ -41,6 +41,24 @@ func (item AnnotationPushItem) Validate() error {
 		}
 	case TargetFileVersion:
 		return annotationTargetValidationErrorAt("schema.AnnotationPushItem.Validate", "targetKind file_version has no push target representation", "the annotation push item has no file path and content hash fields for a file-version target", "use a supported push target kind or extend the wire before publishing file-version annotations")
+	}
+	return nil
+}
+
+// Validate checks the semantic invariants of an entry-level annotation target.
+// JSON Schema can enforce the non-empty session identifier, while this runtime
+// predicate owns the relational half-open range rule shared by every Go request
+// and response path that validates an entry target.
+func (target AnnotationEntryTarget) Validate() error {
+	return validateAnnotationEntryTarget("schema.AnnotationEntryTarget.Validate", target.SessionID, target.EntryIndex, &target.EndIndex)
+}
+
+func validateAnnotationEntryTarget(location, sessionID string, entryIndex int, endIndex *int) error {
+	if sessionID == "" {
+		return annotationTargetValidationErrorAt(location, "entry target has an empty sessionId", "an entry target must identify the session containing the annotated entries", "set the entry target sessionId to a non-empty session ID")
+	}
+	if endIndex != nil && *endIndex <= entryIndex {
+		return annotationTargetValidationErrorAt(location, "entry target has a non-positive half-open range", "an entry target range must contain at least one entry", "set the entry target end index greater than its entry index")
 	}
 	return nil
 }

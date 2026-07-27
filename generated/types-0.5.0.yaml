@@ -51,6 +51,7 @@ components:
         entryIndex:
           type: integer
         sessionId:
+          minLength: 1
           type: string
       required:
       - sessionId

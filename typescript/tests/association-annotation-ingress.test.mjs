@@ -71,7 +71,17 @@ test("association annotation ingress corpus covers every target-kind arm", () =>
 });
 
 test("association annotation ingress fixture strict decoding rejects unknown keys, duplicates, and trailing documents", async (t) => {
-  assert.ok(fixture.strictDecoding.cases.length >= 4, "association annotation ingress strict corpus must retain its validation floor");
+  const expectedCaseNames = [
+    "canonical ingress corpus shape is accepted",
+    "unknown ingress corpus field is rejected",
+    "duplicate ingress corpus field is rejected",
+    "unknown annotation field is rejected",
+    "duplicate annotation field is rejected",
+    "unknown entry target field is rejected",
+    "duplicate entry target field is rejected",
+    "trailing ingress corpus document is rejected",
+  ];
+  assert.deepEqual(fixture.strictDecoding.cases.map((testCase) => testCase.name).sort(), expectedCaseNames.sort(), "association annotation ingress strict corpus must retain its exact inventory");
   for (const testCase of fixture.strictDecoding.cases) {
     await t.test(testCase.name, () => {
       let accepted = true;
@@ -140,9 +150,10 @@ function decodeExpectedBoolean(value, path) {
 }
 
 function decodeIngressExpected(value, path) {
-  const expected = requireExactRecord(value, path, ["publishRequestValid", "annotationRequestValid"]);
+  const expected = requireRecord(value, path, ["publishRequestValid", "annotationRequestValid", "annotationOperationSchemaValid"]);
   if (typeof expected.publishRequestValid !== "boolean") throw new TypeError(`${path}.publishRequestValid: must be a boolean`);
   if (typeof expected.annotationRequestValid !== "boolean") throw new TypeError(`${path}.annotationRequestValid: must be a boolean`);
+  if (expected.annotationOperationSchemaValid !== undefined && typeof expected.annotationOperationSchemaValid !== "boolean") throw new TypeError(`${path}.annotationOperationSchemaValid: must be a boolean when present`);
   return expected;
 }
 

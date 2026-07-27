@@ -36,8 +36,19 @@ type AssociationAnnotationIngressInput struct {
 // AssociationAnnotationIngressExpected records the independent request
 // boundary verdicts that one shared ingress row must exercise.
 type AssociationAnnotationIngressExpected struct {
-	PublishRequestValid    bool `yaml:"publishRequestValid"`
-	AnnotationRequestValid bool `yaml:"annotationRequestValid"`
+	PublishRequestValid            bool  `yaml:"publishRequestValid"`
+	AnnotationRequestValid         bool  `yaml:"annotationRequestValid"`
+	AnnotationOperationSchemaValid *bool `yaml:"annotationOperationSchemaValid,omitempty"`
+}
+
+// OperationSchemaValid returns the expected result from the generated Village
+// operation schema. Most rows match the typed request verdict; rows that prove
+// a relational rule JSON Schema cannot express declare an explicit override.
+func (e AssociationAnnotationIngressExpected) OperationSchemaValid() bool {
+	if e.AnnotationOperationSchemaValid == nil {
+		return e.AnnotationRequestValid
+	}
+	return *e.AnnotationOperationSchemaValid
 }
 
 // AnnotationRequestShape is the nullability arm of the shared ingress corpus.

@@ -1,0 +1,566 @@
+{
+  "$defs": {
+    "SchemaAnnotationEntryTarget": {
+      "properties": {
+        "endIndex": {
+          "type": "integer"
+        },
+        "entryIndex": {
+          "type": "integer"
+        },
+        "sessionId": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "sessionId",
+        "entryIndex",
+        "endIndex"
+      ],
+      "type": "object"
+    },
+    "SchemaAnnotationPushItem": {
+      "oneOf": [
+        {
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "sessionId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "sessionId"
+                ]
+              },
+              {
+                "properties": {
+                  "entryTarget": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "entryTarget"
+                ]
+              },
+              {
+                "properties": {
+                  "annotationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "annotationId"
+                ]
+              },
+              {
+                "properties": {
+                  "projectHash": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "projectHash"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "targetAssociationId": {
+              "$ref": "#/$defs/SchemaAssociationID"
+            },
+            "targetKind": {
+              "const": "association"
+            }
+          },
+          "required": [
+            "targetKind",
+            "targetAssociationId"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "targetAssociationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "targetAssociationId"
+                ]
+              },
+              {
+                "properties": {
+                  "entryTarget": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "entryTarget"
+                ]
+              },
+              {
+                "properties": {
+                  "annotationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "annotationId"
+                ]
+              },
+              {
+                "properties": {
+                  "projectHash": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "projectHash"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "sessionId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "targetKind": {
+              "const": "session"
+            }
+          },
+          "required": [
+            "targetKind",
+            "sessionId"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "targetAssociationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "targetAssociationId"
+                ]
+              },
+              {
+                "properties": {
+                  "sessionId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "sessionId"
+                ]
+              },
+              {
+                "properties": {
+                  "annotationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "annotationId"
+                ]
+              },
+              {
+                "properties": {
+                  "projectHash": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "projectHash"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "entryTarget": {
+              "$ref": "#/$defs/SchemaAnnotationEntryTarget"
+            },
+            "targetKind": {
+              "const": "entry"
+            }
+          },
+          "required": [
+            "targetKind",
+            "entryTarget"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "targetAssociationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "targetAssociationId"
+                ]
+              },
+              {
+                "properties": {
+                  "sessionId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "sessionId"
+                ]
+              },
+              {
+                "properties": {
+                  "entryTarget": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "entryTarget"
+                ]
+              },
+              {
+                "properties": {
+                  "projectHash": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "projectHash"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "annotationId": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "targetKind": {
+              "const": "annotation"
+            }
+          },
+          "required": [
+            "targetKind",
+            "annotationId"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              {
+                "properties": {
+                  "targetAssociationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "targetAssociationId"
+                ]
+              },
+              {
+                "properties": {
+                  "sessionId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "sessionId"
+                ]
+              },
+              {
+                "properties": {
+                  "entryTarget": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "entryTarget"
+                ]
+              },
+              {
+                "properties": {
+                  "annotationId": {
+                    "not": {
+                      "type": "null"
+                    }
+                  }
+                },
+                "required": [
+                  "annotationId"
+                ]
+              }
+            ]
+          },
+          "properties": {
+            "projectHash": {
+              "$ref": "#/$defs/SchemaProjectHash"
+            },
+            "targetKind": {
+              "const": "project"
+            }
+          },
+          "required": [
+            "targetKind",
+            "projectHash"
+          ]
+        }
+      ],
+      "properties": {
+        "annotationId": {
+          "anyOf": [
+            {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "annotatorName": {
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": [
+                "null",
+                "number"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contentHash": {
+          "type": "string"
+        },
+        "entryTarget": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaAnnotationEntryTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "projectHash": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaProjectHash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaProvenance"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessionId": {
+          "anyOf": [
+            {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetAssociationId": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaAssociationID"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetKind": {
+          "$ref": "#/$defs/SchemaTargetKind"
+        },
+        "typeId": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "contentHash",
+        "targetKind",
+        "typeId",
+        "value",
+        "isPrimary"
+      ],
+      "type": "object"
+    },
+    "SchemaAssociationID": {
+      "description": "Opaque durable Peasant identifier for one session-to-commit association",
+      "examples": [
+        "assoc-20260726:session-a:commit-1"
+      ],
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      "title": "Association ID",
+      "type": "string"
+    },
+    "SchemaProjectHash": {
+      "description": "SHA-256 hex digest of the project's origin URL or local path",
+      "examples": [
+        "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      ],
+      "maxLength": 64,
+      "minLength": 64,
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Project Hash",
+      "type": "string"
+    },
+    "SchemaProvenance": {
+      "properties": {
+        "details": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "function": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "type": "object"
+    },
+    "SchemaTargetKind": {
+      "description": "What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association",
+      "enum": [
+        "session",
+        "entry",
+        "annotation",
+        "project",
+        "file_version",
+        "association"
+      ],
+      "examples": [
+        "session",
+        "entry",
+        "file_version",
+        "association"
+      ],
+      "title": "Target Kind",
+      "type": "string"
+    }
+  },
+  "$id": "urn:peasant:annotation-push-request:0.8.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "JSON Schema for the Village annotation push request wire format, extracted from the village-api OpenAPI spec (peasant is the source of truth; the village vendors + enforces this schema).",
+  "properties": {
+    "annotations": {
+      "items": {
+        "$ref": "#/$defs/SchemaAnnotationPushItem"
+      },
+      "type": "array"
+    },
+    "retractions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "annotations"
+  ],
+  "title": "Annotation Push Request Schema",
+  "type": "object"
+}

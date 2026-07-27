@@ -21,11 +21,11 @@ func (a AnnotationSummary) Validate() error {
 			return annotationTargetValidationError("targetKind session does not exclusively contain a non-empty targetSessionId", "the session arm requires exactly one session target", "set only targetSessionId for targetKind session")
 		}
 	case TargetEntry:
-		if a.TargetAssociationID != nil || a.TargetSessionID == nil || *a.TargetSessionID == "" || a.TargetEntryIndex == nil || a.TargetAnnotID != nil || a.TargetProjectHash != nil || a.TargetFilePath != nil || a.TargetContentHash != nil {
+		if a.TargetAssociationID != nil || a.TargetSessionID == nil || a.TargetEntryIndex == nil || a.TargetAnnotID != nil || a.TargetProjectHash != nil || a.TargetFilePath != nil || a.TargetContentHash != nil {
 			return annotationTargetValidationError("targetKind entry does not exclusively contain targetSessionId and targetEntryIndex", "the entry arm requires one session entry target", "set targetSessionId and targetEntryIndex only, with optional targetEntryEndIndex, for targetKind entry")
 		}
-		if a.TargetEntryEndIndex != nil && *a.TargetEntryEndIndex <= *a.TargetEntryIndex {
-			return annotationTargetValidationError("targetKind entry has targetEntryEndIndex not greater than targetEntryIndex", "an entry range is half-open and must contain at least one entry", "set targetEntryEndIndex greater than targetEntryIndex or omit it for a single entry")
+		if err := validateAnnotationEntryTarget("schema.AnnotationSummary.Validate", *a.TargetSessionID, *a.TargetEntryIndex, a.TargetEntryEndIndex); err != nil {
+			return err
 		}
 	case TargetAnnotation:
 		if a.TargetAssociationID != nil || a.TargetSessionID != nil || a.TargetEntryIndex != nil || a.TargetEntryEndIndex != nil || a.TargetAnnotID == nil || *a.TargetAnnotID == "" || a.TargetProjectHash != nil || a.TargetFilePath != nil || a.TargetContentHash != nil {

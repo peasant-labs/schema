@@ -341,6 +341,14 @@ function annotationPushItemRefinement() {
   return `.superRefine((value, context) => {
     const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
     const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
+    const hasValidEntryTarget = (detail: unknown) => {
+        if (typeof detail !== "object" || detail === null || Array.isArray(detail)) return false;
+        const entryTarget = detail as { sessionId?: unknown; entryIndex?: unknown; endIndex?: unknown };
+        return hasNonEmptyString(entryTarget.sessionId)
+            && typeof entryTarget.entryIndex === "number"
+            && typeof entryTarget.endIndex === "number"
+            && entryTarget.endIndex > entryTarget.entryIndex;
+    };
     const hasOnly = (allowed: readonly string[]) => {
         const targetFields: readonly [string, unknown][] = [
             ["targetAssociationId", value.targetAssociationId],
@@ -362,7 +370,7 @@ function annotationPushItemRefinement() {
             if (!hasOnly(["sessionId"])) addIssue("session annotations must not mix target arms");
             return;
         case "entry":
-            if (!isPresent(value.entryTarget)) addIssue("entry annotations require entryTarget");
+            if (!hasValidEntryTarget(value.entryTarget)) addIssue("entry annotations require entryTarget with a non-empty sessionId and endIndex greater than entryIndex");
             if (!hasOnly(["entryTarget"])) addIssue("entry annotations must not mix target arms");
             return;
         case "annotation":

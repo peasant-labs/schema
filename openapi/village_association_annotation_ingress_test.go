@@ -40,7 +40,7 @@ func TestBuildVillageAPISpec_AnnotationPushIngress(t *testing.T) {
 
 	operation := villageAnnotationPushOperation(t, document)
 	description, _ := operation["description"].(string)
-	for _, phrase := range []string{"targetKind association requires only targetAssociationId", "every other target kind rejects targetAssociationId"} {
+	for _, phrase := range []string{"targetKind association requires only targetAssociationId", "every other target kind rejects targetAssociationId", "endIndex must be greater than entryIndex and is enforced by the request validation boundary"} {
 		if !strings.Contains(description, phrase) {
 			t.Errorf("annotation push operation description is missing validation rule %q: %q", phrase, description)
 		}
@@ -113,8 +113,8 @@ func TestBuildVillageAPISpec_AnnotationPushOperationSchema(t *testing.T) {
 			item["isPrimary"] = false
 			requireExplicitNullTargetFields(t, fixture.Input.Annotation, item)
 			body := mustJSONBytes(t, map[string]any{"annotations": []any{item}})
-			if got := accepts(t, operationSchema, body); got != fixture.Expected.AnnotationRequestValid {
-				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected.AnnotationRequestValid)
+			if got := accepts(t, operationSchema, body); got != fixture.Expected.OperationSchemaValid() {
+				t.Fatalf("generated Village annotation operation schema accepted=%t, want %t", got, fixture.Expected.OperationSchemaValid())
 			}
 		})
 	}

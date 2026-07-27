@@ -91,6 +91,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	annotationPushOC.AddRespStructure(new(schema.AnnotationPushResponse), openapicore.WithHTTPStatus(http.StatusOK))
 	annotationPushOC.SetDescription("Push annotations for the authenticated owner. Every item selects exactly one target arm: " +
 		"targetKind association requires only targetAssociationId, while every other target kind rejects targetAssociationId. " +
+		"Entry targets require a non-empty sessionId; endIndex must be greater than entryIndex and is enforced by the request validation boundary. " +
 		"The server resolves association targets owner-scoped before writing the all-or-nothing batch.")
 	annotationPushOC.SetID("pushAnnotations")
 	annotationPushOC.SetTags("annotations")

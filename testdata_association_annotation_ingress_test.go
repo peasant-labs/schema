@@ -18,7 +18,7 @@ func TestAssociationAnnotationIngressFixtureContract(t *testing.T) {
 	assert.RequireValid(t, cases)
 	assert.RequireMin(t, fixtures.AnnotationRequestShapes, 2)
 	assert.RequireValid(t, fixtures.AnnotationRequestShapes)
-	assert.RequireMin(t, fixtures.StrictDecoding, 4)
+	assert.RequireMin(t, fixtures.StrictDecoding, 8)
 	assert.RequireValid(t, fixtures.StrictDecoding)
 
 	requireAssociationAnnotationIngressCase(t, fixtures, "durable association and association annotation are valid")
@@ -28,7 +28,36 @@ func TestAssociationAnnotationIngressFixtureContract(t *testing.T) {
 	requireAssociationAnnotationIngressCase(t, fixtures, "association annotation missing target ID is rejected")
 	requireAssociationAnnotationIngressCase(t, fixtures, "association annotation mixed with session target is rejected")
 	requireAssociationAnnotationIngressCase(t, fixtures, "malformed association annotation target is rejected")
+	requireAssociationAnnotationIngressCase(t, fixtures, "entry annotation rejects empty session ID")
+	requireAssociationAnnotationIngressCase(t, fixtures, "entry annotation rejects equal range at the runtime boundary")
+	requireAssociationAnnotationIngressCase(t, fixtures, "entry annotation rejects reversed range at the runtime boundary")
 	requireAssociationAnnotationIngressCase(t, fixtures, "exact durable replay is represented by one canonical association")
+}
+
+func TestAssociationAnnotationIngressStrictDecodingInventory(t *testing.T) {
+	fixtures := loadAssociationAnnotationIngressFixtures(t)
+	want := map[string]struct{}{
+		"canonical ingress corpus shape is accepted":   {},
+		"unknown ingress corpus field is rejected":     {},
+		"duplicate ingress corpus field is rejected":   {},
+		"unknown annotation field is rejected":         {},
+		"duplicate annotation field is rejected":       {},
+		"unknown entry target field is rejected":       {},
+		"duplicate entry target field is rejected":     {},
+		"trailing ingress corpus document is rejected": {},
+	}
+	if len(fixtures.StrictDecoding.Cases) != len(want) {
+		t.Fatalf("strict decoding corpus has %d cases, want exact inventory of %d", len(fixtures.StrictDecoding.Cases), len(want))
+	}
+	for _, fixture := range fixtures.StrictDecoding.Cases {
+		if _, exists := want[fixture.Name]; !exists {
+			t.Fatalf("strict decoding corpus has unexpected case %q", fixture.Name)
+		}
+		delete(want, fixture.Name)
+	}
+	for name := range want {
+		t.Fatalf("strict decoding corpus is missing required case %q", name)
+	}
 }
 
 func TestAssociationAnnotationIngressTypedAndPublishBoundaryValidators(t *testing.T) {
@@ -45,9 +74,9 @@ func TestAssociationAnnotationIngressTypedAndPublishBoundaryValidators(t *testin
 			if got := annotationErr == nil; got != fixture.Expected.AnnotationRequestValid {
 				t.Fatalf("AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", annotationErr, got, fixture.Expected.AnnotationRequestValid)
 			}
-			decodedAnnotationErr := decodedAnnotationPushRequestError(t, fixture.Input.Annotation)
-			if got := decodedAnnotationErr == nil; got != fixture.Expected.AnnotationRequestValid {
-				t.Fatalf("decoded AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", decodedAnnotationErr, got, fixture.Expected.AnnotationRequestValid)
+			annotationBoundaryErr := annotationPushRequestBoundaryError(t, fixture.Input.Annotation)
+			if got := annotationBoundaryErr == nil; got != fixture.Expected.AnnotationRequestValid {
+				t.Fatalf("ValidateAnnotationPushRequest() error=%v, valid=%t, want %t", annotationBoundaryErr, got, fixture.Expected.AnnotationRequestValid)
 			}
 			boundaryErr := publishRequestBoundaryError(t, fixture.Input)
 			if got := boundaryErr == nil; got != fixture.Expected.PublishRequestValid {
@@ -194,7 +223,7 @@ func publishRequestBoundaryError(t *testing.T, input testutil.AssociationAnnotat
 	return schema.ValidatePublishRequest(body)
 }
 
-func decodedAnnotationPushRequestError(t *testing.T, annotation testutil.AssociationAnnotationIngressAnnotation) error {
+func annotationPushRequestBoundaryError(t *testing.T, annotation testutil.AssociationAnnotationIngressAnnotation) error {
 	t.Helper()
 	item := testutil.AnnotationPushItemTargetJSON(annotation)
 	item["contentHash"] = "fixture-content-hash"
@@ -205,11 +234,7 @@ func decodedAnnotationPushRequestError(t *testing.T, annotation testutil.Associa
 	if err != nil {
 		t.Fatalf("marshal fixture annotation body: %v", err)
 	}
-	var request schema.AnnotationPushRequest
-	if err := json.Unmarshal(body, &request); err != nil {
-		t.Fatalf("decode fixture annotation body: %v", err)
-	}
-	return request.Validate()
+	return schema.ValidateAnnotationPushRequest(body)
 }
 
 func TestAssociationAnnotationIngressFixtureStrictDecodingErrorsAreActionable(t *testing.T) {
