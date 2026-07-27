@@ -68,7 +68,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"ProjectSummariesPayload", new(schema.ProjectSummariesPayload)}, {"ProjectSummary", new(schema.ProjectSummary)},
 		{"ProjectTasksPayload", new(schema.ProjectTasksPayload)}, {"Provenance", new(schema.Provenance)},
 		{"PublishRequest", new(schema.PublishRequest)}, {"PublishResponse", new(schema.PublishResponse)},
-		{"PullAnnotation", new(schema.PullAnnotation)}, {"PullListResponse", new(schema.PullListResponse)},
+		{"PublishedAssociation", new(schema.PublishedAssociation)}, {"PullAnnotation", new(schema.PullAnnotation)}, {"PullListResponse", new(schema.PullListResponse)},
 		{"PullSkipGateItem", new(schema.PullSkipGateItem)}, {"PullSkipGateRequest", new(schema.PullSkipGateRequest)},
 		{"PullSkipGateResponse", new(schema.PullSkipGateResponse)}, {"PullSkipGateResult", new(schema.PullSkipGateResult)},
 		{"PullTranscriptInfo", new(schema.PullTranscriptInfo)}, {"QualityMetrics", new(schema.QualityMetrics)},

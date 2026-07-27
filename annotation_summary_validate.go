@@ -9,20 +9,12 @@ func (a AnnotationSummary) Validate() error {
 	if !a.TargetKind.IsValid() {
 		return annotationTargetValidationError("targetKind is outside the closed target-kind set", "the annotation does not select a supported target discriminator", "use a member of schema.AllTargetKinds")
 	}
-	if a.TargetAssociationID != nil {
-		if err := a.TargetAssociationID.Validate(); err != nil {
-			return fmt.Errorf("annotation summary validation failed at schema.AnnotationSummary.Validate during wire-boundary validation: %w", err)
-		}
-	}
 	hasNonAssociationTarget := a.TargetSessionID != nil || a.TargetEntryIndex != nil || a.TargetEntryEndIndex != nil || a.TargetAnnotID != nil || a.TargetProjectHash != nil || a.TargetFilePath != nil || a.TargetContentHash != nil
+	if err := validateAssociationAnnotationTarget("schema.AnnotationSummary.Validate", a.TargetKind, a.TargetAssociationID, hasNonAssociationTarget); err != nil {
+		return err
+	}
 	switch a.TargetKind {
 	case TargetAssociation:
-		if a.TargetAssociationID == nil {
-			return annotationTargetValidationError("targetKind association has no targetAssociationId", "the association arm requires the durable association identifier", "set targetAssociationId and clear every other target field")
-		}
-		if hasNonAssociationTarget {
-			return annotationTargetValidationError("targetKind association mixes targetAssociationId with another target arm", "an annotation may name exactly one target identity", "keep only targetAssociationId for targetKind association")
-		}
 		return nil
 	case TargetSession:
 		if a.TargetAssociationID != nil || a.TargetSessionID == nil || *a.TargetSessionID == "" || a.TargetEntryIndex != nil || a.TargetEntryEndIndex != nil || a.TargetAnnotID != nil || a.TargetProjectHash != nil || a.TargetFilePath != nil || a.TargetContentHash != nil {
@@ -54,6 +46,35 @@ func (a AnnotationSummary) Validate() error {
 	return nil
 }
 
+// validateAssociationAnnotationTarget is the shared association discriminator
+// gate for response summaries and pushed annotation items. It ensures the
+// durable association ID appears only for TargetAssociation and that the
+// association arm contains no competing target identity.
+func validateAssociationAnnotationTarget(location string, kind TargetKind, associationID *AssociationID, hasNonAssociationTarget bool) error {
+	if associationID != nil {
+		if err := associationID.Validate(); err != nil {
+			return fmt.Errorf("annotation target validation failed at %s during wire-boundary validation: %w", location, err)
+		}
+	}
+	if kind == TargetAssociation {
+		if associationID == nil {
+			return annotationTargetValidationErrorAt(location, "targetKind association has no targetAssociationId", "the association arm requires the durable association identifier", "set targetAssociationId and clear every other target field")
+		}
+		if hasNonAssociationTarget {
+			return annotationTargetValidationErrorAt(location, "targetKind association mixes targetAssociationId with another target arm", "an annotation may name exactly one target identity", "keep only targetAssociationId for targetKind association")
+		}
+		return nil
+	}
+	if associationID != nil {
+		return annotationTargetValidationErrorAt(location, fmt.Sprintf("targetKind %s includes targetAssociationId", kind), "targetAssociationId belongs exclusively to the association target arm", "clear targetAssociationId or set targetKind association and clear every other target field")
+	}
+	return nil
+}
+
 func annotationTargetValidationError(what, why, remediation string) error {
-	return fmt.Errorf("annotation summary validation failed at schema.AnnotationSummary.Validate during wire-boundary validation: %s; %s; %s", what, why, remediation)
+	return annotationTargetValidationErrorAt("schema.AnnotationSummary.Validate", what, why, remediation)
+}
+
+func annotationTargetValidationErrorAt(location, what, why, remediation string) error {
+	return fmt.Errorf("annotation target validation failed at %s during wire-boundary validation: %s; %s; %s", location, what, why, remediation)
 }

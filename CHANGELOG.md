@@ -7,6 +7,18 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.8.0 and Types 0.5.0 add published association ownership and
+  annotation ingress. `GitContext.Associations` carries optional
+  `PublishedAssociation` records with an opaque producer-owned `AssociationID`
+  and observed commit hash. IDs and observed hashes are unique within a publish
+  request. Consumers retain one durable ID per owner, transcript, and observed
+  hash: exact replay is idempotent, while changed bindings and aliases are
+  rejected. `AnnotationPushItem.TargetAssociationID` selects an association
+  target exclusively, contributes to its content hash, and is documented by the
+  Village `POST /api/v1/annotations` operation using the canonical push request
+  and response types. Village API 0.7.0, its publish schema, and Types 0.4.0 are
+  retired and byte-frozen.
+
 - Local API 0.5.0 (`PeasantLocalAPIVersion`), Village API 0.7.0, and Types 0.4.0:
   the git+session timeline and insight-first code map wire surface, all additive.
    - `CommitRef` and `RewrittenCommit` carry `Associations

@@ -1,0 +1,132 @@
+# Association publication and annotation ingress validation corpus.
+# Go and TypeScript exercise this exact data through their public validators.
+cases:
+  - name: durable association and association annotation are valid
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
+      hashComparison: {alternateTargetAssociationId: assoc-session-a:commit-b, distinct: true}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: published associations carry one producer-owned ID and observed commit hash}
+    mutation: {description: provides one canonical association and an annotation naming only that association}
+  - name: duplicate association ID is rejected within one request
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-b}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: association IDs are request-local unique durable identities}
+    mutation: {description: repeats a producer-owned association ID with a different observed commit hash}
+  - name: duplicate observed hash rejects a durable ID alias
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+        - {id: assoc-session-a:commit-a-alias, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: one owner transcript observed commit relationship has one durable association ID}
+    mutation: {description: assigns a second opaque ID to the same observed commit hash}
+  - name: empty observed commit hash is rejected
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: ""}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: published associations need an observed commit hash}
+    mutation: {description: clears the observed commit hash from an otherwise valid association}
+  - name: exact durable replay is represented by one canonical association
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a}
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: consumer replay is idempotent for an unchanged owner ID transcript and observed hash binding}
+    mutation: {description: repeats the unchanged canonical relationship as a new publish request rather than aliasing it inside one request}
+  - name: association annotation missing target ID is rejected
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: association annotations must name their durable association target}
+    mutation: {description: removes targetAssociationId from an association annotation}
+  - name: association annotation mixed with session target is rejected
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: assoc-session-a:commit-a, sessionId: session-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: annotation target discriminators select exactly one target arm}
+    mutation: {description: adds a session target to an otherwise valid association annotation}
+  - name: malformed association annotation target is rejected
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: association, targetAssociationId: " invalid"}
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: association annotation targets use AssociationID grammar}
+    mutation: {description: adds leading whitespace to the opaque association target ID}
+  - name: non-association annotation rejects association target ID
+    input:
+      associations:
+        - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
+      annotation: {targetKind: session, sessionId: session-a, targetAssociationId: assoc-session-a:commit-a}
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: non-association annotation targets must not carry targetAssociationId}
+    mutation: {description: adds an association target ID to a session annotation}
+
+strict_decoding:
+  cases:
+    - name: canonical ingress corpus shape is accepted
+      input: |
+        cases: []
+        strict_decoding:
+          cases: []
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: fixture loader accepts the documented top-level shape}
+      mutation: {description: provides only known top-level fields in one YAML document}
+    - name: unknown ingress corpus field is rejected
+      input: |
+        cases: []
+        strict_decoding:
+          cases: []
+        unexpected: true
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: fixture loaders reject unknown YAML fields}
+      mutation: {description: adds an unknown top-level mapping key}
+    - name: duplicate ingress corpus field is rejected
+      input: |
+        cases: []
+        cases: []
+        strict_decoding:
+          cases: []
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: fixture loaders reject duplicate YAML keys}
+      mutation: {description: repeats the cases mapping key}
+    - name: trailing ingress corpus document is rejected
+      input: |
+        cases: []
+        strict_decoding:
+          cases: []
+        ---
+        cases: []
+        strict_decoding:
+          cases: []
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: fixture loaders accept exactly one YAML document}
+      mutation: {description: appends a second otherwise valid YAML document}
