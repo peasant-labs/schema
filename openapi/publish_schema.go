@@ -11,6 +11,10 @@ import (
 // added by the reflector from this package name.
 const publishRequestComponent = "OpenapiTranscriptPublishRequest"
 
+// annotationPushRequestComponent is the operation component the reflector
+// emits for POST /api/v1/annotations.
+const annotationPushRequestComponent = "SchemaAnnotationPushRequest"
+
 // componentsRefPrefix is the $ref prefix the village-api spec uses for its
 // reusable component schemas.
 const componentsRefPrefix = "#/components/schemas/"
@@ -50,9 +54,23 @@ const jsonSchema2020Dialect = "https://json-schema.org/draft/2020-12/schema"
 // version is the doc-surface version stamped into "$id" (callers pass
 // VillageAPIVersion).
 func BuildPublishRequestSchema(version string) ([]byte, error) {
+	return buildVillageRequestSchema(version, publishRequestComponent, "publish-request", "Publish Request Schema", "JSON Schema for peasant push PublishRequest wire format")
+}
+
+// BuildAnnotationPushRequestSchema extracts the operation-compatible
+// AnnotationPushRequest component into a standalone JSON Schema 2020-12
+// document. schema.ValidateAnnotationPushRequest compiles these exact generated
+// bytes before applying the typed relational validation that JSON Schema cannot
+// express, so a Village handler can enforce the documented and canonical
+// request contract without recreating either rule set.
+func BuildAnnotationPushRequestSchema(version string) ([]byte, error) {
+	return buildVillageRequestSchema(version, annotationPushRequestComponent, "annotation-push-request", "Annotation Push Request Schema", "JSON Schema for the Village annotation push request wire format")
+}
+
+func buildVillageRequestSchema(version, componentName, idName, title, description string) ([]byte, error) {
 	spec, err := BuildVillageAPISpec()
 	if err != nil {
-		return nil, fmt.Errorf("build village-api spec for PublishRequest extraction: %w", err)
+		return nil, fmt.Errorf("build village-api spec for %s extraction: %w", title, err)
 	}
 
 	// Marshal the spec to JSON and walk it as a generic tree. Extracting from the
@@ -73,16 +91,15 @@ func BuildPublishRequestSchema(version string) ([]byte, error) {
 		return nil, err
 	}
 
-	root, ok := components[publishRequestComponent].(map[string]any)
+	root, ok := components[componentName].(map[string]any)
 	if !ok {
 		return nil, fmt.Errorf(
-			"village-api spec is missing the %q component in components/schemas; "+
-				"cannot extract the PublishRequest schema — verify BuildVillageAPISpec still "+
-				"registers openapi.TranscriptPublishRequest as the publish request body",
-			publishRequestComponent)
+			"village-api spec is missing the %q component in components/schemas; cannot extract the %s; "+
+				"verify BuildVillageAPISpec still registers the canonical operation request body",
+			componentName, title)
 	}
 
-	// Collect the transitive closure of components referenced from PublishRequest.
+	// Collect the transitive closure of components referenced from the operation request.
 	closure := map[string]struct{}{}
 	if err := collectRefs(root, components, closure); err != nil {
 		return nil, err
@@ -95,23 +112,23 @@ func BuildPublishRequestSchema(version string) ([]byte, error) {
 		comp, ok := components[name].(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf(
-				"PublishRequest references component %q which is not present (or not an object) "+
+				"%s references component %q which is not present (or not an object) "+
 					"in the village-api spec's components/schemas; the spec is internally inconsistent",
-				name)
+				title, name)
 		}
 		defs[name] = rewriteRefs(comp)
 	}
 
-	// Assemble the standalone schema: PublishRequest's own keywords at the root,
+	// Assemble the standalone schema: the operation request's own keywords at the root,
 	// plus the bundled $defs. The root's own refs are rewritten too.
 	out := map[string]any{}
 	for k, v := range rewriteRefs(root).(map[string]any) {
 		out[k] = v
 	}
 	out["$schema"] = jsonSchema2020Dialect
-	out["$id"] = "urn:peasant:publish-request:" + version
-	out["title"] = "Publish Request Schema"
-	out["description"] = "JSON Schema for peasant push PublishRequest wire format, " +
+	out["$id"] = "urn:peasant:" + idName + ":" + version
+	out["title"] = title
+	out["description"] = description + ", " +
 		"extracted from the village-api OpenAPI spec (peasant is the source of truth; " +
 		"the village vendors + enforces this schema)."
 	out["$defs"] = defs
@@ -120,7 +137,7 @@ func BuildPublishRequestSchema(version string) ([]byte, error) {
 	// matches the rest of the generated artifacts.
 	pretty, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
-		return nil, fmt.Errorf("marshal extracted PublishRequest schema: %w", err)
+		return nil, fmt.Errorf("marshal extracted %s: %w", title, err)
 	}
 	return pretty, nil
 }

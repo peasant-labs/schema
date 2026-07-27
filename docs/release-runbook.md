@@ -58,6 +58,22 @@ All three are provisioned from the **flake dev shell** (`vacuum-go` from nixpkgs
 gate ships a Go **synthetic-break test** (`internal/contractgates/`) that proves
 it fires; those run in `make check`.
 
+### Generated request-validation assets
+
+Each Village API version emits two JSON-only request schemas alongside the OpenAPI
+documents: `publish-request-<version>.schema.json` and
+`annotation-push-request-<version>.schema.json`. The root accessors
+`PublishRequestSchemaJSON()` and `AnnotationPushRequestSchemaJSON()` return those
+embedded bytes. Their canonical validators first enforce the extracted operation
+schema, then decode the Go request type; `ValidateAnnotationPushRequest` additionally
+enforces `entryTarget.endIndex > entryTarget.entryIndex`, a relational rule standard
+JSON Schema cannot express.
+
+When a Village API version is superseded, register the retiring Village JSON/YAML
+pair and both JSON-only request schemas in `cmd/schema-gen/testdata/retired_specs.yaml`
+with their frozen hashes. Current artifacts remain under freshness; only superseded
+artifacts move into the retired registry.
+
 ### Workflow ownership
 
 | Workflow | Trigger | Role |

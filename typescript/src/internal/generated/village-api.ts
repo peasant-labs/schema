@@ -1,5 +1,22 @@
 import type * as Schema from "../../index.js";
 export interface paths {
+    "/api/v1/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Push annotations for the authenticated owner. Every item selects exactly one target arm: targetKind association requires only targetAssociationId, while every other target kind rejects targetAssociationId. Entry targets require a non-empty sessionId; endIndex must be greater than entryIndex and is enforced by the request validation boundary. The server resolves association targets owner-scoped before writing the all-or-nothing batch. */
+        post: operations["pushAnnotations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/annotations/manifest": {
         parameters: {
             query?: never;
@@ -196,7 +213,22 @@ export interface components {
             subagents?: components["schemas"]["SchemaSubagentRef"][];
             timestamp?: components["schemas"]["SchemaTimestampInfo"];
         };
+        SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;
+        SchemaAnnotationPushItem: Schema.AnnotationPushItem;
+        SchemaAnnotationPushRequest: Schema.AnnotationPushRequest;
+        SchemaAnnotationPushResponse: Schema.AnnotationPushResponse;
+        SchemaAnnotationPushResult: Schema.AnnotationPushResult;
+        /**
+         * Annotation Push Status
+         * @description Per-item annotation push outcome
+         * @example created
+         * @example updated
+         * @example skipped
+         * @example error
+         * @enum {string}
+         */
+        SchemaAnnotationPushStatus: Schema.AnnotationPushStatus;
         /**
          * Annotator Kind
          * @description Type of entity that produced an annotation: human, agent (AI model), or rule (automated classifier)
@@ -259,6 +291,7 @@ export interface components {
         SchemaProjectHash: Schema.ProjectHash;
         SchemaProvenance: Schema.Provenance;
         SchemaPublishResponse: Schema.PublishResponse;
+        SchemaPublishedAssociation: Schema.PublishedAssociation;
         SchemaPullAnnotation: Schema.PullAnnotation;
         SchemaPullListResponse: Schema.PullListResponse;
         SchemaPullSkipGateItem: Schema.PullSkipGateItem;
@@ -368,6 +401,30 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    pushAnnotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaAnnotationPushRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaAnnotationPushResponse"];
+                };
+            };
+        };
+    };
     getAnnotationManifest: {
         parameters: {
             query?: never;

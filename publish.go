@@ -50,19 +50,20 @@ type PublishResponse struct {
 // ContentHash is SHA3-256 of the canonical JSON representation of all other fields,
 // computed by ComputeContentHash(). Used for server-side deduplication.
 type AnnotationPushItem struct {
-	ContentHash   string                 `json:"contentHash"`
-	TargetKind    TargetKind             `json:"targetKind"`
-	SessionID     *string                `json:"sessionId,omitempty"`
-	EntryTarget   *AnnotationEntryTarget `json:"entryTarget,omitempty"`
-	AnnotationID  *string                `json:"annotationId,omitempty"`
-	ProjectHash   *ProjectHash           `json:"projectHash,omitempty"`
-	TypeID        string                 `json:"typeId"`
-	Value         string                 `json:"value"`
-	IsPrimary     bool                   `json:"isPrimary"`
-	Confidence    *float64               `json:"confidence,omitempty"`
-	Reason        *string                `json:"reason,omitempty"`
-	AnnotatorName string                 `json:"annotatorName,omitempty"`
-	Provenance    *Provenance            `json:"provenance,omitempty"`
+	ContentHash         string                 `json:"contentHash"`
+	TargetKind          TargetKind             `json:"targetKind"`
+	TargetAssociationID *AssociationID         `json:"targetAssociationId,omitempty"`
+	SessionID           *string                `json:"sessionId,omitempty"`
+	EntryTarget         *AnnotationEntryTarget `json:"entryTarget,omitempty"`
+	AnnotationID        *string                `json:"annotationId,omitempty"`
+	ProjectHash         *ProjectHash           `json:"projectHash,omitempty"`
+	TypeID              string                 `json:"typeId"`
+	Value               string                 `json:"value"`
+	IsPrimary           bool                   `json:"isPrimary"`
+	Confidence          *float64               `json:"confidence,omitempty"`
+	Reason              *string                `json:"reason,omitempty"`
+	AnnotatorName       string                 `json:"annotatorName,omitempty"`
+	Provenance          *Provenance            `json:"provenance,omitempty"`
 }
 
 // AnnotationEntryTarget identifies an entry-level annotation target.
@@ -84,7 +85,7 @@ type AnnotationEntryTarget struct {
 // retired are sent, so a foreign machine's annotation can never be retracted.
 // omitempty preserves the prior wire shape for clients that send no retractions.
 type AnnotationPushRequest struct {
-	Annotations []AnnotationPushItem `json:"annotations"`
+	Annotations []AnnotationPushItem `json:"annotations" required:"true" nullable:"false"`
 	Retractions []string             `json:"retractions,omitempty"`
 }
 

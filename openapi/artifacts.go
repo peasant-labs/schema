@@ -16,6 +16,13 @@ func publishRequestSchemaArtifactName() string {
 	return "publish-request-" + VillageAPIVersion + ".schema.json"
 }
 
+// annotationPushRequestSchemaArtifactName is the standalone AnnotationPushRequest
+// JSON Schema the canonical validation boundary compiles. It is versioned with
+// the Village API operation it is extracted from.
+func annotationPushRequestSchemaArtifactName() string {
+	return "annotation-push-request-" + VillageAPIVersion + ".schema.json"
+}
+
 // Versioned-spec info.version values are re-exported from the root schema package
 // (the single source of truth — see versions.go there). The spec builders in this
 // package reference them unqualified, and the root accessor schema.VillageAPISpecJSON()
@@ -56,6 +63,11 @@ func GenerateSpecArtifacts() (SpecArtifacts, error) {
 		return nil, fmt.Errorf("build PublishRequest schema: %w", err)
 	}
 	out[publishRequestSchemaArtifactName()] = publishSchemaBytes
+	annotationPushSchemaBytes, err := BuildAnnotationPushRequestSchema(VillageAPIVersion)
+	if err != nil {
+		return nil, fmt.Errorf("build AnnotationPushRequest schema: %w", err)
+	}
+	out[annotationPushRequestSchemaArtifactName()] = annotationPushSchemaBytes
 
 	// --- Versioned specs (village, peasant-local, shared types) ---
 	specs := []struct {

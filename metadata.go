@@ -95,13 +95,28 @@ type CommitInfo struct {
 	AuthorTime  int64  `json:"authorTime"`  // author date, Unix millis
 }
 
+// PublishedAssociation is the producer-owned durable identity for one observed
+// session-to-commit relationship published with a transcript. Its ID is opaque
+// to consumers. The enclosing PublishRequest.Identity.SessionID supplies the
+// session identity, so it is deliberately not repeated here.
+//
+// Within a publish request, both ID and ObservedCommitHash must be unique.
+// Consumers retain one durable ID for each owner, transcript, and observed
+// commit hash: an exact replay is idempotent, while a changed binding or a
+// second ID for the same relationship must be rejected rather than aliased.
+type PublishedAssociation struct {
+	ID                 AssociationID `json:"id" yaml:"id"`
+	ObservedCommitHash string        `json:"observedCommitHash" yaml:"observedCommitHash"`
+}
+
 // GitContext holds git repository state at the time of the session.
 type GitContext struct {
-	Branch   *string      `json:"branch,omitempty"`   // Current git branch
-	Remote   *string      `json:"remote,omitempty"`   // Git remote URL
-	Worktree *string      `json:"worktree,omitempty"` // Worktree path (if applicable)
-	Tracking *string      `json:"tracking,omitempty"` // Upstream tracking branch (e.g. "origin/main")
-	Commits  []CommitInfo `json:"commits,omitempty"`  // Commits produced during this session (v4+)
+	Branch       *string                `json:"branch,omitempty"`       // Current git branch
+	Remote       *string                `json:"remote,omitempty"`       // Git remote URL
+	Worktree     *string                `json:"worktree,omitempty"`     // Worktree path (if applicable)
+	Tracking     *string                `json:"tracking,omitempty"`     // Upstream tracking branch (e.g. "origin/main")
+	Commits      []CommitInfo           `json:"commits,omitempty"`      // Commits produced during this session (v4+)
+	Associations []PublishedAssociation `json:"associations,omitempty"` // Durable observed session-to-commit relationships
 }
 
 // ProjectContext identifies the project associated with a session.

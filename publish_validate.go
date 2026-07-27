@@ -3,6 +3,7 @@ package schema
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
@@ -62,5 +63,13 @@ func ValidatePublishRequest(data []byte) error {
 		return err
 	}
 
-	return publishRequestSchema.Validate(v)
+	if err := publishRequestSchema.Validate(v); err != nil {
+		return err
+	}
+
+	var request PublishRequest
+	if err := json.Unmarshal(data, &request); err != nil {
+		return fmt.Errorf("decode publish request after generated schema validation: %w", err)
+	}
+	return request.Validate()
 }
