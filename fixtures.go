@@ -39,6 +39,12 @@ var PullManifestExampleJSON []byte
 //go:embed testdata/publish/verdicts.yaml
 var PublishVerdictsYAML []byte
 
+// AssociationAnnotationIngressYAML contains the cross-language association
+// publication and annotation ingress validation corpus.
+//
+//go:embed testdata/publish/association_annotation_ingress.yaml
+var AssociationAnnotationIngressYAML []byte
+
 // RedactionsYAML contains the GENERATED redaction example corpus
 // (testdata/session-detail/redactions.yaml). It is produced by
 // `go run ./cmd/schema-gen` from RedactionExamples (see redactions.go) and is

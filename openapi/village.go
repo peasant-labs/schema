@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	schema "github.com/peasant-labs/schema"
+	openapicore "github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
@@ -75,6 +76,27 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	exchangeOC.SetTags("auth")
 	if err := r.AddOperation(exchangeOC); err != nil {
 		return nil, fmt.Errorf("add exchange operation: %w", err)
+	}
+
+	// POST /api/v1/annotations accepts owner-authenticated annotation pushes.
+	// The handler validates the shared discriminated target contract before
+	// persistence: targetKind association requires only targetAssociationId, and
+	// every other target kind rejects that field. Association ownership is
+	// resolved by the consumer with the authenticated owner plus the opaque ID.
+	annotationPushOC, err := r.NewOperationContext(http.MethodPost, "/api/v1/annotations")
+	if err != nil {
+		return nil, fmt.Errorf("new annotation push operation: %w", err)
+	}
+	annotationPushOC.AddReqStructure(new(schema.AnnotationPushRequest))
+	annotationPushOC.AddRespStructure(new(schema.AnnotationPushResponse), openapicore.WithHTTPStatus(http.StatusOK))
+	annotationPushOC.SetDescription("Push annotations for the authenticated owner. Every item selects exactly one target arm: " +
+		"targetKind association requires only targetAssociationId, while every other target kind rejects targetAssociationId. " +
+		"Entry targets require a non-empty sessionId; endIndex must be greater than entryIndex and is enforced by the request validation boundary. " +
+		"The server resolves association targets owner-scoped before writing the all-or-nothing batch.")
+	annotationPushOC.SetID("pushAnnotations")
+	annotationPushOC.SetTags("annotations")
+	if err := r.AddOperation(annotationPushOC); err != nil {
+		return nil, fmt.Errorf("add annotation push operation: %w", err)
 	}
 
 	// GET /api/v1/annotations/manifest — server-authoritative annotation skip-gate
@@ -227,16 +249,6 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
 		return nil, fmt.Errorf("harmonize Village API shared components: %w", err)
 	}
-
-	// TODO(annotation): register annotation components for the village push format.
-	//   - What: add AnnotationSummary, AnnotationTypeSummary, Provenance, ValueDomain
-	//     as reusable OpenAPI components; extend PublishRequest with an optional
-	//     Annotations []schema.AnnotationSummary field so buyers receive annotations
-	//     alongside transcripts
-	//   - Why: village consumers need annotation metadata to filter and evaluate datasets
-	//   - Wiring: call addComponentSchema(r, "AnnotationSummary", new(schema.AnnotationSummary)) etc.
-	//     after PublishRequest is registered; bump village spec version to "1.2"
-	//   - When: the push-format annotation extension ships
 
 	return r.Spec, nil
 }

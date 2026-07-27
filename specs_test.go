@@ -12,7 +12,7 @@ import (
 // TestVillageAPISpecJSON_MatchesCurrentVersion is the conformance test for the
 // W9 version-aware accessor (IP3). It proves schema.VillageAPISpecJSON() returns
 // the CURRENT Village API spec bytes — exactly what the generator emits for
-// schema.VillageAPIVersion — so village (the consumer, SLICE-D) can serve
+// schema.VillageAPIVersion — so village can serve
 // GET /openapi.json from it without vendoring or hard-coding a version filename.
 //
 // It is an external (schema_test) test so it may import both schema and openapi
@@ -106,5 +106,38 @@ func TestPublishRequestSchemaJSON_IDMatchesVersion(t *testing.T) {
 			"regenerated after a VillageAPIVersion bump — the validator would enforce against a wrongly-stamped schema.\n"+
 			"  fix:  run `go run ./cmd/schema-gen` and commit generated/, or correct VillageAPIVersion in versions.go.",
 			doc.ID, want)
+	}
+}
+
+// TestAnnotationPushRequestSchemaJSON_MatchesGenerated proves the canonical
+// annotation request boundary compiles the generated operation-compatible
+// artifact, rather than a hand-maintained surrogate schema.
+func TestAnnotationPushRequestSchemaJSON_MatchesGenerated(t *testing.T) {
+	got := schema.AnnotationPushRequestSchemaJSON()
+	if len(got) == 0 {
+		t.Fatal("AnnotationPushRequestSchemaJSON() returned empty bytes")
+	}
+	var document struct {
+		ID string `json:"$id"`
+	}
+	if err := json.Unmarshal(got, &document); err != nil {
+		t.Fatalf("AnnotationPushRequestSchemaJSON() is not valid JSON: %v", err)
+	}
+	wantID := "urn:peasant:annotation-push-request:" + schema.VillageAPIVersion
+	if document.ID != wantID {
+		t.Fatalf("AnnotationPushRequestSchemaJSON() $id=%q, want %q", document.ID, wantID)
+	}
+
+	artifacts, err := openapi.GenerateSpecArtifacts()
+	if err != nil {
+		t.Fatalf("generate spec artifacts: %v", err)
+	}
+	key := "annotation-push-request-" + schema.VillageAPIVersion + ".schema.json"
+	want, ok := artifacts[key]
+	if !ok {
+		t.Fatalf("generator did not produce %q; cannot confirm the accessor is current", key)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("AnnotationPushRequestSchemaJSON() does not match freshly generated %s; run `go run ./cmd/schema-gen` and commit generated/", key)
 	}
 }

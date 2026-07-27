@@ -30,9 +30,12 @@ const (
 	// TargetAssociationID;
 	// harmonizeSharedTypeComponents propagates both into this spec's embedded
 	// annotation components (additive = minor bump).
+	// Bumped to 0.8.0 when the publish wire gained owner-scoped published
+	// associations and annotation ingress gained targetAssociationId plus its
+	// documented Village POST operation (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.7.0"
+	VillageAPIVersion = "0.8.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -55,5 +58,7 @@ const (
 	// Bumped to 0.4.0 when the Local API 0.5.0 surface's new catalog types
 	// (SessionAssociation, RewrittenCommit, SessionInsight and their closed
 	// sets) and the widened TargetKind landed (additive = minor bump).
-	TypesVersion = "0.4.0"
+	// Bumped to 0.5.0 when GitContext gained PublishedAssociation and annotation
+	// push items gained TargetAssociationID (additive = minor bump).
+	TypesVersion = "0.5.0"
 )

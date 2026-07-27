@@ -72,3 +72,22 @@ func PublishRequestSchemaJSON() []byte {
 	}
 	return b
 }
+
+// AnnotationPushRequestSchemaJSON returns the standalone JSON Schema bytes for
+// the current Village annotation-push operation. The generator extracts it from
+// the same operation schema Village serves, so ValidateAnnotationPushRequest
+// validates the documented wire shape before invoking the typed request
+// validator for relational entry-target rules.
+func AnnotationPushRequestSchemaJSON() []byte {
+	name := "generated/annotation-push-request-" + VillageAPIVersion + ".schema.json"
+	b, err := generatedFS.ReadFile(name)
+	if err != nil {
+		panic(fmt.Sprintf(
+			"schema.AnnotationPushRequestSchemaJSON: embedded schema %q is missing: %v.\n"+
+				"  what: the generated AnnotationPushRequest schema for VillageAPIVersion=%s is not committed under generated/.\n"+
+				"  why:  the version const and the committed artifact drifted, or generation was skipped.\n"+
+				"  fix:  run `go run ./cmd/schema-gen` and commit generated/, or correct VillageAPIVersion in versions.go.",
+			name, err, VillageAPIVersion))
+	}
+	return b
+}

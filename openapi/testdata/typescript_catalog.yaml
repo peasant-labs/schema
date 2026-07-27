@@ -434,6 +434,10 @@ types:
     disposition: catalog
     component: GitContext
     reason: public wire or domain contract type
+  - go_name: PublishedAssociation
+    disposition: catalog
+    component: PublishedAssociation
+    reason: public wire or domain contract type
   - go_name: ProjectContext
     disposition: catalog
     component: ProjectContext

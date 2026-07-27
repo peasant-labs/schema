@@ -34,10 +34,10 @@ type retiredSpec struct {
 	JSONSHA256 string `yaml:"json_sha256"`
 	YAMLSHA256 string `yaml:"yaml_sha256"`
 	// jsonOnly marks a retired artifact that has ONLY a .json copy and no .yaml
-	// sibling — the extracted publish-request JSON-Schema (publish-request-<v>.schema)
-	// is emitted JSON-only by the generator (it is a JSON Schema, not an OpenAPI
-	// spec doc), so freezing it must skip the .yaml present/hash check. yamlSHA256
-	// is left empty for such entries.
+	// sibling; extracted request JSON Schemas (publish-request-<v>.schema and
+	// annotation-push-request-<v>.schema) are emitted JSON-only by the generator
+	// (they are JSON Schema documents, not OpenAPI specs), so freezing them must
+	// skip the .yaml present/hash check. yamlSHA256 is left empty for such entries.
 	JSONOnly bool `yaml:"json_only"`
 }
 
@@ -46,8 +46,8 @@ type retiredSpec struct {
 //
 // This registry covers RETIRED versions ONLY. CURRENT-generated specs (the
 // artifacts derived from PeasantLocalAPIVersion, VillageAPIVersion, and
-// TypesVersion, plus the publish-request schema derived from VillageAPIVersion)
-// are deliberately EXCLUDED; they stay under the codegen-freshness gate
+// TypesVersion, plus both request schemas derived from VillageAPIVersion) are
+// deliberately EXCLUDED; they stay under the codegen-freshness gate
 // (TestCodegenFreshness_SpecsMatchSource), which regenerates them from the Go
 // source on every run. Pinning a current version's hash here would false-fail
 // `make check` on every legitimate regen. The partition key is simply "is this
@@ -58,9 +58,11 @@ type retiredSpec struct {
 // frozen (i.e. in the same change that bumps the live const past it), so there is no
 // window where a retired spec is mutable-and-unguarded. The 0.2.0 village-api trio
 // (village-api-0.2.0 json+yaml + publish-request-0.2.0.schema json-only) was frozen
-// here when VillageAPIVersion bumped to 0.3.0 (rc2 #118 required harness+model). Each
-// row now lives in testdata/retired_specs.yaml so adding a newly frozen version
-// extends the fixture rather than an inline test matrix.
+// here when VillageAPIVersion bumped to 0.3.0. At every future Village version
+// freeze, register the Village JSON/YAML pair and every current JSON-only request
+// schema, including annotation-push-request when present. Each row lives in
+// testdata/retired_specs.yaml so adding a newly frozen version extends the fixture
+// rather than an inline test matrix.
 func loadRetiredSpecRegistry(t *testing.T, root string) []retiredSpec {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(root, "cmd", "schema-gen", "testdata", "retired_specs.yaml"))

@@ -7,11 +7,17 @@ export function applyAssociationZodRefinements(source) {
   const declarations = {
     zAssociationEvidenceObservation: uniqueObjectDeclaration(source, "zAssociationEvidenceObservation"),
     zSessionAssociation: uniqueObjectDeclaration(source, "zSessionAssociation"),
+    zGitContext: uniqueObjectDeclaration(source, "zGitContext"),
+    zAnnotationEntryTarget: uniqueObjectDeclaration(source, "zAnnotationEntryTarget"),
+    zAnnotationPushItem: uniqueIntersectionDeclaration(source, "zAnnotationPushItem"),
     zAnnotationSummary: uniqueObjectDeclaration(source, "zAnnotationSummary"),
   };
   const refinements = {
     zAssociationEvidenceObservation: associationEvidenceObservationRefinement(),
     zSessionAssociation: sessionAssociationRefinement(),
+    zGitContext: gitContextPublishedAssociationRefinement(),
+    zAnnotationEntryTarget: annotationEntryTargetRefinement(),
+    zAnnotationPushItem: annotationPushItemRefinement(),
     zAnnotationSummary: annotationSummaryRefinement(),
   };
   const signals = [
@@ -19,6 +25,9 @@ export function applyAssociationZodRefinements(source) {
     propertySignal("zSessionAssociation.sessionId", declarations.zSessionAssociation, rawSessionID, refinedSessionID),
     refinementSignal("zAssociationEvidenceObservation", declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
     refinementSignal("zSessionAssociation", declarations.zSessionAssociation, refinements.zSessionAssociation),
+    refinementSignal("zGitContext", declarations.zGitContext, refinements.zGitContext),
+    refinementSignal("zAnnotationEntryTarget", declarations.zAnnotationEntryTarget, refinements.zAnnotationEntryTarget),
+    intersectionRefinementSignal("zAnnotationPushItem", declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
     refinementSignal("zAnnotationSummary", declarations.zAnnotationSummary, refinements.zAnnotationSummary),
   ];
 
@@ -39,22 +48,38 @@ function refineRawSource(source, declarations, refinements) {
   return replaceDeclarations(source, [
     refinedDeclaration(declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
     refinedDeclaration({ ...declarations.zSessionAssociation, text: sessionAssociation }, refinements.zSessionAssociation),
+    refinedDeclaration(declarations.zGitContext, refinements.zGitContext),
+    refinedDeclaration(declarations.zAnnotationEntryTarget, refinements.zAnnotationEntryTarget),
+    refinedDeclaration(declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
     refinedDeclaration(declarations.zAnnotationSummary, refinements.zAnnotationSummary),
   ]);
 }
 
 function uniqueObjectDeclaration(source, schemaName) {
   const marker = `export const ${schemaName} = z.object({`;
+  const declaration = uniqueDeclaration(source, schemaName, marker);
+  if (declaration.reason !== undefined) return declaration;
+  return declaration;
+}
+
+function uniqueIntersectionDeclaration(source, schemaName) {
+  const marker = `export const ${schemaName} = z.intersection(z.union([`;
+  return uniqueDeclaration(source, schemaName, marker);
+}
+
+function uniqueDeclaration(source, schemaName, marker) {
   const starts = allIndexes(source, marker);
   if (starts.length !== 1) {
     return invalidDeclaration(schemaName, `found ${starts.length} declaration starts, expected exactly one`);
   }
   const start = starts[0];
-  const end = source.indexOf("\n});", start);
+  const typeName = schemaName.slice(1);
+  const typeMarker = `\n\nexport type ${typeName} =`;
+  const end = source.indexOf(typeMarker, start);
   if (end === -1) {
-    return invalidDeclaration(schemaName, "could not find the declaration terminator");
+    return invalidDeclaration(schemaName, `could not find the ${typeName} type declaration following the schema`);
   }
-  return { schemaName, start, end: end + "\n});".length, text: source.slice(start, end + "\n});".length) };
+  return { schemaName, start, end, text: source.slice(start, end) };
 }
 
 function invalidDeclaration(schemaName, reason) {
@@ -84,9 +109,27 @@ function refinementSignal(name, declaration, refinement) {
   return invalidSignal(name, `raw=${rawCount}, refined=${refinementCount}, exactRefinement=${refined}`);
 }
 
+function intersectionRefinementSignal(name, declaration, refinement) {
+  if (declaration.reason !== undefined) {
+    return invalidSignal(name, `declaration unavailable: ${declaration.reason}`);
+  }
+  const rawCount = Number(isRawIntersectionDeclaration(declaration, name));
+  const refinementCount = countText(declaration.text, refinement);
+  const refined = refinementCount === 1 && isRefinedIntersectionDeclaration(declaration, name, refinement);
+  if (rawCount === 1 && refinementCount === 0) return { name, state: "raw" };
+  if (refined) return { name, state: "refined" };
+  return invalidSignal(name, `raw=${rawCount}, refined=${refinementCount}, exactRefinement=${refined}`);
+}
+
 function isRawObjectDeclaration(declaration, schemaName) {
   return declaration.text.startsWith(`export const ${schemaName} = z.object({`)
     && declaration.text.endsWith("\n});")
+    && countText(declaration.text, ".superRefine(") === 0;
+}
+
+function isRawIntersectionDeclaration(declaration, schemaName) {
+  return declaration.text.startsWith(`export const ${schemaName} = z.intersection(z.union([`)
+    && declaration.text.endsWith("\n}));")
     && countText(declaration.text, ".superRefine(") === 0;
 }
 
@@ -98,6 +141,16 @@ function isRefinedObjectDeclaration(declaration, schemaName, refinement) {
     text: `${declaration.text.slice(0, -suffix.length)};`,
   };
   return isRawObjectDeclaration(rawCandidate, schemaName);
+}
+
+function isRefinedIntersectionDeclaration(declaration, schemaName, refinement) {
+  const suffix = `${refinement};`;
+  if (!declaration.text.endsWith(suffix)) return false;
+  const rawCandidate = {
+    ...declaration,
+    text: `${declaration.text.slice(0, -suffix.length)};`,
+  };
+  return isRawIntersectionDeclaration(rawCandidate, schemaName);
 }
 
 function refinedDeclaration(declaration, refinement) {
@@ -284,6 +337,78 @@ function annotationSummaryRefinement() {
             if (!hasNonEmptyString(value.targetFilePath) || !hasNonEmptyString(value.targetContentHash)) addIssue("file_version annotations require non-empty targetFilePath and targetContentHash");
             if (!hasOnly(["targetFilePath", "targetContentHash"])) addIssue("file_version annotations must not mix target arms");
             return;
+    }
+})`;
+}
+
+function annotationEntryTargetRefinement() {
+  return `.superRefine((value, context) => {
+    if (value.sessionId === "") context.addIssue({ code: "custom", message: "entry targets require a non-empty sessionId" });
+    if (value.endIndex <= value.entryIndex) context.addIssue({ code: "custom", message: "entry targets require endIndex greater than entryIndex" });
+})`;
+}
+
+function annotationPushItemRefinement() {
+  return `.superRefine((value, context) => {
+    const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
+    const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
+    const hasOnly = (allowed: readonly string[]) => {
+        const targetFields: readonly [string, unknown][] = [
+            ["targetAssociationId", value.targetAssociationId],
+            ["sessionId", value.sessionId],
+            ["entryTarget", value.entryTarget],
+            ["annotationId", value.annotationId],
+            ["projectHash", value.projectHash]
+        ];
+        return targetFields.every(([name, detail]) => allowed.includes(name) || !isPresent(detail));
+    };
+    const addIssue = (message: string) => context.addIssue({ code: "custom", message });
+    switch (value.targetKind) {
+        case "association":
+            if (!isPresent(value.targetAssociationId)) addIssue("association annotations require targetAssociationId");
+            if (!hasOnly(["targetAssociationId"])) addIssue("association annotations must not mix target arms");
+            return;
+        case "session":
+            if (!hasNonEmptyString(value.sessionId)) addIssue("session annotations require a non-empty sessionId");
+            if (!hasOnly(["sessionId"])) addIssue("session annotations must not mix target arms");
+            return;
+        case "entry":
+            if (!isPresent(value.entryTarget)) addIssue("entry annotations require entryTarget");
+            if (!hasOnly(["entryTarget"])) addIssue("entry annotations must not mix target arms");
+            return;
+        case "annotation":
+            if (!hasNonEmptyString(value.annotationId)) addIssue("annotation targets require a non-empty annotationId");
+            if (!hasOnly(["annotationId"])) addIssue("annotation targets must not mix target arms");
+            return;
+        case "project":
+            if (!isPresent(value.projectHash)) addIssue("project annotations require projectHash");
+            if (!hasOnly(["projectHash"])) addIssue("project annotations must not mix target arms");
+            return;
+    }
+})`;
+}
+
+function gitContextPublishedAssociationRefinement() {
+  return `.superRefine((value, context) => {
+    if (value.associations === undefined || value.associations === null) return;
+    const seenIDs = new Map<string, number>();
+    const seenObservedHashes = new Map<string, number>();
+    for (const [index, association] of value.associations.entries()) {
+        if (association.observedCommitHash.trim() === "") {
+            context.addIssue({ code: "custom", path: ["associations", index, "observedCommitHash"], message: "published associations require a non-empty observedCommitHash" });
+        }
+        const priorID = seenIDs.get(association.id);
+        if (priorID !== undefined) {
+            context.addIssue({ code: "custom", path: ["associations", index, "id"], message: "published association IDs must be unique within one request" });
+        } else {
+            seenIDs.set(association.id, index);
+        }
+        const priorObservedHash = seenObservedHashes.get(association.observedCommitHash);
+        if (priorObservedHash !== undefined) {
+            context.addIssue({ code: "custom", path: ["associations", index, "observedCommitHash"], message: "published association observedCommitHash values must be unique within one request" });
+        } else {
+            seenObservedHashes.set(association.observedCommitHash, index);
+        }
     }
 })`;
 }
