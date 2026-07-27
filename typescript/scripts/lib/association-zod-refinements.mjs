@@ -8,6 +8,7 @@ export function applyAssociationZodRefinements(source) {
     zAssociationEvidenceObservation: uniqueObjectDeclaration(source, "zAssociationEvidenceObservation"),
     zSessionAssociation: uniqueObjectDeclaration(source, "zSessionAssociation"),
     zGitContext: uniqueObjectDeclaration(source, "zGitContext"),
+    zAnnotationEntryTarget: uniqueObjectDeclaration(source, "zAnnotationEntryTarget"),
     zAnnotationPushItem: uniqueIntersectionDeclaration(source, "zAnnotationPushItem"),
     zAnnotationSummary: uniqueObjectDeclaration(source, "zAnnotationSummary"),
   };
@@ -15,6 +16,7 @@ export function applyAssociationZodRefinements(source) {
     zAssociationEvidenceObservation: associationEvidenceObservationRefinement(),
     zSessionAssociation: sessionAssociationRefinement(),
     zGitContext: gitContextPublishedAssociationRefinement(),
+    zAnnotationEntryTarget: annotationEntryTargetRefinement(),
     zAnnotationPushItem: annotationPushItemRefinement(),
     zAnnotationSummary: annotationSummaryRefinement(),
   };
@@ -24,6 +26,7 @@ export function applyAssociationZodRefinements(source) {
     refinementSignal("zAssociationEvidenceObservation", declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
     refinementSignal("zSessionAssociation", declarations.zSessionAssociation, refinements.zSessionAssociation),
     refinementSignal("zGitContext", declarations.zGitContext, refinements.zGitContext),
+    refinementSignal("zAnnotationEntryTarget", declarations.zAnnotationEntryTarget, refinements.zAnnotationEntryTarget),
     intersectionRefinementSignal("zAnnotationPushItem", declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
     refinementSignal("zAnnotationSummary", declarations.zAnnotationSummary, refinements.zAnnotationSummary),
   ];
@@ -46,6 +49,7 @@ function refineRawSource(source, declarations, refinements) {
     refinedDeclaration(declarations.zAssociationEvidenceObservation, refinements.zAssociationEvidenceObservation),
     refinedDeclaration({ ...declarations.zSessionAssociation, text: sessionAssociation }, refinements.zSessionAssociation),
     refinedDeclaration(declarations.zGitContext, refinements.zGitContext),
+    refinedDeclaration(declarations.zAnnotationEntryTarget, refinements.zAnnotationEntryTarget),
     refinedDeclaration(declarations.zAnnotationPushItem, refinements.zAnnotationPushItem),
     refinedDeclaration(declarations.zAnnotationSummary, refinements.zAnnotationSummary),
   ]);
@@ -337,18 +341,17 @@ function annotationSummaryRefinement() {
 })`;
 }
 
+function annotationEntryTargetRefinement() {
+  return `.superRefine((value, context) => {
+    if (value.sessionId === "") context.addIssue({ code: "custom", message: "entry targets require a non-empty sessionId" });
+    if (value.endIndex <= value.entryIndex) context.addIssue({ code: "custom", message: "entry targets require endIndex greater than entryIndex" });
+})`;
+}
+
 function annotationPushItemRefinement() {
   return `.superRefine((value, context) => {
     const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
     const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
-    const hasValidEntryTarget = (detail: unknown) => {
-        if (typeof detail !== "object" || detail === null || Array.isArray(detail)) return false;
-        const entryTarget = detail as { sessionId?: unknown; entryIndex?: unknown; endIndex?: unknown };
-        return hasNonEmptyString(entryTarget.sessionId)
-            && typeof entryTarget.entryIndex === "number"
-            && typeof entryTarget.endIndex === "number"
-            && entryTarget.endIndex > entryTarget.entryIndex;
-    };
     const hasOnly = (allowed: readonly string[]) => {
         const targetFields: readonly [string, unknown][] = [
             ["targetAssociationId", value.targetAssociationId],
@@ -370,7 +373,7 @@ function annotationPushItemRefinement() {
             if (!hasOnly(["sessionId"])) addIssue("session annotations must not mix target arms");
             return;
         case "entry":
-            if (!hasValidEntryTarget(value.entryTarget)) addIssue("entry annotations require entryTarget with a non-empty sessionId and endIndex greater than entryIndex");
+            if (!isPresent(value.entryTarget)) addIssue("entry annotations require entryTarget");
             if (!hasOnly(["entryTarget"])) addIssue("entry annotations must not mix target arms");
             return;
         case "annotation":

@@ -117,7 +117,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 3, endIndex: 4}}
-    expected: {publishRequestValid: true, annotationRequestValid: true}
+    expected: {publishRequestValid: true, annotationRequestValid: true, annotationEntryTargetValid: true}
     classification: must-pass
     provenance: {source: requirement, ref: entry annotations name one non-empty half-open entry range}
     mutation: {description: supplies the entry target arm without competing fields}
@@ -144,7 +144,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: entry, entryTarget: {sessionId: "", entryIndex: 3, endIndex: 4}}
-    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: false}
+    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: false, annotationEntryTargetValid: false}
     classification: must-fail
     provenance: {source: boundary, ref: entry target sessionId must be non-empty in the operation schema and typed validator}
     mutation: {description: clears the session ID from an otherwise valid entry target}
@@ -153,7 +153,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 3, endIndex: 3}}
-    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: true}
+    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: true, annotationEntryTargetValid: false}
     classification: must-fail
     provenance: {source: boundary, ref: entry endIndex must be greater than entryIndex at the typed request validation boundary}
     mutation: {description: collapses an entry target half-open range to zero entries}
@@ -162,7 +162,7 @@ cases:
       associations:
         - {id: assoc-session-a:commit-a, observedCommitHash: commit-a}
       annotation: {targetKind: entry, entryTarget: {sessionId: session-a, entryIndex: 4, endIndex: 3}}
-    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: true}
+    expected: {publishRequestValid: true, annotationRequestValid: false, annotationOperationSchemaValid: true, annotationEntryTargetValid: false}
     classification: must-fail
     provenance: {source: boundary, ref: entry endIndex must be greater than entryIndex at the typed request validation boundary}
     mutation: {description: reverses an entry target half-open range}

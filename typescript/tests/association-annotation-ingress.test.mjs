@@ -41,6 +41,22 @@ test("built root Zod annotation request schema rejects null and accepts an empty
   }
 });
 
+test("built root Zod entry target validator matches the shared malformed-entry rows", async (t) => {
+  const directEntryCases = fixture.cases.cases.filter((testCase) => testCase.expected.annotationEntryTargetValid !== undefined);
+  assert.deepEqual(directEntryCases.map((testCase) => testCase.name).sort(), [
+    "entry annotation is valid",
+    "entry annotation rejects empty session ID",
+    "entry annotation rejects equal range at the runtime boundary",
+    "entry annotation rejects reversed range at the runtime boundary",
+  ].sort(), "direct entry target coverage must retain the shared valid and malformed rows");
+  for (const testCase of directEntryCases) {
+    await t.test(testCase.name, () => {
+      const accepted = schema.zAnnotationEntryTarget.safeParse(testCase.input.annotation.entryTarget).success;
+      assert.equal(accepted, testCase.expected.annotationEntryTargetValid, `${testCase.name}: exported root Zod entry target verdict must match the shared corpus`);
+    });
+  }
+});
+
 test("association annotation ingress corpus covers every target-kind arm", () => {
   const expectedKinds = new Set(schema.AllTargetKinds);
   const coverage = new Map();
@@ -150,10 +166,11 @@ function decodeExpectedBoolean(value, path) {
 }
 
 function decodeIngressExpected(value, path) {
-  const expected = requireRecord(value, path, ["publishRequestValid", "annotationRequestValid", "annotationOperationSchemaValid"]);
+  const expected = requireRecord(value, path, ["publishRequestValid", "annotationRequestValid", "annotationOperationSchemaValid", "annotationEntryTargetValid"]);
   if (typeof expected.publishRequestValid !== "boolean") throw new TypeError(`${path}.publishRequestValid: must be a boolean`);
   if (typeof expected.annotationRequestValid !== "boolean") throw new TypeError(`${path}.annotationRequestValid: must be a boolean`);
   if (expected.annotationOperationSchemaValid !== undefined && typeof expected.annotationOperationSchemaValid !== "boolean") throw new TypeError(`${path}.annotationOperationSchemaValid: must be a boolean when present`);
+  if (expected.annotationEntryTargetValid !== undefined && typeof expected.annotationEntryTargetValid !== "boolean") throw new TypeError(`${path}.annotationEntryTargetValid: must be a boolean when present`);
   return expected;
 }
 

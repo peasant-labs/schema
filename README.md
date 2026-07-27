@@ -39,10 +39,11 @@ that:
 - **One definition, many consumers.** The Go types here ARE the contract. peasant
   emits `SessionDetailPayload` / `PublishRequest`; the village validates and stores
   the same shapes; the frontends render them. Nobody redefines the wire.
-- **Served ≡ enforced.** The village serves its OpenAPI doc from `VillageAPISpecJSON()`
-  and validates inbound publishes against `PublishRequestSchemaJSON()`: the *same*
-  embedded bytes. The documented spec and the enforced schema are one artifact, so
-  they can never diverge.
+- **Served ≡ enforced.** The village serves its OpenAPI doc from `VillageAPISpecJSON()`.
+  `PublishRequestSchemaJSON()` and `AnnotationPushRequestSchemaJSON()` extract the
+  two operation request schemas from those same embedded bytes; their canonical Go
+  boundaries validate the documented shape before applying typed relational rules.
+  The documented spec and the enforced schema therefore have one source artifact.
 - **It stays a leaf.** The module depends on nothing first-party except `bestiary`
   (a sibling), imports no runtime machinery, and a leaf-audit gate keeps its
   dependency set pinned. That is what lets consumers pin it cheaply (see
@@ -107,7 +108,7 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Local dashboard / session-detail wire** | `local_api.go` | `SessionDetailPayload`, `TurnDetail`, `ToolCallDetail`, `SessionSummary`, `SessionScorecard`, `ChildSessionRef`, `DashboardPayload`, `TrendsPayload`, `QualityPayload`, project-familiarity payloads, the WebSocket envelope (`ClientMessage` / `ServerMessage`, `MessageType`, `ChannelTopic`, `ChannelSubscription`), `CreateAnnotationRequest`/`Response` |
 | **Session metadata & git** | `metadata.go` | `UnifiedMetadata`, `RedactionInfo`, `TimestampInfo`, `SourceInfo`, `CommitInfo`, `GitContext`, `ProjectContext`, `SessionStats`, `SubagentRef`, `DiagnosticsInfo`; the `MetadataSchemaVersion` constant |
 | **Content layer** | `content.go`, `identity.go` | `SessionEntry` (1:1 with an indexed transcript entry), `SessionIdentity` |
-| **Publish envelope** | `publish.go`, `publish_validate.go` | `PublishRequest`, `PublishResponse`, `ModelInfo`; the annotation push wire (`AnnotationPushItem` / `Request` / `Response`), `SchemaVersionResponse`; `ValidatePublishRequest` |
+| **Publish envelope** | `publish.go`, `publish_validate.go`, `annotation_push_request_validate.go` | `PublishRequest`, `PublishResponse`, `ModelInfo`; the annotation push wire (`AnnotationPushItem` / `Request` / `Response`), `SchemaVersionResponse`; `ValidatePublishRequest`, `ValidateAnnotationPushRequest` |
 | **Pull envelope** | `pull.go` | `TranscriptID`, `PullTranscriptInfo`, `PullListResponse`, `PullAnnotation` |
 | **Push content envelope** | `push_content.go` | `TranscriptContent` (self-describing, versioned blob body), `ContractVersion` / `PushContractVersion`, `ContentKind` |
 | **Map / Review REST** | `map_api.go` | `MapGraphPayload`, `MapNode`, `MapEdge`, `ActivityEdge`, `EdgeViolation`, `MapNodeDetailPayload`, `TaskSummary`, `CommitRef`, `SessionAssociation`, `RewrittenCommit`, `TimelineSessionRef`, `ProjectResolutionPayload`, `ProjectTasksPayload`, `ProjectSummary`, `ReviewListPayload`, `ChangeSummary`, `ChangeDetailPayload`, `ChangeDiffPayload`, `FrictionCluster`, `FileChange`, `DiffHunk` |
@@ -117,7 +118,7 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Identifiers & enums** | `types.go` | Validated newtypes `SessionID`, `ModelID`, `ProjectHash`, `HostSlug` (+ `TranscriptID` in `pull.go`); closed enums `Role`, `EntryType`, `ToolCallKind`, `StopReason`, `SessionOutcome`, `SourceFormat`, `Visibility`, `License`, and `Harness` (re-exported from `bestiary`) |
 | **Auth & commands** | `auth.go`, `command.go` | `ExchangeCodeRequest`/`Response`, `CLILoginQuery`; `BuiltinCommand` + `IsClaudeBuiltinCommand` |
 | **Redaction fixtures** | `redactions.go` | `RedactionInfo` staleness helpers, `RedactionFixtureLevel`, the `RedactionExamples` corpus, `LoadRedactionExamples` (the redaction *engine* stays in peasant; this module carries only the metadata type and the fixture corpus) |
-| **Embedded specs & fixtures** | `specs.go`, `contract_embeds.go`, `fixtures.go` | `VillageAPISpecJSON()`, `PublishRequestSchemaJSON()`, `EvalSchemaJSON`, `ContractCorpusFS`, and the embedded YAML/JSON fixture corpora |
+| **Embedded specs & fixtures** | `specs.go`, `contract_embeds.go`, `fixtures.go` | `VillageAPISpecJSON()`, `PublishRequestSchemaJSON()`, `AnnotationPushRequestSchemaJSON()`, `EvalSchemaJSON`, `ContractCorpusFS`, and the embedded YAML/JSON fixture corpora |
 
 ### The session-detail payload (the central object)
 
@@ -212,18 +213,20 @@ enforces it; peasant mirrors it in two SQLite CHECK constraints.
 ### Generated OpenAPI specs (`generated/`)
 
 `go run ./cmd/schema-gen` renders the Go source into OpenAPI 3.1 specs, committed as
-byte-frozen goldens (JSON + YAML) plus the standalone PublishRequest JSON-Schema
-(draft 2020-12). Three OpenAPI spec families and one standalone JSON Schema are
+byte-frozen goldens (JSON + YAML) plus standalone PublishRequest and
+AnnotationPushRequest JSON Schemas (draft 2020-12). Three OpenAPI spec families and
+two standalone JSON Schemas are
 emitted from the builders in `openapi/`:
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
 | **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.8.0` |
 | **PublishRequest JSON Schema** | `BuildPublishRequestSchema` | the standalone publish request validator schema | `0.8.0` |
+| **AnnotationPushRequest JSON Schema** | `BuildAnnotationPushRequestSchema` | the standalone annotation push request validator schema | `0.8.0` |
 | **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.5.0` |
 | **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.5.0` |
 
-The current specs are read back into the binary via `//go:embed generated`. Two
+The current specs are read back into the binary via `//go:embed generated`. Three
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
 without vendoring their own copy:
 
@@ -232,9 +235,13 @@ without vendoring their own copy:
 - **`PublishRequestSchemaJSON()`**: the current PublishRequest JSON-Schema (the
   single byte-source `ValidatePublishRequest` compiles and the village enforces
   through).
+- **`AnnotationPushRequestSchemaJSON()`**: the current annotation-push operation
+  schema. `ValidateAnnotationPushRequest` compiles it, decodes the request, and
+  applies the runtime entry-target rule `endIndex > entryIndex` that standard JSON
+  Schema cannot represent.
 
-Both derive their filename from the version constant in `versions.go`, so a version
-bump re-points them in lockstep: consumers need no change.
+All three derive their filename from the version constant in `versions.go`, so a
+version bump re-points them in lockstep: consumers need no change.
 
 ---
 
@@ -277,8 +284,8 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
 
 Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0`,
 PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`, and
-types `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`. The still-generated current versions (village API `0.8.0`,
-PublishRequest `0.8.0`, peasant local API `0.5.0`, types `0.5.0`) live under the freshness gate instead.
+types `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`. The AnnotationPushRequest schema has no retired golden yet. The still-generated current versions (village API `0.8.0`,
+PublishRequest and AnnotationPushRequest `0.8.0`, peasant local API `0.5.0`, types `0.5.0`) live under the freshness gate instead. When a Village API version is frozen, register both JSON-only request schemas alongside the OpenAPI golden in `cmd/schema-gen/testdata/retired_specs.yaml`.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the

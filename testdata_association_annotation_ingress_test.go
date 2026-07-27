@@ -74,6 +74,14 @@ func TestAssociationAnnotationIngressTypedAndPublishBoundaryValidators(t *testin
 			if got := annotationErr == nil; got != fixture.Expected.AnnotationRequestValid {
 				t.Fatalf("AnnotationPushRequest.Validate() error=%v, valid=%t, want %t", annotationErr, got, fixture.Expected.AnnotationRequestValid)
 			}
+			if fixture.Expected.AnnotationEntryTargetValid != nil {
+				if item.EntryTarget == nil {
+					t.Fatal("fixture expects a direct AnnotationEntryTarget verdict but has no entryTarget")
+				}
+				if got := item.EntryTarget.Validate() == nil; got != *fixture.Expected.AnnotationEntryTargetValid {
+					t.Fatalf("AnnotationEntryTarget.Validate() valid=%t, want %t", got, *fixture.Expected.AnnotationEntryTargetValid)
+				}
+			}
 			annotationBoundaryErr := annotationPushRequestBoundaryError(t, fixture.Input.Annotation)
 			if got := annotationBoundaryErr == nil; got != fixture.Expected.AnnotationRequestValid {
 				t.Fatalf("ValidateAnnotationPushRequest() error=%v, valid=%t, want %t", annotationBoundaryErr, got, fixture.Expected.AnnotationRequestValid)

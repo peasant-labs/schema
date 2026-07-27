@@ -39,6 +39,7 @@ function restoreRawState(source) {
   raw = removeRefinement(raw, "zAssociationEvidenceObservation");
   raw = removeRefinement(raw, "zSessionAssociation");
   raw = removeRefinement(raw, "zGitContext");
+  raw = removeRefinement(raw, "zAnnotationEntryTarget");
   raw = removeRefinement(raw, "zAnnotationPushItem");
   raw = removeRefinement(raw, "zAnnotationSummary");
   return raw;

@@ -39,6 +39,7 @@ type AssociationAnnotationIngressExpected struct {
 	PublishRequestValid            bool  `yaml:"publishRequestValid"`
 	AnnotationRequestValid         bool  `yaml:"annotationRequestValid"`
 	AnnotationOperationSchemaValid *bool `yaml:"annotationOperationSchemaValid,omitempty"`
+	AnnotationEntryTargetValid     *bool `yaml:"annotationEntryTargetValid,omitempty"`
 }
 
 // OperationSchemaValid returns the expected result from the generated Village

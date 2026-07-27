@@ -41,6 +41,9 @@ export const zAnnotationEntryTarget = z.object({
     endIndex: z.int(),
     entryIndex: z.int(),
     sessionId: z.string().min(1)
+}).superRefine((value, context) => {
+    if (value.sessionId === "") context.addIssue({ code: "custom", message: "entry targets require a non-empty sessionId" });
+    if (value.endIndex <= value.entryIndex) context.addIssue({ code: "custom", message: "entry targets require endIndex greater than entryIndex" });
 });
 
 export type AnnotationEntryTarget = z.infer<typeof zAnnotationEntryTarget>;
@@ -1380,14 +1383,6 @@ export const zAnnotationPushItem = z.intersection(z.union([
 })).superRefine((value, context) => {
     const isPresent = (detail: unknown) => detail !== undefined && detail !== null;
     const hasNonEmptyString = (detail: unknown) => typeof detail === "string" && detail !== "";
-    const hasValidEntryTarget = (detail: unknown) => {
-        if (typeof detail !== "object" || detail === null || Array.isArray(detail)) return false;
-        const entryTarget = detail as { sessionId?: unknown; entryIndex?: unknown; endIndex?: unknown };
-        return hasNonEmptyString(entryTarget.sessionId)
-            && typeof entryTarget.entryIndex === "number"
-            && typeof entryTarget.endIndex === "number"
-            && entryTarget.endIndex > entryTarget.entryIndex;
-    };
     const hasOnly = (allowed: readonly string[]) => {
         const targetFields: readonly [string, unknown][] = [
             ["targetAssociationId", value.targetAssociationId],
@@ -1409,7 +1404,7 @@ export const zAnnotationPushItem = z.intersection(z.union([
             if (!hasOnly(["sessionId"])) addIssue("session annotations must not mix target arms");
             return;
         case "entry":
-            if (!hasValidEntryTarget(value.entryTarget)) addIssue("entry annotations require entryTarget with a non-empty sessionId and endIndex greater than entryIndex");
+            if (!isPresent(value.entryTarget)) addIssue("entry annotations require entryTarget");
             if (!hasOnly(["entryTarget"])) addIssue("entry annotations must not mix target arms");
             return;
         case "annotation":
