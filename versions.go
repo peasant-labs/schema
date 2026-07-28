@@ -33,9 +33,11 @@ const (
 	// Bumped to 0.8.0 when the publish wire gained owner-scoped published
 	// associations and annotation ingress gained targetAssociationId plus its
 	// documented Village POST operation (additive = minor bump).
+	// Bumped to 0.9.0 when Harness gained Strike and SessionID gained the two
+	// observed Strike identifier forms (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.8.0"
+	VillageAPIVersion = "0.9.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -47,8 +49,10 @@ const (
 	// mapping, the mechanical insight envelope, node-grain
 	// read-state/comprehension signals, and TaskSummary.ReadFiles (all
 	// additive).
+	// Bumped to 0.6.0 when Harness gained Strike and SessionID gained the two
+	// observed Strike identifier forms (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.5.0"
+	PeasantLocalAPIVersion = "0.6.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -60,5 +64,7 @@ const (
 	// sets) and the widened TargetKind landed (additive = minor bump).
 	// Bumped to 0.5.0 when GitContext gained PublishedAssociation and annotation
 	// push items gained TargetAssociationID (additive = minor bump).
-	TypesVersion = "0.5.0"
+	// Bumped to 0.6.0 when Harness gained Strike and SessionID gained the two
+	// observed Strike identifier forms (additive = minor bump).
+	TypesVersion = "0.6.0"
 )

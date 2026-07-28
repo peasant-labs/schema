@@ -563,11 +563,13 @@ export interface components {
         /**
          * Session ID
          * Format: session-id
-         * @description Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})
+         * @description Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, or a Strike session ID)
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          * @example agent-a3aee4f
          * @example ses_3cd91f52effeXd3QAJ54jOyzv5
          * @example sess_3cd91f52effeXd3QAJ54jOyzv5
+         * @example 20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567
+         * @example ABCDEFGHIJKLMNOPQRST234567
          */
         SchemaSessionID: Schema.SessionID;
         SchemaSessionInsight: Schema.SessionInsight;

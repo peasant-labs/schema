@@ -1,14 +1,79 @@
 package schema_test
 
 import (
+	_ "embed"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/peasant-labs/schema"
+	"github.com/peasant-labs/schema/testcase"
+	caseassert "github.com/peasant-labs/schema/testcase/assert"
 )
 
 // --- NewSessionID ---
+
+//go:embed testdata/contract/session_ids.yaml
+var sessionIDCasesYAML []byte
+
+func loadSessionIDCases(t *testing.T) testcase.Corpus[string, bool] {
+	t.Helper()
+	corpus, err := testcase.LoadCorpus[string, bool](sessionIDCasesYAML)
+	if err != nil {
+		t.Fatalf("load session ID corpus: %v", err)
+	}
+	if got := len(corpus.Cases); got != 5 {
+		t.Fatalf("session ID corpus has %d cases, want exactly 5", got)
+	}
+	caseassert.RequireValid(t, corpus)
+	return corpus
+}
+
+func TestNewSessionID_StrikeGrammar(t *testing.T) {
+	corpus := loadSessionIDCases(t)
+	jsonSchema, err := schema.SessionID("").JSONSchema()
+	if err != nil {
+		t.Fatalf("SessionID.JSONSchema(): %v", err)
+	}
+	if jsonSchema.Pattern == nil {
+		t.Fatal("SessionID.JSONSchema() returned no pattern")
+	}
+	pattern, err := regexp.Compile(*jsonSchema.Pattern)
+	if err != nil {
+		t.Fatalf("compile SessionID JSON Schema pattern: %v", err)
+	}
+
+	required := map[string]bool{
+		"strike_timestamped":  false,
+		"strike_bare":         false,
+		"strike_lowercase":    false,
+		"strike_wrong_length": false,
+		"strike_path_unsafe":  false,
+	}
+	for _, c := range corpus.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			if c.Expected != (c.Classification == testcase.MustPass) {
+				t.Fatalf("fixture expected=%v disagrees with classification=%q", c.Expected, c.Classification)
+			}
+			_, constructorErr := schema.NewSessionID(c.Input)
+			if got := constructorErr == nil; got != c.Expected {
+				t.Errorf("NewSessionID(%q) accepted=%v, want %v (err=%v)", c.Input, got, c.Expected, constructorErr)
+			}
+			if got := pattern.MatchString(c.Input); got != c.Expected {
+				t.Errorf("SessionID JSON Schema pattern matched %q = %v, want %v", c.Input, got, c.Expected)
+			}
+		})
+		if _, ok := required[c.Name]; ok {
+			required[c.Name] = true
+		}
+	}
+	for name, present := range required {
+		if !present {
+			t.Errorf("session ID corpus is missing required case %q", name)
+		}
+	}
+}
 
 func TestNewSessionID_ValidUUID(t *testing.T) {
 	sid, err := schema.NewSessionID("99d59925-36bc-424c-a789-8be54d9702ba")
@@ -306,6 +371,24 @@ func TestProvider_IsValid(t *testing.T) {
 	}
 	if schema.Harness("unknown").IsKnown() {
 		t.Error("unknown provider should be invalid")
+	}
+}
+
+func TestHarness_StrikeContract(t *testing.T) {
+	if !schema.HarnessStrike.IsKnown() {
+		t.Fatal("HarnessStrike is not recognized by the canonical Bestiary harness set")
+	}
+	if got := schema.HarnessDisplayName(schema.HarnessStrike); got != "Strike" {
+		t.Errorf("HarnessDisplayName(HarnessStrike) = %q, want %q", got, "Strike")
+	}
+	count := 0
+	for _, harness := range schema.AllHarnesses {
+		if harness == schema.HarnessStrike {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("AllHarnesses contains HarnessStrike %d times, want exactly once", count)
 	}
 }
 

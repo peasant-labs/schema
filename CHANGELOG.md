@@ -7,6 +7,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.9.0, Local API 0.6.0, and Types 0.6.0 add the `strike`
+  harness and both observed Strike session ID forms: a timestamped prefix plus
+  26 uppercase RFC4648 base32 characters, or the 26-character identifier by
+  itself. Existing session ID forms and path-safety checks remain unchanged.
+  Village API 0.8.0, both 0.8.0 request schemas, Local API 0.5.0, and Types
+  0.5.0 are retired and byte-frozen.
+
 - Village API 0.8.0 and Types 0.5.0 add published association ownership and
   annotation ingress. `GitContext.Associations` carries optional
   `PublishedAssociation` records with an opaque producer-owned `AssociationID`

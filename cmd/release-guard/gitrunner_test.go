@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -174,15 +175,12 @@ func TestGitRunner_RealGitSemantics(t *testing.T) {
 func initTestRepo(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
+	gitEnv := hermeticGitTestEnv(t)
 	run := func(args ...string) {
 		t.Helper()
 		cmd := exec.Command("git", args...)
 		cmd.Dir = dir
-		// Deterministic identity/env so the repo builds in any sandbox.
-		cmd.Env = append(cmd.Environ(),
-			"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
-			"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
-		)
+		cmd.Env = gitEnv
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
 		}
@@ -194,4 +192,42 @@ func initTestRepo(t *testing.T) string {
 	run("commit", "-q", "--allow-empty", "-m", "c2")
 	run("tag", "v1.0.0-rc2")
 	return dir
+}
+
+func hermeticGitTestEnv(t *testing.T) []string {
+	t.Helper()
+	home := t.TempDir()
+	env := make([]string, 0, len(os.Environ())+7)
+	for _, entry := range os.Environ() {
+		key, _, _ := strings.Cut(entry, "=")
+		if strings.HasPrefix(key, "GIT_") || key == "HOME" || key == "XDG_CONFIG_HOME" {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env,
+		"HOME="+home,
+		"XDG_CONFIG_HOME="+filepath.Join(home, "xdg"),
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_CONFIG_GLOBAL="+os.DevNull,
+		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
+		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
+	)
+}
+
+func TestInitTestRepo_IgnoresAmbientGitConfig(t *testing.T) {
+	poison := filepath.Join(t.TempDir(), "poison.gitconfig")
+	if err := os.WriteFile(poison, []byte("[commit]\n\tgpgSign = true\n[gpg]\n\tprogram = /definitely-not-a-signer\n"), 0o600); err != nil {
+		t.Fatalf("write hostile git config: %v", err)
+	}
+	t.Setenv("HOME", filepath.Dir(poison))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Dir(poison))
+	t.Setenv("GIT_CONFIG_SYSTEM", poison)
+	t.Setenv("GIT_CONFIG_GLOBAL", poison)
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "0")
+	t.Setenv("GIT_CONFIG_COUNT", "1")
+	t.Setenv("GIT_CONFIG_KEY_0", "commit.gpgSign")
+	t.Setenv("GIT_CONFIG_VALUE_0", "true")
+
+	initTestRepo(t)
 }
