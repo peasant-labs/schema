@@ -1,0 +1,31 @@
+cases:
+  - name: strike_timestamped
+    input: 20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Strike timestamped session ID grammar}
+    mutation: {description: uses the timestamp prefix followed by 26 uppercase RFC4648 base32 characters}
+  - name: strike_bare
+    input: ABCDEFGHIJKLMNOPQRST234567
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Strike bare session ID grammar}
+    mutation: {description: omits the optional timestamp prefix while retaining the 26-character base32 identifier}
+  - name: strike_lowercase
+    input: abcdefghijklmnopqrst234567
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: Strike session IDs require uppercase RFC4648 base32}
+    mutation: {description: lowercases every character of an otherwise valid bare identifier}
+  - name: strike_wrong_length
+    input: ABCDEFGHIJKLMNOPQRST23456
+    expected: false
+    classification: must-fail
+    provenance: {source: boundary, ref: Strike session IDs contain exactly 26 base32 characters}
+    mutation: {description: removes one character from an otherwise valid bare identifier}
+  - name: strike_path_unsafe
+    input: ../ABCDEFGHIJKLMNOPQRST234567
+    expected: false
+    classification: must-fail
+    provenance: {source: requirement, ref: Session ID path and traversal protection}
+    mutation: {description: prefixes a valid bare identifier with parent-directory traversal}

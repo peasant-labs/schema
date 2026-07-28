@@ -80,7 +80,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0-rc6` (GitHub **prerelease**) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | village API `0.8.0` · PublishRequest `0.8.0` · peasant local API `0.5.0` · types `0.5.0` (see [`versions.go`](versions.go)) |
+| Spec versions | village API `0.9.0` · PublishRequest `0.9.0` · peasant local API `0.6.0` · types `0.6.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -220,11 +220,11 @@ emitted from the builders in `openapi/`:
 
 | Spec family | Builder | Covers | Current version |
 |---|---|---|---|
-| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.8.0` |
-| **PublishRequest JSON Schema** | `BuildPublishRequestSchema` | the standalone publish request validator schema | `0.8.0` |
-| **AnnotationPushRequest JSON Schema** | `BuildAnnotationPushRequestSchema` | the standalone annotation push request validator schema | `0.8.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.5.0` |
-| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.5.0` |
+| **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.9.0` |
+| **PublishRequest JSON Schema** | `BuildPublishRequestSchema` | the standalone publish request validator schema | `0.9.0` |
+| **AnnotationPushRequest JSON Schema** | `BuildAnnotationPushRequestSchema` | the standalone annotation push request validator schema | `0.9.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.6.0` |
+| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.6.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Three
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
@@ -282,10 +282,10 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`, and
-types `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0`. The AnnotationPushRequest schema has no retired golden yet. The still-generated current versions (village API `0.8.0`,
-PublishRequest and AnnotationPushRequest `0.8.0`, peasant local API `0.5.0`, types `0.5.0`) live under the freshness gate instead. When a Village API version is frozen, register both JSON-only request schemas alongside the OpenAPI golden in `cmd/schema-gen/testdata/retired_specs.yaml`.
+Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0` / `0.8.0`,
+PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0` / `0.8.0`, AnnotationPushRequest schema `0.8.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`, and
+types `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`. The still-generated current versions (village API `0.9.0`,
+PublishRequest and AnnotationPushRequest `0.9.0`, peasant local API `0.6.0`, types `0.6.0`) live under the freshness gate instead. When a Village API version is frozen, register both JSON-only request schemas alongside the OpenAPI golden in `cmd/schema-gen/testdata/retired_specs.yaml`.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
