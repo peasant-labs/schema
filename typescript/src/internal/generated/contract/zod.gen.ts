@@ -607,7 +607,8 @@ export const zHarness = z.enum([
     'codex',
     'opencode',
     'cursor',
-    'antigravity'
+    'antigravity',
+    'strike'
 ]);
 
 export type Harness = z.infer<typeof zHarness>;
@@ -1060,9 +1061,9 @@ export type ServerMessage = z.infer<typeof zServerMessage>;
 /**
  * Session ID
  *
- * Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})
+ * Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, or a Strike session ID)
  */
-export const zSessionID = z.string().regex(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+)$/);
+export const zSessionID = z.string().regex(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26}|[A-Z2-7]{26})$/);
 
 export type SessionID = z.infer<typeof zSessionID>;
 

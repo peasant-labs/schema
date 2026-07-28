@@ -18,14 +18,18 @@ import (
 //   - ACP session: "sess_3cd91f52effeXd3QAJ54jOyzv5" (ACP sess_ prefix)
 //   - OpenCode session: "ses_3cd91f52effeXd3QAJ54jOyzv5"
 //   - OpenCode message: "msg_001abc"
+//   - Strike timestamped: "20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567"
+//   - Strike bare: "ABCDEFGHIJKLMNOPQRST234567"
 type SessionID string
 
 var (
-	sessionIDUUID     = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
-	sessionIDSubagent = regexp.MustCompile(`^agent-[a-f0-9]+$`)
-	sessionIDOpenCode = regexp.MustCompile(`^ses_[a-zA-Z0-9]+$`)
-	sessionIDACP      = regexp.MustCompile(`^sess_[a-zA-Z0-9]+$`) // ACP sess_ prefix (double-s)
-	sessionIDMessage  = regexp.MustCompile(`^msg_[a-zA-Z0-9]+$`)
+	sessionIDUUID              = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+	sessionIDSubagent          = regexp.MustCompile(`^agent-[a-f0-9]+$`)
+	sessionIDOpenCode          = regexp.MustCompile(`^ses_[a-zA-Z0-9]+$`)
+	sessionIDACP               = regexp.MustCompile(`^sess_[a-zA-Z0-9]+$`) // ACP sess_ prefix (double-s)
+	sessionIDMessage           = regexp.MustCompile(`^msg_[a-zA-Z0-9]+$`)
+	sessionIDStrikeTimestamped = regexp.MustCompile(`^[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26}$`)
+	sessionIDStrikeBare        = regexp.MustCompile(`^[A-Z2-7]{26}$`)
 )
 
 // NewSessionID validates and constructs a SessionID.
@@ -40,8 +44,10 @@ func NewSessionID(raw string) (SessionID, error) {
 		!sessionIDSubagent.MatchString(raw) &&
 		!sessionIDOpenCode.MatchString(raw) &&
 		!sessionIDACP.MatchString(raw) &&
-		!sessionIDMessage.MatchString(raw) {
-		return "", fmt.Errorf("invalid session ID %q: must be UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id}", raw)
+		!sessionIDMessage.MatchString(raw) &&
+		!sessionIDStrikeTimestamped.MatchString(raw) &&
+		!sessionIDStrikeBare.MatchString(raw) {
+		return "", fmt.Errorf("invalid session ID %q: must be UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, a Strike timestamped ID, or a 26-character uppercase RFC4648 base32 Strike ID", raw)
 	}
 	return SessionID(raw), nil
 }
@@ -54,9 +60,9 @@ func (SessionID) JSONSchema() (jsonschema.Schema, error) {
 	s.AddType(jsonschema.String)
 	s.WithFormat("session-id")
 	s.WithTitle("Session ID")
-	s.WithDescription("Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), or msg_{id})")
-	s.WithPattern(`^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+)$`)
-	s.WithExamples("99d59925-36bc-424c-a789-8be54d9702ba", "agent-a3aee4f", "ses_3cd91f52effeXd3QAJ54jOyzv5", "sess_3cd91f52effeXd3QAJ54jOyzv5")
+	s.WithDescription("Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id} (ACP), msg_{id}, or a Strike session ID)")
+	s.WithPattern(`^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26}|[A-Z2-7]{26})$`)
+	s.WithExamples("99d59925-36bc-424c-a789-8be54d9702ba", "agent-a3aee4f", "ses_3cd91f52effeXd3QAJ54jOyzv5", "sess_3cd91f52effeXd3QAJ54jOyzv5", "20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567", "ABCDEFGHIJKLMNOPQRST234567")
 	return s, nil
 }
 
@@ -250,11 +256,13 @@ const (
 	HarnessOpenCode    = bestiary.HarnessOpenCode
 	HarnessCursor      = bestiary.HarnessCursor
 	HarnessAntigravity = bestiary.HarnessAntigravity
+	HarnessStrike      = bestiary.HarnessStrike
 )
 
 // AllHarnesses is the canonical list of harnesses that peasant supports for ingestion.
 var AllHarnesses = []Harness{
 	HarnessClaudeCode, HarnessGeminiCLI, HarnessCodex, HarnessOpenCode, HarnessCursor,
+	HarnessStrike,
 }
 
 // Harnesses returns every harness identifier known to bestiary — the full set,
@@ -280,6 +288,8 @@ func HarnessDisplayName(h Harness) string {
 		return "Cursor"
 	case HarnessAntigravity:
 		return "Antigravity"
+	case HarnessStrike:
+		return "Strike"
 	}
 	return string(h)
 }

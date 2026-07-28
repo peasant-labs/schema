@@ -3,7 +3,7 @@ module github.com/peasant-labs/schema
 go 1.25.5
 
 require (
-	github.com/dayvidpham/bestiary v0.1.1
+	github.com/dayvidpham/bestiary v0.2.9
 	github.com/google/go-github/v88 v88.0.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/swaggest/jsonschema-go v0.3.79

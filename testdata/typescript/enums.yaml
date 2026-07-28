@@ -159,7 +159,8 @@ enums:
       - {name: OpenCode, value: "opencode"}
       - {name: Cursor, value: "cursor"}
       - {name: Antigravity, value: "antigravity"}
-    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor"]
+      - {name: Strike, value: "strike"}
+    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike"]
   - name: InsightKind
     all_name: AllInsightKinds
     members:
