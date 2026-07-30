@@ -72,8 +72,10 @@ const (
 	// Bumped to 0.6.0 when Harness gained Strike and SessionID gained the two
 	// observed Strike identifier forms (additive = minor bump).
 	// Bumped to 0.7.0 when the owner transcript update request, its narrowed
-	// visibility menu, its three-valued license, and its refusal envelope
-	// entered the catalog so both language bindings carry them (additive =
-	// minor bump).
+	// visibility menu, and its three-valued license entered the catalog so both
+	// language bindings carry them (additive = minor bump). The operation's
+	// refusal envelope is deliberately NOT catalogued: it is operation-scoped so
+	// a release cannot freeze a transcript-update-specific name onto a generic
+	// error shape.
 	TypesVersion = "0.7.0"
 )

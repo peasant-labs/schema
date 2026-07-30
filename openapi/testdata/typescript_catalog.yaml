@@ -534,6 +534,9 @@ types:
     disposition: catalog
     component: TranscriptUpdateLicense
     reason: public wire or domain contract type
+  - go_name: OwnerUpdateRequestBehaviour
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
   - go_name: OwnerUpdateFixtures
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable

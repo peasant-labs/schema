@@ -20,12 +20,76 @@ type OwnerUpdateFixtures struct {
 	SpecExpectations   testcase.Corpus[OwnerUpdateSpecProbe, OwnerUpdateSpecExpectation] `yaml:"spec_expectations"`
 }
 
+// OwnerUpdateRequestBehaviour is the closed set of contract behaviours the
+// request_validations arm must cover.
+//
+// It exists because a row-count floor cannot protect a corpus. A minimum with
+// slack in it lets rows carrying a whole behaviour be deleted without any
+// assertion noticing, and a fixture row is not code, so no mutation of the
+// production source can reach it. Naming the behaviours and asserting coverage
+// per member makes the corpus itself guarded input: losing every null-refusal
+// row now fails, where losing six of twenty rows previously did not.
+type OwnerUpdateRequestBehaviour string
+
+const (
+	// OwnerUpdateBehaviourVisibilityAccepted covers an accepted visibility value.
+	OwnerUpdateBehaviourVisibilityAccepted OwnerUpdateRequestBehaviour = "visibility_accepted"
+	// OwnerUpdateBehaviourVisibilityRefused covers a visibility outside the menu.
+	OwnerUpdateBehaviourVisibilityRefused OwnerUpdateRequestBehaviour = "visibility_refused"
+	// OwnerUpdateBehaviourLicenseAccepted covers a canonical menu license.
+	OwnerUpdateBehaviourLicenseAccepted OwnerUpdateRequestBehaviour = "license_accepted"
+	// OwnerUpdateBehaviourLicenseClearAccepted covers the clear sentinel, the
+	// value that makes un-licensing requestable and therefore refusable.
+	OwnerUpdateBehaviourLicenseClearAccepted OwnerUpdateRequestBehaviour = "license_clear_accepted"
+	// OwnerUpdateBehaviourLicenseRefused covers a license off the menu.
+	OwnerUpdateBehaviourLicenseRefused OwnerUpdateRequestBehaviour = "license_refused"
+	// OwnerUpdateBehaviourNullRefused covers an explicit JSON null, which the
+	// server would read as preserve rather than the clear a caller intends.
+	OwnerUpdateBehaviourNullRefused OwnerUpdateRequestBehaviour = "null_refused"
+	// OwnerUpdateBehaviourUnknownFieldRefused covers a field the server accepts
+	// and silently discards.
+	OwnerUpdateBehaviourUnknownFieldRefused OwnerUpdateRequestBehaviour = "unknown_field_refused"
+	// OwnerUpdateBehaviourOmissionAccepted covers omission meaning unchanged.
+	OwnerUpdateBehaviourOmissionAccepted OwnerUpdateRequestBehaviour = "omission_accepted"
+	// OwnerUpdateBehaviourEmptyStringAccepted covers the empty string as a real
+	// clearing value rather than an omission.
+	OwnerUpdateBehaviourEmptyStringAccepted OwnerUpdateRequestBehaviour = "empty_string_accepted"
+)
+
+// AllOwnerUpdateRequestBehaviours is the canonical ordered closed set. The suite
+// derives its minimum from this list AND asserts every member is exercised, so
+// adding a behaviour without a row fails rather than silently reducing coverage.
+var AllOwnerUpdateRequestBehaviours = []OwnerUpdateRequestBehaviour{
+	OwnerUpdateBehaviourVisibilityAccepted,
+	OwnerUpdateBehaviourVisibilityRefused,
+	OwnerUpdateBehaviourLicenseAccepted,
+	OwnerUpdateBehaviourLicenseClearAccepted,
+	OwnerUpdateBehaviourLicenseRefused,
+	OwnerUpdateBehaviourNullRefused,
+	OwnerUpdateBehaviourUnknownFieldRefused,
+	OwnerUpdateBehaviourOmissionAccepted,
+	OwnerUpdateBehaviourEmptyStringAccepted,
+}
+
+// IsValid reports whether the behaviour is a known member.
+func (b OwnerUpdateRequestBehaviour) IsValid() bool {
+	for _, known := range AllOwnerUpdateRequestBehaviours {
+		if b == known {
+			return true
+		}
+	}
+	return false
+}
+
+func (b OwnerUpdateRequestBehaviour) String() string { return string(b) }
+
 // OwnerUpdateValidationExpectation is the verdict for one raw request body:
 // whether the contract accepts it and, for a refusal, a distinctive fragment of
 // the actionable message. ErrorContains is empty exactly when Accepted is true.
 type OwnerUpdateValidationExpectation struct {
-	Accepted      bool   `yaml:"accepted"`
-	ErrorContains string `yaml:"error_contains"`
+	Accepted      bool                        `yaml:"accepted"`
+	ErrorContains string                      `yaml:"error_contains"`
+	Behaviour     OwnerUpdateRequestBehaviour `yaml:"behaviour"`
 }
 
 // OwnerUpdateEncodingInput is a Go-side update intent expressed so the fixture
@@ -198,6 +262,9 @@ func LoadOwnerUpdateFixtures() (*OwnerUpdateFixtures, error) {
 	for _, c := range f.RequestValidations.Cases {
 		if c.Expected.Accepted && c.Expected.ErrorContains != "" {
 			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q is accepted but names an expected error fragment %q; an accepted body produces no error", c.Name, c.Expected.ErrorContains)
+		}
+		if !c.Expected.Behaviour.IsValid() {
+			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q names behaviour %q, which is not a member of the closed set; a row that names no known behaviour cannot contribute to coverage and would let a whole behaviour be deleted unnoticed", c.Name, c.Expected.Behaviour)
 		}
 		wantClassification := testcase.MustFail
 		if c.Expected.Accepted {

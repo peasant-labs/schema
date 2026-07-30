@@ -18,6 +18,35 @@ const fixture = parse(fixtureSource);
 const rows = fixture?.request_validations?.cases;
 assert.ok(Array.isArray(rows) && rows.length > 0, "the owner-update corpus has no request_validations cases; this suite would pass while asserting nothing");
 
+// The closed behaviour set, mirrored from the Go contract. A bare "more than
+// zero rows" check cannot protect a corpus: rows carrying an entire behaviour
+// can be deleted inside the slack of a loose floor, and a fixture row is not
+// code, so no mutation of the production source would reach that loss. Both
+// languages assert coverage per behaviour so a deletion fails on both sides.
+const REQUIRED_BEHAVIOURS = [
+  "visibility_accepted",
+  "visibility_refused",
+  "license_accepted",
+  "license_clear_accepted",
+  "license_refused",
+  "null_refused",
+  "unknown_field_refused",
+  "omission_accepted",
+  "empty_string_accepted",
+];
+
+const covered = new Set(rows.map((row) => row.expected?.behaviour));
+for (const behaviour of REQUIRED_BEHAVIOURS) {
+  assert.ok(
+    covered.has(behaviour),
+    `no request_validations row covers behaviour "${behaviour}"; the corpus lost the rows exercising it, and a row deletion is not something a code mutation can detect`,
+  );
+}
+assert.ok(
+  rows.length >= REQUIRED_BEHAVIOURS.length,
+  `the corpus holds ${rows.length} rows but names ${REQUIRED_BEHAVIOURS.length} required behaviours`,
+);
+
 // The corpus is shared with Go, so it carries rows about enum membership as well
 // as rows about wire shape. Both are meaningful here: the generated Zod contract
 // enforces the enums too, so every row should agree across the two bindings.

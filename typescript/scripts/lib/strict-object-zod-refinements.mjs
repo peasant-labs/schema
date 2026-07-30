@@ -44,28 +44,45 @@ export function applyStrictObjectZodRefinements(source) {
 // duplicated rather than silently skipping, because a silent skip would ship an
 // open validator while every gate stayed green.
 function classify(source, name) {
-  const rawOpen = `export const ${name} = z.object({`;
-  const occurrences = countText(source, rawOpen);
+  const declaration = `export const ${name} = z.object({`;
+  const occurrences = countText(source, declaration);
   if (occurrences !== 1) {
     throw new Error(
-      `strict-object refinement expected exactly one \`${rawOpen}\` declaration in the generated Zod contract but found ${occurrences}; ` +
+      `strict-object refinement expected exactly one \`${declaration}\` declaration in the generated Zod contract but found ${occurrences}; ` +
         `the generator output shape changed, so unknown-field rejection was NOT applied and the published validator would accept and strip unknown keys; ` +
         `re-check the Hey API Zod output for ${name} and update this refinement before regenerating.`,
     );
   }
 
-  const start = source.indexOf(rawOpen);
-  const closeIndex = source.indexOf("\n});", start);
-  if (closeIndex === -1) {
+  const start = source.indexOf(declaration);
+  // Find the declaration's own terminator. Scanning for the RAW terminator alone
+  // is wrong on an already-refined file: once `.strict()` is appended the raw
+  // form no longer matches here, the scan runs on to the NEXT declaration's
+  // terminator, and the span silently swallows an unrelated schema — which then
+  // gets `.strict()` appended to it. Match the shared prefix and decide from
+  // what follows, so the span always ends at this declaration.
+  const objectEnd = source.indexOf("\n})", start);
+  if (objectEnd === -1) {
     throw new Error(
       `strict-object refinement found the ${name} declaration but no terminating \`});\`; the generated Zod contract is not in the expected shape and no refinement was applied.`,
     );
   }
-  const raw = source.slice(start, closeIndex + "\n});".length);
-  const refined = `${raw.slice(0, raw.length - "});".length)}}).strict();`;
 
-  const alreadyRefined = countText(source, refined) === 1;
-  return { name, raw, refined, state: alreadyRefined ? "refined" : "raw" };
+  const rawTail = "\n});";
+  const refinedTail = "\n}).strict();";
+  const followsRefined = source.startsWith(refinedTail, objectEnd);
+  const followsRaw = source.startsWith(rawTail, objectEnd);
+  if (!followsRefined && !followsRaw) {
+    throw new Error(
+      `strict-object refinement found the ${name} declaration ending in an unrecognized form; expected either \`});\` or \`}).strict();\`, ` +
+        `so neither the raw nor the refined state could be identified and no refinement was applied.`,
+    );
+  }
+
+  const body = source.slice(start, objectEnd);
+  const raw = `${body}${rawTail}`;
+  const refined = `${body}${refinedTail}`;
+  return { name, raw, refined, state: followsRefined ? "refined" : "raw" };
 }
 
 function replaceOnce(source, raw, refined, name) {

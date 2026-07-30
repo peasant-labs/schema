@@ -24,7 +24,21 @@ func loadOwnerUpdateFixtures(t *testing.T) *schema.OwnerUpdateFixtures {
 func TestOwnerUpdateRequestValidation(t *testing.T) {
 	fixtures := loadOwnerUpdateFixtures(t)
 	assert.RequireValid(t, fixtures.RequestValidations)
-	assert.RequireMin(t, fixtures.RequestValidations, 14)
+	// The floor derives from the closed behaviour set rather than a hand-written
+	// number. A number with slack in it lets rows carrying an entire behaviour be
+	// deleted with nothing noticing, and a fixture row is not code, so no mutation
+	// of the production source can reach that loss.
+	assert.RequireMin(t, fixtures.RequestValidations, len(schema.AllOwnerUpdateRequestBehaviours))
+
+	covered := map[schema.OwnerUpdateRequestBehaviour]int{}
+	for _, c := range fixtures.RequestValidations.Cases {
+		covered[c.Expected.Behaviour]++
+	}
+	for _, behaviour := range schema.AllOwnerUpdateRequestBehaviours {
+		if covered[behaviour] == 0 {
+			t.Errorf("no request_validations row covers behaviour %q; the corpus lost the rows exercising it, which no mutation of the production source could have detected", behaviour)
+		}
+	}
 
 	for _, c := range fixtures.RequestValidations.Cases {
 		t.Run(c.Name, func(t *testing.T) {
