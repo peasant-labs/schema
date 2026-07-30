@@ -1774,6 +1774,44 @@ export const zPullSkipGateResponse = z.object({
 
 export type PullSkipGateResponse = z.infer<typeof zPullSkipGateResponse>;
 
+export const zTranscriptUpdateErrorResponse = z.object({
+    error: z.string()
+});
+
+export type TranscriptUpdateErrorResponse = z.infer<typeof zTranscriptUpdateErrorResponse>;
+
+/**
+ * TranscriptUpdateLicense
+ *
+ * License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.
+ */
+export const zTranscriptUpdateLicense = z.enum([
+    '',
+    'CC0-1.0',
+    'CC-BY-4.0',
+    'CC-BY-SA-4.0'
+]);
+
+export type TranscriptUpdateLicense = z.infer<typeof zTranscriptUpdateLicense>;
+
+/**
+ * TranscriptUpdateVisibility
+ *
+ * Visibility values accepted by the owner transcript update operation. Organization-scoped visibility is deferred and is deliberately not offered here.
+ */
+export const zTranscriptUpdateVisibility = z.enum(['private', 'public']);
+
+export type TranscriptUpdateVisibility = z.infer<typeof zTranscriptUpdateVisibility>;
+
+export const zTranscriptUpdateRequest = z.object({
+    description: z.string().nullish(),
+    license: zTranscriptUpdateLicense.nullish(),
+    title: z.string().nullish(),
+    visibility: zTranscriptUpdateVisibility.nullish()
+});
+
+export type TranscriptUpdateRequest = z.infer<typeof zTranscriptUpdateRequest>;
+
 export const zTrendsPayload = z.object({
     days: z.array(zDayStats).nullable(),
     totalSessions: z.int(),

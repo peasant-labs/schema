@@ -35,9 +35,14 @@ const (
 	// documented Village POST operation (additive = minor bump).
 	// Bumped to 0.9.0 when Harness gained Strike and SessionID gained the two
 	// observed Strike identifier forms (additive = minor bump).
+	// Bumped to 0.10.0 when the owner transcript update operation
+	// (PATCH /api/v1/transcripts/{id}) was declared: an operation the village
+	// already served but the published contract never stated, together with its
+	// tri-state license semantics, its narrowed visibility menu, and its full
+	// reachable refusal set (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.9.0"
+	VillageAPIVersion = "0.10.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -66,5 +71,9 @@ const (
 	// push items gained TargetAssociationID (additive = minor bump).
 	// Bumped to 0.6.0 when Harness gained Strike and SessionID gained the two
 	// observed Strike identifier forms (additive = minor bump).
-	TypesVersion = "0.6.0"
+	// Bumped to 0.7.0 when the owner transcript update request, its narrowed
+	// visibility menu, its three-valued license, and its refusal envelope
+	// entered the catalog so both language bindings carry them (additive =
+	// minor bump).
+	TypesVersion = "0.7.0"
 )

@@ -7,6 +7,36 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.10.0 and Types 0.7.0 declare the owner transcript update
+  operation, `PATCH /api/v1/transcripts/{id}`. The village has served this route
+  since transcript governance landed, but the published contract never stated
+  it, so a client could only call it from knowledge of the handler. Declaring it
+  closes that drift.
+
+  `TranscriptUpdateRequest` carries `title`, `description`, `visibility`, and
+  `license`, all optional, where an omitted field means leave unchanged rather
+  than reset. `license` is three-valued: omitted preserves the stored license,
+  the empty string requests a clear, and a canonical menu license replaces.
+  Those three states stay distinguishable on the wire because that distinction
+  is what makes the server's rule expressible that a granted Creative Commons
+  license can never be cleared, only replaced.
+
+  `TranscriptUpdateVisibility` declares `private` and `public` only. It is
+  deliberately narrower than `Visibility`, whose third member covers
+  organization-scoped access: that capability is deferred, and declaring it on
+  this operation would advertise a value the server refuses. `Visibility` itself
+  is unchanged.
+
+  The operation declares its reachable refusals, not only success, because two
+  of them are contract rules rather than transport accidents: only the owner may
+  call it, and anyone else receives 403 while neither the transcript nor its
+  governance audit changes; and clearing a granted license is refused with 400.
+  All refusals share one `TranscriptUpdateErrorResponse` envelope. The success
+  body is not yet declared.
+
+  Village API 0.9.0, both 0.9.0 request schemas, and Types 0.6.0 are retired and
+  byte-frozen. Local API stays 0.6.0.
+
 - Village API 0.9.0, Local API 0.6.0, and Types 0.6.0 add the `strike`
   harness and both observed Strike session ID forms: a timestamped prefix plus
   26 uppercase RFC4648 base32 characters, or the 26-character identifier by

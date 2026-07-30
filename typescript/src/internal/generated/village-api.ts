@@ -187,6 +187,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcripts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Update an owned transcript's metadata and governance axes. Every field is optional and an omitted field is left unchanged, resolved against the locked stored row so a concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty string to clear, send a menu license to replace. Clearing a license that was actually granted is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner may call this; anyone else receives 403 and neither the transcript nor its governance audit changes. Visibility accepts private and public; organization-scoped visibility is deferred. */
+        patch: operations["updateTranscript"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -212,6 +229,12 @@ export interface components {
             stats?: components["schemas"]["SchemaSessionStats"];
             subagents?: components["schemas"]["SchemaSubagentRef"][];
             timestamp?: components["schemas"]["SchemaTimestampInfo"];
+        };
+        OpenapiTranscriptUpdateBody: {
+            description?: null | string;
+            license?: components["schemas"]["SchemaTranscriptUpdateLicense"];
+            title?: null | string;
+            visibility?: components["schemas"]["SchemaTranscriptUpdateVisibility"];
         };
         SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;
@@ -378,6 +401,23 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        SchemaTranscriptUpdateErrorResponse: Schema.TranscriptUpdateErrorResponse;
+        /**
+         * TranscriptUpdateLicense
+         * @description License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.
+         * @example CC-BY-4.0
+         * @example
+         * @enum {string}
+         */
+        SchemaTranscriptUpdateLicense: Schema.TranscriptUpdateLicense;
+        /**
+         * TranscriptUpdateVisibility
+         * @description Visibility values accepted by the owner transcript update operation. Organization-scoped visibility is deferred and is deliberately not offered here.
+         * @example public
+         * @example private
+         * @enum {string}
+         */
+        SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
         /**
          * Visibility
          * @description Access control level for a published transcript
@@ -645,6 +685,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaPublishResponse"];
+                };
+            };
+        };
+    };
+    updateTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OpenapiTranscriptUpdateBody"];
+            };
+        };
+        responses: {
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
                 };
             };
         };

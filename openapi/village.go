@@ -15,6 +15,14 @@ import (
 // OpenAPI identity and can never shadow the canonical language-binding type.
 type TranscriptPublishRequest schema.PublishRequest
 
+// TranscriptUpdateBody is the owner-update operation's HTTP body. It carries the
+// canonical schema.TranscriptUpdateRequest shape under an operation-scoped name
+// so the body is a referenced component rather than an inline object, matching
+// every other operation in this spec. Component harmonization then replaces its
+// contents with the canonical Types definition, so the name is operation-local
+// while the schema stays canonical.
+type TranscriptUpdateBody schema.TranscriptUpdateRequest
+
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
 // annotation registry and manifest synchronization, schema negotiation, and
@@ -44,6 +52,45 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	oc.SetTags("transcripts")
 	if err := r.AddOperation(oc); err != nil {
 		return nil, fmt.Errorf("add publish operation: %w", err)
+	}
+
+	// PATCH /api/v1/transcripts/{id} — owner-only partial metadata/governance
+	// update of an already-published transcript. The village has served this
+	// since the governance work landed; declaring it here closes the drift where
+	// a handler enforced rules the published contract never stated.
+	//
+	// Every refusal is declared, not just the happy path, because two of them
+	// are contract rules rather than transport accidents: the ownership boundary
+	// (403, leaving state and the governance audit untouched) and the
+	// irrevocability of a granted license (400). A client reading only a success
+	// shape would not learn either.
+	updateOC, err := r.NewOperationContext(http.MethodPatch, "/api/v1/transcripts/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("new transcript update operation: %w", err)
+	}
+	updateOC.AddReqStructure(new(struct {
+		ID string `path:"id" description:"Transcript identifier"`
+	}))
+	updateOC.AddReqStructure(new(TranscriptUpdateBody))
+	for _, status := range []int{
+		http.StatusBadRequest,
+		http.StatusForbidden,
+		http.StatusNotFound,
+		http.StatusInternalServerError,
+	} {
+		updateOC.AddRespStructure(new(schema.TranscriptUpdateErrorResponse), openapicore.WithHTTPStatus(status))
+	}
+	updateOC.SetDescription("Update an owned transcript's metadata and governance axes. Every field is " +
+		"optional and an omitted field is left unchanged, resolved against the locked stored row so a " +
+		"concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty " +
+		"string to clear, send a menu license to replace. Clearing a license that was actually granted " +
+		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
+		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
+		"changes. Visibility accepts private and public; organization-scoped visibility is deferred.")
+	updateOC.SetID("updateTranscript")
+	updateOC.SetTags("transcripts")
+	if err := r.AddOperation(updateOC); err != nil {
+		return nil, fmt.Errorf("add transcript update operation: %w", err)
 	}
 
 	// GET /api/v1/auth/cli/login — browser OAuth initiation.
