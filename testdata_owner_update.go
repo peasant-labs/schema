@@ -92,6 +92,10 @@ const (
 	// declares. Without it the payload, which is the operation's whole subject,
 	// has nothing pinning its field names.
 	OwnerUpdateProbeBodyProperties OwnerUpdateSpecProbeKind = "body_properties"
+	// OwnerUpdateProbeBodyIsRequired asserts the request body is declared
+	// required. Reflection defaults it to optional, which would describe a
+	// request the server always refuses.
+	OwnerUpdateProbeBodyIsRequired OwnerUpdateSpecProbeKind = "body_is_required"
 	// OwnerUpdateProbeDescriptionAnchors asserts the operation description still
 	// carries the claims a consumer relies on. The description is the only place
 	// several contract decisions are explained, and prose is otherwise unguarded:
@@ -121,6 +125,7 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeBodyProperties,
 	OwnerUpdateProbeBodyIsClosed,
 	OwnerUpdateProbeDescriptionAnchors,
+	OwnerUpdateProbeBodyIsRequired,
 }
 
 // IsValid reports whether the probe kind is a known member.

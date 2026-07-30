@@ -208,6 +208,17 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 					}
 				}
 
+			case schema.OwnerUpdateProbeBodyIsRequired:
+				body, ok := operation["requestBody"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update operation declares no request body")
+				}
+				required, _ := body["required"].(bool)
+				if !required {
+					t.Fatal("the request body must be declared required; the handler decodes it unconditionally, so an optional body describes a request that is always refused with 400")
+				}
+				observed = []string{"required"}
+
 			case schema.OwnerUpdateProbeBodyProperties:
 				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
 				properties, ok := body["properties"].(map[string]any)

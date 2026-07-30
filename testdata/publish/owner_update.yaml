@@ -254,6 +254,13 @@ spec_expectations:
       provenance: {source: requirement, ref: "the payload is the operation's whole subject and nothing else pinned its property names"}
       mutation: {description: "asserts the exact property set, so renaming or dropping a field fails instead of silently advertising a shape village does not serve"}
 
+    - name: the request body is declared required
+      input: {probe: body_is_required}
+      expected: {strings: ["required"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "reflection defaults a body to optional, and the server refuses an absent body with 400 every time"}
+      mutation: {description: "asserts the body is required, so reverting to the reflected default fails instead of shipping a contract for a request that always fails"}
+
     - name: the body is closed against unknown properties
       input: {probe: body_is_closed}
       expected: {strings: ["closed"]}
