@@ -28,8 +28,18 @@ type TranscriptPublishRequest schema.PublishRequest
 // breaking rename. Whether a shared envelope belongs in the catalog is a
 // decision for the change that needs one, not a side effect of this one.
 type TranscriptUpdateErrorResponse struct {
-	// Error is the human-readable, actionable refusal reason.
-	Error string `json:"error"`
+	// Error is the human-readable, actionable refusal reason. It is required
+	// because the village emits it unconditionally: every declared refusal on
+	// this operation, including the 401 raised by the authentication middleware
+	// before the handler runs, is written by one helper that always sets this
+	// field. Declaring it optional would understate what the server guarantees
+	// and force a consumer to handle an absence that cannot occur.
+	//
+	// The tag is load-bearing rather than decorative. Go-tag requiredness is
+	// applied to catalogued types by the Types generator; this type is
+	// deliberately operation-scoped and outside that catalog, so the tag is the
+	// only thing that emits the required array here.
+	Error string `json:"error" required:"true"`
 }
 
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the

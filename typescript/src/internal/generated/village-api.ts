@@ -231,7 +231,7 @@ export interface components {
             timestamp?: components["schemas"]["SchemaTimestampInfo"];
         };
         OpenapiTranscriptUpdateErrorResponse: {
-            error?: string;
+            error: string;
         };
         SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;

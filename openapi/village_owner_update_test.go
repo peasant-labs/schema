@@ -382,6 +382,23 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 		if _, ok := properties["error"]; !ok {
 			t.Fatalf("response %s envelope must carry the error field the village actually serves", status)
 		}
+		// Presence in properties is not the same as a presence GUARANTEE. The
+		// village writes every refusal through one helper that always sets this
+		// field, so declaring it optional would understate the server and make a
+		// consumer handle an absence that cannot occur.
+		required, ok := resolved["required"].([]any)
+		if !ok {
+			t.Fatalf("response %s envelope declares no required array; the error field would be optional in the generated contract while the server always sends it", status)
+		}
+		found := false
+		for _, name := range required {
+			if name == "error" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("response %s envelope does not require the error field; the server emits it unconditionally, so an optional declaration understates the guarantee", status)
+		}
 	}
 	// The expected count comes from the FIXTURE's declared status set, not from
 	// the same responses map the loop walks. Counting non-success entries of that

@@ -31,7 +31,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   of them are contract rules rather than transport accidents: only the owner may
   call it, and anyone else receives 403 while neither the transcript nor its
   governance audit changes; and clearing a granted license is refused with 400.
-  All refusals share one `TranscriptUpdateErrorResponse` envelope. 400 covers
+  All refusals share one `TranscriptUpdateErrorResponse` envelope, whose `error`
+  field is required: the village writes every refusal through a single helper
+  that always sets it, including the 401 raised before the handler runs, so an
+  optional declaration would understate the guarantee. 400 covers
   five distinct refusals: an unparseable transcript id, an undecodable body, a
   visibility outside the accepted set, a license outside the canonical menu, and
   the attempt to clear a granted license. 401 comes from the authentication

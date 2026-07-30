@@ -628,6 +628,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "error"
+        ],
         "type": "object"
       },
       "SchemaAnnotationEntryTarget": {
