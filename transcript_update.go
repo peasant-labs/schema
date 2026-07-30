@@ -107,6 +107,19 @@ type TranscriptUpdateLicense string
 // unexplained empty string.
 const TranscriptUpdateLicenseClear TranscriptUpdateLicense = ""
 
+// AllTranscriptUpdateLicenses is the canonical menu of values this operation
+// accepts: the clear sentinel first, then every canonical menu license in order.
+// It is DERIVED from AllLicenses rather than restated, so widening the license
+// menu widens this operation with no second edit to forget.
+var AllTranscriptUpdateLicenses = func() []TranscriptUpdateLicense {
+	values := make([]TranscriptUpdateLicense, 0, len(AllLicenses)+1)
+	values = append(values, TranscriptUpdateLicenseClear)
+	for _, license := range AllLicenses {
+		values = append(values, TranscriptUpdateLicense(license))
+	}
+	return values
+}()
+
 // IsValid reports whether the value is either the clear sentinel or a license on
 // the canonical menu. It derives the menu from AllLicenses rather than repeating
 // it, so widening the license menu widens this operation automatically.
@@ -127,11 +140,8 @@ func (TranscriptUpdateLicense) JSONSchema() (jsonschema.Schema, error) {
 	s.WithDescription("License value for the owner transcript update operation: a canonical menu " +
 		"license, or the empty string to clear. Clearing a license that was actually granted is " +
 		"refused, because a granted Creative Commons license is irrevocable.")
-	// Derive from AllLicenses so a new license reaches this operation without a
-	// second edit, and prepend the clear sentinel.
-	enum := make([]any, 0, len(AllLicenses)+1)
-	enum = append(enum, string(TranscriptUpdateLicenseClear))
-	for _, license := range AllLicenses {
+	enum := make([]any, 0, len(AllTranscriptUpdateLicenses))
+	for _, license := range AllTranscriptUpdateLicenses {
 		enum = append(enum, string(license))
 	}
 	s.WithEnum(enum...)

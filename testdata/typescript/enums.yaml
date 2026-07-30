@@ -317,6 +317,20 @@ enums:
       - {name: Enumerated, value: "enumerated"}
       - {name: Described, value: "described"}
     all_values: ["enumerated", "described"]
+  - name: TranscriptUpdateLicense
+    all_name: AllTranscriptUpdateLicenses
+    members:
+      - {name: Clear, value: ""}
+      - {name: CC0, value: "CC0-1.0"}
+      - {name: CCBY, value: "CC-BY-4.0"}
+      - {name: CCBYSA, value: "CC-BY-SA-4.0"}
+    all_values: ["", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"]
+  - name: TranscriptUpdateVisibility
+    all_name: AllTranscriptUpdateVisibilities
+    members:
+      - {name: Private, value: "private"}
+      - {name: Public, value: "public"}
+    all_values: ["private", "public"]
   - name: Visibility
     all_name: AllVisibilities
     members:
