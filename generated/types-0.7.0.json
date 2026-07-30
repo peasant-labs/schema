@@ -5880,17 +5880,6 @@
         "title": "Transcript ID",
         "type": "string"
       },
-      "TranscriptUpdateErrorResponse": {
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "type": "object"
-      },
       "TranscriptUpdateLicense": {
         "description": "License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.",
         "enum": [

@@ -60,6 +60,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   https://github.com/peasant-labs/village/issues/55. Adding the response schema
   once that lands is additive.
 
+  The request body is declared **required**. Reflection marks a body optional by
+  default, which would have described a request that always fails: the handler
+  decodes unconditionally, so an absent or empty body is a guaranteed 400. An
+  empty JSON object is the correct no-op and is accepted.
+
+  `TranscriptUpdateErrorResponse` is deliberately operation-scoped rather than a
+  member of the shared type catalog. Its shape is nothing but `{error: string}`,
+  so cataloguing it would freeze a transcript-update-specific name onto a
+  generic envelope at release time, leaving whoever declares the next
+  operation's refusals to reuse a misleading name, duplicate it, or take a
+  breaking rename. Whether a shared refusal envelope belongs in the catalog is a
+  decision for the change that needs one.
+
   The request body is a closed object: unknown properties are refused rather
   than accepted and silently discarded, and no property admits JSON null.
   Refusing null is deliberate. The village decodes a null into the same nil

@@ -230,6 +230,9 @@ export interface components {
             subagents?: components["schemas"]["SchemaSubagentRef"][];
             timestamp?: components["schemas"]["SchemaTimestampInfo"];
         };
+        OpenapiTranscriptUpdateErrorResponse: {
+            error?: string;
+        };
         SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;
         SchemaAnnotationPushItem: Schema.AnnotationPushItem;
@@ -395,7 +398,6 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
-        SchemaTranscriptUpdateErrorResponse: Schema.TranscriptUpdateErrorResponse;
         /**
          * TranscriptUpdateLicense
          * @description License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.
@@ -694,7 +696,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["SchemaTranscriptUpdateRequest"];
             };
@@ -713,7 +715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                    "application/json": components["schemas"]["OpenapiTranscriptUpdateErrorResponse"];
                 };
             };
             /** @description Unauthorized */
@@ -722,7 +724,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                    "application/json": components["schemas"]["OpenapiTranscriptUpdateErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -731,7 +733,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                    "application/json": components["schemas"]["OpenapiTranscriptUpdateErrorResponse"];
                 };
             };
             /** @description Not Found */
@@ -740,7 +742,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                    "application/json": components["schemas"]["OpenapiTranscriptUpdateErrorResponse"];
                 };
             };
             /** @description Internal Server Error */
@@ -749,7 +751,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                    "application/json": components["schemas"]["OpenapiTranscriptUpdateErrorResponse"];
                 };
             };
         };

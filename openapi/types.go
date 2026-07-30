@@ -95,7 +95,6 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TimestampInfo", new(schema.TimestampInfo)}, {"ToolCallDetail", new(schema.ToolCallDetail)},
 		{"ToolCallKind", new(schema.ToolCallKind)}, {"TranscriptContent", new(schema.TranscriptContent)},
 		{"TranscriptID", new(schema.TranscriptID)},
-		{"TranscriptUpdateErrorResponse", new(schema.TranscriptUpdateErrorResponse)},
 		{"TranscriptUpdateLicense", new(schema.TranscriptUpdateLicense)},
 		{"TranscriptUpdateRequest", new(schema.TranscriptUpdateRequest)},
 		{"TranscriptUpdateVisibility", new(schema.TranscriptUpdateVisibility)},

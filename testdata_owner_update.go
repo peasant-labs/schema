@@ -92,6 +92,11 @@ const (
 	// declares. Without it the payload, which is the operation's whole subject,
 	// has nothing pinning its field names.
 	OwnerUpdateProbeBodyProperties OwnerUpdateSpecProbeKind = "body_properties"
+	// OwnerUpdateProbeDescriptionAnchors asserts the operation description still
+	// carries the claims a consumer relies on. The description is the only place
+	// several contract decisions are explained, and prose is otherwise unguarded:
+	// deleting it changes no assertion and breaks no build.
+	OwnerUpdateProbeDescriptionAnchors OwnerUpdateSpecProbeKind = "description_anchors"
 	// OwnerUpdateProbeBodyIsClosed asserts the body rejects unknown properties
 	// rather than accepting and discarding them.
 	OwnerUpdateProbeBodyIsClosed OwnerUpdateSpecProbeKind = "body_is_closed"
@@ -115,6 +120,7 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeSuccessHasNoBody,
 	OwnerUpdateProbeBodyProperties,
 	OwnerUpdateProbeBodyIsClosed,
+	OwnerUpdateProbeDescriptionAnchors,
 }
 
 // IsValid reports whether the probe kind is a known member.

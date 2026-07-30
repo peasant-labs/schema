@@ -197,6 +197,17 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 				}
 				observed = []string{"no-content-declared"}
 
+			case schema.OwnerUpdateProbeDescriptionAnchors:
+				description, ok := operation["description"].(string)
+				if !ok {
+					t.Fatal("owner update operation declares no description; the reasons for its status set, its narrowed visibility menu and its undeclared success body live there and nowhere else a consumer can read")
+				}
+				for _, anchor := range c.Expected.Strings {
+					if strings.Contains(description, anchor) {
+						observed = append(observed, anchor)
+					}
+				}
+
 			case schema.OwnerUpdateProbeBodyProperties:
 				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
 				properties, ok := body["properties"].(map[string]any)
@@ -319,25 +330,47 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 			t.Fatalf("response %s envelope must carry the error field the village actually serves", status)
 		}
 	}
-	// Not a "greater than zero" check. A threshold that admits one would still
-	// pass if the declaration silently lost three of its four refusals, which is
-	// the realistic regression: refusals are dropped one at a time, not all at
-	// once. Require the assertion to have covered EVERY declared non-success
-	// response, so the guard tracks the declaration rather than a fixed number
-	// somebody would have to remember to update.
-	wantRefusals := 0
-	for status := range responses {
-		if status != successStatus {
-			wantRefusals++
-		}
+	// The expected count comes from the FIXTURE's declared status set, not from
+	// the same responses map the loop walks. Counting non-success entries of that
+	// map on both sides would be a tautology: dropping a refusal from the
+	// declaration shrinks both operands together, so the comparison could never
+	// fail for the regression it claims to guard. Deriving one operand
+	// independently is what makes losing a single refusal turn this red.
+	wantRefusals, err := declaredRefusalCount()
+	if err != nil {
+		t.Fatalf("determine the expected refusal count: %v", err)
 	}
 	if wantRefusals == 0 {
-		t.Fatal("the operation declares no refusal responses at all; the ownership boundary and the irrevocability rule would be unreadable from the contract")
+		t.Fatal("the fixture declares no refusal statuses at all; the ownership boundary and the irrevocability rule would be unreadable from the contract")
 	}
 	if refusals != wantRefusals {
-		t.Fatalf("examined %d refusal response(s) but %d are declared; the envelope assertion must cover every declared refusal or it silently stops asserting", refusals, wantRefusals)
+		t.Fatalf("examined %d refusal response(s) but the declared status set names %d; a refusal was dropped from the declaration, or the assertion stopped covering one", refusals, wantRefusals)
 	}
 	if len(envelopeRefs) != 1 {
 		t.Fatalf("the refusals reference %d distinct components %v, want exactly one shared envelope so a client reads the reason from the same field whichever refusal it hit", len(envelopeRefs), envelopeRefs)
 	}
+}
+
+// declaredRefusalCount reads the expected number of refusals from the fixture's
+// response_statuses row. It is deliberately a DIFFERENT source from the built
+// document the envelope assertion walks, so the two can disagree; a count
+// derived from the document itself could not.
+func declaredRefusalCount() (int, error) {
+	fixtures, err := schema.LoadOwnerUpdateFixtures()
+	if err != nil {
+		return 0, fmt.Errorf("load owner update fixtures: %w", err)
+	}
+	for _, c := range fixtures.SpecExpectations.Cases {
+		if c.Input.Probe != schema.OwnerUpdateProbeResponseStatuses {
+			continue
+		}
+		count := 0
+		for _, status := range c.Expected.Strings {
+			if status != successStatus {
+				count++
+			}
+		}
+		return count, nil
+	}
+	return 0, fmt.Errorf("the fixture has no %q row, so the expected refusal count cannot be derived independently of the document under test", schema.OwnerUpdateProbeResponseStatuses)
 }

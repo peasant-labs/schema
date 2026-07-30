@@ -3716,13 +3716,6 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
       type: string
-    TranscriptUpdateErrorResponse:
-      properties:
-        error:
-          type: string
-      required:
-      - error
-      type: object
     TranscriptUpdateLicense:
       description: 'License value for the owner transcript update operation: a canonical
         menu license, or the empty string to clear. Clearing a license that was actually

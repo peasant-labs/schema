@@ -207,20 +207,6 @@ func (r TranscriptUpdateRequest) Validate() error {
 	return nil
 }
 
-// TranscriptUpdateErrorResponse is the body the owner update operation returns
-// on every refusal. The village serves one uniform error envelope, so each
-// declared non-success status carries this same shape and a client can read the
-// reason from one field regardless of which refusal it hit.
-//
-// It is scoped to this operation rather than declared village-wide because this
-// is currently the only operation whose refusals are declared; promoting it to a
-// shared envelope is a deliberate decision for whichever change declares the
-// next one, not a side effect of this one.
-type TranscriptUpdateErrorResponse struct {
-	// Error is the human-readable, actionable refusal reason.
-	Error string `json:"error"`
-}
-
 // transcriptUpdateFields is the closed set of property names this operation
 // accepts, paired with the JSON tags on TranscriptUpdateRequest. It is the one
 // place the wire vocabulary is written down, so the strict decoder and the

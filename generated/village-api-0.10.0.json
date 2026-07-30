@@ -491,7 +491,8 @@
                 "$ref": "#/components/schemas/SchemaTranscriptUpdateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -502,7 +503,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptUpdateErrorResponse"
+                  "$ref": "#/components/schemas/OpenapiTranscriptUpdateErrorResponse"
                 }
               }
             }
@@ -512,7 +513,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptUpdateErrorResponse"
+                  "$ref": "#/components/schemas/OpenapiTranscriptUpdateErrorResponse"
                 }
               }
             }
@@ -522,7 +523,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptUpdateErrorResponse"
+                  "$ref": "#/components/schemas/OpenapiTranscriptUpdateErrorResponse"
                 }
               }
             }
@@ -532,7 +533,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptUpdateErrorResponse"
+                  "$ref": "#/components/schemas/OpenapiTranscriptUpdateErrorResponse"
                 }
               }
             }
@@ -542,7 +543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaTranscriptUpdateErrorResponse"
+                  "$ref": "#/components/schemas/OpenapiTranscriptUpdateErrorResponse"
                 }
               }
             }
@@ -619,6 +620,14 @@
         "required": [
           "model"
         ],
+        "type": "object"
+      },
+      "OpenapiTranscriptUpdateErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        },
         "type": "object"
       },
       "SchemaAnnotationEntryTarget": {
@@ -2987,17 +2996,6 @@
         "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
         "title": "Transcript ID",
         "type": "string"
-      },
-      "SchemaTranscriptUpdateErrorResponse": {
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "error"
-        ],
-        "type": "object"
       },
       "SchemaTranscriptUpdateLicense": {
         "description": "License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.",

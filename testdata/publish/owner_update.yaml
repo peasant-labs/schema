@@ -261,6 +261,22 @@ spec_expectations:
       provenance: {source: requirement, ref: "an open body plus a stripping validator recreates the silent no-op that omitting tags was meant to prevent"}
       mutation: {description: "asserts additionalProperties is false, so an unknown field is refused rather than accepted and discarded"}
 
+    - name: the description still carries the claims a consumer depends on
+      input: {probe: description_anchors}
+      expected:
+        strings:
+          - "an unparseable transcript id"
+          - "a license outside the canonical menu"
+          - "the attempt to clear a granted license"
+          - "401 is returned by the authentication boundary"
+          - "404 covers both a transcript that does not exist and a lookup that failed"
+          - "Explicit null is refused"
+          - "https://github.com/peasant-labs/village/issues/55"
+          - "Do not 'harmonize' this by inventing a success body"
+      classification: must-pass
+      provenance: {source: requirement, ref: "the description is the only place these decisions are explained to a consumer, and prose is otherwise unguarded"}
+      mutation: {description: "asserts each load-bearing claim survives; deleting the justification prose changed no assertion before this row existed"}
+
     - name: the declared license menu carries the clear sentinel and every menu license
       input: {probe: license_enum}
       expected: {strings: ["", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"]}

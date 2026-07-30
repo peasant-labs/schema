@@ -131,6 +131,15 @@ func TestOwnerUpdateVisibilityExcludesDeferredOrganizationScope(t *testing.T) {
 // set is derived rather than duplicated, so widening the canonical menu widens
 // this operation without a second edit that could be forgotten.
 func TestOwnerUpdateLicenseMenuDerivesFromCanonical(t *testing.T) {
+	// The headline claim lives inside the loop below, so an empty canonical menu
+	// would satisfy this test without ever evaluating the derivation. Guard the
+	// iteration source before trusting what iterating it proves.
+	if len(schema.AllLicenses) == 0 {
+		t.Fatal("the canonical license menu is empty, so the derivation loop below would assert nothing while reporting success")
+	}
+	if len(schema.AllTranscriptUpdateLicenses) != len(schema.AllLicenses)+1 {
+		t.Fatalf("the operation menu holds %d values but the canonical menu holds %d; the operation menu must be the canonical menu plus the clear sentinel, or it is not derived at all", len(schema.AllTranscriptUpdateLicenses), len(schema.AllLicenses))
+	}
 	for _, license := range schema.AllLicenses {
 		if !schema.TranscriptUpdateLicense(license).IsValid() {
 			t.Fatalf("canonical menu license %q must be accepted by the owner update operation", license)

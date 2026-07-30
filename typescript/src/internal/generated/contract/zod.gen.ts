@@ -1774,12 +1774,6 @@ export const zPullSkipGateResponse = z.object({
 
 export type PullSkipGateResponse = z.infer<typeof zPullSkipGateResponse>;
 
-export const zTranscriptUpdateErrorResponse = z.object({
-    error: z.string()
-});
-
-export type TranscriptUpdateErrorResponse = z.infer<typeof zTranscriptUpdateErrorResponse>;
-
 /**
  * TranscriptUpdateLicense
  *

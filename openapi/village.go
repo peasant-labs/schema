@@ -15,6 +15,23 @@ import (
 // OpenAPI identity and can never shadow the canonical language-binding type.
 type TranscriptPublishRequest schema.PublishRequest
 
+// TranscriptUpdateErrorResponse is the body the owner update operation returns
+// on every refusal. The village serves one uniform error envelope, so each
+// declared non-success status carries this same shape and a client reads the
+// reason from one field regardless of which refusal it hit.
+//
+// It lives here, operation-scoped, rather than in the shared type catalog. The
+// shape is nothing but {error: string}, so promoting it to the canonical
+// cross-language catalog would freeze a transcript-update-specific NAME onto a
+// generic envelope at the next release tag, leaving whoever declares the second
+// operation's refusals to reuse a misleading name, duplicate it, or take a
+// breaking rename. Whether a shared envelope belongs in the catalog is a
+// decision for the change that needs one, not a side effect of this one.
+type TranscriptUpdateErrorResponse struct {
+	// Error is the human-readable, actionable refusal reason.
+	Error string `json:"error"`
+}
+
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
 // annotation registry and manifest synchronization, schema negotiation, and
@@ -84,7 +101,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		http.StatusNotFound,
 		http.StatusInternalServerError,
 	} {
-		updateOC.AddRespStructure(new(schema.TranscriptUpdateErrorResponse), openapicore.WithHTTPStatus(status))
+		updateOC.AddRespStructure(new(TranscriptUpdateErrorResponse), openapicore.WithHTTPStatus(status))
 	}
 	updateOC.SetDescription("Update an owned transcript's metadata and governance axes. Every field is " +
 		"optional and an omitted field is left unchanged, resolved against the locked stored row so a " +
@@ -121,6 +138,14 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	updateOC.SetTags("transcripts")
 	if err := r.AddOperation(updateOC); err != nil {
 		return nil, fmt.Errorf("add transcript update operation: %w", err)
+	}
+	// Reflection marks a request body optional by default. Here that would be a
+	// false statement: the handler decodes the body unconditionally, so omitting
+	// it (or sending an empty one) is a guaranteed 400. An empty JSON object is
+	// the correct way to send a no-op, and it is accepted. Mark the body required
+	// so the contract describes a request that can actually succeed.
+	if err := requirePatchRequestBody(r.Spec, "/api/v1/transcripts/{id}"); err != nil {
+		return nil, err
 	}
 
 	// GET /api/v1/auth/cli/login — browser OAuth initiation.
@@ -330,4 +355,28 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	return r.Spec, nil
+}
+
+// requirePatchRequestBody marks the PATCH request body at one path as required
+// after reflection. It fails closed rather than silently doing nothing, because
+// a missing path or operation would leave the body advertised as optional while
+// every gate stayed green.
+func requirePatchRequestBody(spec *openapi31.Spec, path string) error {
+	if spec == nil || spec.Paths == nil {
+		return fmt.Errorf("require PATCH request body for %s: the specification has no paths, so the body would remain advertised as optional", path)
+	}
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	if !ok {
+		return fmt.Errorf("require PATCH request body for %s: the path is absent from the specification; either the operation moved or this call names a stale path, and the body would remain advertised as optional", path)
+	}
+	if item.Patch == nil {
+		return fmt.Errorf("require PATCH request body for %s: the path declares no PATCH operation; the body would remain advertised as optional", path)
+	}
+	if item.Patch.RequestBody == nil || item.Patch.RequestBody.RequestBody == nil {
+		return fmt.Errorf("require PATCH request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+	}
+	required := true
+	item.Patch.RequestBody.RequestBody.Required = &required
+	spec.Paths.MapOfPathItemValues[path] = item
+	return nil
 }
