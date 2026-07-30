@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -212,7 +213,21 @@ type TranscriptUpdateRequest struct {
 // ownership check or the irrevocability refusal: both depend on stored state
 // this request cannot see, and pretending otherwise would produce a local
 // success that the server then contradicts.
+// TranscriptUpdateTitleMaxLength is the declared bound on a title, mirroring the
+// storage column. It is a named constant because three places must agree: this
+// validator, the reflector tag that emits maxLength into both documents, and the
+// corpus rows that exercise the boundary.
+//
+// It counts RUNES, matching the column's code-point counting. A generated
+// JavaScript validator counts UTF-16 code units instead and is therefore
+// stricter on astral input; that divergence is deliberate and documented on
+// Title above.
+const TranscriptUpdateTitleMaxLength = 500
+
 func (r TranscriptUpdateRequest) Validate() error {
+	if r.Title != nil && utf8.RuneCountInString(*r.Title) > TranscriptUpdateTitleMaxLength {
+		return fmt.Errorf("transcript update validation failed at schema.TranscriptUpdateRequest.Validate during owner-update request validation: title is %d characters, exceeding the %d the storage column accepts; without this check the request reaches the database and returns an opaque server error instead of naming the limit; shorten the title to %d characters or fewer", utf8.RuneCountInString(*r.Title), TranscriptUpdateTitleMaxLength, TranscriptUpdateTitleMaxLength)
+	}
 	if r.Visibility != nil && !r.Visibility.IsValid() {
 		return fmt.Errorf("transcript update validation failed at schema.TranscriptUpdateRequest.Validate during owner-update request validation: visibility %q is not an accepted value; the owner update operation accepts only %s, because organization-scoped visibility is deferred; send one of the accepted values or omit visibility to leave it unchanged", r.Visibility.String(), TranscriptUpdateVisibilityMenu())
 	}

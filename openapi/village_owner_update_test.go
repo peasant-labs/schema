@@ -134,6 +134,19 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 	document := villageSpecAsMap(t)
 	operation := ownerUpdateOperation(t, document)
 
+	// The anchors row is prose, so nothing about its CONTENT can be derived. What
+	// can be checked is that it still carries as many claims as the corpus says it
+	// must: without this, anchors are deletable from the row one at a time with
+	// every suite green, silently shrinking what the description is held to.
+	for _, c := range fixtures.SpecExpectations.Cases {
+		if c.Input.Probe != schema.OwnerUpdateProbeDescriptionAnchors {
+			continue
+		}
+		if len(c.Expected.Strings) != fixtures.RequiredDescriptionAnchors {
+			t.Fatalf("the description-anchors row carries %d anchors but the corpus requires %d; an anchor was removed from the row, which shrinks the guarded prose without any assertion noticing", len(c.Expected.Strings), fixtures.RequiredDescriptionAnchors)
+		}
+	}
+
 	covered := make(map[schema.OwnerUpdateSpecProbeKind]bool, len(schema.AllOwnerUpdateSpecProbeKinds))
 	for _, c := range fixtures.SpecExpectations.Cases {
 		covered[c.Input.Probe] = true
@@ -227,11 +240,20 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 						t.Fatalf("the path parameter must reference the canonical transcript identifier, not an inline %v; the village parses it as a UUID and refuses anything else with a 400, so a bare string describes ids the server never accepts", s["type"])
 					}
 					resolved := resolveRef(t, document, ref)
-					if resolved["format"] != "uuid" || resolved["pattern"] == nil {
-						t.Fatalf("the path parameter resolves to %v, which carries no uuid format and pattern; the declaration would still permit ids the server refuses", ref)
+					if resolved["format"] != "uuid" {
+						t.Fatalf("the path parameter resolves to %v, which carries no uuid format; the declaration would still permit ids the server refuses", ref)
 					}
+					pattern, ok := resolved["pattern"].(string)
+					if !ok {
+						t.Fatalf("the path parameter resolves to %v, which carries no pattern", ref)
+					}
+					// The pattern's VALUE, not merely its presence. A parameter can
+					// carry a pattern of `^.*$` and be exactly as unconstrained as the
+					// bare string this probe was added to prevent, and a
+					// case-insensitive widening would silently falsify the recorded
+					// reasoning for declaring one canonical form.
 					name, _ := strings.CutPrefix(ref, "#/components/schemas/")
-					observed = append(observed, name)
+					observed = append(observed, name, pattern)
 				}
 
 			case schema.OwnerUpdateProbeTitleMaxLength:

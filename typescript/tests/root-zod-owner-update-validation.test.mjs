@@ -18,22 +18,15 @@ const fixture = parse(fixtureSource);
 const rows = fixture?.request_validations?.cases;
 assert.ok(Array.isArray(rows) && rows.length > 0, "the owner-update corpus has no request_validations cases; this suite would pass while asserting nothing");
 
-// The closed behaviour set, mirrored from the Go contract. A bare "more than
-// zero rows" check cannot protect a corpus: rows carrying an entire behaviour
-// can be deleted inside the slack of a loose floor, and a fixture row is not
-// code, so no mutation of the production source would reach that loss. Both
-// languages assert coverage per behaviour so a deletion fails on both sides.
-const REQUIRED_BEHAVIOURS = [
-  "visibility_accepted",
-  "visibility_refused",
-  "license_accepted",
-  "license_clear_accepted",
-  "license_refused",
-  "null_refused",
-  "unknown_field_refused",
-  "omission_accepted",
-  "empty_string_accepted",
-];
+// The closed behaviour set is read from the corpus, NOT copied here. A
+// hand-mirrored list protects only the members someone remembered to copy, while
+// the comment above it claims both languages are guarded — so adding a tenth
+// behaviour would leave this side silently checking nine.
+const REQUIRED_BEHAVIOURS = fixture?.required_behaviours;
+assert.ok(
+  Array.isArray(REQUIRED_BEHAVIOURS) && REQUIRED_BEHAVIOURS.length > 0,
+  "the corpus declares no required_behaviours; without it this side cannot assert coverage and would silently check nothing",
+);
 
 const covered = new Set(rows.map((row) => row.expected?.behaviour));
 for (const behaviour of REQUIRED_BEHAVIOURS) {

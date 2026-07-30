@@ -143,6 +143,15 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"declared: it is not a member of this contract's Visibility enum at all, whose third member is " +
 		"'group', and the village refuses 'group'. Declaring 'shared' would mean inventing an enum " +
 		"member to expose the deferred organization-ACL capability, so its absence is a decision. " +
+		"The transcript id is likewise narrower than the server: uuid.Parse also accepts uppercase, " +
+		"brace-wrapped, urn:uuid-prefixed and 32-undashed-hex spellings that the declared pattern " +
+		"rejects. Those stay undeclared because the village only ever emits the canonical lowercase " +
+		"form, so no client holds another unless it manufactures one, and accepting five spellings " +
+		"for one identity is itself a defect surface. Note this document now describes one transcript " +
+		"id two ways: this operation constrains it to the canonical pattern, while the older pull " +
+		"operations still declare a bare string. That difference is not a contradiction about what " +
+		"the village accepts, only about what each operation declares; the pull operations are " +
+		"deliberately untouched here. " +
 		"Omit a field to leave it unchanged; send an empty string to clear a title, a description, or " +
 		"a license. Explicit null is refused on every field, because the server would read it as " +
 		"preserve rather than the clear a caller usually intends, and an unknown field is refused " +

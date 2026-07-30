@@ -1,7 +1,19 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { readFile } from "node:fs/promises";
+
 import { applyStrictObjectZodRefinements } from "../scripts/lib/strict-object-zod-refinements.mjs";
+
+// The COMMITTED artifact, not a hand-written imitation. A two-declaration mock
+// cannot show how the postprocessor behaves among the real file's other
+// declarations, which is exactly where its defect lived: a span that ran past
+// its own declaration into the next one. The sibling refinement suite this set
+// mirrors reads the same file for the same reason.
+const trackedGeneratedSource = await readFile(
+  new URL("../src/internal/generated/contract/zod.gen.ts", import.meta.url),
+  "utf8",
+);
 
 // This postprocessor closes the generated runtime validator for the owner-update
 // body. It runs on generator output rather than on committed source, so the
@@ -89,6 +101,24 @@ test("strict-object Zod refinement postprocessor rejects an unterminated declara
     /no terminating/,
     "an unrecognizable declaration shape must abort rather than produce an arbitrary span",
   );
+});
+
+test("strict-object Zod refinement postprocessor is a no-op on the committed artifact", () => {
+  // The committed file is already refined, so re-running must return it byte
+  // for byte. This is the real-artifact form of the regression above: on the
+  // tracked file the broken span ran into a neighbouring declaration.
+  assert.equal(
+    applyStrictObjectZodRefinements(trackedGeneratedSource),
+    trackedGeneratedSource,
+    "the committed contract is already refined and must survive another pass unchanged",
+  );
+});
+
+test("strict-object Zod refinement postprocessor closes exactly one declaration in the committed artifact", () => {
+  const declarations = trackedGeneratedSource.match(/^export const z\w+ = z\.object\(\{/gm) ?? [];
+  assert.ok(declarations.length > 50, `expected the committed artifact to hold many object declarations, found ${declarations.length}`);
+  const closed = trackedGeneratedSource.match(/\}\)\.strict\(\);/g) ?? [];
+  assert.equal(closed.length, 1, `exactly one declaration may be closed in the committed artifact, found ${closed.length}`);
 });
 
 test("strict-object Zod refinement postprocessor closes only the declarations it names", () => {

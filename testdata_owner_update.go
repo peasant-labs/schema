@@ -2,6 +2,7 @@ package schema
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -15,9 +16,18 @@ import (
 // probes work on the generated document, so a single input type would have to be
 // a union that hides which behavior a row actually exercises.
 type OwnerUpdateFixtures struct {
-	RequestValidations testcase.Corpus[string, OwnerUpdateValidationExpectation]         `yaml:"request_validations"`
-	Encodings          testcase.Corpus[OwnerUpdateEncodingInput, string]                 `yaml:"encodings"`
-	SpecExpectations   testcase.Corpus[OwnerUpdateSpecProbe, OwnerUpdateSpecExpectation] `yaml:"spec_expectations"`
+	// RequiredBehaviours is the closed set, declared in the corpus itself so both
+	// language bindings read ONE source instead of each keeping a copy. A
+	// hand-mirrored list in the other language protects only the members someone
+	// remembered to copy, while claiming both sides are guarded.
+	RequiredBehaviours []OwnerUpdateRequestBehaviour `yaml:"required_behaviours"`
+	// RequiredDescriptionAnchors is the count the anchors row must carry. The
+	// anchors are prose, so a closed set does not fit them; a count in the corpus
+	// at least makes a silent deletion from the row fail.
+	RequiredDescriptionAnchors int                                                               `yaml:"required_description_anchors"`
+	RequestValidations         testcase.Corpus[string, OwnerUpdateValidationExpectation]         `yaml:"request_validations"`
+	Encodings                  testcase.Corpus[OwnerUpdateEncodingInput, string]                 `yaml:"encodings"`
+	SpecExpectations           testcase.Corpus[OwnerUpdateSpecProbe, OwnerUpdateSpecExpectation] `yaml:"spec_expectations"`
 }
 
 // OwnerUpdateRequestBehaviour is the closed set of contract behaviours the
@@ -54,6 +64,11 @@ const (
 	// OwnerUpdateBehaviourEmptyStringAccepted covers the empty string as a real
 	// clearing value rather than an omission.
 	OwnerUpdateBehaviourEmptyStringAccepted OwnerUpdateRequestBehaviour = "empty_string_accepted"
+	// OwnerUpdateBehaviourTitleBoundEnforced covers the declared title bound at
+	// its two decisive points. The bound was previously asserted only as text in
+	// the published document, so the Go validator accepted a title the generated
+	// JavaScript validator refused.
+	OwnerUpdateBehaviourTitleBoundEnforced OwnerUpdateRequestBehaviour = "title_bound_enforced"
 )
 
 // AllOwnerUpdateRequestBehaviours is the canonical ordered closed set. The suite
@@ -69,6 +84,7 @@ var AllOwnerUpdateRequestBehaviours = []OwnerUpdateRequestBehaviour{
 	OwnerUpdateBehaviourUnknownFieldRefused,
 	OwnerUpdateBehaviourOmissionAccepted,
 	OwnerUpdateBehaviourEmptyStringAccepted,
+	OwnerUpdateBehaviourTitleBoundEnforced,
 }
 
 // IsValid reports whether the behaviour is a known member.
@@ -80,8 +96,6 @@ func (b OwnerUpdateRequestBehaviour) IsValid() bool {
 	}
 	return false
 }
-
-func (b OwnerUpdateRequestBehaviour) String() string { return string(b) }
 
 // OwnerUpdateValidationExpectation is the verdict for one raw request body:
 // whether the contract accepts it and, for a refusal, a distinctive fragment of
@@ -233,6 +247,74 @@ type OwnerUpdateSpecExpectation struct {
 	Strings []string `yaml:"strings"`
 }
 
+// verifyBehaviourMatchesRow checks that a row actually EXHIBITS the behaviour it
+// claims. Without this the coverage guard's only input is a hand-written label
+// nothing cross-checks, so deleting every row of a behaviour and moving its label
+// onto an unrelated surviving row leaves the guard reporting the behaviour
+// covered while no row exercises it. The label is data like any other and needs
+// its own validation.
+func verifyBehaviourMatchesRow(name, input string, expect OwnerUpdateValidationExpectation) error {
+	known := map[string]struct{}{"title": {}, "description": {}, "visibility": {}, "license": {}}
+
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(input), &decoded); err != nil {
+		return fmt.Errorf("request_validations case %q has an input that is not a JSON object, so no behaviour claim about it can be checked: %w", name, err)
+	}
+
+	hasNull := false
+	hasUnknown := false
+	for field, raw := range decoded {
+		if string(raw) == "null" {
+			hasNull = true
+		}
+		if _, ok := known[field]; !ok {
+			hasUnknown = true
+		}
+	}
+
+	switch expect.Behaviour {
+	case OwnerUpdateBehaviourNullRefused:
+		if !hasNull {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its input %s carries no explicit JSON null; the coverage guard would report the behaviour exercised while nothing exercises it", name, expect.Behaviour, input)
+		}
+	case OwnerUpdateBehaviourUnknownFieldRefused:
+		if !hasUnknown {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but every field in its input %s is a declared field; the coverage guard would report the behaviour exercised while nothing exercises it", name, expect.Behaviour, input)
+		}
+	case OwnerUpdateBehaviourLicenseClearAccepted:
+		if string(decoded["license"]) != `""` {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its input %s does not send the clear sentinel", name, expect.Behaviour, input)
+		}
+	case OwnerUpdateBehaviourVisibilityAccepted, OwnerUpdateBehaviourVisibilityRefused:
+		if _, ok := decoded["visibility"]; !ok {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its input %s carries no visibility field", name, expect.Behaviour, input)
+		}
+	case OwnerUpdateBehaviourLicenseAccepted, OwnerUpdateBehaviourLicenseRefused:
+		if _, ok := decoded["license"]; !ok {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its input %s carries no license field", name, expect.Behaviour, input)
+		}
+	case OwnerUpdateBehaviourTitleBoundEnforced:
+		var title string
+		if err := json.Unmarshal(decoded["title"], &title); err != nil {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but carries no string title", name, expect.Behaviour)
+		}
+		if n := len([]rune(title)); n != TranscriptUpdateTitleMaxLength && n != TranscriptUpdateTitleMaxLength+1 {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its title is %d characters; a bound is proven at the bound and one past it, not at an arbitrary length", name, expect.Behaviour, n)
+		}
+	case OwnerUpdateBehaviourEmptyStringAccepted:
+		found := false
+		for _, raw := range decoded {
+			if string(raw) == `""` {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("request_validations case %q claims behaviour %q but its input %s carries no empty-string value", name, expect.Behaviour, input)
+		}
+	}
+	return nil
+}
+
 // LoadOwnerUpdateFixtures parses OwnerUpdateYAML into the segmented corpus. It
 // rejects unknown fields, trailing documents, and any case missing its
 // classification, provenance, or mutation metadata, so a row cannot enter the
@@ -253,6 +335,17 @@ func LoadOwnerUpdateFixtures() (*OwnerUpdateFixtures, error) {
 		return nil, fmt.Errorf("load owner update fixtures: multiple YAML documents are not allowed")
 	}
 
+	if len(f.RequiredBehaviours) != len(AllOwnerUpdateRequestBehaviours) {
+		return nil, fmt.Errorf("load owner update fixtures: the corpus declares %d required behaviours but the Go closed set has %d; the two must agree because both language bindings derive coverage from the corpus", len(f.RequiredBehaviours), len(AllOwnerUpdateRequestBehaviours))
+	}
+	for _, declared := range f.RequiredBehaviours {
+		if !declared.IsValid() {
+			return nil, fmt.Errorf("load owner update fixtures: the corpus declares required behaviour %q, which is not a member of the Go closed set", declared)
+		}
+	}
+	if f.RequiredDescriptionAnchors <= 0 {
+		return nil, fmt.Errorf("load owner update fixtures: the corpus declares no required description-anchor count, so anchors could be deleted from the row one at a time with nothing noticing")
+	}
 	if err := f.RequestValidations.Validate(); err != nil {
 		return nil, fmt.Errorf("load owner update fixtures: request_validations: %w", err)
 	}
@@ -269,6 +362,9 @@ func LoadOwnerUpdateFixtures() (*OwnerUpdateFixtures, error) {
 	for _, c := range f.RequestValidations.Cases {
 		if c.Expected.Accepted && c.Expected.ErrorContains != "" {
 			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q is accepted but names an expected error fragment %q; an accepted body produces no error", c.Name, c.Expected.ErrorContains)
+		}
+		if err := verifyBehaviourMatchesRow(c.Name, c.Input, c.Expected); err != nil {
+			return nil, fmt.Errorf("load owner update fixtures: %w", err)
 		}
 		if !c.Expected.Behaviour.IsValid() {
 			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q names behaviour %q, which is not a member of the closed set; a row that names no known behaviour cannot contribute to coverage and would let a whole behaviour be deleted unnoticed", c.Name, c.Expected.Behaviour)

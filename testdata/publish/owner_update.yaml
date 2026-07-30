@@ -17,6 +17,26 @@
 # The operation is owner-only and its refusals are contract rules rather than
 # transport accidents, so the declared status set is asserted here too.
 
+# The closed behaviour set, declared ONCE here because both language bindings
+# read this file. A hand-copied mirror in the other language protects only the
+# members someone remembered to copy while claiming both sides are guarded.
+required_behaviours:
+  - visibility_accepted
+  - visibility_refused
+  - license_accepted
+  - license_clear_accepted
+  - license_refused
+  - null_refused
+  - unknown_field_refused
+  - omission_accepted
+  - empty_string_accepted
+  - title_bound_enforced
+
+# The number of anchors the description row must carry. Anchors are prose, so a
+# closed set does not fit them, but without a count they can be deleted from the
+# row one at a time with both suites green.
+required_description_anchors: 18
+
 request_validations:
   cases:
     - name: visibility private is accepted
@@ -152,6 +172,20 @@ request_validations:
       provenance: {source: boundary, ref: "the body is closed, so any unknown name is refused"}
       mutation: {description: "sends a name outside the closed property set"}
 
+    - name: a title at the declared bound is accepted
+      input: '{"title":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+      expected: {accepted: true, error_contains: "", behaviour: title_bound_enforced}
+      classification: must-pass
+      provenance: {source: boundary, ref: "the storage column accepts exactly this many characters"}
+      mutation: {description: "sends a title of exactly the declared bound, the largest value that must be accepted"}
+
+    - name: a title one character over the declared bound is refused
+      input: '{"title":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+      expected: {accepted: false, error_contains: "exceeding the 500 the storage column accepts", behaviour: title_bound_enforced}
+      classification: must-fail
+      provenance: {source: boundary, ref: "one past the column bound must be refused before it becomes an opaque server error"}
+      mutation: {description: "sends one character past the declared bound, the smallest value that must be refused"}
+
     - name: every axis together is accepted
       input: '{"title":"t","description":"d","visibility":"public","license":"CC-BY-4.0"}'
       expected: {accepted: true, error_contains: "", behaviour: omission_accepted}
@@ -256,10 +290,13 @@ spec_expectations:
 
     - name: the path parameter is the canonical validated identifier
       input: {probe: path_parameter_is_canonical}
-      expected: {strings: ["SchemaTranscriptID"]}
+      expected:
+        strings:
+          - "SchemaTranscriptID"
+          - "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
       classification: must-pass
       provenance: {source: bug, ref: "village parses the id with uuid.Parse and refuses anything else with a 400, so a bare string described ids the server never accepts"}
-      mutation: {description: "asserts the parameter resolves to the canonical identifier carrying the uuid format and pattern, not an unconstrained string"}
+      mutation: {description: "asserts the parameter resolves to the canonical identifier AND pins the pattern value; asserting only that a pattern exists permits ^.*$, which is as unconstrained as the bare string this replaced"}
 
     - name: the declared title bound matches the storage column
       input: {probe: title_max_length}
@@ -320,6 +357,14 @@ spec_expectations:
           - "a legacy 'shared' value that is deliberately NOT"
           # 500 has two forms and only one carries the envelope.
           - "middleware returns 500 with an EMPTY body"
+          # The id narrowing's operative reasoning, moved here from a source
+          # comment that nothing could hold: all 11 lines of it were deletable
+          # with every package green and the artifact byte-identical.
+          - "uuid.Parse also accepts uppercase"
+          - "accepting five spellings for one identity is itself a defect surface"
+          # One id declared two ways across this document, recorded so the
+          # difference is not read later as a contradiction.
+          - "describes one transcript id two ways"
       classification: must-pass
       provenance: {source: requirement, ref: "the description is the only place these decisions are explained to a consumer, and prose is otherwise unguarded"}
       mutation: {description: "asserts the five-refusal stem, each of the five refusals it promises, both other statuses, the null rule, and the full undeclared-body justification including its source citation; a subset let a description survive that promised five and listed four"}
