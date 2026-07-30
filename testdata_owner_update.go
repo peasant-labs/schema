@@ -92,6 +92,14 @@ const (
 	// declares. Without it the payload, which is the operation's whole subject,
 	// has nothing pinning its field names.
 	OwnerUpdateProbeBodyProperties OwnerUpdateSpecProbeKind = "body_properties"
+	// OwnerUpdateProbePathParameterIsCanonical asserts the path parameter is the
+	// canonical validated identifier rather than a bare string, so the contract
+	// stops describing ids the server refuses outright.
+	OwnerUpdateProbePathParameterIsCanonical OwnerUpdateSpecProbeKind = "path_parameter_is_canonical"
+	// OwnerUpdateProbeTitleMaxLength asserts the declared title bound matches the
+	// storage column, so an over-long title is refused before it becomes an
+	// opaque server error.
+	OwnerUpdateProbeTitleMaxLength OwnerUpdateSpecProbeKind = "title_max_length"
 	// OwnerUpdateProbeBodyIsRequired asserts the request body is declared
 	// required. Reflection defaults it to optional, which would describe a
 	// request the server always refuses.
@@ -126,6 +134,8 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeBodyIsClosed,
 	OwnerUpdateProbeDescriptionAnchors,
 	OwnerUpdateProbeBodyIsRequired,
+	OwnerUpdateProbePathParameterIsCanonical,
+	OwnerUpdateProbeTitleMaxLength,
 }
 
 // IsValid reports whether the probe kind is a known member.

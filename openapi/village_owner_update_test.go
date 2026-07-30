@@ -208,6 +208,48 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 					}
 				}
 
+			case schema.OwnerUpdateProbePathParameterIsCanonical:
+				parameters, ok := operation["parameters"].([]any)
+				if !ok {
+					t.Fatal("owner update operation declares no parameters")
+				}
+				for _, entry := range parameters {
+					parameter, ok := entry.(map[string]any)
+					if !ok || parameter["in"] != "path" {
+						continue
+					}
+					s, ok := parameter["schema"].(map[string]any)
+					if !ok {
+						t.Fatal("the path parameter declares no schema")
+					}
+					ref, isRef := s["$ref"].(string)
+					if !isRef {
+						t.Fatalf("the path parameter must reference the canonical transcript identifier, not an inline %v; the village parses it as a UUID and refuses anything else with a 400, so a bare string describes ids the server never accepts", s["type"])
+					}
+					resolved := resolveRef(t, document, ref)
+					if resolved["format"] != "uuid" || resolved["pattern"] == nil {
+						t.Fatalf("the path parameter resolves to %v, which carries no uuid format and pattern; the declaration would still permit ids the server refuses", ref)
+					}
+					name, _ := strings.CutPrefix(ref, "#/components/schemas/")
+					observed = append(observed, name)
+				}
+
+			case schema.OwnerUpdateProbeTitleMaxLength:
+				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
+				properties, ok := body["properties"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update body declares no properties")
+				}
+				title, ok := properties["title"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update body declares no title property")
+				}
+				max, present := title["maxLength"]
+				if !present {
+					t.Fatal("title declares no maxLength; the storage column is bounded and nothing else validates on the way in, so an over-long title becomes an opaque server error instead of a refusal naming the limit")
+				}
+				observed = []string{fmt.Sprint(max)}
+
 			case schema.OwnerUpdateProbeBodyIsRequired:
 				body, ok := operation["requestBody"].(map[string]any)
 				if !ok {

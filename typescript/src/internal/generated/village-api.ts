@@ -692,7 +692,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Transcript identifier */
-                id: string;
+                id: components["schemas"]["SchemaTranscriptID"];
             };
             cookie?: never;
         };

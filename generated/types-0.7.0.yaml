@@ -3738,6 +3738,7 @@ components:
         license:
           $ref: '#/components/schemas/TranscriptUpdateLicense'
         title:
+          maxLength: 500
           type: string
         visibility:
           $ref: '#/components/schemas/TranscriptUpdateVisibility'

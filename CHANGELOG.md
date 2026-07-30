@@ -60,6 +60,25 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   https://github.com/peasant-labs/village/issues/55. Adding the response schema
   once that lands is additive.
 
+  The path parameter is the canonical `TranscriptID` rather than a bare string.
+  The village parses it with `uuid.Parse` and refuses anything else with a 400,
+  so an unconstrained string described ids the server never accepts. The
+  canonical type carries `format: uuid` and the lowercase-hex pattern this
+  module already treats as canonical for transcript identifiers (the same shape
+  `SessionID` accepts on its UUID branch, and the form `NewTranscriptID`
+  enforces at the Go boundary), so this adopts the module's existing position
+  rather than inventing a restriction.
+
+  `title` declares `maxLength: 500`, matching the storage column. Nothing
+  validated it on the way in, so an over-long title reached the database and
+  surfaced as an opaque server error rather than a refusal naming the limit; a
+  client can now catch it before sending. The two bounds count differently and
+  the difference is deliberate rather than overlooked: the column counts code
+  points while a JavaScript validator generated from this bound counts UTF-16
+  code units, so nothing the contract accepts can be rejected by the column,
+  at the cost of refusing a title of more than 250 astral characters that the
+  column would have taken.
+
   The request body is declared **required**. Reflection marks a body optional by
   default, which would have described a request that always fails: the handler
   decodes unconditionally, so an absent or empty body is a guaranteed 400. An

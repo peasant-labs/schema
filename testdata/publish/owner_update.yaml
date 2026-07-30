@@ -254,6 +254,20 @@ spec_expectations:
       provenance: {source: requirement, ref: "the payload is the operation's whole subject and nothing else pinned its property names"}
       mutation: {description: "asserts the exact property set, so renaming or dropping a field fails instead of silently advertising a shape village does not serve"}
 
+    - name: the path parameter is the canonical validated identifier
+      input: {probe: path_parameter_is_canonical}
+      expected: {strings: ["SchemaTranscriptID"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "village parses the id with uuid.Parse and refuses anything else with a 400, so a bare string described ids the server never accepts"}
+      mutation: {description: "asserts the parameter resolves to the canonical identifier carrying the uuid format and pattern, not an unconstrained string"}
+
+    - name: the declared title bound matches the storage column
+      input: {probe: title_max_length}
+      expected: {strings: ["500"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "the column is VARCHAR(500) and nothing validates on the way in, so an over-long title surfaced as an opaque server error"}
+      mutation: {description: "asserts the declared bound equals the column bound, so a client catches an over-long title before sending it"}
+
     - name: the request body is declared required
       input: {probe: body_is_required}
       expected: {strings: ["required"]}

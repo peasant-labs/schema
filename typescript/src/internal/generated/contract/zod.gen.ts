@@ -1800,7 +1800,7 @@ export type TranscriptUpdateVisibility = z.infer<typeof zTranscriptUpdateVisibil
 export const zTranscriptUpdateRequest = z.object({
     description: z.string().optional(),
     license: zTranscriptUpdateLicense.optional(),
-    title: z.string().optional(),
+    title: z.string().max(500).optional(),
     visibility: zTranscriptUpdateVisibility.optional()
 }).strict();
 

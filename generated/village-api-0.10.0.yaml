@@ -265,8 +265,8 @@ paths:
         name: id
         required: true
         schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
           description: Transcript identifier
-          type: string
       requestBody:
         content:
           application/json:
@@ -1885,6 +1885,7 @@ components:
         license:
           $ref: '#/components/schemas/SchemaTranscriptUpdateLicense'
         title:
+          maxLength: 500
           type: string
         visibility:
           $ref: '#/components/schemas/SchemaTranscriptUpdateVisibility'

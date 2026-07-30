@@ -479,8 +479,8 @@
             "description": "Transcript identifier",
             "required": true,
             "schema": {
-              "description": "Transcript identifier",
-              "type": "string"
+              "$ref": "#/components/schemas/SchemaTranscriptID",
+              "description": "Transcript identifier"
             }
           }
         ],
@@ -3022,6 +3022,7 @@
             "$ref": "#/components/schemas/SchemaTranscriptUpdateLicense"
           },
           "title": {
+            "maxLength": 500,
             "type": "string"
           },
           "visibility": {

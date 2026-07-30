@@ -180,8 +180,23 @@ func (TranscriptUpdateLicense) JSONSchema() (jsonschema.Schema, error) {
 // success and believe they applied; refusing the field turns that silent no-op
 // into an actionable error.
 type TranscriptUpdateRequest struct {
-	// Title replaces the transcript title when non-nil.
-	Title *string `json:"title,omitempty"`
+	// Title replaces the transcript title when non-nil. The bound mirrors the
+	// storage column, which is VARCHAR(500) and is enforced by nothing else on
+	// the way in: an over-long title reaches the database and surfaces as an
+	// opaque server error rather than a refusal naming the limit. Declaring it
+	// lets a client catch the problem before it sends the request.
+	//
+	// The two limits count differently, and the difference is recorded here
+	// rather than discovered later. The column counts CODE POINTS; a JavaScript
+	// validator generated from this bound counts UTF-16 CODE UNITS, so an astral
+	// character costs two there and one in the column. The direction is the safe
+	// one: a JavaScript count is never smaller than the code-point count, so
+	// nothing this bound accepts can be rejected by the column. The cost is at
+	// the other end, where a title of more than 250 astral characters is refused
+	// client-side though the column would take it. That band was judged worth
+	// the far commoner case of an ordinary over-long title turning into a caught
+	// validation error instead of an opaque server failure.
+	Title *string `json:"title,omitempty" maxLength:"500"`
 	// Description replaces the transcript description when non-nil.
 	Description *string `json:"description,omitempty"`
 	// Visibility replaces the access level when non-nil.

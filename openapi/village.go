@@ -77,8 +77,15 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new transcript update operation: %w", err)
 	}
+	// The path parameter is the canonical TranscriptID, not a bare string. The
+	// village parses it with uuid.Parse and refuses anything else with a 400, so
+	// declaring an unconstrained string described a request the server always
+	// rejects. TranscriptID also carries the lowercase-hex form this module
+	// already treats as canonical for transcript identifiers (see the pattern on
+	// TranscriptID itself and the matching SessionID UUID branch), so this is the
+	// module's existing position rather than a restriction invented here.
 	updateOC.AddReqStructure(new(struct {
-		ID string `path:"id" description:"Transcript identifier"`
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	}))
 	updateOC.AddReqStructure(new(schema.TranscriptUpdateRequest))
 	// The success status is declared with NO body schema. That is deliberate and
