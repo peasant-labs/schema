@@ -94,7 +94,11 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TaxonomyFamilyNode", new(schema.TaxonomyFamilyNode)}, {"TaxonomyNode", new(schema.TaxonomyNode)},
 		{"TimestampInfo", new(schema.TimestampInfo)}, {"ToolCallDetail", new(schema.ToolCallDetail)},
 		{"ToolCallKind", new(schema.ToolCallKind)}, {"TranscriptContent", new(schema.TranscriptContent)},
-		{"TranscriptID", new(schema.TranscriptID)}, {"TrendsPayload", new(schema.TrendsPayload)},
+		{"TranscriptID", new(schema.TranscriptID)},
+		{"TranscriptUpdateLicense", new(schema.TranscriptUpdateLicense)},
+		{"TranscriptUpdateRequest", new(schema.TranscriptUpdateRequest)},
+		{"TranscriptUpdateVisibility", new(schema.TranscriptUpdateVisibility)},
+		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
 		{"TypeOrigin", new(schema.TypeOrigin)},
 		{"UnifiedMetadata", new(schema.UnifiedMetadata)}, {"UnusualSignal", new(schema.UnusualSignal)},
@@ -151,6 +155,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	// its canonical name or Go-requiredness metadata.
 	for name, schemaMap := range directSchemas {
 		r.SpecEns().ComponentsEns().WithSchemasItem(name, schemaMap)
+	}
+	if err := closeStrictComponents(r.SpecEns().ComponentsEns().Schemas); err != nil {
+		return nil, err
 	}
 	delete(r.SpecEns().ComponentsEns().Schemas, "BestiaryHarness")
 	delete(r.SpecEns().ComponentsEns().Schemas, "Provider")
@@ -323,4 +330,90 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 		return fmt.Errorf("add operation %s %s: %w", method, path, err)
 	}
 	return nil
+}
+
+// strictComponents names the components whose reflected schema is deliberately
+// TIGHTER than Go reflection produces on its own: unknown properties are
+// rejected rather than ignored, and no property admits JSON null.
+//
+// This is an explicit, source-owned list rather than a blanket rule because
+// closing a component is a contract promise, not a style preference: most of
+// this catalog is intentionally open so a producer can add a field without
+// breaking every consumer. Only a request body whose whole purpose is to say
+// exactly what changed belongs here, where an unrecognized field means the
+// caller asked for something the server will silently drop.
+var strictComponents = []string{"TranscriptUpdateRequest"}
+
+// closeStrictComponents applies that tightening after reflection and
+// requiredness. Reflection maps a Go pointer to a nullable schema, which is the
+// right default for a payload where null and absent mean the same thing; on
+// these components they do not, so the null arm is removed and the object is
+// closed. Component harmonization then carries the tightened schema into every
+// API document that references the same canonical type, so the Types catalog and
+// the operation cannot disagree about what the body accepts.
+func closeStrictComponents(components map[string]map[string]interface{}) error {
+	for _, name := range strictComponents {
+		component, ok := components[name]
+		if !ok {
+			return fmt.Errorf("close strict component %s: it is named as strict but absent from the Types catalog; either add it to TypeCatalogEntries or remove it from strictComponents, because a strict name that matches nothing would silently stop closing anything", name)
+		}
+		component["additionalProperties"] = false
+		properties, ok := component["properties"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("close strict component %s: it declares no properties map, so the non-nullable tightening below would silently apply to nothing", name)
+		}
+		for propertyName, raw := range properties {
+			property, ok := raw.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("close strict component %s property %s: the property schema is not an object and cannot be tightened", name, propertyName)
+			}
+			properties[propertyName] = dropNullArm(property)
+		}
+	}
+	return nil
+}
+
+// dropNullArm removes the null alternative reflection adds for a Go pointer,
+// collapsing anyOf[X, null] back to X and ["null","string"] back to "string".
+// A property that carries no null arm is returned unchanged.
+func dropNullArm(property map[string]interface{}) map[string]interface{} {
+	if arms, ok := property["anyOf"].([]interface{}); ok {
+		var kept []interface{}
+		for _, arm := range arms {
+			if armMap, ok := arm.(map[string]interface{}); ok && isNullOnly(armMap) {
+				continue
+			}
+			kept = append(kept, arm)
+		}
+		if len(kept) == 1 {
+			if only, ok := kept[0].(map[string]interface{}); ok {
+				return dropNullArm(only)
+			}
+		}
+		property["anyOf"] = kept
+		return property
+	}
+	if types, ok := property["type"].([]interface{}); ok {
+		var kept []interface{}
+		for _, t := range types {
+			if t != "null" {
+				kept = append(kept, t)
+			}
+		}
+		if len(kept) == 1 {
+			property["type"] = kept[0]
+		} else {
+			property["type"] = kept
+		}
+	}
+	return property
+}
+
+// isNullOnly reports whether a schema arm is the bare null type reflection emits
+// as the second alternative for a pointer.
+func isNullOnly(arm map[string]interface{}) bool {
+	if len(arm) != 1 {
+		return false
+	}
+	return arm["type"] == "null"
 }

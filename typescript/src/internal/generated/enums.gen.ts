@@ -36,6 +36,8 @@ import { zTargetKind, type TargetKind as TargetKindContract } from "./contract/z
 import { zToolCallKind, type ToolCallKind as ToolCallKindContract } from "./contract/zod.gen.js";
 import { zTypeOrigin, type TypeOrigin as TypeOriginContract } from "./contract/zod.gen.js";
 import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } from "./contract/zod.gen.js";
+import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
+import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
 
 export type AnnotationAxis = AnnotationAxisContract;
@@ -507,6 +509,28 @@ export const ValueDomainKind = Object.freeze({
 export const AllValueDomainKinds = Object.freeze([ValueDomainKind.Enumerated, ValueDomainKind.Described]) as readonly ValueDomainKind[];
 export function isValueDomainKind(value: unknown): value is ValueDomainKind {
   return zValueDomainKind.safeParse(value).success;
+}
+
+export type TranscriptUpdateLicense = TranscriptUpdateLicenseContract;
+export const TranscriptUpdateLicense = Object.freeze({
+  Clear: zTranscriptUpdateLicense.parse(""),
+  CC0: zTranscriptUpdateLicense.parse("CC0-1.0"),
+  CCBY: zTranscriptUpdateLicense.parse("CC-BY-4.0"),
+  CCBYSA: zTranscriptUpdateLicense.parse("CC-BY-SA-4.0"),
+} as const);
+export const AllTranscriptUpdateLicenses = Object.freeze([TranscriptUpdateLicense.Clear, TranscriptUpdateLicense.CC0, TranscriptUpdateLicense.CCBY, TranscriptUpdateLicense.CCBYSA]) as readonly TranscriptUpdateLicense[];
+export function isTranscriptUpdateLicense(value: unknown): value is TranscriptUpdateLicense {
+  return zTranscriptUpdateLicense.safeParse(value).success;
+}
+
+export type TranscriptUpdateVisibility = TranscriptUpdateVisibilityContract;
+export const TranscriptUpdateVisibility = Object.freeze({
+  Private: zTranscriptUpdateVisibility.parse("private"),
+  Public: zTranscriptUpdateVisibility.parse("public"),
+} as const);
+export const AllTranscriptUpdateVisibilities = Object.freeze([TranscriptUpdateVisibility.Private, TranscriptUpdateVisibility.Public]) as readonly TranscriptUpdateVisibility[];
+export function isTranscriptUpdateVisibility(value: unknown): value is TranscriptUpdateVisibility {
+  return zTranscriptUpdateVisibility.safeParse(value).success;
 }
 
 export type Visibility = VisibilityContract;

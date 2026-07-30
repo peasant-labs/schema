@@ -1,0 +1,377 @@
+# Owner transcript update corpus (PATCH /api/v1/transcripts/{id}).
+#
+# Three behavioral arms, each a testcase corpus:
+#
+#   request_validations  a raw JSON body decoded into TranscriptUpdateRequest and
+#                        validated, exactly as a client would build it. Proves the
+#                        closed enum sets and that absence is legal everywhere.
+#   encodings            a Go-side intent marshaled to exact bytes. This is where
+#                        the three license states are proven distinguishable: a
+#                        preserved license must be ABSENT from the wire, a cleared
+#                        one must be the empty string, and a replacement must be
+#                        the menu value. Collapsing any two would make the
+#                        server's irrevocability rule unexpressible.
+#   spec_expectations    probes against the generated Village document, so the
+#                        declaration cannot drift from the source contract.
+#
+# The operation is owner-only and its refusals are contract rules rather than
+# transport accidents, so the declared status set is asserted here too.
+
+# The closed behaviour set, declared ONCE here because both language bindings
+# read this file. A hand-copied mirror in the other language protects only the
+# members someone remembered to copy while claiming both sides are guarded.
+required_behaviours:
+  - visibility_accepted
+  - visibility_refused
+  - license_accepted
+  - license_clear_accepted
+  - license_refused
+  - null_refused
+  - unknown_field_refused
+  - omission_accepted
+  - empty_string_accepted
+  - title_bound_enforced
+
+# The number of anchors the description row must carry. Anchors are prose, so a
+# closed set does not fit them, but without a count they can be deleted from the
+# row one at a time with both suites green.
+required_description_anchors: 18
+
+request_validations:
+  cases:
+    - name: visibility private is accepted
+      input: '{"visibility":"private"}'
+      expected: {accepted: true, error_contains: "", behaviour: visibility_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "TranscriptUpdateVisibility closed set"}
+      mutation: {description: "sends the private member of the accepted visibility menu"}
+
+    - name: visibility public is accepted
+      input: '{"visibility":"public"}'
+      expected: {accepted: true, error_contains: "", behaviour: visibility_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "TranscriptUpdateVisibility closed set"}
+      mutation: {description: "sends the public member of the accepted visibility menu"}
+
+    - name: visibility group is rejected because organization scope is deferred
+      input: '{"visibility":"group"}'
+      expected: {accepted: false, error_contains: is not an accepted value, behaviour: visibility_refused}
+      classification: must-fail
+      provenance: {source: requirement, ref: "organization visibility is a deferred capability, not a declared one"}
+      mutation: {description: "substitutes the general Visibility enum member this operation deliberately excludes"}
+
+    - name: visibility shared is rejected
+      input: '{"visibility":"shared"}'
+      expected: {accepted: false, error_contains: is not an accepted value, behaviour: visibility_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "the stored token for organization scope is not a client-sendable value here"}
+      mutation: {description: "substitutes the persisted organization-scope token for a declared visibility"}
+
+    - name: unknown visibility is rejected
+      input: '{"visibility":"everyone"}'
+      expected: {accepted: false, error_contains: is not an accepted value, behaviour: visibility_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "TranscriptUpdateVisibility closed set"}
+      mutation: {description: "replaces the visibility with a value outside the closed set"}
+
+    - name: license CC0 is accepted
+      input: '{"license":"CC0-1.0"}'
+      expected: {accepted: true, error_contains: "", behaviour: license_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "canonical License menu"}
+      mutation: {description: "sends a canonical menu license as a replacement"}
+
+    - name: license CC-BY is accepted
+      input: '{"license":"CC-BY-4.0"}'
+      expected: {accepted: true, error_contains: "", behaviour: license_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "canonical License menu"}
+      mutation: {description: "sends a second canonical menu license so the menu is not proven by one member"}
+
+    - name: license CC-BY-SA is accepted
+      input: '{"license":"CC-BY-SA-4.0"}'
+      expected: {accepted: true, error_contains: "", behaviour: license_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "canonical License menu"}
+      mutation: {description: "sends the third canonical menu license so every member is covered"}
+
+    - name: empty license is accepted as the clear request
+      input: '{"license":""}'
+      expected: {accepted: true, error_contains: "", behaviour: license_clear_accepted}
+      classification: must-pass
+      provenance: {source: requirement, ref: "clearing a never-granted license is an accepted no-op"}
+      mutation: {description: "sends the clear sentinel, which is a member of this operation's value set"}
+
+    - name: unknown license is rejected
+      input: '{"license":"MIT"}'
+      expected: {accepted: false, error_contains: is not on the canonical menu, behaviour: license_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "canonical License menu"}
+      mutation: {description: "replaces the license with one outside the canonical menu"}
+
+    - name: empty body is accepted as a no-op
+      input: '{}'
+      expected: {accepted: true, error_contains: "", behaviour: omission_accepted}
+      classification: must-pass
+      provenance: {source: requirement, ref: "every field is optional and omission means leave unchanged"}
+      mutation: {description: "omits every field so nothing is requested to change"}
+
+    - name: title and description alone are accepted
+      input: '{"title":"a better title","description":"a fuller description"}'
+      expected: {accepted: true, error_contains: "", behaviour: omission_accepted}
+      classification: must-pass
+      provenance: {source: requirement, ref: "metadata axes are patchable independently of governance axes"}
+      mutation: {description: "sends only the metadata axes so governance omission is proven legal"}
+
+    - name: empty title is accepted as a real clearing value
+      input: '{"title":""}'
+      expected: {accepted: true, error_contains: "", behaviour: empty_string_accepted}
+      classification: must-pass
+      provenance: {source: boundary, ref: "an empty title is a value, not an omission"}
+      mutation: {description: "sets the title to empty, which must not be confused with omitting it"}
+
+    - name: explicit null title is refused rather than silently preserving
+      input: '{"title":null}'
+      expected: {accepted: false, error_contains: "explicitly null", behaviour: null_refused}
+      classification: must-fail
+      provenance: {source: requirement, ref: "null would decode to the same nil pointer an omitted field produces, so it would mean preserve"}
+      mutation: {description: "sends null where a caller would expect clearing, on the field they would most likely try it"}
+
+    - name: explicit null license is refused
+      input: '{"license":null}'
+      expected: {accepted: false, error_contains: "explicitly null", behaviour: null_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "the fourth wire form for a field whose three other forms are covered"}
+      mutation: {description: "sends null on the tri-state field, where preserve and clear must stay distinguishable"}
+
+    - name: explicit null description is refused
+      input: '{"description":null}'
+      expected: {accepted: false, error_contains: "explicitly null", behaviour: null_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "every field refuses null, not only the ones a probe happens to reach"}
+      mutation: {description: "sends null on the field no other row pinned"}
+
+    - name: explicit null visibility is refused
+      input: '{"visibility":null}'
+      expected: {accepted: false, error_contains: "explicitly null", behaviour: null_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "every field refuses null, not only the ones a probe happens to reach"}
+      mutation: {description: "sends null on the remaining governance field"}
+
+    - name: the tags field village silently discards is refused
+      input: '{"tags":["a","b"]}'
+      expected: {accepted: false, error_contains: "is not a field of this operation", behaviour: unknown_field_refused}
+      classification: must-fail
+      provenance: {source: bug, ref: "village decodes tags and drops it, returning success, so a client believes it applied"}
+      mutation: {description: "sends the field the server accepts and discards, which must be refused rather than accepted and stripped"}
+
+    - name: an unrecognized field is refused
+      input: '{"nonsense":1}'
+      expected: {accepted: false, error_contains: "is not a field of this operation", behaviour: unknown_field_refused}
+      classification: must-fail
+      provenance: {source: boundary, ref: "the body is closed, so any unknown name is refused"}
+      mutation: {description: "sends a name outside the closed property set"}
+
+    - name: a title at the declared bound is accepted
+      input: '{"title":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+      expected: {accepted: true, error_contains: "", behaviour: title_bound_enforced}
+      classification: must-pass
+      provenance: {source: boundary, ref: "the storage column accepts exactly this many characters"}
+      mutation: {description: "sends a title of exactly the declared bound, the largest value that must be accepted"}
+
+    - name: a title one character over the declared bound is refused
+      input: '{"title":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+      expected: {accepted: false, error_contains: "exceeding the 500 the storage column accepts", behaviour: title_bound_enforced}
+      classification: must-fail
+      provenance: {source: boundary, ref: "one past the column bound must be refused before it becomes an opaque server error"}
+      mutation: {description: "sends one character past the declared bound, the smallest value that must be refused"}
+
+    - name: every axis together is accepted
+      input: '{"title":"t","description":"d","visibility":"public","license":"CC-BY-4.0"}'
+      expected: {accepted: true, error_contains: "", behaviour: omission_accepted}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a single call may move metadata and governance together"}
+      mutation: {description: "populates all four axes in one request"}
+
+encodings:
+  cases:
+    - name: omitted license is absent from the wire
+      input: {set_visibility: public}
+      expected: '{"visibility":"public"}'
+      classification: must-pass
+      provenance: {source: requirement, ref: "omission preserves the stored license"}
+      mutation: {description: "leaves the license unset so it must not appear on the wire at all"}
+
+    - name: cleared license is the empty string
+      input: {set_license: true, license: ""}
+      expected: '{"license":""}'
+      classification: must-pass
+      provenance: {source: requirement, ref: "the empty string is the clear request"}
+      mutation: {description: "points the license at the clear sentinel so it must serialize as an empty string, not null and not an omission"}
+
+    - name: replacement license is the menu value
+      input: {set_license: true, license: CC-BY-SA-4.0}
+      expected: '{"license":"CC-BY-SA-4.0"}'
+      classification: must-pass
+      provenance: {source: requirement, ref: "a menu value replaces the stored license"}
+      mutation: {description: "points the license at a menu value so replacement is distinguishable from clearing"}
+
+    - name: nothing set encodes an empty object
+      input: {}
+      expected: '{}'
+      classification: must-pass
+      provenance: {source: boundary, ref: "an all-omitted request changes nothing"}
+      mutation: {description: "sets no field so no key may be emitted"}
+
+    - name: empty title is emitted rather than omitted
+      input: {set_title: true, title: ""}
+      expected: '{"title":""}'
+      classification: must-pass
+      provenance: {source: boundary, ref: "an empty title is a value, not an omission"}
+      mutation: {description: "sets the title to empty so the encoder must still emit the key"}
+
+    - name: metadata and governance encode together
+      input: {set_title: true, title: t, set_visibility: private, set_license: true, license: CC0-1.0}
+      expected: '{"title":"t","visibility":"private","license":"CC0-1.0"}'
+      classification: must-pass
+      provenance: {source: requirement, ref: "a single call may move metadata and governance together"}
+      mutation: {description: "sets three axes so field order and co-presence are pinned"}
+
+spec_expectations:
+  cases:
+    - name: the operation is declared on the village document
+      input: {probe: operation_declared}
+      expected: {strings: ["updateTranscript"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the village already serves this route but the contract never stated it"}
+      mutation: {description: "asserts the PATCH operation exists at the transcript path"}
+
+    - name: the transcript id is a required path parameter
+      input: {probe: path_parameter}
+      expected: {strings: ["id"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the route addresses one transcript"}
+      mutation: {description: "asserts the id parameter is declared in path and required"}
+
+    - name: the request body references the canonical shared component
+      input: {probe: body_is_reference}
+      expected: {strings: ["SchemaTranscriptUpdateRequest"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the operation body and the shared type catalog must be one schema, not two that can drift"}
+      mutation: {description: "asserts the body reference canonicalizes to the catalogued type, which is what makes component harmonization actually apply; an operation-local body name would silently skip harmonization and let the two documents disagree"}
+
+    - name: the declared status set is exactly what a caller can observe
+      input: {probe: response_statuses}
+      expected: {strings: ["200", "400", "401", "403", "404", "500"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "each status carries a different remedy, so a caller must be able to tell them apart from the contract alone"}
+      mutation: {description: "asserts the declared set is exactly the observable statuses, including 401 from the authentication boundary that runs before the handler"}
+
+    - name: the success status is declared with no body schema
+      input: {probe: success_has_no_body}
+      expected: {strings: ["no-content-declared"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "village serves internal storage columns through pgtype wrappers, so no honest success shape exists to declare yet"}
+      mutation: {description: "asserts 200 is present but carries no content schema, so a later invented success body fails rather than passing silently"}
+
+    - name: the declared visibility menu excludes organization scope
+      input: {probe: visibility_enum}
+      expected: {strings: ["private", "public"]}
+      classification: must-pass
+      provenance: {source: enum, ref: "TranscriptUpdateVisibility closed set"}
+      mutation: {description: "asserts the generated enum is exactly the two accepted members"}
+
+    - name: the body declares exactly the four accepted properties
+      input: {probe: body_properties}
+      expected: {strings: ["title", "description", "visibility", "license"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the payload is the operation's whole subject and nothing else pinned its property names"}
+      mutation: {description: "asserts the exact property set, so renaming or dropping a field fails instead of silently advertising a shape village does not serve"}
+
+    - name: the path parameter is the canonical validated identifier
+      input: {probe: path_parameter_is_canonical}
+      expected:
+        strings:
+          - "SchemaTranscriptID"
+          - "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+      classification: must-pass
+      provenance: {source: bug, ref: "village parses the id with uuid.Parse and refuses anything else with a 400, so a bare string described ids the server never accepts"}
+      mutation: {description: "asserts the parameter resolves to the canonical identifier AND pins the pattern value; asserting only that a pattern exists permits ^.*$, which is as unconstrained as the bare string this replaced"}
+
+    - name: the declared title bound matches the storage column
+      input: {probe: title_max_length}
+      expected: {strings: ["500"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "the column is VARCHAR(500) and nothing validates on the way in, so an over-long title surfaced as an opaque server error"}
+      mutation: {description: "asserts the declared bound equals the column bound, so a client catches an over-long title before sending it"}
+
+    - name: the request body is declared required
+      input: {probe: body_is_required}
+      expected: {strings: ["required"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "reflection defaults a body to optional, and the server refuses an absent body with 400 every time"}
+      mutation: {description: "asserts the body is required, so reverting to the reflected default fails instead of shipping a contract for a request that always fails"}
+
+    - name: the refusal envelope declares exactly one property
+      input: {probe: refusal_envelope_properties}
+      expected: {strings: ["error"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "an invented field added to the envelope shipped with the whole suite green, because nothing pinned which properties it has"}
+      mutation: {description: "asserts the exact property set across every refusal, so a field that APPEARS is caught, which an existence check cannot do"}
+
+    - name: the body is closed against unknown properties
+      input: {probe: body_is_closed}
+      expected: {strings: ["closed"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an open body plus a stripping validator recreates the silent no-op that omitting tags was meant to prevent"}
+      mutation: {description: "asserts additionalProperties is false, so an unknown field is refused rather than accepted and discarded"}
+
+    - name: the description still carries the claims a consumer depends on
+      input: {probe: description_anchors}
+      expected:
+        strings:
+          # The stem, and then each of the five refusals it promises. Pinning the
+          # stem alone would allow a description that says five and lists four;
+          # pinning only some refusals allowed exactly that.
+          - "400 covers five distinct refusals"
+          - "an unparseable transcript id"
+          - "an undecodable body"
+          - "a visibility outside the accepted set"
+          - "a license outside the canonical menu"
+          - "the attempt to clear a granted license"
+          # The other statuses, each carrying a remedy a caller cannot infer.
+          - "401 is returned by the authentication boundary"
+          - "404 covers both a transcript that does not exist and a lookup that failed"
+          # The body semantics that have no other prose home.
+          - "Explicit null is refused"
+          # The whole justification for the undeclared success body: the reason,
+          # the source citation a reader needs to check it, and the warning.
+          - "pgtype"
+          - "backend/internal/handler/transcripts.go:723-727"
+          - "https://github.com/peasant-labs/village/issues/55"
+          - "Do not 'harmonize' this by inventing a success body"
+          # Two behaviours the village has that this operation deliberately does
+          # not declare. Both were found by execution against the real handler,
+          # and both read as served-versus-declared drift to anyone who has not
+          # seen the reasoning, so the reasoning ships in the document.
+          - "a legacy 'shared' value that is deliberately NOT"
+          # 500 has two forms and only one carries the envelope.
+          - "middleware returns 500 with an EMPTY body"
+          # The id narrowing's operative reasoning, moved here from a source
+          # comment that nothing could hold: all 11 lines of it were deletable
+          # with every package green and the artifact byte-identical.
+          - "uuid.Parse also accepts uppercase"
+          - "accepting five spellings for one identity is itself a defect surface"
+          # One id declared two ways across this document, recorded so the
+          # difference is not read later as a contradiction.
+          - "describes one transcript id two ways"
+      classification: must-pass
+      provenance: {source: requirement, ref: "the description is the only place these decisions are explained to a consumer, and prose is otherwise unguarded"}
+      mutation: {description: "asserts the five-refusal stem, each of the five refusals it promises, both other statuses, the null rule, and the full undeclared-body justification including its source citation; a subset let a description survive that promised five and listed four"}
+
+    - name: the declared license menu carries the clear sentinel and every menu license
+      input: {probe: license_enum}
+      expected: {strings: ["", "CC0-1.0", "CC-BY-4.0", "CC-BY-SA-4.0"]}
+      classification: must-pass
+      provenance: {source: enum, ref: "canonical License menu plus the clear sentinel"}
+      mutation: {description: "asserts the generated enum derives from the canonical menu and adds the clear sentinel"}

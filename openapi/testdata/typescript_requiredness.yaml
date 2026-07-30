@@ -120,3 +120,14 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: resolver responses always carry display and canonical identities}
     mutation: {description: pins both resolver fields as required non-null values}
+  - name: transcript update request
+    input:
+      component: TranscriptUpdateRequest
+      required: []
+      optional: [title, description, visibility, license]
+      nullable: []
+      nonnullable: [title, description, visibility, license]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "optional means leave unchanged and non-nullable means null cannot silently mean preserve"}
+    mutation: {description: "pins all four owner-update properties on both the presence and nullability axes"}

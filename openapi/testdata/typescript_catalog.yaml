@@ -522,6 +522,39 @@ types:
     disposition: catalog
     component: TranscriptID
     reason: public wire or domain contract type
+  - go_name: TranscriptUpdateRequest
+    disposition: catalog
+    component: TranscriptUpdateRequest
+    reason: public wire or domain contract type
+  - go_name: TranscriptUpdateVisibility
+    disposition: catalog
+    component: TranscriptUpdateVisibility
+    reason: public wire or domain contract type
+  - go_name: TranscriptUpdateLicense
+    disposition: catalog
+    component: TranscriptUpdateLicense
+    reason: public wire or domain contract type
+  - go_name: OwnerUpdateRequestBehaviour
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateValidationExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateEncodingInput
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateSpecProbe
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateSpecProbeKind
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: OwnerUpdateSpecExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
   - go_name: PullSkipGateItem
     disposition: catalog
     component: PullSkipGateItem

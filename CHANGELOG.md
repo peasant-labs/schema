@@ -7,6 +7,122 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.10.0 and Types 0.7.0 declare the owner transcript update
+  operation, `PATCH /api/v1/transcripts/{id}`. The village has served this route
+  since transcript governance landed, but the published contract never stated
+  it, so a client could only call it from knowledge of the handler. Declaring it
+  closes that drift.
+
+  `TranscriptUpdateRequest` carries `title`, `description`, `visibility`, and
+  `license`, all optional, where an omitted field means leave unchanged rather
+  than reset. `license` is three-valued: omitted preserves the stored license,
+  the empty string requests a clear, and a canonical menu license replaces.
+  Those three states stay distinguishable on the wire because that distinction
+  is what makes the server's rule expressible that a granted Creative Commons
+  license can never be cleared, only replaced.
+
+  `TranscriptUpdateVisibility` declares `private` and `public` only. It is
+  deliberately narrower than `Visibility`, whose third member covers
+  organization-scoped access: that capability is deferred, and declaring it on
+  this operation would advertise a value the server refuses. `Visibility` itself
+  is unchanged.
+
+  The operation declares its reachable refusals, not only success, because two
+  of them are contract rules rather than transport accidents: only the owner may
+  call it, and anyone else receives 403 while neither the transcript nor its
+  governance audit changes; and clearing a granted license is refused with 400.
+  All refusals share one `TranscriptUpdateErrorResponse` envelope, whose `error`
+  field is required: the village writes every refusal through a single helper
+  that always sets it, including the 401 raised before the handler runs, so an
+  optional declaration would understate the guarantee. 400 covers
+  five distinct refusals: an unparseable transcript id, an undecodable body, a
+  visibility outside the accepted set, a license outside the canonical menu, and
+  the attempt to clear a granted license. 401 comes from the authentication
+  boundary that runs before the handler and is distinct in remedy from 403:
+  401 means re-authenticate, 403 means you are not the owner. 404 covers a
+  failed lookup as well as a genuinely absent transcript, so it is not proof of
+  absence. No prior operation in this module
+  declared a 4xx or 5xx response, so this establishes that pattern for one
+  operation only; it is not a shared error framework and nothing else is
+  expected to adopt it without its own consumer driving the change.
+
+  The 200 status is declared with **no body schema**, and that is deliberate:
+  it does not mean the operation returns no body. The village does return one,
+  but it currently serves an untyped object wrapping the stored row's internal
+  columns (`owner_id`, `blob_key`, `project_hash`, `source_file_path` and
+  others) at `backend/internal/handler/transcripts.go:723-727`. Those columns
+  also serialize through pgx `pgtype` wrappers, so a consumer would receive
+  `{"String":"x","Valid":true}` where it expects a string, which makes the
+  served shape undecodable as a typed contract rather than merely leaky.
+  Declaring a projection the village does not actually serve would break the
+  property that the served contract and the declared contract cannot drift, so
+  nothing is declared until the handler serves a shape worth declaring. Nothing
+  consumes it today either: applied state is read back through
+  `GET /api/v1/pull/transcripts/{id}`. Tracked, together with the separate
+  defect that `tags` is decoded and silently dropped, at
+  https://github.com/peasant-labs/village/issues/55. Adding the response schema
+  once that lands is additive.
+
+  Two behaviours the village has and this operation deliberately does not
+  declare, recorded so they are not later mistaken for drift. The village
+  accepts and stores a legacy `shared` visibility, which is not a member of this
+  contract's `Visibility` enum at all (its third member is `group`, which the
+  village refuses); declaring it would mean inventing an enum member to expose
+  the deferred organization-ACL capability. And `uuid.Parse` accepts four
+  identifier spellings the declared pattern rejects - uppercase, brace-wrapped,
+  `urn:uuid`-prefixed, and 32 undashed hex digits - which stay undeclared
+  because the village only ever emits the canonical lowercase form and this
+  module already rejects the others at its own boundary.
+
+  The path parameter is the canonical `TranscriptID` rather than a bare string.
+  The village parses it with `uuid.Parse` and refuses anything else with a 400,
+  so an unconstrained string described ids the server never accepts. The
+  canonical type carries `format: uuid` and the lowercase-hex pattern this
+  module already treats as canonical for transcript identifiers (the same shape
+  `SessionID` accepts on its UUID branch, and the form `NewTranscriptID`
+  enforces at the Go boundary), so this adopts the module's existing position
+  rather than inventing a restriction.
+
+  `title` declares `maxLength: 500`, matching the storage column. Nothing
+  validated it on the way in, so an over-long title reached the database and
+  surfaced as an opaque server error rather than a refusal naming the limit; a
+  client can now catch it before sending. The two bounds count differently and
+  the difference is deliberate rather than overlooked: the column counts code
+  points while a JavaScript validator generated from this bound counts UTF-16
+  code units, so nothing the contract accepts can be rejected by the column,
+  at the cost of refusing a title of more than 250 astral characters that the
+  column would have taken.
+
+  The request body is declared **required**. Reflection marks a body optional by
+  default, which would have described a request that always fails: the handler
+  decodes unconditionally, so an absent or empty body is a guaranteed 400. An
+  empty JSON object is the correct no-op and is accepted.
+
+  `TranscriptUpdateErrorResponse` is deliberately operation-scoped rather than a
+  member of the shared type catalog. Its shape is nothing but `{error: string}`,
+  so cataloguing it would freeze a transcript-update-specific name onto a
+  generic envelope at release time, leaving whoever declares the next
+  operation's refusals to reuse a misleading name, duplicate it, or take a
+  breaking rename. Whether a shared refusal envelope belongs in the catalog is a
+  decision for the change that needs one.
+
+  The request body is a closed object: unknown properties are refused rather
+  than accepted and silently discarded, and no property admits JSON null.
+  Refusing null is deliberate. The village decodes a null into the same nil
+  pointer an omitted field produces, so null would mean *preserve* while a
+  caller sending it almost certainly means *clear* - the opposite of the
+  obvious reading, on exactly the fields where clearing is wanted. Each intent
+  therefore gets one unambiguous spelling: omit to leave unchanged, send the
+  empty string to clear. Both refusals are enforced in Go at the decode
+  boundary and declared in the generated schemas, so the two cannot drift.
+
+  This also retires the placeholder note where `Visibility` was registered as a
+  component for "future visibility controls": this operation is that future,
+  and it is now a real declared surface rather than an anticipated one.
+
+  Village API 0.9.0, both 0.9.0 request schemas, and Types 0.6.0 are retired and
+  byte-frozen. Local API stays 0.6.0.
+
 - Village API 0.9.0, Local API 0.6.0, and Types 0.6.0 add the `strike`
   harness and both observed Strike session ID forms: a timestamped prefix plus
   26 uppercase RFC4648 base32 characters, or the 26-character identifier by
