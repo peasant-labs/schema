@@ -72,6 +72,19 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		ID string `path:"id" description:"Transcript identifier"`
 	}))
 	updateOC.AddReqStructure(new(TranscriptUpdateBody))
+	// The success status is declared with NO body schema. That is deliberate and
+	// is not the same as "returns no body": the village does return one, but it
+	// currently serves an untyped object wrapping the stored row's internal
+	// columns (owner_id, blob_key, project_hash, source_file_path and more, at
+	// village backend/internal/handler/transcripts.go:723-727), which must not
+	// enter the public contract. Those columns also serialize through pgtype
+	// wrappers, so a consumer would receive {"String":"x","Valid":true} where it
+	// expects a string; the served shape is not merely leaky but undecodable as a
+	// typed contract. Declaring a projection the village does not actually serve
+	// would break the property that the served contract and the declared contract
+	// cannot drift, so nothing is declared until the handler serves a shape worth
+	// declaring. Adding a response schema later is additive.
+	updateOC.AddRespStructure(nil, openapicore.WithHTTPStatus(http.StatusOK))
 	for _, status := range []int{
 		http.StatusBadRequest,
 		http.StatusForbidden,
@@ -86,7 +99,23 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"string to clear, send a menu license to replace. Clearing a license that was actually granted " +
 		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
 		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
-		"changes. Visibility accepts private and public; organization-scoped visibility is deferred.")
+		"changes. Visibility accepts private and public; organization-scoped visibility is deferred. " +
+		"400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a " +
+		"visibility outside the accepted set, a license outside the canonical menu, and the attempt to " +
+		"clear a granted license. " +
+		"The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather " +
+		"than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user " +
+		"anything useful, so those distinctions are exactly what this contract is for. The success " +
+		"body has no such consumer: the applied state is read back through " +
+		"GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently " +
+		"serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, " +
+		"project_hash, source_file_path and others) at " +
+		"backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype " +
+		"wrappers, so a consumer would receive {\"String\":\"x\",\"Valid\":true} where it expects a " +
+		"string. Declaring a projection the village does not serve would break the property that the " +
+		"served and declared contracts cannot drift, so nothing is declared until the handler serves a " +
+		"shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding " +
+		"the response schema later is additive. Do not 'harmonize' this by inventing a success body.")
 	updateOC.SetID("updateTranscript")
 	updateOC.SetTags("transcripts")
 	if err := r.AddOperation(updateOC); err != nil {

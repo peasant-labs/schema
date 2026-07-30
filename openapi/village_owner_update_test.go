@@ -183,6 +183,20 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 					observed = append(observed, status)
 				}
 
+			case schema.OwnerUpdateProbeSuccessHasNoBody:
+				responses, ok := operation["responses"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update operation declares no responses")
+				}
+				success, ok := responses["200"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update operation must declare the 200 status even though its body is undeclared; omitting the status entirely would read as 'this never succeeds'")
+				}
+				if _, hasContent := success["content"]; hasContent {
+					t.Fatal("the 200 body is deliberately undeclared because village serves internal storage columns through pgtype wrappers; declaring a success shape it does not serve would break served-equals-declared. See village issue 55 before changing this")
+				}
+				observed = []string{"no-content-declared"}
+
 			case schema.OwnerUpdateProbeVisibilityEnum, schema.OwnerUpdateProbeLicenseEnum:
 				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
 				properties, ok := body["properties"].(map[string]any)
@@ -239,7 +253,15 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 	if len(responses) == 0 {
 		t.Fatal("owner update operation declares no refusals; the ownership boundary and the irrevocability rule must be readable from the contract")
 	}
+	refusals := 0
 	for status, entry := range responses {
+		// The success status carries no body by design (see the
+		// success_has_no_body probe); this test is about the refusals sharing one
+		// envelope, so skip it rather than weaken the envelope assertion.
+		if status == "200" {
+			continue
+		}
+		refusals++
 		response, ok := entry.(map[string]any)
 		if !ok {
 			t.Fatalf("response %s is malformed", status)
@@ -268,5 +290,8 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 		if _, ok := properties["error"]; !ok {
 			t.Fatalf("response %s envelope must carry the error field the village actually serves", status)
 		}
+	}
+	if refusals == 0 {
+		t.Fatal("no refusal responses were examined; this test would pass vacuously if the declaration lost every 4xx and 5xx")
 	}
 }

@@ -184,12 +184,19 @@ spec_expectations:
       provenance: {source: manual, ref: "every other operation in this document references a named body component"}
       mutation: {description: "asserts the body is a component reference rather than an inline object"}
 
-    - name: every reachable refusal is declared
+    - name: every reachable status is declared including the bodyless success
       input: {probe: response_statuses}
-      expected: {strings: ["400", "403", "404", "500"]}
+      expected: {strings: ["200", "400", "403", "404", "500"]}
       classification: must-pass
       provenance: {source: requirement, ref: "the ownership boundary and the irrevocability refusal are contract rules a client must be able to read"}
-      mutation: {description: "asserts the declared status set covers every refusal the handler can return"}
+      mutation: {description: "asserts the declared status set covers every refusal the handler can return plus the success status"}
+
+    - name: the success status is declared with no body schema
+      input: {probe: success_has_no_body}
+      expected: {strings: ["no-content-declared"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "village serves internal storage columns through pgtype wrappers, so no honest success shape exists to declare yet"}
+      mutation: {description: "asserts 200 is present but carries no content schema, so a later invented success body fails rather than passing silently"}
 
     - name: the declared visibility menu excludes organization scope
       input: {probe: visibility_enum}

@@ -88,6 +88,11 @@ const (
 	OwnerUpdateProbeVisibilityEnum OwnerUpdateSpecProbeKind = "visibility_enum"
 	// OwnerUpdateProbeLicenseEnum asserts the declared license members.
 	OwnerUpdateProbeLicenseEnum OwnerUpdateSpecProbeKind = "license_enum"
+	// OwnerUpdateProbeSuccessHasNoBody asserts the success status is declared but
+	// carries no content schema. It guards the deliberate omission in BOTH
+	// directions: dropping the status, or inventing a success body the village
+	// does not serve, each fail.
+	OwnerUpdateProbeSuccessHasNoBody OwnerUpdateSpecProbeKind = "success_has_no_body"
 )
 
 // AllOwnerUpdateSpecProbeKinds is the canonical ordered closed set. The spec test
@@ -100,6 +105,7 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeResponseStatuses,
 	OwnerUpdateProbeVisibilityEnum,
 	OwnerUpdateProbeLicenseEnum,
+	OwnerUpdateProbeSuccessHasNoBody,
 }
 
 // IsValid reports whether the probe kind is a known member.

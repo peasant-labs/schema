@@ -31,8 +31,35 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   of them are contract rules rather than transport accidents: only the owner may
   call it, and anyone else receives 403 while neither the transcript nor its
   governance audit changes; and clearing a granted license is refused with 400.
-  All refusals share one `TranscriptUpdateErrorResponse` envelope. The success
-  body is not yet declared.
+  All refusals share one `TranscriptUpdateErrorResponse` envelope. 400 covers
+  five distinct refusals: an unparseable transcript id, an undecodable body, a
+  visibility outside the accepted set, a license outside the canonical menu, and
+  the attempt to clear a granted license. No prior operation in this module
+  declared a 4xx or 5xx response, so this establishes that pattern for one
+  operation only; it is not a shared error framework and nothing else is
+  expected to adopt it without its own consumer driving the change.
+
+  The 200 status is declared with **no body schema**, and that is deliberate:
+  it does not mean the operation returns no body. The village does return one,
+  but it currently serves an untyped object wrapping the stored row's internal
+  columns (`owner_id`, `blob_key`, `project_hash`, `source_file_path` and
+  others) at `backend/internal/handler/transcripts.go:723-727`. Those columns
+  also serialize through pgx `pgtype` wrappers, so a consumer would receive
+  `{"String":"x","Valid":true}` where it expects a string, which makes the
+  served shape undecodable as a typed contract rather than merely leaky.
+  Declaring a projection the village does not actually serve would break the
+  property that the served contract and the declared contract cannot drift, so
+  nothing is declared until the handler serves a shape worth declaring. Nothing
+  consumes it today either: applied state is read back through
+  `GET /api/v1/pull/transcripts/{id}`. Tracked, together with the separate
+  defect that `tags` is decoded and silently dropped, at
+  https://github.com/peasant-labs/village/issues/55. Adding the response schema
+  once that lands is additive.
+
+  This also retires the placeholder note at `openapi/village.go:244`, where
+  `Visibility` was registered as a component for "future visibility controls":
+  this operation is that future, and it is now a real declared surface rather
+  than an anticipated one.
 
   Village API 0.9.0, both 0.9.0 request schemas, and Types 0.6.0 are retired and
   byte-frozen. Local API stays 0.6.0.
