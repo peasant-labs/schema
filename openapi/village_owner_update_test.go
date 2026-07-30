@@ -13,6 +13,12 @@ import (
 
 const ownerUpdatePath = "/api/v1/transcripts/{id}"
 
+// successStatus is the one status whose body is deliberately undeclared. It is
+// named rather than spelled inline so the refusal-envelope skip and the
+// refusal count cannot drift apart: both derive "which response is the success"
+// from this single value.
+const successStatus = "200"
+
 // villageSpecAsMap renders the built Village document the way a consumer reads
 // it. Asserting on the marshaled document rather than the reflector's in-memory
 // structures means these probes see exactly the bytes that ship.
@@ -188,7 +194,7 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 				if !ok {
 					t.Fatal("owner update operation declares no responses")
 				}
-				success, ok := responses["200"].(map[string]any)
+				success, ok := responses[successStatus].(map[string]any)
 				if !ok {
 					t.Fatal("owner update operation must declare the 200 status even though its body is undeclared; omitting the status entirely would read as 'this never succeeds'")
 				}
@@ -258,7 +264,7 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 		// The success status carries no body by design (see the
 		// success_has_no_body probe); this test is about the refusals sharing one
 		// envelope, so skip it rather than weaken the envelope assertion.
-		if status == "200" {
+		if status == successStatus {
 			continue
 		}
 		refusals++
@@ -291,7 +297,22 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 			t.Fatalf("response %s envelope must carry the error field the village actually serves", status)
 		}
 	}
-	if refusals == 0 {
-		t.Fatal("no refusal responses were examined; this test would pass vacuously if the declaration lost every 4xx and 5xx")
+	// Not a "greater than zero" check. A threshold that admits one would still
+	// pass if the declaration silently lost three of its four refusals, which is
+	// the realistic regression: refusals are dropped one at a time, not all at
+	// once. Require the assertion to have covered EVERY declared non-success
+	// response, so the guard tracks the declaration rather than a fixed number
+	// somebody would have to remember to update.
+	wantRefusals := 0
+	for status := range responses {
+		if status != successStatus {
+			wantRefusals++
+		}
+	}
+	if wantRefusals == 0 {
+		t.Fatal("the operation declares no refusal responses at all; the ownership boundary and the irrevocability rule would be unreadable from the contract")
+	}
+	if refusals != wantRefusals {
+		t.Fatalf("examined %d refusal response(s) but %d are declared; the envelope assertion must cover every declared refusal or it silently stops asserting", refusals, wantRefusals)
 	}
 }
