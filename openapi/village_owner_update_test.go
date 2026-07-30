@@ -271,6 +271,36 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 					observed = append(observed, name)
 				}
 
+			case schema.OwnerUpdateProbeRefusalEnvelopeProperties:
+				responses, ok := operation["responses"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update operation declares no responses")
+				}
+				seen := map[string]bool{}
+				for status, entry := range responses {
+					if status == successStatus {
+						continue
+					}
+					response, _ := entry.(map[string]any)
+					content, _ := response["content"].(map[string]any)
+					media, _ := content["application/json"].(map[string]any)
+					schemaRef, _ := media["schema"].(map[string]any)
+					ref, isRef := schemaRef["$ref"].(string)
+					if !isRef {
+						t.Fatalf("response %s does not reference a component", status)
+					}
+					properties, ok := resolveRef(t, document, ref)["properties"].(map[string]any)
+					if !ok {
+						t.Fatalf("response %s envelope declares no properties", status)
+					}
+					for name := range properties {
+						seen[name] = true
+					}
+				}
+				for name := range seen {
+					observed = append(observed, name)
+				}
+
 			case schema.OwnerUpdateProbeBodyIsClosed:
 				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
 				additional, present := body["additionalProperties"]

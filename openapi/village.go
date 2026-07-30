@@ -94,6 +94,18 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	// already treats as canonical for transcript identifiers (see the pattern on
 	// TranscriptID itself and the matching SessionID UUID branch), so this is the
 	// module's existing position rather than a restriction invented here.
+	//
+	// This narrowing is deliberate and was ratified after measurement, so do not
+	// widen it on the observation alone. uuid.Parse ACCEPTS four further
+	// spellings the declared pattern rejects: uppercase hex, brace-wrapped,
+	// urn:uuid-prefixed, and 32 raw hex digits with no dashes; village acts on
+	// all of them. They stay undeclared because village emits identifiers via
+	// uuid.UUID.String(), which is always canonical lowercase, so no client can
+	// hold another form unless it manufactures one; because this module already
+	// rejects the other forms at its own boundary in NewTranscriptID; and because
+	// accepting five spellings for one identity is itself a defect surface.
+	// Declaring one canonical form is better contract design, not merely
+	// narrower.
 	updateOC.AddReqStructure(new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	}))
@@ -127,6 +139,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
 		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
 		"changes. Visibility accepts private and public; organization-scoped visibility is deferred. " +
+		"The village additionally accepts and stores a legacy 'shared' value that is deliberately NOT " +
+		"declared: it is not a member of this contract's Visibility enum at all, whose third member is " +
+		"'group', and the village refuses 'group'. Declaring 'shared' would mean inventing an enum " +
+		"member to expose the deferred organization-ACL capability, so its absence is a decision. " +
 		"Omit a field to leave it unchanged; send an empty string to clear a title, a description, or " +
 		"a license. Explicit null is refused on every field, because the server would read it as " +
 		"preserve rather than the clear a caller usually intends, and an unknown field is refused " +
@@ -137,7 +153,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"runs, and is distinct from 403: 401 means the credential is missing or expired and the " +
 		"caller should re-authenticate, while 403 means the caller is authenticated but does not own " +
 		"this transcript. 404 covers both a transcript that does not exist and a lookup that failed, " +
-		"so it must not be read as proof of absence. " +
+		"so it must not be read as proof of absence. 500 has two forms and only one carries this body: " +
+		"the handler's own failure returns the envelope, while a panic recovered by the router's " +
+		"middleware returns 500 with an EMPTY body, so a client must tolerate an absent body on 500 " +
+		"rather than assuming the envelope is always present. " +
 		"The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather " +
 		"than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user " +
 		"anything useful, so those distinctions are exactly what this contract is for. The success " +

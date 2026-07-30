@@ -275,6 +275,13 @@ spec_expectations:
       provenance: {source: bug, ref: "reflection defaults a body to optional, and the server refuses an absent body with 400 every time"}
       mutation: {description: "asserts the body is required, so reverting to the reflected default fails instead of shipping a contract for a request that always fails"}
 
+    - name: the refusal envelope declares exactly one property
+      input: {probe: refusal_envelope_properties}
+      expected: {strings: ["error"]}
+      classification: must-pass
+      provenance: {source: bug, ref: "an invented field added to the envelope shipped with the whole suite green, because nothing pinned which properties it has"}
+      mutation: {description: "asserts the exact property set across every refusal, so a field that APPEARS is caught, which an existence check cannot do"}
+
     - name: the body is closed against unknown properties
       input: {probe: body_is_closed}
       expected: {strings: ["closed"]}
@@ -306,6 +313,13 @@ spec_expectations:
           - "backend/internal/handler/transcripts.go:723-727"
           - "https://github.com/peasant-labs/village/issues/55"
           - "Do not 'harmonize' this by inventing a success body"
+          # Two behaviours the village has that this operation deliberately does
+          # not declare. Both were found by execution against the real handler,
+          # and both read as served-versus-declared drift to anyone who has not
+          # seen the reasoning, so the reasoning ships in the document.
+          - "a legacy 'shared' value that is deliberately NOT"
+          # 500 has two forms and only one carries the envelope.
+          - "middleware returns 500 with an EMPTY body"
       classification: must-pass
       provenance: {source: requirement, ref: "the description is the only place these decisions are explained to a consumer, and prose is otherwise unguarded"}
       mutation: {description: "asserts the five-refusal stem, each of the five refusals it promises, both other statuses, the null rule, and the full undeclared-body justification including its source citation; a subset let a description survive that promised five and listed four"}

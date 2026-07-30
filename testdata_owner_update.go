@@ -173,6 +173,12 @@ const (
 	// several contract decisions are explained, and prose is otherwise unguarded:
 	// deleting it changes no assertion and breaks no build.
 	OwnerUpdateProbeDescriptionAnchors OwnerUpdateSpecProbeKind = "description_anchors"
+	// OwnerUpdateProbeRefusalEnvelopeProperties asserts the EXACT property set of
+	// the refusal envelope. Asserting that a property exists cannot detect a
+	// property that appears: an invented field on the envelope shipped with the
+	// whole suite green, because nothing said which properties the envelope has.
+	// This is the response-side twin of the request body's property probe.
+	OwnerUpdateProbeRefusalEnvelopeProperties OwnerUpdateSpecProbeKind = "refusal_envelope_properties"
 	// OwnerUpdateProbeBodyIsClosed asserts the body rejects unknown properties
 	// rather than accepting and discarding them.
 	OwnerUpdateProbeBodyIsClosed OwnerUpdateSpecProbeKind = "body_is_closed"
@@ -200,6 +206,7 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeBodyIsRequired,
 	OwnerUpdateProbePathParameterIsCanonical,
 	OwnerUpdateProbeTitleMaxLength,
+	OwnerUpdateProbeRefusalEnvelopeProperties,
 }
 
 // IsValid reports whether the probe kind is a known member.

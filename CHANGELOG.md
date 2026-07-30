@@ -63,6 +63,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   https://github.com/peasant-labs/village/issues/55. Adding the response schema
   once that lands is additive.
 
+  Two behaviours the village has and this operation deliberately does not
+  declare, recorded so they are not later mistaken for drift. The village
+  accepts and stores a legacy `shared` visibility, which is not a member of this
+  contract's `Visibility` enum at all (its third member is `group`, which the
+  village refuses); declaring it would mean inventing an enum member to expose
+  the deferred organization-ACL capability. And `uuid.Parse` accepts four
+  identifier spellings the declared pattern rejects - uppercase, brace-wrapped,
+  `urn:uuid`-prefixed, and 32 undashed hex digits - which stay undeclared
+  because the village only ever emits the canonical lowercase form and this
+  module already rejects the others at its own boundary.
+
   The path parameter is the canonical `TranscriptID` rather than a bare string.
   The village parses it with `uuid.Parse` and refuses anything else with a 400,
   so an unconstrained string described ids the server never accepts. The
