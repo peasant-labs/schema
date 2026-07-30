@@ -23,7 +23,7 @@ const fixture = loadCorpus(fixtureSource, {
   },
 });
 
-assert.equal(fixture.cases.length, 11, "requiredness fixture must retain its eleven representative structures");
+assert.equal(fixture.cases.length, 12, "requiredness fixture must retain its twelve representative structures");
 
 test("built root Zod schemas preserve the shared listed-property requiredness corpus", async (t) => {
   for (const testCase of fixture.cases) {

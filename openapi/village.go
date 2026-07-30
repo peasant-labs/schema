@@ -15,6 +15,33 @@ import (
 // OpenAPI identity and can never shadow the canonical language-binding type.
 type TranscriptPublishRequest schema.PublishRequest
 
+// TranscriptUpdateErrorResponse is the body the owner update operation returns
+// on every refusal. The village serves one uniform error envelope, so each
+// declared non-success status carries this same shape and a client reads the
+// reason from one field regardless of which refusal it hit.
+//
+// It lives here, operation-scoped, rather than in the shared type catalog. The
+// shape is nothing but {error: string}, so promoting it to the canonical
+// cross-language catalog would freeze a transcript-update-specific NAME onto a
+// generic envelope at the next release tag, leaving whoever declares the second
+// operation's refusals to reuse a misleading name, duplicate it, or take a
+// breaking rename. Whether a shared envelope belongs in the catalog is a
+// decision for the change that needs one, not a side effect of this one.
+type TranscriptUpdateErrorResponse struct {
+	// Error is the human-readable, actionable refusal reason. It is required
+	// because the village emits it unconditionally: every declared refusal on
+	// this operation, including the 401 raised by the authentication middleware
+	// before the handler runs, is written by one helper that always sets this
+	// field. Declaring it optional would understate what the server guarantees
+	// and force a consumer to handle an absence that cannot occur.
+	//
+	// The tag is load-bearing rather than decorative. Go-tag requiredness is
+	// applied to catalogued types by the Types generator; this type is
+	// deliberately operation-scoped and outside that catalog, so the tag is the
+	// only thing that emits the required array here.
+	Error string `json:"error" required:"true"`
+}
+
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
 // annotation registry and manifest synchronization, schema negotiation, and
@@ -44,6 +71,126 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	oc.SetTags("transcripts")
 	if err := r.AddOperation(oc); err != nil {
 		return nil, fmt.Errorf("add publish operation: %w", err)
+	}
+
+	// PATCH /api/v1/transcripts/{id} — owner-only partial metadata/governance
+	// update of an already-published transcript. The village has served this
+	// since the governance work landed; declaring it here closes the drift where
+	// a handler enforced rules the published contract never stated.
+	//
+	// Every refusal is declared, not just the happy path, because two of them
+	// are contract rules rather than transport accidents: the ownership boundary
+	// (403, leaving state and the governance audit untouched) and the
+	// irrevocability of a granted license (400). A client reading only a success
+	// shape would not learn either.
+	updateOC, err := r.NewOperationContext(http.MethodPatch, "/api/v1/transcripts/{id}")
+	if err != nil {
+		return nil, fmt.Errorf("new transcript update operation: %w", err)
+	}
+	// The path parameter is the canonical TranscriptID, not a bare string. The
+	// village parses it with uuid.Parse and refuses anything else with a 400, so
+	// declaring an unconstrained string described a request the server always
+	// rejects. TranscriptID also carries the lowercase-hex form this module
+	// already treats as canonical for transcript identifiers (see the pattern on
+	// TranscriptID itself and the matching SessionID UUID branch), so this is the
+	// module's existing position rather than a restriction invented here.
+	//
+	// This narrowing is deliberate and was ratified after measurement, so do not
+	// widen it on the observation alone. uuid.Parse ACCEPTS four further
+	// spellings the declared pattern rejects: uppercase hex, brace-wrapped,
+	// urn:uuid-prefixed, and 32 raw hex digits with no dashes; village acts on
+	// all of them. They stay undeclared because village emits identifiers via
+	// uuid.UUID.String(), which is always canonical lowercase, so no client can
+	// hold another form unless it manufactures one; because this module already
+	// rejects the other forms at its own boundary in NewTranscriptID; and because
+	// accepting five spellings for one identity is itself a defect surface.
+	// Declaring one canonical form is better contract design, not merely
+	// narrower.
+	updateOC.AddReqStructure(new(struct {
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+	}))
+	updateOC.AddReqStructure(new(schema.TranscriptUpdateRequest))
+	// The success status is declared with NO body schema. That is deliberate and
+	// is not the same as "returns no body": the village does return one, but it
+	// currently serves an untyped object wrapping the stored row's internal
+	// columns (owner_id, blob_key, project_hash, source_file_path and more, at
+	// village backend/internal/handler/transcripts.go:723-727), which must not
+	// enter the public contract. Those columns also serialize through pgtype
+	// wrappers, so a consumer would receive {"String":"x","Valid":true} where it
+	// expects a string; the served shape is not merely leaky but undecodable as a
+	// typed contract. Declaring a projection the village does not actually serve
+	// would break the property that the served contract and the declared contract
+	// cannot drift, so nothing is declared until the handler serves a shape worth
+	// declaring. Adding a response schema later is additive.
+	updateOC.AddRespStructure(nil, openapicore.WithHTTPStatus(http.StatusOK))
+	for _, status := range []int{
+		http.StatusBadRequest,
+		http.StatusUnauthorized,
+		http.StatusForbidden,
+		http.StatusNotFound,
+		http.StatusInternalServerError,
+	} {
+		updateOC.AddRespStructure(new(TranscriptUpdateErrorResponse), openapicore.WithHTTPStatus(status))
+	}
+	updateOC.SetDescription("Update an owned transcript's metadata and governance axes. Every field is " +
+		"optional and an omitted field is left unchanged, resolved against the locked stored row so a " +
+		"concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty " +
+		"string to clear, send a menu license to replace. Clearing a license that was actually granted " +
+		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
+		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
+		"changes. Visibility accepts private and public; organization-scoped visibility is deferred. " +
+		"The village additionally accepts and stores a legacy 'shared' value that is deliberately NOT " +
+		"declared: it is not a member of this contract's Visibility enum at all, whose third member is " +
+		"'group', and the village refuses 'group'. Declaring 'shared' would mean inventing an enum " +
+		"member to expose the deferred organization-ACL capability, so its absence is a decision. " +
+		"The transcript id is likewise narrower than the server: uuid.Parse also accepts uppercase, " +
+		"brace-wrapped, urn:uuid-prefixed and 32-undashed-hex spellings that the declared pattern " +
+		"rejects. Those stay undeclared because the village only ever emits the canonical lowercase " +
+		"form, so no client holds another unless it manufactures one, and accepting five spellings " +
+		"for one identity is itself a defect surface. Note this document now describes one transcript " +
+		"id two ways: this operation constrains it to the canonical pattern, while the older pull " +
+		"operations still declare a bare string. That difference is not a contradiction about what " +
+		"the village accepts, only about what each operation declares; the pull operations are " +
+		"deliberately untouched here. " +
+		"Omit a field to leave it unchanged; send an empty string to clear a title, a description, or " +
+		"a license. Explicit null is refused on every field, because the server would read it as " +
+		"preserve rather than the clear a caller usually intends, and an unknown field is refused " +
+		"because the server would accept and silently discard it. " +
+		"400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a " +
+		"visibility outside the accepted set, a license outside the canonical menu, and the attempt to " +
+		"clear a granted license. 401 is returned by the authentication boundary before the handler " +
+		"runs, and is distinct from 403: 401 means the credential is missing or expired and the " +
+		"caller should re-authenticate, while 403 means the caller is authenticated but does not own " +
+		"this transcript. 404 covers both a transcript that does not exist and a lookup that failed, " +
+		"so it must not be read as proof of absence. 500 has two forms and only one carries this body: " +
+		"the handler's own failure returns the envelope, while a panic recovered by the router's " +
+		"middleware returns 500 with an EMPTY body, so a client must tolerate an absent body on 500 " +
+		"rather than assuming the envelope is always present. " +
+		"The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather " +
+		"than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user " +
+		"anything useful, so those distinctions are exactly what this contract is for. The success " +
+		"body has no such consumer: the applied state is read back through " +
+		"GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently " +
+		"serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, " +
+		"project_hash, source_file_path and others) at " +
+		"backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype " +
+		"wrappers, so a consumer would receive {\"String\":\"x\",\"Valid\":true} where it expects a " +
+		"string. Declaring a projection the village does not serve would break the property that the " +
+		"served and declared contracts cannot drift, so nothing is declared until the handler serves a " +
+		"shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding " +
+		"the response schema later is additive. Do not 'harmonize' this by inventing a success body.")
+	updateOC.SetID("updateTranscript")
+	updateOC.SetTags("transcripts")
+	if err := r.AddOperation(updateOC); err != nil {
+		return nil, fmt.Errorf("add transcript update operation: %w", err)
+	}
+	// Reflection marks a request body optional by default. Here that would be a
+	// false statement: the handler decodes the body unconditionally, so omitting
+	// it (or sending an empty one) is a guaranteed 400. An empty JSON object is
+	// the correct way to send a no-op, and it is accepted. Mark the body required
+	// so the contract describes a request that can actually succeed.
+	if err := requirePatchRequestBody(r.Spec, "/api/v1/transcripts/{id}"); err != nil {
+		return nil, err
 	}
 
 	// GET /api/v1/auth/cli/login — browser OAuth initiation.
@@ -239,8 +386,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
 	// Provider, Role, EntryType, and all composite types.
 
-	// Explicitly register content-layer types not yet referenced by PublishRequest
-	// but part of the publish API domain (used in future visibility controls).
+	// Explicitly register content-layer types not referenced by PublishRequest but
+	// part of the publish API domain. Visibility is no longer merely anticipated:
+	// the owner update operation above declares a real visibility surface, using
+	// its own narrowed menu rather than this general enum.
 	if err := addComponentSchema(r, "Visibility", new(schema.Visibility)); err != nil {
 		return nil, err
 	}
@@ -251,4 +400,28 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	return r.Spec, nil
+}
+
+// requirePatchRequestBody marks the PATCH request body at one path as required
+// after reflection. It fails closed rather than silently doing nothing, because
+// a missing path or operation would leave the body advertised as optional while
+// every gate stayed green.
+func requirePatchRequestBody(spec *openapi31.Spec, path string) error {
+	if spec == nil || spec.Paths == nil {
+		return fmt.Errorf("require PATCH request body for %s: the specification has no paths, so the body would remain advertised as optional", path)
+	}
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	if !ok {
+		return fmt.Errorf("require PATCH request body for %s: the path is absent from the specification; either the operation moved or this call names a stale path, and the body would remain advertised as optional", path)
+	}
+	if item.Patch == nil {
+		return fmt.Errorf("require PATCH request body for %s: the path declares no PATCH operation; the body would remain advertised as optional", path)
+	}
+	if item.Patch.RequestBody == nil || item.Patch.RequestBody.RequestBody == nil {
+		return fmt.Errorf("require PATCH request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+	}
+	required := true
+	item.Patch.RequestBody.RequestBody.Required = &required
+	spec.Paths.MapOfPathItemValues[path] = item
+	return nil
 }

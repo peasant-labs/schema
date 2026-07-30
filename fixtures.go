@@ -39,6 +39,13 @@ var PullManifestExampleJSON []byte
 //go:embed testdata/publish/verdicts.yaml
 var PublishVerdictsYAML []byte
 
+// OwnerUpdateYAML contains the owner transcript update corpus: request
+// validation verdicts, exact tri-state license encodings, and the generated
+// Village document probes for the declared operation.
+//
+//go:embed testdata/publish/owner_update.yaml
+var OwnerUpdateYAML []byte
+
 // AssociationAnnotationIngressYAML contains the cross-language association
 // publication and annotation ingress validation corpus.
 //
