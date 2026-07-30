@@ -1804,11 +1804,11 @@ export const zTranscriptUpdateVisibility = z.enum(['private', 'public']);
 export type TranscriptUpdateVisibility = z.infer<typeof zTranscriptUpdateVisibility>;
 
 export const zTranscriptUpdateRequest = z.object({
-    description: z.string().nullish(),
-    license: zTranscriptUpdateLicense.nullish(),
-    title: z.string().nullish(),
-    visibility: zTranscriptUpdateVisibility.nullish()
-});
+    description: z.string().optional(),
+    license: zTranscriptUpdateLicense.optional(),
+    title: z.string().optional(),
+    visibility: zTranscriptUpdateVisibility.optional()
+}).strict();
 
 export type TranscriptUpdateRequest = z.infer<typeof zTranscriptUpdateRequest>;
 

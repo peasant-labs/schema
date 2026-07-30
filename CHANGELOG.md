@@ -34,7 +34,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   All refusals share one `TranscriptUpdateErrorResponse` envelope. 400 covers
   five distinct refusals: an unparseable transcript id, an undecodable body, a
   visibility outside the accepted set, a license outside the canonical menu, and
-  the attempt to clear a granted license. No prior operation in this module
+  the attempt to clear a granted license. 401 comes from the authentication
+  boundary that runs before the handler and is distinct in remedy from 403:
+  401 means re-authenticate, 403 means you are not the owner. 404 covers a
+  failed lookup as well as a genuinely absent transcript, so it is not proof of
+  absence. No prior operation in this module
   declared a 4xx or 5xx response, so this establishes that pattern for one
   operation only; it is not a shared error framework and nothing else is
   expected to adopt it without its own consumer driving the change.
@@ -56,10 +60,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   https://github.com/peasant-labs/village/issues/55. Adding the response schema
   once that lands is additive.
 
-  This also retires the placeholder note at `openapi/village.go:244`, where
-  `Visibility` was registered as a component for "future visibility controls":
-  this operation is that future, and it is now a real declared surface rather
-  than an anticipated one.
+  The request body is a closed object: unknown properties are refused rather
+  than accepted and silently discarded, and no property admits JSON null.
+  Refusing null is deliberate. The village decodes a null into the same nil
+  pointer an omitted field produces, so null would mean *preserve* while a
+  caller sending it almost certainly means *clear* - the opposite of the
+  obvious reading, on exactly the fields where clearing is wanted. Each intent
+  therefore gets one unambiguous spelling: omit to leave unchanged, send the
+  empty string to clear. Both refusals are enforced in Go at the decode
+  boundary and declared in the generated schemas, so the two cannot drift.
+
+  This also retires the placeholder note where `Visibility` was registered as a
+  component for "future visibility controls": this operation is that future,
+  and it is now a real declared surface rather than an anticipated one.
 
   Village API 0.9.0, both 0.9.0 request schemas, and Types 0.6.0 are retired and
   byte-frozen. Local API stays 0.6.0.

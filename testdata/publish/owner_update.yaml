@@ -110,6 +110,48 @@ request_validations:
       provenance: {source: boundary, ref: "an empty title is a value, not an omission"}
       mutation: {description: "sets the title to empty, which must not be confused with omitting it"}
 
+    - name: explicit null title is refused rather than silently preserving
+      input: '{"title":null}'
+      expected: {accepted: false, error_contains: "explicitly null"}
+      classification: must-fail
+      provenance: {source: requirement, ref: "null would decode to the same nil pointer an omitted field produces, so it would mean preserve"}
+      mutation: {description: "sends null where a caller would expect clearing, on the field they would most likely try it"}
+
+    - name: explicit null license is refused
+      input: '{"license":null}'
+      expected: {accepted: false, error_contains: "explicitly null"}
+      classification: must-fail
+      provenance: {source: boundary, ref: "the fourth wire form for a field whose three other forms are covered"}
+      mutation: {description: "sends null on the tri-state field, where preserve and clear must stay distinguishable"}
+
+    - name: explicit null description is refused
+      input: '{"description":null}'
+      expected: {accepted: false, error_contains: "explicitly null"}
+      classification: must-fail
+      provenance: {source: boundary, ref: "every field refuses null, not only the ones a probe happens to reach"}
+      mutation: {description: "sends null on the field no other row pinned"}
+
+    - name: explicit null visibility is refused
+      input: '{"visibility":null}'
+      expected: {accepted: false, error_contains: "explicitly null"}
+      classification: must-fail
+      provenance: {source: boundary, ref: "every field refuses null, not only the ones a probe happens to reach"}
+      mutation: {description: "sends null on the remaining governance field"}
+
+    - name: the tags field village silently discards is refused
+      input: '{"tags":["a","b"]}'
+      expected: {accepted: false, error_contains: "is not a field of this operation"}
+      classification: must-fail
+      provenance: {source: bug, ref: "village decodes tags and drops it, returning success, so a client believes it applied"}
+      mutation: {description: "sends the field the server accepts and discards, which must be refused rather than accepted and stripped"}
+
+    - name: an unrecognized field is refused
+      input: '{"nonsense":1}'
+      expected: {accepted: false, error_contains: "is not a field of this operation"}
+      classification: must-fail
+      provenance: {source: boundary, ref: "the body is closed, so any unknown name is refused"}
+      mutation: {description: "sends a name outside the closed property set"}
+
     - name: every axis together is accepted
       input: '{"title":"t","description":"d","visibility":"public","license":"CC-BY-4.0"}'
       expected: {accepted: true, error_contains: ""}
@@ -177,19 +219,19 @@ spec_expectations:
       provenance: {source: requirement, ref: "the route addresses one transcript"}
       mutation: {description: "asserts the id parameter is declared in path and required"}
 
-    - name: the request body is a referenced component
+    - name: the request body references the canonical shared component
       input: {probe: body_is_reference}
-      expected: {strings: ["OpenapiTranscriptUpdateBody"]}
+      expected: {strings: ["SchemaTranscriptUpdateRequest"]}
       classification: must-pass
-      provenance: {source: manual, ref: "every other operation in this document references a named body component"}
-      mutation: {description: "asserts the body is a component reference rather than an inline object"}
+      provenance: {source: requirement, ref: "the operation body and the shared type catalog must be one schema, not two that can drift"}
+      mutation: {description: "asserts the body reference canonicalizes to the catalogued type, which is what makes component harmonization actually apply; an operation-local body name would silently skip harmonization and let the two documents disagree"}
 
-    - name: every reachable status is declared including the bodyless success
+    - name: the declared status set is exactly what a caller can observe
       input: {probe: response_statuses}
-      expected: {strings: ["200", "400", "403", "404", "500"]}
+      expected: {strings: ["200", "400", "401", "403", "404", "500"]}
       classification: must-pass
-      provenance: {source: requirement, ref: "the ownership boundary and the irrevocability refusal are contract rules a client must be able to read"}
-      mutation: {description: "asserts the declared status set covers every refusal the handler can return plus the success status"}
+      provenance: {source: requirement, ref: "each status carries a different remedy, so a caller must be able to tell them apart from the contract alone"}
+      mutation: {description: "asserts the declared set is exactly the observable statuses, including 401 from the authentication boundary that runs before the handler"}
 
     - name: the success status is declared with no body schema
       input: {probe: success_has_no_body}
@@ -204,6 +246,20 @@ spec_expectations:
       classification: must-pass
       provenance: {source: enum, ref: "TranscriptUpdateVisibility closed set"}
       mutation: {description: "asserts the generated enum is exactly the two accepted members"}
+
+    - name: the body declares exactly the four accepted properties
+      input: {probe: body_properties}
+      expected: {strings: ["title", "description", "visibility", "license"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the payload is the operation's whole subject and nothing else pinned its property names"}
+      mutation: {description: "asserts the exact property set, so renaming or dropping a field fails instead of silently advertising a shape village does not serve"}
+
+    - name: the body is closed against unknown properties
+      input: {probe: body_is_closed}
+      expected: {strings: ["closed"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an open body plus a stripping validator recreates the silent no-op that omitting tags was meant to prevent"}
+      mutation: {description: "asserts additionalProperties is false, so an unknown field is refused rather than accepted and discarded"}
 
     - name: the declared license menu carries the clear sentinel and every menu license
       input: {probe: license_enum}

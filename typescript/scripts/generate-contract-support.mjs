@@ -8,6 +8,7 @@ import { parse } from "yaml";
 
 import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
 import { applyAssociationZodRefinements } from "./lib/association-zod-refinements.mjs";
+import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -43,7 +44,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
   const source = await readFile(zodPath, "utf8");
-  await writeFile(zodPath, applyAssociationZodRefinements(source));
+  await writeFile(zodPath, applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)));
 }
 
 function renderVersions(values) {

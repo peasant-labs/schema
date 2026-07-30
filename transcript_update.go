@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -160,6 +162,23 @@ func (TranscriptUpdateLicense) JSONSchema() (jsonschema.Schema, error) {
 // License carries the third state described on TranscriptUpdateLicense: nil
 // preserves, a pointer to the clear sentinel removes, and a pointer to a menu
 // value replaces.
+//
+// JSON null is REFUSED on every field, and the refusal is the point. A caller
+// reaching for null almost always means "clear this", but the village decodes a
+// null into the same nil pointer an omitted field produces, so null would
+// silently mean PRESERVE - the opposite of the obvious reading, on exactly the
+// fields where clearing is what a caller wants. Rather than declare that trap,
+// this contract rejects null and gives each intent its own unambiguous spelling:
+// omit the field to leave it unchanged, and send the empty string to clear a
+// title, a description, or a license. This is a deliberate narrowing of what the
+// village tolerates, in the same spirit as the visibility menu: the contract
+// never promises behavior the server lacks, it only declines to bless a spelling
+// whose meaning would surprise the caller.
+//
+// Unknown fields are refused for the same reason. The village accepts and
+// silently discards a "tags" field, so a client that sent tags would receive a
+// success and believe they applied; refusing the field turns that silent no-op
+// into an actionable error.
 type TranscriptUpdateRequest struct {
 	// Title replaces the transcript title when non-nil.
 	Title *string `json:"title,omitempty"`
@@ -202,10 +221,47 @@ type TranscriptUpdateErrorResponse struct {
 	Error string `json:"error"`
 }
 
-// IsEmpty reports whether the request would change nothing. A body with every
-// field omitted is accepted by the server and is a no-op, so a caller that built
-// a request from an unchanged form can detect that and skip the call rather than
-// spend a round trip and an audit evaluation on it.
-func (r TranscriptUpdateRequest) IsEmpty() bool {
-	return r.Title == nil && r.Description == nil && r.Visibility == nil && r.License == nil
+// transcriptUpdateFields is the closed set of property names this operation
+// accepts, paired with the JSON tags on TranscriptUpdateRequest. It is the one
+// place the wire vocabulary is written down, so the strict decoder and the
+// generated schema cannot disagree about which names exist.
+var transcriptUpdateFields = []string{"title", "description", "visibility", "license"}
+
+// UnmarshalJSON decodes an owner-update body at the trust boundary, refusing
+// two things the permissive default would wave through: an unknown field, and
+// an explicit null.
+//
+// Both refusals exist because the alternative is a SILENT wrong answer rather
+// than a loud one. An unknown field (notably "tags", which the village decodes
+// and discards) would otherwise be dropped and reported as success. An explicit
+// null would otherwise decode to the same nil pointer an omitted field
+// produces, so a caller who sent null meaning "clear this" would get "leave it
+// unchanged" and no indication anything was ignored.
+func (r *TranscriptUpdateRequest) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	if err := decoder.Decode(&raw); err != nil {
+		return fmt.Errorf("transcript update decoding failed at schema.TranscriptUpdateRequest.UnmarshalJSON during owner-update request decoding: the body is not a JSON object: %w; send an object carrying any of %s, or an empty object to change nothing", err, strings.Join(transcriptUpdateFields, ", "))
+	}
+
+	known := make(map[string]struct{}, len(transcriptUpdateFields))
+	for _, field := range transcriptUpdateFields {
+		known[field] = struct{}{}
+	}
+	for name, value := range raw {
+		if _, ok := known[name]; !ok {
+			return fmt.Errorf("transcript update decoding failed at schema.TranscriptUpdateRequest.UnmarshalJSON during owner-update request decoding: %q is not a field of this operation; the server would accept and silently discard it, so a caller would believe it applied; the accepted fields are %s", name, strings.Join(transcriptUpdateFields, ", "))
+		}
+		if string(bytes.TrimSpace(value)) == "null" {
+			return fmt.Errorf("transcript update decoding failed at schema.TranscriptUpdateRequest.UnmarshalJSON during owner-update request decoding: %q is explicitly null, which this operation refuses because null would mean preserve rather than the clear a caller usually intends; omit %q to leave it unchanged, or send an empty string to clear it", name, name)
+		}
+	}
+
+	type alias TranscriptUpdateRequest
+	var decoded alias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return fmt.Errorf("transcript update decoding failed at schema.TranscriptUpdateRequest.UnmarshalJSON during owner-update request decoding: %w; check that each field carries the type the contract declares", err)
+	}
+	*r = TranscriptUpdateRequest(decoded)
+	return nil
 }

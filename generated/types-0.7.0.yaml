@@ -3738,27 +3738,16 @@ components:
       title: TranscriptUpdateLicense
       type: string
     TranscriptUpdateRequest:
+      additionalProperties: false
       properties:
         description:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
+          type: string
         license:
-          anyOf:
-          - $ref: '#/components/schemas/TranscriptUpdateLicense'
-          - type: "null"
+          $ref: '#/components/schemas/TranscriptUpdateLicense'
         title:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
+          type: string
         visibility:
-          anyOf:
-          - $ref: '#/components/schemas/TranscriptUpdateVisibility'
-          - type: "null"
+          $ref: '#/components/schemas/TranscriptUpdateVisibility'
       type: object
     TranscriptUpdateVisibility:
       description: Visibility values accepted by the owner transcript update operation.

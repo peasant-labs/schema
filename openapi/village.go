@@ -15,14 +15,6 @@ import (
 // OpenAPI identity and can never shadow the canonical language-binding type.
 type TranscriptPublishRequest schema.PublishRequest
 
-// TranscriptUpdateBody is the owner-update operation's HTTP body. It carries the
-// canonical schema.TranscriptUpdateRequest shape under an operation-scoped name
-// so the body is a referenced component rather than an inline object, matching
-// every other operation in this spec. Component harmonization then replaces its
-// contents with the canonical Types definition, so the name is operation-local
-// while the schema stays canonical.
-type TranscriptUpdateBody schema.TranscriptUpdateRequest
-
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
 // annotation registry and manifest synchronization, schema negotiation, and
@@ -71,7 +63,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	updateOC.AddReqStructure(new(struct {
 		ID string `path:"id" description:"Transcript identifier"`
 	}))
-	updateOC.AddReqStructure(new(TranscriptUpdateBody))
+	updateOC.AddReqStructure(new(schema.TranscriptUpdateRequest))
 	// The success status is declared with NO body schema. That is deliberate and
 	// is not the same as "returns no body": the village does return one, but it
 	// currently serves an untyped object wrapping the stored row's internal
@@ -87,6 +79,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	updateOC.AddRespStructure(nil, openapicore.WithHTTPStatus(http.StatusOK))
 	for _, status := range []int{
 		http.StatusBadRequest,
+		http.StatusUnauthorized,
 		http.StatusForbidden,
 		http.StatusNotFound,
 		http.StatusInternalServerError,
@@ -100,9 +93,17 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
 		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
 		"changes. Visibility accepts private and public; organization-scoped visibility is deferred. " +
+		"Omit a field to leave it unchanged; send an empty string to clear a title, a description, or " +
+		"a license. Explicit null is refused on every field, because the server would read it as " +
+		"preserve rather than the clear a caller usually intends, and an unknown field is refused " +
+		"because the server would accept and silently discard it. " +
 		"400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a " +
 		"visibility outside the accepted set, a license outside the canonical menu, and the attempt to " +
-		"clear a granted license. " +
+		"clear a granted license. 401 is returned by the authentication boundary before the handler " +
+		"runs, and is distinct from 403: 401 means the credential is missing or expired and the " +
+		"caller should re-authenticate, while 403 means the caller is authenticated but does not own " +
+		"this transcript. 404 covers both a transcript that does not exist and a lookup that failed, " +
+		"so it must not be read as proof of absence. " +
 		"The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather " +
 		"than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user " +
 		"anything useful, so those distinctions are exactly what this contract is for. The success " +
@@ -315,8 +316,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
 	// Provider, Role, EntryType, and all composite types.
 
-	// Explicitly register content-layer types not yet referenced by PublishRequest
-	// but part of the publish API domain (used in future visibility controls).
+	// Explicitly register content-layer types not referenced by PublishRequest but
+	// part of the publish API domain. Visibility is no longer merely anticipated:
+	// the owner update operation above declares a real visibility surface, using
+	// its own narrowed menu rather than this general enum.
 	if err := addComponentSchema(r, "Visibility", new(schema.Visibility)); err != nil {
 		return nil, err
 	}

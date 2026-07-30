@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
@@ -60,7 +61,7 @@ func ownerUpdateOperation(t *testing.T, document map[string]any) map[string]any 
 func resolveRef(t *testing.T, document map[string]any, ref string) map[string]any {
 	t.Helper()
 	const prefix = "#/components/schemas/"
-	name, found := trimPrefix(ref, prefix)
+	name, found := strings.CutPrefix(ref, prefix)
 	if !found {
 		t.Fatalf("reference %q is not a local component reference", ref)
 	}
@@ -77,13 +78,6 @@ func resolveRef(t *testing.T, document map[string]any, ref string) map[string]an
 		t.Fatalf("village document has no component schema %q", name)
 	}
 	return resolved
-}
-
-func trimPrefix(s, prefix string) (string, bool) {
-	if len(s) < len(prefix) || s[:len(prefix)] != prefix {
-		return "", false
-	}
-	return s[len(prefix):], true
 }
 
 // enumOf reads a component's enum members as strings, following one level of
@@ -177,7 +171,7 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 				if !ok {
 					t.Fatal("owner update request body must be a component reference, not an inline object, so consumers generate a named type")
 				}
-				name, _ := trimPrefix(ref, "#/components/schemas/")
+				name, _ := strings.CutPrefix(ref, "#/components/schemas/")
 				observed = []string{name}
 
 			case schema.OwnerUpdateProbeResponseStatuses:
@@ -202,6 +196,27 @@ func TestOwnerUpdateSpecExpectations(t *testing.T) {
 					t.Fatal("the 200 body is deliberately undeclared because village serves internal storage columns through pgtype wrappers; declaring a success shape it does not serve would break served-equals-declared. See village issue 55 before changing this")
 				}
 				observed = []string{"no-content-declared"}
+
+			case schema.OwnerUpdateProbeBodyProperties:
+				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
+				properties, ok := body["properties"].(map[string]any)
+				if !ok {
+					t.Fatal("owner update body declares no properties")
+				}
+				for name := range properties {
+					observed = append(observed, name)
+				}
+
+			case schema.OwnerUpdateProbeBodyIsClosed:
+				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
+				additional, present := body["additionalProperties"]
+				if !present {
+					t.Fatal("owner update body does not declare additionalProperties; an open body lets a generated validator accept an unknown field and strip it, which is the silent no-op omitting tags was meant to prevent")
+				}
+				if additional != false {
+					t.Fatalf("owner update body declares additionalProperties %v, want false so unknown fields are refused rather than discarded", additional)
+				}
+				observed = []string{"closed"}
 
 			case schema.OwnerUpdateProbeVisibilityEnum, schema.OwnerUpdateProbeLicenseEnum:
 				body := resolveRef(t, document, bodySchema(t, operation)["$ref"].(string))
@@ -260,6 +275,7 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 		t.Fatal("owner update operation declares no refusals; the ownership boundary and the irrevocability rule must be readable from the contract")
 	}
 	refusals := 0
+	envelopeRefs := map[string][]string{}
 	for status, entry := range responses {
 		// The success status carries no body by design (see the
 		// success_has_no_body probe); this test is about the refusals sharing one
@@ -288,6 +304,12 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 		if !ok {
 			t.Fatalf("response %s must reference the shared refusal envelope", status)
 		}
+		// Record the reference itself, not just its resolved shape. Checking
+		// only that each resolved component HAS an error property would pass
+		// when four refusals point at four different components that happen to
+		// share a field name, which is precisely not what "one shared envelope"
+		// means.
+		envelopeRefs[ref] = append(envelopeRefs[ref], status)
 		resolved := resolveRef(t, document, ref)
 		properties, ok := resolved["properties"].(map[string]any)
 		if !ok {
@@ -314,5 +336,8 @@ func TestOwnerUpdateRefusalsShareOneEnvelope(t *testing.T) {
 	}
 	if refusals != wantRefusals {
 		t.Fatalf("examined %d refusal response(s) but %d are declared; the envelope assertion must cover every declared refusal or it silently stops asserting", refusals, wantRefusals)
+	}
+	if len(envelopeRefs) != 1 {
+		t.Fatalf("the refusals reference %d distinct components %v, want exactly one shared envelope so a client reads the reason from the same field whichever refusal it hit", len(envelopeRefs), envelopeRefs)
 	}
 }

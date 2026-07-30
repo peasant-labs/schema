@@ -200,7 +200,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update an owned transcript's metadata and governance axes. Every field is optional and an omitted field is left unchanged, resolved against the locked stored row so a concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty string to clear, send a menu license to replace. Clearing a license that was actually granted is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner may call this; anyone else receives 403 and neither the transcript nor its governance audit changes. Visibility accepts private and public; organization-scoped visibility is deferred. 400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a visibility outside the accepted set, a license outside the canonical menu, and the attempt to clear a granted license. The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user anything useful, so those distinctions are exactly what this contract is for. The success body has no such consumer: the applied state is read back through GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, project_hash, source_file_path and others) at backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype wrappers, so a consumer would receive {"String":"x","Valid":true} where it expects a string. Declaring a projection the village does not serve would break the property that the served and declared contracts cannot drift, so nothing is declared until the handler serves a shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding the response schema later is additive. Do not 'harmonize' this by inventing a success body. */
+        /** @description Update an owned transcript's metadata and governance axes. Every field is optional and an omitted field is left unchanged, resolved against the locked stored row so a concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty string to clear, send a menu license to replace. Clearing a license that was actually granted is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner may call this; anyone else receives 403 and neither the transcript nor its governance audit changes. Visibility accepts private and public; organization-scoped visibility is deferred. Omit a field to leave it unchanged; send an empty string to clear a title, a description, or a license. Explicit null is refused on every field, because the server would read it as preserve rather than the clear a caller usually intends, and an unknown field is refused because the server would accept and silently discard it. 400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a visibility outside the accepted set, a license outside the canonical menu, and the attempt to clear a granted license. 401 is returned by the authentication boundary before the handler runs, and is distinct from 403: 401 means the credential is missing or expired and the caller should re-authenticate, while 403 means the caller is authenticated but does not own this transcript. 404 covers both a transcript that does not exist and a lookup that failed, so it must not be read as proof of absence. The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user anything useful, so those distinctions are exactly what this contract is for. The success body has no such consumer: the applied state is read back through GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, project_hash, source_file_path and others) at backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype wrappers, so a consumer would receive {"String":"x","Valid":true} where it expects a string. Declaring a projection the village does not serve would break the property that the served and declared contracts cannot drift, so nothing is declared until the handler serves a shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding the response schema later is additive. Do not 'harmonize' this by inventing a success body. */
         patch: operations["updateTranscript"];
         trace?: never;
     };
@@ -229,12 +229,6 @@ export interface components {
             stats?: components["schemas"]["SchemaSessionStats"];
             subagents?: components["schemas"]["SchemaSubagentRef"][];
             timestamp?: components["schemas"]["SchemaTimestampInfo"];
-        };
-        OpenapiTranscriptUpdateBody: {
-            description?: null | string;
-            license?: components["schemas"]["SchemaTranscriptUpdateLicense"];
-            title?: null | string;
-            visibility?: components["schemas"]["SchemaTranscriptUpdateVisibility"];
         };
         SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;
@@ -410,6 +404,7 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUpdateLicense: Schema.TranscriptUpdateLicense;
+        SchemaTranscriptUpdateRequest: Schema.TranscriptUpdateRequest;
         /**
          * TranscriptUpdateVisibility
          * @description Visibility values accepted by the owner transcript update operation. Organization-scoped visibility is deferred and is deliberately not offered here.
@@ -701,7 +696,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["OpenapiTranscriptUpdateBody"];
+                "application/json": components["schemas"]["SchemaTranscriptUpdateRequest"];
             };
         };
         responses: {
@@ -714,6 +709,15 @@ export interface operations {
             };
             /** @description Bad Request */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptUpdateErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

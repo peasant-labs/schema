@@ -88,6 +88,13 @@ const (
 	OwnerUpdateProbeVisibilityEnum OwnerUpdateSpecProbeKind = "visibility_enum"
 	// OwnerUpdateProbeLicenseEnum asserts the declared license members.
 	OwnerUpdateProbeLicenseEnum OwnerUpdateSpecProbeKind = "license_enum"
+	// OwnerUpdateProbeBodyProperties asserts the exact property set the body
+	// declares. Without it the payload, which is the operation's whole subject,
+	// has nothing pinning its field names.
+	OwnerUpdateProbeBodyProperties OwnerUpdateSpecProbeKind = "body_properties"
+	// OwnerUpdateProbeBodyIsClosed asserts the body rejects unknown properties
+	// rather than accepting and discarding them.
+	OwnerUpdateProbeBodyIsClosed OwnerUpdateSpecProbeKind = "body_is_closed"
 	// OwnerUpdateProbeSuccessHasNoBody asserts the success status is declared but
 	// carries no content schema. It guards the deliberate omission in BOTH
 	// directions: dropping the status, or inventing a success body the village
@@ -106,6 +113,8 @@ var AllOwnerUpdateSpecProbeKinds = []OwnerUpdateSpecProbeKind{
 	OwnerUpdateProbeVisibilityEnum,
 	OwnerUpdateProbeLicenseEnum,
 	OwnerUpdateProbeSuccessHasNoBody,
+	OwnerUpdateProbeBodyProperties,
+	OwnerUpdateProbeBodyIsClosed,
 }
 
 // IsValid reports whether the probe kind is a known member.
@@ -168,6 +177,13 @@ func LoadOwnerUpdateFixtures() (*OwnerUpdateFixtures, error) {
 	for _, c := range f.RequestValidations.Cases {
 		if c.Expected.Accepted && c.Expected.ErrorContains != "" {
 			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q is accepted but names an expected error fragment %q; an accepted body produces no error", c.Name, c.Expected.ErrorContains)
+		}
+		wantClassification := testcase.MustFail
+		if c.Expected.Accepted {
+			wantClassification = testcase.MustPass
+		}
+		if c.Classification != wantClassification {
+			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q is classified %q but its expectation says accepted=%t; the classification must agree with the verdict or it is decoration a reader would trust and a mutation could flip unnoticed; use %q", c.Name, c.Classification, c.Expected.Accepted, wantClassification)
 		}
 		if !c.Expected.Accepted && c.Expected.ErrorContains == "" {
 			return nil, fmt.Errorf("load owner update fixtures: request_validations case %q is a refusal but names no expected error fragment; without one the row would pass on any message and prove nothing about why the body was refused", c.Name)

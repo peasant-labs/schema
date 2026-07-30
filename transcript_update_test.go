@@ -28,11 +28,16 @@ func TestOwnerUpdateRequestValidation(t *testing.T) {
 
 	for _, c := range fixtures.RequestValidations.Cases {
 		t.Run(c.Name, func(t *testing.T) {
+			// A body can be refused at either boundary: the strict decoder
+			// rejects unknown fields and explicit nulls, and Validate rejects
+			// out-of-set enum values. A caller experiences both as "the
+			// contract refused this", so the row asserts against whichever
+			// fires rather than caring which one did.
 			var request schema.TranscriptUpdateRequest
-			if err := json.Unmarshal([]byte(c.Input), &request); err != nil {
-				t.Fatalf("decode body %s: %v", c.Input, err)
+			err := json.Unmarshal([]byte(c.Input), &request)
+			if err == nil {
+				err = request.Validate()
 			}
-			err := request.Validate()
 			if c.Expected.Accepted {
 				if err != nil {
 					t.Fatalf("body %s must be accepted, got refusal: %v", c.Input, err)
@@ -136,21 +141,5 @@ func TestOwnerUpdateLicenseMenuDerivesFromCanonical(t *testing.T) {
 	}
 	if schema.TranscriptUpdateLicense("MIT").IsValid() {
 		t.Fatal("a license outside the canonical menu must be refused")
-	}
-}
-
-// TestOwnerUpdateIsEmpty covers the no-op detector a caller uses to skip a round
-// trip when a form was submitted unchanged.
-func TestOwnerUpdateIsEmpty(t *testing.T) {
-	if !(schema.TranscriptUpdateRequest{}).IsEmpty() {
-		t.Fatal("a request with every field omitted must report itself empty")
-	}
-	visibility := schema.TranscriptUpdateVisibilityPublic
-	if (schema.TranscriptUpdateRequest{Visibility: &visibility}).IsEmpty() {
-		t.Fatal("a request that sets visibility must not report itself empty")
-	}
-	title := ""
-	if (schema.TranscriptUpdateRequest{Title: &title}).IsEmpty() {
-		t.Fatal("setting the title to empty is a real change and must not report itself empty")
 	}
 }
