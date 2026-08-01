@@ -119,7 +119,11 @@ func (v PublishOperationKind) JSONSchema() (jsonschema.Schema, error) {
 // Successor publication projections have distinct component identities so
 // recursive unknown-field rejection does not tighten legacy uses of shared
 // metadata components.
-type AuthoritativeSessionIdentity SessionIdentity
+type AuthoritativeSessionIdentity struct {
+	SessionID       SessionID  `json:"sessionId"`
+	ParentSessionID *SessionID `json:"parentSessionId,omitempty" nullable:"false"`
+	SchemaVersion   int        `json:"schemaVersion"`
+}
 type AuthoritativeModelInfo ModelInfo
 type AuthoritativeTimestampInfo TimestampInfo
 type AuthoritativeSourceInfo SourceInfo

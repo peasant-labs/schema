@@ -365,7 +365,6 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse"}
 
 var strictNullableProperties = map[string]map[string]struct{}{
-	"AuthoritativeSessionIdentity":  {"parentSessionId": {}},
 	"AuthoritativeTimestampInfo":    {"ingested": {}},
 	"AuthoritativeGitContext":       {"branch": {}, "remote": {}, "worktree": {}, "tracking": {}},
 	"AuthoritativeSessionStats":     {"thoughtTokens": {}, "cachedReadTokens": {}, "cachedWriteTokens": {}},

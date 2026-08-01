@@ -16,11 +16,26 @@ for (const arm of ["metadata", "owner_updates", "owner_update_responses", "opera
     assert.equal(typeof row.expected.zod_valid, "boolean", `${arm}/${row.name} must explicitly declare zod_valid`);
   }
 }
+for (const row of corpus.parent_identity.cases) {
+  assert.equal(typeof row.expected.go_valid, "boolean", `parent_identity/${row.name} must explicitly declare go_valid`);
+  if (row.expected.scenario === "duplicate-key") {
+    assert.equal(row.expected.zod_valid, undefined, `parent_identity/${row.name} must remain raw-Go-only because JSON.parse collapses duplicate keys`);
+  } else {
+    assert.equal(typeof row.expected.zod_valid, "boolean", `parent_identity/${row.name} must explicitly declare zod_valid`);
+  }
+}
 
 test("built publication metadata preserves optional non-null visibility intent and required content hash", () => {
   assert.equal(zAuthoritativePublishRequest.shape.visibilityIntent.isOptional(), true, "visibilityIntent omission is the legacy-compatible form");
   assert.equal(zAuthoritativePublishRequest.shape.visibilityIntent.isNullable(), false, "explicit null remains rejected");
   assert.equal(zAuthoritativePublishRequest.shape.contentHash.isOptional(), false, "contentHash remains required");
+});
+
+test("generated authoritative identity uses only the successor parent key", () => {
+  assert.match(generatedZodSource, /export const zAuthoritativeSessionIdentity = z\.object\(\{[\s\S]*?parentSessionId:/);
+  const declaration = generatedZodSource.match(/export const zAuthoritativeSessionIdentity = z\.object\(\{[\s\S]*?\n\}\)/)?.[0];
+  assert.equal(typeof declaration, "string", "generated authoritative identity declaration must be present");
+  assert.doesNotMatch(declaration, /parentUuid:/);
 });
 
 test("publication Zod refinement refuses a marked artifact with regressed visibility requiredness", () => {
@@ -35,6 +50,11 @@ test("publication Zod refinement refuses a marked artifact with regressed visibi
 
 for (const row of corpus.metadata.cases) {
   test(`publication metadata parity: ${row.name}`, () => {
+    assert.equal(zAuthoritativePublishRequest.safeParse(JSON.parse(row.input)).success, row.expected.zod_valid);
+  });
+}
+for (const row of corpus.parent_identity.cases.filter((row) => row.expected.zod_valid !== undefined)) {
+  test(`publication parent identity parity: ${row.name}`, () => {
     assert.equal(zAuthoritativePublishRequest.safeParse(JSON.parse(row.input)).success, row.expected.zod_valid);
   });
 }
