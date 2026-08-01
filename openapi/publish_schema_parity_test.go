@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"os"
 	"testing"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
@@ -58,9 +59,9 @@ func accepts(t *testing.T, sch *jsonschema.Schema, body []byte) bool {
 // enforce against the extracted schema. The committed legacy copy keeps this
 // pinned after deletion.
 func TestPublishSchema_EnforcementParity(t *testing.T) {
-	newRaw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
+	newRaw, err := os.ReadFile("../generated/publish-request-0.10.0.schema.json")
 	if err != nil {
-		t.Fatalf("BuildPublishRequestSchema: %v", err)
+		t.Fatalf("read frozen extracted publish schema: %v", err)
 	}
 
 	legacy := compileSchema(t, "legacy.json", legacyPublishSchema)

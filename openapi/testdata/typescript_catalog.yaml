@@ -3,6 +3,35 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: AuthoritativeCommitInfo, disposition: catalog, component: AuthoritativeCommitInfo, reason: successor recursive strictness}
+  - {go_name: AuthoritativeDiagnosticEntry, disposition: catalog, component: AuthoritativeDiagnosticEntry, reason: successor recursive strictness}
+  - {go_name: AuthoritativeDiagnosticsInfo, disposition: catalog, component: AuthoritativeDiagnosticsInfo, reason: successor recursive strictness}
+  - {go_name: AuthoritativeGitContext, disposition: catalog, component: AuthoritativeGitContext, reason: successor recursive strictness}
+  - {go_name: AuthoritativeModelInfo, disposition: catalog, component: AuthoritativeModelInfo, reason: successor recursive strictness}
+  - {go_name: AuthoritativePublishRequest, disposition: catalog, component: AuthoritativePublishRequest, reason: successor multipart metadata contract}
+  - {go_name: AuthoritativePublishResponse, disposition: catalog, component: AuthoritativePublishResponse, reason: authoritative publication receipt}
+  - {go_name: AuthoritativeProjectContext, disposition: catalog, component: AuthoritativeProjectContext, reason: successor recursive strictness}
+  - {go_name: AuthoritativeQualityMetrics, disposition: catalog, component: AuthoritativeQualityMetrics, reason: successor recursive strictness}
+  - {go_name: AuthoritativeSessionEntry, disposition: catalog, component: AuthoritativeSessionEntry, reason: successor recursive strictness}
+  - {go_name: AuthoritativeSessionIdentity, disposition: catalog, component: AuthoritativeSessionIdentity, reason: successor recursive strictness}
+  - {go_name: AuthoritativeSessionStats, disposition: catalog, component: AuthoritativeSessionStats, reason: successor recursive strictness}
+  - {go_name: AuthoritativeSourceInfo, disposition: catalog, component: AuthoritativeSourceInfo, reason: successor recursive strictness}
+  - {go_name: AuthoritativeSubagentRef, disposition: catalog, component: AuthoritativeSubagentRef, reason: successor recursive strictness}
+  - {go_name: AuthoritativeTimestampInfo, disposition: catalog, component: AuthoritativeTimestampInfo, reason: successor recursive strictness}
+  - {go_name: CanonicalPublishGitContext, disposition: catalog, component: CanonicalPublishGitContext, reason: authoritative publication contract}
+  - {go_name: CanonicalPublishOperation, disposition: catalog, component: CanonicalPublishOperation, reason: authoritative publication contract}
+  - {go_name: CanonicalPublishReplacement, disposition: catalog, component: CanonicalPublishReplacement, reason: authoritative publication contract}
+  - {go_name: OwnerTranscriptUpdateRequest, disposition: catalog, component: OwnerTranscriptUpdateRequest, reason: successor owner update contract}
+  - {go_name: OwnerTranscriptUpdateResponse, disposition: catalog, component: OwnerTranscriptUpdateResponse, reason: successor owner update contract}
+  - {go_name: OwnerUpdateLicenseIntent, disposition: catalog, component: OwnerUpdateLicenseIntent, reason: successor owner update contract}
+  - {go_name: PublishAppliedState, disposition: catalog, component: PublishAppliedState, reason: authoritative publication contract}
+  - {go_name: PublishAssociationOperation, disposition: catalog, component: PublishAssociationOperation, reason: authoritative publication contract}
+  - {go_name: PublishLicenseOperation, disposition: catalog, component: PublishLicenseOperation, reason: authoritative publication contract}
+  - {go_name: PublishNormalizedValues, disposition: catalog, component: PublishNormalizedValues, reason: authoritative publication contract}
+  - {go_name: PublishOperationKind, disposition: catalog, component: PublishOperationKind, reason: authoritative publication contract}
+  - {go_name: PublishRequestFingerprint, disposition: catalog, component: PublishRequestFingerprint, reason: authoritative publication contract}
+  - {go_name: TranscriptContentHash, disposition: catalog, component: TranscriptContentHash, reason: authoritative publication contract}
+  - {go_name: VisibilityIntent, disposition: catalog, component: VisibilityIntent, reason: successor publication metadata}
   - go_name: AnnotationSummary
     disposition: catalog
     component: AnnotationSummary

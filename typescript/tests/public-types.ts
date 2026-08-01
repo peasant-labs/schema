@@ -17,7 +17,7 @@ import type { TimelineFixtureCase, TimelineFixtureCorpus } from "@peasant-labs/s
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
 type LocalReviewListPayload = LocalOperations["listReviewChanges"]["responses"][200]["content"]["application/json"];
 type LocalProjectResolutionPayload = LocalOperations["resolveProject"]["responses"][200]["content"]["application/json"];
-type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["application/json"];
+type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["multipart/form-data"]["metadata"];
 const reviewOperationUsesCanonicalRoot: Same<ReviewListPayload, LocalReviewListPayload> = true;
 // resolveProject's response is the 5th /local-api operation this suite names explicitly (the other 4 --
 // ReviewListPayload, TimelineSessionRef, CommitRef, ProjectHash -- are covered transitively through

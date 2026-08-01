@@ -2,18 +2,29 @@ package openapi
 
 import (
 	"fmt"
+	"mime/multipart"
 	"net/http"
 
 	schema "github.com/peasant-labs/schema"
+	jsonschema "github.com/swaggest/jsonschema-go"
 	openapicore "github.com/swaggest/openapi-go"
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
-// TranscriptPublishRequest is the Village publish operation's HTTP body.
-// Its validation-requiredness is intentionally stricter than the canonical
-// schema.PublishRequest Go wire shape, so it has a distinct operation-only
-// OpenAPI identity and can never shadow the canonical language-binding type.
-type TranscriptPublishRequest schema.PublishRequest
+// AuthoritativeTranscriptPublishRequest is the Village 0.11 publish
+// operation's HTTP body. Its distinct operation-only identity lets the
+// successor OpenAPI contract be stricter than legacy shared metadata schemas.
+type AuthoritativeTranscriptPublishRequest schema.AuthoritativePublishRequest
+
+// TranscriptPublishRequest retains the previous operation-wrapper name while
+// Go consumers migrate to AuthoritativeTranscriptPublishRequest.
+// Deprecated: use AuthoritativeTranscriptPublishRequest. See schema issue #55.
+type TranscriptPublishRequest = AuthoritativeTranscriptPublishRequest
+
+type transcriptPublishMultipartRequest struct {
+	Metadata       AuthoritativeTranscriptPublishRequest `formData:"metadata" required:"true" description:"PublishRequest JSON encoded with Content-Type application/json."`
+	TranscriptFile *multipart.FileHeader                 `formData:"transcript_file" required:"true" description:"Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash."`
+}
 
 // TranscriptUpdateErrorResponse is the body the owner update operation returns
 // on every refusal. The village serves one uniform error envelope, so each
@@ -64,13 +75,20 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new publish operation: %w", err)
 	}
-	oc.AddReqStructure(new(TranscriptPublishRequest))
-	oc.AddRespStructure(new(schema.PublishResponse))
-	oc.SetDescription("Publish a transcript with session entries to the village.")
+	oc.AddReqStructure(new(transcriptPublishMultipartRequest))
+	oc.AddRespStructure(new(schema.AuthoritativePublishResponse), openapicore.WithHTTPStatus(http.StatusCreated))
+	oc.AddRespStructure(new(schema.AuthoritativePublishResponse), openapicore.WithHTTPStatus(http.StatusOK))
+	oc.SetDescription("Publish exact transcript bytes with typed JSON metadata. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt.")
 	oc.SetID("publishTranscript")
 	oc.SetTags("transcripts")
 	if err := r.AddOperation(oc); err != nil {
 		return nil, fmt.Errorf("add publish operation: %w", err)
+	}
+	if err := registerPublishMetadataComponent(r); err != nil {
+		return nil, err
+	}
+	if err := setMultipartMetadataEncoding(r.Spec, "/api/v1/transcripts/publish"); err != nil {
+		return nil, err
 	}
 
 	// PATCH /api/v1/transcripts/{id} — owner-only partial metadata/governance
@@ -109,20 +127,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	updateOC.AddReqStructure(new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	}))
-	updateOC.AddReqStructure(new(schema.TranscriptUpdateRequest))
-	// The success status is declared with NO body schema. That is deliberate and
-	// is not the same as "returns no body": the village does return one, but it
-	// currently serves an untyped object wrapping the stored row's internal
-	// columns (owner_id, blob_key, project_hash, source_file_path and more, at
-	// village backend/internal/handler/transcripts.go:723-727), which must not
-	// enter the public contract. Those columns also serialize through pgtype
-	// wrappers, so a consumer would receive {"String":"x","Valid":true} where it
-	// expects a string; the served shape is not merely leaky but undecodable as a
-	// typed contract. Declaring a projection the village does not actually serve
-	// would break the property that the served contract and the declared contract
-	// cannot drift, so nothing is declared until the handler serves a shape worth
-	// declaring. Adding a response schema later is additive.
-	updateOC.AddRespStructure(nil, openapicore.WithHTTPStatus(http.StatusOK))
+	updateOC.AddReqStructure(new(schema.OwnerTranscriptUpdateRequest))
+	// The successor contract returns the complete authoritative editable state.
+	// Village must implement this projection before re-pinning the schema module.
+	updateOC.AddRespStructure(new(schema.OwnerTranscriptUpdateResponse), openapicore.WithHTTPStatus(http.StatusOK))
 	for _, status := range []int{
 		http.StatusBadRequest,
 		http.StatusUnauthorized,
@@ -132,53 +140,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	} {
 		updateOC.AddRespStructure(new(TranscriptUpdateErrorResponse), openapicore.WithHTTPStatus(status))
 	}
-	updateOC.SetDescription("Update an owned transcript's metadata and governance axes. Every field is " +
-		"optional and an omitted field is left unchanged, resolved against the locked stored row so a " +
-		"concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty " +
-		"string to clear, send a menu license to replace. Clearing a license that was actually granted " +
-		"is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner " +
-		"may call this; anyone else receives 403 and neither the transcript nor its governance audit " +
-		"changes. Visibility accepts private and public; organization-scoped visibility is deferred. " +
-		"The village additionally accepts and stores a legacy 'shared' value that is deliberately NOT " +
-		"declared: it is not a member of this contract's Visibility enum at all, whose third member is " +
-		"'group', and the village refuses 'group'. Declaring 'shared' would mean inventing an enum " +
-		"member to expose the deferred organization-ACL capability, so its absence is a decision. " +
-		"The transcript id is likewise narrower than the server: uuid.Parse also accepts uppercase, " +
-		"brace-wrapped, urn:uuid-prefixed and 32-undashed-hex spellings that the declared pattern " +
-		"rejects. Those stay undeclared because the village only ever emits the canonical lowercase " +
-		"form, so no client holds another unless it manufactures one, and accepting five spellings " +
-		"for one identity is itself a defect surface. Note this document now describes one transcript " +
-		"id two ways: this operation constrains it to the canonical pattern, while the older pull " +
-		"operations still declare a bare string. That difference is not a contradiction about what " +
-		"the village accepts, only about what each operation declares; the pull operations are " +
-		"deliberately untouched here. " +
-		"Omit a field to leave it unchanged; send an empty string to clear a title, a description, or " +
-		"a license. Explicit null is refused on every field, because the server would read it as " +
-		"preserve rather than the clear a caller usually intends, and an unknown field is refused " +
-		"because the server would accept and silently discard it. " +
-		"400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a " +
-		"visibility outside the accepted set, a license outside the canonical menu, and the attempt to " +
-		"clear a granted license. 401 is returned by the authentication boundary before the handler " +
-		"runs, and is distinct from 403: 401 means the credential is missing or expired and the " +
-		"caller should re-authenticate, while 403 means the caller is authenticated but does not own " +
-		"this transcript. 404 covers both a transcript that does not exist and a lookup that failed, " +
-		"so it must not be read as proof of absence. 500 has two forms and only one carries this body: " +
-		"the handler's own failure returns the envelope, while a panic recovered by the router's " +
-		"middleware returns 500 with an EMPTY body, so a client must tolerate an absent body on 500 " +
-		"rather than assuming the envelope is always present. " +
-		"The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather " +
-		"than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user " +
-		"anything useful, so those distinctions are exactly what this contract is for. The success " +
-		"body has no such consumer: the applied state is read back through " +
-		"GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently " +
-		"serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, " +
-		"project_hash, source_file_path and others) at " +
-		"backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype " +
-		"wrappers, so a consumer would receive {\"String\":\"x\",\"Valid\":true} where it expects a " +
-		"string. Declaring a projection the village does not serve would break the property that the " +
-		"served and declared contracts cannot drift, so nothing is declared until the handler serves a " +
-		"shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding " +
-		"the response schema later is additive. Do not 'harmonize' this by inventing a success body.")
+	updateOC.SetDescription("Update an owned transcript's metadata and governance axes. Every field is optional: omission preserves stored state; empty title, description, or tags clear those fields; license null requests clear; and a canonical license replaces. Explicit null for title, description, tags, or visibility is rejected, as are unknown fields and invalid or duplicate tags. Clearing an already granted Creative Commons license remains subject to the server's irrevocability rule. Only the owner may call this operation. A successful update returns the complete typed authoritative editable state, including the canonical transcript URL and positive update timestamp. Visibility accepts private and public; organization-scoped visibility remains deferred.")
 	updateOC.SetID("updateTranscript")
 	updateOC.SetTags("transcripts")
 	if err := r.AddOperation(updateOC); err != nil {
@@ -423,5 +385,52 @@ func requirePatchRequestBody(spec *openapi31.Spec, path string) error {
 	required := true
 	item.Patch.RequestBody.RequestBody.Required = &required
 	spec.Paths.MapOfPathItemValues[path] = item
+	return nil
+}
+
+func registerPublishMetadataComponent(r *openapi31.Reflector) error {
+	var definitionErr error
+	reflected, err := r.JSONSchemaReflector().Reflect(new(AuthoritativeTranscriptPublishRequest), jsonschema.CollectDefinitions(func(name string, definition jsonschema.Schema) {
+		schemaMap, mapErr := definition.ToSchemaOrBool().ToSimpleMap()
+		if mapErr != nil {
+			definitionErr = fmt.Errorf("marshal multipart metadata dependency %s: %w", name, mapErr)
+			return
+		}
+		fixDefinitionRefs(schemaMap)
+		r.SpecEns().ComponentsEns().WithSchemasItem(name, schemaMap)
+	}))
+	if err != nil {
+		return fmt.Errorf("reflect multipart publish metadata: %w", err)
+	}
+	if definitionErr != nil {
+		return definitionErr
+	}
+	schemaMap, err := reflected.ToSchemaOrBool().ToSimpleMap()
+	if err != nil {
+		return fmt.Errorf("marshal multipart publish metadata: %w", err)
+	}
+	fixDefinitionRefs(schemaMap)
+	schemaMap["required"] = []interface{}{"contentHash", "model"}
+	r.SpecEns().ComponentsEns().WithSchemasItem(publishRequestComponent, schemaMap)
+	return nil
+}
+
+func setMultipartMetadataEncoding(spec *openapi31.Spec, operationPath string) error {
+	item, ok := spec.Paths.MapOfPathItemValues[operationPath]
+	if !ok || item.Post == nil || item.Post.RequestBody == nil || item.Post.RequestBody.RequestBody == nil {
+		return fmt.Errorf("configure publish multipart encoding: POST %s has no reflected request body", operationPath)
+	}
+	body := item.Post.RequestBody.RequestBody
+	body.WithRequired(true)
+	media, ok := body.Content["multipart/form-data"]
+	if !ok {
+		return fmt.Errorf("configure publish multipart encoding: POST %s has no multipart/form-data media type", operationPath)
+	}
+	encoding := openapi31.Encoding{}
+	encoding.WithContentType("application/json")
+	media.WithEncodingItem("metadata", encoding)
+	body.Content["multipart/form-data"] = media
+	item.Post.RequestBody.RequestBody = body
+	spec.Paths.MapOfPathItemValues[operationPath] = item
 	return nil
 }

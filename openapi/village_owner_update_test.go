@@ -3,12 +3,12 @@ package openapi_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
-	specpkg "github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase/assert"
 )
 
@@ -20,18 +20,14 @@ const ownerUpdatePath = "/api/v1/transcripts/{id}"
 // from this single value.
 const successStatus = "200"
 
-// villageSpecAsMap renders the built Village document the way a consumer reads
-// it. Asserting on the marshaled document rather than the reflector's in-memory
-// structures means these probes see exactly the bytes that ship.
+// villageSpecAsMap loads the released 0.10.0 artifact. These assertions are the
+// compatibility record for the rc11 owner-update operation; successor live-spec
+// assertions belong to the publication corpus rather than rewriting history.
 func villageSpecAsMap(t *testing.T) map[string]any {
 	t.Helper()
-	spec, err := specpkg.BuildVillageAPISpec()
+	encoded, err := os.ReadFile("../generated/village-api-0.10.0.json")
 	if err != nil {
-		t.Fatalf("build village spec: %v", err)
-	}
-	encoded, err := json.Marshal(spec)
-	if err != nil {
-		t.Fatalf("encode village spec: %v", err)
+		t.Fatalf("read frozen Village API 0.10.0 artifact: %v", err)
 	}
 	var document map[string]any
 	if err := json.Unmarshal(encoded, &document); err != nil {

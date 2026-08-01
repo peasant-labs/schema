@@ -1,4 +1,17 @@
 enums:
+  - name: PublishOperationKind
+    all_name: AllPublishOperationKinds
+    members:
+      - {name: Preserve, value: "preserve"}
+      - {name: Replace, value: "replace"}
+      - {name: Append, value: "append"}
+    all_values: ["preserve", "replace", "append"]
+  - name: VisibilityIntent
+    all_name: AllVisibilityIntents
+    members:
+      - {name: Private, value: "private"}
+      - {name: Public, value: "public"}
+    all_values: ["private", "public"]
   - name: AnnotationAxis
     all_name: AllAnnotationAxes
     members:

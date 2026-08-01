@@ -64,6 +64,20 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"MessageType", new(schema.MessageType)}, {"MockConfigResponse", new(schema.MockConfigResponse)},
 		{"ModelID", new(schema.ModelID)}, {"ModelInfo", new(schema.ModelInfo)},
 		{"ProjectContext", new(schema.ProjectContext)}, {"ProjectHash", new(schema.ProjectHash)},
+		{"CanonicalPublishGitContext", new(schema.CanonicalPublishGitContext)}, {"CanonicalPublishReplacement", new(schema.CanonicalPublishReplacement)},
+		{"AuthoritativeSessionIdentity", new(schema.AuthoritativeSessionIdentity)}, {"AuthoritativeModelInfo", new(schema.AuthoritativeModelInfo)},
+		{"AuthoritativeTimestampInfo", new(schema.AuthoritativeTimestampInfo)}, {"AuthoritativeSourceInfo", new(schema.AuthoritativeSourceInfo)},
+		{"AuthoritativeCommitInfo", new(schema.AuthoritativeCommitInfo)}, {"AuthoritativeGitContext", new(schema.AuthoritativeGitContext)},
+		{"AuthoritativeProjectContext", new(schema.AuthoritativeProjectContext)}, {"AuthoritativeSessionStats", new(schema.AuthoritativeSessionStats)},
+		{"AuthoritativeQualityMetrics", new(schema.AuthoritativeQualityMetrics)}, {"AuthoritativeSessionEntry", new(schema.AuthoritativeSessionEntry)},
+		{"AuthoritativeSubagentRef", new(schema.AuthoritativeSubagentRef)}, {"AuthoritativeDiagnosticEntry", new(schema.AuthoritativeDiagnosticEntry)}, {"AuthoritativeDiagnosticsInfo", new(schema.AuthoritativeDiagnosticsInfo)},
+		{"AuthoritativePublishRequest", new(schema.AuthoritativePublishRequest)},
+		{"CanonicalPublishOperation", new(schema.CanonicalPublishOperation)}, {"PublishLicenseOperation", new(schema.PublishLicenseOperation)},
+		{"PublishAssociationOperation", new(schema.PublishAssociationOperation)}, {"PublishOperationKind", new(schema.PublishOperationKind)},
+		{"VisibilityIntent", new(schema.VisibilityIntent)}, {"TranscriptContentHash", new(schema.TranscriptContentHash)},
+		{"PublishRequestFingerprint", new(schema.PublishRequestFingerprint)}, {"PublishAppliedState", new(schema.PublishAppliedState)},
+		{"PublishNormalizedValues", new(schema.PublishNormalizedValues)},
+		{"AuthoritativePublishResponse", new(schema.AuthoritativePublishResponse)},
 		{"ProjectResolutionPayload", new(schema.ProjectResolutionPayload)},
 		{"ProjectSummariesPayload", new(schema.ProjectSummariesPayload)}, {"ProjectSummary", new(schema.ProjectSummary)},
 		{"ProjectTasksPayload", new(schema.ProjectTasksPayload)}, {"Provenance", new(schema.Provenance)},
@@ -98,6 +112,9 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TranscriptUpdateLicense", new(schema.TranscriptUpdateLicense)},
 		{"TranscriptUpdateRequest", new(schema.TranscriptUpdateRequest)},
 		{"TranscriptUpdateVisibility", new(schema.TranscriptUpdateVisibility)},
+		{"OwnerUpdateLicenseIntent", new(schema.OwnerUpdateLicenseIntent)},
+		{"OwnerTranscriptUpdateRequest", new(schema.OwnerTranscriptUpdateRequest)},
+		{"OwnerTranscriptUpdateResponse", new(schema.OwnerTranscriptUpdateResponse)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
 		{"TypeOrigin", new(schema.TypeOrigin)},
@@ -220,6 +237,8 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 	}
 	if len(required) > 0 {
 		schemaMap["required"] = required
+	} else {
+		delete(schemaMap, "required")
 	}
 }
 
@@ -334,7 +353,8 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 
 // strictComponents names the components whose reflected schema is deliberately
 // TIGHTER than Go reflection produces on its own: unknown properties are
-// rejected rather than ignored, and no property admits JSON null.
+// rejected rather than ignored, and nullability is kept only for fields whose
+// wire semantics explicitly distinguish null from a missing or concrete value.
 //
 // This is an explicit, source-owned list rather than a blanket rule because
 // closing a component is a contract promise, not a style preference: most of
@@ -342,7 +362,24 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 // breaking every consumer. Only a request body whose whole purpose is to say
 // exactly what changed belongs here, where an unrecognized field means the
 // caller asked for something the server will silently drop.
-var strictComponents = []string{"TranscriptUpdateRequest"}
+var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse"}
+
+var strictNullableProperties = map[string]map[string]struct{}{
+	"AuthoritativeSessionIdentity":  {"parentSessionId": {}},
+	"AuthoritativeTimestampInfo":    {"ingested": {}},
+	"AuthoritativeGitContext":       {"branch": {}, "remote": {}, "worktree": {}, "tracking": {}},
+	"AuthoritativeSessionStats":     {"thoughtTokens": {}, "cachedReadTokens": {}, "cachedWriteTokens": {}},
+	"AuthoritativeQualityMetrics":   {"turnCount": {}, "subagentCount": {}, "totalTokens": {}, "inputTokens": {}, "outputTokens": {}, "toolCalls": {}, "titleGenerated": {}, "outcome": {}, "filesTouched": {}, "linesChanged": {}, "retryLoops": {}, "retryTokensWasted": {}, "withinSessionReverts": {}, "signalDensity": {}, "specQualityScore": {}, "explorationRatio": {}, "scopeBreadth": {}, "discoveryTurns": {}, "durationMinutes": {}, "m2TokenOutcomeRatio": {}, "m3UniqueToolCount": {}, "m4ErrorRecoveryCount": {}, "m4ConsecutiveErrorMax": {}, "m5ContextUtilizationPct": {}, "m5PeakContextTokens": {}, "m5AvgMessageTokens": {}, "m6OutputSurvivalPct": {}, "m6LinesSurvived": {}, "m6LinesTotal": {}, "m7SpecWordCount": {}, "m7SpecHasExamples": {}, "m7SpecHasConstraints": {}, "costInputUsd": {}, "costOutputUsd": {}, "costReasoningUsd": {}, "costCacheReadUsd": {}, "costCacheWriteUsd": {}, "costTotalUsd": {}, "costModelId": {}, "scope": {}, "computedAt": {}, "computeVersion": {}},
+	"AuthoritativeSessionEntry":     {"timestampMs": {}, "contentPreview": {}, "tokensIn": {}, "tokensOut": {}, "toolKind": {}, "toolNamesCsv": {}, "stopReason": {}, "rawByteLength": {}, "toolCallId": {}, "entryId": {}, "parentEntryId": {}, "parentIndex": {}, "toolInput": {}, "toolOutput": {}, "extra": {}, "partType": {}},
+	"AuthoritativeDiagnosticsInfo":  {"partial": {}},
+	"CanonicalPublishGitContext":    {"branch": {}, "remote": {}, "worktree": {}, "tracking": {}},
+	"CanonicalPublishReplacement":   {"quality": {}},
+	"PublishLicenseOperation":       {"license": {}},
+	"PublishAppliedState":           {"license": {}},
+	"PublishNormalizedValues":       {"derivedTitle": {}},
+	"OwnerTranscriptUpdateRequest":  {"license": {}},
+	"OwnerTranscriptUpdateResponse": {"title": {}, "description": {}, "license": {}},
+}
 
 // closeStrictComponents applies that tightening after reflection and
 // requiredness. Reflection maps a Go pointer to a nullable schema, which is the
@@ -367,7 +404,9 @@ func closeStrictComponents(components map[string]map[string]interface{}) error {
 			if !ok {
 				return fmt.Errorf("close strict component %s property %s: the property schema is not an object and cannot be tightened", name, propertyName)
 			}
-			properties[propertyName] = dropNullArm(property)
+			if _, nullable := strictNullableProperties[name][propertyName]; !nullable {
+				properties[propertyName] = dropNullArm(property)
+			}
 		}
 	}
 	return nil
