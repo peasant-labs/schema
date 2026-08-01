@@ -53,7 +53,7 @@
     "generate": "openapi-ts -f openapi-ts.config.mjs && node scripts/generate-contract-support.mjs",
     "build": "node scripts/build.mjs",
     "typecheck": "pnpm run build && tsc --noEmit -p tsconfig.test.json",
-    "test": "pnpm run build && node --test tests/*.test.mjs",
+    "test": "pnpm run build && node --test --test-concurrency=1 tests/*.test.mjs",
     "package:audit": "pnpm run build && node scripts/package-audit.mjs",
     "package:smoke": "pnpm run build && node scripts/package-smoke.mjs"
   },
