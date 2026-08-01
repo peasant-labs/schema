@@ -3,6 +3,47 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0-rc12] - 2026-07-31
+
+### Added
+
+- Village API 0.11.0 and Types 0.8.0 declare the successor publication
+  contract. Publish metadata carries the SHA3-256 digest of the exact transcript
+  bytes and an optional final-visibility intent. The visibility intent never
+  widens access during content replacement; widening remains a separate owner
+  update.
+- Successful publication returns a complete authoritative receipt for both
+  creation (201) and replacement (200). The receipt identifies the transcript
+  and canonical URL, records the actual visibility and content hash, echoes the
+  canonical operation fingerprint, describes the applied license and
+  associations, reports normalized values and blob facts, and distinguishes a
+  newly created transcript from a replacement.
+- Canonical publish operations have a static, domain-separated, length-framed
+  fingerprint. The fingerprint covers replacement content, license intent,
+  association intent, and the exact transcript content hash without depending
+  on JSON property order or serializer behavior.
+- The successor owner-update operation declares omission, clear, and replacement
+  semantics independently and returns the complete editable transcript state on
+  success.
+
+### Changed
+
+- Successor publication request, operation, receipt, and owner-update objects are
+  closed recursively across Go decoding, generated OpenAPI, and built Zod
+  validators. Unknown and duplicate properties are rejected instead of being
+  ignored or stripped, while released Village 0.10.0 and Types 0.7.0 artifacts
+  remain byte-frozen.
+- `openapi.TranscriptPublishRequest` remains available as a deprecated alias to
+  `openapi.AuthoritativeTranscriptPublishRequest`. The successor's nested
+  publication projections are distinct Go types so their generated validators
+  can be strict without closing legacy shared metadata components. Consumers
+  that construct nested values explicitly must convert to the successor types;
+  removing the compatibility alias is deferred until consumer migration is
+  complete.
+- The generated TypeScript test suite runs serially because its idempotence test
+  intentionally regenerates a tracked contract artifact that sibling tests also
+  inspect.
+
 ## [v0.1.0-rc11] - 2026-07-30
 
 ### Added
