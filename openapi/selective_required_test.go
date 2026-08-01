@@ -2,6 +2,7 @@ package openapi_test
 
 import (
 	"encoding/json"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
@@ -62,8 +63,8 @@ func TestVillageSpec_RequirednessMatchesCanonicalTypes(t *testing.T) {
 	}
 	publishRequired := append([]string(nil), doc.Components.Schemas["OpenapiTranscriptPublishRequest"].Required...)
 	sort.Strings(publishRequired)
-	if !reflect.DeepEqual(publishRequired, []string{"model"}) {
-		t.Fatalf("Village publish body required=%v, want [model]; restore the operation-specific validation contract", publishRequired)
+	if !reflect.DeepEqual(publishRequired, []string{"contentHash", "model"}) {
+		t.Fatalf("Village successor publish metadata required=%v, want [contentHash model]; visibilityIntent is optional for legacy compatibility", publishRequired)
 	}
 	for name, component := range doc.Components.Schemas {
 		canonicalName := strings.TrimPrefix(name, "Schema")
@@ -91,9 +92,9 @@ func TestVillageSpec_RequirednessMatchesCanonicalTypes(t *testing.T) {
 // parity test only checks accept/reject, not the message) and mislead any consumer
 // that asserts on these substrings.
 func TestPublishVerdicts_ErrorContainsPinnedStrings(t *testing.T) {
-	newRaw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
+	newRaw, err := os.ReadFile("../generated/publish-request-0.10.0.schema.json")
 	if err != nil {
-		t.Fatalf("BuildPublishRequestSchema: %v", err)
+		t.Fatalf("read frozen publish schema: %v", err)
 	}
 	sch := compileSchema(t, "extracted.json", newRaw)
 

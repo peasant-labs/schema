@@ -2,8 +2,8 @@ package schema
 
 import jsonschema "github.com/swaggest/jsonschema-go"
 
-// PublishRequest is the canonical wire type for CLI → Village upload.
-// The CLI sends this; the village validates and persists it.
+// PublishRequest is the frozen rc11/Village 0.10.0 metadata shape retained for
+// compatibility. Village 0.11.0 publishing uses AuthoritativePublishRequest.
 //
 // Uses nested composites for logical grouping. The JSON tags on each composite
 // struct preserve CLI wire compatibility — the top-level keys are identity, model,
@@ -36,14 +36,32 @@ type PublishRequest struct {
 	License License `json:"license,omitempty"`
 }
 
-// PublishResponse is returned by the village after successful publish.
+type AuthoritativePublishRequest struct {
+	Identity         AuthoritativeSessionIdentity `json:"identity,omitempty"`
+	Model            AuthoritativeModelInfo       `json:"model" required:"true"`
+	Timestamp        AuthoritativeTimestampInfo   `json:"timestamp,omitempty"`
+	Source           AuthoritativeSourceInfo      `json:"source,omitempty"`
+	Git              AuthoritativeGitContext      `json:"git,omitempty"`
+	Project          AuthoritativeProjectContext  `json:"project,omitempty"`
+	Stats            AuthoritativeSessionStats    `json:"stats,omitempty"`
+	Quality          *AuthoritativeQualityMetrics `json:"quality,omitempty"`
+	Entries          []AuthoritativeSessionEntry  `json:"entries,omitempty"`
+	Subagents        []AuthoritativeSubagentRef   `json:"subagents,omitempty"`
+	Diagnostics      AuthoritativeDiagnosticsInfo `json:"diagnostics,omitempty"`
+	License          License                      `json:"license,omitempty"`
+	ContentHash      TranscriptContentHash        `json:"contentHash" required:"true"`
+	VisibilityIntent VisibilityIntent             `json:"visibilityIntent,omitempty"`
+}
+
+// PublishResponse is the released rc11 response retained for source and frozen
+// artifact compatibility. Village API 0.11.0 uses AuthoritativePublishResponse.
 type PublishResponse struct {
-	TranscriptID  string `json:"transcriptId"`  // Server-generated UUID
-	BlobKey       string `json:"blobKey"`       // S3 storage path
-	BlobSizeBytes int64  `json:"blobSizeBytes"` // Uploaded file size in bytes
-	PublishedAt   int64  `json:"publishedAt"`   // Unix millis
-	UpdatedAt     int64  `json:"updatedAt"`     // Unix millis
-	Created       bool   `json:"created"`       // true if new, false if updated
+	TranscriptID  string `json:"transcriptId"`
+	BlobKey       string `json:"blobKey"`
+	BlobSizeBytes int64  `json:"blobSizeBytes"`
+	PublishedAt   int64  `json:"publishedAt"`
+	UpdatedAt     int64  `json:"updatedAt"`
+	Created       bool   `json:"created"`
 }
 
 // AnnotationPushItem is the wire type for a single annotation in a push request.

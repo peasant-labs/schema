@@ -1,4 +1,6 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
+import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
 import { zAnnotationDatatype, type AnnotationDatatype as AnnotationDatatypeContract } from "./contract/zod.gen.js";
 import { zAnnotationPushStatus, type AnnotationPushStatus as AnnotationPushStatusContract } from "./contract/zod.gen.js";
@@ -39,6 +41,27 @@ import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } fro
 import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
+
+export type PublishOperationKind = PublishOperationKindContract;
+export const PublishOperationKind = Object.freeze({
+  Preserve: zPublishOperationKind.parse("preserve"),
+  Replace: zPublishOperationKind.parse("replace"),
+  Append: zPublishOperationKind.parse("append"),
+} as const);
+export const AllPublishOperationKinds = Object.freeze([PublishOperationKind.Preserve, PublishOperationKind.Replace, PublishOperationKind.Append]) as readonly PublishOperationKind[];
+export function isPublishOperationKind(value: unknown): value is PublishOperationKind {
+  return zPublishOperationKind.safeParse(value).success;
+}
+
+export type VisibilityIntent = VisibilityIntentContract;
+export const VisibilityIntent = Object.freeze({
+  Private: zVisibilityIntent.parse("private"),
+  Public: zVisibilityIntent.parse("public"),
+} as const);
+export const AllVisibilityIntents = Object.freeze([VisibilityIntent.Private, VisibilityIntent.Public]) as readonly VisibilityIntent[];
+export function isVisibilityIntent(value: unknown): value is VisibilityIntent {
+  return zVisibilityIntent.safeParse(value).success;
+}
 
 export type AnnotationAxis = AnnotationAxisContract;
 export const AnnotationAxis = Object.freeze({

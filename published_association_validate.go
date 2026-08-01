@@ -51,3 +51,51 @@ func (r PublishRequest) Validate() error {
 	}
 	return nil
 }
+
+// ValidatePublicationRequest validates the complete successor publication
+// request. PublishRequest.Validate retains the released rc11 association-only
+// behavior for source compatibility.
+func ValidatePublicationRequest(r AuthoritativePublishRequest) error {
+	if err := r.ContentHash.Validate(); err != nil {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: %w", err)
+	}
+	if !r.VisibilityIntent.IsValid() {
+		return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: visibilityIntent %q is not omitted, private, or public; publish itself always keeps replacement private and never widens access; omit the field for a legacy caller or send one canonical intent", r.VisibilityIntent)
+	}
+	if _, err := NewSessionID(r.Identity.SessionID.String()); err != nil {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: identity.sessionId: %w", err)
+	}
+	if r.Identity.SchemaVersion <= 0 {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: identity.schemaVersion must be positive; the server cannot classify the producer schema; send the positive source schema version")
+	}
+	if !r.Model.Harness.IsKnown() || r.Model.Model == "" {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: model harness or model id is invalid; the server cannot classify the transcript producer; send canonical nonempty model identity")
+	}
+	if !r.Source.Format.IsValid() || r.Timestamp.Start <= 0 || r.Timestamp.End < r.Timestamp.Start {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: source format or timestamp range is invalid; the server cannot classify exact transcript metadata; send json/jsonl and positive ordered timestamps")
+	}
+	if err := r.Project.Hash.Validate(); err != nil || strings.TrimSpace(r.Project.Name) == "" {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: project identity is invalid; the server cannot bind the publication to a project; send a canonical hash and nonempty name")
+	}
+	if r.License != "" && !r.License.IsValid() {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: license %q is not canonical; the server cannot apply the requested grant; omit it or send a menu license", r.License)
+	}
+	legacyGit := GitContext{Branch: r.Git.Branch, Remote: r.Git.Remote, Worktree: r.Git.Worktree, Tracking: r.Git.Tracking, Associations: r.Git.Associations}
+	for _, commit := range r.Git.Commits {
+		legacyGit.Commits = append(legacyGit.Commits, CommitInfo(commit))
+	}
+	if err := legacyGit.Validate(); err != nil {
+		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: %w", err)
+	}
+	for i, entry := range r.Entries {
+		if entry.SessionID != r.Identity.SessionID || !entry.Harness.IsKnown() || !entry.EntryType.IsValid() || !entry.Role.IsValid() || entry.EntryIndex < 0 || entry.Depth < 0 {
+			return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: entries[%d] has inconsistent identity or classification; the server cannot canonicalize the complete replacement; use the root session id and canonical nonnegative entry fields", i)
+		}
+	}
+	for i, subagent := range r.Subagents {
+		if _, err := NewSessionID(subagent.SessionID.String()); err != nil || subagent.ParentUUID != r.Identity.SessionID {
+			return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: subagents[%d] has invalid identity or parent binding; the server cannot canonicalize the replacement; use canonical session ids bound to the root session", i)
+		}
+	}
+	return nil
+}

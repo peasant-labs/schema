@@ -58,7 +58,7 @@ func TestBuildVillageAPISpec_PublishPath(t *testing.T) {
 // TestBuildVillageAPISpec_AnnotationManifestPath verifies the village spec carries
 // the GET /api/v1/annotations/manifest route + its response schema (GH #69 C3 /
 // follow-up o7kz6) — so the vendored village-api spec includes it and a re-vendor
-// from peasant's generator won't clobber SLICE-B's hand-edit.
+// from peasant's generator won't clobber the canonical schema source.
 func TestBuildVillageAPISpec_AnnotationManifestPath(t *testing.T) {
 	spec, err := specpkg.BuildVillageAPISpec()
 	if err != nil {
@@ -96,16 +96,16 @@ func TestBuildVillageAPISpec_PublishRequestComponent(t *testing.T) {
 		t.Fatalf("BuildVillageAPISpec() error: %v", err)
 	}
 
-	yamlStr := specYAML(t, spec)
-	if !strings.Contains(yamlStr, "OpenapiTranscriptPublishRequest") {
-		t.Errorf("village spec missing operation-specific TranscriptPublishRequest component; got:\n%s", yamlStr)
+	components := spec.ComponentsEns().Schemas
+	if _, ok := components["OpenapiTranscriptPublishRequest"]; !ok {
+		t.Errorf("village spec missing operation-specific TranscriptPublishRequest component")
 	}
-	if strings.Contains(yamlStr, "SchemaPublishRequest") {
-		t.Errorf("village spec shadows canonical PublishRequest with an operation component; got:\n%s", yamlStr)
+	if _, ok := components["SchemaPublishRequest"]; ok {
+		t.Errorf("village spec shadows canonical PublishRequest with an operation component")
 	}
 }
 
-// TestBuildVillageAPISpec_SessionEntryComponent verifies SessionEntry with toolCallId (V15).
+// TestBuildVillageAPISpec_SessionEntryComponent verifies the successor SessionEntry with toolCallId.
 func TestBuildVillageAPISpec_SessionEntryComponent(t *testing.T) {
 	spec, err := specpkg.BuildVillageAPISpec()
 	if err != nil {
@@ -114,10 +114,10 @@ func TestBuildVillageAPISpec_SessionEntryComponent(t *testing.T) {
 
 	jsonStr := specJSON(t, spec)
 
-	// SessionEntry must be present as a component schema key (quoted to avoid
+	// The successor SessionEntry must be present as a component schema key (quoted to avoid
 	// false positives from matching the word in description text).
-	if !strings.Contains(jsonStr, `"SchemaSessionEntry"`) {
-		t.Errorf("village spec missing SchemaSessionEntry component key in components/schemas")
+	if !strings.Contains(jsonStr, `"SchemaAuthoritativeSessionEntry"`) {
+		t.Errorf("village spec missing SchemaAuthoritativeSessionEntry component key in components/schemas")
 	}
 
 	// toolCallId field must appear in the spec.

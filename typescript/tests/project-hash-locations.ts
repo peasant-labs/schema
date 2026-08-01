@@ -12,7 +12,7 @@ import type { operations as LocalOperations } from "@peasant-labs/schema/local-a
 import type { operations as VillageOperations } from "@peasant-labs/schema/village-api";
 
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["application/json"];
+type VillagePublishRequest = NonNullable<VillageOperations["publishTranscript"]["requestBody"]>["content"]["multipart/form-data"]["metadata"];
 type VillagePullAnnotations = VillageOperations["getPullTranscriptAnnotations"]["responses"][200]["content"]["application/json"];
 type VillagePullAnnotation = NonNullable<VillagePullAnnotations>[number];
 // A same-spelling, unconstrained interface field: proves property spelling

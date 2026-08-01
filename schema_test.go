@@ -319,13 +319,18 @@ func TestPublishRequest_SubagentsWithEntries(t *testing.T) {
 // --- PublishResponse round-trip ---
 
 func TestPublishResponse_RoundTrip(t *testing.T) {
-	resp := schema.PublishResponse{
-		TranscriptID:  "server-uuid-1234",
-		BlobKey:       "transcripts/server-uuid-1234.jsonl",
-		BlobSizeBytes: 12345,
-		PublishedAt:   1708700120000,
-		UpdatedAt:     1708700120000,
-		Created:       true,
+	resp := schema.AuthoritativePublishResponse{
+		TranscriptID:                "99d59925-36bc-424c-a789-8be54d9702ba",
+		TranscriptURL:               "https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba",
+		Visibility:                  schema.VisibilityPrivate,
+		ContentHash:                 "a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a",
+		RequestOperationFingerprint: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Applied:                     schema.PublishAppliedState{Associations: []schema.PublishedAssociation{{ID: "assoc-1", ObservedCommitHash: "abc123"}}, NormalizedValues: schema.PublishNormalizedValues{RootHarness: schema.HarnessClaudeCode, EntryHarnesses: []schema.Harness{}, Visibility: schema.VisibilityPrivate, SchemaVersion: "9"}},
+		BlobKey:                     "transcripts/99d59925-36bc-424c-a789-8be54d9702ba.jsonl",
+		BlobSizeBytes:               12345,
+		PublishedAt:                 1708700120000,
+		UpdatedAt:                   1708700120000,
+		Created:                     true,
 	}
 
 	b, err := json.Marshal(resp)
@@ -333,7 +338,7 @@ func TestPublishResponse_RoundTrip(t *testing.T) {
 		t.Fatalf("marshal failed: %v", err)
 	}
 
-	var decoded schema.PublishResponse
+	var decoded schema.AuthoritativePublishResponse
 	if err := json.Unmarshal(b, &decoded); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
@@ -385,7 +390,7 @@ func TestModelInfo_CamelCaseJSON(t *testing.T) {
 	}
 	b, _ := json.Marshal(mi)
 	s := string(b)
-	// Unified harness key (SLICE-B1 emit-side flip): ModelInfo now emits
+	// Unified harness key: ModelInfo now emits
 	// json:"harness", not the legacy json:"modelHarness".
 	if !strings.Contains(s, `"harness"`) {
 		t.Errorf("expected 'harness' in JSON, got: %s", s)

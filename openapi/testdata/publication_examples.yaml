@@ -1,0 +1,2 @@
+request_keys: [minimal, full]
+response_keys: [replacedTranscript, createdTranscript]

@@ -1,0 +1,351 @@
+visibility_intents:
+  cases:
+    - name: omitted-legacy-intent
+      input: ""
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: visibility intent excluded from content operation currency}
+      mutation: {description: omits the compatibility intent}
+    - name: private-intent
+      input: private
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: private-before-replacement ordering}
+      mutation: {description: supplies private intent}
+    - name: public-intent
+      input: public
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: public widening remains separate from publish}
+      mutation: {description: changes only intent from private to public}
+fingerprint_mutations:
+  base: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+  cases:
+    - {name: identity, path: replacement.identity.schemaVersion, value: '10', fingerprint: c2aaf3b82c9b4519cdc6ef75a9fd2bacf04dfaee1f19cd4d443714218a597a66}
+    - {name: model, path: replacement.model.model, value: '"claude-sonnet-4"', fingerprint: 5cc39d7d2f43a701cd6cad0616e3d6df874402ce318db32f1126fe594b7e871a}
+    - {name: timestamp, path: replacement.timestamp.end, value: '2', fingerprint: 1ea085a09e63ee602632775d384f88f21dbe73ad5a48296b313f936f952f4601}
+    - {name: source, path: replacement.source.filePath, value: '"session.jsonl"', fingerprint: 65b380b072a364ecca28e46bd1ce68f8bf4b52c8609da93b9f61d7d2f7e5f2e0}
+    - {name: git-context, path: replacement.git.branch, value: '"main"', fingerprint: 0cb52153ae8464744b811adf898c35cc20f835a2dafe0b441b9db065524c781f}
+    - {name: commits, path: replacement.git.commits, value: '[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]', fingerprint: dba6c1fc34a122dded2ecbbb57772c03a2d279561a5f2160595ef982b1366048}
+    - {name: project, path: replacement.project.name, value: '"other"', fingerprint: 5ae8dc96e73d90aa292831fa8f9019a381246364afcac562ed1e1f8bbb0440df}
+    - {name: stats, path: replacement.stats.turnCount, value: '1', fingerprint: 577dd3e966e75d5cf988b0d241982a74d6cd65c0f4f0a27484385003927fcbcd}
+    - {name: quality, path: replacement.quality, value: '{"turnCount":1}', fingerprint: 665ef8142717b727c2cf4b435b435070d082090588c816a51cae7ca8eb836247}
+    - {name: entries, path: replacement.entries, value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0}]', fingerprint: ba46dce51248e11754b1cfc7e126ece224d4855f2e22d47263b16c22062d329a}
+    - {name: subagents, path: replacement.subagents, value: '[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}]', fingerprint: f3fe04b2654611d699d6dc8cdb64298b7533ec0574c16daf0ea0e404216ddf17}
+    - {name: diagnostics, path: replacement.diagnostics.warnings, value: '[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}]', fingerprint: 10f68b89807c0122e316fefb95d685258cdc7f8e0a9e42dd99f59fb458f4ceae}
+    - {name: license, path: license, value: '{"kind":"replace","license":"CC-BY-4.0"}', fingerprint: 782c837a508911c077ab66fc5d2f33c5f77670dd40e0769a3c67cfed2e058345}
+    - {name: associations, path: associations.associations, value: '[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]', fingerprint: 71c11171bdef31ad7592efc599c73fc902e59869433fa327ded7312ab70191d4}
+    - {name: content-hash, path: contentHash, value: '"b7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"', fingerprint: 8a607b6f86364d4c5754afb03028ac7a3adc6be7fe0cc6aead46166d992107ed}
+owner_updates:
+  cases:
+    - name: omission-preserves-every-field
+      input: '{}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: successor owner update omission}
+      mutation: {description: sends an empty partial update}
+    - name: explicit-null-requests-license-clear
+      input: '{"license":null}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: successor owner update license tri-state}
+      mutation: {description: supplies explicit null rather than omission}
+    - name: canonical-license-requests-replacement
+      input: '{"license":"CC-BY-4.0"}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: successor owner update license replacement}
+      mutation: {description: supplies one canonical replacement license}
+    - name: unknown-owner-update-field-is-rejected
+      input: '{"unknown":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: successor owner update is closed}
+      mutation: {description: adds one undeclared mutation field}
+    - name: null-tags-is-not-a-clear
+      input: '{"tags":null}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: tags clear uses an empty array}
+      mutation: {description: substitutes null for the explicit empty-array clear}
+owner_update_responses:
+  cases:
+    - &owner_response_valid
+      name: complete-owner-update-response
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":null,"visibility":"private","updatedAt":1}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: complete owner update receipt}
+      mutation: {description: complete authoritative editable state}
+    - name: owner-response-missing-required-field
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":null,"visibility":"private"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete owner update receipt}
+      mutation: {description: removes updatedAt}
+    - name: owner-response-null-required-field
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":null,"license":null,"visibility":"private","updatedAt":1}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: non-null tags}
+      mutation: {description: replaces tags with null}
+    - name: owner-response-unknown-field
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":null,"visibility":"private","updatedAt":1,"unknown":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: strict owner response}
+      mutation: {description: adds undeclared field}
+    - name: owner-response-url-id-mismatch
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/00000000-0000-0000-0000-000000000000","title":null,"description":null,"tags":[],"license":null,"visibility":"private","updatedAt":1}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: owner response id binding}
+      mutation: {description: changes URL identifier}
+    - name: owner-response-invalid-visibility
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":null,"visibility":"group","updatedAt":1}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: owner visibility menu}
+      mutation: {description: substitutes deferred group visibility}
+    - name: owner-response-invalid-license
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":"MIT","visibility":"private","updatedAt":1}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: canonical license menu}
+      mutation: {description: substitutes unsupported license}
+    - name: owner-response-duplicate-tags
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":["x","x"],"license":null,"visibility":"private","updatedAt":1}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: unique tags}
+      mutation: {description: duplicates one tag}
+    - name: owner-response-non-positive-updated-at
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","title":null,"description":null,"tags":[],"license":null,"visibility":"private","updatedAt":0}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: positive owner timestamp}
+      mutation: {description: replaces timestamp with zero}
+metadata:
+  cases:
+    - name: legacy-visibility-omission-is-accepted
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: optional visibility intent compatibility}
+      mutation: {description: omits visibilityIntent while retaining required model and contentHash}
+    - name: public-intent-is-advisory-metadata
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","visibilityIntent":"public"}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: visibility widening remains a separate owner update}
+      mutation: {description: adds public visibility intent without changing publication operation currency}
+    - name: content-hash-is-required
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: exact multipart content currency}
+      mutation: {description: removes the required exact content hash}
+    - name: unknown-metadata-field-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","unknown":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: successor multipart metadata is closed}
+      mutation: {description: adds an undeclared top-level metadata field}
+    - name: null-visibility-intent-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","visibilityIntent":null}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: optional means omitted rather than null}
+      mutation: {description: replaces valid omission with explicit null}
+    - name: model-is-required
+      input: '{"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: producer identity required}
+      mutation: {description: removes model}
+    - name: content-hash-format-is-validated
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"not-a-digest"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: exact content currency}
+      mutation: {description: replaces hash with malformed text}
+    - name: visibility-intent-enum-is-validated
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","visibilityIntent":"group"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: private public intent menu}
+      mutation: {description: substitutes unsupported group intent}
+    - name: nested-model-harness-is-required
+      input: '{"model":{"model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete model identity}
+      mutation: {description: removes nested harness}
+    - name: nested-model-id-is-required
+      input: '{"model":{"harness":"claude-code"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete model identity}
+      mutation: {description: removes nested model id}
+    - name: nested-model-harness-is-validated
+      input: '{"model":{"harness":"unknown","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: canonical harness}
+      mutation: {description: substitutes unknown nested harness}
+operations:
+  cases:
+    - name: canonical-private-operation
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d, fingerprint_applicable: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: publication-operation}
+      mutation: {description: baseline exact canonical operation used by both bindings}
+    - name: preserve-license-carries-value
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":"CC0-1.0"},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: license-operation-arm}
+      mutation: {description: adds a forbidden value to the preserve arm}
+    - name: replace-license-with-null
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"replace","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: license operation arm}
+      mutation: {description: removes replacement license value}
+    - name: unknown-license-operation-kind
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"append","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: license operation kind}
+      mutation: {description: substitutes unsupported append kind}
+    - name: association-preserve-arm-is-invalid
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"preserve","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: association operation arm}
+      mutation: {description: substitutes preserve for append}
+    - name: association-replace-arm-is-invalid
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"replace","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: association operation arm}
+      mutation: {description: substitutes replace for append}
+    - name: duplicate-association-id
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[{"id":"assoc-a:x","observedCommitHash":"x"},{"id":"assoc-a:x","observedCommitHash":"y"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: association identity uniqueness}
+      mutation: {description: repeats one association id}
+    - name: duplicate-observed-binding-alias
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[{"id":"assoc-a:x","observedCommitHash":"x"},{"id":"assoc-b:x","observedCommitHash":"x"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: observed binding uniqueness}
+      mutation: {description: aliases one observed binding}
+    - name: empty-observed-binding
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[{"id":"assoc-a:x","observedCommitHash":""}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: durable observed binding}
+      mutation: {description: empties observed commit hash}
+    - name: associations-out-of-order
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[{"id":"assoc-b:x","observedCommitHash":"y"},{"id":"assoc-a:x","observedCommitHash":"x"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: false, zod_valid: false, fingerprint_applicable: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: canonical association order}
+      mutation: {description: reverses canonical order}
+    - name: canonical-association-replay
+      input: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"replace","license":"CC-BY-4.0"},"associations":{"kind":"append","associations":[{"id":"assoc-a:x","observedCommitHash":"x"},{"id":"assoc-b:y","observedCommitHash":"y"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {go_valid: true, zod_valid: true, fingerprint: 0a900924ea587c36f24cb6123d37ea08029281eefb959f0b23818e06612d11e3, fingerprint_applicable: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: exact canonical replay}
+      mutation: {description: supplies sorted complete associations and replacement license}
+responses:
+  cases:
+    - name: complete-authoritative-response
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: authoritative-receipt}
+      mutation: {description: baseline complete receipt}
+    - name: response-url-id-mismatch
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/00000000-0000-0000-0000-000000000000","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: receipt-id-binding}
+      mutation: {description: replaces only the URL identifier}
+    - name: response-reversed-chronology
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":2,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: receipt-chronology}
+      mutation: {description: moves updatedAt before publishedAt}
+    - name: response-visibility-projections-disagree
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"public","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: authoritative visibility projection consistency}
+      mutation: {description: changes only top-level visibility while applied persisted visibility remains private}
+    - name: response-missing-applied-state
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete authoritative receipt}
+      mutation: {description: removes applied state}
+    - name: response-missing-normalized-entry-harnesses
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete nested normalized state}
+      mutation: {description: removes required nested array}
+    - name: response-null-associations
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":null,"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: complete association identity set}
+      mutation: {description: replaces complete association array with null}
+    - name: response-unknown-nested-applied-field
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"},"unknown":true},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: recursive strict objects}
+      mutation: {description: adds undeclared applied-state field}
+    - name: response-empty-blob-key
+      input: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: authoritative blob facts}
+      mutation: {description: empties blob key}
+strict_components: [identity, model, timestamp, source, git, commit, project, stats, quality, diagnostics, diagnostic-entry, entries, subagents]
+strict_schema_components: [AuthoritativeSessionIdentity, AuthoritativeModelInfo, AuthoritativeTimestampInfo, AuthoritativeSourceInfo, AuthoritativeGitContext, AuthoritativeCommitInfo, AuthoritativeProjectContext, AuthoritativeSessionStats, AuthoritativeQualityMetrics, AuthoritativeDiagnosticsInfo, AuthoritativeDiagnosticEntry, AuthoritativeSessionEntry, AuthoritativeSubagentRef, CanonicalPublishGitContext, CanonicalPublishReplacement]
+nested_unknowns:
+  metadata_base: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[],"associations":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[],"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+  operation_base: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+  cases:
+    - {name: identity/metadata, arm: metadata, path: identity.extra, go_valid: false, zod_valid: false}
+    - {name: model/metadata, arm: metadata, path: model.extra, go_valid: false, zod_valid: false}
+    - {name: timestamp/metadata, arm: metadata, path: timestamp.extra, go_valid: false, zod_valid: false}
+    - {name: source/metadata, arm: metadata, path: source.extra, go_valid: false, zod_valid: false}
+    - {name: git/metadata, arm: metadata, path: git.extra, go_valid: false, zod_valid: false}
+    - {name: commit/metadata, arm: metadata, path: git.commits, value: '[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1,"extra":true}]', go_valid: false, zod_valid: false}
+    - {name: project/metadata, arm: metadata, path: project.extra, go_valid: false, zod_valid: false}
+    - {name: stats/metadata, arm: metadata, path: stats.extra, go_valid: false, zod_valid: false}
+    - {name: quality/metadata, arm: metadata, path: quality.extra, go_valid: false, zod_valid: false}
+    - {name: diagnostics/metadata, arm: metadata, path: diagnostics.extra, go_valid: false, zod_valid: false}
+    - {name: diagnostic-entry/metadata, arm: metadata, path: diagnostics.warnings, value: '[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry","extra":true}]', go_valid: false, zod_valid: false}
+    - {name: entries/metadata, arm: metadata, path: entries, value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0,"extraField":true}]', go_valid: false, zod_valid: false}
+    - {name: subagents/metadata, arm: metadata, path: subagents, value: '[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba","extra":true}]', go_valid: false, zod_valid: false}
+    - {name: identity/operation, arm: operation, path: replacement.identity.extra, go_valid: false, zod_valid: false}
+    - {name: model/operation, arm: operation, path: replacement.model.extra, go_valid: false, zod_valid: false}
+    - {name: timestamp/operation, arm: operation, path: replacement.timestamp.extra, go_valid: false, zod_valid: false}
+    - {name: source/operation, arm: operation, path: replacement.source.extra, go_valid: false, zod_valid: false}
+    - {name: git/operation, arm: operation, path: replacement.git.extra, go_valid: false, zod_valid: false}
+    - {name: commit/operation, arm: operation, path: replacement.git.commits, value: '[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1,"extra":true}]', go_valid: false, zod_valid: false}
+    - {name: project/operation, arm: operation, path: replacement.project.extra, go_valid: false, zod_valid: false}
+    - {name: stats/operation, arm: operation, path: replacement.stats.extra, go_valid: false, zod_valid: false}
+    - {name: quality/operation, arm: operation, path: replacement.quality.extra, go_valid: false, zod_valid: false}
+    - {name: diagnostics/operation, arm: operation, path: replacement.diagnostics.extra, go_valid: false, zod_valid: false}
+    - {name: diagnostic-entry/operation, arm: operation, path: replacement.diagnostics.warnings, value: '[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry","extra":true}]', go_valid: false, zod_valid: false}
+    - {name: entries/operation, arm: operation, path: replacement.entries, value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0,"extraField":true}]', go_valid: false, zod_valid: false}
+    - {name: subagents/operation, arm: operation, path: replacement.subagents, value: '[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba","extra":true}]', go_valid: false, zod_valid: false}

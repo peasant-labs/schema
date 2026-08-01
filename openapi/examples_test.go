@@ -1,12 +1,37 @@
 package openapi_test
 
 import (
+	"bytes"
+	_ "embed"
 	"encoding/json"
 	"strings"
 	"testing"
 
 	specpkg "github.com/peasant-labs/schema/openapi"
+	"gopkg.in/yaml.v3"
 )
+
+type publicationExampleManifest struct {
+	RequestKeys  []string `yaml:"request_keys"`
+	ResponseKeys []string `yaml:"response_keys"`
+}
+
+//go:embed testdata/publication_examples.yaml
+var publicationExampleManifestYAML []byte
+
+func loadPublicationExampleManifest(t *testing.T) publicationExampleManifest {
+	t.Helper()
+	var manifest publicationExampleManifest
+	decoder := yaml.NewDecoder(bytes.NewReader(publicationExampleManifestYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&manifest); err != nil {
+		t.Fatalf("load publication example manifest: %v", err)
+	}
+	if len(manifest.RequestKeys) != 2 || len(manifest.ResponseKeys) != 2 {
+		t.Fatalf("publication example manifest must pin two request and two response keys: %+v", manifest)
+	}
+	return manifest
+}
 
 // ============================================================================
 // Village API — operation-level examples
@@ -22,7 +47,7 @@ func TestBuildVillageAPISpec_HasRequestBodyExamples(t *testing.T) {
 
 	jsonStr := specJSON(t, spec)
 
-	for _, key := range []string{"minimal", "full"} {
+	for _, key := range loadPublicationExampleManifest(t).RequestKeys {
 		if !containsQuoted(jsonStr, key) {
 			t.Errorf("village spec missing request body example key %q", key)
 		}
@@ -30,7 +55,7 @@ func TestBuildVillageAPISpec_HasRequestBodyExamples(t *testing.T) {
 }
 
 // TestBuildVillageAPISpec_HasResponseExample verifies that the publish
-// endpoint 200 response contains the "newTranscript" named example.
+// endpoint responses contain authoritative replacement and creation examples.
 func TestBuildVillageAPISpec_HasResponseExample(t *testing.T) {
 	spec, err := specpkg.BuildVillageAPISpec()
 	if err != nil {
@@ -39,8 +64,10 @@ func TestBuildVillageAPISpec_HasResponseExample(t *testing.T) {
 
 	jsonStr := specJSON(t, spec)
 
-	if !containsQuoted(jsonStr, "newTranscript") {
-		t.Errorf("village spec missing response example key %q", "newTranscript")
+	for _, key := range loadPublicationExampleManifest(t).ResponseKeys {
+		if !containsQuoted(jsonStr, key) {
+			t.Errorf("village spec missing response example key %q", key)
+		}
 	}
 }
 
