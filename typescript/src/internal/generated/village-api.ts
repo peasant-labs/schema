@@ -179,7 +179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish a transcript with session entries to the village. */
+        /** @description Publish exact transcript bytes with typed JSON metadata. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
         post: operations["publishTranscript"];
         delete?: never;
         options?: never;
@@ -200,7 +200,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update an owned transcript's metadata and governance axes. Every field is optional and an omitted field is left unchanged, resolved against the locked stored row so a concurrent edit is not reverted. License is three-valued: omit to preserve, send the empty string to clear, send a menu license to replace. Clearing a license that was actually granted is refused with 400 because a granted Creative Commons license is irrevocable. Only the owner may call this; anyone else receives 403 and neither the transcript nor its governance audit changes. Visibility accepts private and public; organization-scoped visibility is deferred. The village additionally accepts and stores a legacy 'shared' value that is deliberately NOT declared: it is not a member of this contract's Visibility enum at all, whose third member is 'group', and the village refuses 'group'. Declaring 'shared' would mean inventing an enum member to expose the deferred organization-ACL capability, so its absence is a decision. The transcript id is likewise narrower than the server: uuid.Parse also accepts uppercase, brace-wrapped, urn:uuid-prefixed and 32-undashed-hex spellings that the declared pattern rejects. Those stay undeclared because the village only ever emits the canonical lowercase form, so no client holds another unless it manufactures one, and accepting five spellings for one identity is itself a defect surface. Note this document now describes one transcript id two ways: this operation constrains it to the canonical pattern, while the older pull operations still declare a bare string. That difference is not a contradiction about what the village accepts, only about what each operation declares; the pull operations are deliberately untouched here. Omit a field to leave it unchanged; send an empty string to clear a title, a description, or a license. Explicit null is refused on every field, because the server would read it as preserve rather than the clear a caller usually intends, and an unknown field is refused because the server would accept and silently discard it. 400 covers five distinct refusals: an unparseable transcript id, an undecodable body, a visibility outside the accepted set, a license outside the canonical menu, and the attempt to clear a granted license. 401 is returned by the authentication boundary before the handler runs, and is distinct from 403: 401 means the credential is missing or expired and the caller should re-authenticate, while 403 means the caller is authenticated but does not own this transcript. 404 covers both a transcript that does not exist and a lookup that failed, so it must not be read as proof of absence. 500 has two forms and only one carries this body: the handler's own failure returns the envelope, while a panic recovered by the router's middleware returns 500 with an EMPTY body, so a client must tolerate an absent body on 500 rather than assuming the envelope is always present. The refusals are declared while the 200 body is NOT, and that asymmetry is deliberate rather than an oversight. A client must distinguish 403 from 404 from each 400 to tell a user anything useful, so those distinctions are exactly what this contract is for. The success body has no such consumer: the applied state is read back through GET /api/v1/pull/transcripts/{id}. The village does return a 200 body, but it currently serves an untyped object wrapping the stored row's internal columns (owner_id, blob_key, project_hash, source_file_path and others) at backend/internal/handler/transcripts.go:723-727, and those columns serialize through pgtype wrappers, so a consumer would receive {"String":"x","Valid":true} where it expects a string. Declaring a projection the village does not serve would break the property that the served and declared contracts cannot drift, so nothing is declared until the handler serves a shape worth declaring. Tracked at https://github.com/peasant-labs/village/issues/55; adding the response schema later is additive. Do not 'harmonize' this by inventing a success body. */
+        /** @description Update an owned transcript's metadata and governance axes. Every field is optional: omission preserves stored state; empty title, description, or tags clear those fields; license null requests clear; and a canonical license replaces. Explicit null for title, description, tags, or visibility is rejected, as are unknown fields and invalid or duplicate tags. Clearing an already granted Creative Commons license remains subject to the server's irrevocability rule. Only the owner may call this operation. A successful update returns the complete typed authoritative editable state, including the canonical transcript URL and positive update timestamp. Visibility accepts private and public; organization-scoped visibility remains deferred. */
         patch: operations["updateTranscript"];
         trace?: never;
     };
@@ -216,19 +216,29 @@ export interface components {
          * @enum {string}
          */
         BestiaryHarness: Schema.Harness;
-        OpenapiTranscriptPublishRequest: {
-            diagnostics?: components["schemas"]["SchemaDiagnosticsInfo"];
-            entries?: components["schemas"]["SchemaSessionEntry"][];
-            git?: components["schemas"]["SchemaGitContext"];
-            identity?: components["schemas"]["SchemaSessionIdentity"];
+        FormDataOpenapiTranscriptPublishMultipartRequest: {
+            /** @description PublishRequest JSON encoded with Content-Type application/json. */
+            metadata: components["schemas"]["OpenapiAuthoritativeTranscriptPublishRequest"];
+            /** @description Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash. */
+            transcript_file: components["schemas"]["MultipartFileHeader"];
+        };
+        /** Format: binary */
+        MultipartFileHeader: string;
+        OpenapiAuthoritativeTranscriptPublishRequest: {
+            contentHash: components["schemas"]["SchemaTranscriptContentHash"];
+            diagnostics?: components["schemas"]["SchemaAuthoritativeDiagnosticsInfo"];
+            entries?: components["schemas"]["SchemaAuthoritativeSessionEntry"][];
+            git?: components["schemas"]["SchemaAuthoritativeGitContext"];
+            identity?: components["schemas"]["SchemaAuthoritativeSessionIdentity"];
             license?: components["schemas"]["SchemaLicense"];
-            model: components["schemas"]["SchemaModelInfo"];
-            project?: components["schemas"]["SchemaProjectContext"];
-            quality?: components["schemas"]["SchemaQualityMetrics"];
-            source?: components["schemas"]["SchemaSourceInfo"];
-            stats?: components["schemas"]["SchemaSessionStats"];
-            subagents?: components["schemas"]["SchemaSubagentRef"][];
-            timestamp?: components["schemas"]["SchemaTimestampInfo"];
+            model: components["schemas"]["SchemaAuthoritativeModelInfo"];
+            project?: components["schemas"]["SchemaAuthoritativeProjectContext"];
+            quality?: components["schemas"]["SchemaAuthoritativeQualityMetrics"];
+            source?: components["schemas"]["SchemaAuthoritativeSourceInfo"];
+            stats?: components["schemas"]["SchemaAuthoritativeSessionStats"];
+            subagents?: components["schemas"]["SchemaAuthoritativeSubagentRef"][];
+            timestamp?: components["schemas"]["SchemaAuthoritativeTimestampInfo"];
+            visibilityIntent?: components["schemas"]["SchemaVisibilityIntent"];
         };
         OpenapiTranscriptUpdateErrorResponse: {
             error: string;
@@ -264,9 +274,20 @@ export interface components {
          * @example assoc-20260726:session-a:commit-1
          */
         SchemaAssociationID: Schema.AssociationID;
-        SchemaCommitInfo: Schema.CommitInfo;
-        SchemaDiagnosticEntry: Schema.DiagnosticEntry;
-        SchemaDiagnosticsInfo: Schema.DiagnosticsInfo;
+        SchemaAuthoritativeCommitInfo: Schema.AuthoritativeCommitInfo;
+        SchemaAuthoritativeDiagnosticEntry: Schema.AuthoritativeDiagnosticEntry;
+        SchemaAuthoritativeDiagnosticsInfo: Schema.AuthoritativeDiagnosticsInfo;
+        SchemaAuthoritativeGitContext: Schema.AuthoritativeGitContext;
+        SchemaAuthoritativeModelInfo: Schema.AuthoritativeModelInfo;
+        SchemaAuthoritativeProjectContext: Schema.AuthoritativeProjectContext;
+        SchemaAuthoritativePublishResponse: Schema.AuthoritativePublishResponse;
+        SchemaAuthoritativeQualityMetrics: Schema.AuthoritativeQualityMetrics;
+        SchemaAuthoritativeSessionEntry: Schema.AuthoritativeSessionEntry;
+        SchemaAuthoritativeSessionIdentity: Schema.AuthoritativeSessionIdentity;
+        SchemaAuthoritativeSessionStats: Schema.AuthoritativeSessionStats;
+        SchemaAuthoritativeSourceInfo: Schema.AuthoritativeSourceInfo;
+        SchemaAuthoritativeSubagentRef: Schema.AuthoritativeSubagentRef;
+        SchemaAuthoritativeTimestampInfo: Schema.AuthoritativeTimestampInfo;
         /**
          * Entry Type
          * @description Classification of a single entry within an agent session transcript
@@ -278,7 +299,6 @@ export interface components {
         SchemaEntryType: Schema.EntryType;
         SchemaExchangeCodeRequest: Schema.ExchangeCodeRequest;
         SchemaExchangeCodeResponse: Schema.ExchangeCodeResponse;
-        SchemaGitContext: Schema.GitContext;
         /**
          * Host Slug
          * @description Sanitized, filesystem-safe identifier derived from git remote; contains only [a-zA-Z0-9._<>-]
@@ -301,8 +321,10 @@ export interface components {
          * @example codex-mini-latest
          */
         SchemaModelID: Schema.ModelID;
-        SchemaModelInfo: Schema.ModelInfo;
-        SchemaProjectContext: Schema.ProjectContext;
+        SchemaOwnerTranscriptUpdateRequest: Schema.OwnerTranscriptUpdateRequest;
+        SchemaOwnerTranscriptUpdateResponse: Schema.OwnerTranscriptUpdateResponse;
+        /** @description Omitted preserves, null requests clear, and a canonical license replaces */
+        SchemaOwnerUpdateLicenseIntent: Schema.OwnerUpdateLicenseIntent;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -310,7 +332,13 @@ export interface components {
          */
         SchemaProjectHash: Schema.ProjectHash;
         SchemaProvenance: Schema.Provenance;
-        SchemaPublishResponse: Schema.PublishResponse;
+        SchemaPublishAppliedState: Schema.PublishAppliedState;
+        SchemaPublishNormalizedValues: Schema.PublishNormalizedValues;
+        /**
+         * Publish Request Fingerprint
+         * @description SHA3-256 digest of the canonical domain-separated publish operation
+         */
+        SchemaPublishRequestFingerprint: Schema.PublishRequestFingerprint;
         SchemaPublishedAssociation: Schema.PublishedAssociation;
         SchemaPullAnnotation: Schema.PullAnnotation;
         SchemaPullListResponse: Schema.PullListResponse;
@@ -319,7 +347,6 @@ export interface components {
         SchemaPullSkipGateResponse: Schema.PullSkipGateResponse;
         SchemaPullSkipGateResult: Schema.PullSkipGateResult;
         SchemaPullTranscriptInfo: Schema.PullTranscriptInfo;
-        SchemaQualityMetrics: Schema.QualityMetrics;
         /**
          * Role
          * @description Sender role of a message turn
@@ -329,7 +356,6 @@ export interface components {
          */
         SchemaRole: Schema.Role;
         SchemaSchemaVersionResponse: Schema.SchemaVersionResponse;
-        SchemaSessionEntry: Schema.SessionEntry;
         /**
          * Session ID
          * Format: session-id
@@ -342,7 +368,6 @@ export interface components {
          * @example ABCDEFGHIJKLMNOPQRST234567
          */
         SchemaSessionID: Schema.SessionID;
-        SchemaSessionIdentity: Schema.SessionIdentity;
         /**
          * Session Outcome
          * @description Resolution status of the session
@@ -352,7 +377,6 @@ export interface components {
          * @enum {string}
          */
         SchemaSessionOutcome: Schema.SessionOutcome;
-        SchemaSessionStats: Schema.SessionStats;
         /**
          * Source Format
          * @description Transcript file format
@@ -361,7 +385,6 @@ export interface components {
          * @enum {string}
          */
         SchemaSourceFormat: Schema.SourceFormat;
-        SchemaSourceInfo: Schema.SourceInfo;
         /**
          * Stop Reason
          * @description Reason why a session or turn ended (ACP-aligned)
@@ -370,7 +393,6 @@ export interface components {
          * @enum {string}
          */
         SchemaStopReason: Schema.StopReason;
-        SchemaSubagentRef: Schema.SubagentRef;
         /**
          * Target Kind
          * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
@@ -381,7 +403,6 @@ export interface components {
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;
-        SchemaTimestampInfo: Schema.TimestampInfo;
         /**
          * Tool Call Kind
          * @description Classification of a tool call, aligned with ACP ToolCallUpdate.kind
@@ -392,21 +413,17 @@ export interface components {
          */
         SchemaToolCallKind: Schema.ToolCallKind;
         /**
+         * Transcript Content Hash
+         * @description SHA3-256 digest of the exact transcript file bytes
+         */
+        SchemaTranscriptContentHash: Schema.TranscriptContentHash;
+        /**
          * Transcript ID
          * Format: uuid
          * @description Village-side transcript identifier (canonical lowercase-hex UUID)
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
-        /**
-         * TranscriptUpdateLicense
-         * @description License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.
-         * @example CC-BY-4.0
-         * @example
-         * @enum {string}
-         */
-        SchemaTranscriptUpdateLicense: Schema.TranscriptUpdateLicense;
-        SchemaTranscriptUpdateRequest: Schema.TranscriptUpdateRequest;
         /**
          * TranscriptUpdateVisibility
          * @description Visibility values accepted by the owner transcript update operation. Organization-scoped visibility is deferred and is deliberately not offered here.
@@ -423,6 +440,14 @@ export interface components {
          * @enum {string}
          */
         SchemaVisibility: Schema.Visibility;
+        /**
+         * Visibility Intent
+         * @description Optional desired final access for legacy compatibility; content replacement remains private and widening occurs separately
+         * @example private
+         * @example public
+         * @enum {string}
+         */
+        SchemaVisibilityIntent: Schema.VisibilityIntent;
         /**
          * Visibility
          * @description Access control level for a published transcript
@@ -669,9 +694,9 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["OpenapiTranscriptPublishRequest"];
+                "multipart/form-data": components["schemas"]["FormDataOpenapiTranscriptPublishMultipartRequest"];
             };
         };
         responses: {
@@ -681,7 +706,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPublishResponse"];
+                    "application/json": components["schemas"]["SchemaAuthoritativePublishResponse"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaAuthoritativePublishResponse"];
                 };
             };
         };
@@ -698,7 +732,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SchemaTranscriptUpdateRequest"];
+                "application/json": components["schemas"]["SchemaOwnerTranscriptUpdateRequest"];
             };
         };
         responses: {
@@ -707,7 +741,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SchemaOwnerTranscriptUpdateResponse"];
+                };
             };
             /** @description Bad Request */
             400: {

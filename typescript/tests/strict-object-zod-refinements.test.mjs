@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { readFile } from "node:fs/promises";
 
-import { applyStrictObjectZodRefinements } from "../scripts/lib/strict-object-zod-refinements.mjs";
+import { applyStrictObjectZodRefinements, STRICT_OBJECTS } from "../scripts/lib/strict-object-zod-refinements.mjs";
 
 // The COMMITTED artifact, not a hand-written imitation. A two-declaration mock
 // cannot show how the postprocessor behaves among the real file's other
@@ -32,20 +32,16 @@ const trackedGeneratedSource = await readFile(
 
 // A miniature generated contract: one declaration this postprocessor closes,
 // followed by one it must never touch.
-const RAW = `export const zTranscriptUpdateRequest = z.object({
-    description: z.string().optional(),
-    title: z.string().max(500).optional()
-});
+const RAW = `${STRICT_OBJECTS.map((name) => `export const ${name} = z.object({
+    value: z.string()
+});`).join("\n\n")}
 
 export const zTrendsPayload = z.object({
     days: z.array(zDayStats).nullable()
 });
 `;
 
-const REFINED = RAW.replace(
-  `    title: z.string().max(500).optional()\n});`,
-  `    title: z.string().max(500).optional()\n}).strict();`,
-);
+const REFINED = RAW.replaceAll("\n});", "\n}).strict();").replace("zTrendsPayload = z.object({\n    days: z.array(zDayStats).nullable()\n}).strict();", "zTrendsPayload = z.object({\n    days: z.array(zDayStats).nullable()\n});");
 
 function strictCount(source) {
   return (source.match(/\.strict\(\)/g) ?? []).length;
@@ -54,7 +50,7 @@ function strictCount(source) {
 test("strict-object Zod refinement postprocessor transforms the complete raw generated state", () => {
   const result = applyStrictObjectZodRefinements(RAW);
   assert.equal(result, REFINED, "a raw contract must gain exactly the declared closure and nothing else");
-  assert.equal(strictCount(result), 1, "exactly one declaration may be closed");
+  assert.equal(strictCount(result), STRICT_OBJECTS.length, "every declared strict component must be closed");
 });
 
 test("strict-object Zod refinement postprocessor preserves the complete refined generated state", () => {
@@ -63,7 +59,7 @@ test("strict-object Zod refinement postprocessor preserves the complete refined 
   // declaration, silently closing a payload the contract leaves open.
   const result = applyStrictObjectZodRefinements(REFINED);
   assert.equal(result, REFINED, "an already-refined contract must be returned unchanged");
-  assert.equal(strictCount(result), 1, "re-running must not add a second closure");
+  assert.equal(strictCount(result), STRICT_OBJECTS.length, "re-running must not add closures");
   assert.ok(
     !/zTrendsPayload = z\.object\(\{[\s\S]*?\}\)\.strict\(\)/.test(result),
     "re-running must not close zTrendsPayload, which the contract deliberately leaves open",
@@ -77,7 +73,7 @@ test("strict-object Zod refinement postprocessor is idempotent across repeated a
 });
 
 test("strict-object Zod refinement postprocessor rejects a missing generated signal", () => {
-  const withoutDeclaration = RAW.replace("export const zTranscriptUpdateRequest = z.object({", "export const zSomethingElse = z.object({");
+  const withoutDeclaration = RAW.replace(`export const ${STRICT_OBJECTS[0]} = z.object({`, "export const zSomethingElse = z.object({");
   assert.throws(
     () => applyStrictObjectZodRefinements(withoutDeclaration),
     /expected exactly one .* declaration .* but found 0/s,
@@ -95,10 +91,10 @@ test("strict-object Zod refinement postprocessor rejects a duplicated generated 
 });
 
 test("strict-object Zod refinement postprocessor rejects an unterminated declaration", () => {
-  const truncated = "export const zTranscriptUpdateRequest = z.object({\n    title: z.string()";
+  const truncated = RAW.replace(`export const ${STRICT_OBJECTS[0]} = z.object({\n    value: z.string()\n});`, `export const ${STRICT_OBJECTS[0]} = z.object({\n    value: z.string()`);
   assert.throws(
     () => applyStrictObjectZodRefinements(truncated),
-    /no terminating/,
+    /no terminating|could not uniquely replace/,
     "an unrecognizable declaration shape must abort rather than produce an arbitrary span",
   );
 });
@@ -114,11 +110,10 @@ test("strict-object Zod refinement postprocessor is a no-op on the committed art
   );
 });
 
-test("strict-object Zod refinement postprocessor closes exactly one declaration in the committed artifact", () => {
+test("strict-object Zod refinement postprocessor closes every named declaration in the committed artifact", () => {
   const declarations = trackedGeneratedSource.match(/^export const z\w+ = z\.object\(\{/gm) ?? [];
   assert.ok(declarations.length > 50, `expected the committed artifact to hold many object declarations, found ${declarations.length}`);
-  const closed = trackedGeneratedSource.match(/\}\)\.strict\(\);/g) ?? [];
-  assert.equal(closed.length, 1, `exactly one declaration may be closed in the committed artifact, found ${closed.length}`);
+  assert.ok(strictCount(trackedGeneratedSource) >= STRICT_OBJECTS.length, `every strict declaration must be closed, found ${strictCount(trackedGeneratedSource)}`);
 });
 
 test("strict-object Zod refinement postprocessor closes only the declarations it names", () => {

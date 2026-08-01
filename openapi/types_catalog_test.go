@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -271,6 +272,13 @@ func exportedRootTypes(t *testing.T) []string {
 	t.Helper()
 	_, file, _, _ := runtime.Caller(0)
 	root := filepath.Dir(filepath.Dir(file))
+	if _, err := os.Stat(root); err != nil {
+		workingDirectory, workingErr := os.Getwd()
+		if workingErr != nil {
+			t.Fatalf("locate root Go package after trimmed build path %q: %v", root, workingErr)
+		}
+		root = filepath.Dir(workingDirectory)
+	}
 	packages, err := parser.ParseDir(token.NewFileSet(), root, func(info fs.FileInfo) bool {
 		name := info.Name()
 		return strings.HasSuffix(name, ".go") && !strings.HasSuffix(name, "_test.go")

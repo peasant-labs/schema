@@ -22,7 +22,34 @@
 // STRICT_OBJECTS lists the generated declarations to close. Each name must
 // correspond to a component the Go source also closes, so this file cannot
 // quietly close something the OpenAPI document leaves open.
-const STRICT_OBJECTS = ["zTranscriptUpdateRequest"];
+export const STRICT_OBJECTS = [
+  "zTranscriptUpdateRequest",
+  "zAuthoritativePublishRequest",
+  "zAuthoritativeSessionIdentity",
+  "zAuthoritativeModelInfo",
+  "zAuthoritativeTimestampInfo",
+  "zAuthoritativeSourceInfo",
+  "zAuthoritativeCommitInfo",
+  "zAuthoritativeGitContext",
+  "zAuthoritativeProjectContext",
+  "zAuthoritativeSessionStats",
+  "zAuthoritativeQualityMetrics",
+  "zAuthoritativeSessionEntry",
+  "zAuthoritativeSubagentRef",
+  "zAuthoritativeDiagnosticEntry",
+  "zAuthoritativeDiagnosticsInfo",
+  "zCanonicalPublishGitContext",
+  "zCanonicalPublishReplacement",
+  "zPublishLicenseOperation",
+  "zPublishAssociationOperation",
+  "zCanonicalPublishOperation",
+  "zPublishedAssociation",
+  "zOwnerTranscriptUpdateRequest",
+  "zOwnerTranscriptUpdateResponse",
+  "zPublishNormalizedValues",
+  "zPublishAppliedState",
+  "zAuthoritativePublishResponse",
+];
 
 export function applyStrictObjectZodRefinements(source) {
   const states = STRICT_OBJECTS.map((name) => classify(source, name));
@@ -62,7 +89,8 @@ function classify(source, name) {
   // gets `.strict()` appended to it. Match the shared prefix and decide from
   // what follows, so the span always ends at this declaration.
   const objectEnd = source.indexOf("\n})", start);
-  if (objectEnd === -1) {
+  const nextDeclaration = source.indexOf("\nexport const ", start + declaration.length);
+  if (objectEnd === -1 || (nextDeclaration !== -1 && nextDeclaration < objectEnd)) {
     throw new Error(
       `strict-object refinement found the ${name} declaration but no terminating \`});\`; the generated Zod contract is not in the expected shape and no refinement was applied.`,
     );
@@ -70,7 +98,7 @@ function classify(source, name) {
 
   const rawTail = "\n});";
   const refinedTail = "\n}).strict();";
-  const followsRefined = source.startsWith(refinedTail, objectEnd);
+  const followsRefined = source.startsWith(refinedTail, objectEnd) || source.startsWith("\n}).strict().superRefine(", objectEnd);
   const followsRaw = source.startsWith(rawTail, objectEnd);
   if (!followsRefined && !followsRaw) {
     throw new Error(

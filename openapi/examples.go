@@ -79,10 +79,29 @@ func setRequestBodyExample(spec *openapi31.Spec, path, method, key, summary stri
 	rb := op.RequestBody.RequestBody
 	mt, ok := rb.Content["application/json"]
 	if !ok {
-		return
+		mt, ok = rb.Content["multipart/form-data"]
+		if !ok {
+			return
+		}
+		metadata, metadataOK := value.(map[string]any)
+		if !metadataOK {
+			return
+		}
+		content := "minimal transcript example\n"
+		hash := "f03d7703b4a2f76973fdf02c046d1cd2e12998210aedb900bcd2e23f23f0f49b"
+		if key == "full" {
+			content = "full transcript example\n"
+			hash = "d3f9fc78924f20d8aabe3f2e490ef51b540b29cbf8dc97f57ee7ec8255ecb244"
+		}
+		metadata["contentHash"] = hash
+		value = map[string]any{"metadata": metadata, "transcript_file": content}
 	}
 	mt.WithExamplesItem(key, exampleRef(summary, value))
-	rb.Content["application/json"] = mt
+	if _, multipart := rb.Content["multipart/form-data"]; multipart {
+		rb.Content["multipart/form-data"] = mt
+	} else {
+		rb.Content["application/json"] = mt
+	}
 	pi.Post = op
 	spec.Paths.MapOfPathItemValues[path] = pi
 }
@@ -129,6 +148,7 @@ func AddVillageExamples(spec *openapi31.Spec) {
 		"diagnostics": map[string]any{
 			"warnings": []any{},
 		},
+		"visibilityIntent": "private",
 	})
 
 	setRequestBodyExample(spec, publishPath, "post", "full", "Full publish request with entries and quality", map[string]any{
@@ -186,17 +206,25 @@ func AddVillageExamples(spec *openapi31.Spec) {
 		"diagnostics": map[string]any{
 			"warnings": []any{},
 		},
+		"visibilityIntent": "private",
 	})
 
-	// Response example.
-	setResponseExample(spec, publishPath, "post", "200", "newTranscript", "Newly created transcript", map[string]any{
-		"transcriptId":  "e7f8a9b0-1234-5678-9abc-def012345678",
-		"blobKey":       "transcripts/2024/02/28/e7f8a9b0-1234-5678-9abc-def012345678.jsonl",
-		"blobSizeBytes": 142857,
-		"publishedAt":   1709139700000,
-		"updatedAt":     1709139700000,
-		"created":       true,
-	})
+	// Complete authoritative response examples for replacement and creation.
+	response := map[string]any{
+		"transcriptId": "e7f8a9b0-1234-5678-9abc-def012345678", "transcriptUrl": "https://village.example/transcripts/e7f8a9b0-1234-5678-9abc-def012345678",
+		"visibility": "private", "contentHash": "d3f9fc78924f20d8aabe3f2e490ef51b540b29cbf8dc97f57ee7ec8255ecb244",
+		"requestOperationFingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"applied":                     map[string]any{"license": nil, "associations": []any{}, "normalizedValues": map[string]any{"rootHarness": "claude-code", "entryHarnesses": []any{"claude-code"}, "derivedTitle": nil, "visibility": "private", "schemaVersion": "9"}},
+		"blobKey":                     "transcripts/e7f8a9b0-1234-5678-9abc-def012345678/transcript.json", "blobSizeBytes": 24,
+		"publishedAt": 1709139700000, "updatedAt": 1709139700000, "created": false,
+	}
+	setResponseExample(spec, publishPath, "post", "200", "replacedTranscript", "Replaced transcript", response)
+	created := make(map[string]any, len(response))
+	for key, value := range response {
+		created[key] = value
+	}
+	created["created"] = true
+	setResponseExample(spec, publishPath, "post", "201", "createdTranscript", "Created transcript", created)
 
 	// --- Auth endpoints ---
 	const exchangePath = "/api/v1/auth/cli/exchange"

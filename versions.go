@@ -42,7 +42,10 @@ const (
 	// reachable refusal set (additive = minor bump).
 	// Each prior version's generated goldens are retained byte-frozen under the
 	// retired-spec immutability guard.
-	VillageAPIVersion = "0.10.0"
+	// Bumped to 0.11.0 when publication gained canonical operation currency,
+	// authoritative success receipts, real multipart transport, and a complete
+	// successor owner-update projection (additive = minor bump).
+	VillageAPIVersion = "0.11.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -77,5 +80,7 @@ const (
 	// refusal envelope is deliberately NOT catalogued: it is operation-scoped so
 	// a release cannot freeze a transcript-update-specific name onto a generic
 	// error shape.
-	TypesVersion = "0.7.0"
+	// Bumped to 0.8.0 for canonical publication operation, authoritative receipt,
+	// publish visibility intent, and successor owner-update types.
+	TypesVersion = "0.8.0"
 )

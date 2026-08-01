@@ -7,9 +7,9 @@ import (
 )
 
 // publishRequestComponent is the operation-specific components/schemas key the
-// village-api spec emits for TranscriptPublishRequest. The "Openapi" prefix is
-// added by the reflector from this package name.
-const publishRequestComponent = "OpenapiTranscriptPublishRequest"
+// village-api spec emits for AuthoritativeTranscriptPublishRequest. The
+// "Openapi" prefix is added by the reflector from this package name.
+const publishRequestComponent = "OpenapiAuthoritativeTranscriptPublishRequest"
 
 // annotationPushRequestComponent is the operation component the reflector
 // emits for POST /api/v1/annotations.
@@ -47,7 +47,7 @@ const jsonSchema2020Dialect = "https://json-schema.org/draft/2020-12/schema"
 //     village validator selects the right draft);
 //   - sets "$id" to urn:peasant:publish-request:<VillageAPIVersion> (derived from
 //     the single-source version const, never retyped);
-//   - hoists OpenapiTranscriptPublishRequest's own keywords to the root;
+//   - hoists OpenapiAuthoritativeTranscriptPublishRequest's own keywords to the root;
 //   - bundles every transitively-referenced component under "$defs", with all
 //     "#/components/schemas/X" $refs rewritten to "#/$defs/X".
 //

@@ -81,6 +81,7 @@
       # Native build dependencies (C libraries, system packages). The schema leaf
       # is pure Go (modernc/zombiezen sqlite are cgo-free), so none are required.
       nativeBuildDeps = pkgs: with pkgs; [
+        gitMinimal # tests exercise isolated git-runner failure boundaries
       ];
 
       # Extra check commands run during `nix build` after go test
@@ -202,8 +203,9 @@
 
               nativeBuildInputs = nativeBuildDeps pkgs;
 
-              # The schema leaf is pure Go and fully hermetic (no git/network in
-              # tests), so the whole suite runs as a packaging sanity gate. No
+              # The schema leaf is pure Go and fully hermetic (no network in
+              # tests); git is present only for isolated local-runner fixtures.
+              # The whole suite runs as a packaging sanity gate. No
               # -race: the detector requires cgo and this build is CGO_ENABLED=0;
               # the authoritative race-enabled suite runs in CI (`go test -race`).
               checkPhase = ''
