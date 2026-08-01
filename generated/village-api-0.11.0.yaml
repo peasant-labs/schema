@@ -471,7 +471,7 @@ components:
     FormDataOpenapiTranscriptPublishMultipartRequest:
       properties:
         metadata:
-          $ref: '#/components/schemas/OpenapiTranscriptPublishRequest'
+          $ref: '#/components/schemas/OpenapiAuthoritativeTranscriptPublishRequest'
           description: PublishRequest JSON encoded with Content-Type application/json.
         transcript_file:
           $ref: '#/components/schemas/MultipartFileHeader'
@@ -484,7 +484,7 @@ components:
       contentMediaType: application/octet-stream
       format: binary
       type: string
-    OpenapiTranscriptPublishRequest:
+    OpenapiAuthoritativeTranscriptPublishRequest:
       properties:
         contentHash:
           $ref: '#/components/schemas/SchemaTranscriptContentHash'

@@ -218,13 +218,13 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         FormDataOpenapiTranscriptPublishMultipartRequest: {
             /** @description PublishRequest JSON encoded with Content-Type application/json. */
-            metadata: components["schemas"]["OpenapiTranscriptPublishRequest"];
+            metadata: components["schemas"]["OpenapiAuthoritativeTranscriptPublishRequest"];
             /** @description Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash. */
             transcript_file: components["schemas"]["MultipartFileHeader"];
         };
         /** Format: binary */
         MultipartFileHeader: string;
-        OpenapiTranscriptPublishRequest: {
+        OpenapiAuthoritativeTranscriptPublishRequest: {
             contentHash: components["schemas"]["SchemaTranscriptContentHash"];
             diagnostics?: components["schemas"]["SchemaAuthoritativeDiagnosticsInfo"];
             entries?: components["schemas"]["SchemaAuthoritativeSessionEntry"][];

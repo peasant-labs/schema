@@ -61,7 +61,7 @@ func TestVillageSpec_RequirednessMatchesCanonicalTypes(t *testing.T) {
 	if err := json.Unmarshal(typesRaw, &canonical); err != nil {
 		t.Fatalf("unmarshal Types spec: %v", err)
 	}
-	publishRequired := append([]string(nil), doc.Components.Schemas["OpenapiTranscriptPublishRequest"].Required...)
+	publishRequired := append([]string(nil), doc.Components.Schemas["OpenapiAuthoritativeTranscriptPublishRequest"].Required...)
 	sort.Strings(publishRequired)
 	if !reflect.DeepEqual(publishRequired, []string{"contentHash", "model"}) {
 		t.Fatalf("Village successor publish metadata required=%v, want [contentHash model]; visibilityIntent is optional for legacy compatibility", publishRequired)

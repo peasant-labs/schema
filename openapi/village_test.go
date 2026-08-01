@@ -97,8 +97,8 @@ func TestBuildVillageAPISpec_PublishRequestComponent(t *testing.T) {
 	}
 
 	components := spec.ComponentsEns().Schemas
-	if _, ok := components["OpenapiTranscriptPublishRequest"]; !ok {
-		t.Errorf("village spec missing operation-specific TranscriptPublishRequest component")
+	if _, ok := components["OpenapiAuthoritativeTranscriptPublishRequest"]; !ok {
+		t.Errorf("village spec missing operation-specific AuthoritativeTranscriptPublishRequest component")
 	}
 	if _, ok := components["SchemaPublishRequest"]; ok {
 		t.Errorf("village spec shadows canonical PublishRequest with an operation component")

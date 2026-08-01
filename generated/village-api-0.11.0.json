@@ -655,7 +655,7 @@
       "FormDataOpenapiTranscriptPublishMultipartRequest": {
         "properties": {
           "metadata": {
-            "$ref": "#/components/schemas/OpenapiTranscriptPublishRequest",
+            "$ref": "#/components/schemas/OpenapiAuthoritativeTranscriptPublishRequest",
             "description": "PublishRequest JSON encoded with Content-Type application/json."
           },
           "transcript_file": {
@@ -674,7 +674,7 @@
         "format": "binary",
         "type": "string"
       },
-      "OpenapiTranscriptPublishRequest": {
+      "OpenapiAuthoritativeTranscriptPublishRequest": {
         "properties": {
           "contentHash": {
             "$ref": "#/components/schemas/SchemaTranscriptContentHash"

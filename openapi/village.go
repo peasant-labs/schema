@@ -11,15 +11,19 @@ import (
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
-// TranscriptPublishRequest is the Village publish operation's HTTP body.
-// Its validation-requiredness is intentionally stricter than the canonical
-// schema.PublishRequest Go wire shape, so it has a distinct operation-only
-// OpenAPI identity and can never shadow the canonical language-binding type.
-type TranscriptPublishRequest schema.AuthoritativePublishRequest
+// AuthoritativeTranscriptPublishRequest is the Village 0.11 publish
+// operation's HTTP body. Its distinct operation-only identity lets the
+// successor OpenAPI contract be stricter than legacy shared metadata schemas.
+type AuthoritativeTranscriptPublishRequest schema.AuthoritativePublishRequest
+
+// TranscriptPublishRequest retains the previous operation-wrapper name while
+// Go consumers migrate to AuthoritativeTranscriptPublishRequest.
+// Deprecated: use AuthoritativeTranscriptPublishRequest. See schema issue #55.
+type TranscriptPublishRequest = AuthoritativeTranscriptPublishRequest
 
 type transcriptPublishMultipartRequest struct {
-	Metadata       TranscriptPublishRequest `formData:"metadata" required:"true" description:"PublishRequest JSON encoded with Content-Type application/json."`
-	TranscriptFile *multipart.FileHeader    `formData:"transcript_file" required:"true" description:"Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash."`
+	Metadata       AuthoritativeTranscriptPublishRequest `formData:"metadata" required:"true" description:"PublishRequest JSON encoded with Content-Type application/json."`
+	TranscriptFile *multipart.FileHeader                 `formData:"transcript_file" required:"true" description:"Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash."`
 }
 
 // TranscriptUpdateErrorResponse is the body the owner update operation returns
@@ -386,7 +390,7 @@ func requirePatchRequestBody(spec *openapi31.Spec, path string) error {
 
 func registerPublishMetadataComponent(r *openapi31.Reflector) error {
 	var definitionErr error
-	reflected, err := r.JSONSchemaReflector().Reflect(new(TranscriptPublishRequest), jsonschema.CollectDefinitions(func(name string, definition jsonschema.Schema) {
+	reflected, err := r.JSONSchemaReflector().Reflect(new(AuthoritativeTranscriptPublishRequest), jsonschema.CollectDefinitions(func(name string, definition jsonschema.Schema) {
 		schemaMap, mapErr := definition.ToSchemaOrBool().ToSimpleMap()
 		if mapErr != nil {
 			definitionErr = fmt.Errorf("marshal multipart metadata dependency %s: %w", name, mapErr)
