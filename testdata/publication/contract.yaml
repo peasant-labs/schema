@@ -1,3 +1,61 @@
+parent_identity:
+  cases:
+    - name: root-omits-parent
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"commits":[],"associations":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"entries":[],"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: root, go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: successor root publication identity}
+      mutation: {description: omits parentSessionId for a root request}
+    - name: subagent-materializes-parent
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9,"parentSessionId":"00000000-0000-4000-8000-000000000001"},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"commits":[],"associations":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"entries":[],"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: valid-parent, go_valid: true, zod_valid: true, parent: 00000000-0000-4000-8000-000000000001, fingerprint: 764ab4cfa9d1280478b03d46a3f126cbb7d5e710577c71120984e0a2af6d1914}
+      classification: must-pass
+      provenance: {source: bug, ref: successor parentSessionId decoder regression}
+      mutation: {description: adds one valid successor parentSessionId}
+    - name: different-parent-changes-fingerprint
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9,"parentSessionId":"00000000-0000-4000-8000-000000000002"},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"commits":[],"associations":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"entries":[],"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: valid-parent, go_valid: true, zod_valid: true, parent: 00000000-0000-4000-8000-000000000002, fingerprint: a3c8854853c775fd2c7f7edd6283f87a7fe24d43c2ebf1cdc734578d3bc4396b}
+      classification: must-pass
+      provenance: {source: boundary, ref: parent identity participates in publication currency}
+      mutation: {description: changes only the valid successor parentSessionId}
+    - name: null-parent-is-rejected
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9,"parentSessionId":null},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: "null", go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: optional successor parent uses omission}
+      mutation: {description: substitutes explicit null for omitted parentSessionId}
+    - name: historical-key-is-rejected-at-successor-boundary
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9,"parentUuid":"00000000-0000-4000-8000-000000000001"},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: historical-key, go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: successor identity key is parentSessionId}
+      mutation: {description: substitutes the historical parentUuid key}
+    - name: wrong-type-parent-is-rejected
+      input: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9,"parentSessionId":42},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: wrong-type, go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: successor parent identifier string type}
+      mutation: {description: substitutes a number for the parent session string}
+    - name: duplicate-parent-is-rejected
+      input: '{"identity":{"parentSessionId":"00000000-0000-4000-8000-000000000001","parentSessionId":"00000000-0000-4000-8000-000000000002"},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+      expected: {scenario: duplicate-key, go_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: duplicate successor identity keys}
+      mutation: {description: duplicates parentSessionId with conflicting values}
+historical_identity_json:
+  cases:
+    - name: uuid-parent-retains-parent-uuid-key
+      input: 00000000-0000-4000-8000-000000000001
+      expected: '{"sessionId":"","parentUuid":"00000000-0000-4000-8000-000000000001","schemaVersion":0}'
+      classification: must-pass
+      provenance: {source: requirement, ref: historical SessionIdentity JSON compatibility}
+      mutation: {description: marshals a UUID parent through the historical shared identity type}
+    - name: agent-parent-retains-parent-uuid-key
+      input: agent-a3aee4f
+      expected: '{"sessionId":"","parentUuid":"agent-a3aee4f","schemaVersion":0}'
+      classification: must-pass
+      provenance: {source: requirement, ref: historical SessionIdentity agent JSON compatibility}
+      mutation: {description: marshals an agent parent through the historical shared identity type}
 visibility_intents:
   cases:
     - name: omitted-legacy-intent

@@ -3,6 +3,15 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- Village API 0.12.0 and Types 0.9.0 give authoritative publication identity
+  its declared `parentSessionId` wire key. Go decoding, canonical operation
+  fingerprints, generated OpenAPI, and generated Zod validators now agree while
+  historical `SessionIdentity` surfaces retain their `parentUuid` key.
+
 ## [v0.1.0-rc12] - 2026-07-31
 
 ### Added

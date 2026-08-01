@@ -1215,7 +1215,7 @@ export const zSessionID = z.string().regex(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 export type SessionID = z.infer<typeof zSessionID>;
 
 export const zAuthoritativeSessionIdentity = z.object({
-    parentUuid: zSessionID.optional(),
+    parentSessionId: zSessionID.optional(),
     schemaVersion: z.int(),
     sessionId: zSessionID
 }).strict();

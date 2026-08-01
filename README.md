@@ -282,10 +282,12 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
   retired spec is mutable-and-unguarded. A permanent negative-control self-test
   proves the guard actually fires.
 
-Currently frozen (retired) goldens: village API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0` / `0.8.0`,
-PublishRequest schema `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0` / `0.6.0` / `0.7.0` / `0.8.0`, AnnotationPushRequest schema `0.8.0`, peasant local API `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`, and
-types `0.1.0` / `0.2.0` / `0.3.0` / `0.4.0` / `0.5.0`. The still-generated current versions (village API `0.9.0`,
-PublishRequest and AnnotationPushRequest `0.9.0`, peasant local API `0.6.0`, types `0.6.0`) live under the freshness gate instead. When a Village API version is frozen, register both JSON-only request schemas alongside the OpenAPI golden in `cmd/schema-gen/testdata/retired_specs.yaml`.
+The exact retired inventory and hashes live in
+`cmd/schema-gen/testdata/retired_specs.yaml`. The still-generated current
+versions (Village API, PublishRequest, and AnnotationPushRequest `0.12.0`,
+Peasant Local API `0.6.0`, and Types `0.9.0`) live under the freshness gate
+instead. When a Village API version is frozen, register both JSON-only request
+schemas alongside the OpenAPI golden in that manifest.
 
 The versioning procedure itself is codified in the `versions.go` doc comments, the
 "Regeneration & gates" section of [`CONTRIBUTING.md`](CONTRIBUTING.md), and the
