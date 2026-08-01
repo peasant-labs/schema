@@ -31,7 +31,27 @@ type publicationCorpus struct {
 	NestedUnknowns         nestedUnknownFixture                                         `yaml:"nested_unknowns"`
 	StrictComponents       []string                                                     `yaml:"strict_components"`
 	StrictSchemaComponents []string                                                     `yaml:"strict_schema_components"`
+	ParentIdentity         testcase.Corpus[string, parentIdentityVerdict]               `yaml:"parent_identity"`
+	HistoricalIdentityJSON testcase.Corpus[string, string]                              `yaml:"historical_identity_json"`
 }
+type parentIdentityVerdict struct {
+	Scenario    parentIdentityScenario `yaml:"scenario"`
+	GoValid     bool                   `yaml:"go_valid"`
+	ZodValid    *bool                  `yaml:"zod_valid,omitempty"`
+	Parent      string                 `yaml:"parent,omitempty"`
+	Fingerprint string                 `yaml:"fingerprint,omitempty"`
+}
+type parentIdentityScenario string
+
+const (
+	parentScenarioRoot       parentIdentityScenario = "root"
+	parentScenarioValid      parentIdentityScenario = "valid-parent"
+	parentScenarioNull       parentIdentityScenario = "null"
+	parentScenarioHistorical parentIdentityScenario = "historical-key"
+	parentScenarioWrongType  parentIdentityScenario = "wrong-type"
+	parentScenarioDuplicate  parentIdentityScenario = "duplicate-key"
+)
+
 type nestedUnknownFixture struct {
 	MetadataBase  string              `yaml:"metadata_base"`
 	OperationBase string              `yaml:"operation_base"`
@@ -87,6 +107,11 @@ func loadPublicationCorpus(t *testing.T) publicationCorpus {
 	assert.RequireValid(t, corpus.OwnerUpdateResponses)
 	assert.RequireMin(t, corpus.VisibilityIntents, 3)
 	assert.RequireValid(t, corpus.VisibilityIntents)
+	assert.RequireMin(t, corpus.ParentIdentity, 6)
+	assert.RequireValid(t, corpus.ParentIdentity)
+	requireParentIdentityCoverage(t, corpus.ParentIdentity)
+	assert.RequireMin(t, corpus.HistoricalIdentityJSON, 2)
+	assert.RequireValid(t, corpus.HistoricalIdentityJSON)
 	if corpus.FingerprintMutations.Base == "" || len(corpus.FingerprintMutations.Cases) < 12 {
 		t.Fatal("fingerprint_mutations must provide a base and at least twelve classified semantic mutations")
 	}
@@ -120,6 +145,146 @@ func loadPublicationCorpus(t *testing.T) publicationCorpus {
 		t.Fatalf("nested unknown inventory has %d rows, want two per %d strict nested components", len(corpus.NestedUnknowns.Cases), len(corpus.StrictComponents))
 	}
 	return corpus
+}
+
+func requireParentIdentityCoverage(t *testing.T, corpus testcase.Corpus[string, parentIdentityVerdict]) {
+	t.Helper()
+	wantCounts := map[parentIdentityScenario]int{
+		parentScenarioRoot: 1, parentScenarioValid: 2, parentScenarioNull: 1,
+		parentScenarioHistorical: 1, parentScenarioWrongType: 1, parentScenarioDuplicate: 1,
+	}
+	gotCounts := make(map[parentIdentityScenario]int, len(wantCounts))
+	parents := map[string]string{}
+	fingerprints := map[string]string{}
+	for _, row := range corpus.Cases {
+		if _, known := wantCounts[row.Expected.Scenario]; !known {
+			t.Fatalf("parent_identity case %q has unknown scenario %q", row.Name, row.Expected.Scenario)
+		}
+		gotCounts[row.Expected.Scenario]++
+		if row.Expected.Scenario == parentScenarioDuplicate {
+			if row.Expected.ZodValid != nil {
+				t.Fatalf("parent_identity duplicate case %q must be raw-Go-only", row.Name)
+			}
+		} else if row.Expected.ZodValid == nil {
+			t.Fatalf("parent_identity case %q must declare zod_valid", row.Name)
+		}
+		if row.Expected.Scenario == parentScenarioValid {
+			if row.Expected.Parent == "" || row.Expected.Fingerprint == "" {
+				t.Fatalf("valid parent case %q must pin parent and fingerprint", row.Name)
+			}
+			if prior, exists := parents[row.Expected.Parent]; exists {
+				t.Fatalf("valid parent cases %q and %q repeat parent %q", prior, row.Name, row.Expected.Parent)
+			}
+			if prior, exists := fingerprints[row.Expected.Fingerprint]; exists {
+				t.Fatalf("valid parent cases %q and %q repeat fingerprint %q", prior, row.Name, row.Expected.Fingerprint)
+			}
+			parents[row.Expected.Parent], fingerprints[row.Expected.Fingerprint] = row.Name, row.Name
+		}
+	}
+	for scenario, want := range wantCounts {
+		if gotCounts[scenario] != want {
+			t.Fatalf("parent_identity scenario %q count=%d want %d", scenario, gotCounts[scenario], want)
+		}
+	}
+}
+
+func TestPublicationContractCorpus_ParentIdentityDecodeAndFingerprint(t *testing.T) {
+	corpus := loadPublicationCorpus(t)
+	seenFingerprints := map[string]string{}
+	for _, row := range corpus.ParentIdentity.Cases {
+		row := row
+		t.Run(row.Name, func(t *testing.T) {
+			request, err := schema.DecodeAuthoritativePublishRequest([]byte(row.Input))
+			if (err == nil) != row.Expected.GoValid {
+				t.Fatalf("Go validity=%v want %v: %v", err == nil, row.Expected.GoValid, err)
+			}
+			if err != nil {
+				return
+			}
+			if row.Expected.Parent == "" {
+				if request.Identity.ParentSessionID != nil {
+					t.Fatalf("decoded parent=%q want nil", request.Identity.ParentSessionID.String())
+				}
+			} else if request.Identity.ParentSessionID == nil || request.Identity.ParentSessionID.String() != row.Expected.Parent {
+				t.Fatalf("decoded parent=%v want %q", request.Identity.ParentSessionID, row.Expected.Parent)
+			}
+			operation, err := schema.CanonicalizePublishRequest(request)
+			if err != nil {
+				t.Fatalf("canonicalize decoded request: %v", err)
+			}
+			fingerprint, err := schema.FingerprintPublishOperation(operation)
+			if err != nil {
+				t.Fatalf("fingerprint decoded request: %v", err)
+			}
+			if fingerprint.String() != row.Expected.Fingerprint {
+				t.Fatalf("fingerprint=%s want %s", fingerprint, row.Expected.Fingerprint)
+			}
+			second, err := schema.FingerprintPublishOperation(operation)
+			if err != nil || second != fingerprint {
+				t.Fatalf("repeat fingerprint=%s error=%v want deterministic %s", second, err, fingerprint)
+			}
+			if prior, exists := seenFingerprints[fingerprint.String()]; exists {
+				t.Fatalf("fingerprint collides with %q", prior)
+			}
+			seenFingerprints[fingerprint.String()] = row.Name
+		})
+	}
+}
+
+func TestPublicationContractCorpus_HistoricalParentUUIDJSONRemainsStable(t *testing.T) {
+	corpus := loadPublicationCorpus(t)
+	for _, row := range corpus.HistoricalIdentityJSON.Cases {
+		parent, err := schema.NewSessionID(row.Input)
+		if err != nil {
+			t.Fatalf("%s fixture parent: %v", row.Name, err)
+		}
+		encoded, err := json.Marshal(schema.SessionIdentity{ParentSessionID: &parent})
+		if err != nil {
+			t.Fatalf("%s marshal historical identity: %v", row.Name, err)
+		}
+		if string(encoded) != row.Expected {
+			t.Fatalf("%s JSON=%s want %s", row.Name, encoded, row.Expected)
+		}
+	}
+}
+
+func TestPublicationContract_GeneratedIdentityKeysRemainSeparated(t *testing.T) {
+	typesSpec, err := schemaopenapi.BuildTypesSpec()
+	if err != nil {
+		t.Fatalf("build Types spec: %v", err)
+	}
+	villageSpec, err := schemaopenapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatalf("build Village spec: %v", err)
+	}
+	assertIdentityKeys(t, typesSpec, "AuthoritativeSessionIdentity", "SessionIdentity")
+	assertIdentityKeys(t, villageSpec, "SchemaAuthoritativeSessionIdentity", "")
+}
+
+func assertIdentityKeys(t *testing.T, spec any, authoritativeName, historicalName string) {
+	t.Helper()
+	data, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatalf("marshal generated spec: %v", err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("decode generated spec: %v", err)
+	}
+	schemas := document["components"].(map[string]any)["schemas"].(map[string]any)
+	authoritative := schemas[authoritativeName].(map[string]any)["properties"].(map[string]any)
+	if _, ok := authoritative["parentSessionId"]; !ok {
+		t.Fatalf("%s omits parentSessionId", authoritativeName)
+	}
+	if _, ok := authoritative["parentUuid"]; ok {
+		t.Fatalf("%s exposes historical parentUuid", authoritativeName)
+	}
+	if historicalName != "" {
+		historical := schemas[historicalName].(map[string]any)["properties"].(map[string]any)
+		if _, ok := historical["parentUuid"]; !ok {
+			t.Fatalf("%s omits historical parentUuid", historicalName)
+		}
+	}
 }
 
 func TestPublicationContractCorpus_RejectsEveryNestedUnknownField(t *testing.T) {

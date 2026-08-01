@@ -45,7 +45,10 @@ const (
 	// Bumped to 0.11.0 when publication gained canonical operation currency,
 	// authoritative success receipts, real multipart transport, and a complete
 	// successor owner-update projection (additive = minor bump).
-	VillageAPIVersion = "0.11.0"
+	// Bumped to 0.12.0 when authoritative publication identity adopted its
+	// declared parentSessionId key while historical SessionIdentity retained
+	// parentUuid (corrective additive version).
+	VillageAPIVersion = "0.12.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -82,5 +85,7 @@ const (
 	// error shape.
 	// Bumped to 0.8.0 for canonical publication operation, authoritative receipt,
 	// publish visibility intent, and successor owner-update types.
-	TypesVersion = "0.8.0"
+	// Bumped to 0.9.0 when AuthoritativeSessionIdentity adopted parentSessionId
+	// independently from the historical SessionIdentity parentUuid wire.
+	TypesVersion = "0.9.0"
 )

@@ -3,7 +3,7 @@ package schema
 import jsonschema "github.com/swaggest/jsonschema-go"
 
 // PublishRequest is the frozen rc11/Village 0.10.0 metadata shape retained for
-// compatibility. Village 0.11.0 publishing uses AuthoritativePublishRequest.
+// compatibility. Village 0.12.0 publishing uses AuthoritativePublishRequest.
 //
 // Uses nested composites for logical grouping. The JSON tags on each composite
 // struct preserve CLI wire compatibility — the top-level keys are identity, model,
@@ -54,7 +54,7 @@ type AuthoritativePublishRequest struct {
 }
 
 // PublishResponse is the released rc11 response retained for source and frozen
-// artifact compatibility. Village API 0.11.0 uses AuthoritativePublishResponse.
+// artifact compatibility. Village API 0.12.0 uses AuthoritativePublishResponse.
 type PublishResponse struct {
 	TranscriptID  string `json:"transcriptId"`
 	BlobKey       string `json:"blobKey"`

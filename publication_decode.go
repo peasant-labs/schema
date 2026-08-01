@@ -73,8 +73,40 @@ func (value *AuthoritativePublishRequest) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		return publicationError("authoritative publish request", err.Error(), "send values matching the declared successor metadata types")
 	}
+	if err := validateAuthoritativeParentSessionIDJSON(raw); err != nil {
+		return err
+	}
 	*value = AuthoritativePublishRequest(decoded)
 	return validateAuthoritativePublishMetadata(*value)
+}
+
+func validateAuthoritativeParentSessionIDJSON(request map[string]json.RawMessage) error {
+	identityJSON, present := request["identity"]
+	if !present || bytes.Equal(bytes.TrimSpace(identityJSON), []byte("null")) {
+		return nil
+	}
+	type identityOverlay struct {
+		ParentSessionID json.RawMessage `json:"parentSessionId"`
+	}
+	var identity identityOverlay
+	if err := json.Unmarshal(identityJSON, &identity); err != nil {
+		return publicationError("successor publication identity", err.Error(), "send values matching the declared successor identity types")
+	}
+	if len(identity.ParentSessionID) == 0 {
+		return nil
+	}
+	if bytes.Equal(bytes.TrimSpace(identity.ParentSessionID), []byte("null")) {
+		return publicationError("successor publication identity", "optional field \"parentSessionId\" is null", "omit it for a root session or send a canonical session identifier")
+	}
+	var raw string
+	if err := json.Unmarshal(identity.ParentSessionID, &raw); err != nil {
+		return publicationError("successor publication identity", fmt.Sprintf("parentSessionId has the wrong type: %v", err), "send a canonical session identifier as a JSON string")
+	}
+	_, err := NewSessionID(raw)
+	if err != nil {
+		return publicationError("successor publication identity", fmt.Sprintf("parentSessionId is invalid: %v", err), "send a canonical UUID or agent-prefixed session identifier")
+	}
+	return nil
 }
 
 func validateAuthoritativePublishMetadata(value AuthoritativePublishRequest) error {
