@@ -7,7 +7,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 First stable release of the `github.com/peasant-labs/schema` Go module and the
 `@peasant-labs/schema` npm package. The contract artifacts are unchanged from
-`v0.1.0-rc13`: Village API 0.12.0, Local API 0.6.0, and Types 0.9.0.
+`v0.1.0-rc13`: Village API 0.12.0, PublishRequest 0.12.0,
+AnnotationPushRequest 0.12.0, Local API 0.6.0, and Types 0.9.0.
 
 ### Changed
 
