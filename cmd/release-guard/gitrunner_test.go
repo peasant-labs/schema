@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/peasant-labs/schema/internal/release"
 )
 
 // --- R6 hardening: leading-dash rejection (BDD #6) --------------------------
@@ -167,6 +169,40 @@ func TestGitRunner_RealGitSemantics(t *testing.T) {
 	}
 	if no {
 		t.Fatal("IsAncestor(HEAD, rc1) = true, want false")
+	}
+}
+
+func TestRunCheckFinal_InitialFinalThroughRealRepository(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH; skipping real repository initial-final check")
+	}
+	repo := t.TempDir()
+	gitEnv := hermeticGitTestEnv(t)
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = repo
+		cmd.Env = gitEnv
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("init", "-q")
+	run("commit", "-q", "--allow-empty", "-m", "initial final source")
+	run("tag", "v1.0.0")
+
+	runner, err := newExecGit()
+	if err != nil {
+		t.Fatalf("newExecGit: %v", err)
+	}
+	runner.(*execGit).dir = repo
+	gh := &mockGitHubClient{workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
+		t.Fatal("fresh initial final must not query an rc workflow run")
+		return nil, nil
+	}}
+	if err := runCheckFinal(context.Background(), gh, runner, testRepo, []string{"--tag", "v1.0.0", "--initial-final", "v1.0.0"}); err != nil {
+		t.Fatalf("runCheckFinal through a real fresh git repository: %v", err)
 	}
 }
 

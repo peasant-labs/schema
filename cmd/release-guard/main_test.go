@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release"
+	"github.com/peasant-labs/schema/testcase"
+	"github.com/peasant-labs/schema/testcase/assert"
 )
 
 // --- interface mocks (mock the DEPENDENCY, never the SUT) -------------------
@@ -211,6 +214,73 @@ func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
 	err := runCheckFinal(context.Background(), gh, git, testRepo, []string{"--tag", "v1.2.3"})
 	if err == nil {
 		t.Fatal("runCheckFinal must BLOCK when IsAncestor errors (green-but-lineage-broken rc), got nil")
+	}
+}
+
+type initialFinalCLIInput struct {
+	Requested       string   `yaml:"requested"`
+	Configured      string   `yaml:"configured"`
+	ProductTags     []string `yaml:"productTags"`
+	ProductTagError string   `yaml:"productTagError"`
+}
+
+type initialFinalCLIExpected struct {
+	ErrorContains string `yaml:"errorContains"`
+}
+
+//go:embed testdata/initial-final/cases.yaml
+var initialFinalCLICasesYAML []byte
+
+func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
+	corpus, err := testcase.LoadCorpus[initialFinalCLIInput, initialFinalCLIExpected](initialFinalCLICasesYAML)
+	if err != nil {
+		t.Fatalf("load initial-final CLI corpus: %v", err)
+	}
+	assert.RequireMin(t, corpus, 5)
+	assert.RequireValid(t, corpus)
+
+	for _, c := range corpus.Cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			git := &mockGitRunner{
+				revParseFn: func(_ context.Context, ref string) (string, error) {
+					if ref != c.Input.Requested {
+						return "", errors.New("unexpected ref " + ref)
+					}
+					return finalCommit, nil
+				},
+				listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
+					switch pattern {
+					case "v*":
+						if c.Input.ProductTagError != "" {
+							return nil, errors.New(c.Input.ProductTagError)
+						}
+						return c.Input.ProductTags, nil
+					case c.Input.Requested + "-rc*":
+						return nil, nil
+					default:
+						return nil, errors.New("unexpected pattern " + pattern)
+					}
+				},
+				isAncestorFn: func(context.Context, string, string) (bool, error) { return false, nil },
+			}
+			gh := &mockGitHubClient{workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
+				t.Fatal("bootstrap without rc tags must not query workflow runs")
+				return nil, nil
+			}}
+			err := runCheckFinal(context.Background(), gh, git, testRepo, []string{
+				"--tag", c.Input.Requested, "--initial-final", c.Input.Configured,
+			})
+			if c.Classification == testcase.MustFail {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("runCheckFinal error = %v, want substring %q", err, c.Expected.ErrorContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("runCheckFinal returned unexpected error: %v", err)
+			}
+		})
 	}
 }
 

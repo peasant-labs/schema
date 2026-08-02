@@ -158,6 +158,10 @@ final-release guard are in `internal/release`, exposed via `cmd/release-guard`):
    the OpenAPI specs as downloadable assets (prerelease for `-rcN`).
 4. A FINAL `vX.Y.Z` requires a same-version `-rcN` that is green AND an ancestor of
    the final commit — enforced by `release-guard check-final` / `release.CheckFinal`.
+   The shared CLI offers `--initial-final vX.Y.Z` only for an explicitly configured
+   fresh-repository bootstrap: it requires that exact final and no prior `v*`
+   product release tags. Schema does not use that option; its first final follows
+   the normal ancestor-rc path.
 5. Old `pkg/schema/v*` tags (from when this lived nested in peasant) are **retained
    forever**; new releases use the bare `vX.Y.Z` path. Tags are append-only — never
    move or delete a release tag.

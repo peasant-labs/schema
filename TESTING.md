@@ -282,6 +282,11 @@ publication guard (`parse_test.go`, `guard_test.go`, `permission_test.go`,
 `review_test.go`, `workflow_guard_test.go`, `workflow_run_test.go`), and
 `cmd/release-guard/*_test.go` cover the CLI that exposes them (`main_test.go`, plus
 the `go-github` and git seams in `githubclient_test.go` / `gitrunner_test.go`).
+The final-guard policy corpus in `internal/release/testdata/guard/final_cases.yaml`
+covers the normal ancestor-rc rule and the exact initial-final bootstrap. The CLI
+corpus in `cmd/release-guard/testdata/initial-final/cases.yaml` covers repository
+tag evidence, malformed release-like tags, and evidence failures; a real-git
+integration test drives the same handler through an actual fresh repository.
 `release-guard check-workflow` runs inside `make check` to keep publication behind
 the required gates: the per-repo policy (`.github/release-guard.policy.yml`)
 requires both the `release` (GitHub Release) and `npm-publish` jobs to sit behind
