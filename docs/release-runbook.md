@@ -218,9 +218,10 @@ record self-disables bootstrap on every later invocation, including a rerun whos
 own Actions status is currently in progress. A malformed `v*` tag, tag-listing
 failure, or repository-release lookup failure blocks the release. Once any prior
 product release exists, the bootstrap no longer applies and the ordinary green same-version
-ancestor-rc rule resumes. A consumer opting in must check out full history and
-tags and grant the workflow token read access to repository releases before
-calling the command.
+ancestor-rc rule resumes even if `--initial-final` remains configured; later
+finals do not depend on looking up the initial final's GitHub Release. A consumer
+opting in must check out full history and tags and grant the workflow token read
+access to repository releases before calling the command.
 
 Schema does not opt into this policy. Its final `v0.1.0` continues through the
 ordinary guard using the green ancestor `v0.1.0-rc13`.

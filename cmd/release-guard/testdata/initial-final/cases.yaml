@@ -53,3 +53,15 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: publication-evidence-error}
     mutation: {description: replaces the repository release lookup with an API error}
+  - name: later final falls through to green ancestor rc
+    input:
+      requested: v1.1.0
+      configured: v1.0.0
+      productTags: [v1.0.0, v1.1.0-rc1, v1.1.0]
+      rcTags: [v1.1.0-rc1]
+      greenRC: true
+      forbidPublicationLookup: true
+    expected: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: later-final-cli-fallback}
+    mutation: {description: adds prior product history and a green same-version ancestor rc}

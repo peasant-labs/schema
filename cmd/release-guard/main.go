@@ -262,9 +262,6 @@ func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo str
 			return fmt.Errorf("check-final: --initial-final must name one exact final version in vX.Y.Z form, got release candidate %q. Remove the rc suffix", initialFinalRaw)
 		}
 		policy.InitialFinal = initialFinal
-		if final != initialFinal {
-			return fmt.Errorf("check-final: initial-final policy permits only the exact configured final %s, but the requested tag is %s. Use %s or remove --initial-final and follow the ordinary ancestor-rc path", initialFinal, final, initialFinal)
-		}
 
 		productTags, listErr := git.ListTags(ctx, "v*")
 		if listErr != nil {
@@ -287,7 +284,7 @@ func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo str
 	if err != nil {
 		return fmt.Errorf("check-final: cannot resolve the commit for final tag %s: %v", final, err)
 	}
-	if policy.InitialFinal != "" {
+	if policy.InitialFinal != "" && len(priorReleases) == 0 {
 		published, publicationErr := gh.ReleaseExists(ctx, repo, string(policy.InitialFinal))
 		if publicationErr != nil {
 			return fmt.Errorf("check-final: cannot prove whether initial final %s already completed publication: %v. Retry after repository release evidence is available", policy.InitialFinal, publicationErr)

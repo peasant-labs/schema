@@ -222,12 +222,15 @@ func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
 }
 
 type initialFinalCLIInput struct {
-	Requested            string   `yaml:"requested"`
-	Configured           string   `yaml:"configured"`
-	ProductTags          []string `yaml:"productTags"`
-	ProductTagError      string   `yaml:"productTagError"`
-	PublicationCompleted bool     `yaml:"publicationCompleted"`
-	PublicationError     string   `yaml:"publicationError"`
+	Requested               string   `yaml:"requested"`
+	Configured              string   `yaml:"configured"`
+	ProductTags             []string `yaml:"productTags"`
+	ProductTagError         string   `yaml:"productTagError"`
+	RCTags                  []string `yaml:"rcTags"`
+	GreenRC                 bool     `yaml:"greenRC"`
+	PublicationCompleted    bool     `yaml:"publicationCompleted"`
+	PublicationError        string   `yaml:"publicationError"`
+	ForbidPublicationLookup bool     `yaml:"forbidPublicationLookup"`
 }
 
 type initialFinalCLIExpected struct {
@@ -250,10 +253,15 @@ func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			git := &mockGitRunner{
 				revParseFn: func(_ context.Context, ref string) (string, error) {
-					if ref != c.Input.Requested {
-						return "", errors.New("unexpected ref " + ref)
+					if ref == c.Input.Requested {
+						return finalCommit, nil
 					}
-					return finalCommit, nil
+					for _, rcTag := range c.Input.RCTags {
+						if ref == rcTag {
+							return rcCommit, nil
+						}
+					}
+					return "", errors.New("unexpected ref " + ref)
 				},
 				listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
 					switch pattern {
@@ -263,17 +271,24 @@ func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
 						}
 						return c.Input.ProductTags, nil
 					case c.Input.Requested + "-rc*":
-						return nil, nil
+						return c.Input.RCTags, nil
 					default:
 						return nil, errors.New("unexpected pattern " + pattern)
 					}
 				},
-				isAncestorFn: func(context.Context, string, string) (bool, error) { return false, nil },
+				isAncestorFn: func(_ context.Context, ancestor, descendant string) (bool, error) {
+					return ancestor != "" && descendant == finalCommit, nil
+				},
 			}
-			gh := &mockGitHubClient{workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
-				t.Fatal("bootstrap without rc tags must not query rc workflow runs")
+			gh := &mockGitHubClient{workflowRunsForCommitFn: func(_ context.Context, _, _ string, commit string) ([]release.WorkflowRun, error) {
+				if c.Input.GreenRC && commit == rcCommit {
+					return []release.WorkflowRun{{HeadSHA: commit, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess}}, nil
+				}
 				return nil, nil
 			}, releaseExistsFn: func(_ context.Context, repo, tag string) (bool, error) {
+				if c.Input.ForbidPublicationLookup {
+					t.Fatal("later final with prior release history must not depend on the initial final's publication lookup")
+				}
 				if repo != testRepo || tag != c.Input.Configured {
 					return false, errors.New("unexpected publication evidence request")
 				}

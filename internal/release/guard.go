@@ -83,17 +83,17 @@ func CheckFinal(final Version, evidence FinalEvidence, policy FinalPolicy) error
 		if evidence.ProductTagScan != ProductTagScanComplete {
 			return fmt.Errorf("initial-final bootstrap for %s is blocked: a complete product-tag scan was not proven. List all v* tags from a full-history checkout and mark the scan complete only after it succeeds", final)
 		}
-		switch evidence.InitialFinalCompletion {
-		case CompletionUnknown:
-			return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence is unknown. Query the repository release for %s and retry only after the query succeeds", final, policy.InitialFinal)
-		case CompletionSucceeded:
-			return fmt.Errorf("initial-final bootstrap for %s is blocked: the configured initial final %s already has a published repository release. The bootstrap self-disables after publication; use the ordinary green same-version ancestor-rc path for later finals", final, policy.InitialFinal)
-		case CompletionIncomplete:
-			// No published release exists; the current run or a retry may proceed.
-		default:
-			return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence %q is invalid. Supply only incomplete or succeeded from a successful repository-release query", final, evidence.InitialFinalCompletion)
-		}
 		if len(evidence.PriorReleases) == 0 {
+			switch evidence.InitialFinalCompletion {
+			case CompletionUnknown:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence is unknown. Query the repository release for %s and retry only after the query succeeds", final, policy.InitialFinal)
+			case CompletionSucceeded:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: the configured initial final %s already has a published repository release. The bootstrap self-disables after publication; use the ordinary green same-version ancestor-rc path for later finals", final, policy.InitialFinal)
+			case CompletionIncomplete:
+				// No published release exists; the current run or a retry may proceed.
+			default:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence %q is invalid. Supply only incomplete or succeeded from a successful repository-release query", final, evidence.InitialFinalCompletion)
+			}
 			if final != policy.InitialFinal {
 				return fmt.Errorf("final release %s is blocked by the initial-final policy: this fresh repository may bootstrap only the exact configured final %s. Request %s, or remove the policy and cut a green same-version ancestor rc", final, policy.InitialFinal, policy.InitialFinal)
 			}

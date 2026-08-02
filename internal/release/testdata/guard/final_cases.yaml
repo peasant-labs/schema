@@ -76,7 +76,6 @@ cases:
       final: v1.1.0
       initialFinal: v1.0.0
       productTagScan: complete
-      initialFinalCompletion: incomplete
       priorReleases: [v1.0.0]
       rcs: [{tag: v1.1.0-rc2, runGreen: true, isAncestor: true}]
     expected: {}
