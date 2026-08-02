@@ -3,6 +3,19 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.1.0] - 2026-08-02
+
+First stable release of the `github.com/peasant-labs/schema` Go module and the
+`@peasant-labs/schema` npm package. The contract artifacts are unchanged from
+`v0.1.0-rc13`: Village API 0.12.0, Local API 0.6.0, and Types 0.9.0.
+
+### Changed
+
+- The shared release guard now supports an exact, explicitly configured
+  initial-final policy for repositories with no prior product release. Schema
+  does not opt into that policy; this final follows the ordinary green,
+  same-version ancestor release candidate path through `v0.1.0-rc13`.
+
 ## [v0.1.0-rc13] - 2026-08-01
 
 ### Fixed
