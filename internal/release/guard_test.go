@@ -11,10 +11,12 @@ import (
 )
 
 type finalCheckInput struct {
-	Final         release.Version    `yaml:"final"`
-	InitialFinal  release.Version    `yaml:"initialFinal"`
-	PriorReleases []release.Version  `yaml:"priorReleases"`
-	RCs           []release.RCStatus `yaml:"rcs"`
+	Final                  release.Version              `yaml:"final"`
+	InitialFinal           release.Version              `yaml:"initialFinal"`
+	PriorReleases          []release.Version            `yaml:"priorReleases"`
+	RCs                    []release.RCStatus           `yaml:"rcs"`
+	ProductTagScan         release.ProductTagScanStatus `yaml:"productTagScan"`
+	InitialFinalCompletion release.CompletionStatus     `yaml:"initialFinalCompletion"`
 }
 
 type finalCheckExpected struct {
@@ -36,7 +38,8 @@ func TestCheckFinal(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			err := release.CheckFinal(c.Input.Final, release.FinalEvidence{
-				RCs: c.Input.RCs, PriorReleases: c.Input.PriorReleases,
+				RCs: c.Input.RCs, ProductTagScan: c.Input.ProductTagScan,
+				PriorReleases: c.Input.PriorReleases, InitialFinalCompletion: c.Input.InitialFinalCompletion,
 			}, release.FinalPolicy{InitialFinal: c.Input.InitialFinal})
 			if c.Classification == testcase.MustFail {
 				if err == nil {

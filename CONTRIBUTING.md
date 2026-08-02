@@ -160,8 +160,9 @@ final-release guard are in `internal/release`, exposed via `cmd/release-guard`):
    the final commit — enforced by `release-guard check-final` / `release.CheckFinal`.
    The shared CLI offers `--initial-final vX.Y.Z` only for an explicitly configured
    fresh-repository bootstrap: it requires that exact final and no prior `v*`
-   product release tags. Schema does not use that option; its first final follows
-   the normal ancestor-rc path.
+   product release tags, plus a successful GitHub Release lookup proving that
+   the configured final has not completed publication. Schema does not use that
+   option; its first final follows the normal ancestor-rc path.
 5. Old `pkg/schema/v*` tags (from when this lived nested in peasant) are **retained
    forever**; new releases use the bare `vX.Y.Z` path. Tags are append-only — never
    move or delete a release tag.

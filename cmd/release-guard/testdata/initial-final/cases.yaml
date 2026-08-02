@@ -35,3 +35,21 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: exact-final-cli}
     mutation: {description: changes the configured final to an rc}
+  - name: requested final differs from configured final
+    input: {requested: v1.0.1, configured: v1.0.0, productTags: [v1.0.1]}
+    expected: {errorContains: exact configured final v1.0.0}
+    classification: must-fail
+    provenance: {source: requirement, ref: exact-initial-final-cli}
+    mutation: {description: changes the requested final away from the configured version}
+  - name: completed configured final rejects second invocation
+    input: {requested: v1.0.0, configured: v1.0.0, productTags: [v1.0.0], publicationCompleted: true}
+    expected: {errorContains: already has a published repository release}
+    classification: must-fail
+    provenance: {source: requirement, ref: bootstrap-self-disable-cli}
+    mutation: {description: changes the repository release observation from absent to published}
+  - name: publication evidence failure fails closed
+    input: {requested: v1.0.0, configured: v1.0.0, productTags: [v1.0.0], publicationError: releases api unavailable}
+    expected: {errorContains: cannot prove whether initial final v1.0.0 already completed publication}
+    classification: must-fail
+    provenance: {source: requirement, ref: publication-evidence-error}
+    mutation: {description: replaces the repository release lookup with an API error}

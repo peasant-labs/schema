@@ -54,19 +54,19 @@ cases:
     provenance: {source: boundary, ref: final-only}
     mutation: {description: changes the requested final to an rc}
   - name: fresh exact initial final proceeds
-    input: {final: v1.0.0, initialFinal: v1.0.0}
+    input: {final: v1.0.0, initialFinal: v1.0.0, productTagScan: complete, initialFinalCompletion: incomplete}
     expected: {}
     classification: must-pass
     provenance: {source: requirement, ref: initial-final-bootstrap}
     mutation: {description: configures the exact requested final with no prior releases}
   - name: wrong initial final is blocked
-    input: {final: v1.0.1, initialFinal: v1.0.0}
+    input: {final: v1.0.1, initialFinal: v1.0.0, productTagScan: complete, initialFinalCompletion: incomplete}
     expected: {errorContains: exact configured final v1.0.0}
     classification: must-fail
     provenance: {source: requirement, ref: exact-initial-final}
     mutation: {description: changes the requested version away from the configured initial final}
   - name: existing release self-disables bootstrap
-    input: {final: v1.0.0, initialFinal: v1.0.0, priorReleases: [v1.0.0]}
+    input: {final: v1.0.0, initialFinal: v1.0.0, productTagScan: complete, initialFinalCompletion: incomplete, priorReleases: [v1.0.0]}
     expected: {errorContains: no same-version release candidate}
     classification: must-fail
     provenance: {source: requirement, ref: bootstrap-self-disable}
@@ -75,6 +75,8 @@ cases:
     input:
       final: v1.1.0
       initialFinal: v1.0.0
+      productTagScan: complete
+      initialFinalCompletion: incomplete
       priorReleases: [v1.0.0]
       rcs: [{tag: v1.1.0-rc2, runGreen: true, isAncestor: true}]
     expected: {}
@@ -82,8 +84,26 @@ cases:
     provenance: {source: requirement, ref: later-final-rc-ancestry}
     mutation: {description: adds a green ancestor rc for a final after bootstrap}
   - name: rc cannot configure initial final
-    input: {final: v1.0.0, initialFinal: v1.0.0-rc1}
+    input: {final: v1.0.0, initialFinal: v1.0.0-rc1, productTagScan: complete, initialFinalCompletion: incomplete}
     expected: {errorContains: policy is invalid}
     classification: must-fail
     provenance: {source: boundary, ref: exact-final-policy}
     mutation: {description: changes the configured initial final to an rc}
+  - name: missing tag-scan evidence is blocked
+    input: {final: v1.0.0, initialFinal: v1.0.0, initialFinalCompletion: incomplete}
+    expected: {errorContains: complete product-tag scan was not proven}
+    classification: must-fail
+    provenance: {source: requirement, ref: explicit-freshness-evidence}
+    mutation: {description: removes the successful tag-scan marker}
+  - name: missing completion evidence is blocked
+    input: {final: v1.0.0, initialFinal: v1.0.0, productTagScan: complete}
+    expected: {errorContains: publication completion evidence is unknown}
+    classification: must-fail
+    provenance: {source: requirement, ref: explicit-publication-evidence}
+    mutation: {description: removes the workflow-completion observation}
+  - name: completed initial final is blocked
+    input: {final: v1.0.0, initialFinal: v1.0.0, productTagScan: complete, initialFinalCompletion: succeeded}
+    expected: {errorContains: already has a published repository release}
+    classification: must-fail
+    provenance: {source: requirement, ref: bootstrap-self-disable}
+    mutation: {description: changes publication evidence from incomplete to succeeded}

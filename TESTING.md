@@ -285,8 +285,10 @@ the `go-github` and git seams in `githubclient_test.go` / `gitrunner_test.go`).
 The final-guard policy corpus in `internal/release/testdata/guard/final_cases.yaml`
 covers the normal ancestor-rc rule and the exact initial-final bootstrap. The CLI
 corpus in `cmd/release-guard/testdata/initial-final/cases.yaml` covers repository
-tag evidence, malformed release-like tags, and evidence failures; a real-git
-integration test drives the same handler through an actual fresh repository.
+tag evidence, completed-publication evidence, malformed release-like tags, exact
+version mismatches, and evidence failures; a real-git integration test drives
+the same handler through an actual fresh repository before and after publication
+completion.
 `release-guard check-workflow` runs inside `make check` to keep publication behind
 the required gates: the per-repo policy (`.github/release-guard.policy.yml`)
 requires both the `release` (GitHub Release) and `npm-publish` jobs to sit behind

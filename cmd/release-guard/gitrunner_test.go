@@ -197,12 +197,20 @@ func TestRunCheckFinal_InitialFinalThroughRealRepository(t *testing.T) {
 		t.Fatalf("newExecGit: %v", err)
 	}
 	runner.(*execGit).dir = repo
+	completed := false
 	gh := &mockGitHubClient{workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
-		t.Fatal("fresh initial final must not query an rc workflow run")
+		t.Fatal("bootstrap without rc tags must not query rc workflow runs")
 		return nil, nil
+	}, releaseExistsFn: func(context.Context, string, string) (bool, error) {
+		return completed, nil
 	}}
 	if err := runCheckFinal(context.Background(), gh, runner, testRepo, []string{"--tag", "v1.0.0", "--initial-final", "v1.0.0"}); err != nil {
 		t.Fatalf("runCheckFinal through a real fresh git repository: %v", err)
+	}
+	completed = true
+	err = runCheckFinal(context.Background(), gh, runner, testRepo, []string{"--tag", "v1.0.0", "--initial-final", "v1.0.0"})
+	if err == nil || !strings.Contains(err.Error(), "already has a published repository release") {
+		t.Fatalf("second run after repository release completion = %v, want self-disable rejection", err)
 	}
 }
 

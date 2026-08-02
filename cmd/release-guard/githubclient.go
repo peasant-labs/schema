@@ -22,6 +22,8 @@ type GitHubClient interface {
 	// WorkflowRunsForCommit returns every run of workflowFile whose head commit
 	// is commitSHA, filtered server-side. Backs check-final (RunGreenForCommit).
 	WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
+	// ReleaseExists reports whether GitHub has a published Release for tag.
+	ReleaseExists(ctx context.Context, repo, tag string) (bool, error)
 	// PullReviews returns every review on PR prNumber, across all pages, in the
 	// API's ascending order. Backs check-approval (LatestApprovers).
 	PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
@@ -49,6 +51,22 @@ type GitHubClient interface {
 	// to drain across already-released history. CommitSHA is the commit the tag
 	// points at (GitHub's list-tags endpoint dereferences annotated tags).
 	Tags(ctx context.Context, repo string) ([]release.TagRef, error)
+}
+
+func (c *githubClient) ReleaseExists(ctx context.Context, repo, tag string) (bool, error) {
+	owner, name, err := splitRepo(repo)
+	if err != nil {
+		return false, err
+	}
+	_, _, err = c.gh.Repositories.GetReleaseByTag(ctx, owner, name, tag)
+	if err == nil {
+		return true, nil
+	}
+	var responseErr *github.ErrorResponse
+	if errors.As(err, &responseErr) && responseErr.Response != nil && responseErr.Response.StatusCode == http.StatusNotFound {
+		return false, nil
+	}
+	return false, fmt.Errorf("github client: cannot determine whether published release %s exists on %s/%s during initial-final checking: %w. Confirm GH_TOKEN can read repository releases and retry", tag, owner, name, err)
 }
 
 // githubClient is the production GitHubClient: a thin wrapper over the go-github

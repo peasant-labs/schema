@@ -19,6 +19,7 @@ import (
 type mockGitHubClient struct {
 	collaboratorPermissionFn func(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
 	workflowRunsForCommitFn  func(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
+	releaseExistsFn          func(ctx context.Context, repo, tag string) (bool, error)
 	pullReviewsFn            func(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
 	refFn                    func(ctx context.Context, repo, ref string) (release.GitRef, error)
 	commitFn                 func(ctx context.Context, repo, sha string) (release.GitCommit, error)
@@ -33,6 +34,9 @@ func (m *mockGitHubClient) CollaboratorPermission(ctx context.Context, repo, use
 }
 func (m *mockGitHubClient) WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error) {
 	return m.workflowRunsForCommitFn(ctx, repo, workflowFile, commitSHA)
+}
+func (m *mockGitHubClient) ReleaseExists(ctx context.Context, repo, tag string) (bool, error) {
+	return m.releaseExistsFn(ctx, repo, tag)
 }
 func (m *mockGitHubClient) PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error) {
 	return m.pullReviewsFn(ctx, repo, prNumber)
@@ -218,10 +222,12 @@ func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
 }
 
 type initialFinalCLIInput struct {
-	Requested       string   `yaml:"requested"`
-	Configured      string   `yaml:"configured"`
-	ProductTags     []string `yaml:"productTags"`
-	ProductTagError string   `yaml:"productTagError"`
+	Requested            string   `yaml:"requested"`
+	Configured           string   `yaml:"configured"`
+	ProductTags          []string `yaml:"productTags"`
+	ProductTagError      string   `yaml:"productTagError"`
+	PublicationCompleted bool     `yaml:"publicationCompleted"`
+	PublicationError     string   `yaml:"publicationError"`
 }
 
 type initialFinalCLIExpected struct {
@@ -265,8 +271,16 @@ func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
 				isAncestorFn: func(context.Context, string, string) (bool, error) { return false, nil },
 			}
 			gh := &mockGitHubClient{workflowRunsForCommitFn: func(context.Context, string, string, string) ([]release.WorkflowRun, error) {
-				t.Fatal("bootstrap without rc tags must not query workflow runs")
+				t.Fatal("bootstrap without rc tags must not query rc workflow runs")
 				return nil, nil
+			}, releaseExistsFn: func(_ context.Context, repo, tag string) (bool, error) {
+				if repo != testRepo || tag != c.Input.Configured {
+					return false, errors.New("unexpected publication evidence request")
+				}
+				if c.Input.PublicationError != "" {
+					return false, errors.New(c.Input.PublicationError)
+				}
+				return c.Input.PublicationCompleted, nil
 			}}
 			err := runCheckFinal(context.Background(), gh, git, testRepo, []string{
 				"--tag", c.Input.Requested, "--initial-final", c.Input.Configured,

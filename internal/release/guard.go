@@ -28,11 +28,33 @@ type FinalPolicy struct {
 	InitialFinal Version
 }
 
+// ProductTagScanStatus proves whether the complete product-tag scan succeeded.
+// The zero value is deliberately unproven so omitted evidence fails closed.
+type ProductTagScanStatus string
+
+const (
+	ProductTagScanUnproven ProductTagScanStatus = ""
+	ProductTagScanComplete ProductTagScanStatus = "complete"
+)
+
+// CompletionStatus is derived from the repository's published release record.
+// Unknown is the zero value so a skipped or failed lookup cannot authorize a
+// bootstrap.
+type CompletionStatus string
+
+const (
+	CompletionUnknown    CompletionStatus = ""
+	CompletionIncomplete CompletionStatus = "incomplete"
+	CompletionSucceeded  CompletionStatus = "succeeded"
+)
+
 // FinalEvidence is the repository evidence used to decide whether a final may
 // proceed. PriorReleases excludes the tag currently being checked.
 type FinalEvidence struct {
-	RCs           []RCStatus
-	PriorReleases []Version
+	RCs                    []RCStatus
+	ProductTagScan         ProductTagScanStatus
+	PriorReleases          []Version
+	InitialFinalCompletion CompletionStatus
 }
 
 // CheckFinal decides whether a FINAL release may proceed.
@@ -57,6 +79,19 @@ func CheckFinal(final Version, evidence FinalEvidence, policy FinalPolicy) error
 	if policy.InitialFinal != "" {
 		if policy.InitialFinal.Kind() != KindFinal {
 			return fmt.Errorf("initial-final policy is invalid: configured version %q is not an exact final release tag. Configure one version in vX.Y.Z form, without an rc suffix", policy.InitialFinal)
+		}
+		if evidence.ProductTagScan != ProductTagScanComplete {
+			return fmt.Errorf("initial-final bootstrap for %s is blocked: a complete product-tag scan was not proven. List all v* tags from a full-history checkout and mark the scan complete only after it succeeds", final)
+		}
+		switch evidence.InitialFinalCompletion {
+		case CompletionUnknown:
+			return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence is unknown. Query the repository release for %s and retry only after the query succeeds", final, policy.InitialFinal)
+		case CompletionSucceeded:
+			return fmt.Errorf("initial-final bootstrap for %s is blocked: the configured initial final %s already has a published repository release. The bootstrap self-disables after publication; use the ordinary green same-version ancestor-rc path for later finals", final, policy.InitialFinal)
+		case CompletionIncomplete:
+			// No published release exists; the current run or a retry may proceed.
+		default:
+			return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence %q is invalid. Supply only incomplete or succeeded from a successful repository-release query", final, evidence.InitialFinalCompletion)
 		}
 		if len(evidence.PriorReleases) == 0 {
 			if final != policy.InitialFinal {
