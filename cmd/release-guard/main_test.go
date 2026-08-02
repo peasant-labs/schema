@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"os"
 	"path/filepath"
@@ -9,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release"
+	"github.com/peasant-labs/schema/testcase"
+	"github.com/peasant-labs/schema/testcase/assert"
 )
 
 // --- interface mocks (mock the DEPENDENCY, never the SUT) -------------------
@@ -16,6 +19,7 @@ import (
 type mockGitHubClient struct {
 	collaboratorPermissionFn func(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
 	workflowRunsForCommitFn  func(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
+	releaseExistsFn          func(ctx context.Context, repo, tag string) (bool, error)
 	pullReviewsFn            func(ctx context.Context, repo string, prNumber int) ([]release.Review, error)
 	refFn                    func(ctx context.Context, repo, ref string) (release.GitRef, error)
 	commitFn                 func(ctx context.Context, repo, sha string) (release.GitCommit, error)
@@ -30,6 +34,9 @@ func (m *mockGitHubClient) CollaboratorPermission(ctx context.Context, repo, use
 }
 func (m *mockGitHubClient) WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error) {
 	return m.workflowRunsForCommitFn(ctx, repo, workflowFile, commitSHA)
+}
+func (m *mockGitHubClient) ReleaseExists(ctx context.Context, repo, tag string) (bool, error) {
+	return m.releaseExistsFn(ctx, repo, tag)
 }
 func (m *mockGitHubClient) PullReviews(ctx context.Context, repo string, prNumber int) ([]release.Review, error) {
 	return m.pullReviewsFn(ctx, repo, prNumber)
@@ -211,6 +218,98 @@ func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
 	err := runCheckFinal(context.Background(), gh, git, testRepo, []string{"--tag", "v1.2.3"})
 	if err == nil {
 		t.Fatal("runCheckFinal must BLOCK when IsAncestor errors (green-but-lineage-broken rc), got nil")
+	}
+}
+
+type initialFinalCLIInput struct {
+	Requested               string   `yaml:"requested"`
+	Configured              string   `yaml:"configured"`
+	ProductTags             []string `yaml:"productTags"`
+	ProductTagError         string   `yaml:"productTagError"`
+	RCTags                  []string `yaml:"rcTags"`
+	GreenRC                 bool     `yaml:"greenRC"`
+	PublicationCompleted    bool     `yaml:"publicationCompleted"`
+	PublicationError        string   `yaml:"publicationError"`
+	ForbidPublicationLookup bool     `yaml:"forbidPublicationLookup"`
+}
+
+type initialFinalCLIExpected struct {
+	ErrorContains string `yaml:"errorContains"`
+}
+
+//go:embed testdata/initial-final/cases.yaml
+var initialFinalCLICasesYAML []byte
+
+func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
+	corpus, err := testcase.LoadCorpus[initialFinalCLIInput, initialFinalCLIExpected](initialFinalCLICasesYAML)
+	if err != nil {
+		t.Fatalf("load initial-final CLI corpus: %v", err)
+	}
+	assert.RequireMin(t, corpus, 5)
+	assert.RequireValid(t, corpus)
+
+	for _, c := range corpus.Cases {
+		c := c
+		t.Run(c.Name, func(t *testing.T) {
+			git := &mockGitRunner{
+				revParseFn: func(_ context.Context, ref string) (string, error) {
+					if ref == c.Input.Requested {
+						return finalCommit, nil
+					}
+					for _, rcTag := range c.Input.RCTags {
+						if ref == rcTag {
+							return rcCommit, nil
+						}
+					}
+					return "", errors.New("unexpected ref " + ref)
+				},
+				listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
+					switch pattern {
+					case "v*":
+						if c.Input.ProductTagError != "" {
+							return nil, errors.New(c.Input.ProductTagError)
+						}
+						return c.Input.ProductTags, nil
+					case c.Input.Requested + "-rc*":
+						return c.Input.RCTags, nil
+					default:
+						return nil, errors.New("unexpected pattern " + pattern)
+					}
+				},
+				isAncestorFn: func(_ context.Context, ancestor, descendant string) (bool, error) {
+					return ancestor != "" && descendant == finalCommit, nil
+				},
+			}
+			gh := &mockGitHubClient{workflowRunsForCommitFn: func(_ context.Context, _, _ string, commit string) ([]release.WorkflowRun, error) {
+				if c.Input.GreenRC && commit == rcCommit {
+					return []release.WorkflowRun{{HeadSHA: commit, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess}}, nil
+				}
+				return nil, nil
+			}, releaseExistsFn: func(_ context.Context, repo, tag string) (bool, error) {
+				if c.Input.ForbidPublicationLookup {
+					t.Fatal("later final with prior release history must not depend on the initial final's publication lookup")
+				}
+				if repo != testRepo || tag != c.Input.Configured {
+					return false, errors.New("unexpected publication evidence request")
+				}
+				if c.Input.PublicationError != "" {
+					return false, errors.New(c.Input.PublicationError)
+				}
+				return c.Input.PublicationCompleted, nil
+			}}
+			err := runCheckFinal(context.Background(), gh, git, testRepo, []string{
+				"--tag", c.Input.Requested, "--initial-final", c.Input.Configured,
+			})
+			if c.Classification == testcase.MustFail {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("runCheckFinal error = %v, want substring %q", err, c.Expected.ErrorContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("runCheckFinal returned unexpected error: %v", err)
+			}
+		})
 	}
 }
 

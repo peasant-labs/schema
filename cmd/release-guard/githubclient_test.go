@@ -31,6 +31,32 @@ func newTestGitHubClient(t *testing.T, handler http.Handler) *githubClient {
 	return &githubClient{gh: gh}
 }
 
+func TestGitHubClient_ReleaseExistsDistinguishesPublication(t *testing.T) {
+	t.Parallel()
+	client := newTestGitHubClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/peasant-labs/schema/releases/tags/v1.0.0":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"tag_name":"v1.0.0"}`)
+		case "/repos/peasant-labs/schema/releases/tags/v1.0.1":
+			http.NotFound(w, r)
+		default:
+			http.Error(w, "release service unavailable", http.StatusServiceUnavailable)
+		}
+	}))
+
+	exists, err := client.ReleaseExists(context.Background(), testRepo, "v1.0.0")
+	if err != nil || !exists {
+		t.Fatalf("ReleaseExists(published) = (%v, %v), want (true, nil)", exists, err)
+	}
+	exists, err = client.ReleaseExists(context.Background(), testRepo, "v1.0.1")
+	if err != nil || exists {
+		t.Fatalf("ReleaseExists(absent) = (%v, %v), want (false, nil)", exists, err)
+	}
+	_, err = client.ReleaseExists(context.Background(), testRepo, "v1.0.2")
+	assertErrContains(t, err, []string{"cannot determine whether published release v1.0.2 exists", "Confirm GH_TOKEN"})
+}
+
 // assertStringsEqual fails unless got and want are the same length with equal
 // elements in order.
 func assertStringsEqual(t *testing.T, label string, got, want []string) {

@@ -199,6 +199,33 @@ public flip.
 same-version `-rcN` that is green **and** an ancestor of the final commit
 (`release-guard check-final`).
 
+The shared guard also supports an explicit bootstrap for a different repository
+whose first product release must be one exact final version:
+
+```
+release-guard check-final --tag v1.0.0 --initial-final v1.0.0
+```
+
+This is a narrow policy, not a general bypass. The configured value must be an
+exact final tag, the requested final must equal it, and a full `v*` tag scan must
+prove that no prior valid product release tag exists. Because the current tag
+already exists when the tag-triggered guard starts, the scan excludes that exact
+tag and separately queries GitHub for a published Release with the configured
+tag. During the first guard run, publication has not happened yet. A legitimate
+retry after any pre-publication failure likewise sees no Release, so both may
+proceed. Once the publisher creates the GitHub Release, that durable completion
+record self-disables bootstrap on every later invocation, including a rerun whose
+own Actions status is currently in progress. A malformed `v*` tag, tag-listing
+failure, or repository-release lookup failure blocks the release. Once any prior
+product release exists, the bootstrap no longer applies and the ordinary green same-version
+ancestor-rc rule resumes even if `--initial-final` remains configured; later
+finals do not depend on looking up the initial final's GitHub Release. A consumer
+opting in must check out full history and tags and grant the workflow token read
+access to repository releases before calling the command.
+
+Schema does not opt into this policy. Its final `v0.1.0` continues through the
+ordinary guard using the green ancestor `v0.1.0-rc13`.
+
 ### npm publication
 
 Every tag from the one that lands this automation onward publishes
