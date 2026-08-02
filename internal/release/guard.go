@@ -12,12 +12,49 @@ import (
 // consumes them as pure data.
 type RCStatus struct {
 	// Tag is the release-candidate tag, e.g. v0.1.0-rc1.
-	Tag Version
+	Tag Version `yaml:"tag"`
 	// RunGreen is true when the rc tag's release.yml run completed successfully.
-	RunGreen bool
+	RunGreen bool `yaml:"runGreen"`
 	// IsAncestor is true when the rc tag's commit is an ancestor of the final
 	// release commit (the final was tagged on a descendant of the proven rc).
-	IsAncestor bool
+	IsAncestor bool `yaml:"isAncestor"`
+}
+
+// FinalPolicy controls the one narrow exception to the normal final-release
+// rule. An empty InitialFinal keeps the ordinary same-version ancestor-rc
+// requirement. A non-empty value permits only that exact final version, and
+// only while the repository has no prior product releases.
+type FinalPolicy struct {
+	InitialFinal Version
+}
+
+// ProductTagScanStatus proves whether the complete product-tag scan succeeded.
+// The zero value is deliberately unproven so omitted evidence fails closed.
+type ProductTagScanStatus string
+
+const (
+	ProductTagScanUnproven ProductTagScanStatus = ""
+	ProductTagScanComplete ProductTagScanStatus = "complete"
+)
+
+// CompletionStatus is derived from the repository's published release record.
+// Unknown is the zero value so a skipped or failed lookup cannot authorize a
+// bootstrap.
+type CompletionStatus string
+
+const (
+	CompletionUnknown    CompletionStatus = ""
+	CompletionIncomplete CompletionStatus = "incomplete"
+	CompletionSucceeded  CompletionStatus = "succeeded"
+)
+
+// FinalEvidence is the repository evidence used to decide whether a final may
+// proceed. PriorReleases excludes the tag currently being checked.
+type FinalEvidence struct {
+	RCs                    []RCStatus
+	ProductTagScan         ProductTagScanStatus
+	PriorReleases          []Version
+	InitialFinalCompletion CompletionStatus
 }
 
 // CheckFinal decides whether a FINAL release may proceed.
@@ -32,17 +69,41 @@ type RCStatus struct {
 // CheckFinal is pure: the caller supplies the observed rc statuses. It returns
 // nil to proceed, or an actionable error naming exactly which condition failed
 // for every candidate considered.
-func CheckFinal(final Version, rcs []RCStatus) error {
+func CheckFinal(final Version, evidence FinalEvidence, policy FinalPolicy) error {
 	if final.IsRC() {
 		return fmt.Errorf(
 			"CheckFinal called with a non-final version %q: release candidates do not require a predecessor rc — call CheckFinal only for final (non-rc) releases",
 			final,
 		)
 	}
+	if policy.InitialFinal != "" {
+		if policy.InitialFinal.Kind() != KindFinal {
+			return fmt.Errorf("initial-final policy is invalid: configured version %q is not an exact final release tag. Configure one version in vX.Y.Z form, without an rc suffix", policy.InitialFinal)
+		}
+		if evidence.ProductTagScan != ProductTagScanComplete {
+			return fmt.Errorf("initial-final bootstrap for %s is blocked: a complete product-tag scan was not proven. List all v* tags from a full-history checkout and mark the scan complete only after it succeeds", final)
+		}
+		if len(evidence.PriorReleases) == 0 {
+			switch evidence.InitialFinalCompletion {
+			case CompletionUnknown:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence is unknown. Query the repository release for %s and retry only after the query succeeds", final, policy.InitialFinal)
+			case CompletionSucceeded:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: the configured initial final %s already has a published repository release. The bootstrap self-disables after publication; use the ordinary green same-version ancestor-rc path for later finals", final, policy.InitialFinal)
+			case CompletionIncomplete:
+				// No published release exists; the current run or a retry may proceed.
+			default:
+				return fmt.Errorf("initial-final bootstrap for %s is blocked: publication completion evidence %q is invalid. Supply only incomplete or succeeded from a successful repository-release query", final, evidence.InitialFinalCompletion)
+			}
+			if final != policy.InitialFinal {
+				return fmt.Errorf("final release %s is blocked by the initial-final policy: this fresh repository may bootstrap only the exact configured final %s. Request %s, or remove the policy and cut a green same-version ancestor rc", final, policy.InitialFinal, policy.InitialFinal)
+			}
+			return nil
+		}
+	}
 
 	base := final.Base()
 	var sameBase []RCStatus
-	for _, rc := range rcs {
+	for _, rc := range evidence.RCs {
 		if rc.Tag.Base() == base {
 			sameBase = append(sameBase, rc)
 		}

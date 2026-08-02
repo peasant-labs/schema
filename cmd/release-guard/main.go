@@ -12,7 +12,7 @@
 //	    Validate a git tag as a schema release reference (rejects the legacy
 //	    pkg/schema/v* and any non-release tag) and emit version + kind.
 //
-//	release-guard check-final --tag vX.Y.Z [--workflow release.yml]
+//	release-guard check-final --tag vX.Y.Z [--workflow release.yml] [--initial-final vX.Y.Z]
 //	    Guard a FINAL release: require a same-version release candidate whose
 //	    release run is green AND whose tag is an ancestor of the final commit.
 //	    Queries git (tag list, rev-list, merge-base) via the hardened GitRunner
@@ -212,6 +212,7 @@ func runCheckWorkflow(args []string) error {
 func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo string, args []string) error {
 	tag := ""
 	workflow := "release.yml"
+	initialFinalRaw := ""
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "--tag":
@@ -226,12 +227,18 @@ func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo str
 				return fmt.Errorf("--workflow requires a value")
 			}
 			workflow = args[i]
+		case "--initial-final":
+			i++
+			if i >= len(args) {
+				return fmt.Errorf("--initial-final requires an exact final version in vX.Y.Z form")
+			}
+			initialFinalRaw = args[i]
 		default:
 			return fmt.Errorf("unknown flag %q for check-final", args[i])
 		}
 	}
 	if tag == "" {
-		return fmt.Errorf("usage: release-guard check-final --tag vX.Y.Z [--workflow release.yml]")
+		return fmt.Errorf("usage: release-guard check-final --tag vX.Y.Z [--workflow release.yml] [--initial-final vX.Y.Z]")
 	}
 
 	final, kind, err := release.ParseTag(tag)
@@ -242,9 +249,50 @@ func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo str
 		return fmt.Errorf("check-final: %s is a release candidate, not a final release; the rc→final guard only applies to final tags", final)
 	}
 
+	policy := release.FinalPolicy{}
+	priorReleases := []release.Version(nil)
+	productTagScan := release.ProductTagScanUnproven
+	initialFinalCompletion := release.CompletionUnknown
+	if initialFinalRaw != "" {
+		initialFinal, initialKind, parseErr := release.ParseTag(initialFinalRaw)
+		if parseErr != nil {
+			return fmt.Errorf("check-final: --initial-final must name one exact final version in vX.Y.Z form, got %q: %v", initialFinalRaw, parseErr)
+		}
+		if initialKind != release.KindFinal {
+			return fmt.Errorf("check-final: --initial-final must name one exact final version in vX.Y.Z form, got release candidate %q. Remove the rc suffix", initialFinalRaw)
+		}
+		policy.InitialFinal = initialFinal
+
+		productTags, listErr := git.ListTags(ctx, "v*")
+		if listErr != nil {
+			return fmt.Errorf("check-final: cannot prove the initial-final repository is fresh because product release tags could not be listed: %v. Fetch all tags and retry", listErr)
+		}
+		for _, productTag := range productTags {
+			version, _, parseErr := release.ParseTag(productTag)
+			if parseErr != nil {
+				return fmt.Errorf("check-final: cannot prove the initial-final repository is fresh because release-like tag %q is malformed: %v. Remove or rename the unpublished malformed tag, or disable bootstrap and use the ordinary rc path", productTag, parseErr)
+			}
+			if version != final {
+				priorReleases = append(priorReleases, version)
+			}
+		}
+		productTagScan = release.ProductTagScanComplete
+
+	}
+
 	finalCommit, err := git.RevParse(ctx, string(final))
 	if err != nil {
 		return fmt.Errorf("check-final: cannot resolve the commit for final tag %s: %v", final, err)
+	}
+	if policy.InitialFinal != "" && len(priorReleases) == 0 {
+		published, publicationErr := gh.ReleaseExists(ctx, repo, string(policy.InitialFinal))
+		if publicationErr != nil {
+			return fmt.Errorf("check-final: cannot prove whether initial final %s already completed publication: %v. Retry after repository release evidence is available", policy.InitialFinal, publicationErr)
+		}
+		initialFinalCompletion = release.CompletionIncomplete
+		if published {
+			initialFinalCompletion = release.CompletionSucceeded
+		}
 	}
 
 	rcTags, err := git.ListTags(ctx, string(final.Base())+"-rc*")
@@ -284,10 +332,16 @@ func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo str
 		statuses = append(statuses, release.RCStatus{Tag: rcVer, RunGreen: green, IsAncestor: ancestor})
 	}
 
-	if err := release.CheckFinal(final, statuses); err != nil {
+	if err := release.CheckFinal(final, release.FinalEvidence{
+		RCs: statuses, ProductTagScan: productTagScan, PriorReleases: priorReleases, InitialFinalCompletion: initialFinalCompletion,
+	}, policy); err != nil {
 		return err
 	}
-	fmt.Printf("final release %s is permitted: a same-version rc is green and an ancestor of the final commit\n", final)
+	if policy.InitialFinal == final && len(priorReleases) == 0 {
+		fmt.Printf("final release %s is permitted by the exact initial-final policy: no prior product release tags exist\n", final)
+	} else {
+		fmt.Printf("final release %s is permitted: a same-version rc is green and an ancestor of the final commit\n", final)
+	}
 	return nil
 }
 
