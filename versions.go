@@ -62,8 +62,10 @@ const (
 	// additive).
 	// Bumped to 0.6.0 when Harness gained Strike and SessionID gained the two
 	// observed Strike identifier forms (additive = minor bump).
+	// Bumped to 0.7.0 when TurnDetail gained its optional per-turn model
+	// identifier (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.6.0"
+	PeasantLocalAPIVersion = "0.7.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -87,5 +89,7 @@ const (
 	// publish visibility intent, and successor owner-update types.
 	// Bumped to 0.9.0 when AuthoritativeSessionIdentity adopted parentSessionId
 	// independently from the historical SessionIdentity parentUuid wire.
-	TypesVersion = "0.9.0"
+	// Bumped to 0.10.0 when TurnDetail gained its optional per-turn model
+	// identifier (additive = minor bump).
+	TypesVersion = "0.10.0"
 )

@@ -1,0 +1,34 @@
+cases:
+  - name: explicit per-turn model is present
+    input:
+      index: 1
+      role: assistant
+      content: "I will inspect the failing request and trace its model attribution."
+      timestamp: "2026-02-24T09:00:30Z"
+      depth: 0
+      model: claude-sonnet-4-6
+    expected:
+      model_present: true
+      model: claude-sonnet-4-6
+    classification: must-pass
+    provenance:
+      source: requirement
+      ref: optional model identity on each transcript turn
+    mutation:
+      description: adds a non-empty model identifier to a valid turn
+
+  - name: legacy turn without model remains valid
+    input:
+      index: 0
+      role: user
+      content: "Please investigate the failing request."
+      timestamp: "2026-02-24T09:00:00Z"
+      depth: 0
+    expected:
+      model_present: false
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: legacy session-detail turns omit per-turn model identity
+    mutation:
+      description: removes the optional model member while preserving the turn
