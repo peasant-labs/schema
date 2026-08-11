@@ -118,8 +118,8 @@ func TestTypesCatalogPreservesListedPropertyRequiredness(t *testing.T) {
 	if err := fixture.Validate(); err != nil {
 		t.Fatalf("validate requiredness fixture: %v", err)
 	}
-	if len(fixture.Cases) != 12 {
-		t.Fatalf("requiredness fixture has %d rows, want exactly 12 representative structures", len(fixture.Cases))
+	if len(fixture.Cases) != 13 {
+		t.Fatalf("requiredness fixture has %d rows, want exactly 13 representative structures", len(fixture.Cases))
 	}
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {
