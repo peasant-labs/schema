@@ -2,8 +2,8 @@ expectedCaseCount: 8
 requiredCaseNames:
   - absent-valid
   - simple-valid
-  - mixed-case-slash-valid
-  - internal-spaces-valid
+  - mixed-case-slash-byte-preserved
+  - internal-spaces-byte-preserved
   - empty-invalid
   - whitespace-only-invalid
   - edge-whitespace-invalid

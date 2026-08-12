@@ -106,10 +106,10 @@ type ObservedModelID ModelID
 // spaces, but may not be empty or have leading or trailing whitespace.
 func NewObservedModelID(raw string) (ObservedModelID, error) {
 	if raw == "" {
-		return "", fmt.Errorf("invalid observed model ID: empty string; supply the exact source-observed model identifier or omit the field when no observation exists")
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: the value is empty, so no source observation can be represented and the caller cannot emit observedModel; omit the field when no observation exists or supply the exact non-empty identifier")
 	}
 	if strings.TrimSpace(raw) != raw {
-		return "", fmt.Errorf("invalid observed model ID %q: leading or trailing whitespace is not allowed; preserve the identifier's internal bytes but remove edge whitespace at the producing boundary", raw)
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has leading or trailing whitespace, but the wire requires exact unpadded bytes and the caller cannot emit observedModel; remove only the edge whitespace at the producing boundary and retry", raw)
 	}
 	return ObservedModelID(raw), nil
 }

@@ -29,7 +29,7 @@ cases:
     provenance: {source: requirement, ref: a simple exact assistant model observation is valid}
     mutation: {description: adds a non-empty observed model identifier to a valid assistant turn}
 
-  - name: mixed-case-slash-valid
+  - name: mixed-case-slash-byte-preserved
     input:
       index: 2
       role: assistant
@@ -45,7 +45,7 @@ cases:
     provenance: {source: requirement, ref: source observations preserve mixed case and slash bytes exactly}
     mutation: {description: uses mixed case and a slash without normalizing the accepted identifier}
 
-  - name: internal-spaces-valid
+  - name: internal-spaces-byte-preserved
     input:
       index: 3
       role: assistant
