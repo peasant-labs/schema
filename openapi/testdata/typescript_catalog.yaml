@@ -750,6 +750,10 @@ types:
     disposition: catalog
     component: ModelID
     reason: public wire or domain contract type
+  - go_name: ObservedModelID
+    disposition: catalog
+    component: ObservedModelID
+    reason: exact assistant-turn model observation contract
   - go_name: ProjectHash
     disposition: catalog
     component: ProjectHash

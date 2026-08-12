@@ -1,0 +1,254 @@
+cases:
+  - name: absent-valid
+    input:
+      index: 0
+      role: assistant
+      content: "I will inspect the failing request."
+      timestamp: "2026-02-24T09:00:00Z"
+      depth: 0
+    expected:
+      accepted: true
+      observedModelPresent: false
+    classification: must-pass
+    provenance: {source: boundary, ref: legacy session-detail turns may omit source model evidence}
+    mutation: {description: omits the optional observedModel member from a valid assistant turn}
+
+  - name: simple-valid
+    input:
+      index: 1
+      role: assistant
+      content: "I found the source of the failure."
+      timestamp: "2026-02-24T09:00:30Z"
+      depth: 0
+      observedModel: claude-sonnet-4-6
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: claude-sonnet-4-6
+    classification: must-pass
+    provenance: {source: requirement, ref: a simple exact assistant model observation is valid}
+    mutation: {description: adds a non-empty observed model identifier to a valid assistant turn}
+
+  - name: mixed-case-slash-byte-preserved
+    input:
+      index: 2
+      role: assistant
+      content: "I switched to the requested model."
+      timestamp: "2026-02-24T09:01:00Z"
+      depth: 0
+      observedModel: Anthropic/Claude-Opus-4-8
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: Anthropic/Claude-Opus-4-8
+    classification: must-pass
+    provenance: {source: requirement, ref: source observations preserve mixed case and slash bytes exactly}
+    mutation: {description: uses mixed case and a slash without normalizing the accepted identifier}
+
+  - name: internal-spaces-byte-preserved
+    input:
+      index: 3
+      role: assistant
+      content: "I retained the provider's exact model label."
+      timestamp: "2026-02-24T09:01:30Z"
+      depth: 0
+      observedModel: "Provider/Model  Family"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "Provider/Model  Family"
+    classification: must-pass
+    provenance: {source: requirement, ref: source observations preserve internal spaces exactly}
+    mutation: {description: uses two internal spaces while keeping both edge bytes non-whitespace}
+
+  - name: unicode-source-bytes-preserved
+    input:
+      index: 4
+      role: assistant
+      content: "I retained the provider's Unicode model identifier."
+      timestamp: "2026-02-24T09:02:00Z"
+      depth: 0
+      observedModel: "提供者/模型 版本"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "提供者/模型 版本"
+    classification: must-pass
+    provenance: {source: requirement, ref: valid Unicode identifiers are accepted and preserved byte-for-byte}
+    mutation: {description: uses Unicode provider and model text with an internal space without normalization}
+
+  - name: unicode-control-boundaries-byte-preserved
+    input:
+      index: 5
+      role: assistant
+      content: "The model identifier retained non-whitespace control boundaries."
+      timestamp: "2026-02-24T09:02:00Z"
+      depth: 0
+      observedModel: "\u001B\u001C\u001D\u001E\u001Fprovider/model\u001B\u001C\u001D\u001E\u001F"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "\u001B\u001C\u001D\u001E\u001Fprovider/model\u001B\u001C\u001D\u001E\u001F"
+    classification: must-pass
+    provenance: {source: boundary, ref: U+001B through U+001F are not Unicode White_Space and remain valid edge bytes}
+    mutation: {description: retains U+001B through U+001F at both edges without trimming or normalization}
+
+  - name: unicode-file-separator-boundary-byte-preserved
+    input:
+      index: 6
+      role: assistant
+      content: "The model identifier retained U+001C at both boundaries."
+      timestamp: "2026-02-24T09:02:15Z"
+      depth: 0
+      observedModel: "\u001Cprovider/model\u001C"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "\u001Cprovider/model\u001C"
+    classification: must-pass
+    provenance: {source: boundary, ref: U+001C FILE SEPARATOR is not Unicode White_Space and remains valid at both edges}
+    mutation: {description: retains exact U+001C edge bytes without trimming or normalization}
+
+  - name: unicode-format-boundary-byte-preserved
+    input:
+      index: 7
+      role: assistant
+      content: "The model identifier retained a non-White_Space format boundary."
+      timestamp: "2026-02-24T09:02:30Z"
+      depth: 0
+      observedModel: "\uFEFFprovider/model\uFEFF"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "\uFEFFprovider/model\uFEFF"
+    classification: must-pass
+    provenance: {source: boundary, ref: U+FEFF is not Unicode White_Space and remains valid edge bytes}
+    mutation: {description: retains U+FEFF at both edges without trimming or normalization}
+
+  - name: empty-invalid
+    input:
+      index: 8
+      role: assistant
+      content: "The model identifier was empty."
+      timestamp: "2026-02-24T09:02:00Z"
+      depth: 0
+      observedModel: ""
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: Too small
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot be empty}
+    mutation: {description: replaces a valid observation with the empty string}
+
+  - name: whitespace-only-invalid
+    input:
+      index: 9
+      role: assistant
+      content: "The model identifier contained only whitespace."
+      timestamp: "2026-02-24T09:02:30Z"
+      depth: 0
+      observedModel: " \t "
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot contain only whitespace}
+    mutation: {description: replaces a valid observation with spaces and a tab}
+
+  - name: edge-whitespace-invalid
+    input:
+      index: 10
+      role: assistant
+      content: "The model identifier had source-boundary padding."
+      timestamp: "2026-02-24T09:03:00Z"
+      depth: 0
+      observedModel: " Anthropic/Claude-Opus-4-8 "
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot have leading or trailing whitespace}
+    mutation: {description: adds one leading and one trailing space to a valid observation}
+
+  - name: non-string-invalid
+    input:
+      index: 11
+      role: assistant
+      content: "The model identifier had the wrong JSON type."
+      timestamp: "2026-02-24T09:03:30Z"
+      depth: 0
+      observedModel: 42
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: string
+    classification: must-fail
+    provenance: {source: boundary, ref: generated runtime validation accepts only string model evidence}
+    mutation: {description: replaces a valid string observation with a number at the generated runtime boundary}
+
+  - name: embedded-line-terminator-invalid
+    input:
+      index: 12
+      role: assistant
+      content: "The model identifier contained an embedded line terminator."
+      timestamp: "2026-02-24T09:04:00Z"
+      depth: 0
+      observedModel: "provider\nmodel"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "provider\nmodel"
+    classification: must-pass
+    provenance: {source: requirement, ref: valid Unicode source identifiers preserve internal line bytes unchanged}
+    mutation: {description: retains an internal LF byte because only edge Unicode whitespace is rejected}
+
+  - name: unicode-nel-edge-invalid
+    input:
+      index: 13
+      role: assistant
+      content: "The model identifier began with Unicode NEL."
+      timestamp: "2026-02-24T09:04:30Z"
+      depth: 0
+      observedModel: "\u0085provider/model"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: Unicode NEL is outside the portable printable-ASCII model identifier alphabet}
+    mutation: {description: prefixes an otherwise valid model identifier with U+0085 NEXT LINE}
+
+  - name: trailing-line-terminator-invalid
+    input:
+      index: 14
+      role: assistant
+      content: "The model identifier ended with a line terminator."
+      timestamp: "2026-02-24T09:05:00Z"
+      depth: 0
+      observedModel: "provider/model\n"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: the generated runtime pattern must consume the complete value rather than stop before a final line terminator}
+    mutation: {description: appends an LF line terminator to an otherwise valid model identifier}
+
+  - name: unicode-edge-whitespace-invalid
+    input:
+      index: 15
+      role: assistant
+      content: "The model identifier had Unicode boundary whitespace."
+      timestamp: "2026-02-24T09:05:30Z"
+      depth: 0
+      observedModel: "\u2003提供者/模型\u00A0"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: Unicode White_Space at either edge is rejected without trimming the source}
+    mutation: {description: adds Unicode em space and no-break space at the source boundaries}
