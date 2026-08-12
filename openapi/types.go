@@ -62,7 +62,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"MapNode", new(schema.MapNode)}, {"MapNodeDetailPayload", new(schema.MapNodeDetailPayload)},
 		{"MapNodeKind", new(schema.MapNodeKind)}, {"MapSlice", new(schema.MapSlice)},
 		{"MessageType", new(schema.MessageType)}, {"MockConfigResponse", new(schema.MockConfigResponse)},
-		{"ModelID", new(schema.ModelID)}, {"ModelInfo", new(schema.ModelInfo)},
+		{"ModelID", new(schema.ModelID)}, {"ModelInfo", new(schema.ModelInfo)}, {"ObservedModelID", new(schema.ObservedModelID)},
 		{"ProjectContext", new(schema.ProjectContext)}, {"ProjectHash", new(schema.ProjectHash)},
 		{"CanonicalPublishGitContext", new(schema.CanonicalPublishGitContext)}, {"CanonicalPublishReplacement", new(schema.CanonicalPublishReplacement)},
 		{"AuthoritativeSessionIdentity", new(schema.AuthoritativeSessionIdentity)}, {"AuthoritativeModelInfo", new(schema.AuthoritativeModelInfo)},

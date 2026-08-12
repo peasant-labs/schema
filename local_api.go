@@ -60,6 +60,12 @@ type TurnDetail struct {
 	Depth       int              `json:"depth"`
 	ParentIndex *int             `json:"parentIndex,omitempty"`
 	AgentName   string           `json:"agentName,omitempty"`
+	// ObservedModel is the exact model identifier observed while producing this
+	// assistant or subagent turn. It is optional source evidence: when present it
+	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
+	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
+	// validators do not infer it from Role.
+	ObservedModel ObservedModelID `json:"observedModel,omitempty"`
 
 	// Enrichment fields — propagated from session_entries.
 	EntryType   EntryType   `json:"entryType,omitempty"`
@@ -107,9 +113,13 @@ type SessionDetailPayload struct {
 	ToolCallCount int                 `json:"toolCallCount"`
 	Turns         []TurnDetail        `json:"turns"`
 	// Optional fields — populated when backend has the data.
-	Source           string            `json:"source,omitempty"`
-	Status           string            `json:"status,omitempty"`
-	Project          string            `json:"project,omitempty"`
+	Source  string `json:"source,omitempty"`
+	Status  string `json:"status,omitempty"`
+	Project string `json:"project,omitempty"`
+	// Model seeds sticky model resolution for the root assistant before the first
+	// valid turn observation. It is the earliest valid root-assistant model in
+	// canonical order when one is available, otherwise legacy stored metadata. It
+	// is never the latest, most common, or final session model.
 	Model            string            `json:"model,omitempty"`
 	WorkingDirectory string            `json:"workingDirectory,omitempty"`
 	GitBranch        string            `json:"gitBranch,omitempty"`

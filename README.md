@@ -80,7 +80,7 @@ flowchart LR
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
 | Latest tag | `v0.1.0` (first stable Go module and npm package release) - prior release candidates remain published |
 | License | Apache-2.0 |
-| Spec versions | Village API `0.12.0` · PublishRequest `0.12.0` · AnnotationPushRequest `0.12.0` · Local API `0.6.0` · Types `0.9.0` (see [`versions.go`](versions.go)) |
+| Spec versions | Village API `0.12.0` · PublishRequest `0.12.0` · AnnotationPushRequest `0.12.0` · Local API `0.7.0` · Types `0.10.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
@@ -131,9 +131,12 @@ consumes. It travels two ways:
   body (replacing raw provider JSONL with a normalized, self-describing blob).
 
 It carries the session header (`Harness`, timing, token totals), the ordered
-`[]TurnDetail` (each with its `[]ToolCallDetail`, ACP-aligned enrichment, and
-optional thinking / stop-reason / token fields), an optional `SessionScorecard`,
-and the resolved `SessionOutcome`.
+`[]TurnDetail` (each with its `[]ToolCallDetail`, optional exact source-observed
+assistant model, ACP-aligned enrichment, and optional thinking / stop-reason /
+token fields), an optional `SessionScorecard`, and the resolved
+`SessionOutcome`. The session-level `model` is the initial root-assistant seed,
+never the latest or final model; consumers derive sticky effective state from
+ordered `observedModel` evidence.
 
 Its composition (`[]` = has-many; a `*` pointer = optional):
 
@@ -150,6 +153,7 @@ classDiagram
         int index
         Role role
         string content
+        ObservedModelID observedModel
         EntryType entryType
         StopReason stopReason
     }
@@ -224,8 +228,8 @@ emitted from the builders in `openapi/`:
 | **village API** | `BuildVillageAPISpec` | publish / pull / annotations / auth / schema-version | `0.12.0` |
 | **PublishRequest JSON Schema** | `BuildPublishRequestSchema` | the standalone publish request validator schema | `0.12.0` |
 | **AnnotationPushRequest JSON Schema** | `BuildAnnotationPushRequestSchema` | the standalone annotation push request validator schema | `0.12.0` |
-| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.6.0` |
-| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.9.0` |
+| **peasant local API** | `BuildPeasantLocalAPISpec` | the local dashboard REST + Map / Review / Search surface | `0.7.0` |
+| **types** | `BuildTypesSpec` | the foundational shared domain-type catalog | `0.10.0` |
 
 The current specs are read back into the binary via `//go:embed generated`. Three
 version-aware accessors expose the bytes so consumers follow the `go.mod` pin
@@ -286,7 +290,7 @@ Two gates enforce this (both run in `make check` via `cmd/schema-gen`):
 The exact retired inventory and hashes live in
 `cmd/schema-gen/testdata/retired_specs.yaml`. The still-generated current
 versions (Village API, PublishRequest, and AnnotationPushRequest `0.12.0`,
-Peasant Local API `0.6.0`, and Types `0.9.0`) live under the freshness gate
+Peasant Local API `0.7.0`, and Types `0.10.0`) live under the freshness gate
 instead. When a Village API version is frozen, register both JSON-only request
 schemas alongside the OpenAPI golden in that manifest.
 
@@ -344,7 +348,7 @@ The `typescript/` directory is the source of the `@peasant-labs/schema`
 package, first shipped with the module's `v0.1.0-rc6` tag. It mirrors the Go
 contract architecture:
 
-- the package root is the canonical Types 0.9 projection of the complete public
+- the package root is the canonical Types 0.10 projection of the complete public
   Go wire/domain catalog, including Zod runtime schemas and Go-shaped closed sets
   and guards;
 - `/local-api` and `/village-api` retain type-only OpenAPI `paths` and

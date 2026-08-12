@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/dayvidpham/bestiary"
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -91,6 +92,79 @@ func (ModelID) JSONSchema() (jsonschema.Schema, error) {
 	s.WithExamples("claude-opus-4-6", "gemini-2.0-flash", "codex-mini-latest")
 	return s, nil
 }
+
+// --- ObservedModelID ---
+
+// ObservedModelID is a model identifier observed on one assistant-generated
+// turn. Producers preserve exact observations, including repeats and omissions;
+// consumers carry observations forward only when deriving effective sticky state.
+// Carry-forward never populates an omitted ObservedModel on the wire.
+// Producers enforce that observations belong only to assistant or subagent output
+// because generated shape validators cannot express that role condition.
+type ObservedModelID ModelID
+
+// NewObservedModelID validates and constructs an ObservedModelID. Accepted bytes
+// are preserved exactly. Values must be valid UTF-8, non-empty, and may not have
+// a Unicode White_Space code point at either edge. Internal whitespace and all
+// other valid Unicode are retained without normalization or canonicalization.
+func NewObservedModelID(raw string) (ObservedModelID, error) {
+	if raw == "" {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: the value is empty, so no source observation can be represented and the caller cannot emit observedModel; omit the field when no observation exists or supply the exact non-empty identifier")
+	}
+	if !utf8.ValidString(raw) {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q is not valid UTF-8, so the caller cannot emit observedModel without changing source bytes; provide the original identifier as valid UTF-8 and retry", raw)
+	}
+	first, _ := utf8.DecodeRuneInString(raw)
+	last, _ := utf8.DecodeLastRuneInString(raw)
+	if observedModelEdgeWhitespace(first) || observedModelEdgeWhitespace(last) {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has Unicode whitespace at an edge, but the wire preserves exact unpadded source bytes and the caller cannot emit observedModel; remove only the edge whitespace at the producing boundary and retry", raw)
+	}
+	return ObservedModelID(raw), nil
+}
+
+// String returns the exact source-observed identifier bytes.
+func (m ObservedModelID) String() string { return string(m) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("Observed Model ID")
+	s.WithDescription("Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.")
+	s.WithMinLength(1)
+	s.WithPattern(observedModelPattern)
+	s.WithExamples("anthropic/Claude-Opus-4-8", "provider/Model Family")
+	return s, nil
+}
+
+// observedModelEdgeWhitespace is the Unicode White_Space property used by the
+// OpenAPI pattern and generated ECMAScript validator. It is listed explicitly
+// because Go's unicode.IsSpace also includes U+001C-U+001F, while ECMAScript's
+// \s includes U+FEFF and omits U+0085. The contract uses the Unicode property,
+// not either runtime's broader or narrower whitespace predicate.
+func observedModelEdgeWhitespace(r rune) bool {
+	switch {
+	case r >= '\u0009' && r <= '\u000D':
+		return true
+	case r == '\u0020' || r == '\u0085' || r == '\u00A0' || r == '\u1680':
+		return true
+	case r >= '\u2000' && r <= '\u200A':
+		return true
+	case r == '\u2028' || r == '\u2029' || r == '\u202F' || r == '\u205F' || r == '\u3000':
+		return true
+	default:
+		return false
+	}
+}
+
+// observedModelPattern requires a complete string whose first and final code
+// points are not Unicode White_Space. ECMAScript \s differs from that set only
+// at U+0085 and U+FEFF, so the edge expression adds U+0085 and explicitly
+// permits U+FEFF. The negative lookahead at the end is an absolute-end
+// assertion: ECMAScript '$' may match before a final terminator. U+001C-U+001F
+// are intentionally absent because they are not Unicode White_Space, even
+// though Go's unicode.IsSpace classifies them as spaces.
+const observedModelPattern = `^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])`
 
 // --- ProjectHash ---
 

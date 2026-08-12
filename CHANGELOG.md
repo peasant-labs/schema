@@ -3,6 +3,24 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Local API 0.7.0 and Types 0.10.0 add optional `TurnDetail.observedModel`
+  evidence as the typed `ObservedModelID`. Present values are non-empty valid
+  UTF-8 strings with no leading or trailing Unicode whitespace; accepted bytes,
+  including Unicode, mixed case, slashes, and internal spaces, are preserved
+  exactly.
+  Generated OpenAPI, TypeScript, and Zod contracts enforce those shape and value
+  constraints. Producers remain
+  responsible for attaching observations only to assistant or subagent output
+  because generated validators do not express a role-dependent condition.
+- `SessionDetailPayload.model` is documented as the initial root-assistant seed
+  for sticky model resolution: the earliest valid root observation in canonical
+  order when available, otherwise legacy stored metadata. It is not the latest,
+  most common, or final model.
+
 ## [v0.1.0] - 2026-08-02
 
 First stable release of the `github.com/peasant-labs/schema` Go module and the
