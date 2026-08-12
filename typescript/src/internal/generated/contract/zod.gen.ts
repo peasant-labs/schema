@@ -838,7 +838,7 @@ export type ModelInfo = z.infer<typeof zModelInfo>;
  *
  * Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.
  */
-export const zObservedModelID = z.string().min(1).regex(/^(?![\s\x85])[\s\S]*[^\s\x85](?![\s\S])/);
+export const zObservedModelID = z.string().min(1).regex(/^(?:﻿|[^\s\x85])(?:[\s\S]*(?:﻿|[^\s\x85]))?(?![\s\S])/);
 
 export type ObservedModelID = z.infer<typeof zObservedModelID>;
 

@@ -1,10 +1,12 @@
-expectedCaseCount: 13
+expectedCaseCount: 15
 requiredCaseNames:
   - absent-valid
   - simple-valid
   - mixed-case-slash-byte-preserved
   - internal-spaces-byte-preserved
   - unicode-source-bytes-preserved
+  - unicode-control-boundaries-byte-preserved
+  - unicode-format-boundary-byte-preserved
   - empty-invalid
   - whitespace-only-invalid
   - edge-whitespace-invalid

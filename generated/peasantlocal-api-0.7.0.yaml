@@ -1732,7 +1732,7 @@ components:
       - anthropic/Claude-Opus-4-8
       - provider/Model Family
       minLength: 1
-      pattern: ^(?![\s\x85])[\s\S]*[^\s\x85](?![\s\S])
+      pattern: ^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])
       title: Observed Model ID
       type: string
     SchemaProjectHash:

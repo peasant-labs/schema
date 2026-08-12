@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/dayvidpham/bestiary"
@@ -138,18 +137,34 @@ func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
-// observedModelEdgeWhitespace mirrors the generated ECMAScript-compatible
-// boundary policy. ECMAScript's \s set covers its Unicode whitespace set; U+0085
-// is added because Go and ECMAScript otherwise classify that Unicode NEL byte
-// differently. FEFF is included by ECMAScript \s and is intentionally rejected.
+// observedModelEdgeWhitespace is the Unicode White_Space property used by the
+// OpenAPI pattern and generated ECMAScript validator. It is listed explicitly
+// because Go's unicode.IsSpace also includes U+001C-U+001F, while ECMAScript's
+// \s includes U+FEFF and omits U+0085. The contract uses the Unicode property,
+// not either runtime's broader or narrower whitespace predicate.
 func observedModelEdgeWhitespace(r rune) bool {
-	return unicode.IsSpace(r) || r == '\uFEFF'
+	switch {
+	case r >= '\u0009' && r <= '\u000D':
+		return true
+	case r == '\u0020' || r == '\u0085' || r == '\u00A0' || r == '\u1680':
+		return true
+	case r >= '\u2000' && r <= '\u200A':
+		return true
+	case r == '\u2028' || r == '\u2029' || r == '\u202F' || r == '\u205F' || r == '\u3000':
+		return true
+	default:
+		return false
+	}
 }
 
 // observedModelPattern requires a complete string whose first and final code
-// points are not Unicode whitespace. The negative lookahead at the end is an
-// absolute-end assertion: ECMAScript '$' may match before a final terminator.
-const observedModelPattern = `^(?![\s\x85])[\s\S]*[^\s\x85](?![\s\S])`
+// points are not Unicode White_Space. ECMAScript \s differs from that set only
+// at U+0085 and U+FEFF, so the edge expression adds U+0085 and explicitly
+// permits U+FEFF. The negative lookahead at the end is an absolute-end
+// assertion: ECMAScript '$' may match before a final terminator. U+001C-U+001F
+// are intentionally absent because they are not Unicode White_Space, even
+// though Go's unicode.IsSpace classifies them as spaces.
+const observedModelPattern = `^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])`
 
 // --- ProjectHash ---
 
