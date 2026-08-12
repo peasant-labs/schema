@@ -135,10 +135,10 @@ cases:
     input:
       component: TurnDetail
       required: [index, role, content, timestamp, depth]
-      optional: [toolCalls, parentIndex, agentName, model, entryType, hasThinking, stopReason, tokensIn, tokensOut]
+      optional: [toolCalls, parentIndex, agentName, observedModel, entryType, hasThinking, stopReason, tokensIn, tokensOut]
       nullable: [parentIndex, stopReason, tokensIn, tokensOut]
-      nonnullable: [index, role, content, timestamp, depth, toolCalls, agentName, model, entryType, hasThinking]
+      nonnullable: [index, role, content, timestamp, depth, toolCalls, agentName, observedModel, entryType, hasThinking]
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: optional per-turn model identity in the session-detail wire}
-    mutation: {description: "pins model as an optional open string while retaining legacy turns without it"}
+    provenance: {source: requirement, ref: optional source-observed model identity in the session-detail wire}
+    mutation: {description: "pins observedModel as optional non-null evidence while retaining legacy turns without it"}

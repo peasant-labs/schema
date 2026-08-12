@@ -2607,6 +2607,17 @@
         ],
         "type": "object"
       },
+      "SchemaObservedModelID": {
+        "description": "Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.",
+        "examples": [
+          "anthropic/Claude-Opus-4-8",
+          "provider/Model Family"
+        ],
+        "minLength": 1,
+        "pattern": "^\\S(?:.*\\S)?$",
+        "title": "Observed Model ID",
+        "type": "string"
+      },
       "SchemaProjectHash": {
         "description": "SHA-256 hex digest of the project's origin URL or local path",
         "examples": [
@@ -3820,8 +3831,8 @@
           "index": {
             "type": "integer"
           },
-          "model": {
-            "type": "string"
+          "observedModel": {
+            "$ref": "#/components/schemas/SchemaObservedModelID"
           },
           "parentIndex": {
             "anyOf": [

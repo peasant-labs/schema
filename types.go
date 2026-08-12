@@ -92,6 +92,43 @@ func (ModelID) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
+// --- ObservedModelID ---
+
+// ObservedModelID is a model identifier observed on one assistant-generated
+// turn. It records source evidence, not resolved sticky state: a producer carries
+// the most recent valid observation forward when deriving an effective model.
+// Producers enforce that observations belong only to assistant or subagent
+// output because generated shape validators cannot express that role condition.
+type ObservedModelID ModelID
+
+// NewObservedModelID validates and constructs an ObservedModelID. Accepted bytes
+// are preserved exactly; values may contain mixed case, slashes, and internal
+// spaces, but may not be empty or have leading or trailing whitespace.
+func NewObservedModelID(raw string) (ObservedModelID, error) {
+	if raw == "" {
+		return "", fmt.Errorf("invalid observed model ID: empty string; supply the exact source-observed model identifier or omit the field when no observation exists")
+	}
+	if strings.TrimSpace(raw) != raw {
+		return "", fmt.Errorf("invalid observed model ID %q: leading or trailing whitespace is not allowed; preserve the identifier's internal bytes but remove edge whitespace at the producing boundary", raw)
+	}
+	return ObservedModelID(raw), nil
+}
+
+// String returns the exact source-observed identifier bytes.
+func (m ObservedModelID) String() string { return string(m) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithTitle("Observed Model ID")
+	s.WithDescription("Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.")
+	s.WithMinLength(1)
+	s.WithPattern(`^\S(?:.*\S)?$`)
+	s.WithExamples("anthropic/Claude-Opus-4-8", "provider/Model Family")
+	return s, nil
+}
+
 // --- ProjectHash ---
 
 // ProjectHash is a SHA-256 hex digest of the project's origin URL or local path.

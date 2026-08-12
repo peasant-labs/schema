@@ -486,6 +486,13 @@ export interface components {
         SchemaMessageType: Schema.MessageType;
         SchemaMockConfigResponse: Schema.MockConfigResponse;
         /**
+         * Observed Model ID
+         * @description Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.
+         * @example anthropic/Claude-Opus-4-8
+         * @example provider/Model Family
+         */
+        SchemaObservedModelID: Schema.ObservedModelID;
+        /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
          * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2

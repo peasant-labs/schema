@@ -834,6 +834,15 @@ export const zModelInfo = z.object({
 export type ModelInfo = z.infer<typeof zModelInfo>;
 
 /**
+ * Observed Model ID
+ *
+ * Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.
+ */
+export const zObservedModelID = z.string().min(1).regex(/^\S(?:.*\S)?$/);
+
+export type ObservedModelID = z.infer<typeof zObservedModelID>;
+
+/**
  * Omitted preserves, null requests clear, and a canonical license replaces
  */
 export const zOwnerUpdateLicenseIntent = z.enum([
@@ -2130,7 +2139,7 @@ export const zTurnDetail = z.object({
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),
     index: z.int(),
-    model: z.string().optional(),
+    observedModel: zObservedModelID.optional(),
     parentIndex: z.int().nullish(),
     role: zRole,
     stopReason: zStopReason.nullish(),
