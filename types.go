@@ -130,7 +130,7 @@ func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
 	s.WithTitle("Observed Model ID")
 	s.WithDescription("Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.")
 	s.WithMinLength(1)
-	s.WithPattern(`^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$`)
+	s.WithPattern(`^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?(?![\s\S])`)
 	s.WithExamples("anthropic/Claude-Opus-4-8", "provider/Model Family")
 	return s, nil
 }

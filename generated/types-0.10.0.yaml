@@ -2788,7 +2788,7 @@ components:
       - anthropic/Claude-Opus-4-8
       - provider/Model Family
       minLength: 1
-      pattern: ^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$
+      pattern: ^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?(?![\s\S])
       title: Observed Model ID
       type: string
     OwnerTranscriptUpdateRequest:

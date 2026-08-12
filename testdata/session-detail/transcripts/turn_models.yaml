@@ -156,3 +156,19 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: Unicode NEL is outside the portable printable-ASCII model identifier alphabet}
     mutation: {description: prefixes an otherwise valid model identifier with U+0085 NEXT LINE}
+
+  - name: trailing-line-terminator-invalid
+    input:
+      index: 10
+      role: assistant
+      content: "The model identifier ended with a line terminator."
+      timestamp: "2026-02-24T09:05:00Z"
+      depth: 0
+      observedModel: "provider/model\n"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: the generated runtime pattern must consume the complete value rather than stop before a final line terminator}
+    mutation: {description: appends an LF line terminator to an otherwise valid model identifier}

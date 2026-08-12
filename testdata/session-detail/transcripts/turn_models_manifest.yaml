@@ -1,4 +1,4 @@
-expectedCaseCount: 10
+expectedCaseCount: 11
 requiredCaseNames:
   - absent-valid
   - simple-valid
@@ -10,3 +10,4 @@ requiredCaseNames:
   - non-string-invalid
   - embedded-line-terminator-invalid
   - unicode-nel-edge-invalid
+  - trailing-line-terminator-invalid
