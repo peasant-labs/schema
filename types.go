@@ -95,21 +95,27 @@ func (ModelID) JSONSchema() (jsonschema.Schema, error) {
 // --- ObservedModelID ---
 
 // ObservedModelID is a model identifier observed on one assistant-generated
-// turn. It records source evidence, not resolved sticky state: a producer carries
-// the most recent valid observation forward when deriving an effective model.
-// Producers enforce that observations belong only to assistant or subagent
-// output because generated shape validators cannot express that role condition.
+// turn. Producers preserve exact observations, including repeats and omissions;
+// consumers carry observations forward only when deriving effective sticky state.
+// Carry-forward never populates an omitted ObservedModel on the wire.
+// Producers enforce that observations belong only to assistant or subagent output
+// because generated shape validators cannot express that role condition.
 type ObservedModelID ModelID
 
 // NewObservedModelID validates and constructs an ObservedModelID. Accepted bytes
-// are preserved exactly; values may contain mixed case, slashes, and internal
-// spaces, but may not be empty or have leading or trailing whitespace.
+// are preserved exactly. Values use printable ASCII, may contain mixed case,
+// slashes, and internal spaces, and may not have a space at either edge.
 func NewObservedModelID(raw string) (ObservedModelID, error) {
 	if raw == "" {
 		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: the value is empty, so no source observation can be represented and the caller cannot emit observedModel; omit the field when no observation exists or supply the exact non-empty identifier")
 	}
-	if strings.TrimSpace(raw) != raw {
-		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has leading or trailing whitespace, but the wire requires exact unpadded bytes and the caller cannot emit observedModel; remove only the edge whitespace at the producing boundary and retry", raw)
+	if raw[0] == ' ' || raw[len(raw)-1] == ' ' {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has an ASCII space at an edge, but the wire requires exact unpadded bytes and the caller cannot emit observedModel; remove only the edge space at the producing boundary and retry", raw)
+	}
+	for index, b := range []byte(raw) {
+		if b < 0x20 || b > 0x7e {
+			return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has non-printable-ASCII byte 0x%02X at byte %d, but model identifiers allow only bytes 0x20 through 0x7E and the caller cannot emit observedModel; preserve printable ASCII identifier bytes only and retry", raw, b, index)
+		}
 	}
 	return ObservedModelID(raw), nil
 }
@@ -122,9 +128,9 @@ func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
 	s := jsonschema.Schema{}
 	s.AddType(jsonschema.String)
 	s.WithTitle("Observed Model ID")
-	s.WithDescription("Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.")
+	s.WithDescription("Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.")
 	s.WithMinLength(1)
-	s.WithPattern(`^\S(?:.*\S)?$`)
+	s.WithPattern(`^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$`)
 	s.WithExamples("anthropic/Claude-Opus-4-8", "provider/Model Family")
 	return s, nil
 }

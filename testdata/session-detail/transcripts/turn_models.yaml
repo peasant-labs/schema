@@ -124,3 +124,35 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: generated runtime validation accepts only string model evidence}
     mutation: {description: replaces a valid string observation with a number at the generated runtime boundary}
+
+  - name: embedded-line-terminator-invalid
+    input:
+      index: 8
+      role: assistant
+      content: "The model identifier contained an embedded line terminator."
+      timestamp: "2026-02-24T09:04:00Z"
+      depth: 0
+      observedModel: "provider\nmodel"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: control characters and line terminators are not valid model identifier bytes}
+    mutation: {description: inserts an LF line terminator inside an otherwise valid model identifier}
+
+  - name: unicode-nel-edge-invalid
+    input:
+      index: 9
+      role: assistant
+      content: "The model identifier began with Unicode NEL."
+      timestamp: "2026-02-24T09:04:30Z"
+      depth: 0
+      observedModel: "\u0085provider/model"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: Unicode NEL is outside the portable printable-ASCII model identifier alphabet}
+    mutation: {description: prefixes an otherwise valid model identifier with U+0085 NEXT LINE}

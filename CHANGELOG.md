@@ -9,9 +9,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 - Local API 0.7.0 and Types 0.10.0 add optional `TurnDetail.observedModel`
   evidence as the typed `ObservedModelID`. Present values are non-empty and
-  cannot have leading or trailing whitespace; accepted mixed case, slash, and
-  internal-space bytes are preserved exactly. Generated OpenAPI, TypeScript,
-  and Zod contracts enforce those shape and value constraints. Producers remain
+  use printable ASCII bytes `0x20` through `0x7E` with no space at either edge;
+  accepted mixed case, slash, and internal-space bytes are preserved exactly.
+  Generated OpenAPI, TypeScript, and Zod contracts enforce those shape and value
+  constraints. Producers remain
   responsible for attaching observations only to assistant or subagent output
   because generated validators do not express a role-dependent condition.
 - `SessionDetailPayload.model` is documented as the initial root-assistant seed

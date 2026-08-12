@@ -1,4 +1,4 @@
-expectedCaseCount: 8
+expectedCaseCount: 10
 requiredCaseNames:
   - absent-valid
   - simple-valid
@@ -8,3 +8,5 @@ requiredCaseNames:
   - whitespace-only-invalid
   - edge-whitespace-invalid
   - non-string-invalid
+  - embedded-line-terminator-invalid
+  - unicode-nel-edge-invalid

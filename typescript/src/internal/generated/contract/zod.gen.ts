@@ -836,9 +836,9 @@ export type ModelInfo = z.infer<typeof zModelInfo>;
 /**
  * Observed Model ID
  *
- * Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Mixed case, slashes, and internal spaces are preserved; leading or trailing whitespace is forbidden.
+ * Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.
  */
-export const zObservedModelID = z.string().min(1).regex(/^\S(?:.*\S)?$/);
+export const zObservedModelID = z.string().min(1).regex(/^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?$/);
 
 export type ObservedModelID = z.infer<typeof zObservedModelID>;
 
