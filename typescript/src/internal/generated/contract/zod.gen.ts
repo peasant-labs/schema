@@ -2130,6 +2130,7 @@ export const zTurnDetail = z.object({
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),
     index: z.int(),
+    model: z.string().optional(),
     parentIndex: z.int().nullish(),
     role: zRole,
     stopReason: zStopReason.nullish(),

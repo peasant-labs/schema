@@ -131,3 +131,14 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "optional means leave unchanged and non-nullable means null cannot silently mean preserve"}
     mutation: {description: "pins all four owner-update properties on both the presence and nullability axes"}
+  - name: turn detail
+    input:
+      component: TurnDetail
+      required: [index, role, content, timestamp, depth]
+      optional: [toolCalls, parentIndex, agentName, model, entryType, hasThinking, stopReason, tokensIn, tokensOut]
+      nullable: [parentIndex, stopReason, tokensIn, tokensOut]
+      nonnullable: [index, role, content, timestamp, depth, toolCalls, agentName, model, entryType, hasThinking]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: optional per-turn model identity in the session-detail wire}
+    mutation: {description: "pins model as an optional open string while retaining legacy turns without it"}

@@ -60,6 +60,7 @@ type TurnDetail struct {
 	Depth       int              `json:"depth"`
 	ParentIndex *int             `json:"parentIndex,omitempty"`
 	AgentName   string           `json:"agentName,omitempty"`
+	Model       string           `json:"model,omitempty"`
 
 	// Enrichment fields — propagated from session_entries.
 	EntryType   EntryType   `json:"entryType,omitempty"`
