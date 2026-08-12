@@ -1,34 +1,126 @@
 cases:
-  - name: explicit per-turn model is present
-    input:
-      index: 1
-      role: assistant
-      content: "I will inspect the failing request and trace its model attribution."
-      timestamp: "2026-02-24T09:00:30Z"
-      depth: 0
-      model: claude-sonnet-4-6
-    expected:
-      model_present: true
-      model: claude-sonnet-4-6
-    classification: must-pass
-    provenance:
-      source: requirement
-      ref: optional model identity on each transcript turn
-    mutation:
-      description: adds a non-empty model identifier to a valid turn
-
-  - name: legacy turn without model remains valid
+  - name: absent-valid
     input:
       index: 0
-      role: user
-      content: "Please investigate the failing request."
+      role: assistant
+      content: "I will inspect the failing request."
       timestamp: "2026-02-24T09:00:00Z"
       depth: 0
     expected:
-      model_present: false
+      accepted: true
+      observedModelPresent: false
     classification: must-pass
-    provenance:
-      source: boundary
-      ref: legacy session-detail turns omit per-turn model identity
-    mutation:
-      description: removes the optional model member while preserving the turn
+    provenance: {source: boundary, ref: legacy session-detail turns may omit source model evidence}
+    mutation: {description: omits the optional observedModel member from a valid assistant turn}
+
+  - name: simple-valid
+    input:
+      index: 1
+      role: assistant
+      content: "I found the source of the failure."
+      timestamp: "2026-02-24T09:00:30Z"
+      depth: 0
+      observedModel: claude-sonnet-4-6
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: claude-sonnet-4-6
+    classification: must-pass
+    provenance: {source: requirement, ref: a simple exact assistant model observation is valid}
+    mutation: {description: adds a non-empty observed model identifier to a valid assistant turn}
+
+  - name: mixed-case-slash-valid
+    input:
+      index: 2
+      role: assistant
+      content: "I switched to the requested model."
+      timestamp: "2026-02-24T09:01:00Z"
+      depth: 0
+      observedModel: Anthropic/Claude-Opus-4-8
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: Anthropic/Claude-Opus-4-8
+    classification: must-pass
+    provenance: {source: requirement, ref: source observations preserve mixed case and slash bytes exactly}
+    mutation: {description: uses mixed case and a slash without normalizing the accepted identifier}
+
+  - name: internal-spaces-valid
+    input:
+      index: 3
+      role: assistant
+      content: "I retained the provider's exact model label."
+      timestamp: "2026-02-24T09:01:30Z"
+      depth: 0
+      observedModel: "Provider/Model  Family"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "Provider/Model  Family"
+    classification: must-pass
+    provenance: {source: requirement, ref: source observations preserve internal spaces exactly}
+    mutation: {description: uses two internal spaces while keeping both edge bytes non-whitespace}
+
+  - name: empty-invalid
+    input:
+      index: 4
+      role: assistant
+      content: "The model identifier was empty."
+      timestamp: "2026-02-24T09:02:00Z"
+      depth: 0
+      observedModel: ""
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: Too small
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot be empty}
+    mutation: {description: replaces a valid observation with the empty string}
+
+  - name: whitespace-only-invalid
+    input:
+      index: 5
+      role: assistant
+      content: "The model identifier contained only whitespace."
+      timestamp: "2026-02-24T09:02:30Z"
+      depth: 0
+      observedModel: " \t "
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot contain only whitespace}
+    mutation: {description: replaces a valid observation with spaces and a tab}
+
+  - name: edge-whitespace-invalid
+    input:
+      index: 6
+      role: assistant
+      content: "The model identifier had source-boundary padding."
+      timestamp: "2026-02-24T09:03:00Z"
+      depth: 0
+      observedModel: " Anthropic/Claude-Opus-4-8 "
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: present model evidence cannot have leading or trailing whitespace}
+    mutation: {description: adds one leading and one trailing space to a valid observation}
+
+  - name: non-string-invalid
+    input:
+      index: 7
+      role: assistant
+      content: "The model identifier had the wrong JSON type."
+      timestamp: "2026-02-24T09:03:30Z"
+      depth: 0
+      observedModel: 42
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: string
+    classification: must-fail
+    provenance: {source: boundary, ref: generated runtime validation accepts only string model evidence}
+    mutation: {description: replaces a valid string observation with a number at the generated runtime boundary}
