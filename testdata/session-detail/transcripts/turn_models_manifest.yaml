@@ -1,9 +1,10 @@
-expectedCaseCount: 11
+expectedCaseCount: 13
 requiredCaseNames:
   - absent-valid
   - simple-valid
   - mixed-case-slash-byte-preserved
   - internal-spaces-byte-preserved
+  - unicode-source-bytes-preserved
   - empty-invalid
   - whitespace-only-invalid
   - edge-whitespace-invalid
@@ -11,3 +12,4 @@ requiredCaseNames:
   - embedded-line-terminator-invalid
   - unicode-nel-edge-invalid
   - trailing-line-terminator-invalid
+  - unicode-edge-whitespace-invalid

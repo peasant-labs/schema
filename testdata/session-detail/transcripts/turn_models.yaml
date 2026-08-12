@@ -61,9 +61,25 @@ cases:
     provenance: {source: requirement, ref: source observations preserve internal spaces exactly}
     mutation: {description: uses two internal spaces while keeping both edge bytes non-whitespace}
 
-  - name: empty-invalid
+  - name: unicode-source-bytes-preserved
     input:
       index: 4
+      role: assistant
+      content: "I retained the provider's Unicode model identifier."
+      timestamp: "2026-02-24T09:02:00Z"
+      depth: 0
+      observedModel: "提供者/模型 版本"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "提供者/模型 版本"
+    classification: must-pass
+    provenance: {source: requirement, ref: valid Unicode identifiers are accepted and preserved byte-for-byte}
+    mutation: {description: uses Unicode provider and model text with an internal space without normalization}
+
+  - name: empty-invalid
+    input:
+      index: 5
       role: assistant
       content: "The model identifier was empty."
       timestamp: "2026-02-24T09:02:00Z"
@@ -79,7 +95,7 @@ cases:
 
   - name: whitespace-only-invalid
     input:
-      index: 5
+      index: 6
       role: assistant
       content: "The model identifier contained only whitespace."
       timestamp: "2026-02-24T09:02:30Z"
@@ -95,7 +111,7 @@ cases:
 
   - name: edge-whitespace-invalid
     input:
-      index: 6
+      index: 7
       role: assistant
       content: "The model identifier had source-boundary padding."
       timestamp: "2026-02-24T09:03:00Z"
@@ -111,7 +127,7 @@ cases:
 
   - name: non-string-invalid
     input:
-      index: 7
+      index: 8
       role: assistant
       content: "The model identifier had the wrong JSON type."
       timestamp: "2026-02-24T09:03:30Z"
@@ -127,23 +143,23 @@ cases:
 
   - name: embedded-line-terminator-invalid
     input:
-      index: 8
+      index: 9
       role: assistant
       content: "The model identifier contained an embedded line terminator."
       timestamp: "2026-02-24T09:04:00Z"
       depth: 0
       observedModel: "provider\nmodel"
     expected:
-      accepted: false
+      accepted: true
       observedModelPresent: true
-      errorContains: must match pattern
-    classification: must-fail
-    provenance: {source: boundary, ref: control characters and line terminators are not valid model identifier bytes}
-    mutation: {description: inserts an LF line terminator inside an otherwise valid model identifier}
+      observedModel: "provider\nmodel"
+    classification: must-pass
+    provenance: {source: requirement, ref: valid Unicode source identifiers preserve internal line bytes unchanged}
+    mutation: {description: retains an internal LF byte because only edge Unicode whitespace is rejected}
 
   - name: unicode-nel-edge-invalid
     input:
-      index: 9
+      index: 10
       role: assistant
       content: "The model identifier began with Unicode NEL."
       timestamp: "2026-02-24T09:04:30Z"
@@ -159,7 +175,7 @@ cases:
 
   - name: trailing-line-terminator-invalid
     input:
-      index: 10
+      index: 11
       role: assistant
       content: "The model identifier ended with a line terminator."
       timestamp: "2026-02-24T09:05:00Z"
@@ -172,3 +188,19 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: the generated runtime pattern must consume the complete value rather than stop before a final line terminator}
     mutation: {description: appends an LF line terminator to an otherwise valid model identifier}
+
+  - name: unicode-edge-whitespace-invalid
+    input:
+      index: 12
+      role: assistant
+      content: "The model identifier had Unicode boundary whitespace."
+      timestamp: "2026-02-24T09:05:30Z"
+      depth: 0
+      observedModel: "\u2003提供者/模型\u00A0"
+    expected:
+      accepted: false
+      observedModelPresent: true
+      errorContains: must match pattern
+    classification: must-fail
+    provenance: {source: boundary, ref: Unicode White_Space at either edge is rejected without trimming the source}
+    mutation: {description: adds Unicode em space and no-break space at the source boundaries}

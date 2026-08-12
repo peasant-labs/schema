@@ -8,9 +8,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 ### Added
 
 - Local API 0.7.0 and Types 0.10.0 add optional `TurnDetail.observedModel`
-  evidence as the typed `ObservedModelID`. Present values are non-empty and
-  use printable ASCII bytes `0x20` through `0x7E` with no space at either edge;
-  accepted mixed case, slash, and internal-space bytes are preserved exactly.
+  evidence as the typed `ObservedModelID`. Present values are non-empty valid
+  UTF-8 strings with no leading or trailing Unicode whitespace; accepted bytes,
+  including Unicode, mixed case, slashes, and internal spaces, are preserved
+  exactly.
   Generated OpenAPI, TypeScript, and Zod contracts enforce those shape and value
   constraints. Producers remain
   responsible for attaching observations only to assistant or subagent output

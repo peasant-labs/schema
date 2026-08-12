@@ -4515,13 +4515,13 @@
         "type": "object"
       },
       "ObservedModelID": {
-        "description": "Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.",
+        "description": "Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.",
         "examples": [
           "anthropic/Claude-Opus-4-8",
           "provider/Model Family"
         ],
         "minLength": 1,
-        "pattern": "^[\\x21-\\x7E](?:[\\x20-\\x7E]*[\\x21-\\x7E])?(?![\\s\\S])",
+        "pattern": "^(?![\\s\\x85])[\\s\\S]*[^\\s\\x85](?![\\s\\S])",
         "title": "Observed Model ID",
         "type": "string"
       },

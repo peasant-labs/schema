@@ -62,8 +62,8 @@ type TurnDetail struct {
 	AgentName   string           `json:"agentName,omitempty"`
 	// ObservedModel is the exact model identifier observed while producing this
 	// assistant or subagent turn. It is optional source evidence: when present it
-	// uses printable ASCII with no edge space, while accepted bytes are preserved
-	// exactly. Producers enforce the assistant-only role condition; generated shape
+	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
+	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
 	// validators do not infer it from Role.
 	ObservedModel ObservedModelID `json:"observedModel,omitempty"`
 

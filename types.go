@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/dayvidpham/bestiary"
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -103,19 +105,20 @@ func (ModelID) JSONSchema() (jsonschema.Schema, error) {
 type ObservedModelID ModelID
 
 // NewObservedModelID validates and constructs an ObservedModelID. Accepted bytes
-// are preserved exactly. Values use printable ASCII, may contain mixed case,
-// slashes, and internal spaces, and may not have a space at either edge.
+// are preserved exactly. Values must be valid UTF-8, non-empty, and may not have
+// a Unicode White_Space code point at either edge. Internal whitespace and all
+// other valid Unicode are retained without normalization or canonicalization.
 func NewObservedModelID(raw string) (ObservedModelID, error) {
 	if raw == "" {
 		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: the value is empty, so no source observation can be represented and the caller cannot emit observedModel; omit the field when no observation exists or supply the exact non-empty identifier")
 	}
-	if raw[0] == ' ' || raw[len(raw)-1] == ' ' {
-		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has an ASCII space at an edge, but the wire requires exact unpadded bytes and the caller cannot emit observedModel; remove only the edge space at the producing boundary and retry", raw)
+	if !utf8.ValidString(raw) {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q is not valid UTF-8, so the caller cannot emit observedModel without changing source bytes; provide the original identifier as valid UTF-8 and retry", raw)
 	}
-	for index, b := range []byte(raw) {
-		if b < 0x20 || b > 0x7e {
-			return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has non-printable-ASCII byte 0x%02X at byte %d, but model identifiers allow only bytes 0x20 through 0x7E and the caller cannot emit observedModel; preserve printable ASCII identifier bytes only and retry", raw, b, index)
-		}
+	first, _ := utf8.DecodeRuneInString(raw)
+	last, _ := utf8.DecodeLastRuneInString(raw)
+	if observedModelEdgeWhitespace(first) || observedModelEdgeWhitespace(last) {
+		return "", fmt.Errorf("observed model validation failed at schema.NewObservedModelID while constructing assistant-turn source evidence: value %q has Unicode whitespace at an edge, but the wire preserves exact unpadded source bytes and the caller cannot emit observedModel; remove only the edge whitespace at the producing boundary and retry", raw)
 	}
 	return ObservedModelID(raw), nil
 }
@@ -128,12 +131,25 @@ func (ObservedModelID) JSONSchema() (jsonschema.Schema, error) {
 	s := jsonschema.Schema{}
 	s.AddType(jsonschema.String)
 	s.WithTitle("Observed Model ID")
-	s.WithDescription("Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.")
+	s.WithDescription("Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.")
 	s.WithMinLength(1)
-	s.WithPattern(`^[\x21-\x7E](?:[\x20-\x7E]*[\x21-\x7E])?(?![\s\S])`)
+	s.WithPattern(observedModelPattern)
 	s.WithExamples("anthropic/Claude-Opus-4-8", "provider/Model Family")
 	return s, nil
 }
+
+// observedModelEdgeWhitespace mirrors the generated ECMAScript-compatible
+// boundary policy. ECMAScript's \s set covers its Unicode whitespace set; U+0085
+// is added because Go and ECMAScript otherwise classify that Unicode NEL byte
+// differently. FEFF is included by ECMAScript \s and is intentionally rejected.
+func observedModelEdgeWhitespace(r rune) bool {
+	return unicode.IsSpace(r) || r == '\uFEFF'
+}
+
+// observedModelPattern requires a complete string whose first and final code
+// points are not Unicode whitespace. The negative lookahead at the end is an
+// absolute-end assertion: ECMAScript '$' may match before a final terminator.
+const observedModelPattern = `^(?![\s\x85])[\s\S]*[^\s\x85](?![\s\S])`
 
 // --- ProjectHash ---
 

@@ -487,7 +487,7 @@ export interface components {
         SchemaMockConfigResponse: Schema.MockConfigResponse;
         /**
          * Observed Model ID
-         * @description Exact model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values contain printable ASCII bytes 0x20 through 0x7E with no space at either edge; mixed case, slashes, and internal spaces are preserved.
+         * @description Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.
          * @example anthropic/Claude-Opus-4-8
          * @example provider/Model Family
          */
