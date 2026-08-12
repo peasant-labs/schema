@@ -93,9 +93,25 @@ cases:
     provenance: {source: boundary, ref: U+001B through U+001F are not Unicode White_Space and remain valid edge bytes}
     mutation: {description: retains U+001B through U+001F at both edges without trimming or normalization}
 
-  - name: unicode-format-boundary-byte-preserved
+  - name: unicode-file-separator-boundary-byte-preserved
     input:
       index: 6
+      role: assistant
+      content: "The model identifier retained U+001C at both boundaries."
+      timestamp: "2026-02-24T09:02:15Z"
+      depth: 0
+      observedModel: "\u001Cprovider/model\u001C"
+    expected:
+      accepted: true
+      observedModelPresent: true
+      observedModel: "\u001Cprovider/model\u001C"
+    classification: must-pass
+    provenance: {source: boundary, ref: U+001C FILE SEPARATOR is not Unicode White_Space and remains valid at both edges}
+    mutation: {description: retains exact U+001C edge bytes without trimming or normalization}
+
+  - name: unicode-format-boundary-byte-preserved
+    input:
+      index: 7
       role: assistant
       content: "The model identifier retained a non-White_Space format boundary."
       timestamp: "2026-02-24T09:02:30Z"
@@ -111,7 +127,7 @@ cases:
 
   - name: empty-invalid
     input:
-      index: 7
+      index: 8
       role: assistant
       content: "The model identifier was empty."
       timestamp: "2026-02-24T09:02:00Z"
@@ -127,7 +143,7 @@ cases:
 
   - name: whitespace-only-invalid
     input:
-      index: 8
+      index: 9
       role: assistant
       content: "The model identifier contained only whitespace."
       timestamp: "2026-02-24T09:02:30Z"
@@ -143,7 +159,7 @@ cases:
 
   - name: edge-whitespace-invalid
     input:
-      index: 9
+      index: 10
       role: assistant
       content: "The model identifier had source-boundary padding."
       timestamp: "2026-02-24T09:03:00Z"
@@ -159,7 +175,7 @@ cases:
 
   - name: non-string-invalid
     input:
-      index: 10
+      index: 11
       role: assistant
       content: "The model identifier had the wrong JSON type."
       timestamp: "2026-02-24T09:03:30Z"
@@ -175,7 +191,7 @@ cases:
 
   - name: embedded-line-terminator-invalid
     input:
-      index: 11
+      index: 12
       role: assistant
       content: "The model identifier contained an embedded line terminator."
       timestamp: "2026-02-24T09:04:00Z"
@@ -191,7 +207,7 @@ cases:
 
   - name: unicode-nel-edge-invalid
     input:
-      index: 12
+      index: 13
       role: assistant
       content: "The model identifier began with Unicode NEL."
       timestamp: "2026-02-24T09:04:30Z"
@@ -207,7 +223,7 @@ cases:
 
   - name: trailing-line-terminator-invalid
     input:
-      index: 13
+      index: 14
       role: assistant
       content: "The model identifier ended with a line terminator."
       timestamp: "2026-02-24T09:05:00Z"
@@ -223,7 +239,7 @@ cases:
 
   - name: unicode-edge-whitespace-invalid
     input:
-      index: 14
+      index: 15
       role: assistant
       content: "The model identifier had Unicode boundary whitespace."
       timestamp: "2026-02-24T09:05:30Z"

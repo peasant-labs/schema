@@ -1,4 +1,4 @@
-expectedCaseCount: 15
+expectedCaseCount: 16
 requiredCaseNames:
   - absent-valid
   - simple-valid
@@ -6,6 +6,7 @@ requiredCaseNames:
   - internal-spaces-byte-preserved
   - unicode-source-bytes-preserved
   - unicode-control-boundaries-byte-preserved
+  - unicode-file-separator-boundary-byte-preserved
   - unicode-format-boundary-byte-preserved
   - empty-invalid
   - whitespace-only-invalid
