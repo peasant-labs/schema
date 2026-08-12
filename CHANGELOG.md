@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.1-rc1] - 2026-08-12
+
 ### Added
 
 - Local API 0.7.0 and Types 0.10.0 add optional `TurnDetail.observedModel`
