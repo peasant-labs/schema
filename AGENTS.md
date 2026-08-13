@@ -52,6 +52,12 @@ serves AND enforces the spec from the pinned module, so the served contract and
 the enforced contract can never drift. Do not land a consumer re-pin against an
 unpublished schema change.
 
+Before adding or changing an optional compatibility-sensitive field or a
+content-capability token, read
+`docs/content-capability-negotiation.md`. It is authoritative for deciding when
+negotiation is required and for the wire, deployment, evolution, and cross-repo
+verification rules.
+
 ## Releases and tags (reserved)
 
 Releases are PR-title driven. Open a PR to `develop` titled
@@ -155,6 +161,7 @@ real test behind each one.
 | Read | For |
 |---|---|
 | `README.md` | The contract overview: what is in the wire, the gate quickstart, and how pinning works. |
+| `docs/content-capability-negotiation.md` | The authoritative content-capability wire semantics, field decision policy, deployment guarantees, and Schema/Village/Peasant test ownership. |
 | `TESTING.md` | The full test strategy: every gate and the real test behind it, and the `testcase` standard. |
 | `CONTRIBUTING.md` | The worktree and `go.work` layout, the leaf-audit and no-`replace` rules, regeneration, and the release ceremony. |
 | `docs/release-runbook.md` | The release operator guide: secrets, the GitHub App, the tag cut, and troubleshooting. |

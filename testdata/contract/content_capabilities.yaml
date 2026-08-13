@@ -1,0 +1,97 @@
+cases:
+  - name: omitted-discovery-is-compatible-with-no-requirements
+    input: {operation: missing}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: omitted and empty discovery are equivalent}
+    mutation: {description: omits both advertised and required capabilities}
+  - name: empty-discovery-is-compatible-with-no-requirements
+    input: {operation: missing, advertised: []}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: omitted and empty discovery are equivalent}
+    mutation: {description: supplies an explicit empty discovery list}
+  - name: known-filter-deduplicates-sorts-and-ignores-unknown
+    input: {operation: filter, advertised: [future_v9, observed_model_v1, observed_model_v1]}
+    expected: {accepted: true, capabilities: [observed_model_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: discovery parsing is forward-open}
+    mutation: {description: combines unknown and duplicate discovery tokens}
+  - name: canonical-server-advertisement-valid
+    input: {operation: validate, advertised: [observed_model_v1]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: producers emit canonical closed inventory}
+    mutation: {description: emits the canonical singleton list}
+  - name: unknown-server-advertisement-invalid
+    input: {operation: validate, advertised: [future_v9]}
+    expected: {accepted: false, errorContains: unknown token}
+    classification: must-fail
+    provenance: {source: boundary, ref: producer validation remains closed}
+    mutation: {description: emits a token absent from the Go inventory}
+  - name: duplicate-server-advertisement-invalid
+    input: {operation: validate, advertised: [observed_model_v1, observed_model_v1]}
+    expected: {accepted: false, errorContains: duplicated or not in canonical lexicographic order}
+    classification: must-fail
+    provenance: {source: boundary, ref: server advertisements are unique}
+    mutation: {description: duplicates the canonical token}
+  - name: required-capability-present
+    input: {operation: missing, advertised: [future_v9, observed_model_v1], required: [observed_model_v1]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: negotiation uses set membership}
+    mutation: {description: includes the requirement alongside an unknown token}
+  - name: required-capability-missing
+    input: {operation: missing, advertised: [future_v9], required: [observed_model_v1]}
+    expected: {accepted: false, capabilities: [observed_model_v1]}
+    classification: must-fail
+    provenance: {source: requirement, ref: missing required capabilities block enriched publish}
+    mutation: {description: advertises only an unknown token}
+  - name: payload-without-observation-needs-no-capability
+    input: {operation: scan, turns: [{role: assistant}]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: legacy payloads require no enriched capability}
+    mutation: {description: omits observed evidence}
+  - name: session-seed-model-alone-needs-no-capability
+    input: {operation: scan, sessionModel: provider/legacy-seed, turns: [{role: assistant}]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: session model seed is legacy metadata rather than observed evidence}
+    mutation: {description: sets only the session-level model seed}
+  - name: root-assistant-observation-requires-capability
+    input: {operation: scan, turns: [{role: assistant, observedModel: provider/root}]}
+    expected: {accepted: true, capabilities: [observed_model_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: root turn evidence requires preservation}
+    mutation: {description: adds evidence at depth zero}
+  - name: nested-assistant-observation-requires-capability
+    input: {operation: scan, turns: [{role: assistant, depth: 2, observedModel: provider/subagent}]}
+    expected: {accepted: true, capabilities: [observed_model_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: nested turn evidence requires preservation}
+    mutation: {description: adds evidence on a nested turn}
+  - name: assistant-evidence-valid
+    input: {operation: evidence, role: assistant, observedModel: Anthropic/Claude-Opus-4-8}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: assistant evidence is accepted and byte-exact}
+    mutation: {description: supplies mixed-case assistant evidence}
+  - name: user-evidence-invalid
+    input: {operation: evidence, role: user, observedModel: provider/model}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: evidence is assistant-only}
+    mutation: {description: moves evidence onto a user turn}
+  - name: tool-evidence-invalid
+    input: {operation: evidence, role: tool, observedModel: provider/model}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: evidence is not valid on tool turns}
+    mutation: {description: moves evidence onto a tool turn}
+  - name: invalid-observed-value-invalid
+    input: {operation: evidence, role: assistant, observedModel: " padded "}
+    expected: {accepted: false, errorContains: has Unicode whitespace at an edge}
+    classification: must-fail
+    provenance: {source: boundary, ref: observed values retain their validated exact bytes}
+    mutation: {description: pads assistant evidence at both edges}

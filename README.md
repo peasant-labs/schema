@@ -121,6 +121,14 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Redaction fixtures** | `redactions.go` | `RedactionInfo` staleness helpers, `RedactionFixtureLevel`, the `RedactionExamples` corpus, `LoadRedactionExamples` (the redaction *engine* stays in peasant; this module carries only the metadata type and the fixture corpus) |
 | **Embedded specs & fixtures** | `specs.go`, `contract_embeds.go`, `fixtures.go` | `VillageAPISpecJSON()`, `PublishRequestSchemaJSON()`, `AnnotationPushRequestSchemaJSON()`, `EvalSchemaJSON`, `ContractCorpusFS`, and the embedded YAML/JSON fixture corpora |
 
+`SchemaVersionResponse.contentCapabilities` is a forward-open list used to avoid
+silently losing optional meaning-, provenance-, or safety-bearing content.
+`observed_model_v1` is the first known token. Clients match exact tokens and
+refuse unsupported enriched publication before upload; server deployments
+advertise only behavior they prove end to end. See the authoritative
+[content capability negotiation specification](docs/content-capability-negotiation.md)
+for wire semantics, guarantees, evolution, and contributor policy.
+
 ### The session-detail payload (the central object)
 
 `SessionDetailPayload` is the object every producer builds and every renderer
@@ -509,6 +517,7 @@ tested, re-enabled alongside branch protection at the flip. The full operator gu
 | `cmd/schema-gen/` | Regenerates `generated/`; hosts the freshness / immutability / surface gate tests |
 | `cmd/release-guard/` + `internal/release/` | The PR-title/tag grammar + release-gating CLI |
 | `docs/release-runbook.md` · `CONTRIBUTING.md` · `CHANGELOG.md` | Operator + contributor references |
+| `docs/content-capability-negotiation.md` | Authoritative optional-content negotiation protocol and contributor decision policy |
 
 ## License
 

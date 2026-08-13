@@ -535,6 +535,10 @@ types:
     disposition: catalog
     component: SchemaVersionResponse
     reason: public wire or domain contract type
+  - go_name: ContentCapability
+    disposition: catalog
+    component: ContentCapability
+    reason: public closed capability contract
   - go_name: PullAnnotation
     disposition: catalog
     component: PullAnnotation
