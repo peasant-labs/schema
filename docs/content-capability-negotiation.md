@@ -72,6 +72,14 @@ as `observed_model_v2`; a transitional deployment may advertise both revisions.
 The inventory is append-only and tokens may be deprecated, but an existing
 token is never silently redefined.
 
+With only one known token, the canonical-order and duplicate-rejection producer
+rules cannot yet be exercised by a distinct-token permutation. When a second
+token is introduced, that same change MUST add a fixture case proving an
+unsorted, unique multi-token server advertisement is rejected (or canonicalized
+by sorting and deduplication) exactly as designed. Do not add a fabricated
+one-token stand-in for this now; add the real permutation with the token that
+makes it testable.
+
 ### Worked examples
 
 Compatible discovery and payload:

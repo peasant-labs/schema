@@ -1,5 +1,6 @@
 export * from "./internal/generated/public-contract.gen.js";
 export * from "./internal/generated/enums.gen.js";
+export * from "./internal/generated/content-capabilities.gen.js";
 export * from "./internal/generated/versions.gen.js";
 
 import { zProjectHash, type ProjectHash } from "./internal/generated/contract/zod.gen.js";

@@ -12,7 +12,7 @@ import (
 type ContentCapability string
 
 const (
-	// ContentCapabilityObservedModel guarantees exact observedModel survival
+	// ContentCapabilityObservedModelV1 guarantees exact observedModel survival
 	// through publish, typed migration, canonical rewrite, and re-emission. Its
 	// meaning is immutable; an incompatible contract requires a new token.
 	ContentCapabilityObservedModelV1 ContentCapability = "observed_model_v1"

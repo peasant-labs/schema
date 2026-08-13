@@ -33,6 +33,18 @@ const enumCatalog = parse(enumCatalogSource);
 const enumNames = enumCatalog.enums.map((enumCase) => enumCase.name);
 assert.ok(enumNames.length > 0, "the closed-enum catalog backing the canonical value entries is empty");
 
+// The known content-capability inventory is a runtime facade that is NOT an
+// enum (the discovery wire alias is an open string), so it is not in the enum
+// catalog. Fold its three runtime exports into the canonical set the same way,
+// so the exact-match assertion below still guards them.
+const contentCapabilityCatalog = parse(await readFile(new URL("../../testdata/typescript/content_capabilities.yaml", import.meta.url), "utf8"));
+const knownContentCapability = contentCapabilityCatalog.known;
+assert.equal(typeof knownContentCapability, "object", "content_capabilities.yaml must provide a known inventory mapping");
+const contentCapabilityRuntimeNames = [knownContentCapability.name, knownContentCapability.all_name, knownContentCapability.guard];
+for (const name of contentCapabilityRuntimeNames) {
+  assert.equal(typeof name, "string", "content_capabilities.yaml known inventory must name its facade const, inventory, and guard");
+}
+
 const indexSource = await readFile(new URL("../src/index.ts", import.meta.url), "utf8");
 const localApiSource = await readFile(new URL("../src/local-api.ts", import.meta.url), "utf8");
 const villageApiSource = await readFile(new URL("../src/village-api.ts", import.meta.url), "utf8");
@@ -41,6 +53,7 @@ const canonicalTypeEntries = toEntries(catalogNames.filter((name) => !enumNames.
 const canonicalRuntimeEntries = [
   ...toEntries(catalogNames.map((name) => `z${name}`)),
   ...toEntries(enumCatalog.enums.flatMap((enumCase) => [enumCase.name, enumCase.all_name, `is${enumCase.name}`])),
+  ...toEntries(contentCapabilityRuntimeNames),
   ...toEntries(fixture.functions.map((fn) => fn.name)),
   ...fixture.constants.map((constant) => ({ name: constant.name, target: String(constant.value) })),
 ];
