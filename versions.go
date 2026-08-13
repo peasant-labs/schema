@@ -66,8 +66,10 @@ const (
 	// observed Strike identifier forms (additive = minor bump).
 	// Bumped to 0.7.0 when TurnDetail gained optional exact model observation
 	// evidence for assistant-generated turns (additive = minor bump).
+	// Bumped to 0.8.0 when process-local UI capability discovery was added
+	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.7.0"
+	PeasantLocalAPIVersion = "0.8.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -94,5 +96,6 @@ const (
 	// Bumped to 0.10.0 when TurnDetail gained optional exact model observation
 	// evidence for assistant-generated turns (additive = minor bump).
 	// Bumped to 0.11.0 for the content-capability contract catalog.
-	TypesVersion = "0.11.0"
+	// Bumped to 0.12.0 for the open process-local UI capabilities envelope.
+	TypesVersion = "0.12.0"
 )

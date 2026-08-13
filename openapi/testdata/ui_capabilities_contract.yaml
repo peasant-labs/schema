@@ -1,0 +1,28 @@
+contract:
+  path: /api/v1/config/capabilities
+  method: get
+  operation_id: getUICapabilities
+  response_status: "200"
+  media_type: application/json
+  response_ref: "#/components/schemas/UICapabilitiesResponse"
+  component: UICapabilitiesResponse
+  property: uiCapabilities
+cases:
+  - name: omitted_is_valid
+    body: '{}'
+    valid: true
+  - name: empty_is_valid
+    body: '{"uiCapabilities":[]}'
+    valid: true
+  - name: unknown_tokens_are_valid
+    body: '{"uiCapabilities":["future_experiment_v1"]}'
+    valid: true
+  - name: multiple_open_tokens_are_valid
+    body: '{"uiCapabilities":["alpha_v1","future_experiment_v1"]}'
+    valid: true
+  - name: null_is_invalid
+    body: '{"uiCapabilities":null}'
+    valid: false
+  - name: non_string_item_is_invalid
+    body: '{"uiCapabilities":[7]}'
+    valid: false

@@ -116,6 +116,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"OwnerTranscriptUpdateRequest", new(schema.OwnerTranscriptUpdateRequest)},
 		{"OwnerTranscriptUpdateResponse", new(schema.OwnerTranscriptUpdateResponse)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
+		{"UICapabilitiesResponse", new(schema.UICapabilitiesResponse)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
 		{"TypeOrigin", new(schema.TypeOrigin)},
 		{"UnifiedMetadata", new(schema.UnifiedMetadata)}, {"UnusualSignal", new(schema.UnusualSignal)},

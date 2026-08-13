@@ -60,6 +60,13 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/config/capabilities
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/config/capabilities",
+		"getUICapabilities", "Discover optional UI behavior enabled for this server process.", []string{"config"},
+		nil, new(schema.UICapabilitiesResponse)); err != nil {
+		return nil, err
+	}
+
 	// POST /api/v1/shutdown
 	if err := addRESTOp(r, http.MethodPost, "/api/v1/shutdown",
 		"postShutdown", "Gracefully shutdown the server (localhost only).", []string{"lifecycle"},
@@ -265,6 +272,21 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
 		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
+	}
+	// Keep the public response component name identical across the Local API and
+	// Types catalogs instead of exposing the reflector's package-prefixed alias.
+	components := r.SpecEns().ComponentsEns().Schemas
+	if reflected, ok := components["SchemaUICapabilitiesResponse"]; ok {
+		components["UICapabilitiesResponse"] = reflected
+		delete(components, "SchemaUICapabilitiesResponse")
+		if path := r.Spec.Paths.MapOfPathItemValues["/api/v1/config/capabilities"]; path.Get != nil {
+			response := path.Get.Responses.MapOfResponseOrReferenceValues["200"]
+			media := response.Response.Content["application/json"]
+			media.Schema["$ref"] = "#/components/schemas/UICapabilitiesResponse"
+			response.Response.Content["application/json"] = media
+			path.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
+			r.Spec.Paths.MapOfPathItemValues["/api/v1/config/capabilities"] = path
+		}
 	}
 
 	return r.Spec, nil
