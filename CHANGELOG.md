@@ -5,6 +5,25 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.1] - 2026-08-13
+
+Final release of the sticky model-evidence and capability-negotiation contracts.
+The contract artifacts are unchanged from `v0.1.1-rc2`: Village API 0.13.0,
+PublishRequest 0.13.0, AnnotationPushRequest 0.13.0, Local API 0.8.0, and Types
+0.12.0.
+
+### Added
+
+- Assistant and subagent turns can carry byte-preserved `observedModel` source
+  evidence, with the session model documented as the initial root-assistant
+  seed for consumer-side sticky model resolution.
+- Village servers can advertise the forward-open `observed_model_v1` content
+  capability after proving role validation and exact evidence preservation.
+  Publishers use capability membership to fail closed instead of silently
+  stripping enriched evidence.
+- Local clients can discover open process-local UI capabilities through the
+  typed `GET /api/v1/config/capabilities` operation.
+
 ## [v0.1.1-rc2] - 2026-08-13
 
 ### Added
