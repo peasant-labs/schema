@@ -78,9 +78,9 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.1-rc1` (observed per-turn model evidence release candidate) - stable `v0.1.0` remains published |
+| Latest tag | `v0.1.1-rc2` (content and UI capability discovery release candidate) - stable `v0.1.0` remains published |
 | License | Apache-2.0 |
-| Spec versions | Village API `0.12.0` · PublishRequest `0.12.0` · AnnotationPushRequest `0.12.0` · Local API `0.7.0` · Types `0.10.0` (see [`versions.go`](versions.go)) |
+| Spec versions | Village API `0.13.0` · PublishRequest `0.13.0` · AnnotationPushRequest `0.13.0` · Local API `0.8.0` · Types `0.12.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
