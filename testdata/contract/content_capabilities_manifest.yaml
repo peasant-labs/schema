@@ -1,0 +1,18 @@
+expectedCaseCount: 16
+requiredCaseNames:
+  - omitted-discovery-is-compatible-with-no-requirements
+  - empty-discovery-is-compatible-with-no-requirements
+  - known-filter-deduplicates-sorts-and-ignores-unknown
+  - canonical-server-advertisement-valid
+  - unknown-server-advertisement-invalid
+  - duplicate-server-advertisement-invalid
+  - required-capability-present
+  - required-capability-missing
+  - payload-without-observation-needs-no-capability
+  - session-seed-model-alone-needs-no-capability
+  - root-assistant-observation-requires-capability
+  - nested-assistant-observation-requires-capability
+  - assistant-evidence-valid
+  - user-evidence-invalid
+  - tool-evidence-invalid
+  - invalid-observed-value-invalid

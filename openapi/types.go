@@ -42,7 +42,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"ChildSessionRef", new(schema.ChildSessionRef)}, {"CLILoginQuery", new(schema.CLILoginQuery)},
 		{"ClientMessage", new(schema.ClientMessage)}, {"CommitInfo", new(schema.CommitInfo)},
 		{"CommitRef", new(schema.CommitRef)}, {"Confidence", new(schema.Confidence)},
-		{"ContentKind", new(schema.ContentKind)},
+		{"ContentCapability", new(schema.ContentCapability)}, {"ContentKind", new(schema.ContentKind)},
 		{"ContractVersion", new(schema.ContractVersion)}, {"CreateAnnotationRequest", new(schema.CreateAnnotationRequest)},
 		{"CreateAnnotationResponse", new(schema.CreateAnnotationResponse)}, {"DashboardPayload", new(schema.DashboardPayload)},
 		{"DayStats", new(schema.DayStats)}, {"DecayLevel", new(schema.DecayLevel)},

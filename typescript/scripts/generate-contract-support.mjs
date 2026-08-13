@@ -27,6 +27,8 @@ const versions = {
 const specPath = join(moduleRoot, "generated", `types-${versions.TypesVersion}.json`);
 const spec = JSON.parse(await readFile(specPath, "utf8"));
 const enumCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "enums.yaml"), "utf8"));
+const contentCapabilityCatalog = parse(await readFile(join(moduleRoot, "testdata", "typescript", "content_capabilities.yaml"), "utf8"));
+const contentCapabilitySource = await readFile(join(moduleRoot, "content_capability.go"), "utf8");
 const qualitySource = parse(await readFile(join(moduleRoot, "testdata", "quality", "sessions.yaml"), "utf8"));
 const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-api", "timeline.yaml"), "utf8"));
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
@@ -35,6 +37,7 @@ await mkdir(generatedRoot, { recursive: true });
 await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
+await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog));
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
@@ -98,6 +101,81 @@ function renderEnums(openapi, catalog) {
     blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }
   return `${header()}${imports.join("\n")}\n\n${blocks.join("\n\n")}\n`;
+}
+
+// renderContentCapabilities generates the strongly typed, CLOSED known-token
+// inventory from the canonical Go source (content_capability.go). This is the
+// deliberate counterpart to the OPEN discovery wire: SchemaVersionResponse's
+// contentCapabilities parses arbitrary strings (z.string(), never z.enum), so
+// an older client tolerates a future server's unknown tokens, while TypeScript
+// consumers still get a typed inventory of the tokens THIS pinned release
+// knows. The facade const/type is named KnownContentCapability to avoid
+// colliding with the open wire alias ContentCapability (an arbitrary string).
+// Go is the single source of truth; drift between it and the strict manifest
+// fails generation closed rather than silently narrowing or widening the set.
+function renderContentCapabilities(source, catalog) {
+  const known = catalog?.known;
+  if (typeof known !== "object" || known === null) {
+    throw new Error("TypeScript content-capability generation could not load the known inventory from testdata/typescript/content_capabilities.yaml: the root known mapping is missing; no typed closed inventory was generated; restore the canonical fixture shape.");
+  }
+  const { name, all_name: allName, guard, go_type: goType, go_all_var: goAllVar, members, all_values: allValues } = known;
+  for (const [field, value] of [["name", name], ["all_name", allName], ["guard", guard], ["go_type", goType], ["go_all_var", goAllVar]]) {
+    if (typeof value !== "string" || value.length === 0) {
+      throw new Error(`TypeScript content-capability generation found an invalid ${field} in testdata/typescript/content_capabilities.yaml; it must be a non-empty string; fix the fixture before regenerating.`);
+    }
+  }
+  if (!Array.isArray(members) || !Array.isArray(allValues)) {
+    throw new Error("TypeScript content-capability generation found an invalid content_capabilities.yaml known entry; members and all_values must both be sequences; fix the fixture before regenerating.");
+  }
+
+  // Parse the canonical Go closed set: the const declarations give value bytes,
+  // and the AllContentCapabilities slice gives canonical order. The generator
+  // trusts Go, then proves the manifest matches it exactly.
+  const goValues = new Map();
+  const constPattern = new RegExp(`(\\w+)\\s+${goType}\\s*=\\s*"([^"]+)"`, "g");
+  for (const match of source.matchAll(constPattern)) goValues.set(match[1], match[2]);
+  if (goValues.size === 0) {
+    throw new Error(`TypeScript content-capability generation found no "<Name> ${goType} = \"...\"" const declarations in content_capability.go; the closed inventory would be empty; keep the canonical Go consts in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
+  }
+  const allPattern = new RegExp(`var\\s+${goAllVar}\\s*=\\s*\\[\\]${goType}\\{([^}]*)\\}`, "s");
+  const allMatch = allPattern.exec(source);
+  if (allMatch === null) {
+    throw new Error(`TypeScript content-capability generation could not find "var ${goAllVar} = []${goType}{...}" in content_capability.go; the token order cannot be trusted; keep the canonical Go slice in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
+  }
+  const goOrder = allMatch[1].split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  const goOrderedValues = goOrder.map((goConst) => {
+    const value = goValues.get(goConst);
+    if (value === undefined) {
+      throw new Error(`TypeScript content-capability generation found ${goAllVar} member ${goConst} in content_capability.go without a matching "${goConst} ${goType} = \"...\"" const; add the const or remove the unsupported member.`);
+    }
+    return value;
+  });
+  if (JSON.stringify(goOrderedValues) !== JSON.stringify(allValues)) {
+    throw new Error(`TypeScript content-capability generation found drift between Go ${goAllVar} (${JSON.stringify(goOrderedValues)}) and content_capabilities.yaml all_values (${JSON.stringify(allValues)}); TypeScript output was not written; update the canonical Go closed set and its manifest together.`);
+  }
+
+  const renderedMembers = members.map((member) => {
+    if (typeof member?.name !== "string" || typeof member?.value !== "string" || typeof member?.go_const !== "string") {
+      throw new Error("TypeScript content-capability generation found a member without a string name, value, and go_const in content_capabilities.yaml; fix the fixture before regenerating.");
+    }
+    if (member.go_const !== `${goType}${member.name}`) {
+      throw new Error(`TypeScript content-capability generation found member ${member.name} whose go_const ${member.go_const} is not ${goType}${member.name}; the TypeScript member name cannot be derived; keep the canonical Go naming convention or update the manifest.`);
+    }
+    if (goValues.get(member.go_const) !== member.value) {
+      throw new Error(`TypeScript content-capability generation found member ${member.name} value ${JSON.stringify(member.value)} that does not match Go const ${member.go_const} (${JSON.stringify(goValues.get(member.go_const))}); update the canonical Go closed set and its manifest together.`);
+    }
+    return `  ${member.name}: ${JSON.stringify(member.value)},`;
+  }).join("\n");
+  const allMembers = allValues.map((value) => {
+    const member = members.find((candidate) => candidate.value === value);
+    if (member === undefined) {
+      throw new Error(`TypeScript content-capability generation found ${JSON.stringify(value)} in all_values without a matching member; the inventory cannot be rendered; add the member or remove the unsupported value.`);
+    }
+    return `${name}.${member.name}`;
+  }).join(", ");
+
+  const doc = `/**\n * ${name} is the closed inventory of content-capability tokens known to this\n * pinned schema release. It is intentionally distinct from the OPEN discovery\n * wire alias ${known.wire_alias} (an arbitrary string): SchemaVersionResponse's\n * contentCapabilities parses unknown future tokens so an older client keeps\n * working, while these constants give strongly typed access to known tokens.\n * ${guard} narrows an arbitrary string to a ${name}, so consumers can filter a\n * discovered list down to the tokens they understand without stringly typing.\n */\n`;
+  return `${header()}${doc}export const ${name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${name} = (typeof ${name})[keyof typeof ${name}];\nexport const ${allName} = Object.freeze([${allMembers}]) as readonly ${name}[];\nexport function ${guard}(value: unknown): value is ${name} {\n  return typeof value === "string" && (${allName} as readonly string[]).includes(value);\n}\n`;
 }
 
 async function renderPublicContract(catalog) {

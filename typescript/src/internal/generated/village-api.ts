@@ -160,7 +160,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Advertise the annotation schema version plus the push and pull contract acceptance/negotiation windows ([Min, Current]) so the CLI can preflight and version-negotiate before publishing or pulling. */
+        /** @description Advertise the annotation schema version plus push and pull contract windows and the deployment-specific content-capability set. contentCapabilities omitted or empty means none and null is invalid. Its items are opaque, forward-open revision strings: clients match exactly without SemVer or suffix parsing, ignore unknown tokens, and tolerate/deduplicate duplicates; server output contains only pinned known tokens, rejects duplicates, has no semantic order, and is serialized lexicographically. observed_model_v1 is required exactly when any root or nested assistant turn carries observedModel, not for session model alone. It guarantees assistant-only value validation before persistence with no invalid database or blob side effects and byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are not guaranteed. */
         get: operations["getSchemaVersion"];
         put?: never;
         post?: never;
@@ -179,7 +179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish exact transcript bytes with typed JSON metadata. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
+        /** @description Publish exact transcript bytes with typed JSON metadata. Capability negotiation is deployment-specific and uses exact string membership, never SemVer ordering. A client with required capabilities missing from the destination MUST refuse before remote upload and MUST NOT strip evidence; dry-run negotiation is local only. A server advertising observed_model_v1 MUST validate assistant-only attribution and observedModel values before persistence or any side effect, and MUST preserve accepted observedModel string bytes through storage, migration, rewrite, and serving; JSON formatting is excluded. Assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
         post: operations["publishTranscript"];
         delete?: never;
         options?: never;

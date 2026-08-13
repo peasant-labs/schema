@@ -425,6 +425,15 @@ export const zConfidence = z.enum([
 export type Confidence = z.infer<typeof zConfidence>;
 
 /**
+ * Content Capability
+ *
+ * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded.
+ */
+export const zContentCapability = z.string();
+
+export type ContentCapability = z.infer<typeof zContentCapability>;
+
+/**
  * Content Kind
  *
  * Payload kind carried by a transcript content envelope
@@ -1173,6 +1182,7 @@ export type ScaleKind = z.infer<typeof zScaleKind>;
 
 export const zSchemaVersionResponse = z.object({
     annotationSchemaVersion: z.string(),
+    contentCapabilities: z.array(z.string()).optional(),
     minPullContractVersion: z.string().optional(),
     minPushContractVersion: z.string(),
     pullContractVersion: z.string().optional(),

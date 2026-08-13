@@ -48,7 +48,9 @@ const (
 	// Bumped to 0.12.0 when authoritative publication identity adopted its
 	// declared parentSessionId key while historical SessionIdentity retained
 	// parentUuid (corrective additive version).
-	VillageAPIVersion = "0.12.0"
+	// Bumped to 0.13.0 when schema negotiation gained optional enriched-content
+	// capability advertisements (additive = minor bump).
+	VillageAPIVersion = "0.13.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -91,5 +93,6 @@ const (
 	// independently from the historical SessionIdentity parentUuid wire.
 	// Bumped to 0.10.0 when TurnDetail gained optional exact model observation
 	// evidence for assistant-generated turns (additive = minor bump).
-	TypesVersion = "0.10.0"
+	// Bumped to 0.11.0 for the content-capability contract catalog.
+	TypesVersion = "0.11.0"
 )

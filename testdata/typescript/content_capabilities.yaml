@@ -1,0 +1,41 @@
+# Strict manifest for the TypeScript known content-capability inventory.
+#
+# The discovery wire (SchemaVersionResponse.contentCapabilities) stays an open
+# list of arbitrary strings so an older generated client still parses a future
+# server's unknown tokens. This manifest describes the SEPARATE strongly typed,
+# closed inventory of tokens known to this pinned schema release, which the
+# generator emits into src/internal/generated/content-capabilities.gen.ts from
+# the canonical Go source (content_capability.go). Go is the source of truth;
+# the generator fails closed on any drift between this manifest and Go.
+known:
+  # KnownContentCapability is the typed const/type facade name. It is distinct
+  # from the open wire alias ContentCapability (an arbitrary string) so the two
+  # never collide in the public surface.
+  name: KnownContentCapability
+  wire_alias: ContentCapability
+  all_name: AllContentCapabilities
+  guard: isContentCapability
+  go_type: ContentCapability
+  go_all_var: AllContentCapabilities
+  members:
+    - {name: ObservedModelV1, go_const: ContentCapabilityObservedModelV1, value: "observed_model_v1"}
+  all_values: ["observed_model_v1"]
+# Discovery cases prove the open wire and the typed guard simultaneously: every
+# advertised list (including unknown future and duplicate tokens) parses, and
+# guarding/filtering it against the closed inventory yields only known tokens.
+discovery:
+  - name: known_only
+    advertised: ["observed_model_v1"]
+    knownFiltered: ["observed_model_v1"]
+  - name: unknown_future_token_ignored
+    advertised: ["future_feature_v9", "observed_model_v1"]
+    knownFiltered: ["observed_model_v1"]
+  - name: unknown_only
+    advertised: ["future_feature_v9"]
+    knownFiltered: []
+  - name: duplicate_known_tolerated
+    advertised: ["observed_model_v1", "observed_model_v1"]
+    knownFiltered: ["observed_model_v1"]
+  - name: empty
+    advertised: []
+    knownFiltered: []
