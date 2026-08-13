@@ -16,11 +16,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   Servers making that advertisement reject enriched publishes that attach
   `observedModel` to user, system, or tool turns; assistant-role turns include
   nested subagent output. Older servers omit the optional advertisement.
-  Consumers ignore unknown discovery tokens and use set membership. Go
-  producers retain a closed inventory and emit unique tokens in canonical order.
+  Consumers ignore unknown discovery tokens and use set membership. Go and
+  TypeScript producers retain typed closed known-token inventories, and servers
+  emit unique tokens in canonical order.
   Token meanings are immutable; incompatible guarantees use a new token. See
   the durable [content capability negotiation specification](docs/content-capability-negotiation.md)
   for the complete wire semantics and deployment guarantees.
+- Local API 0.8.0 and Types 0.12.0 add open process-local UI capability
+  discovery at `GET /api/v1/config/capabilities`. Its `UICapabilitiesResponse`
+  envelope carries optional `uiCapabilities?: string[]`; omitted and empty both
+  mean no advertised capabilities, while unknown strings remain available for
+  forward-compatible clients to ignore. Schema owns the open envelope and
+  operation contract. Peasant owns its capability tokens and all runtime and UI
+  semantics attached to them.
 
 ## [v0.1.1-rc1] - 2026-08-12
 
