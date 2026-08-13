@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"testing"
 
@@ -20,15 +21,25 @@ var contentCapabilityFixtureYAML []byte
 var contentCapabilityManifestYAML []byte
 
 type contentCapabilityInput struct {
-	Capability    schema.ContentCapability        `yaml:"capability,omitempty"`
-	Version       schema.ContentCapabilityVersion `yaml:"version,omitempty"`
-	Role          schema.Role                     `yaml:"role,omitempty"`
-	ObservedModel string                          `yaml:"observedModel,omitempty"`
+	Operation     string                     `yaml:"operation"`
+	Advertised    []schema.ContentCapability `yaml:"advertised,omitempty"`
+	Required      []schema.ContentCapability `yaml:"required,omitempty"`
+	Turns         []contentCapabilityTurn    `yaml:"turns,omitempty"`
+	SessionModel  string                     `yaml:"sessionModel,omitempty"`
+	Role          schema.Role                `yaml:"role,omitempty"`
+	ObservedModel string                     `yaml:"observedModel,omitempty"`
+}
+
+type contentCapabilityTurn struct {
+	Role          schema.Role `yaml:"role"`
+	Depth         int         `yaml:"depth,omitempty"`
+	ObservedModel string      `yaml:"observedModel,omitempty"`
 }
 
 type contentCapabilityExpected struct {
-	Accepted      bool   `yaml:"accepted"`
-	ErrorContains string `yaml:"errorContains,omitempty"`
+	Accepted      bool                       `yaml:"accepted"`
+	ErrorContains string                     `yaml:"errorContains,omitempty"`
+	Capabilities  []schema.ContentCapability `yaml:"capabilities,omitempty"`
 }
 
 type contentCapabilityManifest struct {
@@ -42,16 +53,36 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 		fixtureCase := fixtureCase
 		t.Run(fixtureCase.Name, func(t *testing.T) {
 			var err error
-			if fixtureCase.Input.Capability != "" || fixtureCase.Input.Version != "" {
-				err = (schema.ContentCapabilityAdvertisement{Capability: fixtureCase.Input.Capability, Version: fixtureCase.Input.Version}).Validate()
-			} else {
+			var capabilities []schema.ContentCapability
+			switch fixtureCase.Input.Operation {
+			case "filter":
+				capabilities = schema.KnownContentCapabilities(fixtureCase.Input.Advertised)
+			case "validate":
+				err = schema.ValidateContentCapabilityAdvertisements(fixtureCase.Input.Advertised)
+			case "missing":
+				capabilities = schema.MissingContentCapabilities(fixtureCase.Input.Advertised, fixtureCase.Input.Required)
+				if len(capabilities) != 0 {
+					err = fmt.Errorf("required capabilities are missing")
+				}
+			case "scan":
+				turns := make([]schema.TurnDetail, len(fixtureCase.Input.Turns))
+				for i, turn := range fixtureCase.Input.Turns {
+					turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel)}
+				}
+				capabilities = schema.RequiredContentCapabilities(schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, Turns: turns})
+			case "evidence":
 				err = schema.ValidateObservedModelEvidence(fixtureCase.Input.Role, schema.ObservedModelID(fixtureCase.Input.ObservedModel))
+			default:
+				t.Fatalf("unknown fixture operation %q", fixtureCase.Input.Operation)
 			}
 			if (err == nil) != fixtureCase.Expected.Accepted {
 				t.Fatalf("real contract validator accepted=%v, want %v; err=%v", err == nil, fixtureCase.Expected.Accepted, err)
 			}
 			if err != nil && !strings.Contains(err.Error(), fixtureCase.Expected.ErrorContains) {
 				t.Fatalf("validator error %q does not contain %q", err, fixtureCase.Expected.ErrorContains)
+			}
+			if !slices.Equal(capabilities, fixtureCase.Expected.Capabilities) {
+				t.Fatalf("capabilities=%v, want %v", capabilities, fixtureCase.Expected.Capabilities)
 			}
 		})
 	}

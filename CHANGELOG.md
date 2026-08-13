@@ -7,13 +7,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
-- Village API 0.13.0 and Types 0.11.0 add the closed, independently versioned
-  content-capability advertisement contract. `SchemaVersionResponse` can now
-  advertise `observed_model` version `1.0.0` after the server proves exact
+- Village API 0.13.0 and Types 0.11.0 add a flat, forward-open capability
+  discovery list. `SchemaVersionResponse` can now advertise the string token
+  `observed_model_v1` after the server proves exact
   evidence preservation across publish, migration, rewrite, and serving paths.
   Servers making that advertisement reject enriched publishes that attach
   `observedModel` to user, system, or tool turns; assistant-role turns include
   nested subagent output. Older servers omit the optional advertisement.
+  Consumers ignore unknown discovery tokens and use set membership. Go
+  producers retain a closed inventory and emit unique tokens in canonical order.
+  Token meanings are immutable; incompatible guarantees use a new token.
 
 ## [v0.1.1-rc1] - 2026-08-12
 

@@ -78,7 +78,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	oc.AddReqStructure(new(transcriptPublishMultipartRequest))
 	oc.AddRespStructure(new(schema.AuthoritativePublishResponse), openapicore.WithHTTPStatus(http.StatusCreated))
 	oc.AddRespStructure(new(schema.AuthoritativePublishResponse), openapicore.WithHTTPStatus(http.StatusOK))
-	oc.SetDescription("Publish exact transcript bytes with typed JSON metadata. A server advertising observed_model version 1.0.0 MUST reject observedModel evidence on non-assistant turns before persistence; assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt.")
+	oc.SetDescription("Publish exact transcript bytes with typed JSON metadata. Capability negotiation is deployment-specific and uses exact string membership, never SemVer ordering. A client with required capabilities missing from the destination MUST refuse before remote upload and MUST NOT strip evidence; dry-run negotiation is local only. A server advertising observed_model_v1 MUST validate assistant-only attribution and observedModel values before persistence or any side effect, and MUST preserve accepted observedModel string bytes through storage, migration, rewrite, and serving; JSON formatting is excluded. Assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt.")
 	oc.SetID("publishTranscript")
 	oc.SetTags("transcripts")
 	if err := r.AddOperation(oc); err != nil {

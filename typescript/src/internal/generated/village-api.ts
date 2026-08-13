@@ -179,7 +179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish exact transcript bytes with typed JSON metadata. A server advertising observed_model version 1.0.0 MUST reject observedModel evidence on non-assistant turns before persistence; assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
+        /** @description Publish exact transcript bytes with typed JSON metadata. Capability negotiation is deployment-specific and uses exact string membership, never SemVer ordering. A client with required capabilities missing from the destination MUST refuse before remote upload and MUST NOT strip evidence; dry-run negotiation is local only. A server advertising observed_model_v1 MUST validate assistant-only attribution and observedModel values before persistence or any side effect, and MUST preserve accepted observedModel string bytes through storage, migration, rewrite, and serving; JSON formatting is excluded. Assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
         post: operations["publishTranscript"];
         delete?: never;
         options?: never;
@@ -288,21 +288,6 @@ export interface components {
         SchemaAuthoritativeSourceInfo: Schema.AuthoritativeSourceInfo;
         SchemaAuthoritativeSubagentRef: Schema.AuthoritativeSubagentRef;
         SchemaAuthoritativeTimestampInfo: Schema.AuthoritativeTimestampInfo;
-        /**
-         * Content Capability
-         * @description Optional enriched transcript-content behavior that a client must negotiate before emission
-         * @example observed_model
-         * @enum {string}
-         */
-        SchemaContentCapability: Schema.ContentCapability;
-        SchemaContentCapabilityAdvertisement: Schema.ContentCapabilityAdvertisement;
-        /**
-         * Content Capability Version
-         * @description Semantic version of one optional enriched transcript-content behavior
-         * @example 1.0.0
-         * @enum {string}
-         */
-        SchemaContentCapabilityVersion: Schema.ContentCapabilityVersion;
         /**
          * Entry Type
          * @description Classification of a single entry within an agent session transcript

@@ -199,6 +199,11 @@ type SchemaVersionResponse struct {
 	MinPullContractVersion  PushContractVersion `json:"minPullContractVersion,omitempty"`
 	// ContentCapabilities advertises optional enriched-content contracts proven
 	// safe through the server's publish, storage, migration, and serving paths.
-	// Absence means no enriched-content capability is advertised.
-	ContentCapabilities []ContentCapabilityAdvertisement `json:"contentCapabilities,omitempty"`
+	// Omitted and empty mean no capability; JSON null is outside the contract.
+	// Readers use exact token membership, ignore unknown tokens, and never infer
+	// SemVer ordering. Advertisements are deployment-specific: clients preflight
+	// the destination immediately before remote upload and refuse locally when a
+	// payload requirement is missing, without stripping evidence. A dry run may
+	// perform only this local negotiation and must not upload remotely.
+	ContentCapabilities []ContentCapability `json:"contentCapabilities,omitempty"`
 }

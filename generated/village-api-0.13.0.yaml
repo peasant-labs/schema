@@ -289,10 +289,15 @@ paths:
       - transcripts
   /api/v1/transcripts/publish:
     post:
-      description: Publish exact transcript bytes with typed JSON metadata. A server
-        advertising observed_model version 1.0.0 MUST reject observedModel evidence
-        on non-assistant turns before persistence; assistant includes nested subagent
-        output represented by role assistant. Creation returns 201 and replacement
+      description: Publish exact transcript bytes with typed JSON metadata. Capability
+        negotiation is deployment-specific and uses exact string membership, never
+        SemVer ordering. A client with required capabilities missing from the destination
+        MUST refuse before remote upload and MUST NOT strip evidence; dry-run negotiation
+        is local only. A server advertising observed_model_v1 MUST validate assistant-only
+        attribution and observedModel values before persistence or any side effect,
+        and MUST preserve accepted observedModel string bytes through storage, migration,
+        rewrite, and serving; JSON formatting is excluded. Assistant includes nested
+        subagent output represented by role assistant. Creation returns 201 and replacement
         returns 200; both carry the complete authoritative receipt.
       operationId: publishTranscript
       requestBody:
@@ -1511,33 +1516,6 @@ components:
       - start
       - end
       type: object
-    SchemaContentCapability:
-      description: Optional enriched transcript-content behavior that a client must
-        negotiate before emission
-      enum:
-      - observed_model
-      examples:
-      - observed_model
-      title: Content Capability
-      type: string
-    SchemaContentCapabilityAdvertisement:
-      properties:
-        capability:
-          $ref: '#/components/schemas/SchemaContentCapability'
-        version:
-          $ref: '#/components/schemas/SchemaContentCapabilityVersion'
-      required:
-      - capability
-      - version
-      type: object
-    SchemaContentCapabilityVersion:
-      description: Semantic version of one optional enriched transcript-content behavior
-      enum:
-      - 1.0.0
-      examples:
-      - 1.0.0
-      title: Content Capability Version
-      type: string
     SchemaEntryType:
       description: Classification of a single entry within an agent session transcript
       enum:
@@ -1986,7 +1964,13 @@ components:
           type: string
         contentCapabilities:
           items:
-            $ref: '#/components/schemas/SchemaContentCapabilityAdvertisement'
+            description: Forward-open discovery token for an optional enriched transcript-content
+              behavior. Token meanings are immutable and incompatible semantics require
+              a new token. Consumers use exact set membership, never semantic-version
+              parsing or ordering, and ignore unknown tokens. Producers emit only
+              the closed Go inventory.
+            title: Content Capability
+            type: string
           type: array
         minPullContractVersion:
           type: string

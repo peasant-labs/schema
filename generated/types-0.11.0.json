@@ -3223,40 +3223,8 @@
         "type": "string"
       },
       "ContentCapability": {
-        "description": "Optional enriched transcript-content behavior that a client must negotiate before emission",
-        "enum": [
-          "observed_model"
-        ],
-        "examples": [
-          "observed_model"
-        ],
+        "description": "Forward-open discovery token for an optional enriched transcript-content behavior. Token meanings are immutable and incompatible semantics require a new token. Consumers use exact set membership, never semantic-version parsing or ordering, and ignore unknown tokens. Producers emit only the closed Go inventory.",
         "title": "Content Capability",
-        "type": "string"
-      },
-      "ContentCapabilityAdvertisement": {
-        "properties": {
-          "capability": {
-            "$ref": "#/components/schemas/ContentCapability"
-          },
-          "version": {
-            "$ref": "#/components/schemas/ContentCapabilityVersion"
-          }
-        },
-        "required": [
-          "capability",
-          "version"
-        ],
-        "type": "object"
-      },
-      "ContentCapabilityVersion": {
-        "description": "Semantic version of one optional enriched transcript-content behavior",
-        "enum": [
-          "1.0.0"
-        ],
-        "examples": [
-          "1.0.0"
-        ],
-        "title": "Content Capability Version",
         "type": "string"
       },
       "ContentKind": {
@@ -6302,7 +6270,9 @@
           },
           "contentCapabilities": {
             "items": {
-              "$ref": "#/components/schemas/ContentCapabilityAdvertisement"
+              "description": "Forward-open discovery token for an optional enriched transcript-content behavior. Token meanings are immutable and incompatible semantics require a new token. Consumers use exact set membership, never semantic-version parsing or ordering, and ignore unknown tokens. Producers emit only the closed Go inventory.",
+              "title": "Content Capability",
+              "type": "string"
             },
             "type": "array"
           },

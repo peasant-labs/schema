@@ -1,6 +1,4 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
-import { zContentCapability, type ContentCapability as ContentCapabilityContract } from "./contract/zod.gen.js";
-import { zContentCapabilityVersion, type ContentCapabilityVersion as ContentCapabilityVersionContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
@@ -43,24 +41,6 @@ import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } fro
 import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
-
-export type ContentCapability = ContentCapabilityContract;
-export const ContentCapability = Object.freeze({
-  ObservedModel: zContentCapability.parse("observed_model"),
-} as const);
-export const AllContentCapabilities = Object.freeze([ContentCapability.ObservedModel]) as readonly ContentCapability[];
-export function isContentCapability(value: unknown): value is ContentCapability {
-  return zContentCapability.safeParse(value).success;
-}
-
-export type ContentCapabilityVersion = ContentCapabilityVersionContract;
-export const ContentCapabilityVersion = Object.freeze({
-  ObservedModelV1: zContentCapabilityVersion.parse("1.0.0"),
-} as const);
-export const AllContentCapabilityVersions = Object.freeze([ContentCapabilityVersion.ObservedModelV1]) as readonly ContentCapabilityVersion[];
-export function isContentCapabilityVersion(value: unknown): value is ContentCapabilityVersion {
-  return zContentCapabilityVersion.safeParse(value).success;
-}
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({

@@ -121,6 +121,29 @@ string newtype with `IsValid()` / `String()` / a `JSONSchema()` exposer and an
 | **Redaction fixtures** | `redactions.go` | `RedactionInfo` staleness helpers, `RedactionFixtureLevel`, the `RedactionExamples` corpus, `LoadRedactionExamples` (the redaction *engine* stays in peasant; this module carries only the metadata type and the fixture corpus) |
 | **Embedded specs & fixtures** | `specs.go`, `contract_embeds.go`, `fixtures.go` | `VillageAPISpecJSON()`, `PublishRequestSchemaJSON()`, `AnnotationPushRequestSchemaJSON()`, `EvalSchemaJSON`, `ContractCorpusFS`, and the embedded YAML/JSON fixture corpora |
 
+`SchemaVersionResponse.contentCapabilities` is a flat optional string list.
+`observed_model_v1` means the server preserves and validates exact per-turn
+model evidence. Token meanings are immutable; incompatible semantics require a
+new token. Omitted and empty lists mean no capability; JSON `null` is excluded.
+Discovery readers must ignore unknown tokens and use exact set membership for
+requirements. Tokens are not SemVer and have no ordering. Readers must not reject
+a response merely because it contains a future token or a duplicate.
+Go servers emit only `AllContentCapabilities`, deduplicated and lexicographically
+sorted, and validate that producer-side invariant before serving. Before an
+enriched publish, derive requirements with `RequiredContentCapabilities` and
+check the destination deployment immediately before upload. If
+`MissingContentCapabilities` returns a required token, refuse locally before any
+remote upload and never strip evidence to force compatibility. Dry-run performs
+this local negotiation only and causes no remote upload.
+
+A deployment advertising `observed_model_v1` guarantees assistant-only and value
+validation before persistence or any other side effect. Accepted `observedModel`
+value bytes are preserved exactly across publish, storage, typed migration,
+canonical rewrite, and serving. This guarantee covers the string value, not JSON
+formatting such as whitespace or object-key order. Session-level `model` seed
+metadata alone does not require this capability; root and nested turn
+`observedModel` evidence do.
+
 ### The session-detail payload (the central object)
 
 `SessionDetailPayload` is the object every producer builds and every renderer

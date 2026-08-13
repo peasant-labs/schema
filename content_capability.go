@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/swaggest/jsonschema-go"
 )
@@ -12,15 +13,16 @@ type ContentCapability string
 
 const (
 	// ContentCapabilityObservedModel guarantees exact observedModel survival
-	// through publish, typed migration, canonical rewrite, and re-emission.
-	ContentCapabilityObservedModel ContentCapability = "observed_model"
+	// through publish, typed migration, canonical rewrite, and re-emission. Its
+	// meaning is immutable; an incompatible contract requires a new token.
+	ContentCapabilityObservedModelV1 ContentCapability = "observed_model_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityObservedModel}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityObservedModelV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
-func (c ContentCapability) IsValid() bool { return c == ContentCapabilityObservedModel }
+func (c ContentCapability) IsValid() bool { return c == ContentCapabilityObservedModelV1 }
 
 // Validate rejects capability identifiers outside the canonical inventory.
 func (c ContentCapability) Validate() error {
@@ -30,65 +32,81 @@ func (c ContentCapability) Validate() error {
 	return nil
 }
 
-// JSONSchema declares the closed capability inventory to generated clients.
+// JSONSchema deliberately leaves discovery tokens forward-open. Go producers
+// still use Validate and AllContentCapabilities as their closed inventory.
 func (ContentCapability) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema("Content Capability", "Optional enriched transcript-content behavior that a client must negotiate before emission", AllContentCapabilities), nil
+	var s jsonschema.Schema
+	s.AddType(jsonschema.String)
+	s.WithTitle("Content Capability")
+	s.WithDescription("Forward-open discovery token for an optional enriched transcript-content behavior. Token meanings are immutable and incompatible semantics require a new token. Consumers use exact set membership, never semantic-version parsing or ordering, and ignore unknown tokens. Producers emit only the closed Go inventory.")
+	return s, nil
 }
 
-// ContentCapabilityVersion identifies one semantic version of a capability.
-// It is independent from the broader push-envelope contract version.
-type ContentCapabilityVersion string
-
-const (
-	// ContentCapabilityVersionObservedModelV1 is the first observed-model
-	// preservation and publish-acceptance contract.
-	ContentCapabilityVersionObservedModelV1 ContentCapabilityVersion = "1.0.0"
-)
-
-// AllContentCapabilityVersions is the canonical closed capability-version inventory.
-var AllContentCapabilityVersions = []ContentCapabilityVersion{ContentCapabilityVersionObservedModelV1}
-
-// IsValid reports whether v belongs to the closed capability-version inventory.
-func (v ContentCapabilityVersion) IsValid() bool {
-	return v == ContentCapabilityVersionObservedModelV1
+// KnownContentCapabilities filters unknown discovery tokens, removes duplicates,
+// and returns known tokens in canonical lexicographic order.
+func KnownContentCapabilities(advertised []ContentCapability) []ContentCapability {
+	known := make(map[ContentCapability]struct{}, len(advertised))
+	for _, capability := range advertised {
+		if capability.IsValid() {
+			known[capability] = struct{}{}
+		}
+	}
+	result := make([]ContentCapability, 0, len(known))
+	for capability := range known {
+		result = append(result, capability)
+	}
+	slices.Sort(result)
+	return result
 }
 
-// Validate rejects capability versions outside the canonical inventory.
-func (v ContentCapabilityVersion) Validate() error {
-	if !v.IsValid() {
-		return fmt.Errorf("content capability version validation failed at schema.ContentCapabilityVersion.Validate while negotiating enriched transcript content: version %q is outside the closed contract set, so the caller cannot determine preservation semantics; use one of %v from AllContentCapabilityVersions", v, AllContentCapabilityVersions)
+// ValidateContentCapabilityAdvertisements validates a server-produced list.
+// Discovery readers stay forward-open, but producers must emit only known,
+// unique tokens in canonical lexicographic order.
+func ValidateContentCapabilityAdvertisements(advertised []ContentCapability) error {
+	for i, capability := range advertised {
+		if err := capability.Validate(); err != nil {
+			return fmt.Errorf("content capability advertisement validation failed at schema.ValidateContentCapabilityAdvertisements while validating item %d: the server emitted an unknown token and clients cannot rely on its semantics; update the schema inventory before advertising it: %w", i, err)
+		}
+		if i > 0 && advertised[i-1] >= capability {
+			return fmt.Errorf("content capability advertisement validation failed at schema.ValidateContentCapabilityAdvertisements while checking item %d: advertisements are duplicated or not in canonical lexicographic order, so server output is nondeterministic; deduplicate and sort with KnownContentCapabilities", i)
+		}
 	}
 	return nil
 }
 
-// JSONSchema declares the closed capability-version inventory to generated clients.
-func (ContentCapabilityVersion) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema("Content Capability Version", "Semantic version of one optional enriched transcript-content behavior", AllContentCapabilityVersions), nil
+// MissingContentCapabilities returns required tokens absent from discovery.
+// Unknown discovery tokens are ignored and omitted and empty lists are equal.
+func MissingContentCapabilities(advertised, required []ContentCapability) []ContentCapability {
+	available := KnownContentCapabilities(advertised)
+	missing := make([]ContentCapability, 0, len(required))
+	for _, capability := range KnownContentCapabilities(required) {
+		if !slices.Contains(available, capability) {
+			missing = append(missing, capability)
+		}
+	}
+	return missing
 }
 
-// ContentCapabilityAdvertisement declares one server-supported enriched-content contract.
-type ContentCapabilityAdvertisement struct {
-	Capability ContentCapability        `json:"capability"`
-	Version    ContentCapabilityVersion `json:"version"`
-}
-
-// Validate rejects unknown values and capability/version combinations.
-func (a ContentCapabilityAdvertisement) Validate() error {
-	if err := a.Capability.Validate(); err != nil {
-		return fmt.Errorf("content capability advertisement validation failed at schema.ContentCapabilityAdvertisement.Validate while validating capability: %w", err)
-	}
-	if err := a.Version.Validate(); err != nil {
-		return fmt.Errorf("content capability advertisement validation failed at schema.ContentCapabilityAdvertisement.Validate while validating version: %w", err)
-	}
-	if a.Capability != ContentCapabilityObservedModel || a.Version != ContentCapabilityVersionObservedModelV1 {
-		return fmt.Errorf("content capability advertisement validation failed at schema.ContentCapabilityAdvertisement.Validate while matching capability to version: capability %q does not define version %q, so a client cannot rely on the advertised semantics; advertise observed_model with version 1.0.0", a.Capability, a.Version)
+// RequiredContentCapabilities scans root and nested turns for optional evidence.
+// The session-level Model seed is legacy metadata and does not require a
+// capability. An observedModel on any assistant turn, including a nested
+// subagent turn, requires observed_model_v1.
+func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
+	for _, turn := range payload.Turns {
+		if turn.ObservedModel != "" {
+			return []ContentCapability{ContentCapabilityObservedModelV1}
+		}
 	}
 	return nil
 }
 
 // ValidateObservedModelEvidence enforces the enriched-publish attribution rule.
 // Subagent output uses the assistant role at a nonzero depth, so RoleAssistant
-// covers both root assistants and subagents. Omitted evidence is valid.
+// covers both root assistants and subagents. Omitted evidence is valid. Servers
+// advertising observed_model_v1 guarantee this validation completes before any
+// persistence or other side effect and that accepted observedModel value bytes
+// survive publish, storage, migration, rewrite, and serving exactly. JSON
+// whitespace, object-key ordering, and other formatting are not guaranteed.
 func ValidateObservedModelEvidence(role Role, observed ObservedModelID) error {
 	if observed == "" {
 		return nil
