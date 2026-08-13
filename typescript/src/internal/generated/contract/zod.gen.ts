@@ -2209,6 +2209,12 @@ export const zTypeOrigin = z.enum([
 
 export type TypeOrigin = z.infer<typeof zTypeOrigin>;
 
+export const zUICapabilitiesResponse = z.object({
+    uiCapabilities: z.array(z.string()).optional()
+}).strict();
+
+export type UICapabilitiesResponse = z.infer<typeof zUICapabilitiesResponse>;
+
 export const zUnifiedMetadata = z.object({
     contentHash: z.string(),
     cwd: z.string().optional(),
