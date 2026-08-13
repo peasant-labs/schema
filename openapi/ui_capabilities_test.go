@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	specpkg "github.com/peasant-labs/schema/openapi"
+	"github.com/peasant-labs/schema/testcase"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v3"
 )
@@ -26,11 +27,7 @@ type uiCapabilitiesFixture struct {
 		Component      string `yaml:"component"`
 		Property       string `yaml:"property"`
 	} `yaml:"contract"`
-	Cases []struct {
-		Name  string `yaml:"name"`
-		Body  string `yaml:"body"`
-		Valid bool   `yaml:"valid"`
-	} `yaml:"cases"`
+	Cases testcase.Corpus[string, bool] `yaml:"cases"`
 }
 
 func TestUICapabilitiesContract(t *testing.T) {
@@ -40,8 +37,11 @@ func TestUICapabilitiesContract(t *testing.T) {
 	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatal(err)
 	}
-	if len(fixture.Cases) < 6 {
-		t.Fatalf("UI capabilities fixture has %d cases, want at least 6", len(fixture.Cases))
+	if err := fixture.Cases.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	if err := fixture.Cases.CheckMin(7); err != nil {
+		t.Fatal(err)
 	}
 
 	spec, err := specpkg.BuildPeasantLocalAPISpec()
@@ -118,6 +118,12 @@ func TestUICapabilitiesContract(t *testing.T) {
 	if _, closed := items["enum"]; closed {
 		t.Fatal("UI capability items must remain open strings, not an enum")
 	}
+	if component["additionalProperties"] != false {
+		t.Fatalf("additionalProperties=%v, want false", component["additionalProperties"])
+	}
+	if _, ok := property["description"].(string); !ok {
+		t.Fatal("uiCapabilities description is absent from the generated contract")
+	}
 
 	raw, err := json.Marshal(component)
 	if err != nil {
@@ -131,15 +137,15 @@ func TestUICapabilitiesContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, tc := range fixture.Cases {
+	for _, tc := range fixture.Cases.Cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			var body any
-			if err := json.Unmarshal([]byte(tc.Body), &body); err != nil {
+			if err := json.Unmarshal([]byte(tc.Input), &body); err != nil {
 				t.Fatal(err)
 			}
 			valid := compiled.Validate(body) == nil
-			if valid != tc.Valid {
-				t.Fatalf("schema accepted=%v, want %v for %s", valid, tc.Valid, fmt.Sprintf("%q", tc.Body))
+			if valid != tc.Expected {
+				t.Fatalf("schema accepted=%v, want %v for %s", valid, tc.Expected, fmt.Sprintf("%q", tc.Input))
 			}
 		})
 	}

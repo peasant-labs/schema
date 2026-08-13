@@ -2211,7 +2211,7 @@ export type TypeOrigin = z.infer<typeof zTypeOrigin>;
 
 export const zUICapabilitiesResponse = z.object({
     uiCapabilities: z.array(z.string()).optional()
-});
+}).strict();
 
 export type UICapabilitiesResponse = z.infer<typeof zUICapabilitiesResponse>;
 

@@ -410,7 +410,7 @@ type MockConfigResponse struct {
 // capabilities; consumers compare known tokens by exact membership and ignore
 // unknown tokens. Producers emit tokens in sorted order without duplicates.
 type UICapabilitiesResponse struct {
-	UICapabilities []string `json:"uiCapabilities,omitempty"`
+	UICapabilities []string `json:"uiCapabilities,omitempty" description:"Set of opaque UI capability tokens enabled for this running Peasant server process. Omitted and empty mean no optional capabilities. Ordering is insignificant. Consumers must ignore unknown tokens and compare known tokens by exact membership. Token meanings and lifecycle are owned by Peasant. Peasant producers emit tokens in sorted order without duplicates." nullable:"false"`
 }
 
 // --- Shutdown ---

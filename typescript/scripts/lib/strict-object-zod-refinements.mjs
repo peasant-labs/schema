@@ -46,6 +46,7 @@ export const STRICT_OBJECTS = [
   "zPublishedAssociation",
   "zOwnerTranscriptUpdateRequest",
   "zOwnerTranscriptUpdateResponse",
+  "zUICapabilitiesResponse",
   "zPublishNormalizedValues",
   "zPublishAppliedState",
   "zAuthoritativePublishResponse",

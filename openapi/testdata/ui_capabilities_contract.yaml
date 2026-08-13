@@ -8,21 +8,46 @@ contract:
   component: UICapabilitiesResponse
   property: uiCapabilities
 cases:
-  - name: omitted_is_valid
-    body: '{}'
-    valid: true
-  - name: empty_is_valid
-    body: '{"uiCapabilities":[]}'
-    valid: true
-  - name: unknown_tokens_are_valid
-    body: '{"uiCapabilities":["future_experiment_v1"]}'
-    valid: true
-  - name: multiple_open_tokens_are_valid
-    body: '{"uiCapabilities":["alpha_v1","future_experiment_v1"]}'
-    valid: true
-  - name: null_is_invalid
-    body: '{"uiCapabilities":null}'
-    valid: false
-  - name: non_string_item_is_invalid
-    body: '{"uiCapabilities":[7]}'
-    valid: false
+  cases:
+    - name: omitted_is_valid
+      input: '{}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: omitted means no optional capabilities}
+      mutation: {description: omits the optional capability list}
+    - name: empty_is_valid
+      input: '{"uiCapabilities":[]}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: empty means no optional capabilities}
+      mutation: {description: supplies the equivalent empty list}
+    - name: unknown_tokens_are_valid
+      input: '{"uiCapabilities":["future_experiment_v1"]}'
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: unknown tokens remain valid}
+      mutation: {description: introduces one future opaque token}
+    - name: multiple_open_tokens_are_valid
+      input: '{"uiCapabilities":["alpha_v1","future_experiment_v1"]}'
+      expected: true
+      classification: must-pass
+      provenance: {source: boundary, ref: items are open strings without an enum}
+      mutation: {description: introduces multiple opaque tokens}
+    - name: null_is_invalid
+      input: '{"uiCapabilities":null}'
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: null is invalid}
+      mutation: {description: replaces the optional list with null}
+    - name: non_string_item_is_invalid
+      input: '{"uiCapabilities":[7]}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: capability items are strings}
+      mutation: {description: replaces an opaque string with a number}
+    - name: unknown_property_is_invalid
+      input: '{"uiCapabilities":[],"misspelledCapability":true}'
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: response envelope is closed}
+      mutation: {description: adds an undeclared response property}
