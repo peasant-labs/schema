@@ -179,7 +179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish exact transcript bytes with typed JSON metadata. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
+        /** @description Publish exact transcript bytes with typed JSON metadata. A server advertising observed_model version 1.0.0 MUST reject observedModel evidence on non-assistant turns before persistence; assistant includes nested subagent output represented by role assistant. Creation returns 201 and replacement returns 200; both carry the complete authoritative receipt. */
         post: operations["publishTranscript"];
         delete?: never;
         options?: never;
@@ -288,6 +288,21 @@ export interface components {
         SchemaAuthoritativeSourceInfo: Schema.AuthoritativeSourceInfo;
         SchemaAuthoritativeSubagentRef: Schema.AuthoritativeSubagentRef;
         SchemaAuthoritativeTimestampInfo: Schema.AuthoritativeTimestampInfo;
+        /**
+         * Content Capability
+         * @description Optional enriched transcript-content behavior that a client must negotiate before emission
+         * @example observed_model
+         * @enum {string}
+         */
+        SchemaContentCapability: Schema.ContentCapability;
+        SchemaContentCapabilityAdvertisement: Schema.ContentCapabilityAdvertisement;
+        /**
+         * Content Capability Version
+         * @description Semantic version of one optional enriched transcript-content behavior
+         * @example 1.0.0
+         * @enum {string}
+         */
+        SchemaContentCapabilityVersion: Schema.ContentCapabilityVersion;
         /**
          * Entry Type
          * @description Classification of a single entry within an agent session transcript

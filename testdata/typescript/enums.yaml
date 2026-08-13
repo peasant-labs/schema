@@ -1,4 +1,14 @@
 enums:
+  - name: ContentCapability
+    all_name: AllContentCapabilities
+    members:
+      - {name: ObservedModel, value: "observed_model"}
+    all_values: ["observed_model"]
+  - name: ContentCapabilityVersion
+    all_name: AllContentCapabilityVersions
+    members:
+      - {name: ObservedModelV1, value: "1.0.0"}
+    all_values: ["1.0.0"]
   - name: PublishOperationKind
     all_name: AllPublishOperationKinds
     members:

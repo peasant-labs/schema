@@ -425,6 +425,31 @@ export const zConfidence = z.enum([
 export type Confidence = z.infer<typeof zConfidence>;
 
 /**
+ * Content Capability
+ *
+ * Optional enriched transcript-content behavior that a client must negotiate before emission
+ */
+export const zContentCapability = z.enum(['observed_model']);
+
+export type ContentCapability = z.infer<typeof zContentCapability>;
+
+/**
+ * Content Capability Version
+ *
+ * Semantic version of one optional enriched transcript-content behavior
+ */
+export const zContentCapabilityVersion = z.enum(['1.0.0']);
+
+export type ContentCapabilityVersion = z.infer<typeof zContentCapabilityVersion>;
+
+export const zContentCapabilityAdvertisement = z.object({
+    capability: zContentCapability,
+    version: zContentCapabilityVersion
+});
+
+export type ContentCapabilityAdvertisement = z.infer<typeof zContentCapabilityAdvertisement>;
+
+/**
  * Content Kind
  *
  * Payload kind carried by a transcript content envelope
@@ -1173,6 +1198,7 @@ export type ScaleKind = z.infer<typeof zScaleKind>;
 
 export const zSchemaVersionResponse = z.object({
     annotationSchemaVersion: z.string(),
+    contentCapabilities: z.array(zContentCapabilityAdvertisement).optional(),
     minPullContractVersion: z.string().optional(),
     minPushContractVersion: z.string(),
     pullContractVersion: z.string().optional(),

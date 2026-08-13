@@ -93,6 +93,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"RewriteResolution", new(schema.RewriteResolution)}, {"RewrittenCommit", new(schema.RewrittenCommit)},
 		{"Role", new(schema.Role)},
 		{"ScaleKind", new(schema.ScaleKind)}, {"SchemaVersionResponse", new(schema.SchemaVersionResponse)},
+		{"ContentCapability", new(schema.ContentCapability)}, {"ContentCapabilityVersion", new(schema.ContentCapabilityVersion)}, {"ContentCapabilityAdvertisement", new(schema.ContentCapabilityAdvertisement)},
 		{"SearchPayload", new(schema.SearchPayload)}, {"SearchResult", new(schema.SearchResult)},
 		{"ServerMessage", new(schema.ServerMessage)}, {"SessionAssociation", new(schema.SessionAssociation)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},

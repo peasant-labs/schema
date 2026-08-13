@@ -1,0 +1,10 @@
+expectedCaseCount: 8
+requiredCaseNames:
+  - observed-model-advertisement-valid
+  - unknown-capability-invalid
+  - unknown-version-invalid
+  - assistant-evidence-valid
+  - omitted-evidence-valid
+  - user-evidence-invalid
+  - tool-evidence-invalid
+  - invalid-observation-invalid

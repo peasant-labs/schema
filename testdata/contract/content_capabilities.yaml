@@ -1,0 +1,49 @@
+cases:
+  - name: observed-model-advertisement-valid
+    input: {capability: observed_model, version: 1.0.0}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: canonical observed-model preservation advertisement}
+    mutation: {description: uses the sole canonical capability and version pair}
+  - name: unknown-capability-invalid
+    input: {capability: model_attribution, version: 1.0.0}
+    expected: {accepted: false, errorContains: outside the closed contract set}
+    classification: must-fail
+    provenance: {source: boundary, ref: capability identifiers form a closed set}
+    mutation: {description: replaces the canonical capability with an unknown token}
+  - name: unknown-version-invalid
+    input: {capability: observed_model, version: 2.0.0}
+    expected: {accepted: false, errorContains: outside the closed contract set}
+    classification: must-fail
+    provenance: {source: boundary, ref: capability versions form a closed set}
+    mutation: {description: replaces the canonical version with an unknown version}
+  - name: assistant-evidence-valid
+    input: {role: assistant, observedModel: Anthropic/Claude-Opus-4-8}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: assistant and nested subagent output may carry observed evidence}
+    mutation: {description: attaches exact evidence to assistant output}
+  - name: omitted-evidence-valid
+    input: {role: user}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: legacy turns may omit optional evidence}
+    mutation: {description: omits evidence from a non-assistant turn}
+  - name: user-evidence-invalid
+    input: {role: user, observedModel: anthropic/claude-opus-4-8}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: enriched publish rejects user-attributed model evidence}
+    mutation: {description: moves assistant evidence onto a user turn}
+  - name: tool-evidence-invalid
+    input: {role: tool, observedModel: anthropic/claude-opus-4-8}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: enriched publish rejects tool-attributed model evidence}
+    mutation: {description: moves assistant evidence onto a tool turn}
+  - name: invalid-observation-invalid
+    input: {role: assistant, observedModel: " padded "}
+    expected: {accepted: false, errorContains: has Unicode whitespace at an edge}
+    classification: must-fail
+    provenance: {source: boundary, ref: publish validation invokes the observed-model constructor}
+    mutation: {description: pads assistant evidence at both edges}

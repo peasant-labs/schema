@@ -197,4 +197,8 @@ type SchemaVersionResponse struct {
 	MinPushContractVersion  PushContractVersion `json:"minPushContractVersion"`
 	PullContractVersion     PushContractVersion `json:"pullContractVersion,omitempty"`
 	MinPullContractVersion  PushContractVersion `json:"minPullContractVersion,omitempty"`
+	// ContentCapabilities advertises optional enriched-content contracts proven
+	// safe through the server's publish, storage, migration, and serving paths.
+	// Absence means no enriched-content capability is advertised.
+	ContentCapabilities []ContentCapabilityAdvertisement `json:"contentCapabilities,omitempty"`
 }
