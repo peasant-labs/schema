@@ -404,6 +404,15 @@ type MockConfigResponse struct {
 	API     []string `json:"api,omitempty"`
 }
 
+// UICapabilitiesResponse reports optional UI behavior enabled for the running
+// local Peasant server. Capability token meanings and lifecycle are owned by
+// Peasant, not by the schema module. Omitted and empty both mean no optional
+// capabilities; consumers compare known tokens by exact membership and ignore
+// unknown tokens. Producers emit tokens in sorted order without duplicates.
+type UICapabilitiesResponse struct {
+	UICapabilities []string `json:"uiCapabilities,omitempty" description:"Set of opaque UI capability tokens enabled for this running Peasant server process. Omitted and empty mean no optional capabilities. Ordering is insignificant. Consumers must ignore unknown tokens and compare known tokens by exact membership. Token meanings and lifecycle are owned by Peasant. Peasant producers emit tokens in sorted order without duplicates." nullable:"false"`
+}
+
 // --- Shutdown ---
 
 // ShutdownResponse is the JSON response for POST /api/v1/shutdown.

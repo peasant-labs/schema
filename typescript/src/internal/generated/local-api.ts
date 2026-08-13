@@ -35,6 +35,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/config/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Discover optional UI behavior enabled for this server process. */
+        get: operations["getUICapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/mock": {
         parameters: {
             query?: never;
@@ -645,6 +662,7 @@ export interface components {
         ServerMessage: Schema.ServerMessage;
         SessionDetailPayload: Schema.SessionDetailPayload;
         TrendsPayload: Schema.TrendsPayload;
+        UICapabilitiesResponse: Schema.UICapabilitiesResponse;
     };
     responses: never;
     parameters: never;
@@ -722,6 +740,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaCreateAnnotationResponse"];
+                };
+            };
+        };
+    };
+    getUICapabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UICapabilitiesResponse"];
                 };
             };
         };

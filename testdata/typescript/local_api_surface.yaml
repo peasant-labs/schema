@@ -3,6 +3,7 @@ operations:
   - {path: /api/v1/annotations, method: get, operation_id: listAnnotations}
   - {path: /api/v1/annotations, method: post, operation_id: createAnnotation}
   - {path: /api/v1/config/mock, method: get, operation_id: getMockConfig}
+  - {path: /api/v1/config/capabilities, method: get, operation_id: getUICapabilities}
   - {path: /api/v1/health, method: get, operation_id: getHealth}
   - {path: "/api/v1/map/{projectHash}", method: get, operation_id: getMapGraph}
   - {path: "/api/v1/map/{projectHash}/node", method: get, operation_id: getMapNodeDetail}
