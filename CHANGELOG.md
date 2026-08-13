@@ -16,7 +16,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   nested subagent output. Older servers omit the optional advertisement.
   Consumers ignore unknown discovery tokens and use set membership. Go
   producers retain a closed inventory and emit unique tokens in canonical order.
-  Token meanings are immutable; incompatible guarantees use a new token.
+  Token meanings are immutable; incompatible guarantees use a new token. See
+  the durable [content capability negotiation specification](docs/content-capability-negotiation.md)
+  for the complete wire semantics and deployment guarantees.
 
 ## [v0.1.1-rc1] - 2026-08-12
 

@@ -204,6 +204,8 @@ type SchemaVersionResponse struct {
 	// SemVer ordering. Advertisements are deployment-specific: clients preflight
 	// the destination immediately before remote upload and refuse locally when a
 	// payload requirement is missing, without stripping evidence. A dry run may
-	// perform only this local negotiation and must not upload remotely.
+	// perform only this local negotiation and must not upload remotely. Duplicate
+	// server output is invalid, clients tolerate and deduplicate it, order has no
+	// meaning, and canonical server serialization is lexicographically sorted.
 	ContentCapabilities []ContentCapability `json:"contentCapabilities,omitempty"`
 }

@@ -160,7 +160,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Advertise the annotation schema version plus the push and pull contract acceptance/negotiation windows ([Min, Current]) so the CLI can preflight and version-negotiate before publishing or pulling. */
+        /** @description Advertise the annotation schema version plus push and pull contract windows and the deployment-specific content-capability set. contentCapabilities omitted or empty means none and null is invalid. Its items are opaque, forward-open revision strings: clients match exactly without SemVer or suffix parsing, ignore unknown tokens, and tolerate/deduplicate duplicates; server output contains only pinned known tokens, rejects duplicates, has no semantic order, and is serialized lexicographically. observed_model_v1 is required exactly when any root or nested assistant turn carries observedModel, not for session model alone. It guarantees assistant-only value validation before persistence with no invalid database or blob side effects and byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are not guaranteed. */
         get: operations["getSchemaVersion"];
         put?: never;
         post?: never;
