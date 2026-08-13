@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.1-rc2] - 2026-08-13
+
 ### Added
 
 - Village API 0.13.0 and Types 0.11.0 add a flat, forward-open capability
