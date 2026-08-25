@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.2-rc2] - 2026-08-25
+
 ### Added
 
 - `RemoteLabel(remote string) (label string, ok bool)`: the canonical
