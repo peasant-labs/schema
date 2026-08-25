@@ -73,15 +73,15 @@ cases:
     input: "ssh://git@[::1]:2222/team/repo"
     expected: {label: "[::1]:team/repo", ok: true}
     classification: must-pass
-    provenance: {source: boundary, ref: "port stripping must be bracket-aware so an IPv6 literal host is never mangled"}
-    mutation: {description: "an IPv6 literal host keeps its brackets and inner colons while the trailing port is dropped"}
+    provenance: {source: boundary, ref: "an IPv6 literal host with an explicit port must render with brackets preserved and the port dropped"}
+    mutation: {description: "proves bracket PRESERVATION only: a naive last-colon strip also passes this case by coincidence, because the last colon in [::1]:2222 happens to be the port separator, so this case alone cannot prove bracket-awareness -- see ipv6_host_without_port for the discriminating case"}
 
   - name: ipv6_host_without_port
     input: "ssh://git@[::1]/team/repo"
     expected: {label: "[::1]:team/repo", ok: true}
     classification: must-pass
-    provenance: {source: boundary, ref: "port stripping must be bracket-aware so an IPv6 literal host is never mangled"}
-    mutation: {description: "an IPv6 literal host with no port present passes through unchanged, brackets and all"}
+    provenance: {source: boundary, ref: "this is the discriminating IPv6 case: a naive last-colon strip mangles [::1] into [:, so only a bracket-aware implementation survives this one -- ipv6_host_with_port passes under both implementations and proves bracket preservation only"}
+    mutation: {description: "an IPv6 literal host with no port present must pass through unchanged, brackets and all; a naive strings.LastIndex(host, \":\") strip fails this case because it cuts inside the brackets"}
 
   - name: scp_form_numeric_first_path_segment_is_not_a_port
     input: "git@host:1234/repo"
