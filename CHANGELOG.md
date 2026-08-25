@@ -16,6 +16,29 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   constant changed. Recorded as a deliberate exception to the contract-only
   leaf charter in `AGENTS.md`.
 
+## [v0.1.2-rc1] - 2026-08-25
+
+### Added
+
+- Local API 0.9.0 and Types 0.13.0 add the declared session origin: the closed
+  set `user | agent | unknown`, carried as the optional `sessionOrigin` field on
+  both `SessionDetailPayload` and `SessionSummary`. The producer that recorded a
+  session declares who drove it, instead of every consumer inferring it from
+  turn shapes after the evidence is gone. The contract states what each value
+  binds a consumer to: `user` and `agent` are decisions a consumer stores
+  without re-deriving; a declared `unknown` means the producer looked and could
+  not tell, so the consumer falls back to whatever rule it would have applied
+  had the field been absent, and never stores `unknown` in place of a judgement
+  it can make itself. An absent field means the producer expressed no opinion,
+  typically a build older than this field, and falls back the same way. The two
+  therefore behave identically while remaining distinct facts.
+- Local API 0.9.0 declares `GET /api/v1/session-summaries?ids=`, which returns
+  the summaries for an explicit set of session identifiers. It resolves links,
+  so it applies neither origin scope nor selection scope: a session hidden from
+  every discovery list still resolves when its identifier is named. An
+  identifier that names no local session is omitted from the response rather
+  than failing the batch.
+
 ## [v0.1.1] - 2026-08-13
 
 Final release of the sticky model-evidence and capability-negotiation contracts.

@@ -1,0 +1,174 @@
+# Declared session origin: the closed wire menu, its two payload placements, and
+# the published component that carries the same menu to non-Go consumers.
+#
+# The arms are heterogeneous on purpose: the predicate arm works on raw tokens,
+# the round-trip arm on encoded payloads, and the schema arm on the generated
+# Types document.
+#
+# error_contains values are authored HERE as independent literals. They are the
+# message the JSON Schema validator actually emits, never a copy of a production
+# message constant: a needle derived from the code under test cannot detect that
+# code changing.
+
+required_behaviours:
+  - menu_member_accepted
+  - absent_declaration_accepted
+  - out_of_menu_rejected
+  - detail_round_trip
+  - summary_round_trip
+  - absent_field_omitted
+  - published_schema_refusal
+
+required_menu:
+  - user
+  - agent
+  - unknown
+
+by_id_operation:
+  path: /api/v1/session-summaries
+  method: get
+  operation_id: getSessionSummariesByID
+  query_parameter: ids
+  response_status: "200"
+  media_type: application/json
+  response_ref: "#/components/schemas/SchemaSessionsPayload"
+  description_anchors:
+    - {name: resolves_links, text: "resolves links"}
+    - {name: no_origin_scope, text: "NEITHER origin scope"}
+    - {name: no_selection_scope, text: "NOR selection scope"}
+    - {name: unknown_identifier_omitted, text: "omitted from the response rather than failing the batch"}
+
+validities:
+  cases:
+    - name: user is a declared menu member
+      input: "user"
+      expected: {valid: true, behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginUser"}
+      mutation: {description: "Offers the user token to the wire predicate."}
+    - name: agent is a declared menu member
+      input: "agent"
+      expected: {valid: true, behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginAgent"}
+      mutation: {description: "Offers the agent token to the wire predicate."}
+    - name: unknown is a declared menu member
+      input: "unknown"
+      expected: {valid: true, behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginUnknown"}
+      mutation: {description: "Offers the unknown token, the producer's explicit could-not-tell verdict, to the wire predicate."}
+    - name: an absent declaration is valid
+      input: ""
+      expected: {valid: true, behaviour: absent_declaration_accepted}
+      classification: must-pass
+      provenance: {source: boundary, ref: "SessionOrigin contract rule: an absent field means the producer expressed no opinion"}
+      mutation: {description: "Drops the declaration entirely, which the predicate must accept rather than treat as a malformed token."}
+    - name: an off-menu role name is refused
+      input: "orchestrator"
+      expected: {valid: false, behaviour: out_of_menu_rejected}
+      classification: must-fail
+      provenance: {source: manual, ref: "a plausible fourth origin a producer might invent"}
+      mutation: {description: "Replaces a menu member with a token outside the menu."}
+    - name: a capitalised menu member is refused
+      input: "User"
+      expected: {valid: false, behaviour: out_of_menu_rejected}
+      classification: must-fail
+      provenance: {source: boundary, ref: "casing boundary of the wire tokens"}
+      mutation: {description: "Changes only the case of a valid token, which the closed set must not fold."}
+    - name: a near-miss agent synonym is refused
+      input: "subagent"
+      expected: {valid: false, behaviour: out_of_menu_rejected}
+      classification: must-fail
+      provenance: {source: manual, ref: "the vocabulary a subagent transcript tempts a producer into"}
+      mutation: {description: "Substitutes a synonym a producer might reach for instead of the agent member."}
+
+round_trips:
+  cases:
+    - name: session detail carries a declared user origin
+      input: {payload: session_detail, origin: "user"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"user"', decoded: "user", behaviour: detail_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "SessionDetailPayload.SessionOrigin placement"}
+      mutation: {description: "Encodes and decodes the detail payload with a user declaration."}
+    - name: session detail carries a declared agent origin
+      input: {payload: session_detail, origin: "agent"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"agent"', decoded: "agent", behaviour: detail_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "SessionDetailPayload.SessionOrigin placement"}
+      mutation: {description: "Encodes and decodes the detail payload with an agent declaration."}
+    - name: session detail carries a declared unknown origin
+      input: {payload: session_detail, origin: "unknown"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"unknown"', decoded: "unknown", behaviour: detail_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a declared unknown is sent explicitly, not omitted"}
+      mutation: {description: "Encodes the explicit could-not-tell verdict, which must reach the consumer rather than being folded into an absent field."}
+    - name: session detail omits an absent declaration
+      input: {payload: session_detail, origin: ""}
+      expected: {field_present: false, encoded_json: "", decoded: "", behaviour: absent_field_omitted}
+      classification: must-pass
+      provenance: {source: boundary, ref: "omitempty on SessionDetailPayload.SessionOrigin"}
+      mutation: {description: "Leaves the declaration unset, which must produce no key rather than an empty fourth token."}
+    - name: session summary carries a declared user origin
+      input: {payload: session_summary, origin: "user"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"user"', decoded: "user", behaviour: summary_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "SessionSummary.SessionOrigin placement"}
+      mutation: {description: "Encodes and decodes the summary with a user declaration."}
+    - name: session summary carries a declared agent origin
+      input: {payload: session_summary, origin: "agent"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"agent"', decoded: "agent", behaviour: summary_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "SessionSummary.SessionOrigin placement"}
+      mutation: {description: "Encodes and decodes the summary with an agent declaration."}
+    - name: session summary carries a declared unknown origin
+      input: {payload: session_summary, origin: "unknown"}
+      expected: {field_present: true, encoded_json: '"sessionOrigin":"unknown"', decoded: "unknown", behaviour: summary_round_trip}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a declared unknown is sent explicitly, not omitted"}
+      mutation: {description: "Encodes the explicit could-not-tell verdict on the summary, which the lists surface reads."}
+    - name: session summary omits an absent declaration
+      input: {payload: session_summary, origin: ""}
+      expected: {field_present: false, encoded_json: "", decoded: "", behaviour: absent_field_omitted}
+      classification: must-pass
+      provenance: {source: boundary, ref: "omitempty on SessionSummary.SessionOrigin"}
+      mutation: {description: "Leaves the declaration unset on the summary, which must produce no key."}
+
+schema_probes:
+  cases:
+    - name: the published component accepts user
+      input: {origin: "user"}
+      expected: {accepted: true, error_contains: "", behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginUser"}
+      mutation: {description: "Offers a menu member to the generated Types component."}
+    - name: the published component accepts agent
+      input: {origin: "agent"}
+      expected: {accepted: true, error_contains: "", behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginAgent"}
+      mutation: {description: "Offers a menu member to the generated Types component."}
+    - name: the published component accepts unknown
+      input: {origin: "unknown"}
+      expected: {accepted: true, error_contains: "", behaviour: menu_member_accepted}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionOrigins member SessionOriginUnknown"}
+      mutation: {description: "Offers a menu member to the generated Types component."}
+    - name: the published component refuses an off-menu role name
+      input: {origin: "orchestrator"}
+      expected:
+        accepted: false
+        error_contains: 'value must be one of "user", "agent", "unknown"'
+        behaviour: published_schema_refusal
+      classification: must-fail
+      provenance: {source: manual, ref: "a plausible fourth origin a non-Go producer might invent"}
+      mutation: {description: "Offers a token outside the menu to the generated component, which must refuse it rather than degrade to an open string."}
+    - name: the published component carries no empty member
+      input: {origin: ""}
+      expected:
+        accepted: false
+        error_contains: 'value must be one of "user", "agent", "unknown"'
+        behaviour: published_schema_refusal
+      classification: must-fail
+      provenance: {source: boundary, ref: "an absent declaration is an omitted key, never an empty token"}
+      mutation: {description: "Offers the empty string to the generated component; adding it to the published enum would turn absence into a fourth wire token."}

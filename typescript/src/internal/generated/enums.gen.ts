@@ -31,6 +31,7 @@ import { zRewriteMethod, type RewriteMethod as RewriteMethodContract } from "./c
 import { zRewriteResolution, type RewriteResolution as RewriteResolutionContract } from "./contract/zod.gen.js";
 import { zRole, type Role as RoleContract } from "./contract/zod.gen.js";
 import { zScaleKind, type ScaleKind as ScaleKindContract } from "./contract/zod.gen.js";
+import { zSessionOrigin, type SessionOrigin as SessionOriginContract } from "./contract/zod.gen.js";
 import { zSessionOutcome, type SessionOutcome as SessionOutcomeContract } from "./contract/zod.gen.js";
 import { zSourceFormat, type SourceFormat as SourceFormatContract } from "./contract/zod.gen.js";
 import { zStopReason, type StopReason as StopReasonContract } from "./contract/zod.gen.js";
@@ -446,6 +447,17 @@ export const ScaleKind = Object.freeze({
 export const AllScaleKinds = Object.freeze([ScaleKind.Nominal, ScaleKind.Ordinal, ScaleKind.Continuous]) as readonly ScaleKind[];
 export function isScaleKind(value: unknown): value is ScaleKind {
   return zScaleKind.safeParse(value).success;
+}
+
+export type SessionOrigin = SessionOriginContract;
+export const SessionOrigin = Object.freeze({
+  User: zSessionOrigin.parse("user"),
+  Agent: zSessionOrigin.parse("agent"),
+  Unknown: zSessionOrigin.parse("unknown"),
+} as const);
+export const AllSessionOrigins = Object.freeze([SessionOrigin.User, SessionOrigin.Agent, SessionOrigin.Unknown]) as readonly SessionOrigin[];
+export function isSessionOrigin(value: unknown): value is SessionOrigin {
+  return zSessionOrigin.safeParse(value).success;
 }
 
 export type SessionOutcome = SessionOutcomeContract;
