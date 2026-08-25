@@ -45,3 +45,5 @@ specs:
   - {name: annotation-push-request-0.12.0.schema, json_sha256: eee1be1e2da230a900e7626f700c77036dbbe2e970c6c760bd41017c1df2a7a2, json_only: true}
   - {name: peasantlocal-api-0.7.0, json_sha256: ac0c0dcf80a447ca611bc33e7a684f7b684c41acd79983e6d514b12975bbba4c, yaml_sha256: 9683cc46dfb2c3378237eb50ebf09233c7bc307ea9f427a45bdb2b6e1dc82436}
   - {name: types-0.11.0, json_sha256: 2476484d85c50a38ebc04e209413f127bee87196ee756582dd9f44c262a97f94, yaml_sha256: fd23c3c9aa32934ff13a518188932958471dd2a401555d69ee1b6fab7b8d624c}
+  - {name: peasantlocal-api-0.8.0, json_sha256: 004836ff623a89f448d39be94a67a1d68f1539f93f8bb46b60a214e39cd9bab1, yaml_sha256: 8e7c6dbc8cebdce3ba8d21014e29bd3b175b7054c6386e93e149d648a8970b26}
+  - {name: types-0.12.0, json_sha256: cc4938e69218c354780fda5354eaa90f0c4b762993b47919966e682ede65cccb, yaml_sha256: c181962bf137d0abd49f6f7bd0564328a1b7a6daa33e7c78c2786da238bdaa47}

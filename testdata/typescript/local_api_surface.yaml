@@ -14,6 +14,7 @@ operations:
   - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
   - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}
   - {path: /api/v1/search, method: get, operation_id: searchMessages}
+  - {path: /api/v1/session-summaries, method: get, operation_id: getSessionSummariesByID}
   - {path: /api/v1/sessions, method: get, operation_id: listSessions}
   - {path: "/api/v1/sessions/{id}", method: get, operation_id: getSession}
   - {path: /api/v1/shutdown, method: post, operation_id: postShutdown}

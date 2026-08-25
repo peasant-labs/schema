@@ -239,6 +239,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/session-summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get session summaries for an explicit set of session identifiers. This operation resolves links, so it applies NEITHER origin scope NOR selection scope: a session hidden from every discovery list is still returned here when its identifier is named. An identifier that names no session on this machine is omitted from the response rather than failing the batch, so a partially stale link still resolves the sessions that do exist. */
+        get: operations["getSessionSummariesByID"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions": {
         parameters: {
             query?: never;
@@ -597,6 +614,15 @@ export interface components {
          */
         SchemaSessionID: Schema.SessionID;
         SchemaSessionInsight: Schema.SessionInsight;
+        /**
+         * Session Origin
+         * @description Who drove a recorded session, as declared by the producer that recorded it
+         * @example user
+         * @example agent
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaSessionOrigin: Schema.SessionOrigin;
         /**
          * Session Outcome
          * @description Resolution status of the session
@@ -1023,6 +1049,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaSearchPayload"];
+                };
+            };
+        };
+    };
+    getSessionSummariesByID: {
+        parameters: {
+            query: {
+                /** @description Comma-separated session IDs to resolve */
+                ids: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSessionsPayload"];
                 };
             };
         };

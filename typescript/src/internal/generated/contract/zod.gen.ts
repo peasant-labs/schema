@@ -1352,6 +1352,19 @@ export const zSessionInsight = z.object({
 export type SessionInsight = z.infer<typeof zSessionInsight>;
 
 /**
+ * Session Origin
+ *
+ * Who drove a recorded session, as declared by the producer that recorded it
+ */
+export const zSessionOrigin = z.enum([
+    'user',
+    'agent',
+    'unknown'
+]);
+
+export type SessionOrigin = z.infer<typeof zSessionOrigin>;
+
+/**
  * Session Outcome
  *
  * Resolution status of the session
@@ -1499,6 +1512,7 @@ export const zSessionSummary = z.object({
     preview: z.string().optional(),
     project: z.string().optional(),
     projectHash: zProjectHash.optional(),
+    sessionOrigin: zSessionOrigin.optional(),
     startTime: z.iso.datetime(),
     toolCallCount: z.int(),
     totalTokens: z.int(),
@@ -2174,6 +2188,7 @@ export const zSessionDetailPayload = z.object({
     project: z.string().optional(),
     schemaVersion: z.string().optional(),
     scorecard: zSessionScorecard.nullish(),
+    sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
     startTime: z.iso.datetime(),
     status: z.string().optional(),

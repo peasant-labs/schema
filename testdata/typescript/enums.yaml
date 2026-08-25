@@ -272,6 +272,13 @@ enums:
       - {name: Ordinal, value: "ordinal"}
       - {name: Continuous, value: "continuous"}
     all_values: ["nominal", "ordinal", "continuous"]
+  - name: SessionOrigin
+    all_name: AllSessionOrigins
+    members:
+      - {name: User, value: "user"}
+      - {name: Agent, value: "agent"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["user", "agent", "unknown"]
   - name: SessionOutcome
     all_name: AllOutcomes
     members:
