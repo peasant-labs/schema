@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.2-rc1] - 2026-08-25
+
 ### Added
 
 - Local API 0.9.0 and Types 0.13.0 add the declared session origin: the closed
