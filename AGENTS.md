@@ -16,7 +16,13 @@ their clients.
 
 It is a **contract-only leaf**: types, closed enums, generated OpenAPI specs, the
 publish-request JSON Schema validator, typed fixtures, and the codegen plus
-release-guard tooling. Its `typescript/` package generates the same contract
+release-guard tooling. **Recorded exception:** `RemoteLabel` (`remote_label.go`)
+is a small presentation rule, not a serialized contract type or an OpenAPI
+surface. It lives here anyway because this module is the only Go dependency
+both peasant and village share, and the rule must render byte-identical
+display labels in both; duplicating it per-repo would let the two renderings
+drift. Any further presentation logic added to this module needs its own
+recorded exception here, not a silent precedent from this one. Its `typescript/` package generates the same contract
 definitions and runtime schemas for TypeScript consumers and ships inside the
 module's tagged releases (first in `v0.1.0-rc6`); npm publication is automated
 in the release ceremony (`release.yml`'s `npm-publish` job, behind the same

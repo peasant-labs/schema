@@ -1,0 +1,14 @@
+requiredCaseNames:
+  - https_url
+  - ssh_scp_form
+  - ssh_scheme_url
+  - bare_normalized_form
+  - embedded_userinfo_pat
+  - dot_git_suffix
+  - trailing_slash
+  - self_hosted_host_keeps_full_hostname
+  - enterprise_host_with_port
+  - uppercase_host_is_lowercased
+  - empty_remote_is_rejected
+  - host_only_with_no_path_is_rejected
+  - path_only_with_no_host_is_rejected

@@ -1,0 +1,91 @@
+cases:
+  - name: https_url
+    input: "https://github.com/peasant-labs/village"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the canonical RemoteLabel host:owner/repo display form"}
+    mutation: {description: "a plain HTTPS remote yields host:owner/repo"}
+
+  - name: ssh_scp_form
+    input: "git@github.com:peasant-labs/village.git"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "RemoteLabel accepts SCP-like SSH form"}
+    mutation: {description: "SCP-like git@host:owner/repo.git form is parsed and its .git suffix dropped"}
+
+  - name: ssh_scheme_url
+    input: "ssh://git@github.com/peasant-labs/village"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "RemoteLabel accepts ssh:// scheme form"}
+    mutation: {description: "explicit ssh:// scheme with userinfo present but no credential is parsed"}
+
+  - name: bare_normalized_form
+    input: "github.com/peasant-labs/village"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "RemoteLabel accepts the normalized bare form peasant stores in canonical_remote"}
+    mutation: {description: "the pre-normalized host/owner/repo form used by ingest.NormalizeRemoteURL is accepted directly"}
+
+  - name: embedded_userinfo_pat
+    input: "https://oauth2:ghp_ABCDEF0123456789@github.com/peasant-labs/village"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "userinfo is stripped before the host is read so a credential can never reach a rendered label"}
+    mutation: {description: "a personal access token baked into the remote as userinfo is stripped before the host is extracted"}
+
+  - name: dot_git_suffix
+    input: "https://github.com/peasant-labs/village.git"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a trailing .git suffix is dropped"}
+    mutation: {description: "a trailing .git suffix on an HTTPS remote is trimmed before parsing"}
+
+  - name: trailing_slash
+    input: "https://github.com/peasant-labs/village/"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "trailing separator on an otherwise well-formed remote must not change the label"}
+    mutation: {description: "a trailing slash is trimmed before the host/path split"}
+
+  - name: self_hosted_host_keeps_full_hostname
+    input: "https://git.example.corp/team/repo"
+    expected: {label: "git.example.corp:team/repo", ok: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the full host is used for every host, with no allowlist and no short-prefix table"}
+    mutation: {description: "a self-hosted forge host is rendered in full, proving there is no host-shortening table"}
+
+  - name: enterprise_host_with_port
+    input: "https://git.example.corp:8443/team/repo"
+    expected: {label: "git.example.corp:8443:team/repo", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "an enterprise remote with an explicit port must remain distinguishable from the unported host"}
+    mutation: {description: "a host carrying an explicit port is kept verbatim, including the port, ahead of the owner/repo path"}
+
+  - name: uppercase_host_is_lowercased
+    input: "https://GitHub.COM/peasant-labs/village"
+    expected: {label: "github.com:peasant-labs/village", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "host casing must not fork the display label for the same remote"}
+    mutation: {description: "an uppercase host is lowercased before it is rendered into the label"}
+
+  - name: empty_remote_is_rejected
+    input: ""
+    expected: {label: "", ok: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "ok is false when remote is empty"}
+    mutation: {description: "an empty remote string carries no host or path and must be rejected"}
+
+  - name: host_only_with_no_path_is_rejected
+    input: "github.com"
+    expected: {label: "", ok: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "ok is false when remote carries no recognizable host+path pair"}
+    mutation: {description: "a bare host with no owner/repo path has nothing to split into a label"}
+
+  - name: path_only_with_no_host_is_rejected
+    input: "/peasant-labs/village"
+    expected: {label: "", ok: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "ok is false when remote carries no recognizable host+path pair"}
+    mutation: {description: "a leading-slash path with an empty host segment has no host to render"}
