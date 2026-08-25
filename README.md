@@ -78,7 +78,7 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.2-rc2` (shared RemoteLabel display rule release candidate) - stable `v0.1.1` remains published |
+| Latest tag | `v0.1.2` (shared RemoteLabel display rule and declared session origin) - stable release |
 | License | Apache-2.0 |
 | Spec versions | Village API `0.13.0` · PublishRequest `0.13.0` · AnnotationPushRequest `0.13.0` · Local API `0.8.0` · Types `0.12.0` (see [`versions.go`](versions.go)) |
 
