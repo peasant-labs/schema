@@ -5,6 +5,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- `RemoteLabel(remote string) (label string, ok bool)`: the canonical
+  "host:owner/repo" git remote display rule, ported from peasant's
+  `internal/projectlabel.FromRemote` minus its host-shortening table so a
+  self-hosted or enterprise forge renders under its full hostname. Embedded
+  userinfo (a PAT baked into a remote) is stripped before the host is read.
+  This is a presentation rule, not a wire type; no OpenAPI surface or version
+  constant changed. Recorded as a deliberate exception to the contract-only
+  leaf charter in `AGENTS.md`.
+
 ## [v0.1.2-rc1] - 2026-08-25
 
 ### Added

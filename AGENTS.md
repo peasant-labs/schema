@@ -29,6 +29,14 @@ WebSocket hub (the WebSocket types live here, but the hub stays in peasant). So
 the test suite is about keeping the contract honest, not about request/response
 behaviour (see `TESTING.md`).
 
+**Recorded exception:** `RemoteLabel` (`remote_label.go`) is a small
+presentation rule, not a serialized contract type or an OpenAPI surface. It
+lives here anyway because this module is the only Go dependency both peasant
+and village share, and the rule must render byte-identical display labels in
+both; duplicating it per-repo would let the two renderings drift. Any further
+presentation logic added to this module needs its own recorded exception
+here, not a silent precedent from this one.
+
 ## Branches and landing
 
 - `develop` is the default and integration branch; `main` is **reserved for
