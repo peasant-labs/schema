@@ -68,8 +68,11 @@ const (
 	// evidence for assistant-generated turns (additive = minor bump).
 	// Bumped to 0.8.0 when process-local UI capability discovery was added
 	// (additive = minor bump).
+	// Bumped to 0.9.0 when the session payloads gained the producer's declared
+	// session origin and the by-id session-summaries operation was declared
+	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.8.0"
+	PeasantLocalAPIVersion = "0.9.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -97,5 +100,8 @@ const (
 	// evidence for assistant-generated turns (additive = minor bump).
 	// Bumped to 0.11.0 for the content-capability contract catalog.
 	// Bumped to 0.12.0 for the open process-local UI capabilities envelope.
-	TypesVersion = "0.12.0"
+	// Bumped to 0.13.0 when the declared session-origin closed set entered the
+	// catalog and both session payloads gained its optional field (additive =
+	// minor bump).
+	TypesVersion = "0.13.0"
 )

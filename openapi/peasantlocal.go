@@ -53,6 +53,28 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/session-summaries
+	// A sibling RESOURCE rather than a path under /api/v1/sessions: getSession
+	// already occupies /api/v1/sessions/{id}, so a by-id collection nested there
+	// would be ambiguous against it. Annotation types sit beside annotations for
+	// the same reason.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-summaries",
+		"getSessionSummariesByID",
+		"Get session summaries for an explicit set of session identifiers. "+
+			"This operation resolves links, so it applies NEITHER origin scope NOR "+
+			"selection scope: a session hidden from every discovery list is still "+
+			"returned here when its identifier is named. An identifier that names "+
+			"no session on this machine is omitted from the response rather than "+
+			"failing the batch, so a partially stale link still resolves the "+
+			"sessions that do exist.",
+		[]string{"sessions"},
+		new(struct {
+			IDs string `query:"ids" required:"true" description:"Comma-separated session IDs to resolve"`
+		}),
+		new(schema.SessionsPayload)); err != nil {
+		return nil, err
+	}
+
 	// GET /api/v1/config/mock
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/config/mock",
 		"getMockConfig", "Get mock data configuration.", []string{"config"},
