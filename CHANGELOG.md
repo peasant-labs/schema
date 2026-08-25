@@ -5,6 +5,12 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.2] - 2026-08-25
+
+Final release of the shared RemoteLabel display rule and the declared session
+origin contracts. The contract artifacts are unchanged from `v0.1.2-rc2`:
+Village API 0.13.0, Local API 0.9.0, Types 0.13.0.
+
 ## [v0.1.2-rc2] - 2026-08-25
 
 ### Added
