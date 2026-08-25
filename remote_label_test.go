@@ -137,7 +137,6 @@ func validateRemoteLabelFixtureInventory(fixtures testcase.Corpus[string, remote
 func TestRemoteLabel(t *testing.T) {
 	fixtures := loadRemoteLabelFixtures(t)
 	for _, c := range fixtures.Cases {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			label, ok := schema.RemoteLabel(c.Input)
 			if label != c.Expected.Label || ok != c.Expected.OK {

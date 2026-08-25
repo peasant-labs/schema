@@ -9,6 +9,9 @@ requiredCaseNames:
   - self_hosted_host_keeps_full_hostname
   - enterprise_host_with_port
   - uppercase_host_is_lowercased
+  - ipv6_host_with_port
+  - ipv6_host_without_port
+  - scp_form_numeric_first_path_segment_is_not_a_port
   - empty_remote_is_rejected
   - host_only_with_no_path_is_rejected
   - path_only_with_no_host_is_rejected

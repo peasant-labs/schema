@@ -57,10 +57,10 @@ cases:
 
   - name: enterprise_host_with_port
     input: "https://git.example.corp:8443/team/repo"
-    expected: {label: "git.example.corp:8443:team/repo", ok: true}
+    expected: {label: "git.example.corp:team/repo", ok: true}
     classification: must-pass
-    provenance: {source: boundary, ref: "an enterprise remote with an explicit port must remain distinguishable from the unported host"}
-    mutation: {description: "a host carrying an explicit port is kept verbatim, including the port, ahead of the owner/repo path"}
+    provenance: {source: requirement, ref: "the port is dropped from the rendered label; same-host-different-port forges collide by design"}
+    mutation: {description: "a host carrying an explicit port renders with the port stripped, leaving only the bare hostname"}
 
   - name: uppercase_host_is_lowercased
     input: "https://GitHub.COM/peasant-labs/village"
@@ -68,6 +68,27 @@ cases:
     classification: must-pass
     provenance: {source: boundary, ref: "host casing must not fork the display label for the same remote"}
     mutation: {description: "an uppercase host is lowercased before it is rendered into the label"}
+
+  - name: ipv6_host_with_port
+    input: "ssh://git@[::1]:2222/team/repo"
+    expected: {label: "[::1]:team/repo", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "port stripping must be bracket-aware so an IPv6 literal host is never mangled"}
+    mutation: {description: "an IPv6 literal host keeps its brackets and inner colons while the trailing port is dropped"}
+
+  - name: ipv6_host_without_port
+    input: "ssh://git@[::1]/team/repo"
+    expected: {label: "[::1]:team/repo", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "port stripping must be bracket-aware so an IPv6 literal host is never mangled"}
+    mutation: {description: "an IPv6 literal host with no port present passes through unchanged, brackets and all"}
+
+  - name: scp_form_numeric_first_path_segment_is_not_a_port
+    input: "git@host:1234/repo"
+    expected: {label: "host:1234/repo", ok: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "the SCP-like form's colon is a mandatory path separator, never a port marker"}
+    mutation: {description: "a numeric first path segment in SCP-like form must survive as the owner, not be mistaken for and stripped as a port"}
 
   - name: empty_remote_is_rejected
     input: ""
