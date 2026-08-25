@@ -774,6 +774,43 @@ types:
     disposition: catalog
     component: SessionID
     reason: public wire or domain contract type
+  - go_name: SessionOrigin
+    disposition: catalog
+    component: SessionOrigin
+    reason: public wire or domain contract type
+  - go_name: SessionOriginBehaviour
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginPayloadKind
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginValidityExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginRoundTripInput
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginRoundTripExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginSchemaProbe
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginSchemaExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionOriginFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionSummariesByIDAnchor
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionSummariesByIDDescriptionAnchor
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionSummariesByIDContract
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
   - go_name: SessionOutcome
     disposition: catalog
     component: SessionOutcome

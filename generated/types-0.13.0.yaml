@@ -1,0 +1,5033 @@
+openapi: 3.1.0
+info:
+  description: Shared domain type catalog for Peasant APIs. No operations; register
+    these components for SDK code generation and cross-API type sharing.
+  title: Peasant Types
+  version: 0.13.0
+components:
+  schemas:
+    ActivityEdge:
+      properties:
+        from:
+          type: string
+        taskCount:
+          type: integer
+        to:
+          type: string
+      required:
+      - from
+      - to
+      - taskCount
+      type: object
+    AnnotationAxis:
+      description: Subscription dimension for annotation channels
+      enum:
+      - type
+      - session
+      - project
+      examples:
+      - type
+      - session
+      - project
+      title: Annotation Axis
+      type: string
+    AnnotationDatatype:
+      description: Storage type for annotation values (maps to SQLite STRICT column
+        type)
+      enum:
+      - text
+      - integer
+      - real
+      - boolean
+      examples:
+      - text
+      - integer
+      title: Annotation Datatype
+      type: string
+    AnnotationEntryTarget:
+      properties:
+        endIndex:
+          type: integer
+        entryIndex:
+          type: integer
+        sessionId:
+          minLength: 1
+          type: string
+      required:
+      - sessionId
+      - entryIndex
+      - endIndex
+      type: object
+    AnnotationManifestResponse:
+      properties:
+        digest:
+          description: Deterministic, order-independent digest over the hash set;
+            a client computing the same digest over its local set knows nothing diverged.
+          type: string
+        hashes:
+          description: Hex-encoded SHA3-256 annotation content-hashes the village
+            holds for the owner (sorted, de-duplicated).
+          items:
+            type: string
+          type: array
+      required:
+      - hashes
+      - digest
+      type: object
+    AnnotationPushItem:
+      oneOf:
+      - not:
+          anyOf:
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
+            - sessionId
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
+            - entryTarget
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
+            - annotationId
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
+            - projectHash
+        properties:
+          targetAssociationId:
+            $ref: '#/components/schemas/AssociationID'
+          targetKind:
+            const: association
+        required:
+        - targetKind
+        - targetAssociationId
+      - not:
+          anyOf:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
+            - targetAssociationId
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
+            - entryTarget
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
+            - annotationId
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
+            - projectHash
+        properties:
+          sessionId:
+            minLength: 1
+            type: string
+          targetKind:
+            const: session
+        required:
+        - targetKind
+        - sessionId
+      - not:
+          anyOf:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
+            - targetAssociationId
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
+            - sessionId
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
+            - annotationId
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
+            - projectHash
+        properties:
+          entryTarget:
+            $ref: '#/components/schemas/AnnotationEntryTarget'
+          targetKind:
+            const: entry
+        required:
+        - targetKind
+        - entryTarget
+      - not:
+          anyOf:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
+            - targetAssociationId
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
+            - sessionId
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
+            - entryTarget
+          - properties:
+              projectHash:
+                not:
+                  type: "null"
+            required:
+            - projectHash
+        properties:
+          annotationId:
+            minLength: 1
+            type: string
+          targetKind:
+            const: annotation
+        required:
+        - targetKind
+        - annotationId
+      - not:
+          anyOf:
+          - properties:
+              targetAssociationId:
+                not:
+                  type: "null"
+            required:
+            - targetAssociationId
+          - properties:
+              sessionId:
+                not:
+                  type: "null"
+            required:
+            - sessionId
+          - properties:
+              entryTarget:
+                not:
+                  type: "null"
+            required:
+            - entryTarget
+          - properties:
+              annotationId:
+                not:
+                  type: "null"
+            required:
+            - annotationId
+        properties:
+          projectHash:
+            $ref: '#/components/schemas/ProjectHash'
+          targetKind:
+            const: project
+        required:
+        - targetKind
+        - projectHash
+      properties:
+        annotationId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        annotatorName:
+          type: string
+        confidence:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        contentHash:
+          type: string
+        entryTarget:
+          anyOf:
+          - $ref: '#/components/schemas/AnnotationEntryTarget'
+          - type: "null"
+        isPrimary:
+          type: boolean
+        projectHash:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectHash'
+          - type: "null"
+        provenance:
+          anyOf:
+          - $ref: '#/components/schemas/Provenance'
+          - type: "null"
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        sessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAssociationId:
+          anyOf:
+          - $ref: '#/components/schemas/AssociationID'
+          - type: "null"
+        targetKind:
+          $ref: '#/components/schemas/TargetKind'
+        typeId:
+          type: string
+        value:
+          type: string
+      required:
+      - contentHash
+      - targetKind
+      - typeId
+      - value
+      - isPrimary
+      type: object
+    AnnotationPushRequest:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationPushItem'
+          type: array
+        retractions:
+          items:
+            type: string
+          type: array
+      required:
+      - annotations
+      type: object
+    AnnotationPushResponse:
+      properties:
+        created:
+          type: integer
+        errors:
+          type: integer
+        results:
+          items:
+            $ref: '#/components/schemas/AnnotationPushResult'
+          type: array
+        skipped:
+          type: integer
+        updated:
+          type: integer
+      required:
+      - created
+      - updated
+      - skipped
+      - errors
+      type: object
+    AnnotationPushResult:
+      properties:
+        contentHash:
+          type: string
+        error:
+          type: string
+        status:
+          $ref: '#/components/schemas/AnnotationPushStatus'
+      required:
+      - status
+      type: object
+    AnnotationPushStatus:
+      description: Per-item annotation push outcome
+      enum:
+      - created
+      - updated
+      - skipped
+      - error
+      examples:
+      - created
+      - updated
+      - skipped
+      - error
+      title: Annotation Push Status
+      type: string
+    AnnotationStatus:
+      description: ISO 11179 lifecycle state of an annotation type
+      enum:
+      - proposed
+      - active
+      - deprecated
+      - retired
+      examples:
+      - active
+      - deprecated
+      title: Annotation Status
+      type: string
+    AnnotationSummary:
+      properties:
+        annotatorKind:
+          $ref: '#/components/schemas/AnnotatorKind'
+        annotatorName:
+          type: string
+        confidence:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        contentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        createdAt:
+          format: int64
+          type: integer
+        id:
+          type: string
+        isPrimary:
+          type: boolean
+        provenance:
+          anyOf:
+          - $ref: '#/components/schemas/Provenance'
+          - type: "null"
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        supersededBy:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAnnotationId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetAssociationId:
+          anyOf:
+          - $ref: '#/components/schemas/AssociationID'
+          - type: "null"
+        targetContentHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetEntryEndIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetEntryIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetFilePath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetKind:
+          $ref: '#/components/schemas/TargetKind'
+        targetProjectHash:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectHash'
+          - type: "null"
+        targetSessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        typeId:
+          type: string
+        typeName:
+          type: string
+        value:
+          type: string
+      required:
+      - id
+      - targetKind
+      - isPrimary
+      - annotatorKind
+      - annotatorName
+      - typeId
+      - typeName
+      - value
+      - createdAt
+      type: object
+    AnnotationTypeSummary:
+      properties:
+        allowedTargetKinds:
+          items:
+            $ref: '#/components/schemas/TargetKind'
+          type: array
+        class:
+          type: string
+        description:
+          type: string
+        displayName:
+          type: string
+        family:
+          type: string
+        id:
+          type: string
+        lowerIsBetter:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        origin:
+          $ref: '#/components/schemas/TypeOrigin'
+        priorityOverride:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        scaleKind:
+          $ref: '#/components/schemas/ScaleKind'
+        status:
+          $ref: '#/components/schemas/AnnotationStatus'
+        typeId:
+          type: string
+        valueDomain:
+          $ref: '#/components/schemas/ValueDomain'
+        version:
+          type: integer
+      required:
+      - typeId
+      - version
+      - displayName
+      - family
+      - class
+      - valueDomain
+      - status
+      - origin
+      type: object
+    AnnotationsPayload:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationSummary'
+          type:
+          - array
+          - "null"
+        axis:
+          $ref: '#/components/schemas/AnnotationAxis'
+        id:
+          type: string
+      required:
+      - axis
+      - id
+      - annotations
+      type: object
+    AnnotatorKind:
+      description: 'Type of entity that produced an annotation: human, agent (AI model),
+        or rule (automated classifier)'
+      enum:
+      - human
+      - agent
+      - rule
+      examples:
+      - human
+      - agent
+      - rule
+      title: Annotator Kind
+      type: string
+    AnnotatorSummary:
+      properties:
+        description:
+          type: string
+        displayName:
+          type: string
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/AnnotatorKind'
+        modelId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+        providerKey:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        status:
+          type: string
+      required:
+      - id
+      - kind
+      - name
+      - displayName
+      - status
+      type: object
+    AssociationConclusion:
+      description: 'Producer-supplied conclusion for a session-to-commit association:
+        confirmed or candidate'
+      enum:
+      - confirmed
+      - candidate
+      examples:
+      - confirmed
+      - candidate
+      title: Association Conclusion
+      type: string
+    AssociationEvidenceKind:
+      description: Atomic observation supporting a session-to-commit association
+      enum:
+      - recorded_commit
+      - touched_file
+      - branch_membership
+      - time_window
+      examples:
+      - recorded_commit
+      - touched_file
+      - branch_membership
+      - time_window
+      title: Association Evidence Kind
+      type: string
+    AssociationEvidenceObservation:
+      properties:
+        branchName:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        kind:
+          $ref: '#/components/schemas/AssociationEvidenceKind'
+        recordedCommitHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        touchedFilePath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        windowEndMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        windowStartMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      required:
+      - kind
+      type: object
+    AssociationID:
+      description: Opaque durable Peasant identifier for one session-to-commit association
+      examples:
+      - assoc-20260726:session-a:commit-1
+      maxLength: 128
+      minLength: 1
+      pattern: ^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$
+      title: Association ID
+      type: string
+    AuthoritativeCommitInfo:
+      additionalProperties: false
+      properties:
+        authorEmail:
+          type: string
+        authorName:
+          type: string
+        authorTime:
+          format: int64
+          type: integer
+        commitTime:
+          format: int64
+          type: integer
+        hash:
+          type: string
+        message:
+          type: string
+      required:
+      - hash
+      - message
+      - authorName
+      - authorEmail
+      - commitTime
+      - authorTime
+      type: object
+    AuthoritativeDiagnosticEntry:
+      additionalProperties: false
+      properties:
+        errorType:
+          type: string
+        location:
+          type: string
+        message:
+          type: string
+        remediation:
+          type: string
+      required:
+      - errorType
+      - location
+      - message
+      - remediation
+      type: object
+    AuthoritativeDiagnosticsInfo:
+      additionalProperties: false
+      properties:
+        partial:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        warnings:
+          items:
+            $ref: '#/components/schemas/AuthoritativeDiagnosticEntry'
+          type: array
+      required:
+      - warnings
+      type: object
+    AuthoritativeGitContext:
+      additionalProperties: false
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/PublishedAssociation'
+          type: array
+        branch:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        commits:
+          items:
+            $ref: '#/components/schemas/AuthoritativeCommitInfo'
+          type: array
+        remote:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        tracking:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        worktree:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      type: object
+    AuthoritativeModelInfo:
+      additionalProperties: false
+      properties:
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hostSlug:
+          $ref: '#/components/schemas/HostSlug'
+        model:
+          $ref: '#/components/schemas/ModelID'
+        version:
+          type: string
+      required:
+      - harness
+      - model
+      type: object
+    AuthoritativeProjectContext:
+      additionalProperties: false
+      properties:
+        filePath:
+          type: string
+        hash:
+          $ref: '#/components/schemas/ProjectHash'
+        name:
+          type: string
+      required:
+      - hash
+      - name
+      type: object
+    AuthoritativePublishRequest:
+      additionalProperties: false
+      properties:
+        contentHash:
+          $ref: '#/components/schemas/TranscriptContentHash'
+        diagnostics:
+          $ref: '#/components/schemas/AuthoritativeDiagnosticsInfo'
+        entries:
+          items:
+            $ref: '#/components/schemas/AuthoritativeSessionEntry'
+          type: array
+        git:
+          $ref: '#/components/schemas/AuthoritativeGitContext'
+        identity:
+          $ref: '#/components/schemas/AuthoritativeSessionIdentity'
+        license:
+          $ref: '#/components/schemas/License'
+        model:
+          $ref: '#/components/schemas/AuthoritativeModelInfo'
+        project:
+          $ref: '#/components/schemas/AuthoritativeProjectContext'
+        quality:
+          $ref: '#/components/schemas/AuthoritativeQualityMetrics'
+        source:
+          $ref: '#/components/schemas/AuthoritativeSourceInfo'
+        stats:
+          $ref: '#/components/schemas/AuthoritativeSessionStats'
+        subagents:
+          items:
+            $ref: '#/components/schemas/AuthoritativeSubagentRef'
+          type: array
+        timestamp:
+          $ref: '#/components/schemas/AuthoritativeTimestampInfo'
+        visibilityIntent:
+          $ref: '#/components/schemas/VisibilityIntent'
+      required:
+      - model
+      - contentHash
+      type: object
+    AuthoritativePublishResponse:
+      additionalProperties: false
+      properties:
+        applied:
+          $ref: '#/components/schemas/PublishAppliedState'
+        blobKey:
+          type: string
+        blobSizeBytes:
+          format: int64
+          type: integer
+        contentHash:
+          $ref: '#/components/schemas/TranscriptContentHash'
+        created:
+          type: boolean
+        publishedAt:
+          format: int64
+          type: integer
+        requestOperationFingerprint:
+          $ref: '#/components/schemas/PublishRequestFingerprint'
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+        transcriptUrl:
+          type: string
+        updatedAt:
+          format: int64
+          type: integer
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+      required:
+      - transcriptId
+      - transcriptUrl
+      - visibility
+      - contentHash
+      - requestOperationFingerprint
+      - applied
+      - blobKey
+      - blobSizeBytes
+      - publishedAt
+      - updatedAt
+      - created
+      type: object
+    AuthoritativeQualityMetrics:
+      additionalProperties: false
+      properties:
+        computeVersion:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        computedAt:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        costCacheReadUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costCacheWriteUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costInputUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costModelId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        costOutputUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costReasoningUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costTotalUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        discoveryTurns:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        durationMinutes:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        explorationRatio:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        filesTouched:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        inputTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        linesChanged:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m2TokenOutcomeRatio:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m3UniqueToolCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m4ConsecutiveErrorMax:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m4ErrorRecoveryCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m5AvgMessageTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m5ContextUtilizationPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m5PeakContextTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6LinesSurvived:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6LinesTotal:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6OutputSurvivalPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m7SpecHasConstraints:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        m7SpecHasExamples:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        m7SpecWordCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/SessionOutcome'
+          - type: "null"
+        outputTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        retryLoops:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        retryTokensWasted:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        scope:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        scopeBreadth:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        signalDensity:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        subagentCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        titleGenerated:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolCalls:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        totalTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        turnCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      type: object
+    AuthoritativeSessionEntry:
+      additionalProperties: false
+      properties:
+        contentPreview:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        depth:
+          type: integer
+        entryId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        entryIndex:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/EntryType'
+        extra:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hasThinking:
+          type: boolean
+        hasToolUse:
+          type: boolean
+        isError:
+          type: boolean
+        parentEntryId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        parentIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        partType:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        rawByteLength:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        role:
+          $ref: '#/components/schemas/Role'
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        stopReason:
+          anyOf:
+          - $ref: '#/components/schemas/StopReason'
+          - type: "null"
+        timestampMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensIn:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensOut:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        toolCallId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolInput:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolKind:
+          anyOf:
+          - $ref: '#/components/schemas/ToolCallKind'
+          - type: "null"
+        toolNamesCsv:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolOutput:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      required:
+      - sessionId
+      - entryIndex
+      - harness
+      - entryType
+      - role
+      - hasToolUse
+      - hasThinking
+      - isError
+      - depth
+      type: object
+    AuthoritativeSessionIdentity:
+      additionalProperties: false
+      properties:
+        parentSessionId:
+          $ref: '#/components/schemas/SessionID'
+        schemaVersion:
+          type: integer
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - sessionId
+      - schemaVersion
+      type: object
+    AuthoritativeSessionStats:
+      additionalProperties: false
+      properties:
+        cachedReadTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        cachedWriteTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        durationMs:
+          format: int64
+          type: integer
+        subagentCount:
+          type: integer
+        thoughtTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        turnCount:
+          type: integer
+      required:
+      - turnCount
+      - toolCallCount
+      - subagentCount
+      - durationMs
+      - tokensIn
+      - tokensOut
+      type: object
+    AuthoritativeSourceInfo:
+      additionalProperties: false
+      properties:
+        filePath:
+          type: string
+        format:
+          $ref: '#/components/schemas/SourceFormat'
+      required:
+      - format
+      type: object
+    AuthoritativeSubagentRef:
+      additionalProperties: false
+      properties:
+        parentUuid:
+          $ref: '#/components/schemas/SessionID'
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - sessionId
+      - parentUuid
+      type: object
+    AuthoritativeTimestampInfo:
+      additionalProperties: false
+      properties:
+        end:
+          format: int64
+          type: integer
+        ingested:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        start:
+          format: int64
+          type: integer
+      required:
+      - start
+      - end
+      type: object
+    BatchCreateAnnotationsErrorResponse:
+      properties:
+        error:
+          type: string
+        failingIndex:
+          type: integer
+      required:
+      - error
+      - failingIndex
+      type: object
+    BatchCreateAnnotationsRequest:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/CreateAnnotationRequest'
+          type:
+          - array
+          - "null"
+      required:
+      - annotations
+      type: object
+    BatchCreateAnnotationsResponse:
+      properties:
+        ids:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+      required:
+      - ids
+      type: object
+    BuiltinCommand:
+      description: Claude Code built-in slash command name without the leading slash
+      enum:
+      - exit
+      - compact
+      - clear
+      - new
+      - model
+      - usage
+      - cost
+      - context
+      - plugin
+      - permissions
+      - login
+      - resume
+      - plan
+      - fast
+      - voice
+      - todos
+      - reload-plugins
+      - sandbox
+      - config
+      - statusline
+      - upgrade
+      - extra-usage
+      - rate-limit-options
+      - privacy-settings
+      - help
+      - commands
+      examples:
+      - exit
+      - compact
+      - clear
+      - new
+      - model
+      - usage
+      - cost
+      - context
+      - plugin
+      - permissions
+      - login
+      - resume
+      - plan
+      - fast
+      - voice
+      - todos
+      - reload-plugins
+      - sandbox
+      - config
+      - statusline
+      - upgrade
+      - extra-usage
+      - rate-limit-options
+      - privacy-settings
+      - help
+      - commands
+      title: Built-in Command
+      type: string
+    CLILoginQuery:
+      properties:
+        port:
+          description: Local callback server port
+          type: integer
+        state:
+          description: OAuth state parameter for CSRF protection
+          type: string
+      required:
+      - port
+      - state
+      type: object
+    CanonicalPublishGitContext:
+      additionalProperties: false
+      properties:
+        branch:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        commits:
+          items:
+            $ref: '#/components/schemas/AuthoritativeCommitInfo'
+          type: array
+        remote:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        tracking:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        worktree:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      required:
+      - branch
+      - remote
+      - worktree
+      - tracking
+      - commits
+      type: object
+    CanonicalPublishOperation:
+      additionalProperties: false
+      properties:
+        associations:
+          $ref: '#/components/schemas/PublishAssociationOperation'
+        contentHash:
+          $ref: '#/components/schemas/TranscriptContentHash'
+        license:
+          $ref: '#/components/schemas/PublishLicenseOperation'
+        replacement:
+          $ref: '#/components/schemas/CanonicalPublishReplacement'
+      required:
+      - replacement
+      - license
+      - associations
+      - contentHash
+      type: object
+    CanonicalPublishReplacement:
+      additionalProperties: false
+      properties:
+        diagnostics:
+          $ref: '#/components/schemas/AuthoritativeDiagnosticsInfo'
+        entries:
+          items:
+            $ref: '#/components/schemas/AuthoritativeSessionEntry'
+          type: array
+        git:
+          $ref: '#/components/schemas/CanonicalPublishGitContext'
+        identity:
+          $ref: '#/components/schemas/AuthoritativeSessionIdentity'
+        model:
+          $ref: '#/components/schemas/AuthoritativeModelInfo'
+        project:
+          $ref: '#/components/schemas/AuthoritativeProjectContext'
+        quality:
+          anyOf:
+          - $ref: '#/components/schemas/AuthoritativeQualityMetrics'
+          - type: "null"
+        source:
+          $ref: '#/components/schemas/AuthoritativeSourceInfo'
+        stats:
+          $ref: '#/components/schemas/AuthoritativeSessionStats'
+        subagents:
+          items:
+            $ref: '#/components/schemas/AuthoritativeSubagentRef'
+          type: array
+        timestamp:
+          $ref: '#/components/schemas/AuthoritativeTimestampInfo'
+      required:
+      - identity
+      - model
+      - timestamp
+      - source
+      - git
+      - project
+      - stats
+      - quality
+      - entries
+      - subagents
+      - diagnostics
+      type: object
+    ChangeBinding:
+      description: Strength of the evidence connecting a recorded session to a code
+        change
+      enum:
+      - bound
+      - candidate
+      examples:
+      - bound
+      - candidate
+      title: Change Binding
+      type: string
+    ChangeDetailPayload:
+      properties:
+        baseRef:
+          type: string
+        branch:
+          type: string
+        costUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        defaultBranch:
+          type: string
+        files:
+          items:
+            $ref: '#/components/schemas/FileChange'
+          type:
+          - array
+          - "null"
+        frictions:
+          items:
+            $ref: '#/components/schemas/FrictionCluster'
+          type:
+          - array
+          - "null"
+        insights:
+          items:
+            $ref: '#/components/schemas/SessionInsight'
+          type: array
+        linesAdded:
+          type: integer
+        linesRemoved:
+          type: integer
+        newEdges:
+          items:
+            $ref: '#/components/schemas/MapEdge'
+          type:
+          - array
+          - "null"
+        newNodes:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        outputTokens:
+          format: int64
+          type: integer
+        removedEdges:
+          items:
+            $ref: '#/components/schemas/MapEdge'
+          type:
+          - array
+          - "null"
+        removedNodes:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        slice:
+          $ref: '#/components/schemas/MapSlice'
+        unrecordedCommits:
+          items:
+            $ref: '#/components/schemas/CommitRef'
+          type:
+          - array
+          - "null"
+        unusual:
+          items:
+            $ref: '#/components/schemas/UnusualSignal'
+          type:
+          - array
+          - "null"
+        violations:
+          items:
+            $ref: '#/components/schemas/EdgeViolation'
+          type:
+          - array
+          - "null"
+        work:
+          items:
+            $ref: '#/components/schemas/ChangeSession'
+          type:
+          - array
+          - "null"
+      required:
+      - branch
+      - baseRef
+      - defaultBranch
+      - files
+      - slice
+      - newEdges
+      - removedEdges
+      - newNodes
+      - removedNodes
+      - violations
+      - work
+      - unrecordedCommits
+      - unusual
+      - frictions
+      - insights
+      - linesAdded
+      - linesRemoved
+      - outputTokens
+      type: object
+    ChangeDiffPayload:
+      properties:
+        binary:
+          type: boolean
+        branch:
+          type: string
+        file:
+          type: string
+        hunks:
+          items:
+            $ref: '#/components/schemas/DiffHunk'
+          type:
+          - array
+          - "null"
+        oldPath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        status:
+          $ref: '#/components/schemas/FileChangeStatus'
+        truncated:
+          type: boolean
+      required:
+      - branch
+      - file
+      - status
+      - binary
+      - truncated
+      - hunks
+      type: object
+    ChangeSession:
+      properties:
+        binding:
+          $ref: '#/components/schemas/ChangeBinding'
+        harness:
+          type: string
+        sessionId:
+          type: string
+        startMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+          type:
+          - array
+          - "null"
+        title:
+          type: string
+      required:
+      - sessionId
+      - title
+      - harness
+      - binding
+      - tasks
+      type: object
+    ChangeSummary:
+      properties:
+        aheadCount:
+          type: integer
+        baseHash:
+          type: string
+        behindCount:
+          type: integer
+        branch:
+          type: string
+        filesChanged:
+          type: integer
+        lastWorkMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        mergeCommitHash:
+          type: string
+        merged:
+          type: boolean
+        mergedAtMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        newEdges:
+          type: integer
+        removedEdges:
+          type: integer
+        reverted:
+          type: boolean
+        sessionCount:
+          type: integer
+        taskCount:
+          type: integer
+        tipCommitMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        violations:
+          type: integer
+      required:
+      - branch
+      - aheadCount
+      - behindCount
+      - filesChanged
+      - sessionCount
+      - taskCount
+      - newEdges
+      - removedEdges
+      - violations
+      - merged
+      type: object
+    ChannelSubscription:
+      properties:
+        axis:
+          $ref: '#/components/schemas/AnnotationAxis'
+        id:
+          type: string
+        topic:
+          $ref: '#/components/schemas/ChannelTopic'
+      required:
+      - topic
+      type: object
+    ChannelTopic:
+      description: Subscribable WebSocket data stream
+      enum:
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      examples:
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      title: Channel Topic
+      type: string
+    ChildSessionRef:
+      properties:
+        id:
+          type: string
+        project:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+      required:
+      - id
+      - startTime
+      type: object
+    ClientMessage:
+      properties:
+        channels:
+          items:
+            $ref: '#/components/schemas/ChannelSubscription'
+          type: array
+        type:
+          $ref: '#/components/schemas/MessageType'
+      required:
+      - type
+      type: object
+    CommitInfo:
+      properties:
+        authorEmail:
+          type: string
+        authorName:
+          type: string
+        authorTime:
+          format: int64
+          type: integer
+        commitTime:
+          format: int64
+          type: integer
+        hash:
+          type: string
+        message:
+          type: string
+      required:
+      - hash
+      - message
+      - authorName
+      - authorEmail
+      - commitTime
+      - authorTime
+      type: object
+    CommitRef:
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/SessionAssociation'
+          type: array
+        hasSession:
+          type: boolean
+        hash:
+          type: string
+        sessionIds:
+          items:
+            $ref: '#/components/schemas/SessionID'
+          type: array
+        subject:
+          type: string
+        timeMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      required:
+      - hash
+      - subject
+      - hasSession
+      - sessionIds
+      - associations
+      type: object
+    Confidence:
+      description: 'Strength of evidence behind a derived relationship: high, medium,
+        or low'
+      enum:
+      - high
+      - medium
+      - low
+      examples:
+      - high
+      - medium
+      - low
+      title: Confidence
+      type: string
+    ContentCapability:
+      description: Opaque, forward-open revision token in the deployment-specific
+        content-capability set. Clients use exact set membership, never parse _v1
+        as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate
+        duplicate or unordered input. Servers emit only their pinned known inventory,
+        reject duplicates, and serialize lexicographically; token meanings are immutable.
+        observed_model_v1 is required iff any root or nested assistant turn has observedModel,
+        not for session model alone, and guarantees assistant-only value validation
+        before persistence with no invalid DB/blob side effects plus byte-exact accepted
+        observedModel strings through storage, typed migration, rewrite, serving,
+        and pull; JSON whitespace and key order are excluded.
+      title: Content Capability
+      type: string
+    ContentKind:
+      description: Payload kind carried by a transcript content envelope
+      enum:
+      - session_detail
+      examples:
+      - session_detail
+      title: Content Kind
+      type: string
+    ContractVersion:
+      type:
+      - "null"
+      - string
+    CreateAnnotationRequest:
+      properties:
+        annotatorName:
+          type: string
+        confidence:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        isPrimary:
+          type: boolean
+        reason:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        sessionId:
+          type: string
+        targetAnnotationId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        targetEntryEndIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        targetEntryIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        typeId:
+          type: string
+        value:
+          type: string
+      required:
+      - sessionId
+      - typeId
+      - value
+      - isPrimary
+      type: object
+    CreateAnnotationResponse:
+      properties:
+        id:
+          type: string
+      required:
+      - id
+      type: object
+    DashboardPayload:
+      properties:
+        acceptanceRate:
+          format: double
+          type: number
+        avgDurationMins:
+          format: double
+          type: number
+        avgTurnsPerSession:
+          format: double
+          type: number
+        harnessBreakdown:
+          additionalProperties:
+            type: integer
+          type:
+          - object
+          - "null"
+        totalSessions:
+          type: integer
+        totalTokens:
+          type: integer
+      required:
+      - totalSessions
+      - totalTokens
+      - avgDurationMins
+      - harnessBreakdown
+      - avgTurnsPerSession
+      - acceptanceRate
+      type: object
+    DayStats:
+      properties:
+        date:
+          type: string
+        sessions:
+          type: integer
+        tokens:
+          type: integer
+      required:
+      - date
+      - tokens
+      - sessions
+      type: object
+    DecayLevel:
+      description: Recency band for project file familiarity
+      enum:
+      - fresh
+      - fading
+      - stale
+      - unexplored
+      examples:
+      - fresh
+      - fading
+      - stale
+      - unexplored
+      title: Decay Level
+      type: string
+    DiagnosticEntry:
+      properties:
+        errorType:
+          type: string
+        location:
+          type: string
+        message:
+          type: string
+        remediation:
+          type: string
+      required:
+      - errorType
+      - location
+      - message
+      - remediation
+      type: object
+    DiagnosticsInfo:
+      properties:
+        partial:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        warnings:
+          items:
+            $ref: '#/components/schemas/DiagnosticEntry'
+          type:
+          - array
+          - "null"
+      required:
+      - warnings
+      type: object
+    DiffHunk:
+      properties:
+        header:
+          type: string
+        lines:
+          items:
+            $ref: '#/components/schemas/DiffLine'
+          type:
+          - array
+          - "null"
+        newLines:
+          type: integer
+        newStart:
+          type: integer
+        oldLines:
+          type: integer
+        oldStart:
+          type: integer
+        sessionId:
+          type: string
+        sessionTitle:
+          type: string
+      required:
+      - oldStart
+      - oldLines
+      - newStart
+      - newLines
+      - lines
+      type: object
+    DiffLine:
+      properties:
+        kind:
+          $ref: '#/components/schemas/DiffLineKind'
+        text:
+          type: string
+      required:
+      - kind
+      - text
+      type: object
+    DiffLineKind:
+      description: 'Unified-diff line kind: context, addition, or deletion'
+      enum:
+      - context
+      - add
+      - del
+      examples:
+      - context
+      - add
+      - del
+      title: Diff Line Kind
+      type: string
+    EdgeViolation:
+      properties:
+        from:
+          type: string
+        kind:
+          $ref: '#/components/schemas/EdgeViolationKind'
+        to:
+          type: string
+      required:
+      - kind
+      - from
+      - to
+      type: object
+    EdgeViolationKind:
+      description: Structural violation detected on a map edge
+      enum:
+      - cycle
+      - wrong_way
+      examples:
+      - cycle
+      - wrong_way
+      title: Edge Violation Kind
+      type: string
+    EntryType:
+      description: Classification of a single entry within an agent session transcript
+      enum:
+      - text
+      - tool_use
+      - tool_result
+      - thinking
+      - system
+      - error
+      - result
+      examples:
+      - text
+      - tool_use
+      - tool_result
+      title: Entry Type
+      type: string
+    ExchangeCodeRequest:
+      properties:
+        code:
+          type: string
+        state:
+          type: string
+      required:
+      - code
+      - state
+      type: object
+    ExchangeCodeResponse:
+      properties:
+        api_key:
+          type: string
+        key_id:
+          type: string
+        user_id:
+          type: string
+        username:
+          type: string
+      required:
+      - api_key
+      - key_id
+      - user_id
+      - username
+      type: object
+    FamiliarityPayload:
+      properties:
+        familiarityPct:
+          format: double
+          type: number
+        files:
+          items:
+            $ref: '#/components/schemas/FileFamiliarity'
+          type:
+          - array
+          - "null"
+        freshnessDays:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        suggestions:
+          items:
+            $ref: '#/components/schemas/ReviewSuggestion'
+          type:
+          - array
+          - "null"
+        trails:
+          items:
+            $ref: '#/components/schemas/WalkthroughTrail'
+          type:
+          - array
+          - "null"
+        unexploredCount:
+          type: integer
+      required:
+      - projectHash
+      - familiarityPct
+      - unexploredCount
+      - freshnessDays
+      - files
+      - trails
+      - suggestions
+      type: object
+    FileChange:
+      properties:
+        linesAdded:
+          type: integer
+        linesRemoved:
+          type: integer
+        oldPath:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        path:
+          type: string
+        status:
+          $ref: '#/components/schemas/FileChangeStatus'
+      required:
+      - path
+      - status
+      - linesAdded
+      - linesRemoved
+      type: object
+    FileChangeStatus:
+      description: 'Git file delta status: modified, added, deleted, or renamed'
+      enum:
+      - M
+      - A
+      - D
+      - R
+      examples:
+      - M
+      - A
+      - D
+      - R
+      title: File Change Status
+      type: string
+    FileFamiliarity:
+      properties:
+        daysSince:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        decayLevel:
+          $ref: '#/components/schemas/DecayLevel'
+        depth:
+          type: integer
+        humanTurns:
+          type: integer
+        isSourceFile:
+          type: boolean
+        lastEngagedAt:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        path:
+          type: string
+        sessionCount:
+          type: integer
+        totalTurns:
+          type: integer
+      required:
+      - path
+      - depth
+      - sessionCount
+      - totalTurns
+      - humanTurns
+      - lastEngagedAt
+      - daysSince
+      - decayLevel
+      - isSourceFile
+      type: object
+    FrictionCluster:
+      properties:
+        count:
+          type: integer
+        file:
+          type: string
+        kind:
+          type: string
+        label:
+          type: string
+        sessions:
+          type: integer
+      required:
+      - kind
+      - label
+      - file
+      - count
+      - sessions
+      type: object
+    GitContext:
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/PublishedAssociation'
+          type: array
+        branch:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        commits:
+          items:
+            $ref: '#/components/schemas/CommitInfo'
+          type: array
+        remote:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        tracking:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        worktree:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      type: object
+    Harness:
+      description: AI coding tool or development environment
+      enum:
+      - claude-code
+      - gemini-cli
+      - codex
+      - opencode
+      - cursor
+      - antigravity
+      - strike
+      examples:
+      - claude-code
+      - opencode
+      title: Harness
+      type: string
+    HealthResponse:
+      properties:
+        status:
+          type: string
+      required:
+      - status
+      type: object
+    HostSlug:
+      description: Sanitized, filesystem-safe identifier derived from git remote;
+        contains only [a-zA-Z0-9._<>-]
+      examples:
+      - github.com--user--repo
+      - local--home-user-projects-myapp
+      pattern: ^[a-zA-Z0-9._<>-]+$
+      title: Host Slug
+      type: string
+    InsightClassification:
+      properties:
+        category:
+          type: string
+        cause:
+          type: string
+        resolution:
+          type: string
+        severityLocus:
+          type: string
+        severityScope:
+          type: string
+      required:
+      - category
+      - cause
+      - severityScope
+      - severityLocus
+      - resolution
+      type: object
+    InsightEvidence:
+      properties:
+        commitHash:
+          type: string
+        entryIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        file:
+          type: string
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - sessionId
+      type: object
+    InsightKind:
+      description: 'What a SessionInsight observed: a decision, friction, an unusual
+        rate elevation, or a retry loop'
+      enum:
+      - decision
+      - friction
+      - unusual
+      - retry_loop
+      examples:
+      - decision
+      - friction
+      - unusual
+      - retry_loop
+      title: Insight Kind
+      type: string
+    InsightProvenance:
+      description: 'How a SessionInsight was produced: mechanical (rule-derived) or
+        mined'
+      enum:
+      - mechanical
+      - mined
+      examples:
+      - mechanical
+      - mined
+      title: Insight Provenance
+      type: string
+    InteractionType:
+      description: How deeply a session engaged with a project file
+      enum:
+      - mentioned
+      - read
+      - discussed
+      - questioned
+      examples:
+      - mentioned
+      - read
+      - discussed
+      - questioned
+      title: Interaction Type
+      type: string
+    License:
+      description: Content license for a published transcript
+      enum:
+      - CC0-1.0
+      - CC-BY-4.0
+      - CC-BY-SA-4.0
+      examples:
+      - CC0-1.0
+      title: License
+      type: string
+    MapEdge:
+      properties:
+        count:
+          type: integer
+        from:
+          type: string
+        to:
+          type: string
+      required:
+      - from
+      - to
+      - count
+      type: object
+    MapGraphPayload:
+      properties:
+        activityEdges:
+          items:
+            $ref: '#/components/schemas/ActivityEdge'
+          type:
+          - array
+          - "null"
+        atCommit:
+          type: string
+        generatedAtMs:
+          format: int64
+          type: integer
+        nodes:
+          items:
+            $ref: '#/components/schemas/MapNode'
+          type:
+          - array
+          - "null"
+        parsedLanguages:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        repoFound:
+          type: boolean
+        repoPath:
+          type: string
+        structureEdges:
+          items:
+            $ref: '#/components/schemas/MapEdge'
+          type:
+          - array
+          - "null"
+        violations:
+          items:
+            $ref: '#/components/schemas/EdgeViolation'
+          type:
+          - array
+          - "null"
+      required:
+      - projectHash
+      - repoFound
+      - parsedLanguages
+      - nodes
+      - structureEdges
+      - activityEdges
+      - violations
+      - generatedAtMs
+      type: object
+    MapNode:
+      properties:
+        agentEditedCount:
+          type: integer
+        attributedRegionCount:
+          type: integer
+        changedRegionCount:
+          type: integer
+        effortDensity:
+          format: double
+          type: number
+        fileCount:
+          type: integer
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/MapNodeKind'
+        language:
+          type: string
+        layer:
+          type: integer
+        loc:
+          type: integer
+        name:
+          type: string
+        order:
+          type: integer
+        parent:
+          type: string
+        readAttribution:
+          $ref: '#/components/schemas/ReadAttributionState'
+        readCount:
+          type: integer
+        readState:
+          $ref: '#/components/schemas/ReadStateGrade'
+        recordedFiles:
+          type: integer
+        reviewedRegionCount:
+          type: integer
+        totalFiles:
+          type: integer
+        touchCount:
+          type: integer
+      required:
+      - id
+      - kind
+      - name
+      - layer
+      - order
+      - loc
+      - fileCount
+      - recordedFiles
+      - totalFiles
+      - touchCount
+      - effortDensity
+      - agentEditedCount
+      - readCount
+      - readAttribution
+      - readState
+      - changedRegionCount
+      - attributedRegionCount
+      - reviewedRegionCount
+      type: object
+    MapNodeDetailPayload:
+      properties:
+        costUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        dependsOn:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        insights:
+          items:
+            $ref: '#/components/schemas/SessionInsight'
+          type: array
+        kind:
+          $ref: '#/components/schemas/MapNodeKind'
+        language:
+          type: string
+        lastTouchMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        loc:
+          type: integer
+        path:
+          type: string
+        reEdits:
+          type: integer
+        recentCommits:
+          items:
+            $ref: '#/components/schemas/CommitRef'
+          type:
+          - array
+          - "null"
+        recordedFiles:
+          type: integer
+        retryLoops:
+          type: integer
+        rewrittenCommits:
+          items:
+            $ref: '#/components/schemas/RewrittenCommit'
+          type: array
+        sessionCount:
+          type: integer
+        shapedBy:
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+          type:
+          - array
+          - "null"
+        taskCount:
+          type: integer
+        totalFiles:
+          type: integer
+        usedBy:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+      required:
+      - path
+      - kind
+      - loc
+      - recordedFiles
+      - totalFiles
+      - sessionCount
+      - taskCount
+      - dependsOn
+      - usedBy
+      - shapedBy
+      - recentCommits
+      - retryLoops
+      - reEdits
+      - rewrittenCommits
+      - insights
+      type: object
+    MapNodeKind:
+      description: Path-derived map node classification
+      enum:
+      - module
+      - package
+      - file
+      examples:
+      - module
+      - package
+      - file
+      title: Map Node Kind
+      type: string
+    MapSlice:
+      properties:
+        activityEdges:
+          items:
+            $ref: '#/components/schemas/ActivityEdge'
+          type:
+          - array
+          - "null"
+        nodes:
+          items:
+            $ref: '#/components/schemas/MapNode'
+          type:
+          - array
+          - "null"
+        structureEdges:
+          items:
+            $ref: '#/components/schemas/MapEdge'
+          type:
+          - array
+          - "null"
+      required:
+      - nodes
+      - structureEdges
+      - activityEdges
+      type: object
+    MessageType:
+      description: WebSocket message discriminator
+      enum:
+      - subscribe
+      - unsubscribe
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      - connected
+      - error
+      examples:
+      - subscribe
+      - unsubscribe
+      - dashboard
+      - sessions
+      - session_detail
+      - trends
+      - quality
+      - annotations
+      - project_familiarity
+      - connected
+      - error
+      title: Message Type
+      type: string
+    MockConfigResponse:
+      properties:
+        api:
+          items:
+            type: string
+          type: array
+        enabled:
+          type: boolean
+        tui:
+          items:
+            type: string
+          type: array
+        web:
+          items:
+            type: string
+          type: array
+      required:
+      - enabled
+      type: object
+    ModelID:
+      description: Model identifier (e.g. 'claude-opus-4-6', 'gemini-2.0-flash')
+      examples:
+      - claude-opus-4-6
+      - gemini-2.0-flash
+      - codex-mini-latest
+      minLength: 1
+      title: Model ID
+      type: string
+    ModelInfo:
+      properties:
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hostSlug:
+          $ref: '#/components/schemas/HostSlug'
+        model:
+          $ref: '#/components/schemas/ModelID'
+        version:
+          type: string
+      required:
+      - harness
+      - model
+      type: object
+    ObservedModelID:
+      description: Exact UTF-8 model identifier observed on an assistant-generated
+        turn; producer-enforced as assistant or subagent evidence. Values are non-empty
+        and may not have a Unicode White_Space code point at either edge; all accepted
+        bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.
+      examples:
+      - anthropic/Claude-Opus-4-8
+      - provider/Model Family
+      minLength: 1
+      pattern: ^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])
+      title: Observed Model ID
+      type: string
+    OwnerTranscriptUpdateRequest:
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+        license:
+          $ref: '#/components/schemas/OwnerUpdateLicenseIntent'
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          maxLength: 500
+          type: string
+        visibility:
+          $ref: '#/components/schemas/TranscriptUpdateVisibility'
+      type: object
+    OwnerTranscriptUpdateResponse:
+      additionalProperties: false
+      properties:
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        license:
+          anyOf:
+          - $ref: '#/components/schemas/License'
+          - type: "null"
+        tags:
+          items:
+            type: string
+          type: array
+        title:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+        transcriptUrl:
+          type: string
+        updatedAt:
+          format: int64
+          type: integer
+        visibility:
+          $ref: '#/components/schemas/TranscriptUpdateVisibility'
+      required:
+      - transcriptId
+      - transcriptUrl
+      - title
+      - description
+      - tags
+      - license
+      - visibility
+      - updatedAt
+      type: object
+    OwnerUpdateLicenseIntent:
+      anyOf:
+      - description: Content license for a published transcript
+        enum:
+        - CC0-1.0
+        - CC-BY-4.0
+        - CC-BY-SA-4.0
+        examples:
+        - CC0-1.0
+        title: License
+        type: string
+      - type: "null"
+      description: Omitted preserves, null requests clear, and a canonical license
+        replaces
+    ProjectContext:
+      properties:
+        filePath:
+          type: string
+        hash:
+          $ref: '#/components/schemas/ProjectHash'
+        name:
+          type: string
+      required:
+      - hash
+      - name
+      type: object
+    ProjectHash:
+      description: SHA-256 hex digest of the project's origin URL or local path
+      examples:
+      - a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0-9a-f]{64}$
+      title: Project Hash
+      type: string
+    ProjectResolutionPayload:
+      properties:
+        project:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+      required:
+      - project
+      - projectHash
+      type: object
+    ProjectSummariesPayload:
+      properties:
+        projects:
+          items:
+            $ref: '#/components/schemas/ProjectSummary'
+          type:
+          - array
+          - "null"
+      required:
+      - projects
+      type: object
+    ProjectSummary:
+      properties:
+        lastWorkMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        openChanges:
+          type: integer
+        project:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        recordedFiles:
+          type: integer
+        sessions:
+          type: integer
+        totalFiles:
+          type: integer
+      required:
+      - projectHash
+      - project
+      - sessions
+      - recordedFiles
+      - totalFiles
+      - openChanges
+      type: object
+    ProjectTasksPayload:
+      properties:
+        fileFilter:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskSummary'
+          type:
+          - array
+          - "null"
+      required:
+      - projectHash
+      - tasks
+      type: object
+    Provenance:
+      properties:
+        details:
+          additionalProperties:
+            type: string
+          type: object
+        function:
+          type: string
+        method:
+          type: string
+        version:
+          type: string
+      required:
+      - method
+      type: object
+    PublishAppliedState:
+      additionalProperties: false
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/PublishedAssociation'
+          type: array
+        license:
+          anyOf:
+          - $ref: '#/components/schemas/License'
+          - type: "null"
+        normalizedValues:
+          $ref: '#/components/schemas/PublishNormalizedValues'
+      required:
+      - license
+      - associations
+      - normalizedValues
+      type: object
+    PublishAssociationOperation:
+      additionalProperties: false
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/PublishedAssociation'
+          type: array
+        kind:
+          $ref: '#/components/schemas/PublishOperationKind'
+      required:
+      - kind
+      - associations
+      type: object
+    PublishLicenseOperation:
+      additionalProperties: false
+      properties:
+        kind:
+          $ref: '#/components/schemas/PublishOperationKind'
+        license:
+          anyOf:
+          - $ref: '#/components/schemas/License'
+          - type: "null"
+      required:
+      - kind
+      - license
+      type: object
+    PublishNormalizedValues:
+      additionalProperties: false
+      properties:
+        derivedTitle:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        entryHarnesses:
+          items:
+            $ref: '#/components/schemas/Harness'
+          type: array
+        rootHarness:
+          $ref: '#/components/schemas/Harness'
+        schemaVersion:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+      required:
+      - rootHarness
+      - entryHarnesses
+      - derivedTitle
+      - visibility
+      - schemaVersion
+      type: object
+    PublishOperationKind:
+      description: Mutation semantic for one publish operation arm
+      enum:
+      - preserve
+      - replace
+      - append
+      examples:
+      - preserve
+      - replace
+      - append
+      title: Publish Operation Kind
+      type: string
+    PublishRequest:
+      properties:
+        diagnostics:
+          $ref: '#/components/schemas/DiagnosticsInfo'
+        entries:
+          items:
+            $ref: '#/components/schemas/SessionEntry'
+          type: array
+        git:
+          $ref: '#/components/schemas/GitContext'
+        identity:
+          $ref: '#/components/schemas/SessionIdentity'
+        license:
+          $ref: '#/components/schemas/License'
+        model:
+          $ref: '#/components/schemas/ModelInfo'
+        project:
+          $ref: '#/components/schemas/ProjectContext'
+        quality:
+          anyOf:
+          - $ref: '#/components/schemas/QualityMetrics'
+          - type: "null"
+        source:
+          $ref: '#/components/schemas/SourceInfo'
+        stats:
+          $ref: '#/components/schemas/SessionStats'
+        subagents:
+          items:
+            $ref: '#/components/schemas/SubagentRef'
+          type: array
+        timestamp:
+          $ref: '#/components/schemas/TimestampInfo'
+      required:
+      - identity
+      - model
+      - timestamp
+      - source
+      - git
+      - project
+      - stats
+      - diagnostics
+      type: object
+    PublishRequestFingerprint:
+      description: SHA3-256 digest of the canonical domain-separated publish operation
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0-9a-f]{64}$
+      title: Publish Request Fingerprint
+      type: string
+    PublishResponse:
+      properties:
+        blobKey:
+          type: string
+        blobSizeBytes:
+          format: int64
+          type: integer
+        created:
+          type: boolean
+        publishedAt:
+          format: int64
+          type: integer
+        transcriptId:
+          type: string
+        updatedAt:
+          format: int64
+          type: integer
+      required:
+      - transcriptId
+      - blobKey
+      - blobSizeBytes
+      - publishedAt
+      - updatedAt
+      - created
+      type: object
+    PublishedAssociation:
+      additionalProperties: false
+      properties:
+        id:
+          $ref: '#/components/schemas/AssociationID'
+        observedCommitHash:
+          type: string
+      required:
+      - id
+      - observedCommitHash
+      type: object
+    PullAnnotation:
+      properties:
+        annotatorKind:
+          $ref: '#/components/schemas/AnnotatorKind'
+        annotatorName:
+          type: string
+        authorUserId:
+          type: string
+        authorUsername:
+          type: string
+        confidence:
+          type:
+          - "null"
+          - number
+        contentHash:
+          type:
+          - "null"
+          - string
+        createdAt:
+          format: int64
+          type: integer
+        id:
+          type: string
+        isPrimary:
+          type: boolean
+        provenance:
+          $ref: '#/components/schemas/Provenance'
+        reason:
+          type:
+          - "null"
+          - string
+        supersededBy:
+          type:
+          - "null"
+          - string
+        targetAnnotationId:
+          type:
+          - "null"
+          - string
+        targetAssociationId:
+          $ref: '#/components/schemas/AssociationID'
+        targetContentHash:
+          type:
+          - "null"
+          - string
+        targetEntryEndIndex:
+          type:
+          - "null"
+          - integer
+        targetEntryIndex:
+          type:
+          - "null"
+          - integer
+        targetFilePath:
+          type:
+          - "null"
+          - string
+        targetKind:
+          $ref: '#/components/schemas/TargetKind'
+        targetProjectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        targetSessionId:
+          type:
+          - "null"
+          - string
+        typeId:
+          type: string
+        typeName:
+          type: string
+        value:
+          type: string
+      required:
+      - AnnotationSummary
+      - authorUserId
+      - authorUsername
+      type: object
+    PullListResponse:
+      properties:
+        limit:
+          type: integer
+        page:
+          type: integer
+        total:
+          type: integer
+        transcripts:
+          items:
+            $ref: '#/components/schemas/PullTranscriptInfo'
+          type:
+          - array
+          - "null"
+      required:
+      - transcripts
+      - page
+      - limit
+      - total
+      type: object
+    PullSkipGateItem:
+      properties:
+        annotationHashes:
+          description: The client's own annotation content-hashes for this transcript
+            (sorted, de-duplicated); compared as a set against the owner-scoped server
+            set.
+          items:
+            type: string
+          type: array
+        contentHash:
+          description: Hex-encoded SHA3-256 served-blob content-hash the client currently
+            holds for this transcript; compared by value against the server's stored
+            hash.
+          type: string
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+          description: The id of a transcript the client holds and is asking about.
+      required:
+      - transcriptId
+      - contentHash
+      - annotationHashes
+      type: object
+    PullSkipGateRequest:
+      properties:
+        items:
+          description: The per-transcript items the client is asking a currency question
+            about (ordered by transcriptId, de-duplicated per-item annotation set).
+          items:
+            $ref: '#/components/schemas/PullSkipGateItem'
+          type: array
+      required:
+      - items
+      type: object
+    PullSkipGateResponse:
+      properties:
+        results:
+          description: Per-id currency answers, present only for pullable ids (non-pullable
+            ids are withheld by omission); ordered by transcriptId.
+          items:
+            $ref: '#/components/schemas/PullSkipGateResult'
+          type: array
+      required:
+      - results
+      type: object
+    PullSkipGateResult:
+      properties:
+        annotationsCurrent:
+          description: True when the owner-scoped server annotation set for this id
+            equals the client's held set; false when it differs (missing or extra).
+          type: boolean
+        contentCurrent:
+          description: True when the server's stored content-hash equals the client's
+            held hash for this id; false when it has diverged or the server holds
+            none.
+          type: boolean
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+          description: The transcript id this currency answer is for (always one the
+            caller may pull).
+      required:
+      - transcriptId
+      - contentCurrent
+      - annotationsCurrent
+      type: object
+    PullTranscriptInfo:
+      properties:
+        annotationCount:
+          type: integer
+        contentHash:
+          type: string
+        contractVersion:
+          type: string
+        harness:
+          $ref: '#/components/schemas/Harness'
+        license:
+          $ref: '#/components/schemas/License'
+        localId:
+          type: string
+        ownerUserId:
+          type: string
+        ownerUsername:
+          type: string
+        projectName:
+          type: string
+        publishedAt:
+          format: int64
+          type: integer
+        title:
+          type: string
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+        updatedAt:
+          format: int64
+          type: integer
+        visibility:
+          $ref: '#/components/schemas/Visibility'
+      required:
+      - transcriptId
+      - ownerUserId
+      - ownerUsername
+      - visibility
+      - publishedAt
+      - updatedAt
+      - annotationCount
+      type: object
+    QualityMetrics:
+      properties:
+        computeVersion:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        computedAt:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        costCacheReadUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costCacheWriteUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costInputUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costModelId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        costOutputUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costReasoningUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        costTotalUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        discoveryTurns:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        durationMinutes:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        explorationRatio:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        filesTouched:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        inputTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        linesChanged:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m2TokenOutcomeRatio:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m3UniqueToolCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m4ConsecutiveErrorMax:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m4ErrorRecoveryCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m5AvgMessageTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m5ContextUtilizationPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m5PeakContextTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6LinesSurvived:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6LinesTotal:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m6OutputSurvivalPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m7SpecHasConstraints:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        m7SpecHasExamples:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        m7SpecWordCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        outcome:
+          anyOf:
+          - $ref: '#/components/schemas/SessionOutcome'
+          - type: "null"
+        outputTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        retryLoops:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        retryTokensWasted:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        scope:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        scopeBreadth:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        signalDensity:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        subagentCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        titleGenerated:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolCalls:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        totalTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        turnCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      type: object
+    QualityPayload:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/QualitySession'
+          type:
+          - array
+          - "null"
+      required:
+      - sessions
+      type: object
+    QualitySession:
+      properties:
+        date:
+          type: string
+        discoveryTurns:
+          type: integer
+        durationMinutes:
+          format: double
+          type: number
+        effectiveAnnotations:
+          items:
+            $ref: '#/components/schemas/AnnotationSummary'
+          type: array
+        explorationRatio:
+          format: double
+          type: number
+        filesTouched:
+          type: integer
+        id:
+          type: string
+        inputTokens:
+          type: integer
+        linesChanged:
+          type: integer
+        outcome:
+          type: string
+        outputTokens:
+          type: integer
+        project:
+          type: string
+        retryLoops:
+          type: integer
+        retryTokensWasted:
+          type: integer
+        scope:
+          type: string
+        scopeBreadth:
+          type: integer
+        signalDensity:
+          format: double
+          type: number
+        specQualityScore:
+          format: double
+          type: number
+        title:
+          type: string
+        toolCalls:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        withinSessionReverts:
+          type: integer
+      required:
+      - id
+      - date
+      - project
+      - totalTokens
+      - inputTokens
+      - outputTokens
+      - turnCount
+      - toolCalls
+      - durationMinutes
+      - scope
+      - title
+      - outcome
+      - filesTouched
+      - linesChanged
+      - retryLoops
+      - retryTokensWasted
+      - withinSessionReverts
+      - signalDensity
+      - specQualityScore
+      - explorationRatio
+      - scopeBreadth
+      - discoveryTurns
+      type: object
+    ReadAttributionState:
+      description: 'Whether per-file read attribution is recoverable for a node''s
+        editing sessions: complete, partial, or unavailable'
+      enum:
+      - complete
+      - partial
+      - unavailable
+      examples:
+      - complete
+      - partial
+      - unavailable
+      title: Read Attribution State
+      type: string
+    ReadStateGrade:
+      description: 'Ordinal explicit read-state act: none, viewed, reviewed, or reviewed_in_detail'
+      enum:
+      - none
+      - viewed
+      - reviewed
+      - reviewed_in_detail
+      examples:
+      - none
+      - viewed
+      - reviewed
+      - reviewed_in_detail
+      title: Read State Grade
+      type: string
+    RedactionInfo:
+      properties:
+        applied:
+          type: boolean
+        content_hash_at_redact:
+          type: string
+        level:
+          type: string
+        redacted_at_ms:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        rule_set_version:
+          type: string
+      required:
+      - applied
+      type: object
+    ReviewListPayload:
+      properties:
+        changes:
+          items:
+            $ref: '#/components/schemas/ChangeSummary'
+          type: array
+        defaultBranch:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        recentCommits:
+          items:
+            $ref: '#/components/schemas/CommitRef'
+          type: array
+        repoFound:
+          type: boolean
+        rewrittenCommits:
+          items:
+            $ref: '#/components/schemas/RewrittenCommit'
+          type: array
+        sessions:
+          items:
+            $ref: '#/components/schemas/TimelineSessionRef'
+          type: array
+      required:
+      - projectHash
+      - repoFound
+      - changes
+      - recentCommits
+      - sessions
+      - rewrittenCommits
+      type: object
+    ReviewSuggestion:
+      properties:
+        daysSince:
+          type: integer
+        lastEngaged:
+          type: string
+        path:
+          type: string
+        suggestedPrompt:
+          type: string
+      required:
+      - path
+      - lastEngaged
+      - daysSince
+      - suggestedPrompt
+      type: object
+    RewriteMethod:
+      description: Mechanism the resolver used to map a ghost commit to its successor
+      enum:
+      - hash
+      - patch_id
+      - author_identity
+      - message_embedded
+      - temporal
+      - none
+      examples:
+      - hash
+      - patch_id
+      - author_identity
+      - message_embedded
+      - temporal
+      - none
+      title: Rewrite Method
+      type: string
+    RewriteResolution:
+      description: Whether a ledger-observed commit hash is live, was rewritten, or
+        could not be resolved
+      enum:
+      - live
+      - rewritten
+      - unresolved
+      examples:
+      - live
+      - rewritten
+      - unresolved
+      title: Rewrite Resolution
+      type: string
+    RewrittenCommit:
+      properties:
+        associations:
+          items:
+            $ref: '#/components/schemas/SessionAssociation'
+          type: array
+        authorTimeMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        ghostHash:
+          type: string
+        method:
+          $ref: '#/components/schemas/RewriteMethod'
+        resolution:
+          $ref: '#/components/schemas/RewriteResolution'
+        sessionIds:
+          items:
+            $ref: '#/components/schemas/SessionID'
+          type: array
+        subject:
+          type: string
+        successorHash:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      required:
+      - ghostHash
+      - subject
+      - sessionIds
+      - associations
+      - resolution
+      - method
+      - confidence
+      type: object
+    Role:
+      description: Sender role of a message turn
+      enum:
+      - user
+      - assistant
+      - tool
+      - system
+      examples:
+      - user
+      - assistant
+      title: Role
+      type: string
+    ScaleKind:
+      description: 'Stevens measurement level: nominal (categories without order),
+        ordinal (ordered categories), continuous (numeric range)'
+      enum:
+      - nominal
+      - ordinal
+      - continuous
+      examples:
+      - nominal
+      - ordinal
+      - continuous
+      title: Scale Kind
+      type: string
+    SchemaVersionResponse:
+      properties:
+        annotationSchemaVersion:
+          type: string
+        contentCapabilities:
+          items:
+            description: Opaque, forward-open revision token in the deployment-specific
+              content-capability set. Clients use exact set membership, never parse
+              _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and
+              tolerate duplicate or unordered input. Servers emit only their pinned
+              known inventory, reject duplicates, and serialize lexicographically;
+              token meanings are immutable. observed_model_v1 is required iff any
+              root or nested assistant turn has observedModel, not for session model
+              alone, and guarantees assistant-only value validation before persistence
+              with no invalid DB/blob side effects plus byte-exact accepted observedModel
+              strings through storage, typed migration, rewrite, serving, and pull;
+              JSON whitespace and key order are excluded.
+            title: Content Capability
+            type: string
+          type: array
+        minPullContractVersion:
+          type: string
+        minPushContractVersion:
+          type: string
+        pullContractVersion:
+          type: string
+        pushContractVersion:
+          type: string
+        supportedTargetKinds:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        supportedTypeIds:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+      required:
+      - annotationSchemaVersion
+      - supportedTargetKinds
+      - supportedTypeIds
+      - pushContractVersion
+      - minPushContractVersion
+      type: object
+    SearchPayload:
+      properties:
+        query:
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/SearchResult'
+          type:
+          - array
+          - "null"
+      required:
+      - query
+      - results
+      type: object
+    SearchResult:
+      properties:
+        entryIndex:
+          type: integer
+        project:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        role:
+          type: string
+        score:
+          format: double
+          type: number
+        sessionId:
+          type: string
+        snippet:
+          type: string
+      required:
+      - sessionId
+      - project
+      - entryIndex
+      - role
+      - snippet
+      - score
+      type: object
+    ServerMessage:
+      properties:
+        axis:
+          $ref: '#/components/schemas/AnnotationAxis'
+        data: {}
+        id:
+          type: string
+        message:
+          type: string
+        topic:
+          $ref: '#/components/schemas/ChannelTopic'
+        type:
+          $ref: '#/components/schemas/MessageType'
+        version:
+          type: string
+      required:
+      - type
+      type: object
+    SessionAssociation:
+      properties:
+        conclusion:
+          $ref: '#/components/schemas/AssociationConclusion'
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        evidence:
+          items:
+            $ref: '#/components/schemas/AssociationEvidenceObservation'
+          type: array
+        id:
+          $ref: '#/components/schemas/AssociationID'
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - id
+      - sessionId
+      - conclusion
+      - confidence
+      - evidence
+      type: object
+    SessionDetailPayload:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/ChildSessionRef'
+          type: array
+        durationMins:
+          format: double
+          type: number
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/Harness'
+        id:
+          type: string
+        model:
+          type: string
+        outcome:
+          $ref: '#/components/schemas/SessionOutcome'
+        project:
+          type: string
+        schemaVersion:
+          type: string
+        scorecard:
+          anyOf:
+          - $ref: '#/components/schemas/SessionScorecard'
+          - type: "null"
+        sessionOrigin:
+          $ref: '#/components/schemas/SessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        turns:
+          items:
+            $ref: '#/components/schemas/TurnDetail'
+          type:
+          - array
+          - "null"
+        workingDirectory:
+          type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
+      type: object
+    SessionEntry:
+      properties:
+        contentPreview:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        depth:
+          type: integer
+        entryId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        entryIndex:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/EntryType'
+        extra:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hasThinking:
+          type: boolean
+        hasToolUse:
+          type: boolean
+        isError:
+          type: boolean
+        parentEntryId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        parentIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        partType:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        rawByteLength:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        role:
+          $ref: '#/components/schemas/Role'
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        stopReason:
+          anyOf:
+          - $ref: '#/components/schemas/StopReason'
+          - type: "null"
+        timestampMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensIn:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensOut:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        toolCallId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolInput:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolKind:
+          anyOf:
+          - $ref: '#/components/schemas/ToolCallKind'
+          - type: "null"
+        toolNamesCsv:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        toolOutput:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+      required:
+      - sessionId
+      - entryIndex
+      - harness
+      - entryType
+      - role
+      - hasToolUse
+      - hasThinking
+      - isError
+      - depth
+      type: object
+    SessionID:
+      description: Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id}
+        (ACP), msg_{id}, or a Strike session ID)
+      examples:
+      - 99d59925-36bc-424c-a789-8be54d9702ba
+      - agent-a3aee4f
+      - ses_3cd91f52effeXd3QAJ54jOyzv5
+      - sess_3cd91f52effeXd3QAJ54jOyzv5
+      - 20260728T123456.123456789Z-ABCDEFGHIJKLMNOPQRST234567
+      - ABCDEFGHIJKLMNOPQRST234567
+      format: session-id
+      pattern: ^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|agent-[a-f0-9]+|sess?_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26}|[A-Z2-7]{26})$
+      title: Session ID
+      type: string
+    SessionIdentity:
+      properties:
+        parentUuid:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        schemaVersion:
+          type: integer
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - sessionId
+      - schemaVersion
+      type: object
+    SessionInsight:
+      properties:
+        classification:
+          anyOf:
+          - $ref: '#/components/schemas/InsightClassification'
+          - type: "null"
+        confidence:
+          $ref: '#/components/schemas/Confidence'
+        evidence:
+          items:
+            $ref: '#/components/schemas/InsightEvidence'
+          type: array
+        kind:
+          $ref: '#/components/schemas/InsightKind'
+        provenance:
+          $ref: '#/components/schemas/InsightProvenance'
+        subjects:
+          items:
+            type: string
+          type: array
+        summary:
+          type: string
+        title:
+          type: string
+      required:
+      - kind
+      - provenance
+      - confidence
+      - title
+      - subjects
+      - evidence
+      type: object
+    SessionOrigin:
+      description: Who drove a recorded session, as declared by the producer that
+        recorded it
+      enum:
+      - user
+      - agent
+      - unknown
+      examples:
+      - user
+      - agent
+      - unknown
+      title: Session Origin
+      type: string
+    SessionOutcome:
+      description: Resolution status of the session
+      enum:
+      - resolved
+      - partial
+      - failed
+      examples:
+      - resolved
+      - partial
+      - failed
+      title: Session Outcome
+      type: string
+    SessionScorecard:
+      properties:
+        costTotalUsd:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m2TokenOutcomeRatio:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m4ConsecutiveErrorMax:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        m5ContextUtilizationPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m6OutputSurvivalPct:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        m7SpecHasConstraints:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        m7SpecHasExamples:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        outcome:
+          $ref: '#/components/schemas/SessionOutcome'
+        retryTokensWasted:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        signalDensity:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        totalTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      type: object
+    SessionStats:
+      properties:
+        cachedReadTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        cachedWriteTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        durationMs:
+          format: int64
+          type: integer
+        subagentCount:
+          type: integer
+        thoughtTokens:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        turnCount:
+          type: integer
+      required:
+      - turnCount
+      - toolCallCount
+      - subagentCount
+      - durationMs
+      - tokensIn
+      - tokensOut
+      type: object
+    SessionSummary:
+      properties:
+        durationMins:
+          format: double
+          type: number
+        harness:
+          $ref: '#/components/schemas/Harness'
+        id:
+          type: string
+        outcome:
+          type: string
+        parentSessionId:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        preview:
+          type: string
+        project:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        sessionOrigin:
+          $ref: '#/components/schemas/SessionOrigin'
+        startTime:
+          format: date-time
+          type: string
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+      required:
+      - id
+      - harness
+      - startTime
+      - durationMins
+      - totalTokens
+      - turnCount
+      - toolCallCount
+      type: object
+    SessionsPayload:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/SessionSummary'
+          type:
+          - array
+          - "null"
+      required:
+      - sessions
+      type: object
+    ShutdownResponse:
+      properties:
+        status:
+          type: string
+      required:
+      - status
+      type: object
+    SourceFormat:
+      description: Transcript file format
+      enum:
+      - jsonl
+      - json
+      examples:
+      - jsonl
+      - json
+      title: Source Format
+      type: string
+    SourceInfo:
+      properties:
+        filePath:
+          type: string
+        format:
+          $ref: '#/components/schemas/SourceFormat'
+      required:
+      - format
+      type: object
+    StopReason:
+      description: Reason why a session or turn ended (ACP-aligned)
+      enum:
+      - end_turn
+      - cancelled
+      - max_tokens
+      - max_turn_requests
+      - refusal
+      examples:
+      - end_turn
+      - max_tokens
+      title: Stop Reason
+      type: string
+    SubagentRef:
+      properties:
+        parentUuid:
+          $ref: '#/components/schemas/SessionID'
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+      required:
+      - sessionId
+      - parentUuid
+      type: object
+    TargetKind:
+      description: 'What is being annotated: session-level, entry-level (turn/tool
+        call), meta-annotation, project-level, a specific file version (content-hash
+        keyed read-state receipt), or a durable session-to-commit association'
+      enum:
+      - session
+      - entry
+      - annotation
+      - project
+      - file_version
+      - association
+      examples:
+      - session
+      - entry
+      - file_version
+      - association
+      title: Target Kind
+      type: string
+    TaskSummary:
+      properties:
+        editedFiles:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        entryIndex:
+          type: integer
+        labels:
+          items:
+            type: string
+          type:
+          - array
+          - "null"
+        outcome:
+          type: string
+        readCount:
+          type: integer
+        readFiles:
+          items:
+            type: string
+          type: array
+        retryLoop:
+          type: boolean
+        sessionId:
+          type: string
+        startMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        title:
+          type: string
+      required:
+      - sessionId
+      - entryIndex
+      - title
+      - editedFiles
+      - readCount
+      - readFiles
+      - retryLoop
+      - labels
+      type: object
+    TaxonomyFamilyNode:
+      properties:
+        family:
+          type: string
+        types:
+          items:
+            $ref: '#/components/schemas/AnnotationTypeSummary'
+          type:
+          - array
+          - "null"
+      required:
+      - family
+      - types
+      type: object
+    TaxonomyNode:
+      properties:
+        class:
+          type: string
+        families:
+          items:
+            $ref: '#/components/schemas/TaxonomyFamilyNode'
+          type:
+          - array
+          - "null"
+      required:
+      - class
+      - families
+      type: object
+    TimelineSessionRef:
+      properties:
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hasCommitBinding:
+          type: boolean
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        startMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        title:
+          type: string
+      required:
+      - sessionId
+      - title
+      - harness
+      - hasCommitBinding
+      type: object
+    TimestampInfo:
+      properties:
+        end:
+          format: int64
+          type: integer
+        ingested:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        start:
+          format: int64
+          type: integer
+      required:
+      - start
+      - end
+      type: object
+    ToolCallDetail:
+      properties:
+        arguments:
+          type: string
+        durationMs:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        exitCode:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        filePath:
+          type: string
+        id:
+          type: string
+        isError:
+          type: boolean
+        name:
+          type: string
+        result:
+          type: string
+        toolKind:
+          $ref: '#/components/schemas/ToolCallKind'
+      required:
+      - id
+      - name
+      - arguments
+      - result
+      type: object
+    ToolCallKind:
+      description: Classification of a tool call, aligned with ACP ToolCallUpdate.kind
+      enum:
+      - read
+      - edit
+      - delete
+      - move
+      - search
+      - execute
+      - think
+      - fetch
+      - other
+      examples:
+      - read
+      - edit
+      - execute
+      title: Tool Call Kind
+      type: string
+    TranscriptContent:
+      properties:
+        contractVersion:
+          type: string
+        kind:
+          $ref: '#/components/schemas/ContentKind'
+        sessionDetail:
+          anyOf:
+          - $ref: '#/components/schemas/SessionDetailPayload'
+          - type: "null"
+      required:
+      - contractVersion
+      - kind
+      type: object
+    TranscriptContentHash:
+      description: SHA3-256 digest of the exact transcript file bytes
+      maxLength: 64
+      minLength: 64
+      pattern: ^[0-9a-f]{64}$
+      title: Transcript Content Hash
+      type: string
+    TranscriptID:
+      description: Village-side transcript identifier (canonical lowercase-hex UUID)
+      examples:
+      - 99d59925-36bc-424c-a789-8be54d9702ba
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      title: Transcript ID
+      type: string
+    TranscriptUpdateLicense:
+      description: 'License value for the owner transcript update operation: a canonical
+        menu license, or the empty string to clear. Clearing a license that was actually
+        granted is refused, because a granted Creative Commons license is irrevocable.'
+      enum:
+      - ""
+      - CC0-1.0
+      - CC-BY-4.0
+      - CC-BY-SA-4.0
+      examples:
+      - CC-BY-4.0
+      - ""
+      title: TranscriptUpdateLicense
+      type: string
+    TranscriptUpdateRequest:
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+        license:
+          $ref: '#/components/schemas/TranscriptUpdateLicense'
+        title:
+          maxLength: 500
+          type: string
+        visibility:
+          $ref: '#/components/schemas/TranscriptUpdateVisibility'
+      type: object
+    TranscriptUpdateVisibility:
+      description: Visibility values accepted by the owner transcript update operation.
+        Organization-scoped visibility is deferred and is deliberately not offered
+        here.
+      enum:
+      - private
+      - public
+      examples:
+      - public
+      - private
+      title: TranscriptUpdateVisibility
+      type: string
+    TrendsPayload:
+      properties:
+        days:
+          items:
+            $ref: '#/components/schemas/DayStats'
+          type:
+          - array
+          - "null"
+        totalSessions:
+          type: integer
+        totalTokens:
+          type: integer
+      required:
+      - days
+      - totalTokens
+      - totalSessions
+      type: object
+    TurnDetail:
+      properties:
+        agentName:
+          type: string
+        content:
+          type: string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/EntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/ObservedModelID'
+        parentIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        role:
+          $ref: '#/components/schemas/Role'
+        stopReason:
+          anyOf:
+          - $ref: '#/components/schemas/StopReason'
+          - type: "null"
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        tokensOut:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/ToolCallDetail'
+          type: array
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      type: object
+    TypeOrigin:
+      description: 'Who created an annotation type: system (built-in), user (individual),
+        or group (shared)'
+      enum:
+      - system
+      - user
+      - group
+      examples:
+      - system
+      - user
+      title: Type Origin
+      type: string
+    UICapabilitiesResponse:
+      additionalProperties: false
+      properties:
+        uiCapabilities:
+          description: Set of opaque UI capability tokens enabled for this running
+            Peasant server process. Omitted and empty mean no optional capabilities.
+            Ordering is insignificant. Consumers must ignore unknown tokens and compare
+            known tokens by exact membership. Token meanings and lifecycle are owned
+            by Peasant. Peasant producers emit tokens in sorted order without duplicates.
+          items:
+            type: string
+          type: array
+      type: object
+    UnifiedMetadata:
+      properties:
+        contentHash:
+          type: string
+        cwd:
+          type: string
+        derivedAt:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        diagnostics:
+          $ref: '#/components/schemas/DiagnosticsInfo'
+        git:
+          $ref: '#/components/schemas/GitContext'
+        harness:
+          $ref: '#/components/schemas/Harness'
+        hostSlug:
+          $ref: '#/components/schemas/HostSlug'
+        metadataHash:
+          type: string
+        model:
+          $ref: '#/components/schemas/ModelID'
+        parentUuid:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        project:
+          $ref: '#/components/schemas/ProjectContext'
+        redaction:
+          $ref: '#/components/schemas/RedactionInfo'
+        schemaVersion:
+          type: integer
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        source:
+          $ref: '#/components/schemas/SourceInfo'
+        stats:
+          $ref: '#/components/schemas/SessionStats'
+        subagents:
+          items:
+            $ref: '#/components/schemas/SubagentRef'
+          type:
+          - array
+          - "null"
+        timestamp:
+          $ref: '#/components/schemas/TimestampInfo'
+        version:
+          type: string
+      required:
+      - schemaVersion
+      - sessionId
+      - parentUuid
+      - harness
+      - model
+      - version
+      - timestamp
+      - source
+      - git
+      - project
+      - hostSlug
+      - stats
+      - subagents
+      - diagnostics
+      - contentHash
+      - metadataHash
+      - redaction
+      type: object
+    UnusualSignal:
+      properties:
+        kind:
+          type: string
+        label:
+          type: string
+        perChange:
+          format: double
+          type: number
+        perProject:
+          format: double
+          type: number
+      required:
+      - kind
+      - label
+      - perChange
+      - perProject
+      type: object
+    ValueDomain:
+      properties:
+        constraintSpec:
+          type: string
+        datatype:
+          $ref: '#/components/schemas/AnnotationDatatype'
+        kind:
+          $ref: '#/components/schemas/ValueDomainKind'
+        permissibleValues:
+          items:
+            type: string
+          type: array
+      required:
+      - kind
+      - datatype
+      type: object
+    ValueDomainKind:
+      description: 'ISO 11179 value domain: enumerated (finite allowed set) or described
+        (range/pattern constraint)'
+      enum:
+      - enumerated
+      - described
+      examples:
+      - enumerated
+      - described
+      title: Value Domain Kind
+      type: string
+    Visibility:
+      description: Access control level for a published transcript
+      enum:
+      - private
+      - group
+      - public
+      examples:
+      - public
+      - private
+      title: Visibility
+      type: string
+    VisibilityIntent:
+      description: Optional desired final access for legacy compatibility; content
+        replacement remains private and widening occurs separately
+      enum:
+      - private
+      - public
+      examples:
+      - private
+      - public
+      title: Visibility Intent
+      type: string
+    WalkthroughStep:
+      properties:
+        excerpt:
+          type: string
+        file:
+          type: string
+        line:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      required:
+      - file
+      - excerpt
+      type: object
+    WalkthroughTrail:
+      properties:
+        date:
+          type: string
+        isCoherent:
+          type: boolean
+        sessionId:
+          type: string
+        steps:
+          items:
+            $ref: '#/components/schemas/WalkthroughStep'
+          type:
+          - array
+          - "null"
+        title:
+          type: string
+        turnCount:
+          type: integer
+      required:
+      - sessionId
+      - title
+      - date
+      - turnCount
+      - steps
+      - isCoherent
+      type: object

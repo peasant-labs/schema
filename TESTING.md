@@ -80,6 +80,7 @@ script) behind it.
 | License corpus regen-freshness | `licensecorpus/licensecorpus_test.go` (`TestLicenseCorpus_Freshness`) | **Hard.** A committed `license_corpus.yaml` that drifts from a fresh `RenderCorpus` (hand-edit or stale) fails. |
 | Local API 0.5.0 closed-set exhaustive coverage + regen-freshness | `enumcorpus/enumcorpus_test.go` (`TestEnumCorpora_ExhaustiveCoverageAndFreshness`, one subtest pair per enum) | **Hard.** `enumcorpus.BuildCorpus`/`RenderCorpus` generalize `licensecorpus`'s pattern over any closed string enum; `cmd/gen-enum-corpora` regenerates all ten committed corpora (`AssociationConclusion`, `AssociationEvidenceKind`, `Confidence`, `RewriteResolution`, `RewriteMethod`, `InsightKind`, `InsightProvenance`, `ReadAttributionState`, `ReadStateGrade`, `TargetKind`) in one `go generate`. |
 | `ReadStateGrade` registry-seed cross-check | `enumcorpus/enumcorpus_test.go` (`TestReadStateGradeRegistrySeedCrossCheck`) | **Hard.** `schema.ReadStateGradeRegistrySeedPermissibleValues` must byte-equal `AllReadStateGrades` minus `none`; the peasant-side read-state registry seed pins the other half against this exported value. |
+| Declared session origin | `session_origin_test.go`, `testdata_session_origin.go`; `testdata/local-api/session_origin.yaml` | **Hard.** The corpus derives its menu from `AllSessionOrigins` and its behaviour coverage from `AllSessionOriginBehaviours`, both by set membership, so widening the enum or deleting the rows that carry a behaviour fails at load. Every menu member round-trips on BOTH `SessionDetailPayload` and `SessionSummary`, and the published `SessionOrigin` component must refuse an off-menu token with a needle naming the whole menu. |
 | TypeScript closed-set completeness | `openapi_enums_test.go`; `testdata/typescript/enums.yaml` | **Hard.** Every canonical Go closed set is an OpenAPI enum before TypeScript generation can run. |
 | TypeScript generated-file freshness | `make freshness` | **Hard.** Hey API/Zod root output, `openapi-typescript` operation contracts, and YAML-derived fixture data are byte-stable after regeneration. |
 | TypeScript typecheck + fixture tests | `typescript/tsconfig*.json`, `typescript/tests/` | **Hard.** Public types compile and both languages accept/reject the same strict YAML matrix. |
@@ -340,8 +341,8 @@ the JSON tags and struct shapes, and the validator behaviour.
 
 Typed test corpora live in `testdata/` trees, one family per surface:
 
-- top level `testdata/`: `annotations`, `contract`, `publish`, `pull`, `quality`,
-  `session-detail`, `sync`;
+- top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,
+  `quality`, `session-detail`, `sync`;
 - `internal/release/testdata/`: `grammar`, `workflow`;
 - `cmd/release-guard/testdata/`: `github`;
 - `openapi/testdata/`.
@@ -475,6 +476,16 @@ the withheld arm asserts per case that a withheld id appears nowhere in the
 marshaled response bytes (not merely absent from the slice). Each arm carries at
 least two structurally-rich cases, the representative behavior plus an idempotence,
 empty, or nil boundary case, so no arm can pass vacuously.
+
+The declared-session-origin family is the second worked example, and it segments
+for a different reason: `SessionOriginFixtures` in `testdata_session_origin.go`
+carries a predicate arm over raw tokens, a round-trip arm over encoded payloads,
+and a schema arm over the generated Types component. Alongside the arms it
+declares two required-NAME manifests, `required_behaviours` and `required_menu`,
+plus the by-id operation's `description_anchors`. The loader compares each to its
+Go closed set by membership in both directions, never by a row count, so a
+deleted row, a deleted anchor, or a widened enum fails at load rather than
+quietly reducing coverage.
 
 Classify each arm before modeling it. The discriminator: does the arm have two or
 more genuinely-distinct, independent `input -> expected` examples, each a real,

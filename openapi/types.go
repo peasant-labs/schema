@@ -98,6 +98,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
 		{"SessionEntry", new(schema.SessionEntry)}, {"SessionID", new(schema.SessionID)},
 		{"SessionIdentity", new(schema.SessionIdentity)}, {"SessionInsight", new(schema.SessionInsight)},
+		{"SessionOrigin", new(schema.SessionOrigin)},
 		{"SessionOutcome", new(schema.SessionOutcome)},
 		{"SessionScorecard", new(schema.SessionScorecard)}, {"SessionStats", new(schema.SessionStats)},
 		{"SessionSummary", new(schema.SessionSummary)}, {"SessionsPayload", new(schema.SessionsPayload)},

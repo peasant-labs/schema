@@ -20,6 +20,67 @@ type DashboardPayload struct {
 
 // --- Sessions ---
 
+// SessionOrigin is who drove a recorded session, as declared by the producer
+// that recorded it.
+//
+// CONTRACT RULE, binding on every consumer:
+//
+//   - "user" and "agent" are decisions. A consumer stores the declared value and
+//     does not re-derive it.
+//   - "unknown" is also a decision: the producer looked and could not tell. A
+//     consumer MUST fall back to whatever rule it would have applied had the
+//     field been absent. It MUST NOT store "unknown" in place of a judgement it
+//     is itself capable of making.
+//   - An ABSENT field means the producer expressed no opinion, typically a build
+//     older than this field. A consumer falls back the same way.
+//
+// So "unknown" and absent produce identical behaviour. They stay distinct
+// because they are different facts: one producer examined the session, the other
+// never knew the question existed. Only the first is evidence; both instruct the
+// consumer to decide for itself.
+type SessionOrigin string
+
+const (
+	// SessionOriginUser: a person drove the session.
+	SessionOriginUser SessionOrigin = "user"
+	// SessionOriginAgent: a program started the session.
+	SessionOriginAgent SessionOrigin = "agent"
+	// SessionOriginUnknown: the producer examined the session and could not
+	// establish who drove it. It instructs the consumer to apply its own rule.
+	SessionOriginUnknown SessionOrigin = "unknown"
+)
+
+// AllSessionOrigins is the canonical menu of declared session origins.
+var AllSessionOrigins = []SessionOrigin{
+	SessionOriginUser,
+	SessionOriginAgent,
+	SessionOriginUnknown,
+}
+
+// IsValid reports whether o is a value this contract accepts on the wire. It
+// accepts the empty string: an absent declaration is valid and means the
+// producer expressed no opinion.
+func (o SessionOrigin) IsValid() bool {
+	switch o {
+	case "", SessionOriginUser, SessionOriginAgent, SessionOriginUnknown:
+		return true
+	}
+	return false
+}
+
+func (o SessionOrigin) String() string { return string(o) }
+
+// JSONSchema implements jsonschema.Exposer. The published enum is the declared
+// menu only; the empty string is the absence of the field, which omitempty
+// already expresses, so it is not a menu member.
+func (SessionOrigin) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Session Origin",
+		"Who drove a recorded session, as declared by the producer that recorded it",
+		AllSessionOrigins,
+	), nil
+}
+
 // SessionSummary is a session without turns, used in the sessions list.
 type SessionSummary struct {
 	ID            string    `json:"id"`
@@ -36,6 +97,10 @@ type SessionSummary struct {
 	ProjectHash     ProjectHash `json:"projectHash,omitempty"`
 	Outcome         string      `json:"outcome,omitempty"`
 	ParentSessionID *string     `json:"parentSessionId,omitempty"`
+	// SessionOrigin is the producer's declaration of who drove this session.
+	// Absent when the producer expressed no opinion; see SessionOrigin for the
+	// rule a consumer applies to an absent or "unknown" value.
+	SessionOrigin SessionOrigin `json:"sessionOrigin,omitempty"`
 	// Preview is the raw first user message of the session, sourced from the
 	// already-redacted indexed transcript (session_entries.content_preview). It
 	// is redaction-safe by construction. Empty when the session has no indexed
@@ -130,6 +195,10 @@ type SessionDetailPayload struct {
 	// when the session has no computed outcome. The metadata columns expose no
 	// per-signal reason, so no reason field accompanies it yet.
 	Outcome SessionOutcome `json:"outcome,omitempty"`
+	// SessionOrigin is the producer's declaration of who drove this session.
+	// Absent when the producer expressed no opinion; see SessionOrigin for the
+	// rule a consumer applies to an absent or "unknown" value.
+	SessionOrigin SessionOrigin `json:"sessionOrigin,omitempty"`
 	// Scorecard carries the per-session quality signals used by the "How this
 	// session went" self-assessment card. Nil when the session has no computed
 	// metrics. Sourced from the same session_metrics row that backs QualitySession.
