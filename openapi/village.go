@@ -55,8 +55,9 @@ type TranscriptUpdateErrorResponse struct {
 
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
-// annotation registry and manifest synchronization, schema negotiation, and
-// group-scoped transcript discovery and pull operations.
+// annotation registry and manifest synchronization, schema negotiation, group-
+// scoped transcript discovery and pull operations, collectives, contributions,
+// review actions, and linked repositories.
 func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -342,6 +343,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("add pull skip-gate operation: %w", err)
 	}
 
+	if err := addVillageCollectiveOperations(r); err != nil {
+		return nil, err
+	}
+
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
 	// Provider, Role, EntryType, and all composite types.
@@ -362,26 +367,589 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	return r.Spec, nil
 }
 
+type villageOperationSpec struct {
+	method        string
+	path          string
+	id            string
+	tag           string
+	description   string
+	requests      []interface{}
+	response      interface{}
+	successStatus int
+	errorStatuses []int
+}
+
+func addVillageCollectiveOperations(r *openapi31.Reflector) error {
+	groupPath := new(struct {
+		ID schema.VillageUUID `path:"id" description:"Collective identifier"`
+	})
+	groupListQuery := new(struct {
+		Limit  int `query:"limit"`
+		Offset int `query:"offset"`
+	})
+	groupSearchQuery := new(struct {
+		Q     string `query:"q"`
+		Limit int    `query:"limit"`
+	})
+	memberPath := new(struct {
+		ID     schema.VillageUUID `path:"id" description:"Collective identifier"`
+		UserID schema.VillageUUID `path:"userID" description:"Member user identifier"`
+	})
+	removeMemberRequest := new(struct {
+		ID      schema.VillageUUID `path:"id" description:"Collective identifier"`
+		UserID  schema.VillageUUID `path:"userID" description:"Member user identifier"`
+		Retract bool               `query:"retract"`
+	})
+	groupTranscriptPath := new(struct {
+		ID           schema.VillageUUID  `path:"id" description:"Collective identifier"`
+		TranscriptID schema.TranscriptID `path:"transcriptID" description:"Transcript identifier"`
+	})
+	transcriptPath := new(struct {
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+	})
+	transcriptGroupPath := new(struct {
+		ID      schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		GroupID schema.VillageUUID  `path:"groupID" description:"Collective identifier"`
+	})
+	ownerCollectivePath := new(struct {
+		GroupID schema.VillageUUID `path:"groupId" description:"Collective identifier"`
+	})
+	shareEventsPath := new(struct {
+		GroupID      schema.VillageUUID  `path:"groupId" description:"Collective identifier"`
+		TranscriptID schema.TranscriptID `path:"transcriptId" description:"Transcript identifier"`
+	})
+	repositoryPath := new(struct {
+		ID    schema.VillageUUID `path:"id" description:"Collective identifier"`
+		Owner string             `path:"owner" description:"Repository owner login"`
+		Name  string             `path:"name" description:"Repository name"`
+	})
+	repositoryCommitsRequest := new(struct {
+		ID      schema.VillageUUID `path:"id" description:"Collective identifier"`
+		Owner   string             `path:"owner" description:"Repository owner login"`
+		Name    string             `path:"name" description:"Repository name"`
+		Refresh bool               `query:"refresh"`
+	})
+
+	operations := []villageOperationSpec{
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/public",
+			id:          "listPublicGroups",
+			tag:         "collectives",
+			description: "List public collectives as compact rows with member and approved-transcript counts.",
+			response:    new([]schema.VillagePublicGroup),
+			errorStatuses: []int{
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/search",
+			id:          "searchCollectives",
+			tag:         "collectives",
+			description: "Search visible collectives. An empty q returns an empty collectives array; limit defaults to 10 and is capped at 50.",
+			requests:    []interface{}{groupSearchQuery},
+			response:    new(schema.VillageCollectiveSearchResponse),
+			errorStatuses: []int{
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:        http.MethodPost,
+			path:          "/api/v1/groups",
+			id:            "createGroup",
+			tag:           "collectives",
+			description:   "Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted.",
+			requests:      []interface{}{new(schema.VillageCreateGroupRequest)},
+			response:      new(schema.VillageGroup),
+			successStatus: http.StatusCreated,
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups",
+			id:          "listGroups",
+			tag:         "collectives",
+			description: "List collectives the authenticated caller belongs to, with the caller's role and membership time.",
+			response:    new([]schema.VillageUserGroup),
+			errorStatuses: []int{
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/visible",
+			id:          "listVisibleGroups",
+			tag:         "collectives",
+			description: "List collectives the authenticated caller may see. Role and member_since are null when the caller sees the collective through public or open visibility but is not a member.",
+			response:    new([]schema.VillageVisibleGroup),
+			errorStatuses: []int{
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}",
+			id:          "getGroup",
+			tag:         "collectives",
+			description: "Get a collective with roster, stats, model breakdown, contributors, the caller's role, and a transcript page. pending_members is present only for owners. transcripts is an empty array when the caller may see the collective but may not read its data.",
+			requests:    []interface{}{groupPath, groupListQuery},
+			response:    new(schema.VillageGroupDetailResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusNotFound,
+			},
+		},
+		{
+			method:      http.MethodPatch,
+			path:        "/api/v1/groups/{id}",
+			id:          "updateGroup",
+			tag:         "collectives",
+			description: "Update an owned collective. Name and description are written from the request body's string values, so a caller that wants to preserve them must send their current values. linked_github_org omitted means preserve, empty string clears, and non-empty sets after visible-org validation.",
+			requests:    []interface{}{groupPath, new(schema.VillageUpdateGroupRequest)},
+			response:    new(schema.VillageGroup),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodDelete,
+			path:        "/api/v1/groups/{id}",
+			id:          "deleteGroup",
+			tag:         "collectives",
+			description: "Delete an owned collective and return a status receipt.",
+			requests:    []interface{}{groupPath},
+			response:    new(schema.VillageStatusResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPost,
+			path:        "/api/v1/groups/{id}/join",
+			id:          "joinGroup",
+			tag:         "collectives",
+			description: "Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route.",
+			requests:    []interface{}{groupPath},
+			response:    new(schema.VillageGroupStatusRoleResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPost,
+			path:        "/api/v1/groups/{id}/members",
+			id:          "addGroupMember",
+			tag:         "collectives",
+			description: "Add a platform user to an owned collective by username.",
+			requests:    []interface{}{groupPath, new(schema.VillageGroupMemberUsernameRequest)},
+			response:    new(schema.VillageStatusResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPatch,
+			path:        "/api/v1/groups/{id}/members/{userID}/role",
+			id:          "updateGroupMemberRole",
+			tag:         "collectives",
+			description: "Change a collective member's role to contributor or member. Owner and pending are not accepted by this operation.",
+			requests:    []interface{}{memberPath, new(schema.VillageGroupMemberRoleRequest)},
+			response:    new(schema.VillageGroupStatusRoleResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodDelete,
+			path:        "/api/v1/groups/{id}/members/{userID}",
+			id:          "removeGroupMember",
+			tag:         "collectives",
+			description: "Remove a member from a collective. The member may remove themselves; removing somebody else requires owner access. retract=true or a mandatory deletion policy retracts that member's live submissions.",
+			requests:    []interface{}{removeMemberRequest},
+			response:    new(schema.VillageRemoveGroupMemberResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/contributable",
+			id:          "listContributableTranscripts",
+			tag:         "contributions",
+			description: "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
+			requests:    []interface{}{groupPath},
+			response:    new(schema.VillageContributableResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusRequestEntityTooLarge,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPost,
+			path:        "/api/v1/groups/{id}/shares",
+			id:          "batchShareProject",
+			tag:         "contributions",
+			description: "Offer selected transcripts from one owned project to one collective in one transaction. Omitted or empty transcript_ids means every owned transcript in the project. visibility_confirmed must be true when any selected private transcript would become visible to the collective.",
+			requests:    []interface{}{groupPath, new(schema.VillageBatchShareRequest)},
+			response:    new(schema.VillageBatchShareResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
+				http.StatusUnprocessableEntity,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/pending",
+			id:          "listPendingShares",
+			tag:         "contributions",
+			description: "List pending transcript submissions for an owned collective, oldest first.",
+			requests:    []interface{}{groupPath},
+			response:    new([]schema.VillagePendingShare),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/my-shares",
+			id:          "listMyGroupShares",
+			tag:         "contributions",
+			description: "List the authenticated caller's own live submissions to one collective, including pending and approved rows.",
+			requests:    []interface{}{groupPath},
+			response:    new([]schema.VillageUserGroupShare),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPatch,
+			path:        "/api/v1/groups/{id}/shares",
+			id:          "batchReviewShares",
+			tag:         "contributions",
+			description: "Approve or reject many pending submissions in one owner-only action. The response separates ids that were decided by this action from ids that were already decided, never submitted to this collective, or stale.",
+			requests:    []interface{}{groupPath, new(schema.VillageBatchReviewRequest)},
+			response:    new(schema.VillageBatchReviewResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPatch,
+			path:        "/api/v1/groups/{id}/shares/{transcriptID}",
+			id:          "reviewShare",
+			tag:         "contributions",
+			description: "Approve or reject one pending submission to an owned collective. The decision changes the share-attempt status and does not mutate transcript visibility.",
+			requests:    []interface{}{groupTranscriptPath, new(schema.VillageReviewShareRequest)},
+			response:    new(schema.VillageReviewShareResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodDelete,
+			path:        "/api/v1/groups/{id}/transcripts/{transcriptID}",
+			id:          "removeGroupTranscript",
+			tag:         "contributions",
+			description: "Remove or revoke a transcript contribution from an owned collective without deleting the transcript from its owner's library.",
+			requests:    []interface{}{groupTranscriptPath},
+			response:    new(schema.VillageStatusResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodPost,
+			path:        "/api/v1/transcripts/{id}/share",
+			id:          "shareTranscriptWithGroups",
+			tag:         "contributions",
+			description: "Offer one owned transcript to one or more collectives. The response is the transcript's share list, while duplicate or refused collectives are skipped unless every requested collective is already live.",
+			requests:    []interface{}{transcriptPath, new(schema.VillageShareTranscriptRequest)},
+			response:    new([]schema.VillageTranscriptShare),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusConflict,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodDelete,
+			path:        "/api/v1/transcripts/{id}/share/{groupID}",
+			id:          "unshareTranscriptFromGroup",
+			tag:         "contributions",
+			description: "Withdraw one owned transcript from one collective and return a status receipt.",
+			requests:    []interface{}{transcriptGroupPath},
+			response:    new(schema.VillageStatusResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/users/me/collectives/contributions",
+			id:          "listMyCollectiveContributions",
+			tag:         "contributions",
+			description: "List collectives the authenticated caller has offered transcripts to, with approved and pending transcript counts and rejected and withdrawn attempt counts.",
+			response:    new(schema.VillageContributedCollectivesResponse),
+			errorStatuses: []int{
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/transcripts/{id}/collectives",
+			id:          "listTranscriptCollectives",
+			tag:         "contributions",
+			description: "List visible collectives that hold a transcript. The server returns an empty collectives array, not a refusal, when memberships are hidden by collective visibility or contributor opt-in policy.",
+			requests:    []interface{}{transcriptPath},
+			response:    new(schema.VillageTranscriptCollectivesResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/users/me/collectives/{groupId}/submissions",
+			id:          "listMyCollectiveSubmissions",
+			tag:         "contributions",
+			description: "List every transcript-collective pair the authenticated caller has offered to one collective, including pairs whose latest event was a withdrawal. A caller with no pair receives 404, matching no-such-collective.",
+			requests:    []interface{}{ownerCollectivePath},
+			response:    new([]schema.VillageCollectiveSubmission),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/users/me/collectives/{groupId}/transcripts/{transcriptId}/events",
+			id:          "listShareEventHistory",
+			tag:         "contributions",
+			description: "List the full owner-only event history for one transcript and collective pair, oldest event first. The decided_by_actor field is an actor class, never a moderator user id.",
+			requests:    []interface{}{shareEventsPath},
+			response:    new([]schema.VillageShareEvent),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/repositories",
+			id:          "listGroupRepositories",
+			tag:         "repositories",
+			description: "List GitHub repositories linked to a collective. The caller must be an authenticated collective member.",
+			requests:    []interface{}{groupPath},
+			response:    new(schema.VillageLinkedRepositoriesResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:        http.MethodPost,
+			path:          "/api/v1/groups/{id}/repositories",
+			id:            "linkGroupRepository",
+			tag:           "repositories",
+			description:   "Link a GitHub repository to an owned collective after validating that the configured GitHub App installation can access it.",
+			requests:      []interface{}{groupPath, new(schema.VillageLinkRepositoryRequest)},
+			response:      new(schema.VillageLinkedRepository),
+			successStatus: http.StatusCreated,
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotImplemented,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodDelete,
+			path:        "/api/v1/groups/{id}/repositories/{owner}/{name}",
+			id:          "unlinkGroupRepository",
+			tag:         "repositories",
+			description: "Unlink a GitHub repository from an owned collective.",
+			requests:    []interface{}{repositoryPath},
+			response:    new(schema.VillageStatusResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/repositories/{owner}/{name}/commits",
+			id:          "listGroupRepositoryCommits",
+			tag:         "repositories",
+			description: "List cached commits for a linked repository. refresh=true fetches from GitHub and requires collective owner access; otherwise any collective member may read the cache.",
+			requests:    []interface{}{repositoryCommitsRequest},
+			response:    new(schema.VillageRepositoryCommitsResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotFound,
+				http.StatusNotImplemented,
+				http.StatusBadGateway,
+				http.StatusInternalServerError,
+			},
+		},
+	}
+
+	for _, op := range operations {
+		oc, err := r.NewOperationContext(op.method, op.path)
+		if err != nil {
+			return fmt.Errorf("new Village operation %s %s: %w", op.method, op.path, err)
+		}
+		for _, request := range op.requests {
+			oc.AddReqStructure(request)
+		}
+		if op.response != nil {
+			if op.successStatus != 0 && op.successStatus != http.StatusOK {
+				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
+			} else {
+				oc.AddRespStructure(op.response)
+			}
+		}
+		for _, status := range op.errorStatuses {
+			oc.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
+		}
+		oc.SetDescription(op.description)
+		oc.SetID(op.id)
+		oc.SetTags(op.tag)
+		if err := r.AddOperation(oc); err != nil {
+			return fmt.Errorf("add Village operation %s %s: %w", op.method, op.path, err)
+		}
+	}
+
+	for _, body := range []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/api/v1/groups"},
+		{http.MethodPatch, "/api/v1/groups/{id}"},
+		{http.MethodPost, "/api/v1/groups/{id}/members"},
+		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
+		{http.MethodPost, "/api/v1/groups/{id}/shares"},
+		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
+		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
+		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
+		{http.MethodPost, "/api/v1/groups/{id}/repositories"},
+	} {
+		if err := requireRequestBody(r.Spec, body.method, body.path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // requirePatchRequestBody marks the PATCH request body at one path as required
 // after reflection. It fails closed rather than silently doing nothing, because
 // a missing path or operation would leave the body advertised as optional while
 // every gate stayed green.
 func requirePatchRequestBody(spec *openapi31.Spec, path string) error {
+	return requireRequestBody(spec, http.MethodPatch, path)
+}
+
+func requireRequestBody(spec *openapi31.Spec, method, path string) error {
 	if spec == nil || spec.Paths == nil {
-		return fmt.Errorf("require PATCH request body for %s: the specification has no paths, so the body would remain advertised as optional", path)
+		return fmt.Errorf("require %s request body for %s: the specification has no paths, so the body would remain advertised as optional", method, path)
 	}
 	item, ok := spec.Paths.MapOfPathItemValues[path]
 	if !ok {
-		return fmt.Errorf("require PATCH request body for %s: the path is absent from the specification; either the operation moved or this call names a stale path, and the body would remain advertised as optional", path)
-	}
-	if item.Patch == nil {
-		return fmt.Errorf("require PATCH request body for %s: the path declares no PATCH operation; the body would remain advertised as optional", path)
-	}
-	if item.Patch.RequestBody == nil || item.Patch.RequestBody.RequestBody == nil {
-		return fmt.Errorf("require PATCH request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+		return fmt.Errorf("require %s request body for %s: the path is absent from the specification; either the operation moved or this call names a stale path, and the body would remain advertised as optional", method, path)
 	}
 	required := true
-	item.Patch.RequestBody.RequestBody.Required = &required
+	switch method {
+	case http.MethodPost:
+		if item.Post == nil {
+			return fmt.Errorf("require POST request body for %s: the path declares no POST operation; the body would remain advertised as optional", path)
+		}
+		if item.Post.RequestBody == nil || item.Post.RequestBody.RequestBody == nil {
+			return fmt.Errorf("require POST request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+		}
+		item.Post.RequestBody.RequestBody.Required = &required
+	case http.MethodPatch:
+		if item.Patch == nil {
+			return fmt.Errorf("require PATCH request body for %s: the path declares no PATCH operation; the body would remain advertised as optional", path)
+		}
+		if item.Patch.RequestBody == nil || item.Patch.RequestBody.RequestBody == nil {
+			return fmt.Errorf("require PATCH request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+		}
+		item.Patch.RequestBody.RequestBody.Required = &required
+	default:
+		return fmt.Errorf("require %s request body for %s: unsupported method; extend requireRequestBody before adding this body gate", method, path)
+	}
 	spec.Paths.MapOfPathItemValues[path] = item
 	return nil
 }

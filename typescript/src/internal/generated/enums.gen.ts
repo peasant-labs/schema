@@ -41,6 +41,18 @@ import { zTypeOrigin, type TypeOrigin as TypeOriginContract } from "./contract/z
 import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
+import { zVillageAssignableGroupRole, type VillageAssignableGroupRole as VillageAssignableGroupRoleContract } from "./contract/zod.gen.js";
+import { zVillageContributionStatus, type VillageContributionStatus as VillageContributionStatusContract } from "./contract/zod.gen.js";
+import { zVillageGroupAcceptanceMode, type VillageGroupAcceptanceMode as VillageGroupAcceptanceModeContract } from "./contract/zod.gen.js";
+import { zVillageGroupDataAccess, type VillageGroupDataAccess as VillageGroupDataAccessContract } from "./contract/zod.gen.js";
+import { zVillageGroupRole, type VillageGroupRole as VillageGroupRoleContract } from "./contract/zod.gen.js";
+import { zVillageGroupViewerRole, type VillageGroupViewerRole as VillageGroupViewerRoleContract } from "./contract/zod.gen.js";
+import { zVillageProjectNameSource, type VillageProjectNameSource as VillageProjectNameSourceContract } from "./contract/zod.gen.js";
+import { zVillageReviewDecision, type VillageReviewDecision as VillageReviewDecisionContract } from "./contract/zod.gen.js";
+import { zVillageShareEventActor, type VillageShareEventActor as VillageShareEventActorContract } from "./contract/zod.gen.js";
+import { zVillageShareStatus, type VillageShareStatus as VillageShareStatusContract } from "./contract/zod.gen.js";
+import { zVillageTranscriptDeletionPolicy, type VillageTranscriptDeletionPolicy as VillageTranscriptDeletionPolicyContract } from "./contract/zod.gen.js";
+import { zVillageTranscriptVisibility, type VillageTranscriptVisibility as VillageTranscriptVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
@@ -566,6 +578,142 @@ export const TranscriptUpdateVisibility = Object.freeze({
 export const AllTranscriptUpdateVisibilities = Object.freeze([TranscriptUpdateVisibility.Private, TranscriptUpdateVisibility.Public]) as readonly TranscriptUpdateVisibility[];
 export function isTranscriptUpdateVisibility(value: unknown): value is TranscriptUpdateVisibility {
   return zTranscriptUpdateVisibility.safeParse(value).success;
+}
+
+export type VillageAssignableGroupRole = VillageAssignableGroupRoleContract;
+export const VillageAssignableGroupRole = Object.freeze({
+  Contributor: zVillageAssignableGroupRole.parse("contributor"),
+  Member: zVillageAssignableGroupRole.parse("member"),
+} as const);
+export const AllVillageAssignableGroupRoles = Object.freeze([VillageAssignableGroupRole.Contributor, VillageAssignableGroupRole.Member]) as readonly VillageAssignableGroupRole[];
+export function isVillageAssignableGroupRole(value: unknown): value is VillageAssignableGroupRole {
+  return zVillageAssignableGroupRole.safeParse(value).success;
+}
+
+export type VillageContributionStatus = VillageContributionStatusContract;
+export const VillageContributionStatus = Object.freeze({
+  Approved: zVillageContributionStatus.parse("approved"),
+  Pending: zVillageContributionStatus.parse("pending"),
+} as const);
+export const AllVillageContributionStatuses = Object.freeze([VillageContributionStatus.Approved, VillageContributionStatus.Pending]) as readonly VillageContributionStatus[];
+export function isVillageContributionStatus(value: unknown): value is VillageContributionStatus {
+  return zVillageContributionStatus.safeParse(value).success;
+}
+
+export type VillageGroupAcceptanceMode = VillageGroupAcceptanceModeContract;
+export const VillageGroupAcceptanceMode = Object.freeze({
+  Open: zVillageGroupAcceptanceMode.parse("open"),
+  VerifiedOnly: zVillageGroupAcceptanceMode.parse("verified_only"),
+  Curated: zVillageGroupAcceptanceMode.parse("curated"),
+} as const);
+export const AllVillageGroupAcceptanceModes = Object.freeze([VillageGroupAcceptanceMode.Open, VillageGroupAcceptanceMode.VerifiedOnly, VillageGroupAcceptanceMode.Curated]) as readonly VillageGroupAcceptanceMode[];
+export function isVillageGroupAcceptanceMode(value: unknown): value is VillageGroupAcceptanceMode {
+  return zVillageGroupAcceptanceMode.safeParse(value).success;
+}
+
+export type VillageGroupDataAccess = VillageGroupDataAccessContract;
+export const VillageGroupDataAccess = Object.freeze({
+  MembersOnly: zVillageGroupDataAccess.parse("members_only"),
+  Contributors: zVillageGroupDataAccess.parse("contributors"),
+  Public: zVillageGroupDataAccess.parse("public"),
+} as const);
+export const AllVillageGroupDataAccessPolicies = Object.freeze([VillageGroupDataAccess.MembersOnly, VillageGroupDataAccess.Contributors, VillageGroupDataAccess.Public]) as readonly VillageGroupDataAccess[];
+export function isVillageGroupDataAccess(value: unknown): value is VillageGroupDataAccess {
+  return zVillageGroupDataAccess.safeParse(value).success;
+}
+
+export type VillageGroupRole = VillageGroupRoleContract;
+export const VillageGroupRole = Object.freeze({
+  Owner: zVillageGroupRole.parse("owner"),
+  Member: zVillageGroupRole.parse("member"),
+  Contributor: zVillageGroupRole.parse("contributor"),
+  Pending: zVillageGroupRole.parse("pending"),
+} as const);
+export const AllVillageGroupRoles = Object.freeze([VillageGroupRole.Owner, VillageGroupRole.Member, VillageGroupRole.Contributor, VillageGroupRole.Pending]) as readonly VillageGroupRole[];
+export function isVillageGroupRole(value: unknown): value is VillageGroupRole {
+  return zVillageGroupRole.safeParse(value).success;
+}
+
+export type VillageGroupViewerRole = VillageGroupViewerRoleContract;
+export const VillageGroupViewerRole = Object.freeze({
+  None: zVillageGroupViewerRole.parse(""),
+  Owner: zVillageGroupViewerRole.parse("owner"),
+  Member: zVillageGroupViewerRole.parse("member"),
+  Contributor: zVillageGroupViewerRole.parse("contributor"),
+  Pending: zVillageGroupViewerRole.parse("pending"),
+} as const);
+export const AllVillageGroupViewerRoles = Object.freeze([VillageGroupViewerRole.None, VillageGroupViewerRole.Owner, VillageGroupViewerRole.Member, VillageGroupViewerRole.Contributor, VillageGroupViewerRole.Pending]) as readonly VillageGroupViewerRole[];
+export function isVillageGroupViewerRole(value: unknown): value is VillageGroupViewerRole {
+  return zVillageGroupViewerRole.safeParse(value).success;
+}
+
+export type VillageProjectNameSource = VillageProjectNameSourceContract;
+export const VillageProjectNameSource = Object.freeze({
+  Override: zVillageProjectNameSource.parse("override"),
+  Consented: zVillageProjectNameSource.parse("consented"),
+  Remote: zVillageProjectNameSource.parse("remote"),
+  Path: zVillageProjectNameSource.parse("path"),
+  Privacy: zVillageProjectNameSource.parse("privacy"),
+} as const);
+export const AllVillageProjectNameSources = Object.freeze([VillageProjectNameSource.Override, VillageProjectNameSource.Consented, VillageProjectNameSource.Remote, VillageProjectNameSource.Path, VillageProjectNameSource.Privacy]) as readonly VillageProjectNameSource[];
+export function isVillageProjectNameSource(value: unknown): value is VillageProjectNameSource {
+  return zVillageProjectNameSource.safeParse(value).success;
+}
+
+export type VillageReviewDecision = VillageReviewDecisionContract;
+export const VillageReviewDecision = Object.freeze({
+  Approved: zVillageReviewDecision.parse("approved"),
+  Rejected: zVillageReviewDecision.parse("rejected"),
+} as const);
+export const AllVillageReviewDecisions = Object.freeze([VillageReviewDecision.Approved, VillageReviewDecision.Rejected]) as readonly VillageReviewDecision[];
+export function isVillageReviewDecision(value: unknown): value is VillageReviewDecision {
+  return zVillageReviewDecision.safeParse(value).success;
+}
+
+export type VillageShareEventActor = VillageShareEventActorContract;
+export const VillageShareEventActor = Object.freeze({
+  None: zVillageShareEventActor.parse(""),
+  Owner: zVillageShareEventActor.parse("owner"),
+  Collective: zVillageShareEventActor.parse("collective"),
+  Moderator: zVillageShareEventActor.parse("moderator"),
+} as const);
+export const AllVillageShareEventActors = Object.freeze([VillageShareEventActor.None, VillageShareEventActor.Owner, VillageShareEventActor.Collective, VillageShareEventActor.Moderator]) as readonly VillageShareEventActor[];
+export function isVillageShareEventActor(value: unknown): value is VillageShareEventActor {
+  return zVillageShareEventActor.safeParse(value).success;
+}
+
+export type VillageShareStatus = VillageShareStatusContract;
+export const VillageShareStatus = Object.freeze({
+  Pending: zVillageShareStatus.parse("pending"),
+  Approved: zVillageShareStatus.parse("approved"),
+  Rejected: zVillageShareStatus.parse("rejected"),
+  Retracted: zVillageShareStatus.parse("retracted"),
+  Revoked: zVillageShareStatus.parse("revoked"),
+} as const);
+export const AllVillageShareStatuses = Object.freeze([VillageShareStatus.Pending, VillageShareStatus.Approved, VillageShareStatus.Rejected, VillageShareStatus.Retracted, VillageShareStatus.Revoked]) as readonly VillageShareStatus[];
+export function isVillageShareStatus(value: unknown): value is VillageShareStatus {
+  return zVillageShareStatus.safeParse(value).success;
+}
+
+export type VillageTranscriptDeletionPolicy = VillageTranscriptDeletionPolicyContract;
+export const VillageTranscriptDeletionPolicy = Object.freeze({
+  UserChoice: zVillageTranscriptDeletionPolicy.parse("user_choice"),
+  Mandatory: zVillageTranscriptDeletionPolicy.parse("mandatory"),
+} as const);
+export const AllVillageTranscriptDeletionPolicies = Object.freeze([VillageTranscriptDeletionPolicy.UserChoice, VillageTranscriptDeletionPolicy.Mandatory]) as readonly VillageTranscriptDeletionPolicy[];
+export function isVillageTranscriptDeletionPolicy(value: unknown): value is VillageTranscriptDeletionPolicy {
+  return zVillageTranscriptDeletionPolicy.safeParse(value).success;
+}
+
+export type VillageTranscriptVisibility = VillageTranscriptVisibilityContract;
+export const VillageTranscriptVisibility = Object.freeze({
+  Private: zVillageTranscriptVisibility.parse("private"),
+  Shared: zVillageTranscriptVisibility.parse("shared"),
+  Public: zVillageTranscriptVisibility.parse("public"),
+} as const);
+export const AllVillageTranscriptVisibilities = Object.freeze([VillageTranscriptVisibility.Private, VillageTranscriptVisibility.Shared, VillageTranscriptVisibility.Public]) as readonly VillageTranscriptVisibility[];
+export function isVillageTranscriptVisibility(value: unknown): value is VillageTranscriptVisibility {
+  return zVillageTranscriptVisibility.safeParse(value).success;
 }
 
 export type Visibility = VisibilityContract;

@@ -50,7 +50,9 @@ const (
 	// parentUuid (corrective additive version).
 	// Bumped to 0.13.0 when schema negotiation gained optional enriched-content
 	// capability advertisements (additive = minor bump).
-	VillageAPIVersion = "0.13.0"
+	// Bumped to 0.14.0 when the Village API spec gained the schema-owned
+	// collectives, contribution, review, and linked-repository web routes.
+	VillageAPIVersion = "0.14.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -103,5 +105,7 @@ const (
 	// Bumped to 0.13.0 when the declared session-origin closed set entered the
 	// catalog and both session payloads gained its optional field (additive =
 	// minor bump).
-	TypesVersion = "0.13.0"
+	// Bumped to 0.14.0 when the Village collectives, contribution, review, and
+	// linked-repository DTOs entered the catalog.
+	TypesVersion = "0.14.0"
 )

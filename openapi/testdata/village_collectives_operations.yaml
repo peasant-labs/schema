@@ -1,0 +1,229 @@
+operations:
+  - path: /api/v1/groups/public
+    method: get
+    operation_id: listPublicGroups
+    request_components: []
+    response_components: [VillagePublicGroup]
+    statuses: ["200", "500"]
+    description_anchors: [public collectives, approved-transcript counts]
+  - path: /api/v1/groups/search
+    method: get
+    operation_id: searchCollectives
+    request_components: []
+    response_components: [VillageCollectiveSearchResponse]
+    statuses: ["200", "500"]
+    description_anchors: [empty q, capped at 50]
+  - path: /api/v1/groups
+    method: post
+    operation_id: createGroup
+    request_components: [VillageCreateGroupRequest]
+    response_components: [VillageGroup]
+    statuses: ["201", "400", "401", "500"]
+    description_anchors: [Name is required, defaults to open]
+  - path: /api/v1/groups
+    method: get
+    operation_id: listGroups
+    request_components: []
+    response_components: [VillageUserGroup]
+    statuses: ["200", "401", "500"]
+    description_anchors: [caller belongs to, membership time]
+  - path: /api/v1/groups/visible
+    method: get
+    operation_id: listVisibleGroups
+    request_components: []
+    response_components: [VillageVisibleGroup]
+    statuses: ["200", "401", "500"]
+    description_anchors: [may see, not a member]
+  - path: /api/v1/groups/{id}
+    method: get
+    operation_id: getGroup
+    request_components: []
+    response_components: [VillageGroupDetailResponse]
+    statuses: ["200", "400", "404"]
+    description_anchors: [pending_members is present only for owners, transcripts is an empty array]
+  - path: /api/v1/groups/{id}
+    method: patch
+    operation_id: updateGroup
+    request_components: [VillageUpdateGroupRequest]
+    response_components: [VillageGroup]
+    statuses: ["200", "400", "401", "403", "404", "500"]
+    description_anchors: [preserve them must send, empty string clears]
+  - path: /api/v1/groups/{id}
+    method: delete
+    operation_id: deleteGroup
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [Delete an owned collective]
+  - path: /api/v1/groups/{id}/join
+    method: post
+    operation_id: joinGroup
+    request_components: []
+    response_components: [VillageGroupStatusRoleResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "500"]
+    description_anchors: [Join an open or verified collective, Curated collectives]
+  - path: /api/v1/groups/{id}/members
+    method: post
+    operation_id: addGroupMember
+    request_components: [VillageGroupMemberUsernameRequest]
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "403", "404", "500"]
+    description_anchors: [by username]
+  - path: /api/v1/groups/{id}/members/{userID}/role
+    method: patch
+    operation_id: updateGroupMemberRole
+    request_components: [VillageGroupMemberRoleRequest]
+    response_components: [VillageGroupStatusRoleResponse]
+    statuses: ["200", "400", "401", "403", "404", "500"]
+    description_anchors: [contributor or member, Owner and pending are not accepted]
+  - path: /api/v1/groups/{id}/members/{userID}
+    method: delete
+    operation_id: removeGroupMember
+    request_components: []
+    response_components: [VillageRemoveGroupMemberResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [retract=true, mandatory deletion policy]
+  - path: /api/v1/groups/{id}/contributable
+    method: get
+    operation_id: listContributableTranscripts
+    request_components: []
+    response_components: [VillageContributableResponse]
+    statuses: ["200", "400", "401", "403", "413", "500"]
+    description_anchors: [already live, unpaginated]
+  - path: /api/v1/groups/{id}/shares
+    method: post
+    operation_id: batchShareProject
+    request_components: [VillageBatchShareRequest]
+    response_components: [VillageBatchShareResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "422", "500"]
+    description_anchors: [one transaction, visibility_confirmed]
+  - path: /api/v1/groups/{id}/pending
+    method: get
+    operation_id: listPendingShares
+    request_components: []
+    response_components: [VillagePendingShare]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [pending transcript submissions, oldest first]
+  - path: /api/v1/groups/{id}/my-shares
+    method: get
+    operation_id: listMyGroupShares
+    request_components: []
+    response_components: [VillageUserGroupShare]
+    statuses: ["200", "400", "401", "500"]
+    description_anchors: [own live submissions, pending and approved]
+  - path: /api/v1/groups/{id}/shares
+    method: patch
+    operation_id: batchReviewShares
+    request_components: [VillageBatchReviewRequest]
+    response_components: [VillageBatchReviewResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [Approve or reject many, already decided]
+  - path: /api/v1/groups/{id}/shares/{transcriptID}
+    method: patch
+    operation_id: reviewShare
+    request_components: [VillageReviewShareRequest]
+    response_components: [VillageReviewShareResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [one pending submission, does not mutate transcript visibility]
+  - path: /api/v1/groups/{id}/transcripts/{transcriptID}
+    method: delete
+    operation_id: removeGroupTranscript
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [without deleting the transcript]
+  - path: /api/v1/transcripts/{id}/share
+    method: post
+    operation_id: shareTranscriptWithGroups
+    request_components: [VillageShareTranscriptRequest]
+    response_components: [VillageTranscriptShare]
+    statuses: ["200", "400", "401", "403", "404", "409", "500"]
+    description_anchors: [share list, every requested collective]
+  - path: /api/v1/transcripts/{id}/share/{groupID}
+    method: delete
+    operation_id: unshareTranscriptFromGroup
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "403", "404"]
+    description_anchors: [Withdraw one owned transcript]
+  - path: /api/v1/users/me/collectives/contributions
+    method: get
+    operation_id: listMyCollectiveContributions
+    request_components: []
+    response_components: [VillageContributedCollectivesResponse]
+    statuses: ["200", "401", "500"]
+    description_anchors: [rejected and withdrawn attempt counts]
+  - path: /api/v1/transcripts/{id}/collectives
+    method: get
+    operation_id: listTranscriptCollectives
+    request_components: []
+    response_components: [VillageTranscriptCollectivesResponse]
+    statuses: ["200", "400", "404", "500"]
+    description_anchors: [empty collectives array, contributor opt-in]
+  - path: /api/v1/users/me/collectives/{groupId}/submissions
+    method: get
+    operation_id: listMyCollectiveSubmissions
+    request_components: []
+    response_components: [VillageCollectiveSubmission]
+    statuses: ["200", "400", "401", "404", "500"]
+    description_anchors: [withdrawal, no-such-collective]
+  - path: /api/v1/users/me/collectives/{groupId}/transcripts/{transcriptId}/events
+    method: get
+    operation_id: listShareEventHistory
+    request_components: []
+    response_components: [VillageShareEvent]
+    statuses: ["200", "400", "401", "404", "500"]
+    description_anchors: [oldest event first, never a moderator user id]
+  - path: /api/v1/groups/{id}/repositories
+    method: get
+    operation_id: listGroupRepositories
+    request_components: []
+    response_components: [VillageLinkedRepositoriesResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [authenticated collective member]
+  - path: /api/v1/groups/{id}/repositories
+    method: post
+    operation_id: linkGroupRepository
+    request_components: [VillageLinkRepositoryRequest]
+    response_components: [VillageLinkedRepository]
+    statuses: ["201", "400", "401", "403", "501", "500"]
+    description_anchors: [GitHub App installation]
+  - path: /api/v1/groups/{id}/repositories/{owner}/{name}
+    method: delete
+    operation_id: unlinkGroupRepository
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "403", "404", "500"]
+    description_anchors: [Unlink a GitHub repository]
+  - path: /api/v1/groups/{id}/repositories/{owner}/{name}/commits
+    method: get
+    operation_id: listGroupRepositoryCommits
+    request_components: []
+    response_components: [VillageRepositoryCommitsResponse]
+    statuses: ["200", "400", "401", "403", "404", "501", "502", "500"]
+    description_anchors: [refresh=true, any collective member]
+component_enums:
+  - component: VillageGroupAcceptanceMode
+    values: [open, verified_only, curated]
+  - component: VillageGroupDataAccess
+    values: [members_only, contributors, public]
+  - component: VillageTranscriptDeletionPolicy
+    values: [user_choice, mandatory]
+  - component: VillageGroupRole
+    values: [owner, member, contributor, pending]
+  - component: VillageAssignableGroupRole
+    values: [contributor, member]
+  - component: VillageGroupViewerRole
+    values: ["", owner, member, contributor, pending]
+  - component: VillageProjectNameSource
+    values: [override, consented, remote, path, privacy]
+  - component: VillageTranscriptVisibility
+    values: [private, shared, public]
+  - component: VillageContributionStatus
+    values: [approved, pending]
+  - component: VillageReviewDecision
+    values: [approved, rejected]
+  - component: VillageShareStatus
+    values: [pending, approved, rejected, retracted, revoked]
+  - component: VillageShareEventActor
+    values: ["", owner, collective, moderator]

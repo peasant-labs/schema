@@ -2339,6 +2339,735 @@ export const zTaxonomyNode = z.object({
 export type TaxonomyNode = z.infer<typeof zTaxonomyNode>;
 
 /**
+ * Village Assignable Group Role
+ *
+ * Collective roles an owner may assign through the member role endpoint
+ */
+export const zVillageAssignableGroupRole = z.enum(['contributor', 'member']);
+
+export type VillageAssignableGroupRole = z.infer<typeof zVillageAssignableGroupRole>;
+
+export const zVillageBatchReviewResponse = z.object({
+    already_decided: z.array(zTranscriptID).nullable(),
+    decided: z.array(zTranscriptID).nullable()
+});
+
+export type VillageBatchReviewResponse = z.infer<typeof zVillageBatchReviewResponse>;
+
+export const zVillageBatchShareRequest = z.object({
+    project_hash: zProjectHash,
+    transcript_ids: z.array(zTranscriptID).optional(),
+    visibility_confirmed: z.boolean()
+});
+
+export type VillageBatchShareRequest = z.infer<typeof zVillageBatchShareRequest>;
+
+/**
+ * Village Contribution Status
+ *
+ * Status assigned when a new collective contribution is opened
+ */
+export const zVillageContributionStatus = z.enum(['approved', 'pending']);
+
+export type VillageContributionStatus = z.infer<typeof zVillageContributionStatus>;
+
+export const zVillageBatchShareEntry = z.object({
+    status: zVillageContributionStatus,
+    transcript_id: zTranscriptID
+});
+
+export type VillageBatchShareEntry = z.infer<typeof zVillageBatchShareEntry>;
+
+export const zVillageBatchShareResponse = z.object({
+    already_shared: z.array(zTranscriptID).nullable(),
+    project_hash: zProjectHash,
+    shared: z.array(zVillageBatchShareEntry).nullable()
+});
+
+export type VillageBatchShareResponse = z.infer<typeof zVillageBatchShareResponse>;
+
+export const zVillageErrorResponse = z.object({
+    error: z.string()
+});
+
+export type VillageErrorResponse = z.infer<typeof zVillageErrorResponse>;
+
+/**
+ * Village Group Acceptance Mode
+ *
+ * How a collective accepts new members and contributions
+ */
+export const zVillageGroupAcceptanceMode = z.enum([
+    'open',
+    'verified_only',
+    'curated'
+]);
+
+export type VillageGroupAcceptanceMode = z.infer<typeof zVillageGroupAcceptanceMode>;
+
+/**
+ * Village Group Data Access
+ *
+ * Who may read a collective's pooled transcript data
+ */
+export const zVillageGroupDataAccess = z.enum([
+    'members_only',
+    'contributors',
+    'public'
+]);
+
+export type VillageGroupDataAccess = z.infer<typeof zVillageGroupDataAccess>;
+
+export const zVillageCreateGroupRequest = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode.optional(),
+    data_access: zVillageGroupDataAccess.optional(),
+    description: z.string().optional(),
+    linked_github_org: z.string().optional(),
+    name: z.string()
+});
+
+export type VillageCreateGroupRequest = z.infer<typeof zVillageCreateGroupRequest>;
+
+export const zVillageGroupMemberRoleRequest = z.object({
+    role: zVillageAssignableGroupRole
+});
+
+export type VillageGroupMemberRoleRequest = z.infer<typeof zVillageGroupMemberRoleRequest>;
+
+export const zVillageGroupMemberUsernameRequest = z.object({
+    username: z.string()
+});
+
+export type VillageGroupMemberUsernameRequest = z.infer<typeof zVillageGroupMemberUsernameRequest>;
+
+export const zVillageGroupModelBreakdown = z.object({
+    model_provider: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageGroupModelBreakdown = z.infer<typeof zVillageGroupModelBreakdown>;
+
+/**
+ * Village Group Role
+ *
+ * A user's role in one collective
+ */
+export const zVillageGroupRole = z.enum([
+    'owner',
+    'member',
+    'contributor',
+    'pending'
+]);
+
+export type VillageGroupRole = z.infer<typeof zVillageGroupRole>;
+
+export const zVillageGroupStatusRoleResponse = z.object({
+    role: zVillageGroupRole,
+    status: z.string()
+});
+
+export type VillageGroupStatusRoleResponse = z.infer<typeof zVillageGroupStatusRoleResponse>;
+
+export const zVillageGroupTranscriptStats = z.object({
+    contributor_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    total_duration_ms: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    total_tokens: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    total_transcripts: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    total_turns: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+export type VillageGroupTranscriptStats = z.infer<typeof zVillageGroupTranscriptStats>;
+
+/**
+ * Village Group Viewer Role
+ *
+ * The caller's role in a collective, or an empty string when the caller has none
+ */
+export const zVillageGroupViewerRole = z.enum([
+    '',
+    'owner',
+    'member',
+    'contributor',
+    'pending'
+]);
+
+export type VillageGroupViewerRole = z.infer<typeof zVillageGroupViewerRole>;
+
+export const zVillageLinkRepositoryRequest = z.object({
+    installation_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    name: z.string(),
+    owner: z.string()
+});
+
+export type VillageLinkRepositoryRequest = z.infer<typeof zVillageLinkRepositoryRequest>;
+
+/**
+ * Village Project Name Source
+ *
+ * Which source tier produced a resolved project display name
+ */
+export const zVillageProjectNameSource = z.enum([
+    'override',
+    'consented',
+    'remote',
+    'path',
+    'privacy'
+]);
+
+export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>;
+
+export const zVillageRemoveGroupMemberResponse = z.object({
+    retracted: z.boolean(),
+    status: z.string()
+});
+
+export type VillageRemoveGroupMemberResponse = z.infer<typeof zVillageRemoveGroupMemberResponse>;
+
+export const zVillageRepositoryCommit = z.object({
+    author_email: z.string().nullable(),
+    author_name: z.string().nullable(),
+    authored_at: z.iso.datetime().nullable(),
+    committed_at: z.iso.datetime().nullable(),
+    message: z.string().nullable(),
+    sha: z.string()
+});
+
+export type VillageRepositoryCommit = z.infer<typeof zVillageRepositoryCommit>;
+
+export const zVillageRepositoryCommitsResponse = z.object({
+    commit_count: z.int(),
+    commits: z.array(zVillageRepositoryCommit).nullable(),
+    last_synced: z.iso.datetime().nullable(),
+    name: z.string(),
+    owner: z.string(),
+    refreshed: z.boolean()
+});
+
+export type VillageRepositoryCommitsResponse = z.infer<typeof zVillageRepositoryCommitsResponse>;
+
+/**
+ * Village Review Decision
+ *
+ * Decision applied by a collective owner to pending submissions
+ */
+export const zVillageReviewDecision = z.enum(['approved', 'rejected']);
+
+export type VillageReviewDecision = z.infer<typeof zVillageReviewDecision>;
+
+export const zVillageBatchReviewRequest = z.object({
+    status: zVillageReviewDecision,
+    transcript_ids: z.array(zTranscriptID).nullable()
+});
+
+export type VillageBatchReviewRequest = z.infer<typeof zVillageBatchReviewRequest>;
+
+export const zVillageReviewShareRequest = z.object({
+    status: zVillageReviewDecision
+});
+
+export type VillageReviewShareRequest = z.infer<typeof zVillageReviewShareRequest>;
+
+export const zVillageReviewShareResponse = z.object({
+    status: zVillageReviewDecision
+});
+
+export type VillageReviewShareResponse = z.infer<typeof zVillageReviewShareResponse>;
+
+/**
+ * Village Share Event Actor
+ *
+ * Actor class that decided one collective share event
+ */
+export const zVillageShareEventActor = z.enum([
+    '',
+    'owner',
+    'collective',
+    'moderator'
+]);
+
+export type VillageShareEventActor = z.infer<typeof zVillageShareEventActor>;
+
+/**
+ * Village Share Status
+ *
+ * Status of one collective share-attempt event
+ */
+export const zVillageShareStatus = z.enum([
+    'pending',
+    'approved',
+    'rejected',
+    'retracted',
+    'revoked'
+]);
+
+export type VillageShareStatus = z.infer<typeof zVillageShareStatus>;
+
+export const zVillageShareEvent = z.object({
+    decided_at: z.iso.datetime().nullable(),
+    decided_by_actor: zVillageShareEventActor,
+    event_num: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    recorded_at: z.iso.datetime(),
+    status: zVillageShareStatus
+});
+
+export type VillageShareEvent = z.infer<typeof zVillageShareEvent>;
+
+export const zVillageStatusResponse = z.object({
+    status: z.string()
+});
+
+export type VillageStatusResponse = z.infer<typeof zVillageStatusResponse>;
+
+/**
+ * Village Transcript Deletion Policy
+ *
+ * Whether leaving a collective retracts contributed transcripts by default
+ */
+export const zVillageTranscriptDeletionPolicy = z.enum(['user_choice', 'mandatory']);
+
+export type VillageTranscriptDeletionPolicy = z.infer<typeof zVillageTranscriptDeletionPolicy>;
+
+/**
+ * Village Transcript Visibility
+ *
+ * Village transcript visibility as stored and served by web routes
+ */
+export const zVillageTranscriptVisibility = z.enum([
+    'private',
+    'shared',
+    'public'
+]);
+
+export type VillageTranscriptVisibility = z.infer<typeof zVillageTranscriptVisibility>;
+
+export const zVillageContributableTranscript = z.object({
+    already_shared: z.boolean(),
+    git_branch: z.string().nullable(),
+    id: zTranscriptID,
+    local_id: zSessionID,
+    model_provider: z.string(),
+    parent_session_id: zSessionID.nullable(),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name_source: zVillageProjectNameSource,
+    published_at: z.iso.datetime(),
+    session_origin: zSessionOrigin,
+    title: z.string().nullable(),
+    visibility: zVillageTranscriptVisibility
+});
+
+export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
+
+/**
+ * Village UUID
+ *
+ * Village-side canonical lowercase UUID identifier
+ */
+export const zVillageUUID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+
+export type VillageUUID = z.infer<typeof zVillageUUID>;
+
+export const zVillageCollectiveSearchResult = z.object({
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    name: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageCollectiveSearchResult = z.infer<typeof zVillageCollectiveSearchResult>;
+
+export const zVillageCollectiveSearchResponse = z.object({
+    collectives: z.array(zVillageCollectiveSearchResult).nullable()
+});
+
+export type VillageCollectiveSearchResponse = z.infer<typeof zVillageCollectiveSearchResponse>;
+
+export const zVillageCollectiveSubmission = z.object({
+    event_num: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    group_id: zVillageUUID,
+    recorded_at: z.iso.datetime(),
+    status: zVillageShareStatus,
+    title: z.string().nullable(),
+    transcript_id: zTranscriptID
+});
+
+export type VillageCollectiveSubmission = z.infer<typeof zVillageCollectiveSubmission>;
+
+export const zVillageContributableResponse = z.object({
+    group_id: zVillageUUID,
+    transcripts: z.array(zVillageContributableTranscript).nullable()
+});
+
+export type VillageContributableResponse = z.infer<typeof zVillageContributableResponse>;
+
+export const zVillageContributedCollective = z.object({
+    approved_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    pending_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    rejected_attempt_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    withdrawn_attempt_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageContributedCollective = z.infer<typeof zVillageContributedCollective>;
+
+export const zVillageContributedCollectivesResponse = z.object({
+    collectives: z.array(zVillageContributedCollective).nullable()
+});
+
+export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
+
+export const zVillageGroup = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode,
+    created_at: z.iso.datetime(),
+    created_by: zVillageUUID,
+    data_access: zVillageGroupDataAccess,
+    description: z.string().nullable(),
+    display_members: z.boolean(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
+    updated_at: z.iso.datetime()
+});
+
+export type VillageGroup = z.infer<typeof zVillageGroup>;
+
+export const zVillageGroupContributor = z.object({
+    avatar_url: z.string().nullable(),
+    github_username: z.string(),
+    id: zVillageUUID,
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageGroupContributor = z.infer<typeof zVillageGroupContributor>;
+
+export const zVillageGroupMember = z.object({
+    avatar_url: z.string().nullable(),
+    display_name: z.string().nullable(),
+    github_orgs: z.array(z.string()).nullable(),
+    github_username: z.string(),
+    id: zVillageUUID,
+    joined_at: z.iso.datetime(),
+    role: zVillageGroupRole
+});
+
+export type VillageGroupMember = z.infer<typeof zVillageGroupMember>;
+
+export const zVillageGroupTranscript = z.object({
+    blob_size_bytes: z.int().nullish(),
+    compute_version: z.int().nullish(),
+    computed_at: z.iso.datetime().nullish(),
+    content_hash: zTranscriptContentHash.optional(),
+    description: z.string().nullish(),
+    diagnostics_partial: z.boolean().nullish(),
+    diagnostics_warnings: z.array(z.string()).nullish(),
+    discovery_turns: z.int().nullish(),
+    duration_ms: z.int().nullish(),
+    exploration_ratio: z.number().nullish(),
+    files_touched: z.int().nullish(),
+    git_branch: z.string().nullish(),
+    git_remote: z.string().nullish(),
+    harness_version: z.string().nullish(),
+    id: zTranscriptID.optional(),
+    ingested_at: z.iso.datetime().nullish(),
+    license_id: zLicense.optional(),
+    lines_changed: z.int().nullish(),
+    local_id: zSessionID.optional(),
+    m2_token_outcome_ratio: z.number().nullish(),
+    m3_unique_tool_count: z.int().nullish(),
+    m4_consecutive_error_max: z.int().nullish(),
+    m4_error_recovery_count: z.int().nullish(),
+    m5_avg_message_tokens: z.int().nullish(),
+    m5_context_utilization_pct: z.number().nullish(),
+    m5_peak_context_tokens: z.int().nullish(),
+    m6_lines_survived: z.int().nullish(),
+    m6_lines_total: z.int().nullish(),
+    m6_output_survival_pct: z.number().nullish(),
+    m7_spec_has_constraints: z.boolean().nullish(),
+    m7_spec_has_examples: z.boolean().nullish(),
+    m7_spec_word_count: z.int().nullish(),
+    model_name: z.string().nullish(),
+    model_provider: z.string().optional(),
+    outcome: zSessionOutcome.optional(),
+    owner_avatar_url: z.string().nullable(),
+    owner_id: zVillageUUID.optional(),
+    owner_is_discoverable: z.boolean(),
+    owner_username: z.string(),
+    parent_session_id: zSessionID.optional(),
+    project_display_name: z.string().optional(),
+    project_hash: zProjectHash.optional(),
+    project_name: z.string().nullish(),
+    project_name_source: zVillageProjectNameSource.optional(),
+    project_remote_label: z.string().optional(),
+    published_at: z.iso.datetime().optional(),
+    retry_loops: z.int().nullish(),
+    retry_tokens_wasted: z.int().nullish(),
+    schema_version: z.string().optional(),
+    scope_breadth: z.int().nullish(),
+    session_end: z.iso.datetime().nullish(),
+    session_origin: zSessionOrigin.optional(),
+    session_start: z.iso.datetime().nullish(),
+    signal_density: z.number().nullish(),
+    source_format: zSourceFormat.optional(),
+    spec_quality_score: z.number().nullish(),
+    subagent_count: z.int().nullish(),
+    subagents: z.array(z.record(z.string(), z.unknown())).nullish(),
+    title: z.string().nullish(),
+    title_generated: z.string().nullish(),
+    token_count: z.int().nullish(),
+    tokens_in: z.int().nullish(),
+    tokens_out: z.int().nullish(),
+    tool_call_count: z.int().nullish(),
+    turn_count: z.int().nullish(),
+    updated_at: z.iso.datetime().optional(),
+    visibility: zVillageTranscriptVisibility.optional(),
+    within_session_reverts: z.int().nullish()
+});
+
+export type VillageGroupTranscript = z.infer<typeof zVillageGroupTranscript>;
+
+export const zVillageGroupDetailResponse = z.object({
+    can_read: z.boolean(),
+    contributors: z.array(zVillageGroupContributor).nullable(),
+    group: zVillageGroup,
+    members: z.array(zVillageGroupMember).nullable(),
+    models: z.array(zVillageGroupModelBreakdown).nullable(),
+    pending_members: z.array(zVillageGroupMember).optional(),
+    stats: zVillageGroupTranscriptStats,
+    transcripts: z.array(zVillageGroupTranscript).nullable(),
+    your_role: zVillageGroupViewerRole
+});
+
+export type VillageGroupDetailResponse = z.infer<typeof zVillageGroupDetailResponse>;
+
+export const zVillageLinkedRepository = z.object({
+    created_at: z.iso.datetime().nullable(),
+    group_id: zVillageUUID,
+    id: zVillageUUID,
+    installation_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    is_private: z.boolean(),
+    last_synced_at: z.iso.datetime().nullable(),
+    linked_by: zVillageUUID,
+    name: z.string(),
+    owner: z.string()
+});
+
+export type VillageLinkedRepository = z.infer<typeof zVillageLinkedRepository>;
+
+export const zVillageLinkedRepositoriesResponse = z.object({
+    repositories: z.array(zVillageLinkedRepository).nullable()
+});
+
+export type VillageLinkedRepositoriesResponse = z.infer<typeof zVillageLinkedRepositoriesResponse>;
+
+export const zVillagePendingShare = z.object({
+    branch: z.string().nullable(),
+    local_id: zSessionID,
+    model_provider: z.string(),
+    owner_id: zVillageUUID,
+    owner_is_discoverable: z.boolean(),
+    owner_username: z.string(),
+    parent_session_id: zSessionID.nullable(),
+    project_hash: zProjectHash,
+    project_name: z.string().nullable(),
+    shared_at: z.iso.datetime(),
+    title: z.string().nullable(),
+    transcript_id: zTranscriptID
+});
+
+export type VillagePendingShare = z.infer<typeof zVillagePendingShare>;
+
+export const zVillagePublicGroup = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode,
+    created_at: z.iso.datetime(),
+    data_access: zVillageGroupDataAccess,
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    name: z.string(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillagePublicGroup = z.infer<typeof zVillagePublicGroup>;
+
+export const zVillageShareTranscriptRequest = z.object({
+    group_ids: z.array(zVillageUUID).nullable()
+});
+
+export type VillageShareTranscriptRequest = z.infer<typeof zVillageShareTranscriptRequest>;
+
+export const zVillageTranscript = z.object({
+    blob_size_bytes: z.int().nullable(),
+    compute_version: z.int().nullable(),
+    computed_at: z.iso.datetime().nullable(),
+    content_hash: zTranscriptContentHash.nullable(),
+    description: z.string().nullable(),
+    diagnostics_partial: z.boolean().nullable(),
+    diagnostics_warnings: z.array(z.string()).nullable(),
+    discovery_turns: z.int().nullable(),
+    duration_ms: z.int().nullable(),
+    exploration_ratio: z.number().nullable(),
+    files_touched: z.int().nullable(),
+    git_branch: z.string().nullable(),
+    git_remote: z.string().nullable(),
+    harness_version: z.string().nullable(),
+    id: zTranscriptID,
+    ingested_at: z.iso.datetime().nullable(),
+    license_id: zLicense.nullable(),
+    lines_changed: z.int().nullable(),
+    local_id: zSessionID,
+    m2_token_outcome_ratio: z.number().nullable(),
+    m3_unique_tool_count: z.int().nullable(),
+    m4_consecutive_error_max: z.int().nullable(),
+    m4_error_recovery_count: z.int().nullable(),
+    m5_avg_message_tokens: z.int().nullable(),
+    m5_context_utilization_pct: z.number().nullable(),
+    m5_peak_context_tokens: z.int().nullable(),
+    m6_lines_survived: z.int().nullable(),
+    m6_lines_total: z.int().nullable(),
+    m6_output_survival_pct: z.number().nullable(),
+    m7_spec_has_constraints: z.boolean().nullable(),
+    m7_spec_has_examples: z.boolean().nullable(),
+    m7_spec_word_count: z.int().nullable(),
+    model_name: z.string().nullable(),
+    model_provider: z.string(),
+    outcome: zSessionOutcome.nullable(),
+    owner_id: zVillageUUID,
+    parent_session_id: zSessionID.nullable(),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name: z.string().nullable(),
+    project_name_source: zVillageProjectNameSource,
+    project_remote_label: z.string(),
+    published_at: z.iso.datetime(),
+    retry_loops: z.int().nullable(),
+    retry_tokens_wasted: z.int().nullable(),
+    schema_version: z.string(),
+    scope_breadth: z.int().nullable(),
+    session_end: z.iso.datetime().nullable(),
+    session_origin: zSessionOrigin,
+    session_start: z.iso.datetime().nullable(),
+    signal_density: z.number().nullable(),
+    source_format: zSourceFormat.nullable(),
+    spec_quality_score: z.number().nullable(),
+    subagent_count: z.int().nullable(),
+    subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
+    title: z.string().nullable(),
+    title_generated: z.string().nullable(),
+    token_count: z.int().nullable(),
+    tokens_in: z.int().nullable(),
+    tokens_out: z.int().nullable(),
+    tool_call_count: z.int().nullable(),
+    turn_count: z.int().nullable(),
+    updated_at: z.iso.datetime(),
+    visibility: zVillageTranscriptVisibility,
+    within_session_reverts: z.int().nullable()
+});
+
+export type VillageTranscript = z.infer<typeof zVillageTranscript>;
+
+export const zVillageTranscriptCollective = z.object({
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    shared_at: z.iso.datetime()
+});
+
+export type VillageTranscriptCollective = z.infer<typeof zVillageTranscriptCollective>;
+
+export const zVillageTranscriptCollectivesResponse = z.object({
+    collectives: z.array(zVillageTranscriptCollective).nullable()
+});
+
+export type VillageTranscriptCollectivesResponse = z.infer<typeof zVillageTranscriptCollectivesResponse>;
+
+export const zVillageTranscriptShare = z.object({
+    group_id: zVillageUUID,
+    group_name: z.string(),
+    shared_at: z.iso.datetime()
+});
+
+export type VillageTranscriptShare = z.infer<typeof zVillageTranscriptShare>;
+
+export const zVillageUpdateGroupRequest = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode.optional(),
+    data_access: zVillageGroupDataAccess.optional(),
+    description: z.string().optional(),
+    display_members: z.boolean().nullish(),
+    linked_github_org: z.string().nullish(),
+    name: z.string().optional(),
+    transcript_deletion_policy: zVillageTranscriptDeletionPolicy.optional()
+});
+
+export type VillageUpdateGroupRequest = z.infer<typeof zVillageUpdateGroupRequest>;
+
+export const zVillageUserGroup = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode,
+    created_at: z.iso.datetime(),
+    created_by: zVillageUUID,
+    data_access: zVillageGroupDataAccess,
+    description: z.string().nullable(),
+    display_members: z.boolean(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    member_since: z.iso.datetime(),
+    name: z.string(),
+    role: zVillageGroupRole,
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
+    updated_at: z.iso.datetime()
+});
+
+export type VillageUserGroup = z.infer<typeof zVillageUserGroup>;
+
+export const zVillageUserGroupShare = z.object({
+    id: zTranscriptID,
+    local_id: zSessionID,
+    model_name: z.string().nullable(),
+    model_provider: z.string(),
+    owner_id: zVillageUUID,
+    parent_session_id: zSessionID.nullable(),
+    published_at: z.iso.datetime(),
+    shared_at: z.iso.datetime(),
+    status: zVillageShareStatus,
+    title: z.string().nullable(),
+    tokens_in: z.int().nullable(),
+    tokens_out: z.int().nullable(),
+    turn_count: z.int().nullable(),
+    visibility: zVillageTranscriptVisibility
+});
+
+export type VillageUserGroupShare = z.infer<typeof zVillageUserGroupShare>;
+
+export const zVillageVisibleGroup = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode,
+    created_at: z.iso.datetime(),
+    created_by: zVillageUUID,
+    data_access: zVillageGroupDataAccess,
+    description: z.string().nullable(),
+    display_members: z.boolean(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    member_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    member_since: z.iso.datetime().nullable(),
+    name: z.string(),
+    role: zVillageGroupRole.nullable(),
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
+    updated_at: z.iso.datetime()
+});
+
+export type VillageVisibleGroup = z.infer<typeof zVillageVisibleGroup>;
+
+/**
  * Visibility
  *
  * Access control level for a published transcript

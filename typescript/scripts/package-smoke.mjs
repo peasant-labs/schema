@@ -30,7 +30,15 @@ try {
   const tarball = packed.filename;
   const packageRoot = fileURLToPath(new URL("..", import.meta.url));
   const packageManifest = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const packageLock = parse(await readFile(new URL("../pnpm-lock.yaml", import.meta.url), "utf8"));
   const compilerSpecifier = `typescript@${packageManifest.devDependencies.typescript}`;
+  const lockedRuntimeSpecifiers = Object.keys(packageManifest.dependencies ?? {})
+    .sort()
+    .map((name) => {
+      const resolved = packageLock.importers?.["."]?.dependencies?.[name]?.version;
+      assert.equal(typeof resolved, "string", `pnpm-lock.yaml must pin the runtime dependency ${name}`);
+      return `${name}@${resolved.replace(/\(.+$/, "")}`;
+    });
   const tsconfig = {
     compilerOptions: { strict: true, noEmit: true, target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext" },
     include: ["consumer.ts"],
@@ -47,7 +55,7 @@ try {
     stdio: "inherit",
   });
   await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
-  execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, tarball], {
+  execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, ...lockedRuntimeSpecifiers, tarball], {
     cwd: consumerDir,
     stdio: "inherit",
   });

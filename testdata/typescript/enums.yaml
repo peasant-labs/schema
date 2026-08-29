@@ -351,6 +351,94 @@ enums:
       - {name: Private, value: "private"}
       - {name: Public, value: "public"}
     all_values: ["private", "public"]
+  - name: VillageAssignableGroupRole
+    all_name: AllVillageAssignableGroupRoles
+    members:
+      - {name: Contributor, value: "contributor"}
+      - {name: Member, value: "member"}
+    all_values: ["contributor", "member"]
+  - name: VillageContributionStatus
+    all_name: AllVillageContributionStatuses
+    members:
+      - {name: Approved, value: "approved"}
+      - {name: Pending, value: "pending"}
+    all_values: ["approved", "pending"]
+  - name: VillageGroupAcceptanceMode
+    all_name: AllVillageGroupAcceptanceModes
+    members:
+      - {name: Open, value: "open"}
+      - {name: VerifiedOnly, value: "verified_only"}
+      - {name: Curated, value: "curated"}
+    all_values: ["open", "verified_only", "curated"]
+  - name: VillageGroupDataAccess
+    all_name: AllVillageGroupDataAccessPolicies
+    members:
+      - {name: MembersOnly, value: "members_only"}
+      - {name: Contributors, value: "contributors"}
+      - {name: Public, value: "public"}
+    all_values: ["members_only", "contributors", "public"]
+  - name: VillageGroupRole
+    all_name: AllVillageGroupRoles
+    members:
+      - {name: Owner, value: "owner"}
+      - {name: Member, value: "member"}
+      - {name: Contributor, value: "contributor"}
+      - {name: Pending, value: "pending"}
+    all_values: ["owner", "member", "contributor", "pending"]
+  - name: VillageGroupViewerRole
+    all_name: AllVillageGroupViewerRoles
+    members:
+      - {name: None, value: ""}
+      - {name: Owner, value: "owner"}
+      - {name: Member, value: "member"}
+      - {name: Contributor, value: "contributor"}
+      - {name: Pending, value: "pending"}
+    all_values: ["", "owner", "member", "contributor", "pending"]
+  - name: VillageProjectNameSource
+    all_name: AllVillageProjectNameSources
+    members:
+      - {name: Override, value: "override"}
+      - {name: Consented, value: "consented"}
+      - {name: Remote, value: "remote"}
+      - {name: Path, value: "path"}
+      - {name: Privacy, value: "privacy"}
+    all_values: ["override", "consented", "remote", "path", "privacy"]
+  - name: VillageReviewDecision
+    all_name: AllVillageReviewDecisions
+    members:
+      - {name: Approved, value: "approved"}
+      - {name: Rejected, value: "rejected"}
+    all_values: ["approved", "rejected"]
+  - name: VillageShareEventActor
+    all_name: AllVillageShareEventActors
+    members:
+      - {name: None, value: ""}
+      - {name: Owner, value: "owner"}
+      - {name: Collective, value: "collective"}
+      - {name: Moderator, value: "moderator"}
+    all_values: ["", "owner", "collective", "moderator"]
+  - name: VillageShareStatus
+    all_name: AllVillageShareStatuses
+    members:
+      - {name: Pending, value: "pending"}
+      - {name: Approved, value: "approved"}
+      - {name: Rejected, value: "rejected"}
+      - {name: Retracted, value: "retracted"}
+      - {name: Revoked, value: "revoked"}
+    all_values: ["pending", "approved", "rejected", "retracted", "revoked"]
+  - name: VillageTranscriptDeletionPolicy
+    all_name: AllVillageTranscriptDeletionPolicies
+    members:
+      - {name: UserChoice, value: "user_choice"}
+      - {name: Mandatory, value: "mandatory"}
+    all_values: ["user_choice", "mandatory"]
+  - name: VillageTranscriptVisibility
+    all_name: AllVillageTranscriptVisibilities
+    members:
+      - {name: Private, value: "private"}
+      - {name: Shared, value: "shared"}
+      - {name: Public, value: "public"}
+    all_values: ["private", "shared", "public"]
   - name: Visibility
     all_name: AllVisibilities
     members:
