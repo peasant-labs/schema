@@ -8782,201 +8782,425 @@
       "VillageGroupTranscript": {
         "properties": {
           "blob_size_bytes": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "compute_version": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "computed_at": {
-            "format": "date-time",
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "content_hash": {
-            "$ref": "#/components/schemas/TranscriptContentHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptContentHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "description": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "diagnostics_partial": {
-            "type": [
-              "null",
-              "boolean"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "diagnostics_warnings": {
-            "items": {
-              "type": "string"
-            },
-            "type": [
-              "null",
-              "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": [
+                  "null",
+                  "array"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "discovery_turns": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "duration_ms": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "exploration_ratio": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "files_touched": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "git_branch": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "git_remote": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "harness_version": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "id": {
             "$ref": "#/components/schemas/TranscriptID"
           },
           "ingested_at": {
-            "format": "date-time",
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "license_id": {
-            "$ref": "#/components/schemas/License"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/License"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "lines_changed": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
           },
           "m2_token_outcome_ratio": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m3_unique_tool_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m4_consecutive_error_max": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m4_error_recovery_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m5_avg_message_tokens": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m5_context_utilization_pct": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m5_peak_context_tokens": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m6_lines_survived": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m6_lines_total": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m6_output_survival_pct": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m7_spec_has_constraints": {
-            "type": [
-              "null",
-              "boolean"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m7_spec_has_examples": {
-            "type": [
-              "null",
-              "boolean"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "m7_spec_word_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "model_name": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "model_provider": {
             "type": "string"
           },
           "outcome": {
-            "$ref": "#/components/schemas/SessionOutcome"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionOutcome"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "owner_avatar_url": {
             "anyOf": [
@@ -9001,7 +9225,14 @@
             "type": "string"
           },
           "parent_session_id": {
-            "$ref": "#/components/schemas/SessionID"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_display_name": {
             "type": "string"
@@ -9010,9 +9241,16 @@
             "$ref": "#/components/schemas/ProjectHash"
           },
           "project_name": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "project_name_source": {
@@ -9026,114 +9264,233 @@
             "type": "string"
           },
           "retry_loops": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "retry_tokens_wasted": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "schema_version": {
             "type": "string"
           },
           "scope_breadth": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "session_end": {
-            "format": "date-time",
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "session_origin": {
             "$ref": "#/components/schemas/SessionOrigin"
           },
           "session_start": {
-            "format": "date-time",
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "signal_density": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "source_format": {
-            "$ref": "#/components/schemas/SourceFormat"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceFormat"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "spec_quality_score": {
-            "type": [
-              "null",
-              "number"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "subagent_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "subagents": {
-            "items": {
-              "additionalProperties": {},
-              "type": "object"
-            },
-            "type": [
-              "null",
-              "array"
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {},
+                  "type": "object"
+                },
+                "type": [
+                  "null",
+                  "array"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "title": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "title_generated": {
-            "type": [
-              "null",
-              "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "token_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "tokens_in": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "tokens_out": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "tool_call_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "turn_count": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "updated_at": {
@@ -9144,14 +9501,85 @@
             "$ref": "#/components/schemas/VillageTranscriptVisibility"
           },
           "within_session_reverts": {
-            "type": [
-              "null",
-              "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           }
         },
         "required": [
-          "VillageTranscript",
+          "id",
+          "owner_id",
+          "local_id",
+          "title",
+          "description",
+          "visibility",
+          "model_provider",
+          "model_name",
+          "harness_version",
+          "session_start",
+          "session_end",
+          "turn_count",
+          "token_count",
+          "blob_size_bytes",
+          "schema_version",
+          "published_at",
+          "updated_at",
+          "parent_session_id",
+          "ingested_at",
+          "source_format",
+          "git_branch",
+          "git_remote",
+          "project_hash",
+          "project_name",
+          "project_display_name",
+          "project_name_source",
+          "project_remote_label",
+          "tool_call_count",
+          "subagent_count",
+          "duration_ms",
+          "subagents",
+          "diagnostics_warnings",
+          "diagnostics_partial",
+          "tokens_in",
+          "tokens_out",
+          "title_generated",
+          "outcome",
+          "files_touched",
+          "lines_changed",
+          "retry_loops",
+          "retry_tokens_wasted",
+          "within_session_reverts",
+          "signal_density",
+          "spec_quality_score",
+          "exploration_ratio",
+          "scope_breadth",
+          "discovery_turns",
+          "m2_token_outcome_ratio",
+          "m3_unique_tool_count",
+          "m4_error_recovery_count",
+          "m4_consecutive_error_max",
+          "m5_context_utilization_pct",
+          "m5_peak_context_tokens",
+          "m5_avg_message_tokens",
+          "m6_output_survival_pct",
+          "m6_lines_survived",
+          "m6_lines_total",
+          "m7_spec_word_count",
+          "m7_spec_has_examples",
+          "m7_spec_has_constraints",
+          "computed_at",
+          "compute_version",
+          "content_hash",
+          "license_id",
+          "session_origin",
           "owner_username",
           "owner_avatar_url",
           "owner_is_discoverable"
@@ -9729,7 +10157,7 @@
         "type": "string"
       },
       "VillageShareStatus": {
-        "description": "Status of one collective share-attempt event",
+        "description": "Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.",
         "enum": [
           "pending",
           "approved",

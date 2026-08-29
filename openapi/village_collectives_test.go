@@ -14,8 +14,9 @@ import (
 var villageCollectivesFixtures embed.FS
 
 type villageCollectivesOperationFixtures struct {
-	Operations     []villageCollectivesOperationFixture `yaml:"operations"`
-	ComponentEnums []villageComponentEnumFixture        `yaml:"component_enums"`
+	Operations        []villageCollectivesOperationFixture `yaml:"operations"`
+	ComponentEnums    []villageComponentEnumFixture        `yaml:"component_enums"`
+	ComponentRequired []villageComponentRequiredFixture    `yaml:"component_required"`
 }
 
 type villageCollectivesOperationFixture struct {
@@ -31,6 +32,12 @@ type villageCollectivesOperationFixture struct {
 type villageComponentEnumFixture struct {
 	Component string   `yaml:"component"`
 	Values    []string `yaml:"values"`
+}
+
+type villageComponentRequiredFixture struct {
+	Component string   `yaml:"component"`
+	Contains  []string `yaml:"contains"`
+	Excludes  []string `yaml:"excludes"`
 }
 
 func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
@@ -106,6 +113,40 @@ func TestBuildVillageAPISpec_CollectivesEnums(t *testing.T) {
 	}
 }
 
+func TestBuildVillageAPISpec_CollectivesRequiredFields(t *testing.T) {
+	fixtures := loadVillageCollectivesFixtures(t)
+	document := currentVillageSpecDocument(t)
+
+	for _, fixture := range fixtures.ComponentRequired {
+		if fixture.Component == "" {
+			t.Fatalf("required-field fixture has a blank component: %+v", fixture)
+		}
+		component := villageComponent(t, document, fixture.Component)
+		raw, ok := component["required"].([]any)
+		if !ok {
+			t.Fatalf("component %s declares no required set", fixture.Component)
+		}
+		required := map[string]struct{}{}
+		for _, value := range raw {
+			asString, ok := value.(string)
+			if !ok {
+				t.Fatalf("component %s has non-string required value %v", fixture.Component, value)
+			}
+			required[asString] = struct{}{}
+		}
+		for _, field := range fixture.Contains {
+			if _, ok := required[field]; !ok {
+				t.Errorf("component %s required set is missing %q", fixture.Component, field)
+			}
+		}
+		for _, field := range fixture.Excludes {
+			if _, ok := required[field]; ok {
+				t.Errorf("component %s required set includes forbidden %q", fixture.Component, field)
+			}
+		}
+	}
+}
+
 func loadVillageCollectivesFixtures(t *testing.T) villageCollectivesOperationFixtures {
 	t.Helper()
 	data, err := villageCollectivesFixtures.ReadFile("testdata/village_collectives_operations.yaml")
@@ -123,6 +164,9 @@ func loadVillageCollectivesFixtures(t *testing.T) villageCollectivesOperationFix
 	}
 	if len(fixtures.ComponentEnums) == 0 {
 		t.Fatal("Village collectives operation fixtures must name at least one enum")
+	}
+	if len(fixtures.ComponentRequired) == 0 {
+		t.Fatal("Village collectives operation fixtures must name at least one required-field component")
 	}
 	return fixtures
 }

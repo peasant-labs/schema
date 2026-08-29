@@ -975,7 +975,7 @@ export interface components {
         SchemaVillageShareEventActor: Schema.VillageShareEventActor;
         /**
          * Village Share Status
-         * @description Status of one collective share-attempt event
+         * @description Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.
          * @example pending
          * @example approved
          * @example rejected

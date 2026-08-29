@@ -232,7 +232,9 @@ func (VillageReviewDecision) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema("Village Review Decision", "Decision applied by a collective owner to pending submissions", AllVillageReviewDecisions), nil
 }
 
-// VillageShareStatus is the full share-attempt ledger status menu.
+// VillageShareStatus is the full share-attempt ledger status menu. Pending,
+// approved, and rejected can appear in current projections; retracted and
+// revoked are terminal states kept for the historical event ledger.
 type VillageShareStatus string
 
 const (
@@ -252,7 +254,11 @@ var AllVillageShareStatuses = []VillageShareStatus{
 }
 
 func (VillageShareStatus) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema("Village Share Status", "Status of one collective share-attempt event", AllVillageShareStatuses), nil
+	return closedStringEnumSchema(
+		"Village Share Status",
+		"Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.",
+		AllVillageShareStatuses,
+	), nil
 }
 
 // VillageShareEventActor is the actor class attached to one share event. It is
@@ -517,11 +523,79 @@ type VillageTranscript struct {
 	SessionOrigin           SessionOrigin               `json:"session_origin"`
 }
 
+// VillageGroupTranscript deliberately lists the transcript fields instead of
+// embedding VillageTranscript. Village flattens its embedded response on the
+// JSON wire, and this shape preserves required fields in OpenAPI and TypeScript
+// generation.
 type VillageGroupTranscript struct {
-	VillageTranscript
-	OwnerUsername       string  `json:"owner_username"`
-	OwnerAvatarURL      *string `json:"owner_avatar_url"`
-	OwnerIsDiscoverable bool    `json:"owner_is_discoverable"`
+	ID                      TranscriptID                `json:"id"`
+	OwnerID                 VillageUUID                 `json:"owner_id"`
+	LocalID                 SessionID                   `json:"local_id"`
+	Title                   *string                     `json:"title"`
+	Description             *string                     `json:"description"`
+	Visibility              VillageTranscriptVisibility `json:"visibility"`
+	ModelProvider           string                      `json:"model_provider"`
+	ModelName               *string                     `json:"model_name"`
+	HarnessVersion          *string                     `json:"harness_version"`
+	SessionStart            *time.Time                  `json:"session_start"`
+	SessionEnd              *time.Time                  `json:"session_end"`
+	TurnCount               *int32                      `json:"turn_count"`
+	TokenCount              *int32                      `json:"token_count"`
+	BlobSizeBytes           *int64                      `json:"blob_size_bytes"`
+	SchemaVersion           string                      `json:"schema_version"`
+	PublishedAt             time.Time                   `json:"published_at"`
+	UpdatedAt               time.Time                   `json:"updated_at"`
+	ParentSessionID         *SessionID                  `json:"parent_session_id"`
+	IngestedAt              *time.Time                  `json:"ingested_at"`
+	SourceFormat            *SourceFormat               `json:"source_format"`
+	GitBranch               *string                     `json:"git_branch"`
+	GitRemote               *string                     `json:"git_remote"`
+	ProjectHash             ProjectHash                 `json:"project_hash"`
+	ProjectName             *string                     `json:"project_name"`
+	ProjectDisplayName      string                      `json:"project_display_name"`
+	ProjectNameSource       VillageProjectNameSource    `json:"project_name_source"`
+	ProjectRemoteLabel      string                      `json:"project_remote_label"`
+	ToolCallCount           *int32                      `json:"tool_call_count"`
+	SubagentCount           *int32                      `json:"subagent_count"`
+	DurationMs              *int64                      `json:"duration_ms"`
+	Subagents               *[]map[string]interface{}   `json:"subagents"`
+	DiagnosticsWarnings     *[]string                   `json:"diagnostics_warnings"`
+	DiagnosticsPartial      *bool                       `json:"diagnostics_partial"`
+	TokensIn                *int64                      `json:"tokens_in"`
+	TokensOut               *int64                      `json:"tokens_out"`
+	TitleGenerated          *string                     `json:"title_generated"`
+	Outcome                 *SessionOutcome             `json:"outcome"`
+	FilesTouched            *int32                      `json:"files_touched"`
+	LinesChanged            *int32                      `json:"lines_changed"`
+	RetryLoops              *int32                      `json:"retry_loops"`
+	RetryTokensWasted       *int32                      `json:"retry_tokens_wasted"`
+	WithinSessionReverts    *int32                      `json:"within_session_reverts"`
+	SignalDensity           *float32                    `json:"signal_density"`
+	SpecQualityScore        *float32                    `json:"spec_quality_score"`
+	ExplorationRatio        *float32                    `json:"exploration_ratio"`
+	ScopeBreadth            *int32                      `json:"scope_breadth"`
+	DiscoveryTurns          *int32                      `json:"discovery_turns"`
+	M2TokenOutcomeRatio     *float32                    `json:"m2_token_outcome_ratio"`
+	M3UniqueToolCount       *int32                      `json:"m3_unique_tool_count"`
+	M4ErrorRecoveryCount    *int32                      `json:"m4_error_recovery_count"`
+	M4ConsecutiveErrorMax   *int32                      `json:"m4_consecutive_error_max"`
+	M5ContextUtilizationPct *float32                    `json:"m5_context_utilization_pct"`
+	M5PeakContextTokens     *int32                      `json:"m5_peak_context_tokens"`
+	M5AvgMessageTokens      *int32                      `json:"m5_avg_message_tokens"`
+	M6OutputSurvivalPct     *float32                    `json:"m6_output_survival_pct"`
+	M6LinesSurvived         *int32                      `json:"m6_lines_survived"`
+	M6LinesTotal            *int32                      `json:"m6_lines_total"`
+	M7SpecWordCount         *int32                      `json:"m7_spec_word_count"`
+	M7SpecHasExamples       *bool                       `json:"m7_spec_has_examples"`
+	M7SpecHasConstraints    *bool                       `json:"m7_spec_has_constraints"`
+	ComputedAt              *time.Time                  `json:"computed_at"`
+	ComputeVersion          *int32                      `json:"compute_version"`
+	ContentHash             *TranscriptContentHash      `json:"content_hash"`
+	LicenseID               *License                    `json:"license_id"`
+	SessionOrigin           SessionOrigin               `json:"session_origin"`
+	OwnerUsername           string                      `json:"owner_username"`
+	OwnerAvatarURL          *string                     `json:"owner_avatar_url"`
+	OwnerIsDiscoverable     bool                        `json:"owner_is_discoverable"`
 }
 
 type VillageTranscriptShare struct {
@@ -589,8 +663,10 @@ type VillageUserGroupShare struct {
 	OwnerID         VillageUUID                 `json:"owner_id"`
 	LocalID         SessionID                   `json:"local_id"`
 	ParentSessionID *SessionID                  `json:"parent_session_id"`
-	Status          VillageShareStatus          `json:"status"`
-	SharedAt        time.Time                   `json:"shared_at"`
+	// Status uses the shared lifecycle enum. Current my-shares responses emit the
+	// live subset today; terminal values are reserved for ledger history.
+	Status   VillageShareStatus `json:"status"`
+	SharedAt time.Time          `json:"shared_at"`
 }
 
 type VillageBatchShareRequest struct {

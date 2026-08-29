@@ -227,3 +227,24 @@ component_enums:
     values: [pending, approved, rejected, retracted, revoked]
   - component: VillageShareEventActor
     values: ["", owner, collective, moderator]
+component_required:
+  - component: VillageGroupTranscript
+    contains:
+      - id
+      - owner_id
+      - local_id
+      - visibility
+      - model_provider
+      - schema_version
+      - published_at
+      - updated_at
+      - project_hash
+      - project_display_name
+      - project_name_source
+      - project_remote_label
+      - session_origin
+      - owner_username
+      - owner_avatar_url
+      - owner_is_discoverable
+    excludes:
+      - VillageTranscript
