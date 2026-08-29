@@ -47,6 +47,7 @@ type villageComponentPropertyFixture struct {
 	Required  *bool  `yaml:"required"`
 	Nullable  *bool  `yaml:"nullable"`
 	ItemsRef  string `yaml:"items_ref"`
+	ItemsType string `yaml:"items_type"`
 }
 
 func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
@@ -175,6 +176,15 @@ func TestBuildVillageAPISpec_CollectivesPropertyContracts(t *testing.T) {
 			}
 			if got, ok := items["$ref"].(string); !ok || got != fixture.ItemsRef {
 				t.Errorf("component %s property %s items $ref = %v, want %s", fixture.Component, fixture.Property, items["$ref"], fixture.ItemsRef)
+			}
+		}
+		if fixture.ItemsType != "" {
+			items, ok := property["items"].(map[string]any)
+			if !ok {
+				t.Fatalf("component %s property %s declares no array items schema: %s", fixture.Component, fixture.Property, mustJSON(t, property))
+			}
+			if got, ok := items["type"].(string); !ok || got != fixture.ItemsType {
+				t.Errorf("component %s property %s items type = %v, want %s", fixture.Component, fixture.Property, items["type"], fixture.ItemsType)
 			}
 		}
 	}

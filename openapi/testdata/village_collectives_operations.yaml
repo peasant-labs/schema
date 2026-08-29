@@ -279,6 +279,11 @@ component_properties:
     required: false
     nullable: false
     items_ref: "#/components/schemas/SchemaVillageGroupMember"
+  - component: VillageGroupMember
+    property: github_orgs
+    required: true
+    nullable: false
+    items_type: string
   - component: VillageShareTranscriptRequest
     property: group_ids
     required: true
