@@ -62,7 +62,7 @@ try {
     cwd: packageRoot,
     stdio: "inherit",
   });
-  await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.5.3" }));
+  await writeFile(join(consumerDir, "package.json"), JSON.stringify({ private: true, type: "module", packageManager: "pnpm@11.24.0" }));
   execFileSync("pnpm", ["add", "--offline", "--ignore-scripts", "--store-dir", storeDir, compilerSpecifier, ...lockedRuntimeSpecifiers, tarball], {
     cwd: consumerDir,
     stdio: "inherit",
