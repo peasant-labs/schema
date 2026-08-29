@@ -188,8 +188,9 @@ jobs:
   # token for this job, scoped to the "npm-publish" GitHub Actions environment
   # (below) that the npm Trusted Publisher registration is bound to; pnpm
   # (native OIDC trusted-publish support since the v11 publish reimplementation;
-  # the flake pins 11.24.0, chosen over the npm CLI to stay on this repo's one
-  # package-manager toolchain for install/build/test/publish) exchanges that
+  # the package pins pnpm 11.24.0 in packageManager, and pnpm switches to it;
+  # chosen over the npm CLI to stay on this repo's one package-manager
+  # toolchain for install/build/test/publish) exchanges that
   # token with the npm registry itself when no registry auth token is
   # configured, so there is no secret to provision, rotate, or leak. Provenance
   # attestation is automatic with a trusted-publishing publish; no extra flag

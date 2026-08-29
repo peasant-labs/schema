@@ -1,0 +1,21 @@
+# pnpm workspace settings for the generated TypeScript contract package.
+#
+# This is a single-package project (no `packages:` list needed); this file
+# exists to hold pnpm 11 install-policy settings, which pnpm 11 only reads
+# from pnpm-workspace.yaml (the package.json "pnpm" field is no longer read).
+#
+# Build-script approval gate (pnpm >=10): pnpm 11 makes an ignored build
+# script a hard error unless it is given an explicit decision here
+# (allowBuilds, https://pnpm.io/settings/build). As of this file, `pnpm
+# install` reports no packages with build scripts in this package's
+# dependency tree, so no entries are needed. Policy: no build script may run.
+# If a future dependency change introduces one, add it here as
+# `<name>: false` (an explicit ignore), never `true`.
+#
+# Minimum release age: block install of any dependency published less than
+# 7 days ago (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION), except our own
+# first-party packages, which must always be installable immediately.
+# https://pnpm.io/settings/dependency-resolution
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - '@peasant-labs/*'
