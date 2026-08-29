@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Transcript Publish API",
-    "description": "Village API for transcript publishing, CLI authentication, annotation registry and manifest synchronization, schema negotiation, and group-scoped transcript discovery, content, annotations, and currency checks.",
+    "description": "Village API for transcript publishing, CLI authentication, annotation registry and manifest synchronization, schema negotiation, group-scoped transcript discovery, content, annotations, currency checks, collectives, shares, contributions, review, and linked repositories.",
     "version": "0.14.0"
   },
   "paths": {
@@ -252,7 +252,7 @@
         "tags": [
           "collectives"
         ],
-        "description": "List public collectives as compact rows with member and approved-transcript counts.",
+        "description": "List collectives for the public directory as compact rows with member and approved-transcript counts.",
         "operationId": "listPublicGroups",
         "responses": {
           "200": {
@@ -5703,10 +5703,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaTranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5721,19 +5718,13 @@
             "items": {
               "$ref": "#/components/schemas/SchemaTranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "decided": {
             "items": {
               "$ref": "#/components/schemas/SchemaTranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5784,10 +5775,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaTranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "project_hash": {
             "$ref": "#/components/schemas/SchemaProjectHash"
@@ -5796,10 +5784,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageBatchShareEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5815,10 +5800,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageCollectiveSearchResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -5931,10 +5913,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageContributableTranscript"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -6099,10 +6078,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageContributedCollective"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -6303,10 +6279,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageGroupContributor"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "group": {
             "$ref": "#/components/schemas/SchemaVillageGroup"
@@ -6315,19 +6288,13 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageGroupMember"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "models": {
             "items": {
               "$ref": "#/components/schemas/SchemaVillageGroupModelBreakdown"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "pending_members": {
             "items": {
@@ -6342,10 +6309,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageGroupTranscript"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "your_role": {
             "$ref": "#/components/schemas/SchemaVillageGroupViewerRole"
@@ -6395,10 +6359,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "github_username": {
             "type": "string"
@@ -7379,10 +7340,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageLinkedRepository"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7741,10 +7699,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageRepositoryCommit"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "last_synced": {
             "anyOf": [
@@ -7897,10 +7852,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageUUID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -7973,10 +7925,7 @@
             "items": {
               "$ref": "#/components/schemas/SchemaVillageTranscriptCollective"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8054,15 +8003,29 @@
             "type": "string"
           },
           "display_members": {
-            "type": [
-              "boolean",
-              "null"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "linked_github_org": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "name": {

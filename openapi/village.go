@@ -68,8 +68,8 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		// never a literal retyped here. See the package doc for the policy.
 		WithVersion(VillageAPIVersion).
 		WithDescription("Village API for transcript publishing, CLI authentication, annotation registry " +
-			"and manifest synchronization, schema negotiation, and group-scoped transcript discovery, " +
-			"content, annotations, and currency checks.")
+			"and manifest synchronization, schema negotiation, group-scoped transcript discovery, " +
+			"content, annotations, currency checks, collectives, shares, contributions, review, and linked repositories.")
 
 	// POST /api/v1/transcripts/publish — PublishRequest in, PublishResponse out.
 	oc, err := r.NewOperationContext(http.MethodPost, "/api/v1/transcripts/publish")
@@ -436,7 +436,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/groups/public",
 			id:          "listPublicGroups",
 			tag:         "collectives",
-			description: "List public collectives as compact rows with member and approved-transcript counts.",
+			description: "List collectives for the public directory as compact rows with member and approved-transcript counts.",
 			response:    new([]schema.VillagePublicGroup),
 			errorStatuses: []int{
 				http.StatusInternalServerError,

@@ -5,7 +5,7 @@ operations:
     request_components: []
     response_components: [VillagePublicGroup]
     statuses: ["200", "500"]
-    description_anchors: [public collectives, approved-transcript counts]
+    description_anchors: [public directory, approved-transcript counts]
   - path: /api/v1/groups/search
     method: get
     operation_id: searchCollectives
@@ -248,3 +248,89 @@ component_required:
       - owner_is_discoverable
     excludes:
       - VillageTranscript
+component_properties:
+  - component: VillageCollectiveSearchResponse
+    property: collectives
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageCollectiveSearchResult"
+  - component: VillageGroupDetailResponse
+    property: members
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageGroupMember"
+  - component: VillageGroupDetailResponse
+    property: models
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageGroupModelBreakdown"
+  - component: VillageGroupDetailResponse
+    property: contributors
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageGroupContributor"
+  - component: VillageGroupDetailResponse
+    property: transcripts
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageGroupTranscript"
+  - component: VillageGroupDetailResponse
+    property: pending_members
+    required: false
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageGroupMember"
+  - component: VillageShareTranscriptRequest
+    property: group_ids
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageUUID"
+  - component: VillageContributedCollectivesResponse
+    property: collectives
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributedCollective"
+  - component: VillageTranscriptCollectivesResponse
+    property: collectives
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageTranscriptCollective"
+  - component: VillageBatchShareResponse
+    property: shared
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageBatchShareEntry"
+  - component: VillageBatchShareResponse
+    property: already_shared
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageBatchReviewRequest
+    property: transcript_ids
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageBatchReviewResponse
+    property: decided
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageBatchReviewResponse
+    property: already_decided
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaTranscriptID"
+  - component: VillageContributableResponse
+    property: transcripts
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageContributableTranscript"
+  - component: VillageLinkedRepositoriesResponse
+    property: repositories
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageLinkedRepository"
+  - component: VillageRepositoryCommitsResponse
+    property: commits
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageRepositoryCommit"

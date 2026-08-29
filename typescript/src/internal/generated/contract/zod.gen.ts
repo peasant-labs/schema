@@ -2348,8 +2348,8 @@ export const zVillageAssignableGroupRole = z.enum(['contributor', 'member']);
 export type VillageAssignableGroupRole = z.infer<typeof zVillageAssignableGroupRole>;
 
 export const zVillageBatchReviewResponse = z.object({
-    already_decided: z.array(zTranscriptID).nullable(),
-    decided: z.array(zTranscriptID).nullable()
+    already_decided: z.array(zTranscriptID),
+    decided: z.array(zTranscriptID)
 });
 
 export type VillageBatchReviewResponse = z.infer<typeof zVillageBatchReviewResponse>;
@@ -2379,9 +2379,9 @@ export const zVillageBatchShareEntry = z.object({
 export type VillageBatchShareEntry = z.infer<typeof zVillageBatchShareEntry>;
 
 export const zVillageBatchShareResponse = z.object({
-    already_shared: z.array(zTranscriptID).nullable(),
+    already_shared: z.array(zTranscriptID),
     project_hash: zProjectHash,
-    shared: z.array(zVillageBatchShareEntry).nullable()
+    shared: z.array(zVillageBatchShareEntry)
 });
 
 export type VillageBatchShareResponse = z.infer<typeof zVillageBatchShareResponse>;
@@ -2536,7 +2536,7 @@ export type VillageRepositoryCommit = z.infer<typeof zVillageRepositoryCommit>;
 
 export const zVillageRepositoryCommitsResponse = z.object({
     commit_count: z.int(),
-    commits: z.array(zVillageRepositoryCommit).nullable(),
+    commits: z.array(zVillageRepositoryCommit),
     last_synced: z.iso.datetime().nullable(),
     name: z.string(),
     owner: z.string(),
@@ -2556,7 +2556,7 @@ export type VillageReviewDecision = z.infer<typeof zVillageReviewDecision>;
 
 export const zVillageBatchReviewRequest = z.object({
     status: zVillageReviewDecision,
-    transcript_ids: z.array(zTranscriptID).nullable()
+    transcript_ids: z.array(zTranscriptID)
 });
 
 export type VillageBatchReviewRequest = z.infer<typeof zVillageBatchReviewRequest>;
@@ -2679,7 +2679,7 @@ export const zVillageCollectiveSearchResult = z.object({
 export type VillageCollectiveSearchResult = z.infer<typeof zVillageCollectiveSearchResult>;
 
 export const zVillageCollectiveSearchResponse = z.object({
-    collectives: z.array(zVillageCollectiveSearchResult).nullable()
+    collectives: z.array(zVillageCollectiveSearchResult)
 });
 
 export type VillageCollectiveSearchResponse = z.infer<typeof zVillageCollectiveSearchResponse>;
@@ -2697,7 +2697,7 @@ export type VillageCollectiveSubmission = z.infer<typeof zVillageCollectiveSubmi
 
 export const zVillageContributableResponse = z.object({
     group_id: zVillageUUID,
-    transcripts: z.array(zVillageContributableTranscript).nullable()
+    transcripts: z.array(zVillageContributableTranscript)
 });
 
 export type VillageContributableResponse = z.infer<typeof zVillageContributableResponse>;
@@ -2716,7 +2716,7 @@ export const zVillageContributedCollective = z.object({
 export type VillageContributedCollective = z.infer<typeof zVillageContributedCollective>;
 
 export const zVillageContributedCollectivesResponse = z.object({
-    collectives: z.array(zVillageContributedCollective).nullable()
+    collectives: z.array(zVillageContributedCollective)
 });
 
 export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
@@ -2749,7 +2749,7 @@ export type VillageGroupContributor = z.infer<typeof zVillageGroupContributor>;
 export const zVillageGroupMember = z.object({
     avatar_url: z.string().nullable(),
     display_name: z.string().nullable(),
-    github_orgs: z.array(z.string()).nullable(),
+    github_orgs: z.array(z.string()),
     github_username: z.string(),
     id: zVillageUUID,
     joined_at: z.iso.datetime(),
@@ -2833,13 +2833,13 @@ export type VillageGroupTranscript = z.infer<typeof zVillageGroupTranscript>;
 
 export const zVillageGroupDetailResponse = z.object({
     can_read: z.boolean(),
-    contributors: z.array(zVillageGroupContributor).nullable(),
+    contributors: z.array(zVillageGroupContributor),
     group: zVillageGroup,
-    members: z.array(zVillageGroupMember).nullable(),
-    models: z.array(zVillageGroupModelBreakdown).nullable(),
+    members: z.array(zVillageGroupMember),
+    models: z.array(zVillageGroupModelBreakdown),
     pending_members: z.array(zVillageGroupMember).optional(),
     stats: zVillageGroupTranscriptStats,
-    transcripts: z.array(zVillageGroupTranscript).nullable(),
+    transcripts: z.array(zVillageGroupTranscript),
     your_role: zVillageGroupViewerRole
 });
 
@@ -2860,7 +2860,7 @@ export const zVillageLinkedRepository = z.object({
 export type VillageLinkedRepository = z.infer<typeof zVillageLinkedRepository>;
 
 export const zVillageLinkedRepositoriesResponse = z.object({
-    repositories: z.array(zVillageLinkedRepository).nullable()
+    repositories: z.array(zVillageLinkedRepository)
 });
 
 export type VillageLinkedRepositoriesResponse = z.infer<typeof zVillageLinkedRepositoriesResponse>;
@@ -2897,7 +2897,7 @@ export const zVillagePublicGroup = z.object({
 export type VillagePublicGroup = z.infer<typeof zVillagePublicGroup>;
 
 export const zVillageShareTranscriptRequest = z.object({
-    group_ids: z.array(zVillageUUID).nullable()
+    group_ids: z.array(zVillageUUID)
 });
 
 export type VillageShareTranscriptRequest = z.infer<typeof zVillageShareTranscriptRequest>;
@@ -2983,7 +2983,7 @@ export const zVillageTranscriptCollective = z.object({
 export type VillageTranscriptCollective = z.infer<typeof zVillageTranscriptCollective>;
 
 export const zVillageTranscriptCollectivesResponse = z.object({
-    collectives: z.array(zVillageTranscriptCollective).nullable()
+    collectives: z.array(zVillageTranscriptCollective)
 });
 
 export type VillageTranscriptCollectivesResponse = z.infer<typeof zVillageTranscriptCollectivesResponse>;

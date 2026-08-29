@@ -7987,10 +7987,7 @@
             "items": {
               "$ref": "#/components/schemas/TranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8005,19 +8002,13 @@
             "items": {
               "$ref": "#/components/schemas/TranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "decided": {
             "items": {
               "$ref": "#/components/schemas/TranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8068,10 +8059,7 @@
             "items": {
               "$ref": "#/components/schemas/TranscriptID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "project_hash": {
             "$ref": "#/components/schemas/ProjectHash"
@@ -8080,10 +8068,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageBatchShareEntry"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8099,10 +8084,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageCollectiveSearchResult"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8215,10 +8197,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageContributableTranscript"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8383,10 +8362,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageContributedCollective"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -8587,10 +8563,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageGroupContributor"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "group": {
             "$ref": "#/components/schemas/VillageGroup"
@@ -8599,19 +8572,13 @@
             "items": {
               "$ref": "#/components/schemas/VillageGroupMember"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "models": {
             "items": {
               "$ref": "#/components/schemas/VillageGroupModelBreakdown"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "pending_members": {
             "items": {
@@ -8626,10 +8593,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageGroupTranscript"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "your_role": {
             "$ref": "#/components/schemas/VillageGroupViewerRole"
@@ -8679,10 +8643,7 @@
             "items": {
               "type": "string"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "github_username": {
             "type": "string"
@@ -9663,10 +9624,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageLinkedRepository"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -10025,10 +9983,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageRepositoryCommit"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           },
           "last_synced": {
             "anyOf": [
@@ -10181,10 +10136,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageUUID"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -11042,10 +10994,7 @@
             "items": {
               "$ref": "#/components/schemas/VillageTranscriptCollective"
             },
-            "type": [
-              "array",
-              "null"
-            ]
+            "type": "array"
           }
         },
         "required": [
@@ -11123,15 +11072,29 @@
             "type": "string"
           },
           "display_members": {
-            "type": [
-              "boolean",
-              "null"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "linked_github_org": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "name": {

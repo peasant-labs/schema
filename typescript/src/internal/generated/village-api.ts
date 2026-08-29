@@ -93,7 +93,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List public collectives as compact rows with member and approved-transcript counts. */
+        /** @description List collectives for the public directory as compact rows with member and approved-transcript counts. */
         get: operations["listPublicGroups"];
         put?: never;
         post?: never;

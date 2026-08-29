@@ -16,6 +16,14 @@ assert.equal(typeof typesVersion, "string", "public_exports.yaml must declare th
 const spec = JSON.parse(await readFile(new URL(`../../generated/types-${typesVersion}.json`, import.meta.url), "utf8"));
 const enumCatalog = parse(await readFile(new URL("../../testdata/typescript/enums.yaml", import.meta.url), "utf8"));
 assert.ok(Array.isArray(enumCatalog.enums) && enumCatalog.enums.length > 0, "enums.yaml must provide at least one enum facade for the packed-package runtime probe");
+const villageCollectivesFixture = parse(await readFile(new URL("../../openapi/testdata/village_collectives_operations.yaml", import.meta.url), "utf8"));
+assert.ok(Array.isArray(villageCollectivesFixture.operations) && villageCollectivesFixture.operations.length > 0, "village_collectives_operations.yaml must provide operation IDs for the packed-package type probe");
+const villageCollectiveOperationIDs = villageCollectivesFixture.operations.map((operation) => {
+  assert.equal(typeof operation.operation_id, "string", "each Village collectives operation fixture must declare an operation_id");
+  assert.match(operation.operation_id, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Village collectives operation IDs must be TypeScript property identifiers");
+  return operation.operation_id;
+});
+assert.equal(new Set(villageCollectiveOperationIDs).size, villageCollectiveOperationIDs.length, "Village collectives operation IDs must be unique");
 const enumName = enumCatalog.enums[0].name;
 assert.match(enumName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "enums.yaml representative enum name must be a JavaScript identifier");
 const enumNames = new Set(enumCatalog.enums.map((enumCase) => enumCase.name));
@@ -69,8 +77,11 @@ try {
   await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
   execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });
 
+  const operationTypeChecks = villageCollectiveOperationIDs
+    .map((operationID) => `type __VillageCollectivesOperation_${operationID} = VillageOperations[${JSON.stringify(operationID)}];`)
+    .join("\n");
   await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
-  await writeFile(join(consumerDir, "consumer.ts"), await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8"));
+  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n`);
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 

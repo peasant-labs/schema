@@ -1,8 +1,9 @@
 openapi: 3.1.0
 info:
   description: Village API for transcript publishing, CLI authentication, annotation
-    registry and manifest synchronization, schema negotiation, and group-scoped transcript
-    discovery, content, annotations, and currency checks.
+    registry and manifest synchronization, schema negotiation, group-scoped transcript
+    discovery, content, annotations, currency checks, collectives, shares, contributions,
+    review, and linked repositories.
   title: Transcript Publish API
   version: 0.14.0
 paths:
@@ -1190,8 +1191,8 @@ paths:
       - contributions
   /api/v1/groups/public:
     get:
-      description: List public collectives as compact rows with member and approved-transcript
-        counts.
+      description: List collectives for the public directory as compact rows with
+        member and approved-transcript counts.
       operationId: listPublicGroups
       responses:
         "200":
@@ -3626,9 +3627,7 @@ components:
         transcript_ids:
           items:
             $ref: '#/components/schemas/SchemaTranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - transcript_ids
       - status
@@ -3638,15 +3637,11 @@ components:
         already_decided:
           items:
             $ref: '#/components/schemas/SchemaTranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
         decided:
           items:
             $ref: '#/components/schemas/SchemaTranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - decided
       - already_decided
@@ -3680,17 +3675,13 @@ components:
         already_shared:
           items:
             $ref: '#/components/schemas/SchemaTranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
         project_hash:
           $ref: '#/components/schemas/SchemaProjectHash'
         shared:
           items:
             $ref: '#/components/schemas/SchemaVillageBatchShareEntry'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - project_hash
       - shared
@@ -3701,9 +3692,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/SchemaVillageCollectiveSearchResult'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -3774,9 +3763,7 @@ components:
         transcripts:
           items:
             $ref: '#/components/schemas/SchemaVillageContributableTranscript'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - group_id
       - transcripts
@@ -3880,9 +3867,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/SchemaVillageContributedCollective'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -4017,23 +4002,17 @@ components:
         contributors:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupContributor'
-          type:
-          - array
-          - "null"
+          type: array
         group:
           $ref: '#/components/schemas/SchemaVillageGroup'
         members:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupMember'
-          type:
-          - array
-          - "null"
+          type: array
         models:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupModelBreakdown'
-          type:
-          - array
-          - "null"
+          type: array
         pending_members:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupMember'
@@ -4043,9 +4022,7 @@ components:
         transcripts:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupTranscript'
-          type:
-          - array
-          - "null"
+          type: array
         your_role:
           $ref: '#/components/schemas/SchemaVillageGroupViewerRole'
       required:
@@ -4075,9 +4052,7 @@ components:
         github_orgs:
           items:
             type: string
-          type:
-          - array
-          - "null"
+          type: array
         github_username:
           type: string
         id:
@@ -4626,9 +4601,7 @@ components:
         repositories:
           items:
             $ref: '#/components/schemas/SchemaVillageLinkedRepository'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - repositories
       type: object
@@ -4848,9 +4821,7 @@ components:
         commits:
           items:
             $ref: '#/components/schemas/SchemaVillageRepositoryCommit'
-          type:
-          - array
-          - "null"
+          type: array
         last_synced:
           anyOf:
           - format: date-time
@@ -4959,9 +4930,7 @@ components:
         group_ids:
           items:
             $ref: '#/components/schemas/SchemaVillageUUID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - group_ids
       type: object
@@ -5005,9 +4974,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/SchemaVillageTranscriptCollective'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -5065,13 +5032,17 @@ components:
         description:
           type: string
         display_members:
-          type:
-          - boolean
-          - "null"
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
         linked_github_org:
-          type:
-          - string
-          - "null"
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         name:
           type: string
         transcript_deletion_policy:

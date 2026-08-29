@@ -363,7 +363,7 @@ type VillageCollectiveSearchResult struct {
 }
 
 type VillageCollectiveSearchResponse struct {
-	Collectives []VillageCollectiveSearchResult `json:"collectives"`
+	Collectives []VillageCollectiveSearchResult `json:"collectives" nullable:"false"`
 }
 
 type VillageCreateGroupRequest struct {
@@ -382,8 +382,8 @@ type VillageUpdateGroupRequest struct {
 	Description              string                          `json:"description,omitempty"`
 	DataAccess               VillageGroupDataAccess          `json:"data_access,omitempty"`
 	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode,omitempty"`
-	LinkedGithubOrg          *string                         `json:"linked_github_org,omitempty" nullable:"false"`
-	DisplayMembers           *bool                           `json:"display_members,omitempty" nullable:"false"`
+	LinkedGithubOrg          *string                         `json:"linked_github_org,omitempty"`
+	DisplayMembers           *bool                           `json:"display_members,omitempty"`
 	TranscriptDeletionPolicy VillageTranscriptDeletionPolicy `json:"transcript_deletion_policy,omitempty"`
 }
 
@@ -417,7 +417,7 @@ type VillageGroupMember struct {
 	GithubUsername string           `json:"github_username"`
 	DisplayName    *string          `json:"display_name"`
 	AvatarURL      *string          `json:"avatar_url"`
-	GithubOrgs     []string         `json:"github_orgs"`
+	GithubOrgs     []string         `json:"github_orgs" nullable:"false"`
 }
 
 type VillageGroupTranscriptStats struct {
@@ -442,14 +442,14 @@ type VillageGroupContributor struct {
 
 type VillageGroupDetailResponse struct {
 	Group          VillageGroup                 `json:"group"`
-	Members        []VillageGroupMember         `json:"members"`
+	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
-	Models         []VillageGroupModelBreakdown `json:"models"`
-	Contributors   []VillageGroupContributor    `json:"contributors"`
+	Models         []VillageGroupModelBreakdown `json:"models" nullable:"false"`
+	Contributors   []VillageGroupContributor    `json:"contributors" nullable:"false"`
 	CanRead        bool                         `json:"can_read"`
 	YourRole       VillageGroupViewerRole       `json:"your_role"`
-	Transcripts    []VillageGroupTranscript     `json:"transcripts"`
-	PendingMembers []VillageGroupMember         `json:"pending_members,omitempty"`
+	Transcripts    []VillageGroupTranscript     `json:"transcripts" nullable:"false"`
+	PendingMembers []VillageGroupMember         `json:"pending_members,omitempty" nullable:"false"`
 }
 
 // VillageTranscript is the current transcript row projection used by Village web
@@ -605,7 +605,7 @@ type VillageTranscriptShare struct {
 }
 
 type VillageShareTranscriptRequest struct {
-	GroupIDs []VillageUUID `json:"group_ids"`
+	GroupIDs []VillageUUID `json:"group_ids" nullable:"false"`
 }
 
 type VillageContributedCollective struct {
@@ -620,7 +620,7 @@ type VillageContributedCollective struct {
 }
 
 type VillageContributedCollectivesResponse struct {
-	Collectives []VillageContributedCollective `json:"collectives"`
+	Collectives []VillageContributedCollective `json:"collectives" nullable:"false"`
 }
 
 type VillageTranscriptCollective struct {
@@ -632,7 +632,7 @@ type VillageTranscriptCollective struct {
 }
 
 type VillageTranscriptCollectivesResponse struct {
-	Collectives []VillageTranscriptCollective `json:"collectives"`
+	Collectives []VillageTranscriptCollective `json:"collectives" nullable:"false"`
 }
 
 type VillagePendingShare struct {
@@ -682,18 +682,18 @@ type VillageBatchShareEntry struct {
 
 type VillageBatchShareResponse struct {
 	ProjectHash   ProjectHash              `json:"project_hash"`
-	Shared        []VillageBatchShareEntry `json:"shared"`
-	AlreadyShared []TranscriptID           `json:"already_shared"`
+	Shared        []VillageBatchShareEntry `json:"shared" nullable:"false"`
+	AlreadyShared []TranscriptID           `json:"already_shared" nullable:"false"`
 }
 
 type VillageBatchReviewRequest struct {
-	TranscriptIDs []TranscriptID        `json:"transcript_ids"`
+	TranscriptIDs []TranscriptID        `json:"transcript_ids" nullable:"false"`
 	Status        VillageReviewDecision `json:"status"`
 }
 
 type VillageBatchReviewResponse struct {
-	Decided        []TranscriptID `json:"decided"`
-	AlreadyDecided []TranscriptID `json:"already_decided"`
+	Decided        []TranscriptID `json:"decided" nullable:"false"`
+	AlreadyDecided []TranscriptID `json:"already_decided" nullable:"false"`
 }
 
 type VillageReviewShareResponse struct {
@@ -722,7 +722,7 @@ type VillageContributableTranscript struct {
 
 type VillageContributableResponse struct {
 	GroupID     VillageUUID                      `json:"group_id"`
-	Transcripts []VillageContributableTranscript `json:"transcripts"`
+	Transcripts []VillageContributableTranscript `json:"transcripts" nullable:"false"`
 }
 
 type VillageShareEvent struct {
@@ -761,7 +761,7 @@ type VillageLinkedRepository struct {
 }
 
 type VillageLinkedRepositoriesResponse struct {
-	Repositories []VillageLinkedRepository `json:"repositories"`
+	Repositories []VillageLinkedRepository `json:"repositories" nullable:"false"`
 }
 
 type VillageRepositoryCommit struct {
@@ -779,5 +779,5 @@ type VillageRepositoryCommitsResponse struct {
 	Refreshed   bool                      `json:"refreshed"`
 	LastSynced  *time.Time                `json:"last_synced"`
 	CommitCount int                       `json:"commit_count"`
-	Commits     []VillageRepositoryCommit `json:"commits"`
+	Commits     []VillageRepositoryCommit `json:"commits" nullable:"false"`
 }

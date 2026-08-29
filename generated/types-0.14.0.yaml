@@ -4984,9 +4984,7 @@ components:
         transcript_ids:
           items:
             $ref: '#/components/schemas/TranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - transcript_ids
       - status
@@ -4996,15 +4994,11 @@ components:
         already_decided:
           items:
             $ref: '#/components/schemas/TranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
         decided:
           items:
             $ref: '#/components/schemas/TranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - decided
       - already_decided
@@ -5038,17 +5032,13 @@ components:
         already_shared:
           items:
             $ref: '#/components/schemas/TranscriptID'
-          type:
-          - array
-          - "null"
+          type: array
         project_hash:
           $ref: '#/components/schemas/ProjectHash'
         shared:
           items:
             $ref: '#/components/schemas/VillageBatchShareEntry'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - project_hash
       - shared
@@ -5059,9 +5049,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/VillageCollectiveSearchResult'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -5132,9 +5120,7 @@ components:
         transcripts:
           items:
             $ref: '#/components/schemas/VillageContributableTranscript'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - group_id
       - transcripts
@@ -5238,9 +5224,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/VillageContributedCollective'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -5375,23 +5359,17 @@ components:
         contributors:
           items:
             $ref: '#/components/schemas/VillageGroupContributor'
-          type:
-          - array
-          - "null"
+          type: array
         group:
           $ref: '#/components/schemas/VillageGroup'
         members:
           items:
             $ref: '#/components/schemas/VillageGroupMember'
-          type:
-          - array
-          - "null"
+          type: array
         models:
           items:
             $ref: '#/components/schemas/VillageGroupModelBreakdown'
-          type:
-          - array
-          - "null"
+          type: array
         pending_members:
           items:
             $ref: '#/components/schemas/VillageGroupMember'
@@ -5401,9 +5379,7 @@ components:
         transcripts:
           items:
             $ref: '#/components/schemas/VillageGroupTranscript'
-          type:
-          - array
-          - "null"
+          type: array
         your_role:
           $ref: '#/components/schemas/VillageGroupViewerRole'
       required:
@@ -5433,9 +5409,7 @@ components:
         github_orgs:
           items:
             type: string
-          type:
-          - array
-          - "null"
+          type: array
         github_username:
           type: string
         id:
@@ -5984,9 +5958,7 @@ components:
         repositories:
           items:
             $ref: '#/components/schemas/VillageLinkedRepository'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - repositories
       type: object
@@ -6206,9 +6178,7 @@ components:
         commits:
           items:
             $ref: '#/components/schemas/VillageRepositoryCommit'
-          type:
-          - array
-          - "null"
+          type: array
         last_synced:
           anyOf:
           - format: date-time
@@ -6317,9 +6287,7 @@ components:
         group_ids:
           items:
             $ref: '#/components/schemas/VillageUUID'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - group_ids
       type: object
@@ -6771,9 +6739,7 @@ components:
         collectives:
           items:
             $ref: '#/components/schemas/VillageTranscriptCollective'
-          type:
-          - array
-          - "null"
+          type: array
       required:
       - collectives
       type: object
@@ -6831,13 +6797,17 @@ components:
         description:
           type: string
         display_members:
-          type:
-          - boolean
-          - "null"
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
         linked_github_org:
-          type:
-          - string
-          - "null"
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         name:
           type: string
         transcript_deletion_policy:
