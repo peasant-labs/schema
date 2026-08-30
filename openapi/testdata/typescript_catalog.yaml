@@ -499,6 +499,238 @@ types:
     disposition: catalog
     component: UICapabilitiesResponse
     reason: public wire or domain contract type
+  - go_name: VillageAssignableGroupRole
+    disposition: catalog
+    component: VillageAssignableGroupRole
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchReviewRequest
+    disposition: catalog
+    component: VillageBatchReviewRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchReviewResponse
+    disposition: catalog
+    component: VillageBatchReviewResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchShareEntry
+    disposition: catalog
+    component: VillageBatchShareEntry
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchShareRequest
+    disposition: catalog
+    component: VillageBatchShareRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageBatchShareResponse
+    disposition: catalog
+    component: VillageBatchShareResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageCollectiveSearchResponse
+    disposition: catalog
+    component: VillageCollectiveSearchResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageCollectiveSearchResult
+    disposition: catalog
+    component: VillageCollectiveSearchResult
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageCollectiveSubmission
+    disposition: catalog
+    component: VillageCollectiveSubmission
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributableResponse
+    disposition: catalog
+    component: VillageContributableResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributableTranscript
+    disposition: catalog
+    component: VillageContributableTranscript
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributedCollective
+    disposition: catalog
+    component: VillageContributedCollective
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributedCollectivesResponse
+    disposition: catalog
+    component: VillageContributedCollectivesResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageContributionStatus
+    disposition: catalog
+    component: VillageContributionStatus
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageCreateGroupRequest
+    disposition: catalog
+    component: VillageCreateGroupRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageErrorResponse
+    disposition: catalog
+    component: VillageErrorResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroup
+    disposition: catalog
+    component: VillageGroup
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupAcceptanceMode
+    disposition: catalog
+    component: VillageGroupAcceptanceMode
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupContributor
+    disposition: catalog
+    component: VillageGroupContributor
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupDataAccess
+    disposition: catalog
+    component: VillageGroupDataAccess
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupDetailResponse
+    disposition: catalog
+    component: VillageGroupDetailResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupMember
+    disposition: catalog
+    component: VillageGroupMember
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupMemberRoleRequest
+    disposition: catalog
+    component: VillageGroupMemberRoleRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupMemberUsernameRequest
+    disposition: catalog
+    component: VillageGroupMemberUsernameRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupModelBreakdown
+    disposition: catalog
+    component: VillageGroupModelBreakdown
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupRole
+    disposition: catalog
+    component: VillageGroupRole
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupStatusRoleResponse
+    disposition: catalog
+    component: VillageGroupStatusRoleResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupTranscript
+    disposition: catalog
+    component: VillageGroupTranscript
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupTranscriptStats
+    disposition: catalog
+    component: VillageGroupTranscriptStats
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageGroupViewerRole
+    disposition: catalog
+    component: VillageGroupViewerRole
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageLinkRepositoryRequest
+    disposition: catalog
+    component: VillageLinkRepositoryRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageLinkedRepositoriesResponse
+    disposition: catalog
+    component: VillageLinkedRepositoriesResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageLinkedRepository
+    disposition: catalog
+    component: VillageLinkedRepository
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillagePendingShare
+    disposition: catalog
+    component: VillagePendingShare
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageProjectNameSource
+    disposition: catalog
+    component: VillageProjectNameSource
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillagePublicGroup
+    disposition: catalog
+    component: VillagePublicGroup
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageRemoveGroupMemberResponse
+    disposition: catalog
+    component: VillageRemoveGroupMemberResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageRepositoryCommit
+    disposition: catalog
+    component: VillageRepositoryCommit
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageRepositoryCommitsResponse
+    disposition: catalog
+    component: VillageRepositoryCommitsResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageReviewDecision
+    disposition: catalog
+    component: VillageReviewDecision
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageReviewShareRequest
+    disposition: catalog
+    component: VillageReviewShareRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageReviewShareResponse
+    disposition: catalog
+    component: VillageReviewShareResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageShareEvent
+    disposition: catalog
+    component: VillageShareEvent
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageShareEventActor
+    disposition: catalog
+    component: VillageShareEventActor
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageShareStatus
+    disposition: catalog
+    component: VillageShareStatus
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageShareTranscriptRequest
+    disposition: catalog
+    component: VillageShareTranscriptRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageStatusResponse
+    disposition: catalog
+    component: VillageStatusResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscript
+    disposition: catalog
+    component: VillageTranscript
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscriptCollective
+    disposition: catalog
+    component: VillageTranscriptCollective
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscriptCollectivesResponse
+    disposition: catalog
+    component: VillageTranscriptCollectivesResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscriptDeletionPolicy
+    disposition: catalog
+    component: VillageTranscriptDeletionPolicy
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscriptShare
+    disposition: catalog
+    component: VillageTranscriptShare
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageTranscriptVisibility
+    disposition: catalog
+    component: VillageTranscriptVisibility
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageUpdateGroupRequest
+    disposition: catalog
+    component: VillageUpdateGroupRequest
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageUserGroup
+    disposition: catalog
+    component: VillageUserGroup
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageUserGroupShare
+    disposition: catalog
+    component: VillageUserGroupShare
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageUUID
+    disposition: catalog
+    component: VillageUUID
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageVisibleGroup
+    disposition: catalog
+    component: VillageVisibleGroup
+    reason: schema-owned Village collectives wire contract
   - go_name: ModelInfo
     disposition: catalog
     component: ModelInfo
