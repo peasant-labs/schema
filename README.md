@@ -78,19 +78,19 @@ flowchart LR
 |---|---|
 | Module path | `github.com/peasant-labs/schema` |
 | Default branch | `develop` (releases are cut from it; `main`/tags carry the releases) |
-| Latest tag | `v0.1.2` (shared RemoteLabel display rule and declared session origin) - stable release |
+| Latest tag | `v0.1.3-rc1` (Village collectives contract surface release candidate) - stable `v0.1.2` remains published |
 | License | Apache-2.0 |
-| Spec versions | Village API `0.13.0` · PublishRequest `0.13.0` · AnnotationPushRequest `0.13.0` · Local API `0.8.0` · Types `0.12.0` (see [`versions.go`](versions.go)) |
+| Spec versions | Village API `0.14.0` · PublishRequest `0.14.0` · AnnotationPushRequest `0.14.0` · Local API `0.9.0` · Types `0.14.0` (see [`versions.go`](versions.go)) |
 
 ### Consumers
 
 | Consumer | Language | How it pins / uses the contract |
 |---|---|---|
-| **peasant** (Go backend + web) | Go | `go.mod` currently requires `github.com/peasant-labs/schema@v0.1.0-rc13`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
-| **village** (Go backend) | Go | `backend/go.mod` currently requires `github.com/peasant-labs/schema@v0.1.0-rc13`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
+| **peasant** (Go backend + web) | Go | `go.mod` currently requires `github.com/peasant-labs/schema@v0.1.2`; produces `SessionDetailPayload`, imports the enums, mirrors `AllLicenses` in its SQLite CHECKs. |
+| **village** (Go backend) | Go | `backend/go.mod` currently requires `github.com/peasant-labs/schema@v0.1.2`; serves `GET /openapi.json` from `VillageAPISpecJSON()` and **enforces** inbound publishes via `ValidatePublishRequest` (both read the embedded spec, so served ≡ enforced). |
 | **TypeScript consumers** (`@peasant-labs/schema`) | TypeScript | `npm install @peasant-labs/schema` (published to npm from `typescript/`, version tracking the module release tag) for generated named types, Zod schemas, schema-owned fixtures, and type-only Local/Village `paths` and `operations` contracts. It provides no transport client. `@peasant-labs/types` is deprecated and must not receive new contract definitions. |
 
-> Both backends currently pin `v0.1.0-rc13`; their final re-pins happen in
+> Both backends currently pin `v0.1.2`; their final re-pins happen in
 > separate downstream changes after this release. Because the module is normal `go get`-pinned, each
 > consumer moves independently, so they can briefly sit on different tags between
 > re-pins; a re-pin is a one-line `go.mod` change plus `go mod tidy`.

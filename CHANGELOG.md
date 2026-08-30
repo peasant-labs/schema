@@ -5,6 +5,21 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.1.3-rc1] - 2026-08-30
+
+### Added
+
+- Village API 0.14.0 and Types 0.14.0 declare the collectives, shares,
+  contributions, review, and linked-repository route surface that Village already
+  serves under `/api/v1`. The contract now covers collective discovery and
+  membership, project contribution, single and batch share review, transcript
+  collective history, share-event history, linked repositories, and repository
+  commits.
+- The generated TypeScript package exports the new Village operation contracts
+  and runtime schemas. Fixture-backed tests now pin the route list, closed enums,
+  flattened collective transcript shape, array nullability, and package-exported
+  operation IDs.
+
 ## [v0.1.2] - 2026-08-25
 
 Final release of the shared RemoteLabel display rule and the declared session
