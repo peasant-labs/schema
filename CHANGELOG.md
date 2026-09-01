@@ -5,6 +5,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Changed
+
+- Final release tags no longer require a prior successful same-version rc.
+  Rc tags remain supported as prereleases and still publish to npm under `next`.
+
 ## [v0.1.3-rc1] - 2026-08-30
 
 ### Added

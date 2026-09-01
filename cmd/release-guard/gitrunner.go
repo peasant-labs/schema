@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// GitRunner is the release-guard's git-lineage seam: the three read-only history
-// queries check-final needs. It is hardened (typed structured argv, no
+// GitRunner is the release-guard's git-lineage seam: read-only history queries
+// for release tooling. It is hardened (typed structured argv, no
 // shell, leading-dash rejection, an --end-of-options sentinel, and a subcommand
 // allowlist) but still SHELLS `git` — go-git adoption is out of scope.
 type GitRunner interface {
@@ -69,7 +69,7 @@ type execGit struct {
 func newExecGit() (GitRunner, error) {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
-		return nil, fmt.Errorf("git runner: cannot find a `git` executable on PATH for release-guard lineage checks: %w. Install git or enter the nix dev shell (which provides it) before running check-final", err)
+		return nil, fmt.Errorf("git runner: cannot find a `git` executable on PATH for release-guard lineage checks: %w. Install git or enter the nix dev shell (which provides it) before running release-guard history checks", err)
 	}
 	return &execGit{gitPath: gitPath}, nil
 }

@@ -24,11 +24,9 @@ concurrency:
 
 permissions:
   contents: write # create the GitHub Release + upload assets
-  actions: read # release-guard check-final reads rc release-run conclusions
 
 jobs:
-  # Gate the build: reject non-schema tags, and for FINAL releases require a
-  # same-version rc that is green AND an ancestor of the final commit.
+  # Gate the build: reject non-schema tags and classify rc vs final releases.
   guard:
     name: guard
     runs-on: ubuntu-latest
@@ -58,10 +56,6 @@ jobs:
       - name: Parse + classify the tag
         id: parse
         run: go run ./cmd/release-guard parse-tag "$TAG"
-
-      - name: Final-release guard (green same-version rc + ancestor)
-        if: steps.parse.outputs.kind == 'final'
-        run: go run ./cmd/release-guard check-final --tag "$TAG"
 
   nix-vendor-hash:
     name: assert nix vendorHash current
@@ -116,9 +110,8 @@ jobs:
           # `release-guard parse-tag`) are unstable: they may carry breaking changes
           # vs the prior release as they converge toward a final vX.Y.Z, so the
           # vs-prior breaking diff (oasdiff + go-apidiff) does NOT apply to an rc.
-          # The compatibility guarantee is enforced only at a FINAL release (here,
-          # plus `release-guard check-final`); PR-time gates already cover breaks vs
-          # develop. For an rc, leave BASE_REF empty so contract-gates.sh runs
+          # The compatibility guarantee is enforced only at a FINAL release here;
+          # PR-time gates already cover breaks vs develop. For an rc, leave BASE_REF empty so contract-gates.sh runs
           # vacuum lint only (its empty-base behaviour skips the breaking diffs).
           if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
             echo "base_ref=" >> "$GITHUB_OUTPUT"

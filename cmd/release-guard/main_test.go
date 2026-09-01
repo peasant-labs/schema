@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/peasant-labs/schema/internal/release"
-	"github.com/peasant-labs/schema/testcase"
-	"github.com/peasant-labs/schema/testcase/assert"
 )
 
 // --- interface mocks (mock the DEPENDENCY, never the SUT) -------------------
@@ -119,201 +117,7 @@ func TestRunCheckMaintainer(t *testing.T) {
 	}
 }
 
-// --- BDD #2: check-final (green via server-side HeadSHA; no-green blocks) ----
-
-// finalCheckRunner builds a GitRunner for a v1.2.3 final with one rc (v1.2.3-rc1)
-// that is an ancestor; RevParse maps the final tag and the rc tag to distinct
-// 40-hex commits.
-const (
-	finalCommit = "1111111111111111111111111111111111111111"
-	rcCommit    = "2222222222222222222222222222222222222222"
-)
-
-func finalCheckRunner() *mockGitRunner {
-	return &mockGitRunner{
-		revParseFn: func(_ context.Context, ref string) (string, error) {
-			switch ref {
-			case "v1.2.3":
-				return finalCommit, nil
-			case "v1.2.3-rc1":
-				return rcCommit, nil
-			default:
-				return "", errors.New("unexpected ref " + ref)
-			}
-		},
-		listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
-			if pattern != "v1.2.3-rc*" {
-				return nil, errors.New("unexpected pattern " + pattern)
-			}
-			return []string{"v1.2.3-rc1"}, nil
-		},
-		isAncestorFn: func(_ context.Context, ancestor, descendant string) (bool, error) {
-			return ancestor == "v1.2.3-rc1" && descendant == finalCommit, nil
-		},
-	}
-}
-
-func TestRunCheckFinal_GreenViaHeadSHA(t *testing.T) {
-	t.Parallel()
-
-	var gotCommitSHA string
-	gh := &mockGitHubClient{
-		workflowRunsForCommitFn: func(_ context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error) {
-			gotCommitSHA = commitSHA
-			// Decoys (other commit / in-progress / failure) + the green run on
-			// the rc commit. The server-side HeadSHA filter is modelled by the
-			// handler passing the rc commit; RunGreenForCommit re-checks it.
-			return []release.WorkflowRun{
-				{HeadSHA: "deadbeef", Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
-				{HeadSHA: commitSHA, Status: release.WorkflowRunInProgress, Conclusion: release.WorkflowRunNoConclusion},
-				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunFailure},
-				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
-			}, nil
-		},
-	}
-	err := runCheckFinal(context.Background(), gh, finalCheckRunner(), testRepo, []string{"--tag", "v1.2.3"})
-	if err != nil {
-		t.Fatalf("runCheckFinal (green rc) = %v, want nil", err)
-	}
-	// The run lookup must use the rc's COMMIT (resolved via RevParse), not the tag.
-	if gotCommitSHA != rcCommit {
-		t.Fatalf("WorkflowRunsForCommit got commit %q, want the rc commit %q", gotCommitSHA, rcCommit)
-	}
-}
-
-func TestRunCheckFinal_NoGreenRunBlocks(t *testing.T) {
-	t.Parallel()
-
-	gh := &mockGitHubClient{
-		workflowRunsForCommitFn: func(_ context.Context, _, _, commitSHA string) ([]release.WorkflowRun, error) {
-			// No completed+success run on the rc commit → not green.
-			return []release.WorkflowRun{
-				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunFailure},
-			}, nil
-		},
-	}
-	err := runCheckFinal(context.Background(), gh, finalCheckRunner(), testRepo, []string{"--tag", "v1.2.3"})
-	if err == nil {
-		t.Fatal("runCheckFinal (no green rc) = nil, want a blocking error")
-	}
-}
-
-// PARITY: a genuine git lineage failure (IsAncestor exit >1 → error) must be
-// treated as not-an-ancestor and BLOCK — never silently pass.
-func TestRunCheckFinal_IsAncestorErrorBlocks(t *testing.T) {
-	t.Parallel()
-
-	git := finalCheckRunner()
-	git.isAncestorFn = func(_ context.Context, _, _ string) (bool, error) {
-		return false, errors.New("merge-base: exit status 128 (bad object)")
-	}
-	gh := &mockGitHubClient{
-		workflowRunsForCommitFn: func(_ context.Context, _, _, commitSHA string) ([]release.WorkflowRun, error) {
-			// The rc IS green — only the lineage error must keep it from passing.
-			return []release.WorkflowRun{
-				{HeadSHA: commitSHA, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess},
-			}, nil
-		},
-	}
-	err := runCheckFinal(context.Background(), gh, git, testRepo, []string{"--tag", "v1.2.3"})
-	if err == nil {
-		t.Fatal("runCheckFinal must BLOCK when IsAncestor errors (green-but-lineage-broken rc), got nil")
-	}
-}
-
-type initialFinalCLIInput struct {
-	Requested               string   `yaml:"requested"`
-	Configured              string   `yaml:"configured"`
-	ProductTags             []string `yaml:"productTags"`
-	ProductTagError         string   `yaml:"productTagError"`
-	RCTags                  []string `yaml:"rcTags"`
-	GreenRC                 bool     `yaml:"greenRC"`
-	PublicationCompleted    bool     `yaml:"publicationCompleted"`
-	PublicationError        string   `yaml:"publicationError"`
-	ForbidPublicationLookup bool     `yaml:"forbidPublicationLookup"`
-}
-
-type initialFinalCLIExpected struct {
-	ErrorContains string `yaml:"errorContains"`
-}
-
-//go:embed testdata/initial-final/cases.yaml
-var initialFinalCLICasesYAML []byte
-
-func TestRunCheckFinal_InitialFinalCases(t *testing.T) {
-	corpus, err := testcase.LoadCorpus[initialFinalCLIInput, initialFinalCLIExpected](initialFinalCLICasesYAML)
-	if err != nil {
-		t.Fatalf("load initial-final CLI corpus: %v", err)
-	}
-	assert.RequireMin(t, corpus, 5)
-	assert.RequireValid(t, corpus)
-
-	for _, c := range corpus.Cases {
-		c := c
-		t.Run(c.Name, func(t *testing.T) {
-			git := &mockGitRunner{
-				revParseFn: func(_ context.Context, ref string) (string, error) {
-					if ref == c.Input.Requested {
-						return finalCommit, nil
-					}
-					for _, rcTag := range c.Input.RCTags {
-						if ref == rcTag {
-							return rcCommit, nil
-						}
-					}
-					return "", errors.New("unexpected ref " + ref)
-				},
-				listTagsFn: func(_ context.Context, pattern string) ([]string, error) {
-					switch pattern {
-					case "v*":
-						if c.Input.ProductTagError != "" {
-							return nil, errors.New(c.Input.ProductTagError)
-						}
-						return c.Input.ProductTags, nil
-					case c.Input.Requested + "-rc*":
-						return c.Input.RCTags, nil
-					default:
-						return nil, errors.New("unexpected pattern " + pattern)
-					}
-				},
-				isAncestorFn: func(_ context.Context, ancestor, descendant string) (bool, error) {
-					return ancestor != "" && descendant == finalCommit, nil
-				},
-			}
-			gh := &mockGitHubClient{workflowRunsForCommitFn: func(_ context.Context, _, _ string, commit string) ([]release.WorkflowRun, error) {
-				if c.Input.GreenRC && commit == rcCommit {
-					return []release.WorkflowRun{{HeadSHA: commit, Status: release.WorkflowRunCompleted, Conclusion: release.WorkflowRunSuccess}}, nil
-				}
-				return nil, nil
-			}, releaseExistsFn: func(_ context.Context, repo, tag string) (bool, error) {
-				if c.Input.ForbidPublicationLookup {
-					t.Fatal("later final with prior release history must not depend on the initial final's publication lookup")
-				}
-				if repo != testRepo || tag != c.Input.Configured {
-					return false, errors.New("unexpected publication evidence request")
-				}
-				if c.Input.PublicationError != "" {
-					return false, errors.New(c.Input.PublicationError)
-				}
-				return c.Input.PublicationCompleted, nil
-			}}
-			err := runCheckFinal(context.Background(), gh, git, testRepo, []string{
-				"--tag", c.Input.Requested, "--initial-final", c.Input.Configured,
-			})
-			if c.Classification == testcase.MustFail {
-				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
-					t.Fatalf("runCheckFinal error = %v, want substring %q", err, c.Expected.ErrorContains)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("runCheckFinal returned unexpected error: %v", err)
-			}
-		})
-	}
-}
-
-// --- BDD #3: check-approval (paginated approvals; maintainer gate) ----------
+// --- BDD #2: check-approval (paginated approvals; maintainer gate) ----------
 
 func TestRunCheckApproval(t *testing.T) {
 	t.Parallel()
@@ -450,7 +254,7 @@ func TestReadGitHubToken(t *testing.T) {
 
 	t.Run("reads the value of the exported GH_TOKEN", func(t *testing.T) {
 		t.Setenv("GH_TOKEN", "ghp_a_real_looking_token")
-		token, err := readGitHubToken("check-final")
+		token, err := readGitHubToken("check-approval")
 		if err != nil {
 			t.Fatalf("readGitHubToken with $GH_TOKEN set = %v, want nil", err)
 		}

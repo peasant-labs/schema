@@ -20,7 +20,7 @@ type GitHubClient interface {
 	// ("owner/repo"). Backs check-maintainer / check-approval.
 	CollaboratorPermission(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
 	// WorkflowRunsForCommit returns every run of workflowFile whose head commit
-	// is commitSHA, filtered server-side. Backs check-final (RunGreenForCommit).
+	// is commitSHA, filtered server-side.
 	WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
 	// ReleaseExists reports whether GitHub has a published Release for tag.
 	ReleaseExists(ctx context.Context, repo, tag string) (bool, error)
@@ -66,7 +66,7 @@ func (c *githubClient) ReleaseExists(ctx context.Context, repo, tag string) (boo
 	if errors.As(err, &responseErr) && responseErr.Response != nil && responseErr.Response.StatusCode == http.StatusNotFound {
 		return false, nil
 	}
-	return false, fmt.Errorf("github client: cannot determine whether published release %s exists on %s/%s during initial-final checking: %w. Confirm GH_TOKEN can read repository releases and retry", tag, owner, name, err)
+	return false, fmt.Errorf("github client: cannot determine whether published release %s exists on %s/%s during release checking: %w. Confirm GH_TOKEN can read repository releases and retry", tag, owner, name, err)
 }
 
 // githubClient is the production GitHubClient: a thin wrapper over the go-github
@@ -134,7 +134,7 @@ func (c *githubClient) WorkflowRunsForCommit(ctx context.Context, repo, workflow
 	for {
 		page, resp, err := c.gh.Actions.ListWorkflowRunsByFileName(ctx, owner, name, workflowFile, opts)
 		if err != nil {
-			return nil, fmt.Errorf("github client: cannot list runs of %s for commit %s on %s/%s during check-final: %w. Confirm the workflow file name and that GH_TOKEN can read Actions", workflowFile, commitSHA, owner, name, err)
+			return nil, fmt.Errorf("github client: cannot list runs of %s for commit %s on %s/%s during workflow-run checking: %w. Confirm the workflow file name and that GH_TOKEN can read Actions", workflowFile, commitSHA, owner, name, err)
 		}
 		for _, r := range page.WorkflowRuns {
 			if r == nil {
