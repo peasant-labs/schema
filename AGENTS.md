@@ -78,8 +78,8 @@ content-carrying release PR is supported). On merge,
 `peasant-labs-releaser` GitHub App token (the default CI token cannot push a tag
 that re-triggers `release.yml`), and the tag drives `release.yml` to publish a
 GitHub Release with the OpenAPI specs as assets (a prerelease for `-rcN`). A final
-`vX.Y.Z` requires a same-version `-rcN` that is green and an ancestor of the final
-commit (`release-guard check-final`).
+`vX.Y.Z` does not require a preceding rc, but it still runs the release gates and
+diffs against the prior release when one exists.
 
 **Minting a public tag is a reserved maintainer action.** An agent must not push
 a public release tag or perform the cut. Prepare and queue the release PR; the
