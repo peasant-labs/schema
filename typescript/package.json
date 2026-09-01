@@ -59,7 +59,7 @@
   },
   "dependencies": {
     "yaml": "2.9.0",
-    "zod": "^4.4.3"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",
