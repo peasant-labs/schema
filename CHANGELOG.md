@@ -10,6 +10,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - Final release tags no longer require a prior successful same-version rc.
   Rc tags remain supported as prereleases and still publish to npm under `next`.
 
+## [v0.1.3] - 2026-09-01
+
+Final release of the Village collectives contract surface. The contract
+artifacts are unchanged from `v0.1.3-rc1`: Village API 0.14.0,
+PublishRequest 0.14.0, AnnotationPushRequest 0.14.0, Local API 0.9.0, and
+Types 0.14.0.
+
 ## [v0.1.3-rc1] - 2026-08-30
 
 ### Added
