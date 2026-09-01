@@ -19,11 +19,11 @@ import (
 // bubble-merge.yml on a merged pull_request:closed event. It reads develop's
 // tip, drain-all-bubbles every pending squash into a signed merge-commit
 // triangle (M parents [T, S], M.tree == S.tree), and advances develop via a
-// single fast-forward compare-and-swap — failing loud (non-zero exit + a GitHub
+// single fast-forward compare-and-swap, failing loud (non-zero exit + a GitHub
 // Actions ::error::) if it cannot, leaving develop linear and unchanged.
 //
-// It composes the canonical GitHubClient seam (SLICE-1) directly in package main
-// — the repo's sole composition root — so there is no internal/bubble or
+// It composes the canonical GitHubClient seam directly in package main, the
+// repo's sole composition root, so there is no internal/bubble or
 // internal/githubapi package: the orchestration reads its own-types (release.*)
 // off the one go-github wrapper.
 
@@ -34,7 +34,7 @@ const (
 	// examines at most this many commits (the tip plus up to walkBound-1
 	// ancestors) before giving up, so a develop with an unexpectedly long run of
 	// single-parent commits (no merge boundary) fails loud instead of walking
-	// unbounded (R-A).
+	// unbounded.
 	defaultWalkBound = 256
 )
 
@@ -808,9 +808,9 @@ func reviewersExcludingApprovers(reviews []release.Review, approvers []string) [
 
 // --- CLI entry points ----------------------------------------------------------
 
-// runBubble is the `release-guard bubble` dispatch handler, mirroring
-// runCheckFinal's injection (gh + repo from the composition root). It adapts the
-// process stdio and delegates to bubbleRun (the writer-injectable seam).
+// runBubble is the `release-guard bubble` dispatch handler. It receives the
+// GitHub client and repo from the composition root, adapts process stdio, and
+// delegates to bubbleRun (the writer-injectable seam).
 func runBubble(ctx context.Context, gh GitHubClient, repo string, args []string) error {
 	return bubbleRun(ctx, gh, repo, os.Stdout, os.Stderr, args)
 }

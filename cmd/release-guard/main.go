@@ -12,13 +12,6 @@
 //	    Validate a git tag as a schema release reference (rejects the legacy
 //	    pkg/schema/v* and any non-release tag) and emit version + kind.
 //
-//	release-guard check-final --tag vX.Y.Z [--workflow release.yml] [--initial-final vX.Y.Z]
-//	    Guard a FINAL release: require a same-version release candidate whose
-//	    release run is green AND whose tag is an ancestor of the final commit.
-//	    Queries git (tag list, rev-list, merge-base) via the hardened GitRunner
-//	    and the GitHub API (workflow-run conclusions) via the GitHubClient, then
-//	    defers the decision to release.CheckFinal.
-//
 //	release-guard check-maintainer --user <login>
 //	    Assert a GitHub user is a release maintainer (admin/maintain collaborator
 //	    on $GITHUB_REPOSITORY). Reads the collaborator permission via the
@@ -44,8 +37,8 @@
 // consume them via steps.<id>.outputs.*), and always echoes them to stdout.
 //
 // main() is the SOLE composition root: it reads GH_TOKEN + GITHUB_REPOSITORY
-// from the environment ONCE, builds the GitHubClient (go-github) and the hardened
-// GitRunner, and injects them DOWN into pure handler funcs that take their deps
+// from the environment ONCE, builds the GitHubClient (go-github), and injects it
+// DOWN into pure handler funcs that take their deps
 // as parameters and never touch os.Getenv. Handlers return an error; main maps a
 // non-nil error to a non-zero exit via fatalf, preserving exit-code parity.
 package main
@@ -61,7 +54,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fatalf("usage: release-guard <parse-title|parse-tag|check-final|check-workflow|check-maintainer|check-approval|bubble> ...")
+		fatalf("usage: release-guard <parse-title|parse-tag|check-workflow|check-maintainer|check-approval|bubble> ...")
 	}
 	sub := os.Args[1]
 	args := os.Args[2:]
@@ -75,10 +68,6 @@ func main() {
 		err = runParseTag(args)
 	case "check-workflow":
 		err = runCheckWorkflow(args)
-	case "check-final":
-		gh := mustGitHubClient(sub)
-		git := mustGitRunner(sub)
-		err = runCheckFinal(ctx, gh, git, mustRepo(sub), args)
 	case "check-maintainer":
 		gh := mustGitHubClient(sub)
 		err = runCheckMaintainer(ctx, gh, mustRepo(sub), args)
@@ -89,7 +78,7 @@ func main() {
 		gh := mustGitHubClient(sub)
 		err = runBubble(ctx, gh, mustRepo(sub), args)
 	default:
-		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-final, check-workflow, check-maintainer, check-approval, or bubble", sub)
+		fatalf("unknown subcommand %q: expected parse-title, parse-tag, check-workflow, check-maintainer, check-approval, or bubble", sub)
 	}
 	if err != nil {
 		fatalf("%v", err)
@@ -132,16 +121,6 @@ func mustGitHubClient(sub string) GitHubClient {
 		fatalf("%s: cannot construct the GitHub API client: %v", sub, err)
 	}
 	return gh
-}
-
-// mustGitRunner builds the hardened git-lineage runner, failing fast if git is
-// not resolvable on PATH.
-func mustGitRunner(sub string) GitRunner {
-	git, err := newExecGit()
-	if err != nil {
-		fatalf("%s: %v", sub, err)
-	}
-	return git
 }
 
 // mustRepo reads GITHUB_REPOSITORY once (owner/repo); the wrapper splits it.
@@ -206,142 +185,6 @@ func runCheckWorkflow(args []string) error {
 		return err
 	}
 	fmt.Printf("release workflow gates are valid: %s satisfies the release-guard policy in %s\n", releaseWorkflow, policyPath)
-	return nil
-}
-
-func runCheckFinal(ctx context.Context, gh GitHubClient, git GitRunner, repo string, args []string) error {
-	tag := ""
-	workflow := "release.yml"
-	initialFinalRaw := ""
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--tag":
-			i++
-			if i >= len(args) {
-				return fmt.Errorf("--tag requires a value")
-			}
-			tag = args[i]
-		case "--workflow":
-			i++
-			if i >= len(args) {
-				return fmt.Errorf("--workflow requires a value")
-			}
-			workflow = args[i]
-		case "--initial-final":
-			i++
-			if i >= len(args) {
-				return fmt.Errorf("--initial-final requires an exact final version in vX.Y.Z form")
-			}
-			initialFinalRaw = args[i]
-		default:
-			return fmt.Errorf("unknown flag %q for check-final", args[i])
-		}
-	}
-	if tag == "" {
-		return fmt.Errorf("usage: release-guard check-final --tag vX.Y.Z [--workflow release.yml] [--initial-final vX.Y.Z]")
-	}
-
-	final, kind, err := release.ParseTag(tag)
-	if err != nil {
-		return err
-	}
-	if kind != release.KindFinal {
-		return fmt.Errorf("check-final: %s is a release candidate, not a final release; the rc→final guard only applies to final tags", final)
-	}
-
-	policy := release.FinalPolicy{}
-	priorReleases := []release.Version(nil)
-	productTagScan := release.ProductTagScanUnproven
-	initialFinalCompletion := release.CompletionUnknown
-	if initialFinalRaw != "" {
-		initialFinal, initialKind, parseErr := release.ParseTag(initialFinalRaw)
-		if parseErr != nil {
-			return fmt.Errorf("check-final: --initial-final must name one exact final version in vX.Y.Z form, got %q: %v", initialFinalRaw, parseErr)
-		}
-		if initialKind != release.KindFinal {
-			return fmt.Errorf("check-final: --initial-final must name one exact final version in vX.Y.Z form, got release candidate %q. Remove the rc suffix", initialFinalRaw)
-		}
-		policy.InitialFinal = initialFinal
-
-		productTags, listErr := git.ListTags(ctx, "v*")
-		if listErr != nil {
-			return fmt.Errorf("check-final: cannot prove the initial-final repository is fresh because product release tags could not be listed: %v. Fetch all tags and retry", listErr)
-		}
-		for _, productTag := range productTags {
-			version, _, parseErr := release.ParseTag(productTag)
-			if parseErr != nil {
-				return fmt.Errorf("check-final: cannot prove the initial-final repository is fresh because release-like tag %q is malformed: %v. Remove or rename the unpublished malformed tag, or disable bootstrap and use the ordinary rc path", productTag, parseErr)
-			}
-			if version != final {
-				priorReleases = append(priorReleases, version)
-			}
-		}
-		productTagScan = release.ProductTagScanComplete
-
-	}
-
-	finalCommit, err := git.RevParse(ctx, string(final))
-	if err != nil {
-		return fmt.Errorf("check-final: cannot resolve the commit for final tag %s: %v", final, err)
-	}
-	if policy.InitialFinal != "" && len(priorReleases) == 0 {
-		published, publicationErr := gh.ReleaseExists(ctx, repo, string(policy.InitialFinal))
-		if publicationErr != nil {
-			return fmt.Errorf("check-final: cannot prove whether initial final %s already completed publication: %v. Retry after repository release evidence is available", policy.InitialFinal, publicationErr)
-		}
-		initialFinalCompletion = release.CompletionIncomplete
-		if published {
-			initialFinalCompletion = release.CompletionSucceeded
-		}
-	}
-
-	rcTags, err := git.ListTags(ctx, string(final.Base())+"-rc*")
-	if err != nil {
-		return fmt.Errorf("check-final: cannot list release-candidate tags for %s: %v", final.Base(), err)
-	}
-
-	statuses := make([]release.RCStatus, 0, len(rcTags))
-	for _, rcTag := range rcTags {
-		rcVer, rcKind, perr := release.ParseTag(rcTag)
-		if perr != nil || rcKind != release.KindRC || rcVer.Base() != final.Base() {
-			continue
-		}
-
-		rcCommit, rerr := git.RevParse(ctx, string(rcVer))
-		if rerr != nil {
-			return fmt.Errorf("check-final: cannot resolve the commit for release candidate %s: %v", rcVer, rerr)
-		}
-
-		// PARITY: the old inline isAncestor reported ANY git failure (exit >1) as
-		// a bare not-an-ancestor; the hardened GitRunner now returns an error for
-		// exit >1. Keep the guard BLOCKING — treat an error as not-an-ancestor so
-		// the rc cannot satisfy CheckFinal — but surface the reason on stderr
-		// instead of swallowing it. (exit 1 is the definitive (false, nil).)
-		ancestor, aerr := git.IsAncestor(ctx, string(rcVer), finalCommit)
-		if aerr != nil {
-			fmt.Fprintf(os.Stderr, "release-guard: check-final: treating release candidate %s as NOT an ancestor of the final commit because the lineage check failed: %v\n", rcVer, aerr)
-			ancestor = false
-		}
-
-		runs, gerr := gh.WorkflowRunsForCommit(ctx, repo, workflow, rcCommit)
-		if gerr != nil {
-			return fmt.Errorf("check-final: cannot determine the release-run status of %s: %v", rcVer, gerr)
-		}
-		green := release.RunGreenForCommit(runs, rcCommit)
-
-		statuses = append(statuses, release.RCStatus{Tag: rcVer, RunGreen: green, IsAncestor: ancestor})
-	}
-
-	if err := release.CheckFinal(final, release.FinalEvidence{
-		RCs: statuses, ProductTagScan: productTagScan, PriorReleases: priorReleases, InitialFinalCompletion: initialFinalCompletion,
-	}, policy); err != nil {
-		return err
-	}
-	if policy.InitialFinal == final && len(priorReleases) == 0 {
-		fmt.Printf("final release %s is permitted by the exact initial-final policy: no prior product release tags exist\n", final)
-	} else {
-		fmt.Printf("final release %s is permitted: a same-version rc is green and an ancestor of the final commit\n", final)
-	}
 	return nil
 }
 

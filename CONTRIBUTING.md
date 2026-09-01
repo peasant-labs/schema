@@ -146,7 +146,7 @@ Gates that run in CI (and locally):
 ## Release ceremony
 
 Releases mirror peasant's PR-title-driven pipeline (the title/tag grammar and
-final-release guard are in `internal/release`, exposed via `cmd/release-guard`):
+publication gates are in `internal/release`, exposed via `cmd/release-guard`):
 
 1. Open a PR to `develop` titled `release(vX.Y.Z[-rcN]): <summary>`
    (e.g. `release(v0.1.0-rc1): first release candidate`). The grammar is enforced
@@ -156,13 +156,9 @@ final-release guard are in `internal/release`, exposed via `cmd/release-guard`):
 3. On merge, the release workflow mints the annotated tag (via the releaser App
    token); the tag triggers the release run, which publishes a GitHub Release with
    the OpenAPI specs as downloadable assets (prerelease for `-rcN`).
-4. A FINAL `vX.Y.Z` requires a same-version `-rcN` that is green AND an ancestor of
-   the final commit — enforced by `release-guard check-final` / `release.CheckFinal`.
-   The shared CLI offers `--initial-final vX.Y.Z` only for an explicitly configured
-   fresh-repository bootstrap: it requires that exact final and no prior `v*`
-   product release tags, plus a successful GitHub Release lookup proving that
-   the configured final has not completed publication. Schema does not use that
-   option; its first final follows the normal ancestor-rc path.
+4. A FINAL `vX.Y.Z` no longer requires a same-version rc. It still runs the
+   release gates and, when a prior release tag exists, the compatibility diff
+   against that prior release. An `-rcN` tag remains supported as a prerelease.
 5. Old `pkg/schema/v*` tags (from when this lived nested in peasant) are **retained
    forever**; new releases use the bare `vX.Y.Z` path. Tags are append-only — never
    move or delete a release tag.

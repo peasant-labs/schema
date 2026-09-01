@@ -9,7 +9,7 @@
 #
 # Each entry: a job that must exist, and the needs-edges it must declare.
 jobs:
-  # The tag guard (parse-tag + final-requires-green-ancestor-rc): the entry gate.
+  # The tag guard (parse-tag and rc/final classification): the entry gate.
   - name: guard
   # The flake vendorHash freshness gate: never publish from a hash-stale tree.
   - name: nix-vendor-hash
