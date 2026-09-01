@@ -11,16 +11,17 @@ import (
 	"github.com/peasant-labs/schema/internal/release"
 )
 
-// GitHubClient is the release-guard's narrow view of the GitHub REST API: the
-// three calls the release gates make. It returns internal/release own-types
-// (never go-github types) so the policy layer stays free of any go-github
-// import — the production wrapper below is the single go-github seam.
+// GitHubClient is the release-guard's narrow view of the GitHub REST API calls
+// needed by maintainer checks, approval checks, and squash-bubble automation. It
+// returns internal/release own-types (never go-github types) so the policy layer
+// stays free of any go-github import; the production wrapper below is the
+// single go-github seam.
 type GitHubClient interface {
 	// CollaboratorPermission returns user's permission level on repo
 	// ("owner/repo"). Backs check-maintainer / check-approval.
 	CollaboratorPermission(ctx context.Context, repo, user string) (release.CollaboratorPermission, error)
-	// WorkflowRunsForCommit returns every run of workflowFile whose head commit
-	// is commitSHA, filtered server-side.
+	// WorkflowRunsForCommit returns every run of workflowFile whose head commit is
+	// commitSHA, filtered server-side.
 	WorkflowRunsForCommit(ctx context.Context, repo, workflowFile, commitSHA string) ([]release.WorkflowRun, error)
 	// ReleaseExists reports whether GitHub has a published Release for tag.
 	ReleaseExists(ctx context.Context, repo, tag string) (bool, error)

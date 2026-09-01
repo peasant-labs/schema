@@ -22,8 +22,7 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  contents: write # create the GitHub Release + upload assets
+permissions: {}
 
 jobs:
   # Gate the build: reject non-schema tags and classify rc vs final releases.
@@ -31,9 +30,10 @@ jobs:
     name: guard
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read # checkout only; the guard parses the pushed tag locally
     env:
       TAG: ${{ github.ref_name }}
-      GH_TOKEN: ${{ github.token }}
     # The tag's release kind ("rc" | "final"), derived once here by the tested
     # `release-guard parse-tag` (internal/release Kind() over the anchored tag
     # grammar). Downstream jobs consume `needs.guard.outputs.kind` rather than
@@ -62,6 +62,8 @@ jobs:
     needs: guard
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read # checkout only; no release artifact is written here
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -90,6 +92,8 @@ jobs:
     needs: [guard, nix-vendor-hash]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read # checkout only; compatibility gates read repository history
     env:
       TAG: ${{ github.ref_name }}
     steps:
@@ -111,14 +115,18 @@ jobs:
           # vs the prior release as they converge toward a final vX.Y.Z, so the
           # vs-prior breaking diff (oasdiff + go-apidiff) does NOT apply to an rc.
           # The compatibility guarantee is enforced only at a FINAL release here;
-          # PR-time gates already cover breaks vs develop. For an rc, leave BASE_REF empty so contract-gates.sh runs
-          # vacuum lint only (its empty-base behaviour skips the breaking diffs).
+          # PR-time gates already cover breaks vs develop. For an rc, leave
+          # BASE_REF empty so contract-gates.sh runs vacuum lint only (its
+          # empty-base behaviour skips the breaking diffs).
           if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
             echo "base_ref=" >> "$GITHUB_OUTPUT"
             echo "::notice::prerelease ${TAG}: skipping the vs-prior breaking diff (rc tags may break); vacuum lint only."
           else
-            # The most recent v* tag that is an ancestor of this tag, excluding it.
-            prior="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null || true)"
+            # The nearest ancestor tag that is a final/stable release, excluding
+            # the current tag. RC tags are deliberately ignored: a final must
+            # prove compatibility against the prior stable contract, not a
+            # release candidate that may have skipped the vs-prior breaking diff.
+            prior="$(git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' "${TAG}^" 2>/dev/null || true)"
             echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
             if [ -n "${prior}" ]; then
               echo "::notice::diffing the contract against prior release ${prior}"
@@ -137,6 +145,8 @@ jobs:
     needs: [guard, nix-vendor-hash, contract-gates]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write # create the GitHub Release + upload assets
     env:
       TAG: ${{ github.ref_name }}
       GH_TOKEN: ${{ github.token }}

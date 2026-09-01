@@ -50,9 +50,9 @@ const (
 )
 
 // WorkflowRun is the minimal projection of a GitHub Actions workflow run the
-// release-final gate consumes: the commit it ran against and its terminal
+// release-guard predicates consume: the commit it ran against and its terminal
 // state. It is an own-type (mirroring release.Review and
-// release.CollaboratorPermission) so the policy predicate never touches a
+// release.CollaboratorPermission) so pure policy code never touches a
 // *github.WorkflowRun and the go-github pointer-field nil-guards stay at the
 // wrapper boundary.
 type WorkflowRun struct {

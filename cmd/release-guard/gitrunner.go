@@ -9,9 +9,10 @@ import (
 )
 
 // GitRunner is the release-guard's git-lineage seam: read-only history queries
-// for release tooling. It is hardened (typed structured argv, no
-// shell, leading-dash rejection, an --end-of-options sentinel, and a subcommand
-// allowlist) but still SHELLS `git` — go-git adoption is out of scope.
+// for release tooling and squash-bubble safeguards. It is hardened (typed
+// structured argv, no shell, leading-dash rejection, an --end-of-options
+// sentinel, and a subcommand allowlist) but still shells out to `git`; go-git
+// adoption is out of scope.
 type GitRunner interface {
 	// RevParse resolves ref to a single commit SHA (git rev-list -n 1).
 	RevParse(ctx context.Context, ref string) (string, error)
