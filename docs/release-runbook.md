@@ -116,7 +116,8 @@ Trusted Publishing (OIDC)**, not a stored token: the job requests
 `permissions: { id-token: write }`, GitHub mints it a short-lived OIDC token
 scoped to the `npm-publish` GitHub Actions environment, and `pnpm publish`
 (native OIDC trusted-publish support since pnpm's v11 publish
-reimplementation; the flake pins pnpm 11.5.3) exchanges that token with
+reimplementation; the package pins pnpm 11.24.0 in `packageManager`, and pnpm
+switches to it) exchanges that token with
 npmjs.com for a one-time publish credential - no `NPM_TOKEN` secret exists or
 is needed. Provenance attestation is automatic on a trusted-publishing publish.
 
