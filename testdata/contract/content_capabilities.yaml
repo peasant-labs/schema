@@ -35,6 +35,12 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: server advertisements are unique}
     mutation: {description: duplicates the canonical token}
+  - name: unsorted-unique-server-advertisement-invalid
+    input: {operation: validate, advertised: [observed_model_v1, detailed_usage_v1]}
+    expected: {accepted: false, errorContains: not in canonical lexicographic order}
+    classification: must-fail
+    provenance: {source: requirement, ref: docs/content-capability-negotiation.md evolution requires a distinct-token ordering regression}
+    mutation: {description: reverses two distinct known tokens without introducing duplicates}
   - name: required-capability-present
     input: {operation: missing, advertised: [future_v9, observed_model_v1], required: [observed_model_v1]}
     expected: {accepted: true}
