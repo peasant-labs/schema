@@ -202,6 +202,55 @@ operations:
     response_components: [VillageRepositoryCommitsResponse]
     statuses: ["200", "400", "401", "403", "404", "501", "502", "500"]
     description_anchors: [refresh=true, any collective member]
+  - path: /api/v1/integrations/github/webhook
+    method: post
+    operation_id: receiveGitHubWebhook
+    request_components: [VillageGitHubWebhookPayload]
+    response_components: [VillageStatusResponse]
+    statuses: ["202", "400", "401", "501"]
+    description_anchors: [X-Hub-Signature-256, X-GitHub-Delivery, installation]
+  - path: /api/v1/pulls/{owner}/{name}/{number}
+    method: get
+    operation_id: getPullRequestAttachment
+    request_components: []
+    response_components: [VillagePullRequestAttachmentResponse]
+    statuses: ["200", "400", "403", "404", "500"]
+    description_anchors: [digest, viewer_is_author]
+  - path: /api/v1/pulls/{owner}/{name}/{number}/confirm
+    method: post
+    operation_id: confirmPullRequestAttachment
+    request_components: []
+    response_components: [VillagePullRequestAttachmentResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "500", "502"]
+    description_anchors: [preview, author]
+  - path: /api/v1/pulls/{owner}/{name}/{number}
+    method: delete
+    operation_id: detachPullRequestAttachment
+    request_components: []
+    response_components: [VillagePullRequestAttachmentResponse]
+    statuses: ["200", "400", "401", "403", "404", "409", "500", "502"]
+    description_anchors: [Detach, previous visibility]
+  - path: /api/v1/users/me/prompt-requests
+    method: get
+    operation_id: listMyPromptRequests
+    request_components: []
+    response_components: [VillagePromptRequestsResponse]
+    statuses: ["200", "401", "500"]
+    description_anchors: [waiting, remote]
+  - path: /api/v1/users/me/settings
+    method: get
+    operation_id: getMySettings
+    request_components: []
+    response_components: [VillageUserSettings]
+    statuses: ["200", "401", "500"]
+    description_anchors: [preview_before_attach]
+  - path: /api/v1/users/me/settings
+    method: patch
+    operation_id: updateMySettings
+    request_components: [VillageUpdateUserSettingsRequest]
+    response_components: [VillageUserSettings]
+    statuses: ["200", "400", "401", "500"]
+    description_anchors: [left unchanged]
 component_enums:
   - component: VillageGroupAcceptanceMode
     values: [open, verified_only, curated]
@@ -227,6 +276,10 @@ component_enums:
     values: [pending, approved, rejected, retracted, revoked]
   - component: VillageShareEventActor
     values: ["", owner, collective, moderator]
+  - component: VillagePullRequestAttachmentState
+    values: [requested, waiting, preview, attached, detached]
+  - component: VillagePromptsCheckMode
+    values: [informational, required]
 component_required:
   - component: VillageGroupTranscript
     contains:
@@ -248,6 +301,17 @@ component_required:
       - owner_is_discoverable
     excludes:
       - VillageTranscript
+  - component: VillagePullRequestAttachment
+    contains:
+      - id
+      - owner
+      - name
+      - number
+      - head_sha
+      - state
+      - created_at
+      - updated_at
+    excludes: []
 component_properties:
   - component: VillageCollectiveSearchResponse
     property: collectives
@@ -339,3 +403,13 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillageRepositoryCommit"
+  - component: VillagePromptRequestsResponse
+    property: requests
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillagePromptRequest"
+  - component: VillagePullRequestAttachmentResponse
+    property: transcripts
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"

@@ -379,6 +379,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/integrations/github/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Receive a GitHub App webhook delivery. The body is GitHub's payload, authenticated by the X-Hub-Signature-256 HMAC over the raw body; X-GitHub-Delivery makes redelivery idempotent. Handles installation, pull_request, check_run, and issue_comment events and acknowledges every other event without acting. Returns 501 when the App or its webhook secret is not configured. */
+        post: operations["receiveGitHubWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pull/transcripts": {
         parameters: {
             query?: never;
@@ -458,6 +475,41 @@ export interface paths {
         get: operations["getPullTranscriptContent"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pulls/{owner}/{name}/{number}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read one pull request's prompt attachment. The digest is null until the attachment reaches preview or attached; viewer_is_author is true when the caller is the pull request author. Readers who may not see the attached transcripts receive 403. */
+        get: operations["getPullRequestAttachment"];
+        put?: never;
+        post?: never;
+        /** @description Detach the prompts from a pull request. Only the pull request author may detach. Deletes the comment, resets the check, and restores each transcript's previous visibility; an attachment already detached returns 409. */
+        delete: operations["detachPullRequestAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pulls/{owner}/{name}/{number}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. Posting to GitHub failing returns 502 and leaves the attachment in preview. */
+        post: operations["confirmPullRequestAttachment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -617,6 +669,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/prompt-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the caller's attachments that are waiting for a transcript from the caller's machine, with each repository's normalized remote so a client can match the repository it is about to push. */
+        get: operations["listMyPromptRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the caller's settings, including preview_before_attach. */
+        get: operations["getMySettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Patch the caller's settings. A field that is omitted is left unchanged. */
+        patch: operations["updateMySettings"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -702,6 +789,16 @@ export interface components {
         SchemaAuthoritativeSubagentRef: Schema.AuthoritativeSubagentRef;
         SchemaAuthoritativeTimestampInfo: Schema.AuthoritativeTimestampInfo;
         /**
+         * Digest Item Kind
+         * @description Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor
+         * @example session
+         * @example prompt
+         * @example skill
+         * @example commit
+         * @enum {string}
+         */
+        SchemaDigestItemKind: Schema.DigestItemKind;
+        /**
          * Entry Type
          * @description Classification of a single entry within an agent session transcript
          * @example text
@@ -744,6 +841,10 @@ export interface components {
          * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
          */
         SchemaProjectHash: Schema.ProjectHash;
+        SchemaPromptDigest: Schema.PromptDigest;
+        SchemaPromptDigestHeader: Schema.PromptDigestHeader;
+        SchemaPromptDigestItem: Schema.PromptDigestItem;
+        SchemaPromptDigestSkill: Schema.PromptDigestSkill;
         SchemaProvenance: Schema.Provenance;
         SchemaPublishAppliedState: Schema.PublishAppliedState;
         SchemaPublishNormalizedValues: Schema.PublishNormalizedValues;
@@ -884,6 +985,11 @@ export interface components {
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
         SchemaVillageCreateGroupRequest: Schema.VillageCreateGroupRequest;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
+        /**
+         * GitHub Webhook Payload
+         * @description GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape
+         */
+        SchemaVillageGitHubWebhookPayload: Schema.VillageGitHubWebhookPayload;
         SchemaVillageGroup: Schema.VillageGroup;
         /**
          * Village Group Acceptance Mode
@@ -948,6 +1054,8 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageProjectNameSource: Schema.VillageProjectNameSource;
+        SchemaVillagePromptRequest: Schema.VillagePromptRequest;
+        SchemaVillagePromptRequestsResponse: Schema.VillagePromptRequestsResponse;
         /**
          * Village Prompts Check Mode
          * @description Check-run conclusion policy for a collective's linked repositories when no prompts are attached
@@ -957,6 +1065,20 @@ export interface components {
          */
         SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
         SchemaVillagePublicGroup: Schema.VillagePublicGroup;
+        SchemaVillagePullRequestAttachedTranscript: Schema.VillagePullRequestAttachedTranscript;
+        SchemaVillagePullRequestAttachment: Schema.VillagePullRequestAttachment;
+        SchemaVillagePullRequestAttachmentResponse: Schema.VillagePullRequestAttachmentResponse;
+        /**
+         * Village Pull Request Attachment State
+         * @description Current lifecycle state of a pull request's prompt attachment
+         * @example requested
+         * @example waiting
+         * @example preview
+         * @example attached
+         * @example detached
+         * @enum {string}
+         */
+        SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
         SchemaVillageRemoveGroupMemberResponse: Schema.VillageRemoveGroupMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;
         SchemaVillageRepositoryCommitsResponse: Schema.VillageRepositoryCommitsResponse;
@@ -1022,8 +1144,10 @@ export interface components {
          */
         SchemaVillageUUID: Schema.VillageUUID;
         SchemaVillageUpdateGroupRequest: Schema.VillageUpdateGroupRequest;
+        SchemaVillageUpdateUserSettingsRequest: Schema.VillageUpdateUserSettingsRequest;
         SchemaVillageUserGroup: Schema.VillageUserGroup;
         SchemaVillageUserGroupShare: Schema.VillageUserGroupShare;
+        SchemaVillageUserSettings: Schema.VillageUserSettings;
         SchemaVillageVisibleGroup: Schema.VillageVisibleGroup;
         /**
          * Visibility
@@ -2549,6 +2673,64 @@ export interface operations {
             };
         };
     };
+    receiveGitHubWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description GitHub event name */
+                "X-GitHub-Event": string;
+                /** @description Unique delivery identifier; Village records it so a redelivery is idempotent */
+                "X-GitHub-Delivery": string;
+                /** @description HMAC SHA-256 of the raw body under the App webhook secret */
+                "X-Hub-Signature-256": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageGitHubWebhookPayload"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listPullableTranscripts: {
         parameters: {
             query?: {
@@ -2657,6 +2839,249 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    getPullRequestAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Repository owner login */
+                owner: string;
+                /** @description Repository name */
+                name: string;
+                /** @description Pull request number */
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePullRequestAttachmentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    detachPullRequestAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Repository owner login */
+                owner: string;
+                /** @description Repository name */
+                name: string;
+                /** @description Pull request number */
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePullRequestAttachmentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    confirmPullRequestAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Repository owner login */
+                owner: string;
+                /** @description Repository name */
+                name: string;
+                /** @description Pull request number */
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePullRequestAttachmentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
             };
         };
     };
@@ -3117,6 +3542,133 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyPromptRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePromptRequestsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getMySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageUpdateUserSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

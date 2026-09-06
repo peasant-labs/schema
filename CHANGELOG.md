@@ -30,6 +30,12 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `VillagePromptsCheckMode` (`informational | required`). `VillageGroup` and
   `VillageUpdateGroupRequest` gain `post_prompts_check` and
   `prompts_check_mode`.
+- Village API 0.15.0 routes: `POST /api/v1/integrations/github/webhook`,
+  `GET` and `DELETE /api/v1/pulls/{owner}/{name}/{number}`,
+  `POST /api/v1/pulls/{owner}/{name}/{number}/confirm`,
+  `GET /api/v1/users/me/prompt-requests`, and `GET` and
+  `PATCH /api/v1/users/me/settings`. The route fixture pins each operation's
+  id, components, statuses, and description anchors.
 
 ### Changed
 
