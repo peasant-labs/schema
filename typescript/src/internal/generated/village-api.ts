@@ -948,6 +948,14 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageProjectNameSource: Schema.VillageProjectNameSource;
+        /**
+         * Village Prompts Check Mode
+         * @description Check-run conclusion policy for a collective's linked repositories when no prompts are attached
+         * @example informational
+         * @example required
+         * @enum {string}
+         */
+        SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
         SchemaVillagePublicGroup: Schema.VillagePublicGroup;
         SchemaVillageRemoveGroupMemberResponse: Schema.VillageRemoveGroupMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;

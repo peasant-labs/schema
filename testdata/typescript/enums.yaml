@@ -454,3 +454,18 @@ enums:
       - {name: Skill, value: "skill"}
       - {name: Commit, value: "commit"}
     all_values: ["session", "prompt", "skill", "commit"]
+  - name: VillagePullRequestAttachmentState
+    all_name: AllVillagePullRequestAttachmentStates
+    members:
+      - {name: Requested, value: "requested"}
+      - {name: Waiting, value: "waiting"}
+      - {name: Preview, value: "preview"}
+      - {name: Attached, value: "attached"}
+      - {name: Detached, value: "detached"}
+    all_values: ["requested", "waiting", "preview", "attached", "detached"]
+  - name: VillagePromptsCheckMode
+    all_name: AllVillagePromptsCheckModes
+    members:
+      - {name: Informational, value: "informational"}
+      - {name: Required, value: "required"}
+    all_values: ["informational", "required"]

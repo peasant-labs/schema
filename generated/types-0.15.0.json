@@ -8612,6 +8612,12 @@
         ],
         "type": "object"
       },
+      "VillageGitHubWebhookPayload": {
+        "additionalProperties": true,
+        "description": "GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape",
+        "title": "GitHub Webhook Payload",
+        "type": "object"
+      },
       "VillageGroup": {
         "properties": {
           "acceptance_mode": {
@@ -8662,6 +8668,12 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "type": "boolean"
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/VillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/VillageTranscriptDeletionPolicy"
           },
@@ -8681,7 +8693,9 @@
           "data_access",
           "linked_github_org",
           "display_members",
-          "transcript_deletion_policy"
+          "transcript_deletion_policy",
+          "post_prompts_check",
+          "prompts_check_mode"
         ],
         "type": "object"
       },
@@ -10005,6 +10019,65 @@
         "title": "Village Project Name Source",
         "type": "string"
       },
+      "VillagePromptRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachmentState"
+          }
+        },
+        "required": [
+          "owner",
+          "name",
+          "number",
+          "state",
+          "remote",
+          "requested_at"
+        ],
+        "type": "object"
+      },
+      "VillagePromptRequestsResponse": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/VillagePromptRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests"
+        ],
+        "type": "object"
+      },
+      "VillagePromptsCheckMode": {
+        "description": "Check-run conclusion policy for a collective's linked repositories when no prompts are attached",
+        "enum": [
+          "informational",
+          "required"
+        ],
+        "examples": [
+          "informational",
+          "required"
+        ],
+        "title": "Village Prompts Check Mode",
+        "type": "string"
+      },
       "VillagePublicGroup": {
         "properties": {
           "acceptance_mode": {
@@ -10070,6 +10143,234 @@
           "transcript_count"
         ],
         "type": "object"
+      },
+      "VillagePullRequestAttachedTranscript": {
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "previous_visibility": {
+            "$ref": "#/components/schemas/VillageTranscriptVisibility"
+          },
+          "session_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "position",
+          "previous_visibility",
+          "title",
+          "session_start"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachment": {
+        "properties": {
+          "author_user_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageUUID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "check_run_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "detached_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "head_sha": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "is_private_repository": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "requested_by_github_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachmentState"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "name",
+          "number",
+          "head_sha",
+          "is_private_repository",
+          "state",
+          "author_user_id",
+          "requested_by_github_id",
+          "comment_id",
+          "check_run_id",
+          "created_at",
+          "updated_at",
+          "confirmed_at",
+          "detached_at"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachmentResponse": {
+        "properties": {
+          "attachment": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachment"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptDigest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcripts": {
+            "items": {
+              "$ref": "#/components/schemas/VillagePullRequestAttachedTranscript"
+            },
+            "type": "array"
+          },
+          "viewer_is_author": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attachment",
+          "digest",
+          "transcripts",
+          "viewer_is_author"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachmentState": {
+        "description": "Current lifecycle state of a pull request's prompt attachment",
+        "enum": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "examples": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "title": "Village Pull Request Attachment State",
+        "type": "string"
       },
       "VillageRemoveGroupMemberResponse": {
         "properties": {
@@ -11295,8 +11596,42 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/VillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/VillageTranscriptDeletionPolicy"
+          }
+        },
+        "type": "object"
+      },
+      "VillageUpdateUserSettingsRequest": {
+        "properties": {
+          "preview_before_attach": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object"
@@ -11512,6 +11847,17 @@
           "parent_session_id",
           "status",
           "shared_at"
+        ],
+        "type": "object"
+      },
+      "VillageUserSettings": {
+        "properties": {
+          "preview_before_attach": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "preview_before_attach"
         ],
         "type": "object"
       },

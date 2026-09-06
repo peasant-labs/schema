@@ -20,6 +20,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `PromptDigestItem`, and the closed set `DigestItemKind`
   (`session | prompt | skill | commit`). Validators enforce the per-kind field
   rules, chronological order, and header consistency.
+- Village attachment DTOs (Village API 0.15.0, Types 0.15.0):
+  `VillagePullRequestAttachment`, `VillagePullRequestAttachedTranscript`,
+  `VillagePullRequestAttachmentResponse`, `VillagePromptRequest`,
+  `VillagePromptRequestsResponse`, `VillageUserSettings`,
+  `VillageUpdateUserSettingsRequest`, `VillageGitHubWebhookPayload`, and the
+  closed sets `VillagePullRequestAttachmentState`
+  (`requested | waiting | preview | attached | detached`) and
+  `VillagePromptsCheckMode` (`informational | required`). `VillageGroup` and
+  `VillageUpdateGroupRequest` gain `post_prompts_check` and
+  `prompts_check_mode`.
 
 ### Changed
 

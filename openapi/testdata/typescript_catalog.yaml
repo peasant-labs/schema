@@ -572,6 +572,7 @@ types:
     disposition: catalog
     component: VillageErrorResponse
     reason: schema-owned Village collectives wire contract
+  - {go_name: VillageGitHubWebhookPayload, disposition: catalog, component: VillageGitHubWebhookPayload, reason: pull request attachment contract}
   - go_name: VillageGroup
     disposition: catalog
     component: VillageGroup
@@ -648,10 +649,17 @@ types:
     disposition: catalog
     component: VillageProjectNameSource
     reason: schema-owned Village collectives wire contract
+  - {go_name: VillagePromptRequest, disposition: catalog, component: VillagePromptRequest, reason: pull request attachment contract}
+  - {go_name: VillagePromptRequestsResponse, disposition: catalog, component: VillagePromptRequestsResponse, reason: pull request attachment contract}
+  - {go_name: VillagePromptsCheckMode, disposition: catalog, component: VillagePromptsCheckMode, reason: pull request attachment contract}
   - go_name: VillagePublicGroup
     disposition: catalog
     component: VillagePublicGroup
     reason: schema-owned Village collectives wire contract
+  - {go_name: VillagePullRequestAttachedTranscript, disposition: catalog, component: VillagePullRequestAttachedTranscript, reason: pull request attachment contract}
+  - {go_name: VillagePullRequestAttachment, disposition: catalog, component: VillagePullRequestAttachment, reason: pull request attachment contract}
+  - {go_name: VillagePullRequestAttachmentResponse, disposition: catalog, component: VillagePullRequestAttachmentResponse, reason: pull request attachment contract}
+  - {go_name: VillagePullRequestAttachmentState, disposition: catalog, component: VillagePullRequestAttachmentState, reason: pull request attachment contract}
   - go_name: VillageRemoveGroupMemberResponse
     disposition: catalog
     component: VillageRemoveGroupMemberResponse
@@ -724,6 +732,7 @@ types:
     disposition: catalog
     component: VillageUpdateGroupRequest
     reason: schema-owned Village collectives wire contract
+  - {go_name: VillageUpdateUserSettingsRequest, disposition: catalog, component: VillageUpdateUserSettingsRequest, reason: pull request attachment contract}
   - go_name: VillageUserGroup
     disposition: catalog
     component: VillageUserGroup
@@ -732,6 +741,7 @@ types:
     disposition: catalog
     component: VillageUserGroupShare
     reason: schema-owned Village collectives wire contract
+  - {go_name: VillageUserSettings, disposition: catalog, component: VillageUserSettings, reason: pull request attachment contract}
   - go_name: VillageUUID
     disposition: catalog
     component: VillageUUID

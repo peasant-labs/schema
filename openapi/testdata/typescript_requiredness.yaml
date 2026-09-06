@@ -153,3 +153,25 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: a skill invocation always names its command and may carry arguments}
     mutation: {description: contrasts the required name with the optional non-null args}
+  - name: pull request attachment
+    input:
+      component: VillagePullRequestAttachment
+      required: [id, owner, name, number, head_sha, is_private_repository, state, author_user_id, requested_by_github_id, comment_id, check_run_id, created_at, updated_at, confirmed_at, detached_at]
+      optional: []
+      nullable: [author_user_id, requested_by_github_id, comment_id, check_run_id, confirmed_at, detached_at]
+      nonnullable: [id, owner, name, number, head_sha, is_private_repository, state, created_at, updated_at]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: Village rows are emitted whole with null for fields a state has not reached}
+    mutation: {description: contrasts always-present identity with nullable lifecycle fields}
+  - name: update user settings request
+    input:
+      component: VillageUpdateUserSettingsRequest
+      required: []
+      optional: [preview_before_attach]
+      nullable: [preview_before_attach]
+      nonnullable: []
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: an omitted setting is left unchanged}
+    mutation: {description: a single optional boolean patch}
