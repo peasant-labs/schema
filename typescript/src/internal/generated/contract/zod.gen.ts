@@ -842,6 +842,71 @@ export const zModelInfo = z.object({
 
 export type ModelInfo = z.infer<typeof zModelInfo>;
 
+export const zNativeAttachmentRef = z.object({
+    toolCallId: z.string().optional(),
+    turnIndex: z.int().nullish()
+});
+
+export type NativeAttachmentRef = z.infer<typeof zNativeAttachmentRef>;
+
+/**
+ * Native Metadata Kind
+ *
+ * Kind of bounded non-conversational native metadata
+ */
+export const zNativeMetadataKind = z.enum([
+    'pi.custom.data',
+    'pi.custommessage.details',
+    'pi.toolresult.details',
+    'pi.compaction.details',
+    'pi.branchsummary.details'
+]);
+
+export type NativeMetadataKind = z.infer<typeof zNativeMetadataKind>;
+
+/**
+ * Native Metadata Source Type
+ *
+ * Native source category for public metadata
+ */
+export const zNativeMetadataSourceType = z.enum([
+    'pi.custom',
+    'pi.custom_message',
+    'pi.message',
+    'pi.compaction',
+    'pi.branch_summary'
+]);
+
+export type NativeMetadataSourceType = z.infer<typeof zNativeMetadataSourceType>;
+
+/**
+ * Native Pi Message Role
+ *
+ * Pi message role needed for public metadata validation
+ */
+export const zNativePiMessageRole = z.enum(['toolResult']);
+
+export type NativePiMessageRole = z.infer<typeof zNativePiMessageRole>;
+
+export const zNativeSourceRef = z.object({
+    entryRef: z.string(),
+    messageRole: zNativePiMessageRole.optional(),
+    sourceType: zNativeMetadataSourceType
+});
+
+export type NativeSourceRef = z.infer<typeof zNativeSourceRef>;
+
+export const zNativeMetadataRecord = z.object({
+    attachment: zNativeAttachmentRef.nullish(),
+    customType: z.string().optional(),
+    data: z.unknown(),
+    id: z.string(),
+    kind: zNativeMetadataKind,
+    source: zNativeSourceRef
+});
+
+export type NativeMetadataRecord = z.infer<typeof zNativeMetadataRecord>;
+
 /**
  * Observed Model ID
  *
@@ -1104,6 +1169,21 @@ export const zMapSlice = z.object({
 });
 
 export type MapSlice = z.infer<typeof zMapSlice>;
+
+export const zRecordedCostAmount = z.string().nullable();
+
+export type RecordedCostAmount = z.infer<typeof zRecordedCostAmount>;
+
+export const zRecordedCostDetail = z.object({
+    cacheRead: z.string().nullish(),
+    cacheWrite: z.string().nullish(),
+    input: z.string().nullish(),
+    output: z.string().nullish(),
+    source: z.string(),
+    total: z.string().nullish()
+});
+
+export type RecordedCostDetail = z.infer<typeof zRecordedCostDetail>;
 
 export const zRedactionInfo = z.object({
     applied: z.boolean(),
@@ -1906,6 +1986,18 @@ export const zTimestampInfo = z.object({
 
 export type TimestampInfo = z.infer<typeof zTimestampInfo>;
 
+export const zTokenUsageDetail = z.object({
+    cacheRead: z.int().nullish(),
+    cacheWrite: z.int().nullish(),
+    cacheWrite1h: z.int().nullish(),
+    input: z.int().nullish(),
+    output: z.int().nullish(),
+    reasoning: z.int().nullish(),
+    totalTokens: z.int().nullish()
+});
+
+export type TokenUsageDetail = z.infer<typeof zTokenUsageDetail>;
+
 /**
  * Tool Call Kind
  *
@@ -2017,20 +2109,6 @@ export const zPublishRequest = z.object({
 });
 
 export type PublishRequest = z.infer<typeof zPublishRequest>;
-
-export const zToolCallDetail = z.object({
-    arguments: z.string(),
-    durationMs: z.int().nullish(),
-    exitCode: z.int().nullish(),
-    filePath: z.string().optional(),
-    id: z.string(),
-    isError: z.boolean().optional(),
-    name: z.string(),
-    result: z.string(),
-    toolKind: zToolCallKind.optional()
-});
-
-export type ToolCallDetail = z.infer<typeof zToolCallDetail>;
 
 /**
  * Transcript Content Hash
@@ -2156,61 +2234,6 @@ export const zTrendsPayload = z.object({
 
 export type TrendsPayload = z.infer<typeof zTrendsPayload>;
 
-export const zTurnDetail = z.object({
-    agentName: z.string().optional(),
-    content: z.string(),
-    depth: z.int(),
-    entryType: zEntryType.optional(),
-    hasThinking: z.boolean().optional(),
-    index: z.int(),
-    observedModel: zObservedModelID.optional(),
-    parentIndex: z.int().nullish(),
-    role: zRole,
-    stopReason: zStopReason.nullish(),
-    timestamp: z.iso.datetime(),
-    tokensIn: z.int().nullish(),
-    tokensOut: z.int().nullish(),
-    toolCalls: z.array(zToolCallDetail).optional()
-});
-
-export type TurnDetail = z.infer<typeof zTurnDetail>;
-
-export const zSessionDetailPayload = z.object({
-    childSessions: z.array(zChildSessionRef).optional(),
-    durationMins: z.number(),
-    endTime: z.iso.datetime(),
-    gitBranch: z.string().optional(),
-    gitRemote: z.string().optional(),
-    harness: zHarness,
-    id: z.string(),
-    model: z.string().optional(),
-    outcome: zSessionOutcome.optional(),
-    project: z.string().optional(),
-    schemaVersion: z.string().optional(),
-    scorecard: zSessionScorecard.nullish(),
-    sessionOrigin: zSessionOrigin.optional(),
-    source: z.string().optional(),
-    startTime: z.iso.datetime(),
-    status: z.string().optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
-    turns: z.array(zTurnDetail).nullable(),
-    workingDirectory: z.string().optional()
-});
-
-export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
-
-export const zTranscriptContent = z.object({
-    contractVersion: z.string(),
-    kind: zContentKind,
-    sessionDetail: zSessionDetailPayload.nullish()
-});
-
-export type TranscriptContent = z.infer<typeof zTranscriptContent>;
-
 /**
  * Type Origin
  *
@@ -2287,6 +2310,122 @@ export const zChangeDetailPayload = z.object({
 });
 
 export type ChangeDetailPayload = z.infer<typeof zChangeDetailPayload>;
+
+/**
+ * Usage Completeness
+ *
+ * Completeness of the five base token fields
+ */
+export const zUsageCompleteness = z.enum([
+    'complete',
+    'partial',
+    'unknown'
+]);
+
+export type UsageCompleteness = z.infer<typeof zUsageCompleteness>;
+
+export const zUsageOwnerID = z.string().nullable();
+
+export type UsageOwnerID = z.infer<typeof zUsageOwnerID>;
+
+/**
+ * Usage Scope
+ *
+ * Native owner scope for detailed token and cost evidence
+ */
+export const zUsageScope = z.enum([
+    'assistant',
+    'tool',
+    'summary'
+]);
+
+export type UsageScope = z.infer<typeof zUsageScope>;
+
+export const zUsageDetail = z.object({
+    completeness: zUsageCompleteness,
+    cost: zRecordedCostDetail.nullish(),
+    ownerId: z.string(),
+    scope: zUsageScope,
+    sourceEntryRef: z.string(),
+    tokens: zTokenUsageDetail.nullish()
+});
+
+export type UsageDetail = z.infer<typeof zUsageDetail>;
+
+export const zToolCallDetail = z.object({
+    arguments: z.string(),
+    callEntryRef: z.string().optional(),
+    durationMs: z.int().nullish(),
+    exitCode: z.int().nullish(),
+    filePath: z.string().optional(),
+    id: z.string(),
+    isError: z.boolean().optional(),
+    name: z.string(),
+    result: z.string(),
+    resultEntryRef: z.string().optional(),
+    toolKind: zToolCallKind.optional(),
+    usage: zUsageDetail.nullish()
+});
+
+export type ToolCallDetail = z.infer<typeof zToolCallDetail>;
+
+export const zTurnDetail = z.object({
+    agentName: z.string().optional(),
+    content: z.string(),
+    depth: z.int(),
+    entryType: zEntryType.optional(),
+    hasThinking: z.boolean().optional(),
+    index: z.int(),
+    observedModel: zObservedModelID.optional(),
+    parentIndex: z.int().nullish(),
+    role: zRole,
+    sourceEntryRef: z.string().optional(),
+    stopReason: zStopReason.nullish(),
+    timestamp: z.iso.datetime(),
+    tokensIn: z.int().nullish(),
+    tokensOut: z.int().nullish(),
+    toolCalls: z.array(zToolCallDetail).optional(),
+    usage: zUsageDetail.nullish()
+});
+
+export type TurnDetail = z.infer<typeof zTurnDetail>;
+
+export const zSessionDetailPayload = z.object({
+    childSessions: z.array(zChildSessionRef).optional(),
+    durationMins: z.number(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    model: z.string().optional(),
+    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
+    outcome: zSessionOutcome.optional(),
+    project: z.string().optional(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.nullish(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    turns: z.array(zTurnDetail).nullable(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
+
+export const zTranscriptContent = z.object({
+    contractVersion: z.string(),
+    kind: zContentKind,
+    sessionDetail: zSessionDetailPayload.nullish()
+});
+
+export type TranscriptContent = z.infer<typeof zTranscriptContent>;
 
 /**
  * Value Domain Kind

@@ -15,14 +15,16 @@ const (
 	// ContentCapabilityObservedModelV1 guarantees exact observedModel survival
 	// through publish, typed migration, canonical rewrite, and re-emission. Its
 	// meaning is immutable; an incompatible contract requires a new token.
-	ContentCapabilityObservedModelV1 ContentCapability = "observed_model_v1"
+	ContentCapabilityObservedModelV1  ContentCapability = "observed_model_v1"
+	ContentCapabilityDetailedUsageV1  ContentCapability = "detailed_usage_v1"
+	ContentCapabilityNativeMetadataV1 ContentCapability = "native_metadata_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityObservedModelV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
-func (c ContentCapability) IsValid() bool { return c == ContentCapabilityObservedModelV1 }
+func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
 
 // Validate rejects capability identifiers outside the canonical inventory.
 func (c ContentCapability) Validate() error {
@@ -92,12 +94,24 @@ func MissingContentCapabilities(advertised, required []ContentCapability) []Cont
 // capability. An observedModel on any assistant turn, including a nested
 // subagent turn, requires observed_model_v1.
 func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
+	required := make([]ContentCapability, 0, 3)
 	for _, turn := range payload.Turns {
 		if turn.ObservedModel != "" {
-			return []ContentCapability{ContentCapabilityObservedModelV1}
+			required = append(required, ContentCapabilityObservedModelV1)
+		}
+		if turn.Usage != nil {
+			required = append(required, ContentCapabilityDetailedUsageV1)
+		}
+		for _, tool := range turn.ToolCalls {
+			if tool.Usage != nil {
+				required = append(required, ContentCapabilityDetailedUsageV1)
+			}
 		}
 	}
-	return nil
+	if len(payload.NativeMetadata) > 0 {
+		required = append(required, ContentCapabilityNativeMetadataV1)
+	}
+	return KnownContentCapabilities(required)
 }
 
 // ValidateObservedModelEvidence enforces the enriched-publish attribution rule.

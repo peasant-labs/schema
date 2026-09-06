@@ -1,0 +1,24 @@
+requiredCaseNames:
+  - complete-zero
+  - partial-owner
+  - unknown-absent
+  - cost-only-exponent
+  - reasoning-subset-invalid
+  - duplicate-owner-invalid
+  - tool-role-scope-invalid
+  - escaped-duplicate-key-invalid
+  - metadata-number-over-safe-invalid
+  - metadata-tool-target-invalid
+  - all-capabilities-accumulate
+cases:
+  - {name: complete-zero, operation: usage, accepted: true, completeness: complete, tokens: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0}}
+  - {name: partial-owner, operation: usage, accepted: true, completeness: partial, tokens: {input: 1}}
+  - {name: unknown-absent, operation: usage, accepted: true, completeness: unknown}
+  - {name: cost-only-exponent, operation: usage, accepted: true, completeness: unknown, costTotal: "1e-7"}
+  - {name: reasoning-subset-invalid, operation: usage, accepted: false, errorContains: reasoning exceeds output, completeness: partial, tokens: {output: 1, reasoning: 2}}
+  - {name: duplicate-owner-invalid, operation: payload, accepted: false, errorContains: duplicate usage, duplicateOwner: true}
+  - {name: tool-role-scope-invalid, operation: payload, accepted: false, errorContains: non-tool scope, wrongToolScope: true}
+  - {name: escaped-duplicate-key-invalid, operation: raw, accepted: false, errorContains: duplicate object key, raw: '{"data":1,"d\u0061ta":2}'}
+  - {name: metadata-number-over-safe-invalid, operation: metadataRaw, accepted: false, errorContains: JS-safe bounds, raw: '9007199254740992'}
+  - {name: metadata-tool-target-invalid, operation: metadataTarget, accepted: false, errorContains: attachment target}
+  - {name: all-capabilities-accumulate, operation: capabilities, accepted: true, capabilities: [detailed_usage_v1, native_metadata_v1, observed_model_v1]}
