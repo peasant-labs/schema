@@ -400,6 +400,13 @@ export const zChildSessionRef = z.object({
 
 export type ChildSessionRef = z.infer<typeof zChildSessionRef>;
 
+export const zCommandInvocation = z.object({
+    args: z.string().optional(),
+    name: z.string()
+});
+
+export type CommandInvocation = z.infer<typeof zCommandInvocation>;
+
 export const zCommitInfo = z.object({
     authorEmail: z.string(),
     authorName: z.string(),
@@ -2158,6 +2165,7 @@ export type TrendsPayload = z.infer<typeof zTrendsPayload>;
 
 export const zTurnDetail = z.object({
     agentName: z.string().optional(),
+    command: zCommandInvocation.nullish(),
     content: z.string(),
     depth: z.int(),
     entryType: zEntryType.optional(),

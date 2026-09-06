@@ -1834,6 +1834,15 @@ components:
       required:
       - type
       type: object
+    CommandInvocation:
+      properties:
+        args:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      type: object
     CommitInfo:
       properties:
         authorEmail:
@@ -4778,6 +4787,10 @@ components:
       properties:
         agentName:
           type: string
+        command:
+          anyOf:
+          - $ref: '#/components/schemas/CommandInvocation'
+          - type: "null"
         content:
           type: string
         depth:

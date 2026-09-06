@@ -38,6 +38,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"BuiltinCommand", new(schema.BuiltinCommand)}, {"ChangeBinding", new(schema.ChangeBinding)},
 		{"ChangeDetailPayload", new(schema.ChangeDetailPayload)}, {"ChangeDiffPayload", new(schema.ChangeDiffPayload)},
 		{"ChangeSession", new(schema.ChangeSession)}, {"ChangeSummary", new(schema.ChangeSummary)},
+		{"CommandInvocation", new(schema.CommandInvocation)},
 		{"ChannelSubscription", new(schema.ChannelSubscription)}, {"ChannelTopic", new(schema.ChannelTopic)},
 		{"ChildSessionRef", new(schema.ChildSessionRef)}, {"CLILoginQuery", new(schema.CLILoginQuery)},
 		{"ClientMessage", new(schema.ClientMessage)}, {"CommitInfo", new(schema.CommitInfo)},

@@ -11,6 +11,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   prompt attachment contract. Village API 0.14.0, Local API 0.9.0, and Types
   0.14.0 are frozen under the retired-spec guard. The remaining entries in this
   section list the surface as it lands.
+- `TurnDetail.command` (`CommandInvocation`, Local API 0.10.0, Types 0.15.0):
+  the slash-prefixed name and optional arguments of a skill or user-defined
+  slash command invoked on a user turn. Optional and safely ignorable; no
+  content-capability token. Built-in harness commands are never emitted.
 
 ### Changed
 

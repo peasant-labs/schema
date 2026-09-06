@@ -355,6 +355,10 @@ types:
     disposition: catalog
     component: ChangeSummary
     reason: public wire or domain contract type
+  - go_name: CommandInvocation
+    disposition: catalog
+    component: CommandInvocation
+    reason: public wire or domain contract type
   - go_name: CommitRef
     disposition: catalog
     component: CommitRef

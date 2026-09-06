@@ -1759,6 +1759,20 @@
         ],
         "type": "object"
       },
+      "SchemaCommandInvocation": {
+        "properties": {
+          "args": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "SchemaCommitRef": {
         "properties": {
           "associations": {
@@ -3890,6 +3904,16 @@
         "properties": {
           "agentName": {
             "type": "string"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaCommandInvocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "content": {
             "type": "string"

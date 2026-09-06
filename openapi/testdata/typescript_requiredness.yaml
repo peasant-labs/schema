@@ -135,10 +135,21 @@ cases:
     input:
       component: TurnDetail
       required: [index, role, content, timestamp, depth]
-      optional: [toolCalls, parentIndex, agentName, observedModel, entryType, hasThinking, stopReason, tokensIn, tokensOut]
-      nullable: [parentIndex, stopReason, tokensIn, tokensOut]
+      optional: [toolCalls, parentIndex, agentName, observedModel, command, entryType, hasThinking, stopReason, tokensIn, tokensOut]
+      nullable: [parentIndex, command, stopReason, tokensIn, tokensOut]
       nonnullable: [index, role, content, timestamp, depth, toolCalls, agentName, observedModel, entryType, hasThinking]
     expected: true
     classification: must-pass
-    provenance: {source: requirement, ref: optional source-observed model identity in the session-detail wire}
-    mutation: {description: "pins observedModel as optional non-null evidence while retaining legacy turns without it"}
+    provenance: {source: requirement, ref: optional source-observed model identity and command invocation in the session-detail wire}
+    mutation: {description: "pins observedModel and command as optional while retaining legacy turns without them"}
+  - name: command invocation
+    input:
+      component: CommandInvocation
+      required: [name]
+      optional: [args]
+      nullable: []
+      nonnullable: [name, args]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: a skill invocation always names its command and may carry arguments}
+    mutation: {description: contrasts the required name with the optional non-null args}
