@@ -104,6 +104,16 @@ func TestTurnDetailOmitsAbsentCommand(t *testing.T) {
 	}
 }
 
+func TestNewCommandInvocationRejectsInvalidUTF8(t *testing.T) {
+	_, err := schema.NewCommandInvocation("/aura\xff", "")
+	if err == nil {
+		t.Fatal("a name with an invalid UTF-8 byte must be rejected")
+	}
+	if !strings.Contains(err.Error(), "not valid UTF-8") {
+		t.Fatalf("error %q does not name the UTF-8 defect", err)
+	}
+}
+
 func TestTurnCommandFixtureInventoryRejectsCountPreservingRename(t *testing.T) {
 	manifest, err := decodeTurnModelFixtureManifest(turnCommandManifestYAML)
 	if err != nil {
