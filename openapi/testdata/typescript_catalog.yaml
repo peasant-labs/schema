@@ -375,6 +375,11 @@ types:
     disposition: catalog
     component: DiffLineKind
     reason: public wire or domain contract type
+  - {go_name: DigestItemKind, disposition: catalog, component: DigestItemKind, reason: prompt digest closed set}
+  - {go_name: PromptDigest, disposition: catalog, component: PromptDigest, reason: prompt digest projection}
+  - {go_name: PromptDigestHeader, disposition: catalog, component: PromptDigestHeader, reason: prompt digest projection}
+  - {go_name: PromptDigestItem, disposition: catalog, component: PromptDigestItem, reason: prompt digest projection}
+  - {go_name: PromptDigestSkill, disposition: catalog, component: PromptDigestSkill, reason: prompt digest projection}
   - go_name: EdgeViolation
     disposition: catalog
     component: EdgeViolation

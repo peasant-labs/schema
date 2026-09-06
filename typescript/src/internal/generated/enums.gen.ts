@@ -54,6 +54,7 @@ import { zVillageShareStatus, type VillageShareStatus as VillageShareStatusContr
 import { zVillageTranscriptDeletionPolicy, type VillageTranscriptDeletionPolicy as VillageTranscriptDeletionPolicyContract } from "./contract/zod.gen.js";
 import { zVillageTranscriptVisibility, type VillageTranscriptVisibility as VillageTranscriptVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
+import { zDigestItemKind, type DigestItemKind as DigestItemKindContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -725,4 +726,16 @@ export const Visibility = Object.freeze({
 export const AllVisibilities = Object.freeze([Visibility.Private, Visibility.Group, Visibility.Public]) as readonly Visibility[];
 export function isVisibility(value: unknown): value is Visibility {
   return zVisibility.safeParse(value).success;
+}
+
+export type DigestItemKind = DigestItemKindContract;
+export const DigestItemKind = Object.freeze({
+  Session: zDigestItemKind.parse("session"),
+  Prompt: zDigestItemKind.parse("prompt"),
+  Skill: zDigestItemKind.parse("skill"),
+  Commit: zDigestItemKind.parse("commit"),
+} as const);
+export const AllDigestItemKinds = Object.freeze([DigestItemKind.Session, DigestItemKind.Prompt, DigestItemKind.Skill, DigestItemKind.Commit]) as readonly DigestItemKind[];
+export function isDigestItemKind(value: unknown): value is DigestItemKind {
+  return zDigestItemKind.safeParse(value).success;
 }

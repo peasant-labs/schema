@@ -1,0 +1,9 @@
+expectedCaseCount: 7
+requiredCaseNames:
+  - chronological-valid
+  - out-of-order-invalid
+  - header-prompt-count-mismatch-invalid
+  - header-session-count-mismatch-invalid
+  - commits-covered-exceeds-total-invalid
+  - skill-without-slash-invalid
+  - skill-zero-count-invalid

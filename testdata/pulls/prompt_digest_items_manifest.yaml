@@ -1,0 +1,19 @@
+expectedCaseCount: 17
+requiredCaseNames:
+  - prompt-valid
+  - skill-valid
+  - commit-valid
+  - commit-abbreviated-sha-valid
+  - session-valid
+  - unknown-kind-invalid
+  - bad-transcript-id-invalid
+  - zero-timestamp-invalid
+  - prompt-missing-turn-index-invalid
+  - prompt-missing-ordinal-invalid
+  - prompt-empty-text-invalid
+  - prompt-with-sha-invalid
+  - skill-text-without-slash-invalid
+  - skill-with-ordinal-invalid
+  - commit-bad-sha-invalid
+  - commit-with-turn-index-invalid
+  - session-missing-counts-invalid

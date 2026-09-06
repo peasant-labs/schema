@@ -15,6 +15,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   the slash-prefixed name and optional arguments of a skill or user-defined
   slash command invoked on a user turn. Optional and safely ignorable; no
   content-capability token. Built-in harness commands are never emitted.
+- `PromptDigest` (Types 0.15.0): the reviewer-facing projection of the prompts
+  behind a pull request, with `PromptDigestHeader`, `PromptDigestSkill`,
+  `PromptDigestItem`, and the closed set `DigestItemKind`
+  (`session | prompt | skill | commit`). Validators enforce the per-kind field
+  rules, chronological order, and header consistency.
 
 ### Changed
 

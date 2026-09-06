@@ -1,0 +1,98 @@
+cases:
+  - name: chronological-valid
+    input:
+      header: {sessionCount: 1, promptCount: 2, commitsCovered: 1, commitsTotal: 1, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills:
+        - {name: /superpowers:brainstorming, invocationCount: 1}
+      items:
+        - {kind: session, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:00:00Z", text: session 1, promptCount: 2, commitCount: 1}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:02:00Z", text: first ask, turnIndex: 0, ordinal: 1}
+        - {kind: skill, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:02:30Z", text: /superpowers:brainstorming, turnIndex: 1}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:05:00Z", text: second ask, turnIndex: 6, ordinal: 2}
+        - {kind: commit, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:10:00Z", text: a1b2c3d, commitSha: a1b2c3d}
+    expected:
+      accepted: true
+    classification: must-pass
+    provenance: {source: requirement, ref: the complete chain for one session in order}
+    mutation: {description: a minimal complete digest}
+
+  - name: out-of-order-invalid
+    input:
+      header: {sessionCount: 1, promptCount: 2, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills: []
+      items:
+        - {kind: session, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:00:00Z", text: session 1, promptCount: 2, commitCount: 0}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:05:00Z", text: second ask, turnIndex: 6, ordinal: 2}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:02:00Z", text: first ask, turnIndex: 0, ordinal: 1}
+    expected:
+      accepted: false
+      errorContains: chronological
+    classification: must-fail
+    provenance: {source: requirement, ref: the chain is what a reviewer reads top to bottom}
+    mutation: {description: swaps two prompts so timestamps go backwards}
+
+  - name: header-prompt-count-mismatch-invalid
+    input:
+      header: {sessionCount: 1, promptCount: 3, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills: []
+      items:
+        - {kind: session, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:00:00Z", text: session 1, promptCount: 1, commitCount: 0}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:02:00Z", text: first ask, turnIndex: 0, ordinal: 1}
+    expected:
+      accepted: false
+      errorContains: header promptCount
+    classification: must-fail
+    provenance: {source: requirement, ref: the header summarises the complete chain}
+    mutation: {description: overstates promptCount in the header}
+
+  - name: header-session-count-mismatch-invalid
+    input:
+      header: {sessionCount: 2, promptCount: 1, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills: []
+      items:
+        - {kind: session, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:00:00Z", text: session 1, promptCount: 1, commitCount: 0}
+        - {kind: prompt, transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13, timestamp: "2026-09-06T14:02:00Z", text: first ask, turnIndex: 0, ordinal: 1}
+    expected:
+      accepted: false
+      errorContains: header sessionCount
+    classification: must-fail
+    provenance: {source: requirement, ref: the header summarises the complete chain}
+    mutation: {description: overstates sessionCount in the header}
+
+  - name: commits-covered-exceeds-total-invalid
+    input:
+      header: {sessionCount: 0, promptCount: 0, commitsCovered: 2, commitsTotal: 1, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills: []
+      items: []
+    expected:
+      accepted: false
+      errorContains: commitsCovered
+    classification: must-fail
+    provenance: {source: boundary, ref: covered commits are a subset of the PR's commits}
+    mutation: {description: covers more commits than the PR has}
+
+  - name: skill-without-slash-invalid
+    input:
+      header: {sessionCount: 0, promptCount: 0, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills:
+        - {name: brainstorming, invocationCount: 1}
+      items: []
+    expected:
+      accepted: false
+      errorContains: slash-prefixed
+    classification: must-fail
+    provenance: {source: requirement, ref: the header lists invocations as recorded}
+    mutation: {description: drops the slash from a header skill}
+
+  - name: skill-zero-count-invalid
+    input:
+      header: {sessionCount: 0, promptCount: 0, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills:
+        - {name: /superpowers:brainstorming, invocationCount: 0}
+      items: []
+    expected:
+      accepted: false
+      errorContains: invocationCount
+    classification: must-fail
+    provenance: {source: boundary, ref: a listed skill was invoked at least once}
+    mutation: {description: lists a skill with a zero count}

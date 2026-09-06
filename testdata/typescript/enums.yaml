@@ -446,3 +446,11 @@ enums:
       - {name: Group, value: "group"}
       - {name: Public, value: "public"}
     all_values: ["private", "group", "public"]
+  - name: DigestItemKind
+    all_name: AllDigestItemKinds
+    members:
+      - {name: Session, value: "session"}
+      - {name: Prompt, value: "prompt"}
+      - {name: Skill, value: "skill"}
+      - {name: Commit, value: "commit"}
+    all_values: ["session", "prompt", "skill", "commit"]

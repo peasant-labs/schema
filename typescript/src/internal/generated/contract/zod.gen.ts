@@ -563,6 +563,20 @@ export const zDiffHunk = z.object({
 export type DiffHunk = z.infer<typeof zDiffHunk>;
 
 /**
+ * Digest Item Kind
+ *
+ * Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor
+ */
+export const zDigestItemKind = z.enum([
+    'session',
+    'prompt',
+    'skill',
+    'commit'
+]);
+
+export type DigestItemKind = z.infer<typeof zDigestItemKind>;
+
+/**
  * Edge Violation Kind
  *
  * Structural violation detected on a map edge
@@ -918,6 +932,25 @@ export const zProjectSummariesPayload = z.object({
 });
 
 export type ProjectSummariesPayload = z.infer<typeof zProjectSummariesPayload>;
+
+export const zPromptDigestHeader = z.object({
+    commitsCovered: z.int(),
+    commitsTotal: z.int(),
+    harness: zHarness,
+    promptCount: z.int(),
+    redactionLevel: z.string(),
+    sessionCount: z.int(),
+    villageUrl: z.string()
+});
+
+export type PromptDigestHeader = z.infer<typeof zPromptDigestHeader>;
+
+export const zPromptDigestSkill = z.object({
+    invocationCount: z.int(),
+    name: z.string()
+});
+
+export type PromptDigestSkill = z.infer<typeof zPromptDigestSkill>;
 
 export const zProvenance = z.object({
     details: z.record(z.string(), z.string()).optional(),
@@ -2065,6 +2098,28 @@ export type CanonicalPublishOperation = z.infer<typeof zCanonicalPublishOperatio
 export const zTranscriptID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 
 export type TranscriptID = z.infer<typeof zTranscriptID>;
+
+export const zPromptDigestItem = z.object({
+    commitCount: z.int().nullish(),
+    commitSha: z.string().optional(),
+    kind: zDigestItemKind,
+    ordinal: z.int().nullish(),
+    promptCount: z.int().nullish(),
+    text: z.string(),
+    timestamp: z.iso.datetime(),
+    transcriptId: zTranscriptID,
+    turnIndex: z.int().nullish()
+});
+
+export type PromptDigestItem = z.infer<typeof zPromptDigestItem>;
+
+export const zPromptDigest = z.object({
+    header: zPromptDigestHeader,
+    items: z.array(zPromptDigestItem),
+    skills: z.array(zPromptDigestSkill)
+});
+
+export type PromptDigest = z.infer<typeof zPromptDigest>;
 
 export const zPullSkipGateItem = z.object({
     annotationHashes: z.array(z.string()),

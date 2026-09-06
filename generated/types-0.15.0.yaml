@@ -2129,6 +2129,21 @@ components:
       - del
       title: Diff Line Kind
       type: string
+    DigestItemKind:
+      description: 'Kind of one item in the prompt digest chain: a session boundary,
+        a human prompt, a skill invocation marker, or a commit anchor'
+      enum:
+      - session
+      - prompt
+      - skill
+      - commit
+      examples:
+      - session
+      - prompt
+      - skill
+      - commit
+      title: Digest Item Kind
+      type: string
     EdgeViolation:
       properties:
         from:
@@ -2971,6 +2986,101 @@ components:
       required:
       - projectHash
       - tasks
+      type: object
+    PromptDigest:
+      properties:
+        header:
+          $ref: '#/components/schemas/PromptDigestHeader'
+        items:
+          items:
+            $ref: '#/components/schemas/PromptDigestItem'
+          type: array
+        skills:
+          items:
+            $ref: '#/components/schemas/PromptDigestSkill'
+          type: array
+      required:
+      - header
+      - skills
+      - items
+      type: object
+    PromptDigestHeader:
+      properties:
+        commitsCovered:
+          type: integer
+        commitsTotal:
+          type: integer
+        harness:
+          $ref: '#/components/schemas/Harness'
+        promptCount:
+          type: integer
+        redactionLevel:
+          type: string
+        sessionCount:
+          type: integer
+        villageUrl:
+          type: string
+      required:
+      - sessionCount
+      - promptCount
+      - commitsCovered
+      - commitsTotal
+      - harness
+      - redactionLevel
+      - villageUrl
+      type: object
+    PromptDigestItem:
+      properties:
+        commitCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        commitSha:
+          type: string
+        kind:
+          $ref: '#/components/schemas/DigestItemKind'
+        ordinal:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        promptCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        text:
+          type: string
+        timestamp:
+          format: date-time
+          type: string
+        transcriptId:
+          $ref: '#/components/schemas/TranscriptID'
+        turnIndex:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+      required:
+      - kind
+      - transcriptId
+      - timestamp
+      - text
+      type: object
+    PromptDigestSkill:
+      properties:
+        invocationCount:
+          type: integer
+        name:
+          type: string
+      required:
+      - name
+      - invocationCount
       type: object
     Provenance:
       properties:
