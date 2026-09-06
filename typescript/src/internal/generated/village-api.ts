@@ -508,7 +508,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. Posting to GitHub failing returns 502 and leaves the attachment in preview. */
+        /** @description Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. A failed post to GitHub returns 502 and leaves the attachment in preview. */
         post: operations["confirmPullRequestAttachment"];
         delete?: never;
         options?: never;

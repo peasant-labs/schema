@@ -1522,7 +1522,7 @@ paths:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Bad Gateway
       tags:
-      - pulls
+      - pull-requests
     get:
       description: Read one pull request's prompt attachment. The digest is null until
         the attachment reaches preview or attached; viewer_is_author is true when
@@ -1584,12 +1584,12 @@ paths:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Internal Server Error
       tags:
-      - pulls
+      - pull-requests
   /api/v1/pulls/{owner}/{name}/{number}/confirm:
     post:
       description: Confirm a preview and post it. Only the pull request author may
-        confirm; the attachment must be in preview, otherwise 409. Posting to GitHub
-        failing returns 502 and leaves the attachment in preview.
+        confirm; the attachment must be in preview, otherwise 409. A failed post to
+        GitHub returns 502 and leaves the attachment in preview.
       operationId: confirmPullRequestAttachment
       parameters:
       - description: Repository owner login
@@ -1664,7 +1664,7 @@ paths:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Bad Gateway
       tags:
-      - pulls
+      - pull-requests
   /api/v1/schema/version:
     get:
       description: 'Advertise the annotation schema version plus push and pull contract
@@ -2251,7 +2251,7 @@ paths:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Internal Server Error
       tags:
-      - pulls
+      - users
   /api/v1/users/me/settings:
     get:
       description: Read the caller's settings, including preview_before_attach.

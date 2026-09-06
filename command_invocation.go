@@ -7,10 +7,11 @@ import (
 )
 
 // CommandInvocation records that a user-role turn invoked a skill or a
-// user-defined slash command rather than typing a prompt. Name keeps the leading
-// slash exactly as the harness recorded it, for example
-// "/superpowers:brainstorming". Args is the text that followed the command on the
-// same line and may be empty.
+// user-defined slash command rather than typing a prompt. Name is slash-prefixed,
+// for example "/superpowers:brainstorming". Args is the text that followed the
+// command on the same line and may be empty. A harness that records a bare
+// command name gets the slash added by the producer before construction; the
+// constructor does not add it.
 //
 // Built-in harness commands (see BuiltinCommand) are structural signals and are
 // never emitted as a CommandInvocation.

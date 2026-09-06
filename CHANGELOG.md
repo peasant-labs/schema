@@ -18,7 +18,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   behind a pull request, with `PromptDigestHeader`, `PromptDigestSkill`,
   `PromptDigestItem`, and the closed set `DigestItemKind`
   (`session | prompt | skill | commit`). Validators enforce the per-kind field
-  rules, chronological order, and header consistency.
+  rules, chronological order, and header consistency. Header entries are
+  slash-prefixed skills and user commands or bare plugin identifiers; validators
+  also enforce sequential prompt ordinals, commit coverage, and header
+  invocation counts.
 - Village attachment DTOs (Village API 0.15.0, Types 0.15.0):
   `VillagePullRequestAttachment`, `VillagePullRequestAttachedTranscript`,
   `VillagePullRequestAttachmentResponse`, `VillagePromptRequest`,

@@ -61,7 +61,12 @@ const (
 var AllVillagePromptsCheckModes = []VillagePromptsCheckMode{VillagePromptsCheckInformational, VillagePromptsCheckRequired}
 
 func (m VillagePromptsCheckMode) IsValid() bool {
-	return m == VillagePromptsCheckInformational || m == VillagePromptsCheckRequired
+	for _, known := range AllVillagePromptsCheckModes {
+		if m == known {
+			return true
+		}
+	}
+	return false
 }
 
 func (m VillagePromptsCheckMode) String() string { return string(m) }

@@ -355,10 +355,7 @@ types:
     disposition: catalog
     component: ChangeSummary
     reason: public wire or domain contract type
-  - go_name: CommandInvocation
-    disposition: catalog
-    component: CommandInvocation
-    reason: public wire or domain contract type
+  - {go_name: CommandInvocation, disposition: catalog, component: CommandInvocation, reason: public wire or domain contract type}
   - go_name: CommitRef
     disposition: catalog
     component: CommitRef
@@ -376,10 +373,6 @@ types:
     component: DiffLineKind
     reason: public wire or domain contract type
   - {go_name: DigestItemKind, disposition: catalog, component: DigestItemKind, reason: prompt digest closed set}
-  - {go_name: PromptDigest, disposition: catalog, component: PromptDigest, reason: prompt digest projection}
-  - {go_name: PromptDigestHeader, disposition: catalog, component: PromptDigestHeader, reason: prompt digest projection}
-  - {go_name: PromptDigestItem, disposition: catalog, component: PromptDigestItem, reason: prompt digest projection}
-  - {go_name: PromptDigestSkill, disposition: catalog, component: PromptDigestSkill, reason: prompt digest projection}
   - go_name: EdgeViolation
     disposition: catalog
     component: EdgeViolation
@@ -440,6 +433,10 @@ types:
     disposition: catalog
     component: ProjectTasksPayload
     reason: public wire or domain contract type
+  - {go_name: PromptDigest, disposition: catalog, component: PromptDigest, reason: prompt digest projection}
+  - {go_name: PromptDigestHeader, disposition: catalog, component: PromptDigestHeader, reason: prompt digest projection}
+  - {go_name: PromptDigestItem, disposition: catalog, component: PromptDigestItem, reason: prompt digest projection}
+  - {go_name: PromptDigestSkill, disposition: catalog, component: PromptDigestSkill, reason: prompt digest projection}
   - go_name: ReviewListPayload
     disposition: catalog
     component: ReviewListPayload

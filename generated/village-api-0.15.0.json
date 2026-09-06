@@ -2239,7 +2239,7 @@
     "/api/v1/pulls/{owner}/{name}/{number}": {
       "get": {
         "tags": [
-          "pulls"
+          "pull-requests"
         ],
         "description": "Read one pull request's prompt attachment. The digest is null until the attachment reaches preview or attached; viewer_is_author is true when the caller is the pull request author. Readers who may not see the attached transcripts receive 403.",
         "operationId": "getPullRequestAttachment",
@@ -2331,7 +2331,7 @@
       },
       "delete": {
         "tags": [
-          "pulls"
+          "pull-requests"
         ],
         "description": "Detach the prompts from a pull request. Only the pull request author may detach. Deletes the comment, resets the check, and restores each transcript's previous visibility; an attachment already detached returns 409.",
         "operationId": "detachPullRequestAttachment",
@@ -2455,9 +2455,9 @@
     "/api/v1/pulls/{owner}/{name}/{number}/confirm": {
       "post": {
         "tags": [
-          "pulls"
+          "pull-requests"
         ],
-        "description": "Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. Posting to GitHub failing returns 502 and leaves the attachment in preview.",
+        "description": "Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. A failed post to GitHub returns 502 and leaves the attachment in preview.",
         "operationId": "confirmPullRequestAttachment",
         "parameters": [
           {
@@ -3374,7 +3374,7 @@
     "/api/v1/users/me/prompt-requests": {
       "get": {
         "tags": [
-          "pulls"
+          "users"
         ],
         "description": "List the caller's attachments that are waiting for a transcript from the caller's machine, with each repository's normalized remote so a client can match the repository it is about to push.",
         "operationId": "listMyPromptRequests",

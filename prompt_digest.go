@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -61,7 +62,10 @@ type PromptDigestHeader struct {
 }
 
 // PromptDigestSkill is one distinct skill or user slash command across every
-// attached session, with how many times it was invoked.
+// attached session, with how many times it was invoked. Name is a slash-prefixed
+// skill or user command as recorded by the harness, or a bare plugin identifier
+// for a tool provider observed through tool calls. Renderers distinguish the two
+// by the leading slash.
 type PromptDigestSkill struct {
 	Name            string `json:"name"`
 	InvocationCount int    `json:"invocationCount"`
@@ -101,7 +105,7 @@ var digestCommitSHAPattern = regexp.MustCompile(`^[0-9a-f]{7,40}$`)
 func (i PromptDigestItem) Validate() error {
 	const where = "prompt digest item validation failed at schema.PromptDigestItem.Validate: "
 	if !i.Kind.IsValid() {
-		return fmt.Errorf(where+"the kind is outside the closed set %v, so a renderer cannot place the item; emit one of the known kinds", AllDigestItemKinds)
+		return fmt.Errorf(where+"the kind %q is outside the closed set %v, so a renderer cannot place the item; emit one of the known kinds", i.Kind, AllDigestItemKinds)
 	}
 	if _, err := NewTranscriptID(i.TranscriptID.String()); err != nil {
 		return fmt.Errorf(where+"the item cannot link to its transcript: %w", err)
@@ -165,14 +169,24 @@ func (i PromptDigestItem) Validate() error {
 func (d PromptDigest) Validate() error {
 	const where = "prompt digest validation failed at schema.PromptDigest.Validate: "
 	for index, skill := range d.Skills {
-		if len(skill.Name) < 2 || skill.Name[0] != '/' {
-			return fmt.Errorf(where+"skills[%d] name %q is not a slash-prefixed invocation", index, skill.Name)
+		if skill.Name == "" {
+			return fmt.Errorf(where+"skills[%d] has an empty name; a header entry names a slash-prefixed skill or user command, or a bare plugin identifier", index)
+		}
+		for _, r := range skill.Name {
+			if unicode.IsSpace(r) || unicode.IsControl(r) {
+				return fmt.Errorf(where+"skills[%d] name %q contains whitespace or a control character; a header entry is one token", index, skill.Name)
+			}
+		}
+		if skill.Name == "/" {
+			return fmt.Errorf(where+"skills[%d] name is a bare slash and names no command; supply the command token after the slash", index)
 		}
 		if skill.InvocationCount < 1 {
 			return fmt.Errorf(where+"skills[%d] %q has invocationCount %d; a listed skill was invoked at least once", index, skill.Name, skill.InvocationCount)
 		}
 	}
 	prompts, sessions := 0, 0
+	skillItemCounts := map[string]int{}
+	distinctCommitSHAs := map[string]struct{}{}
 	var previous time.Time
 	for index, item := range d.Items {
 		if err := item.Validate(); err != nil {
@@ -185,8 +199,35 @@ func (d PromptDigest) Validate() error {
 		switch item.Kind {
 		case DigestItemPrompt:
 			prompts++
+			if *item.Ordinal != prompts {
+				return fmt.Errorf(where+"items[%d] is prompt %d in chain order but carries ordinal %d; ordinals run 1..promptCount in chain order", index, prompts, *item.Ordinal)
+			}
 		case DigestItemSession:
 			sessions++
+		case DigestItemSkill:
+			skillItemCounts[item.Text]++
+		case DigestItemCommit:
+			distinctCommitSHAs[item.CommitSHA] = struct{}{}
+		}
+	}
+	headerSkillNames := make(map[string]struct{}, len(d.Skills))
+	for _, skill := range d.Skills {
+		headerSkillNames[skill.Name] = struct{}{}
+	}
+	for index, item := range d.Items {
+		if item.Kind != DigestItemSkill {
+			continue
+		}
+		if _, listed := headerSkillNames[item.Text]; !listed {
+			return fmt.Errorf(where+"items[%d] is a skill item %q that no header entry names; the header lists every invocation in the chain", index, item.Text)
+		}
+	}
+	for index, skill := range d.Skills {
+		if skill.Name[0] != '/' {
+			continue
+		}
+		if skill.InvocationCount != skillItemCounts[skill.Name] {
+			return fmt.Errorf(where+"skills[%d] %q declares invocationCount %d but the chain carries %d matching skill items; the header counts the complete chain", index, skill.Name, skill.InvocationCount, skillItemCounts[skill.Name])
 		}
 	}
 	if d.Header.PromptCount != prompts {
@@ -194,6 +235,9 @@ func (d PromptDigest) Validate() error {
 	}
 	if d.Header.SessionCount != sessions {
 		return fmt.Errorf(where+"header sessionCount %d does not match the %d session items; the header describes the complete chain", d.Header.SessionCount, sessions)
+	}
+	if d.Header.CommitsCovered != len(distinctCommitSHAs) {
+		return fmt.Errorf(where+"header commitsCovered %d does not match the %d distinct commit anchors in the chain; the header describes the complete chain", d.Header.CommitsCovered, len(distinctCommitSHAs))
 	}
 	if d.Header.CommitsCovered < 0 || d.Header.CommitsTotal < 0 || d.Header.CommitsCovered > d.Header.CommitsTotal {
 		return fmt.Errorf(where+"header commitsCovered %d must be between 0 and commitsTotal %d", d.Header.CommitsCovered, d.Header.CommitsTotal)
