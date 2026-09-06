@@ -35,7 +35,7 @@ cases:
     mutation: {description: removes the Role runtime enum object export}
 
   - name: wrong metadata schema version is rejected
-    input: {kind: redirect, namespace: value, name: MetadataSchemaVersion, target: "10"}
+    input: {kind: redirect, namespace: value, name: MetadataSchemaVersion, target: "9"}
     expected: false
     classification: must-fail
     provenance: {source: requirement, ref: TypeScript metadata version is sourced from the Go constant}

@@ -107,5 +107,6 @@ const (
 	// minor bump).
 	// Bumped to 0.14.0 when the Village collectives, contribution, review, and
 	// linked-repository DTOs entered the catalog.
-	TypesVersion = "0.14.0"
+	// Bumped to 0.15.0 for optional local metadata adapter/parser provenance.
+	TypesVersion = "0.15.0"
 )

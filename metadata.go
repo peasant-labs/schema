@@ -1,6 +1,10 @@
 package schema
 
-import "encoding/json"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+)
 
 // MetadataSchemaVersion is the schema version written by this build of the ingest tool.
 // v1: initial schema
@@ -20,7 +24,13 @@ import "encoding/json"
 //	re-classify existing on-disk sessions as Updated so the stale "modelHarness" key
 //	self-heals (re-extract + rewrite) on next ingest; UnmarshalJSON still accepts the
 //	legacy key on pre-v9 files in the meantime.
-const MetadataSchemaVersion = 9
+//
+// v10: optional AdapterVersion records the successful Peasant adapter/parser.
+//
+//	The v9-to-v10 change is local metadata bookkeeping, not a reason to read
+//	native sources again. Consumers can losslessly adopt v9 metadata without
+//	inventing the missing producer revision. Native refresh is a separate decision.
+const MetadataSchemaVersion = 10
 
 // RedactionInfo tracks whether and when redaction was applied to a session's transcript.
 // Level is stored as a string because this schema module is a public contract module that
@@ -70,6 +80,10 @@ type UnifiedMetadata struct {
 	ContentHash   string          `json:"contentHash"`  // SHA3-256 of transcript bytes
 	MetadataHash  string          `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
 	Redaction     RedactionInfo   `json:"redaction"`
+	// AdapterVersion identifies the Peasant adapter/parser that successfully
+	// produced this artifact, not the native harness release in Version.
+	// Omission means unknown historical provenance; a present value must be positive.
+	AdapterVersion *int `json:"adapterVersion,omitempty" minimum:"1" nullable:"false" description:"Successful Peasant adapter/parser revision for this local artifact, not the native harness release. Omit when unknown; a present revision must be positive."`
 }
 
 // TimestampInfo records session timing in Unix milliseconds.
@@ -165,18 +179,50 @@ type DiagnosticEntry struct {
 // json:"modelHarness". When the canonical key is absent but the legacy key is
 // present, the legacy value is adopted so a pre-v9 file still reads its harness
 // correctly in the window before the v9 DIFF-stage re-extract rewrites it.
-// Marshalling is unaffected (struct tags emit only "harness").
+// AdapterVersion is positive when present; omission represents unknown provenance.
 func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 	type alias UnifiedMetadata // avoid recursion into this method
+	next := *m
+	next.AdapterVersion = nil
 	aux := &struct {
-		LegacyModelHarness *Harness `json:"modelHarness"`
+		LegacyModelHarness *Harness        `json:"modelHarness"`
+		AdapterVersion     json.RawMessage `json:"adapterVersion"`
 		*alias
-	}{alias: (*alias)(m)}
+	}{alias: (*alias)(&next)}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
 	}
-	if m.ModelHarness == "" && aux.LegacyModelHarness != nil {
-		m.ModelHarness = *aux.LegacyModelHarness
+	if len(aux.AdapterVersion) > 0 {
+		if bytes.Equal(bytes.TrimSpace(aux.AdapterVersion), []byte("null")) {
+			return fmt.Errorf("decode metadata adapterVersion: null is not a producer revision; omit the field when unknown or provide a positive integer")
+		}
+		if err := json.Unmarshal(aux.AdapterVersion, &next.AdapterVersion); err != nil {
+			return fmt.Errorf("decode metadata adapterVersion: provide a positive integer or omit unknown provenance: %w", err)
+		}
+	}
+	if err := next.validateAdapterVersion(); err != nil {
+		return err
+	}
+	if next.ModelHarness == "" && aux.LegacyModelHarness != nil {
+		next.ModelHarness = *aux.LegacyModelHarness
+	}
+	*m = next
+	return nil
+}
+
+// MarshalJSON preserves optional producer provenance and refuses invalid revisions
+// even when the metadata was assembled directly rather than decoded from JSON.
+func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
+	if err := m.validateAdapterVersion(); err != nil {
+		return nil, err
+	}
+	type alias UnifiedMetadata
+	return json.Marshal(alias(m))
+}
+
+func (m UnifiedMetadata) validateAdapterVersion() error {
+	if m.AdapterVersion != nil && *m.AdapterVersion <= 0 {
+		return fmt.Errorf("validate metadata adapterVersion: got %d; producer revisions must be positive, so omit the field for unknown provenance instead", *m.AdapterVersion)
 	}
 	return nil
 }

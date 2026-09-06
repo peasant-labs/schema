@@ -14,9 +14,9 @@ cases:
     input:
       component: UnifiedMetadata
       required: [schemaVersion, parentUuid, diagnostics]
-      optional: [cwd, derivedAt]
+      optional: [cwd, derivedAt, adapterVersion]
       nullable: [parentUuid, derivedAt]
-      nonnullable: [schemaVersion, diagnostics, cwd]
+      nonnullable: [schemaVersion, diagnostics, cwd, adapterVersion]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Go JSON tags are the canonical Types presence contract}
