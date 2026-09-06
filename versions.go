@@ -52,7 +52,11 @@ const (
 	// capability advertisements (additive = minor bump).
 	// Bumped to 0.14.0 when the Village API spec gained the schema-owned
 	// collectives, contribution, review, and linked-repository web routes.
-	VillageAPIVersion = "0.14.0"
+	// Bumped to 0.15.0 when the pull request prompt attachment surface was
+	// declared: the GitHub webhook receiver, the attachment read, confirm, and
+	// detach routes, the prompt-request and user-settings routes, and two
+	// collective settings (additive = minor bump).
+	VillageAPIVersion = "0.15.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -74,7 +78,9 @@ const (
 	// session origin and the by-id session-summaries operation was declared
 	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.9.0"
+	// Bumped to 0.10.0 when TurnDetail gained the optional CommandInvocation
+	// for skill and user slash-command turns (additive = minor bump).
+	PeasantLocalAPIVersion = "0.10.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -107,5 +113,8 @@ const (
 	// minor bump).
 	// Bumped to 0.14.0 when the Village collectives, contribution, review, and
 	// linked-repository DTOs entered the catalog.
-	TypesVersion = "0.14.0"
+	// Bumped to 0.15.0 when CommandInvocation, the PromptDigest projection with
+	// its DigestItemKind closed set, and the Village pull request attachment
+	// DTOs entered the catalog.
+	TypesVersion = "0.15.0"
 )

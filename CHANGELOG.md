@@ -5,6 +5,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Village API 0.15.0, Local API 0.10.0, and Types 0.15.0 open the pull request
+  prompt attachment contract. Village API 0.14.0, Local API 0.9.0, and Types
+  0.14.0 are frozen under the retired-spec guard. The remaining entries in this
+  section list the surface as it lands.
+
 ### Changed
 
 - Final release tags no longer require a prior successful same-version rc.
