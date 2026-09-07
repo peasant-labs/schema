@@ -44,6 +44,29 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - Final release tags no longer require a prior successful same-version rc.
   Rc tags remain supported as prereleases and still publish to npm under `next`.
 
+## [v0.18.0] - 2026-09-07
+
+This release builds on the queued v0.17.0 prompt attachment contract without
+claiming that release as published. Generated Types 0.18.0 and Peasant Local API
+0.12.0 carry the additions below. Village API remains 0.16.0, with the same
+upstream prompt attachment surface queued for v0.17.0.
+
+### Added
+
+- `ToolCallDetail.namespace` preserves optional tool namespace evidence
+  independently from the tool name. Omission, an explicitly empty string, and a
+  non-empty string remain distinct; JSON null is forbidden. The
+  `tool_namespace_v1` content capability accumulates with detailed usage,
+  observed model, and native metadata requirements when those forms of evidence
+  occur together.
+
+### Changed
+
+- Selected native metadata values accept strings up to 64 KiB while retaining
+  the existing 64 KiB limit for each metadata record and 1 MiB aggregate limit
+  for the selected metadata subtree. These metadata budgets do not apply to
+  ordinary transcript strings.
+
 ## [v0.1.3] - 2026-09-01
 
 Final release of the Village collectives contract surface. The contract
@@ -635,3 +658,5 @@ Published as a GitHub **prerelease**; the consumers (`peasant`, `village`) pin
 - The retained `pkg/schema/v*` tags (from when the contract lived nested inside
   `peasant`, up to `v1.3.0`) are **not** release references of this module and are
   never moved or deleted.
+
+[v0.18.0]: https://github.com/peasant-labs/schema/compare/v0.17.0...v0.18.0
