@@ -263,7 +263,13 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 		}
 		if field.Type.Kind() == reflect.Pointer {
 			if property, ok := properties[name].(map[string]interface{}); ok {
-				properties[name] = nullableSchema(property)
+				if field.Tag.Get("nullable") == "false" {
+					// Explicit non-null optional values use omission, not JSON null,
+					// for absence (for example a successful adapter revision).
+					properties[name] = dropNullArm(property)
+				} else {
+					properties[name] = nullableSchema(property)
+				}
 			}
 		}
 	}

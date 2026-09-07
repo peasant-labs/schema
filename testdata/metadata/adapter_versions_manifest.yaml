@@ -1,0 +1,12 @@
+baseMetadata: >-
+  {"schemaVersion":10,"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","parentUuid":null,"harness":"claude-code","model":"claude-opus-4-6","version":"2.1.47","timestamp":{"start":1708700000000,"end":1708700060000},"source":{"format":"jsonl"},"git":{},"project":{"hash":"0000000000000000000000000000000000000000000000000000000000000000","name":"example"},"hostSlug":"example","stats":{"turnCount":1,"toolCallCount":0,"subagentCount":0,"durationMs":60000,"tokensIn":10,"tokensOut":20},"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"","metadataHash":"","redaction":{"applied":false}}
+requiredCaseNames:
+  - absent producer remains unknown
+  - first positive revision
+  - later positive revision
+  - legacy metadata nine
+  - zero is not unknown
+  - negative revision rejected
+  - null is not a revision
+  - fractional revision rejected
+  - string revision rejected

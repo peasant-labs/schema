@@ -2231,6 +2231,7 @@ export const zUICapabilitiesResponse = z.object({
 export type UICapabilitiesResponse = z.infer<typeof zUICapabilitiesResponse>;
 
 export const zUnifiedMetadata = z.object({
+    adapterVersion: z.int().gte(1).optional(),
     contentHash: z.string(),
     cwd: z.string().optional(),
     derivedAt: z.int().nullish(),
