@@ -400,6 +400,13 @@ export const zChildSessionRef = z.object({
 
 export type ChildSessionRef = z.infer<typeof zChildSessionRef>;
 
+export const zCommandInvocation = z.object({
+    args: z.string().optional(),
+    name: z.string()
+});
+
+export type CommandInvocation = z.infer<typeof zCommandInvocation>;
+
 export const zCommitInfo = z.object({
     authorEmail: z.string(),
     authorName: z.string(),
@@ -554,6 +561,20 @@ export const zDiffHunk = z.object({
 });
 
 export type DiffHunk = z.infer<typeof zDiffHunk>;
+
+/**
+ * Digest Item Kind
+ *
+ * Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor
+ */
+export const zDigestItemKind = z.enum([
+    'session',
+    'prompt',
+    'skill',
+    'commit'
+]);
+
+export type DigestItemKind = z.infer<typeof zDigestItemKind>;
 
 /**
  * Edge Violation Kind
@@ -977,6 +998,25 @@ export const zProjectSummariesPayload = z.object({
 });
 
 export type ProjectSummariesPayload = z.infer<typeof zProjectSummariesPayload>;
+
+export const zPromptDigestHeader = z.object({
+    commitsCovered: z.int(),
+    commitsTotal: z.int(),
+    harness: zHarness,
+    promptCount: z.int(),
+    redactionLevel: z.string(),
+    sessionCount: z.int(),
+    villageUrl: z.string()
+});
+
+export type PromptDigestHeader = z.infer<typeof zPromptDigestHeader>;
+
+export const zPromptDigestSkill = z.object({
+    invocationCount: z.int(),
+    name: z.string()
+});
+
+export type PromptDigestSkill = z.infer<typeof zPromptDigestSkill>;
 
 export const zProvenance = z.object({
     details: z.record(z.string(), z.string()).optional(),
@@ -2138,6 +2178,28 @@ export const zTranscriptID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 
 export type TranscriptID = z.infer<typeof zTranscriptID>;
 
+export const zPromptDigestItem = z.object({
+    commitCount: z.int().nullish(),
+    commitSha: z.string().optional(),
+    kind: zDigestItemKind,
+    ordinal: z.int().nullish(),
+    promptCount: z.int().nullish(),
+    text: z.string(),
+    timestamp: z.iso.datetime(),
+    transcriptId: zTranscriptID,
+    turnIndex: z.int().nullish()
+});
+
+export type PromptDigestItem = z.infer<typeof zPromptDigestItem>;
+
+export const zPromptDigest = z.object({
+    header: zPromptDigestHeader,
+    items: z.array(zPromptDigestItem),
+    skills: z.array(zPromptDigestSkill)
+});
+
+export type PromptDigest = z.infer<typeof zPromptDigest>;
+
 export const zPullSkipGateItem = z.object({
     annotationHashes: z.array(z.string()),
     contentHash: z.string(),
@@ -2373,6 +2435,7 @@ export type ToolCallDetail = z.infer<typeof zToolCallDetail>;
 
 export const zTurnDetail = z.object({
     agentName: z.string().optional(),
+    command: zCommandInvocation.nullish(),
     content: z.string(),
     depth: z.int(),
     entryType: zEntryType.optional(),
@@ -2535,6 +2598,15 @@ export const zVillageErrorResponse = z.object({
 export type VillageErrorResponse = z.infer<typeof zVillageErrorResponse>;
 
 /**
+ * GitHub Webhook Payload
+ *
+ * GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape
+ */
+export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
+
+export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
+
+/**
  * Village Group Acceptance Mode
  *
  * How a collective accepts new members and contributions
@@ -2657,6 +2729,47 @@ export const zVillageProjectNameSource = z.enum([
 ]);
 
 export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>;
+
+/**
+ * Village Prompts Check Mode
+ *
+ * Check-run conclusion policy for a collective's linked repositories when no prompts are attached
+ */
+export const zVillagePromptsCheckMode = z.enum(['informational', 'required']);
+
+export type VillagePromptsCheckMode = z.infer<typeof zVillagePromptsCheckMode>;
+
+/**
+ * Village Pull Request Attachment State
+ *
+ * Current lifecycle state of a pull request's prompt attachment
+ */
+export const zVillagePullRequestAttachmentState = z.enum([
+    'requested',
+    'waiting',
+    'preview',
+    'attached',
+    'detached'
+]);
+
+export type VillagePullRequestAttachmentState = z.infer<typeof zVillagePullRequestAttachmentState>;
+
+export const zVillagePromptRequest = z.object({
+    name: z.string(),
+    number: z.int(),
+    owner: z.string(),
+    remote: z.string(),
+    requested_at: z.iso.datetime(),
+    state: zVillagePullRequestAttachmentState
+});
+
+export type VillagePromptRequest = z.infer<typeof zVillagePromptRequest>;
+
+export const zVillagePromptRequestsResponse = z.object({
+    requests: z.array(zVillagePromptRequest)
+});
+
+export type VillagePromptRequestsResponse = z.infer<typeof zVillagePromptRequestsResponse>;
 
 export const zVillageRemoveGroupMemberResponse = z.object({
     retracted: z.boolean(),
@@ -2800,6 +2913,16 @@ export const zVillageContributableTranscript = z.object({
 
 export type VillageContributableTranscript = z.infer<typeof zVillageContributableTranscript>;
 
+export const zVillagePullRequestAttachedTranscript = z.object({
+    position: z.int(),
+    previous_visibility: zVillageTranscriptVisibility,
+    session_start: z.iso.datetime().nullable(),
+    title: z.string().nullable(),
+    transcript_id: zTranscriptID
+});
+
+export type VillagePullRequestAttachedTranscript = z.infer<typeof zVillagePullRequestAttachedTranscript>;
+
 /**
  * Village UUID
  *
@@ -2873,6 +2996,8 @@ export const zVillageGroup = z.object({
     id: zVillageUUID,
     linked_github_org: z.string().nullable(),
     name: z.string(),
+    post_prompts_check: z.boolean(),
+    prompts_check_mode: zVillagePromptsCheckMode,
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
     updated_at: z.iso.datetime()
 });
@@ -3038,6 +3163,35 @@ export const zVillagePublicGroup = z.object({
 
 export type VillagePublicGroup = z.infer<typeof zVillagePublicGroup>;
 
+export const zVillagePullRequestAttachment = z.object({
+    author_user_id: zVillageUUID.nullable(),
+    check_run_id: z.int().nullable(),
+    comment_id: z.int().nullable(),
+    confirmed_at: z.iso.datetime().nullable(),
+    created_at: z.iso.datetime(),
+    detached_at: z.iso.datetime().nullable(),
+    head_sha: z.string(),
+    id: zVillageUUID,
+    is_private_repository: z.boolean(),
+    name: z.string(),
+    number: z.int(),
+    owner: z.string(),
+    requested_by_github_id: z.int().nullable(),
+    state: zVillagePullRequestAttachmentState,
+    updated_at: z.iso.datetime()
+});
+
+export type VillagePullRequestAttachment = z.infer<typeof zVillagePullRequestAttachment>;
+
+export const zVillagePullRequestAttachmentResponse = z.object({
+    attachment: zVillagePullRequestAttachment,
+    digest: zPromptDigest.nullable(),
+    transcripts: z.array(zVillagePullRequestAttachedTranscript),
+    viewer_is_author: z.boolean()
+});
+
+export type VillagePullRequestAttachmentResponse = z.infer<typeof zVillagePullRequestAttachmentResponse>;
+
 export const zVillageShareTranscriptRequest = z.object({
     group_ids: z.array(zVillageUUID)
 });
@@ -3145,10 +3299,18 @@ export const zVillageUpdateGroupRequest = z.object({
     display_members: z.boolean().nullish(),
     linked_github_org: z.string().nullish(),
     name: z.string().optional(),
+    post_prompts_check: z.boolean().nullish(),
+    prompts_check_mode: zVillagePromptsCheckMode.optional(),
     transcript_deletion_policy: zVillageTranscriptDeletionPolicy.optional()
 });
 
 export type VillageUpdateGroupRequest = z.infer<typeof zVillageUpdateGroupRequest>;
+
+export const zVillageUpdateUserSettingsRequest = z.object({
+    preview_before_attach: z.boolean().nullish()
+});
+
+export type VillageUpdateUserSettingsRequest = z.infer<typeof zVillageUpdateUserSettingsRequest>;
 
 export const zVillageUserGroup = z.object({
     acceptance_mode: zVillageGroupAcceptanceMode,
@@ -3188,6 +3350,12 @@ export const zVillageUserGroupShare = z.object({
 });
 
 export type VillageUserGroupShare = z.infer<typeof zVillageUserGroupShare>;
+
+export const zVillageUserSettings = z.object({
+    preview_before_attach: z.boolean()
+});
+
+export type VillageUserSettings = z.infer<typeof zVillageUserSettings>;
 
 export const zVillageVisibleGroup = z.object({
     acceptance_mode: zVillageGroupAcceptanceMode,

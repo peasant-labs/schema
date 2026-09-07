@@ -297,6 +297,11 @@ type VillageGroup struct {
 	LinkedGithubOrg          *string                         `json:"linked_github_org"`
 	DisplayMembers           bool                            `json:"display_members"`
 	TranscriptDeletionPolicy VillageTranscriptDeletionPolicy `json:"transcript_deletion_policy"`
+	// PostPromptsCheck controls whether the prompts check is created on pull
+	// requests in this collective's linked repositories. Defaults to true.
+	PostPromptsCheck bool `json:"post_prompts_check"`
+	// PromptsCheckMode decides the check conclusion when no prompts are attached.
+	PromptsCheckMode VillagePromptsCheckMode `json:"prompts_check_mode"`
 }
 
 // VillagePublicGroup is the compact row returned by GET /api/v1/groups/public.
@@ -385,6 +390,8 @@ type VillageUpdateGroupRequest struct {
 	LinkedGithubOrg          *string                         `json:"linked_github_org,omitempty"`
 	DisplayMembers           *bool                           `json:"display_members,omitempty"`
 	TranscriptDeletionPolicy VillageTranscriptDeletionPolicy `json:"transcript_deletion_policy,omitempty"`
+	PostPromptsCheck         *bool                           `json:"post_prompts_check,omitempty"`
+	PromptsCheckMode         VillagePromptsCheckMode         `json:"prompts_check_mode,omitempty"`
 }
 
 type VillageStatusResponse struct {

@@ -53,7 +53,11 @@ const (
 	// Bumped to 0.14.0 when the Village API spec gained the schema-owned
 	// collectives, contribution, review, and linked-repository web routes.
 	// Bumped to 0.15.0 when the canonical harness inventory gained Pi.
-	VillageAPIVersion = "0.15.0"
+	// Bumped to 0.16.0 when the pull request prompt attachment surface was
+	// declared: the GitHub webhook receiver, the attachment read, confirm, and
+	// detach routes, the prompt-request and user-settings routes, and two
+	// collective settings (additive = minor bump).
+	VillageAPIVersion = "0.16.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -76,8 +80,10 @@ const (
 	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
 	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
-	// Bumped to 0.11.0 for independent optional tool namespace evidence.
-	PeasantLocalAPIVersion = "0.11.0"
+	// Bumped to 0.11.0 when TurnDetail gained the optional CommandInvocation
+	// for skill and user slash-command turns (additive = minor bump).
+	// Bumped to 0.12.0 for independent optional tool namespace evidence.
+	PeasantLocalAPIVersion = "0.12.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -113,6 +119,9 @@ const (
 	// Bumped to 0.15.0 for optional local metadata adapter/parser provenance.
 	// Bumped to 0.16.0 for detailed usage and native metadata evidence while
 	// retaining the adapter/parser provenance contract.
-	// Bumped to 0.17.0 for independent optional tool namespace evidence.
-	TypesVersion = "0.17.0"
+	// Bumped to 0.17.0 when CommandInvocation, the PromptDigest projection with
+	// its DigestItemKind closed set, and the Village pull request attachment
+	// DTOs entered the catalog.
+	// Bumped to 0.18.0 for independent optional tool namespace evidence.
+	TypesVersion = "0.18.0"
 )

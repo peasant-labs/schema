@@ -3,7 +3,7 @@ info:
   description: Shared domain type catalog for Peasant APIs. No operations; register
     these components for SDK code generation and cross-API type sharing.
   title: Peasant Types
-  version: 0.17.0
+  version: 0.18.0
 components:
   schemas:
     ActivityEdge:
@@ -4956,6 +4956,8 @@ components:
         isError:
           type: boolean
         name:
+          type: string
+        namespace:
           type: string
         result:
           type: string

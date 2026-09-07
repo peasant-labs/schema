@@ -134,6 +134,12 @@ type TurnDetail struct {
 	SourceEntryRef string          `json:"sourceEntryRef,omitempty"`
 	Usage          *UsageDetail    `json:"usage,omitempty"`
 
+	// Command is present when this user-role turn invoked a skill or a
+	// user-defined slash command. It is optional and safely ignorable; the
+	// invocation name is also in Content. Producers set it only on RoleUser
+	// turns and never for built-in harness commands.
+	Command *CommandInvocation `json:"command,omitempty"`
+
 	// Enrichment fields — propagated from session_entries.
 	EntryType   EntryType   `json:"entryType,omitempty"`
 	HasThinking bool        `json:"hasThinking,omitempty"`
