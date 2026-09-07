@@ -144,8 +144,11 @@ type TurnDetail struct {
 
 // ToolCallDetail is a tool call in the detail view.
 type ToolCallDetail struct {
-	ID             string       `json:"id"`
-	Name           string       `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// Namespace is independent source evidence, including a present empty string.
+	// Omission means not recorded; producers preserve the exact redacted value.
+	Namespace      *string      `json:"namespace,omitempty" nullable:"false"`
 	Arguments      string       `json:"arguments"`
 	Result         string       `json:"result"`
 	DurationMs     *int         `json:"durationMs,omitempty"`

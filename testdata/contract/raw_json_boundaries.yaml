@@ -1,4 +1,19 @@
 requiredCaseNames:
+  - tool-namespace-with-all-evidence
+  - tool-namespace-absent
+  - tool-namespace-empty
+  - tool-namespace-original-identity
+  - tool-namespace-redacted
+  - tool-namespace-outside-metadata-budget
+  - tool-namespace-null
+  - tool-namespace-number
+  - tool-namespace-object
+  - tool-namespace-array
+  - tool-namespace-bool
+  - tool-namespace-surrogate
+  - tool-namespace-duplicate
+  - tool-namespace-escaped-duplicate
+  - tool-namespace-invalid-value-unicode
   - duplicate-escaped-key
   - null-detail-root
   - null-token-input
@@ -100,6 +115,91 @@ requiredCaseNames:
   - trailing-comma-root
   - trailing-comma-metadata-array
 cases:
+  - name: tool-namespace-with-all-evidence
+    operation: detail
+    accepted: true
+    requiredCapabilities: [detailed_usage_v1, native_metadata_v1, observed_model_v1, tool_namespace_v1]
+    raw: >-
+      {"id":"s","harness":"pi","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":1,"turns":[{"index":0,"depth":0,"role":"assistant","content":"preserved","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"assistant-entry","observedModel":"Provider/Model","usage":{"ownerId":"assistant-owner","sourceEntryRef":"assistant-entry","scope":"assistant","completeness":"unknown"},"toolCalls":[{"id":"call","namespace":"Tools/Custom","name":"Lookup","arguments":"{\"nested\":{\"key\":true}}","result":"found","isError":true,"callEntryRef":"assistant-entry","resultEntryRef":"result-entry","usage":{"ownerId":"tool-owner","sourceEntryRef":"result-entry","scope":"tool","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"1e-7"}}}]}],"nativeMetadata":[{"id":"metadata","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call"},"data":{"state":{"selected":true}}}]}
+  - name: tool-namespace-absent
+    operation: turn
+    accepted: true
+    requiredCapabilities: []
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","name":"Lookup","arguments":"{\"nested\":{\"key\":true}}","result":""}]}'
+  - name: tool-namespace-empty
+    operation: turn
+    accepted: true
+    requiredCapabilities: [tool_namespace_v1]
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-original-identity
+    operation: turn
+    accepted: true
+    requiredCapabilities: [detailed_usage_v1, tool_namespace_v1]
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"  Mixed.Case/tools::λ/工具😀  ","name":"Lookup","arguments":"{}","result":"found","isError":true,"callEntryRef":"call-entry","resultEntryRef":"result-entry","usage":{"ownerId":"tool-owner","sourceEntryRef":"result-entry","scope":"tool","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"1e-7"}}}]}'
+  - name: tool-namespace-redacted
+    operation: turn
+    accepted: true
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"[INTERNAL]","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-outside-metadata-budget
+    operation: turn
+    accepted: true
+    generate: {unit: x, repeat: 16385}
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"{{value}}","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-null
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":null,"name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-number
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":7,"name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-object
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":{},"name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-array
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":[],"name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-bool
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":false,"name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-surrogate
+    operation: turn
+    accepted: false
+    errorCategory: lexical
+    errorContains: surrogate
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"\ud800","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-duplicate
+    operation: turn
+    accepted: false
+    errorCategory: lexical
+    errorContains: duplicate
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"original","namespace":"other","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-escaped-duplicate
+    operation: turn
+    accepted: false
+    errorCategory: lexical
+    errorContains: duplicate
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"original","name\u0073pace":"other","name":"Lookup","arguments":"{}","result":""}]}'
+  - name: tool-namespace-invalid-value-unicode
+    operation: namespace-unicode
+    accepted: false
+    errorCategory: validation
+    errorContains: namespace
+    goNamespaceBytesHex: ff
+    raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"\ud800","name":"Lookup","arguments":"{}","result":""}]}'
   - {name: duplicate-escaped-key, operation: scanner, accepted: false, errorCategory: lexical, errorContains: duplicate object key, raw: '{"data":1,"d\u0061ta":2}'}
   - {name: null-detail-root, operation: detail, accepted: false, errorCategory: validation, raw: 'null'}
   - name: null-token-input

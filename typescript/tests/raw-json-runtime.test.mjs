@@ -13,11 +13,13 @@ const generation = z.strictObject({
   depth: z.int().nonnegative().optional(), whitespace: z.int().nonnegative().optional(), copies: z.int().nonnegative().optional(),
 });
 const row = z.strictObject({
-  name: z.string().min(1), operation: z.enum(["scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode"]),
+  name: z.string().min(1), operation: z.enum(["scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode", "namespace-unicode"]),
   raw: z.string(), accepted: z.boolean(), errorCategory: z.enum(["lexical", "validation"]).optional(),
   errorContains: z.string().optional(), targets: z.string().optional(), pointers: z.array(z.string()).optional(),
   goOwnerBytesHex: z.string().regex(/^(?:[0-9a-f]{2})+$/).optional(),
+  goNamespaceBytesHex: z.string().regex(/^(?:[0-9a-f]{2})+$/).optional(),
   maxDepth: z.int().positive().optional(), generate: generation.optional(),
+  requiredCapabilities: z.array(z.string()).optional(),
 }).refine(value => value.accepted || value.errorCategory !== undefined, "rejections need an error category");
 const fixture = z.strictObject({requiredCaseNames: z.array(z.string().min(1)), cases: z.array(row)}).parse(
   parse(readFileSync(new URL("../../testdata/contract/raw_json_boundaries.yaml", import.meta.url), "utf8"), {uniqueKeys: true}),
@@ -81,6 +83,7 @@ for (const item of fixture.cases) test(item.name, async t => {
     case "turn": await detailExits(t, item, detail(`[${raw}]`)); break;
     case "detail": await detailExits(t, item, raw); break;
     case "owner-unicode": outcome(item, () => parseSessionDetailPayloadValue(JSON.parse(detail(`[${raw}]`))), raw); break;
+    case "namespace-unicode": outcome(item, () => parseSessionDetailPayloadValue(JSON.parse(detail(`[${raw}]`))), raw); break;
     case "metadata-value": outcome(item, () => parseNativeMetadataRecordsValue(JSON.parse(raw), JSON.parse(item.targets)), raw); break;
     case "metadata-records": {
       const targets = JSON.parse(item.targets);

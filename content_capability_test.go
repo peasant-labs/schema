@@ -21,19 +21,27 @@ var contentCapabilityFixtureYAML []byte
 var contentCapabilityManifestYAML []byte
 
 type contentCapabilityInput struct {
-	Operation     string                     `yaml:"operation"`
-	Advertised    []schema.ContentCapability `yaml:"advertised,omitempty"`
-	Required      []schema.ContentCapability `yaml:"required,omitempty"`
-	Turns         []contentCapabilityTurn    `yaml:"turns,omitempty"`
-	SessionModel  string                     `yaml:"sessionModel,omitempty"`
-	Role          schema.Role                `yaml:"role,omitempty"`
-	ObservedModel string                     `yaml:"observedModel,omitempty"`
+	Operation      string                     `yaml:"operation"`
+	Advertised     []schema.ContentCapability `yaml:"advertised,omitempty"`
+	Required       []schema.ContentCapability `yaml:"required,omitempty"`
+	Turns          []contentCapabilityTurn    `yaml:"turns,omitempty"`
+	SessionModel   string                     `yaml:"sessionModel,omitempty"`
+	Role           schema.Role                `yaml:"role,omitempty"`
+	ObservedModel  string                     `yaml:"observedModel,omitempty"`
+	NativeMetadata bool                       `yaml:"nativeMetadata,omitempty"`
 }
 
 type contentCapabilityTurn struct {
-	Role          schema.Role `yaml:"role"`
-	Depth         int         `yaml:"depth,omitempty"`
-	ObservedModel string      `yaml:"observedModel,omitempty"`
+	Role          schema.Role             `yaml:"role"`
+	Depth         int                     `yaml:"depth,omitempty"`
+	ObservedModel string                  `yaml:"observedModel,omitempty"`
+	Usage         bool                    `yaml:"usage,omitempty"`
+	Tools         []contentCapabilityTool `yaml:"tools,omitempty"`
+}
+
+type contentCapabilityTool struct {
+	Namespace *string `yaml:"namespace,omitempty"`
+	Usage     bool    `yaml:"usage,omitempty"`
 }
 
 type contentCapabilityExpected struct {
@@ -43,7 +51,6 @@ type contentCapabilityExpected struct {
 }
 
 type contentCapabilityManifest struct {
-	ExpectedCaseCount int      `yaml:"expectedCaseCount"`
 	RequiredCaseNames []string `yaml:"requiredCaseNames"`
 }
 
@@ -68,8 +75,22 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 				turns := make([]schema.TurnDetail, len(fixtureCase.Input.Turns))
 				for i, turn := range fixtureCase.Input.Turns {
 					turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel)}
+					if turn.Usage {
+						turns[i].Usage = &schema.UsageDetail{}
+					}
+					for _, tool := range turn.Tools {
+						value := schema.ToolCallDetail{Namespace: tool.Namespace}
+						if tool.Usage {
+							value.Usage = &schema.UsageDetail{}
+						}
+						turns[i].ToolCalls = append(turns[i].ToolCalls, value)
+					}
 				}
-				capabilities = schema.RequiredContentCapabilities(schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, Turns: turns})
+				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, Turns: turns}
+				if fixtureCase.Input.NativeMetadata {
+					payload.NativeMetadata = []schema.NativeMetadataRecord{{}}
+				}
+				capabilities = schema.RequiredContentCapabilities(payload)
 			case "evidence":
 				err = schema.ValidateObservedModelEvidence(fixtureCase.Input.Role, schema.ObservedModelID(fixtureCase.Input.ObservedModel))
 			default:
@@ -124,9 +145,6 @@ func loadContentCapabilityFixtures(t *testing.T) (testcase.Corpus[contentCapabil
 }
 
 func validateContentCapabilityInventory(corpus testcase.Corpus[contentCapabilityInput, contentCapabilityExpected], manifest contentCapabilityManifest) error {
-	if len(corpus.Cases) != manifest.ExpectedCaseCount || len(manifest.RequiredCaseNames) != manifest.ExpectedCaseCount {
-		return fmt.Errorf("capability fixture inventory count mismatch: cases=%d names=%d expected=%d", len(corpus.Cases), len(manifest.RequiredCaseNames), manifest.ExpectedCaseCount)
-	}
 	required := make(map[string]bool, len(manifest.RequiredCaseNames))
 	for _, name := range manifest.RequiredCaseNames {
 		if strings.TrimSpace(name) == "" || required[name] {

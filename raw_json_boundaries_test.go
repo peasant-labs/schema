@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -19,17 +20,19 @@ import (
 var rawJSONBoundaryYAML []byte
 
 type rawJSONBoundaryCase struct {
-	Name            string             `yaml:"name"`
-	Operation       string             `yaml:"operation"`
-	ErrorContains   string             `yaml:"errorContains"`
-	ErrorCategory   string             `yaml:"errorCategory"`
-	Raw             string             `yaml:"raw"`
-	GoOwnerBytesHex string             `yaml:"goOwnerBytesHex"`
-	Targets         string             `yaml:"targets"`
-	Accepted        bool               `yaml:"accepted"`
-	Pointers        []string           `yaml:"pointers"`
-	MaxDepth        int                `yaml:"maxDepth"`
-	Generate        *rawJSONGeneration `yaml:"generate"`
+	Name                 string                     `yaml:"name"`
+	Operation            string                     `yaml:"operation"`
+	ErrorContains        string                     `yaml:"errorContains"`
+	ErrorCategory        string                     `yaml:"errorCategory"`
+	Raw                  string                     `yaml:"raw"`
+	GoOwnerBytesHex      string                     `yaml:"goOwnerBytesHex"`
+	GoNamespaceBytesHex  string                     `yaml:"goNamespaceBytesHex"`
+	Targets              string                     `yaml:"targets"`
+	Accepted             bool                       `yaml:"accepted"`
+	Pointers             []string                   `yaml:"pointers"`
+	MaxDepth             int                        `yaml:"maxDepth"`
+	Generate             *rawJSONGeneration         `yaml:"generate"`
+	RequiredCapabilities []schema.ContentCapability `yaml:"requiredCapabilities"`
 }
 
 // Generation expands only fixture input, never implements validation. Raw
@@ -72,7 +75,7 @@ func loadRawJSONBoundaryFixtures(t *testing.T) rawJSONBoundaryFixtures {
 		}
 		seen[c.Name] = true
 		switch c.Operation {
-		case "scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode":
+		case "scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode", "namespace-unicode":
 		default:
 			t.Fatalf("case %q has unknown operation %q", c.Name, c.Operation)
 		}
@@ -191,12 +194,31 @@ func testDetailRawExits(t *testing.T, c rawJSONBoundaryCase, raw string) {
 	t.Run("detail", func(t *testing.T) {
 		value, err := schema.DecodeSessionDetailPayloadRaw([]byte(raw))
 		assertRawOutcome(t, c, value, err, raw)
+		if c.Accepted && c.RequiredCapabilities != nil && !slices.Equal(schema.RequiredContentCapabilities(value), c.RequiredCapabilities) {
+			t.Fatalf("decoded detail requirements %v, want %v", schema.RequiredContentCapabilities(value), c.RequiredCapabilities)
+		}
 	})
 	t.Run("transcript", func(t *testing.T) {
 		envelope := `{"kind":"session_detail","contractVersion":"1.0.0","sessionDetail":` + raw + `}`
 		value, err := schema.DecodeTranscriptContentRaw([]byte(envelope))
 		assertRawOutcome(t, c, value, err, envelope)
+		if c.Accepted && c.RequiredCapabilities != nil && !slices.Equal(schema.RequiredContentCapabilities(*value.SessionDetail), c.RequiredCapabilities) {
+			t.Fatalf("decoded transcript requirements %v, want %v", schema.RequiredContentCapabilities(*value.SessionDetail), c.RequiredCapabilities)
+		}
 	})
+	if c.Accepted {
+		t.Run("typed-roundtrip", func(t *testing.T) {
+			var value schema.SessionDetailPayload
+			if err := json.Unmarshal([]byte(raw), &value); err != nil {
+				t.Fatal(err)
+			}
+			assertRawOutcome(t, c, value, schema.ValidateSessionDetailPayload(value), raw)
+			envelope := schema.TranscriptContent{Kind: schema.ContentKindSessionDetail, SessionDetail: &value}
+			if err := schema.ValidateTranscriptContent(envelope); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
 }
 
 func TestRawJSONBoundariesSharedCorpus(t *testing.T) {
@@ -204,6 +226,19 @@ func TestRawJSONBoundariesSharedCorpus(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			raw := expandRawCase(c)
 			switch c.Operation {
+			case "namespace-unicode":
+				var value schema.SessionDetailPayload
+				if err := json.Unmarshal([]byte(rawDetail("["+raw+"]", "", "claude-code")), &value); err != nil {
+					t.Fatal(err)
+				}
+				invalid, err := hex.DecodeString(c.GoNamespaceBytesHex)
+				if err != nil {
+					t.Fatal(err)
+				}
+				namespace := string(invalid)
+				value.Turns[0].ToolCalls[0].Namespace = &namespace
+				assertRawOutcome(t, c, nil, schema.ValidateSessionDetailPayload(value), raw)
+				assertRawOutcome(t, c, nil, schema.ValidateTranscriptContent(schema.TranscriptContent{Kind: schema.ContentKindSessionDetail, SessionDetail: &value}), raw)
 			case "scanner":
 				depth := c.MaxDepth
 				if depth == 0 {

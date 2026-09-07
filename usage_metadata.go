@@ -324,6 +324,9 @@ func validateTurnEvidence(turns []TurnDetail) error {
 		}
 		for j := range t.ToolCalls {
 			tool := &t.ToolCalls[j]
+			if tool.Namespace != nil && !utf8.ValidString(*tool.Namespace) {
+				return fmt.Errorf("tool namespace validation failed at schema.ValidateSessionDetailPayload during turn %d tool %d validation: namespace contains invalid UTF-8; encoding would replace tool identity evidence; supply a valid Unicode string or omit unrecorded namespace", t.Index, j)
+			}
 			if tool.ToolKind != "" && !tool.ToolKind.IsValid() {
 				return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: toolKind is outside its closed set; the tool cannot be classified; use a published tool kind")
 			}
@@ -771,6 +774,9 @@ func validateSessionDetailRawShape(raw []byte) error {
 			for _, toolRaw := range tools {
 				var tool map[string]json.RawMessage
 				if json.Unmarshal(toolRaw, &tool) == nil {
+					if namespace, exists := tool["namespace"]; exists && isNullRaw(namespace) {
+						return fmt.Errorf("tool namespace validation failed at schema raw detail decoder during pre-decode validation: namespace is explicitly null; typed decoding would erase recorded presence; provide a string, including empty, or omit unrecorded namespace")
+					}
 					if usage, exists := tool["usage"]; exists && !isNullRaw(usage) {
 						if err := validateUsageRawShape(usage); err != nil {
 							return err

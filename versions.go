@@ -76,7 +76,8 @@ const (
 	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
 	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
-	PeasantLocalAPIVersion = "0.10.0"
+	// Bumped to 0.11.0 for independent optional tool namespace evidence.
+	PeasantLocalAPIVersion = "0.11.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -112,5 +113,6 @@ const (
 	// Bumped to 0.15.0 for optional local metadata adapter/parser provenance.
 	// Bumped to 0.16.0 for detailed usage and native metadata evidence while
 	// retaining the adapter/parser provenance contract.
-	TypesVersion = "0.16.0"
+	// Bumped to 0.17.0 for independent optional tool namespace evidence.
+	TypesVersion = "0.17.0"
 )

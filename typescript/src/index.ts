@@ -196,7 +196,18 @@ function validateTurnEvidence(targets: NonNullable<Detail["turns"]>): Map<number
       if (!turn.sourceEntryRef || turn.usage.sourceEntryRef !== turn.sourceEntryRef) failSemantic("turn usage source reference disagrees");
       validateUsage(turn.usage, owners, sources);
     }
-    for (const tool of turn.toolCalls ?? []) { if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes"); if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous"); if (tool.id) toolIds.add(tool.id); if (tool.callEntryRef !== undefined && !validOptionalRef(tool.callEntryRef)) failSemantic("tool call reference is invalid or exceeds 96 bytes"); if (tool.resultEntryRef !== undefined && !validOptionalRef(tool.resultEntryRef)) failSemantic("tool result reference is invalid or exceeds 96 bytes"); if (tool.usage != null) { if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees"); validateUsage(tool.usage, owners, sources); } }
+    for (const tool of turn.toolCalls ?? []) {
+      if (tool.namespace !== undefined && !validUnicode(tool.namespace)) failSemantic("tool namespace contains invalid Unicode; provide a valid string or omit unrecorded namespace");
+      if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes");
+      if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous");
+      if (tool.id) toolIds.add(tool.id);
+      if (tool.callEntryRef !== undefined && !validOptionalRef(tool.callEntryRef)) failSemantic("tool call reference is invalid or exceeds 96 bytes");
+      if (tool.resultEntryRef !== undefined && !validOptionalRef(tool.resultEntryRef)) failSemantic("tool result reference is invalid or exceeds 96 bytes");
+      if (tool.usage != null) {
+        if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees");
+        validateUsage(tool.usage, owners, sources);
+      }
+    }
   }
   return turns;
 }

@@ -12,9 +12,10 @@ export const KnownContentCapability = Object.freeze({
   DetailedUsageV1: "detailed_usage_v1",
   NativeMetadataV1: "native_metadata_v1",
   ObservedModelV1: "observed_model_v1",
+  ToolNamespaceV1: "tool_namespace_v1",
 } as const);
 export type KnownContentCapability = (typeof KnownContentCapability)[keyof typeof KnownContentCapability];
-export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1]) as readonly KnownContentCapability[];
+export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
 export function isContentCapability(value: unknown): value is KnownContentCapability {
   return typeof value === "string" && (AllContentCapabilities as readonly string[]).includes(value);
 }
