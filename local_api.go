@@ -130,7 +130,9 @@ type TurnDetail struct {
 	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
 	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
 	// validators do not infer it from Role.
-	ObservedModel ObservedModelID `json:"observedModel,omitempty"`
+	ObservedModel  ObservedModelID `json:"observedModel,omitempty"`
+	SourceEntryRef string          `json:"sourceEntryRef,omitempty"`
+	Usage          *UsageDetail    `json:"usage,omitempty"`
 
 	// Enrichment fields — propagated from session_entries.
 	EntryType   EntryType   `json:"entryType,omitempty"`
@@ -142,15 +144,18 @@ type TurnDetail struct {
 
 // ToolCallDetail is a tool call in the detail view.
 type ToolCallDetail struct {
-	ID         string       `json:"id"`
-	Name       string       `json:"name"`
-	Arguments  string       `json:"arguments"`
-	Result     string       `json:"result"`
-	DurationMs *int         `json:"durationMs,omitempty"`
-	ExitCode   *int         `json:"exitCode,omitempty"`
-	FilePath   string       `json:"filePath,omitempty"`
-	IsError    bool         `json:"isError,omitempty"`
-	ToolKind   ToolCallKind `json:"toolKind,omitempty"`
+	ID             string       `json:"id"`
+	Name           string       `json:"name"`
+	Arguments      string       `json:"arguments"`
+	Result         string       `json:"result"`
+	DurationMs     *int         `json:"durationMs,omitempty"`
+	ExitCode       *int         `json:"exitCode,omitempty"`
+	FilePath       string       `json:"filePath,omitempty"`
+	IsError        bool         `json:"isError,omitempty"`
+	ToolKind       ToolCallKind `json:"toolKind,omitempty"`
+	CallEntryRef   string       `json:"callEntryRef,omitempty"`
+	ResultEntryRef string       `json:"resultEntryRef,omitempty"`
+	Usage          *UsageDetail `json:"usage,omitempty"`
 }
 
 // SessionDetailPayload is the data sent on the session_detail WebSocket channel
@@ -202,7 +207,8 @@ type SessionDetailPayload struct {
 	// Scorecard carries the per-session quality signals used by the "How this
 	// session went" self-assessment card. Nil when the session has no computed
 	// metrics. Sourced from the same session_metrics row that backs QualitySession.
-	Scorecard *SessionScorecard `json:"scorecard,omitempty"`
+	Scorecard      *SessionScorecard      `json:"scorecard,omitempty"`
+	NativeMetadata []NativeMetadataRecord `json:"nativeMetadata,omitempty"`
 }
 
 // SessionScorecard holds the deterministic per-session quality signals needed

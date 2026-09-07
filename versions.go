@@ -52,7 +52,8 @@ const (
 	// capability advertisements (additive = minor bump).
 	// Bumped to 0.14.0 when the Village API spec gained the schema-owned
 	// collectives, contribution, review, and linked-repository web routes.
-	VillageAPIVersion = "0.14.0"
+	// Bumped to 0.15.0 when the canonical harness inventory gained Pi.
+	VillageAPIVersion = "0.15.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -74,7 +75,8 @@ const (
 	// session origin and the by-id session-summaries operation was declared
 	// (additive = minor bump).
 	// Prior versions stay byte-frozen.
-	PeasantLocalAPIVersion = "0.9.0"
+	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
+	PeasantLocalAPIVersion = "0.10.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -108,5 +110,7 @@ const (
 	// Bumped to 0.14.0 when the Village collectives, contribution, review, and
 	// linked-repository DTOs entered the catalog.
 	// Bumped to 0.15.0 for optional local metadata adapter/parser provenance.
-	TypesVersion = "0.15.0"
+	// Bumped to 0.16.0 for detailed usage and native metadata evidence while
+	// retaining the adapter/parser provenance contract.
+	TypesVersion = "0.16.0"
 )

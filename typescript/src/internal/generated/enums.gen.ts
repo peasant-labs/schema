@@ -54,6 +54,11 @@ import { zVillageShareStatus, type VillageShareStatus as VillageShareStatusContr
 import { zVillageTranscriptDeletionPolicy, type VillageTranscriptDeletionPolicy as VillageTranscriptDeletionPolicyContract } from "./contract/zod.gen.js";
 import { zVillageTranscriptVisibility, type VillageTranscriptVisibility as VillageTranscriptVisibilityContract } from "./contract/zod.gen.js";
 import { zVisibility, type Visibility as VisibilityContract } from "./contract/zod.gen.js";
+import { zUsageScope, type UsageScope as UsageScopeContract } from "./contract/zod.gen.js";
+import { zUsageCompleteness, type UsageCompleteness as UsageCompletenessContract } from "./contract/zod.gen.js";
+import { zNativeMetadataKind, type NativeMetadataKind as NativeMetadataKindContract } from "./contract/zod.gen.js";
+import { zNativeMetadataSourceType, type NativeMetadataSourceType as NativeMetadataSourceTypeContract } from "./contract/zod.gen.js";
+import { zNativePiMessageRole, type NativePiMessageRole as NativePiMessageRoleContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -304,13 +309,14 @@ export const Harness = Object.freeze({
   Cursor: zHarness.parse("cursor"),
   Antigravity: zHarness.parse("antigravity"),
   Strike: zHarness.parse("strike"),
+  Pi: zHarness.parse("pi"),
 } as const);
 /**
  * AllHarnesses is the ingestion-supported subset of Harness, not the full
  * canonical set (mirrors types.go's AllHarnesses doc comment). Every Harness
  * member remains individually valid and accepted by isHarness.
  */
-export const AllHarnesses = Object.freeze([Harness.ClaudeCode, Harness.GeminiCLI, Harness.Codex, Harness.OpenCode, Harness.Cursor, Harness.Strike]) as readonly Harness[];
+export const AllHarnesses = Object.freeze([Harness.ClaudeCode, Harness.GeminiCLI, Harness.Codex, Harness.OpenCode, Harness.Cursor, Harness.Strike, Harness.Pi]) as readonly Harness[];
 export function isHarness(value: unknown): value is Harness {
   return zHarness.safeParse(value).success;
 }
@@ -725,4 +731,61 @@ export const Visibility = Object.freeze({
 export const AllVisibilities = Object.freeze([Visibility.Private, Visibility.Group, Visibility.Public]) as readonly Visibility[];
 export function isVisibility(value: unknown): value is Visibility {
   return zVisibility.safeParse(value).success;
+}
+
+export type UsageScope = UsageScopeContract;
+export const UsageScope = Object.freeze({
+  Assistant: zUsageScope.parse("assistant"),
+  Tool: zUsageScope.parse("tool"),
+  Summary: zUsageScope.parse("summary"),
+} as const);
+export const AllUsageScopes = Object.freeze([UsageScope.Assistant, UsageScope.Tool, UsageScope.Summary]) as readonly UsageScope[];
+export function isUsageScope(value: unknown): value is UsageScope {
+  return zUsageScope.safeParse(value).success;
+}
+
+export type UsageCompleteness = UsageCompletenessContract;
+export const UsageCompleteness = Object.freeze({
+  Complete: zUsageCompleteness.parse("complete"),
+  Partial: zUsageCompleteness.parse("partial"),
+  Unknown: zUsageCompleteness.parse("unknown"),
+} as const);
+export const AllUsageCompleteness = Object.freeze([UsageCompleteness.Complete, UsageCompleteness.Partial, UsageCompleteness.Unknown]) as readonly UsageCompleteness[];
+export function isUsageCompleteness(value: unknown): value is UsageCompleteness {
+  return zUsageCompleteness.safeParse(value).success;
+}
+
+export type NativeMetadataKind = NativeMetadataKindContract;
+export const NativeMetadataKind = Object.freeze({
+  PiCustomData: zNativeMetadataKind.parse("pi.custom.data"),
+  PiCustomMessageDetails: zNativeMetadataKind.parse("pi.custommessage.details"),
+  PiToolResultDetails: zNativeMetadataKind.parse("pi.toolresult.details"),
+  PiCompactionDetails: zNativeMetadataKind.parse("pi.compaction.details"),
+  PiBranchSummaryDetails: zNativeMetadataKind.parse("pi.branchsummary.details"),
+} as const);
+export const AllNativeMetadataKinds = Object.freeze([NativeMetadataKind.PiCustomData, NativeMetadataKind.PiCustomMessageDetails, NativeMetadataKind.PiToolResultDetails, NativeMetadataKind.PiCompactionDetails, NativeMetadataKind.PiBranchSummaryDetails]) as readonly NativeMetadataKind[];
+export function isNativeMetadataKind(value: unknown): value is NativeMetadataKind {
+  return zNativeMetadataKind.safeParse(value).success;
+}
+
+export type NativeMetadataSourceType = NativeMetadataSourceTypeContract;
+export const NativeMetadataSourceType = Object.freeze({
+  PiCustom: zNativeMetadataSourceType.parse("pi.custom"),
+  PiCustomMessage: zNativeMetadataSourceType.parse("pi.custom_message"),
+  PiMessage: zNativeMetadataSourceType.parse("pi.message"),
+  PiCompaction: zNativeMetadataSourceType.parse("pi.compaction"),
+  PiBranchSummary: zNativeMetadataSourceType.parse("pi.branch_summary"),
+} as const);
+export const AllNativeMetadataSourceTypes = Object.freeze([NativeMetadataSourceType.PiCustom, NativeMetadataSourceType.PiCustomMessage, NativeMetadataSourceType.PiMessage, NativeMetadataSourceType.PiCompaction, NativeMetadataSourceType.PiBranchSummary]) as readonly NativeMetadataSourceType[];
+export function isNativeMetadataSourceType(value: unknown): value is NativeMetadataSourceType {
+  return zNativeMetadataSourceType.safeParse(value).success;
+}
+
+export type NativePiMessageRole = NativePiMessageRoleContract;
+export const NativePiMessageRole = Object.freeze({
+  ToolResult: zNativePiMessageRole.parse("toolResult"),
+} as const);
+export const AllNativePiMessageRoles = Object.freeze([NativePiMessageRole.ToolResult]) as readonly NativePiMessageRole[];
+export function isNativePiMessageRole(value: unknown): value is NativePiMessageRole {
+  return zNativePiMessageRole.safeParse(value).success;
 }
