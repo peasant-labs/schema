@@ -168,6 +168,7 @@ func (i PromptDigestItem) Validate() error {
 // skills, and that the header counts describe the complete chain.
 func (d PromptDigest) Validate() error {
 	const where = "prompt digest validation failed at schema.PromptDigest.Validate: "
+	seen := make(map[string]struct{}, len(d.Skills))
 	for index, skill := range d.Skills {
 		if skill.Name == "" {
 			return fmt.Errorf(where+"skills[%d] has an empty name; a header entry names a slash-prefixed skill or user command, or a bare plugin identifier", index)
@@ -183,6 +184,10 @@ func (d PromptDigest) Validate() error {
 		if skill.InvocationCount < 1 {
 			return fmt.Errorf(where+"skills[%d] %q has invocationCount %d; a listed skill was invoked at least once", index, skill.Name, skill.InvocationCount)
 		}
+		if _, repeated := seen[skill.Name]; repeated {
+			return fmt.Errorf(where+"skills[%d] is a duplicate header entry for %q; the header names each skill once and carries its complete invocationCount", index, skill.Name)
+		}
+		seen[skill.Name] = struct{}{}
 	}
 	prompts, sessions := 0, 0
 	skillItemCounts := map[string]int{}

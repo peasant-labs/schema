@@ -165,3 +165,17 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: every marker in the chain has a header entry}
     mutation: {description: drops the header entry for a skill marker in the chain}
+
+  - name: duplicate-header-skill-invalid
+    input:
+      header: {sessionCount: 0, promptCount: 0, commitsCovered: 0, commitsTotal: 0, harness: claude-code, redactionLevel: standard, villageUrl: https://village.example/pulls/o/r/42}
+      skills:
+        - {name: /superpowers:brainstorming, invocationCount: 1}
+        - {name: /superpowers:brainstorming, invocationCount: 1}
+      items: []
+    expected:
+      accepted: false
+      errorContains: duplicate
+    classification: must-fail
+    provenance: {source: requirement, ref: the header lists each skill once}
+    mutation: {description: repeats a header skill entry}

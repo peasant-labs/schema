@@ -1,4 +1,4 @@
-expectedCaseCount: 12
+expectedCaseCount: 13
 requiredCaseNames:
   - chronological-valid
   - out-of-order-invalid
@@ -12,3 +12,4 @@ requiredCaseNames:
   - commits-covered-mismatch-invalid
   - skill-count-mismatch-invalid
   - skill-item-missing-from-header-invalid
+  - duplicate-header-skill-invalid
