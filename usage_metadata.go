@@ -373,7 +373,7 @@ func ValidateTranscriptContent(v TranscriptContent) error {
 }
 
 func ValidateNativeMetadata(v SessionDetailPayload) error {
-	if len(v.NativeMetadata) > 0 && string(v.Harness) != "pi" {
+	if len(v.NativeMetadata) > 0 && v.Harness != HarnessPi {
 		return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: pi metadata is attached to harness %q; consumers would misattribute evidence; emit it only for harness pi", v.Harness)
 	}
 	return ValidateNativeMetadataRecords(v.NativeMetadata, v.Turns)

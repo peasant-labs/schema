@@ -229,15 +229,6 @@ func TestRawJSONBoundariesSharedCorpus(t *testing.T) {
 					t.Run("raw-public-bounds", func(t *testing.T) { testDetailRawExits(t, c, rawDetail(c.Targets, raw, "claude-code")) })
 				}
 				t.Run("pi-public-roots", func(t *testing.T) {
-					known := false
-					for _, harness := range schema.Harnesses() {
-						if string(harness) == "pi" {
-							known = true
-						}
-					}
-					if !known {
-						t.Skip("Pi public roots await the released canonical Bestiary harness pin; independent production record validation runs above")
-					}
 					testDetailRawExits(t, c, rawDetail(c.Targets, raw, "pi"))
 				})
 			case "metadata-value":

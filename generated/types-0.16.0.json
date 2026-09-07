@@ -3921,7 +3921,8 @@
           "opencode",
           "cursor",
           "antigravity",
-          "strike"
+          "strike",
+          "pi"
         ],
         "examples": [
           "claude-code",

@@ -517,6 +517,7 @@ components:
       - cursor
       - antigravity
       - strike
+      - pi
       examples:
       - claude-code
       - opencode

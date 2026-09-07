@@ -173,7 +173,8 @@ enums:
       - {name: Cursor, value: "cursor"}
       - {name: Antigravity, value: "antigravity"}
       - {name: Strike, value: "strike"}
-    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike"]
+      - {name: Pi, value: "pi"}
+    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike", "pi"]
   - name: InsightKind
     all_name: AllInsightKinds
     members:

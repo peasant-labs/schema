@@ -5,7 +5,7 @@ import { parse } from "yaml";
 import { z } from "zod";
 import {
   scanRawJsonText, parseSessionDetailPayloadText, parseSessionDetailPayloadValue, parseTranscriptContentText,
-  parseServerMessageRaw, parseNativeMetadataRecordsText, parseNativeMetadataRecordsValue, zHarness,
+  parseServerMessageRaw, parseNativeMetadataRecordsText, parseNativeMetadataRecordsValue,
 } from "../dist/index.js";
 
 const generation = z.strictObject({
@@ -87,7 +87,7 @@ for (const item of fixture.cases) test(item.name, async t => {
       outcome(item, () => parseNativeMetadataRecordsText(raw, targets), raw);
       if (item.errorCategory !== "lexical") outcome(item, () => parseNativeMetadataRecordsValue(JSON.parse(raw), targets), raw);
       if (item.errorCategory === "lexical") await t.test("raw-public-bounds", async t => detailExits(t, item, detail(item.targets, raw)));
-      await t.test("pi-public-roots", {skip: !zHarness.safeParse("pi").success && "awaits the released canonical Bestiary harness pin; independent production record validation runs above"}, async t => {
+      await t.test("pi-public-roots", async t => {
         await detailExits(t, item, detail(item.targets, raw, "pi"));
       });
       break;

@@ -677,7 +677,8 @@ export const zHarness = z.enum([
     'opencode',
     'cursor',
     'antigravity',
-    'strike'
+    'strike',
+    'pi'
 ]);
 
 export type Harness = z.infer<typeof zHarness>;
