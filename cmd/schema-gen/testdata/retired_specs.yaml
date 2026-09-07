@@ -1,5 +1,9 @@
 specs:
+  - {name: village-api-0.14.0, json_sha256: a0e343394f8d5273728c4223bef9c5c5bc2df9b6e63b7357011e7cb6d53113fd, yaml_sha256: 91ded59199e07c2896af0bf1cf619fdb91c4773b7c9b5a71262a9815b3bc7155}
+  - {name: publish-request-0.14.0.schema, json_sha256: edc102d2c80b496baec89e382dc0c27ae6096d03595c1d2d1c32c4524af129b2, json_only: true}
+  - {name: annotation-push-request-0.14.0.schema, json_sha256: a8399d734bc8f88f1043ce50907ef3c98b2c7726240f1a9cfeb33b489765aef2, json_only: true}
   - {name: types-0.14.0, json_sha256: 598793c8a257b340532df071d4e5fe83d7b2b7f74b7cd653a6a0db53c2ee9d96, yaml_sha256: 3c5b8b730604470ffdc0fe372e07b9dd99c30398f2c1e66c8d925cfc32b136cd}
+  - {name: types-0.15.0, json_sha256: e3015601bde5181de2b3ad1bf3f90eb8c71bef7d5fe3ad95e17368a5a35ba311, yaml_sha256: 0c1617c1e4fabd880a4eafdecd1b36df4fa4eeb020e9dc6a7547ad7d728358b2}
   - {name: types-0.1.0, json_sha256: 91b80c69b5aa7fa68f04e9ad1536089eae1908e5ea0db8246dc7b603661f2f83, yaml_sha256: 3f876b6b2a3606dda7b6b79b9f5b7534db7bb8fe16ac1f5512f2e235730e1a64}
   - {name: types-0.2.0, json_sha256: 315192ee23fe0fe630b378ed74f1922ec22da84954cc2412bc13d23e51bd0f50, yaml_sha256: 1416877e8337624e8422f7043b060ce087d2bc2e1ddbb1cef9e0de862e35aab9}
   - {name: peasantlocal-api-0.1.0, json_sha256: 40b31eb6816a96c1283b2854e76d94936198b56c6ee78f16f02d774566791aee, yaml_sha256: 8c147003402e78f5a964135a689247c4876a2a980fcbd3be2c2bf6a553ce1b23}
@@ -52,3 +56,4 @@ specs:
   - {name: village-api-0.13.0, json_sha256: 4d5da6df33645c727fa9b4c5bd4d3d41dda6d06d67263a646dec62f207d7fe48, yaml_sha256: 0c23310cdcb9b3fd393393003102b468ca8637feae2aa0ac567814f18fecceba}
   - {name: publish-request-0.13.0.schema, json_sha256: 36cfd40ba85274ab366c07b459345dd06ed74e0cd6d947bbc7a14ef371006cef, json_only: true}
   - {name: annotation-push-request-0.13.0.schema, json_sha256: 98fcffd2d3ed56cdf0d390d8c4242dc81ca9ccdd3a75d4c826542eadc2cb8a7f, json_only: true}
+  - {name: peasantlocal-api-0.9.0, json_sha256: 4296953d1c4dcd5c1443e0e632a5022f862573cba8a91811b79c2eac93e7e340, yaml_sha256: b085349074fcb61f0ea7c2e4f8871a428f134d2c45484973ef0484ec30dadeba}

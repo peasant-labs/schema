@@ -10,13 +10,13 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.14.0
+    value: 0.15.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.9.0
+    value: 0.10.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.15.0
+    value: 0.16.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "10"
@@ -30,6 +30,27 @@ functions:
     surfaces: [root]
   - name: newProjectHash
     target: runtime-constructor:ProjectHash
+    surfaces: [root]
+  - name: scanRawJsonText
+    target: runtime-scanner:RawJSON
+    surfaces: [root]
+  - name: parseServerMessageRaw
+    target: runtime-parser:ServerMessage
+    surfaces: [root]
+  - name: parseSessionDetailPayloadValue
+    target: runtime-parser:SessionDetailPayload
+    surfaces: [root]
+  - name: parseSessionDetailPayloadText
+    target: runtime-parser:SessionDetailPayload
+    surfaces: [root]
+  - name: parseTranscriptContentText
+    target: runtime-parser:TranscriptContent
+    surfaces: [root]
+  - name: parseNativeMetadataRecordsText
+    target: runtime-parser:NativeMetadataRecords
+    surfaces: [root]
+  - name: parseNativeMetadataRecordsValue
+    target: runtime-parser:NativeMetadataRecords
     surfaces: [root]
 forbidden:
   - Provider

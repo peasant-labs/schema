@@ -331,12 +331,13 @@ const (
 	HarnessCursor      = bestiary.HarnessCursor
 	HarnessAntigravity = bestiary.HarnessAntigravity
 	HarnessStrike      = bestiary.HarnessStrike
+	HarnessPi          = bestiary.HarnessPi
 )
 
 // AllHarnesses is the canonical list of harnesses that peasant supports for ingestion.
 var AllHarnesses = []Harness{
 	HarnessClaudeCode, HarnessGeminiCLI, HarnessCodex, HarnessOpenCode, HarnessCursor,
-	HarnessStrike,
+	HarnessStrike, HarnessPi,
 }
 
 // Harnesses returns every harness identifier known to bestiary — the full set,
@@ -364,6 +365,8 @@ func HarnessDisplayName(h Harness) string {
 		return "Antigravity"
 	case HarnessStrike:
 		return "Strike"
+	case HarnessPi:
+		return "Pi"
 	}
 	return string(h)
 }

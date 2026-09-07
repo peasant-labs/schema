@@ -1,4 +1,4 @@
-expectedCaseCount: 16
+expectedCaseCount: 17
 requiredCaseNames:
   - omitted-discovery-is-compatible-with-no-requirements
   - empty-discovery-is-compatible-with-no-requirements
@@ -6,6 +6,7 @@ requiredCaseNames:
   - canonical-server-advertisement-valid
   - unknown-server-advertisement-invalid
   - duplicate-server-advertisement-invalid
+  - unsorted-unique-server-advertisement-invalid
   - required-capability-present
   - required-capability-missing
   - payload-without-observation-needs-no-capability

@@ -1063,3 +1063,59 @@ types:
     disposition: catalog
     component: Visibility
     reason: public wire or domain contract type
+
+  - go_name: UsageScope
+    disposition: catalog
+    component: UsageScope
+    reason: public wire or domain contract type
+  - go_name: UsageCompleteness
+    disposition: catalog
+    component: UsageCompleteness
+    reason: public wire or domain contract type
+  - go_name: UsageOwnerID
+    disposition: catalog
+    component: UsageOwnerID
+    reason: public wire or domain contract type
+  - go_name: RecordedCostAmount
+    disposition: catalog
+    component: RecordedCostAmount
+    reason: public wire or domain contract type
+  - go_name: TokenUsageDetail
+    disposition: catalog
+    component: TokenUsageDetail
+    reason: public wire or domain contract type
+  - go_name: RecordedCostDetail
+    disposition: catalog
+    component: RecordedCostDetail
+    reason: public wire or domain contract type
+  - go_name: UsageDetail
+    disposition: catalog
+    component: UsageDetail
+    reason: public wire or domain contract type
+  - go_name: NativeMetadataKind
+    disposition: catalog
+    component: NativeMetadataKind
+    reason: public wire or domain contract type
+  - go_name: NativeMetadataSourceType
+    disposition: catalog
+    component: NativeMetadataSourceType
+    reason: public wire or domain contract type
+  - go_name: NativePiMessageRole
+    disposition: catalog
+    component: NativePiMessageRole
+    reason: public wire or domain contract type
+  - go_name: NativeSourceRef
+    disposition: catalog
+    component: NativeSourceRef
+    reason: public wire or domain contract type
+  - go_name: NativeAttachmentRef
+    disposition: catalog
+    component: NativeAttachmentRef
+    reason: public wire or domain contract type
+  - go_name: NativeMetadataRecord
+    disposition: catalog
+    component: NativeMetadataRecord
+    reason: public wire or domain contract type
+  - go_name: RawJSONPathPolicy
+    disposition: runtime-only
+    reason: raw decoder policy is runtime behavior, not serialized contract data
