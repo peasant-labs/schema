@@ -346,6 +346,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillageCollectiveOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillagePullRequestOperations(r); err != nil {
+		return nil, err
+	}
 
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
@@ -865,6 +868,36 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 	}
 
+	if err := addVillageOperations(r, operations); err != nil {
+		return err
+	}
+
+	for _, body := range []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/api/v1/groups"},
+		{http.MethodPatch, "/api/v1/groups/{id}"},
+		{http.MethodPost, "/api/v1/groups/{id}/members"},
+		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
+		{http.MethodPost, "/api/v1/groups/{id}/shares"},
+		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
+		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
+		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
+		{http.MethodPost, "/api/v1/groups/{id}/repositories"},
+	} {
+		if err := requireRequestBody(r.Spec, body.method, body.path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// addVillageOperations reflects one table of Village operations. Every request
+// structure is added, the success response takes its declared status, and each
+// error status shares the common VillageErrorResponse envelope.
+func addVillageOperations(r *openapi31.Reflector, operations []villageOperationSpec) error {
 	for _, op := range operations {
 		oc, err := r.NewOperationContext(op.method, op.path)
 		if err != nil {
@@ -890,26 +923,6 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			return fmt.Errorf("add Village operation %s %s: %w", op.method, op.path, err)
 		}
 	}
-
-	for _, body := range []struct {
-		method string
-		path   string
-	}{
-		{http.MethodPost, "/api/v1/groups"},
-		{http.MethodPatch, "/api/v1/groups/{id}"},
-		{http.MethodPost, "/api/v1/groups/{id}/members"},
-		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
-		{http.MethodPost, "/api/v1/groups/{id}/shares"},
-		{http.MethodPatch, "/api/v1/groups/{id}/shares"},
-		{http.MethodPatch, "/api/v1/groups/{id}/shares/{transcriptID}"},
-		{http.MethodPost, "/api/v1/transcripts/{id}/share"},
-		{http.MethodPost, "/api/v1/groups/{id}/repositories"},
-	} {
-		if err := requireRequestBody(r.Spec, body.method, body.path); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

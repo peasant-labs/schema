@@ -1,0 +1,15 @@
+expectedCaseCount: 13
+requiredCaseNames:
+  - chronological-valid
+  - out-of-order-invalid
+  - header-prompt-count-mismatch-invalid
+  - header-session-count-mismatch-invalid
+  - commits-covered-exceeds-total-invalid
+  - skill-name-with-whitespace-invalid
+  - skill-zero-count-invalid
+  - plugin-header-entry-valid
+  - ordinals-not-sequential-invalid
+  - commits-covered-mismatch-invalid
+  - skill-count-mismatch-invalid
+  - skill-item-missing-from-header-invalid
+  - duplicate-header-skill-invalid
