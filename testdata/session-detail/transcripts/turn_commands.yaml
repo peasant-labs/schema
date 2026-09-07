@@ -1,0 +1,102 @@
+cases:
+  - name: namespaced-skill-valid
+    input:
+      name: /superpowers:brainstorming
+    expected:
+      accepted: true
+      wireHasArgs: false
+    classification: must-pass
+    provenance: {source: requirement, ref: a namespaced skill name is the common Claude Code invocation form}
+    mutation: {description: a valid invocation with no trailing arguments}
+
+  - name: skill-with-args-valid
+    input:
+      name: /aura:epoch
+      args: plan the migration
+    expected:
+      accepted: true
+      wireHasArgs: true
+    classification: must-pass
+    provenance: {source: requirement, ref: text after the command on the same line is carried as args}
+    mutation: {description: adds trailing arguments to a valid invocation}
+
+  - name: plain-user-command-valid
+    input:
+      name: /review-pr
+    expected:
+      accepted: true
+      wireHasArgs: false
+    classification: must-pass
+    provenance: {source: requirement, ref: a user-defined command without a namespace is also an invocation}
+    mutation: {description: drops the namespace separator from a valid name}
+
+  - name: opencode-skill-valid
+    input:
+      name: /commit
+      args: ""
+    expected:
+      accepted: true
+      wireHasArgs: false
+    classification: must-pass
+    provenance: {source: requirement, ref: OpenCode records skills under the same slash-prefixed form}
+    mutation: {description: an explicit empty args string is treated as absent on the wire}
+
+  - name: missing-slash-invalid
+    input:
+      name: superpowers:brainstorming
+    expected:
+      accepted: false
+      errorContains: does not start with a slash
+    classification: must-fail
+    provenance: {source: boundary, ref: the wire keeps the harness form with the leading slash}
+    mutation: {description: removes the leading slash from a valid name}
+
+  - name: empty-invalid
+    input:
+      name: ""
+    expected:
+      accepted: false
+      errorContains: the name is empty
+    classification: must-fail
+    provenance: {source: boundary, ref: an empty name cannot attribute the turn to a command}
+    mutation: {description: empties the name}
+
+  - name: bare-slash-invalid
+    input:
+      name: /
+    expected:
+      accepted: false
+      errorContains: bare slash
+    classification: must-fail
+    provenance: {source: boundary, ref: a slash with nothing after it names no command}
+    mutation: {description: keeps only the slash}
+
+  - name: whitespace-in-name-invalid
+    input:
+      name: /aura epoch
+    expected:
+      accepted: false
+      errorContains: whitespace or a control character
+    classification: must-fail
+    provenance: {source: boundary, ref: a name is one token; trailing text belongs in args}
+    mutation: {description: inserts a space into the name instead of using args}
+
+  - name: control-character-in-name-invalid
+    input:
+      name: "/aura\tepoch"
+    expected:
+      accepted: false
+      errorContains: whitespace or a control character
+    classification: must-fail
+    provenance: {source: boundary, ref: control characters are never part of a command token}
+    mutation: {description: inserts a tab into the name}
+
+  - name: builtin-command-invalid
+    input:
+      name: /compact
+    expected:
+      accepted: false
+      errorContains: built-in harness command
+    classification: must-fail
+    provenance: {source: requirement, ref: built-in commands are structural signals and are never emitted as invocations}
+    mutation: {description: uses a Claude Code built-in command name}

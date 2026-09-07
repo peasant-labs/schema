@@ -59,6 +59,9 @@ import { zUsageCompleteness, type UsageCompleteness as UsageCompletenessContract
 import { zNativeMetadataKind, type NativeMetadataKind as NativeMetadataKindContract } from "./contract/zod.gen.js";
 import { zNativeMetadataSourceType, type NativeMetadataSourceType as NativeMetadataSourceTypeContract } from "./contract/zod.gen.js";
 import { zNativePiMessageRole, type NativePiMessageRole as NativePiMessageRoleContract } from "./contract/zod.gen.js";
+import { zDigestItemKind, type DigestItemKind as DigestItemKindContract } from "./contract/zod.gen.js";
+import { zVillagePullRequestAttachmentState, type VillagePullRequestAttachmentState as VillagePullRequestAttachmentStateContract } from "./contract/zod.gen.js";
+import { zVillagePromptsCheckMode, type VillagePromptsCheckMode as VillagePromptsCheckModeContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -788,4 +791,39 @@ export const NativePiMessageRole = Object.freeze({
 export const AllNativePiMessageRoles = Object.freeze([NativePiMessageRole.ToolResult]) as readonly NativePiMessageRole[];
 export function isNativePiMessageRole(value: unknown): value is NativePiMessageRole {
   return zNativePiMessageRole.safeParse(value).success;
+}
+
+export type DigestItemKind = DigestItemKindContract;
+export const DigestItemKind = Object.freeze({
+  Session: zDigestItemKind.parse("session"),
+  Prompt: zDigestItemKind.parse("prompt"),
+  Skill: zDigestItemKind.parse("skill"),
+  Commit: zDigestItemKind.parse("commit"),
+} as const);
+export const AllDigestItemKinds = Object.freeze([DigestItemKind.Session, DigestItemKind.Prompt, DigestItemKind.Skill, DigestItemKind.Commit]) as readonly DigestItemKind[];
+export function isDigestItemKind(value: unknown): value is DigestItemKind {
+  return zDigestItemKind.safeParse(value).success;
+}
+
+export type VillagePullRequestAttachmentState = VillagePullRequestAttachmentStateContract;
+export const VillagePullRequestAttachmentState = Object.freeze({
+  Requested: zVillagePullRequestAttachmentState.parse("requested"),
+  Waiting: zVillagePullRequestAttachmentState.parse("waiting"),
+  Preview: zVillagePullRequestAttachmentState.parse("preview"),
+  Attached: zVillagePullRequestAttachmentState.parse("attached"),
+  Detached: zVillagePullRequestAttachmentState.parse("detached"),
+} as const);
+export const AllVillagePullRequestAttachmentStates = Object.freeze([VillagePullRequestAttachmentState.Requested, VillagePullRequestAttachmentState.Waiting, VillagePullRequestAttachmentState.Preview, VillagePullRequestAttachmentState.Attached, VillagePullRequestAttachmentState.Detached]) as readonly VillagePullRequestAttachmentState[];
+export function isVillagePullRequestAttachmentState(value: unknown): value is VillagePullRequestAttachmentState {
+  return zVillagePullRequestAttachmentState.safeParse(value).success;
+}
+
+export type VillagePromptsCheckMode = VillagePromptsCheckModeContract;
+export const VillagePromptsCheckMode = Object.freeze({
+  Informational: zVillagePromptsCheckMode.parse("informational"),
+  Required: zVillagePromptsCheckMode.parse("required"),
+} as const);
+export const AllVillagePromptsCheckModes = Object.freeze([VillagePromptsCheckMode.Informational, VillagePromptsCheckMode.Required]) as readonly VillagePromptsCheckMode[];
+export function isVillagePromptsCheckMode(value: unknown): value is VillagePromptsCheckMode {
+  return zVillagePromptsCheckMode.safeParse(value).success;
 }

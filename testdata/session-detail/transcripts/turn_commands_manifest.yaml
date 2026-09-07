@@ -1,0 +1,12 @@
+expectedCaseCount: 10
+requiredCaseNames:
+  - namespaced-skill-valid
+  - skill-with-args-valid
+  - plain-user-command-valid
+  - opencode-skill-valid
+  - missing-slash-invalid
+  - empty-invalid
+  - bare-slash-invalid
+  - whitespace-in-name-invalid
+  - control-character-in-name-invalid
+  - builtin-command-invalid

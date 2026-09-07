@@ -173,29 +173,7 @@ func decodeTurnModelFixtureManifest(data []byte) (turnModelFixtureManifest, erro
 }
 
 func validateTurnModelFixtureInventory(corpus testcase.Corpus[turnModelFixtureInput, turnModelFixtureExpected], manifest turnModelFixtureManifest) error {
-	if len(corpus.Cases) != manifest.ExpectedCaseCount {
-		return fmt.Errorf("turn model corpus has %d cases, want exactly %d", len(corpus.Cases), manifest.ExpectedCaseCount)
-	}
-	required := make(map[string]struct{}, len(manifest.RequiredCaseNames))
-	for _, name := range manifest.RequiredCaseNames {
-		required[name] = struct{}{}
-	}
-	actual := make(map[string]struct{}, len(corpus.Cases))
-	for _, fixtureCase := range corpus.Cases {
-		if _, duplicate := actual[fixtureCase.Name]; duplicate {
-			return fmt.Errorf("turn model corpus repeats case name %q", fixtureCase.Name)
-		}
-		actual[fixtureCase.Name] = struct{}{}
-		if _, registered := required[fixtureCase.Name]; !registered {
-			return fmt.Errorf("turn model corpus contains unregistered case %q", fixtureCase.Name)
-		}
-	}
-	for name := range required {
-		if _, present := actual[name]; !present {
-			return fmt.Errorf("turn model corpus is missing required case %q", name)
-		}
-	}
-	return nil
+	return validateCorpusInventory("turn model", corpus, manifest)
 }
 
 func turnModelNodePresent(node yaml.Node) bool {

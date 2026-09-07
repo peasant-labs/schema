@@ -412,6 +412,7 @@ export interface components {
          */
         SchemaChannelTopic: Schema.ChannelTopic;
         SchemaChildSessionRef: Schema.ChildSessionRef;
+        SchemaCommandInvocation: Schema.CommandInvocation;
         SchemaCommitRef: Schema.CommitRef;
         /**
          * Confidence
