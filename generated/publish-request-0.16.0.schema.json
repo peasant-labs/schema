@@ -1372,7 +1372,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:peasant:publish-request:0.15.0",
+  "$id": "urn:peasant:publish-request:0.16.0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "JSON Schema for peasant push PublishRequest wire format, extracted from the village-api OpenAPI spec (peasant is the source of truth; the village vendors + enforces this schema).",
   "properties": {

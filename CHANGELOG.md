@@ -7,14 +7,14 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
-- Village API 0.15.0, Local API 0.10.0, and Types 0.15.0 open the pull request
-  prompt attachment contract. Village API 0.14.0, Local API 0.9.0, and Types
-  0.14.0 are frozen under the retired-spec guard.
-- `TurnDetail.command` (`CommandInvocation`, Local API 0.10.0, Types 0.15.0):
+- Village API 0.16.0, Local API 0.11.0, and Types 0.17.0 open the pull request
+  prompt attachment contract. Village API 0.15.0, Local API 0.10.0, and Types
+  0.16.0 are frozen under the retired-spec guard.
+- `TurnDetail.command` (`CommandInvocation`, Local API 0.11.0, Types 0.17.0):
   the slash-prefixed name and optional arguments of a skill or user-defined
   slash command invoked on a user turn. Optional and safely ignorable; no
   content-capability token. Built-in harness commands are never emitted.
-- `PromptDigest` (Types 0.15.0): the reviewer-facing projection of the prompts
+- `PromptDigest` (Types 0.17.0): the reviewer-facing projection of the prompts
   behind a pull request, with `PromptDigestHeader`, `PromptDigestSkill`,
   `PromptDigestItem`, and the closed set `DigestItemKind`
   (`session | prompt | skill | commit`). Validators enforce the per-kind field
@@ -22,7 +22,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   slash-prefixed skills and user commands or bare plugin identifiers; validators
   also enforce sequential prompt ordinals, commit coverage, and header
   invocation counts.
-- Village attachment DTOs (Village API 0.15.0, Types 0.15.0):
+- Village attachment DTOs (Village API 0.16.0, Types 0.17.0):
   `VillagePullRequestAttachment`, `VillagePullRequestAttachedTranscript`,
   `VillagePullRequestAttachmentResponse`, `VillagePromptRequest`,
   `VillagePromptRequestsResponse`, `VillageUserSettings`,
@@ -32,7 +32,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `VillagePromptsCheckMode` (`informational | required`). `VillageGroup` and
   `VillageUpdateGroupRequest` gain `post_prompts_check` and
   `prompts_check_mode`.
-- Village API 0.15.0 routes: `POST /api/v1/integrations/github/webhook`,
+- Village API 0.16.0 routes: `POST /api/v1/integrations/github/webhook`,
   `GET` and `DELETE /api/v1/pulls/{owner}/{name}/{number}`,
   `POST /api/v1/pulls/{owner}/{name}/{number}/confirm`,
   `GET /api/v1/users/me/prompt-requests`, and `GET` and

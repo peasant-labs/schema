@@ -3,7 +3,7 @@
   "info": {
     "title": "Peasant Local Dashboard API",
     "description": "Local web dashboard API for viewing AI agent session analytics. Includes REST endpoints and WebSocket channel message schemas.",
-    "version": "0.10.0"
+    "version": "0.11.0"
   },
   "paths": {
     "/api/v1/annotation-types": {
@@ -1757,6 +1757,20 @@
         "required": [
           "id",
           "startTime"
+        ],
+        "type": "object"
+      },
+      "SchemaCommandInvocation": {
+        "properties": {
+          "args": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
         ],
         "type": "object"
       },
@@ -4207,6 +4221,16 @@
         "properties": {
           "agentName": {
             "type": "string"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaCommandInvocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "content": {
             "type": "string"

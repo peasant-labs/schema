@@ -173,7 +173,8 @@ enums:
       - {name: Cursor, value: "cursor"}
       - {name: Antigravity, value: "antigravity"}
       - {name: Strike, value: "strike"}
-    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike"]
+      - {name: Pi, value: "pi"}
+    all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike", "pi"]
   - name: InsightKind
     all_name: AllInsightKinds
     members:
@@ -446,6 +447,26 @@ enums:
       - {name: Group, value: "group"}
       - {name: Public, value: "public"}
     all_values: ["private", "group", "public"]
+  - name: UsageScope
+    all_name: AllUsageScopes
+    members: [{name: Assistant, value: assistant}, {name: Tool, value: tool}, {name: Summary, value: summary}]
+    all_values: [assistant, tool, summary]
+  - name: UsageCompleteness
+    all_name: AllUsageCompleteness
+    members: [{name: Complete, value: complete}, {name: Partial, value: partial}, {name: Unknown, value: unknown}]
+    all_values: [complete, partial, unknown]
+  - name: NativeMetadataKind
+    all_name: AllNativeMetadataKinds
+    members: [{name: PiCustomData, value: pi.custom.data}, {name: PiCustomMessageDetails, value: pi.custommessage.details}, {name: PiToolResultDetails, value: pi.toolresult.details}, {name: PiCompactionDetails, value: pi.compaction.details}, {name: PiBranchSummaryDetails, value: pi.branchsummary.details}]
+    all_values: [pi.custom.data, pi.custommessage.details, pi.toolresult.details, pi.compaction.details, pi.branchsummary.details]
+  - name: NativeMetadataSourceType
+    all_name: AllNativeMetadataSourceTypes
+    members: [{name: PiCustom, value: pi.custom}, {name: PiCustomMessage, value: pi.custom_message}, {name: PiMessage, value: pi.message}, {name: PiCompaction, value: pi.compaction}, {name: PiBranchSummary, value: pi.branch_summary}]
+    all_values: [pi.custom, pi.custom_message, pi.message, pi.compaction, pi.branch_summary]
+  - name: NativePiMessageRole
+    all_name: AllNativePiMessageRoles
+    members: [{name: ToolResult, value: toolResult}]
+    all_values: [toolResult]
   - name: DigestItemKind
     all_name: AllDigestItemKinds
     members:

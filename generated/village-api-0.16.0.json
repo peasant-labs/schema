@@ -3,7 +3,7 @@
   "info": {
     "title": "Transcript Publish API",
     "description": "Village API for transcript publishing, CLI authentication, annotation registry and manifest synchronization, schema negotiation, group-scoped transcript discovery, content, annotations, currency checks, collectives, shares, contributions, review, and linked repositories.",
-    "version": "0.15.0"
+    "version": "0.16.0"
   },
   "paths": {
     "/api/v1/annotations": {
@@ -1984,6 +1984,99 @@
         }
       }
     },
+    "/api/v1/integrations/github/webhook": {
+      "post": {
+        "tags": [
+          "integrations"
+        ],
+        "description": "Receive a GitHub App webhook delivery. The body is GitHub's payload, authenticated by the X-Hub-Signature-256 HMAC over the raw body; X-GitHub-Delivery makes redelivery idempotent. Handles installation, pull_request, check_run, and issue_comment events and acknowledges every other event without acting. Returns 501 when the App or its webhook secret is not configured.",
+        "operationId": "receiveGitHubWebhook",
+        "parameters": [
+          {
+            "name": "X-GitHub-Event",
+            "in": "header",
+            "description": "GitHub event name",
+            "required": true,
+            "schema": {
+              "description": "GitHub event name",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-GitHub-Delivery",
+            "in": "header",
+            "description": "Unique delivery identifier; Village records it so a redelivery is idempotent",
+            "required": true,
+            "schema": {
+              "description": "Unique delivery identifier; Village records it so a redelivery is idempotent",
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Hub-Signature-256",
+            "in": "header",
+            "description": "HMAC SHA-256 of the raw body under the App webhook secret",
+            "required": true,
+            "schema": {
+              "description": "HMAC SHA-256 of the raw body under the App webhook secret",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchemaVillageGitHubWebhookPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageStatusResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/pull/transcripts": {
       "get": {
         "tags": [
@@ -2139,6 +2232,346 @@
         "responses": {
           "204": {
             "description": "No Content"
+          }
+        }
+      }
+    },
+    "/api/v1/pulls/{owner}/{name}/{number}": {
+      "get": {
+        "tags": [
+          "pull-requests"
+        ],
+        "description": "Read one pull request's prompt attachment. The digest is null until the attachment reaches preview or attached; viewer_is_author is true when the caller is the pull request author. Readers who may not see the attached transcripts receive 403.",
+        "operationId": "getPullRequestAttachment",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "Repository owner login",
+            "required": true,
+            "schema": {
+              "description": "Repository owner login",
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Repository name",
+            "required": true,
+            "schema": {
+              "description": "Repository name",
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "description": "Pull request number",
+            "required": true,
+            "schema": {
+              "description": "Pull request number",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillagePullRequestAttachmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pull-requests"
+        ],
+        "description": "Detach the prompts from a pull request. Only the pull request author may detach. Deletes the comment, resets the check, and restores each transcript's previous visibility; an attachment already detached returns 409.",
+        "operationId": "detachPullRequestAttachment",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "Repository owner login",
+            "required": true,
+            "schema": {
+              "description": "Repository owner login",
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Repository name",
+            "required": true,
+            "schema": {
+              "description": "Repository name",
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "description": "Pull request number",
+            "required": true,
+            "schema": {
+              "description": "Pull request number",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillagePullRequestAttachmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pulls/{owner}/{name}/{number}/confirm": {
+      "post": {
+        "tags": [
+          "pull-requests"
+        ],
+        "description": "Confirm a preview and post it. Only the pull request author may confirm; the attachment must be in preview, otherwise 409. A failed post to GitHub returns 502 and leaves the attachment in preview.",
+        "operationId": "confirmPullRequestAttachment",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "description": "Repository owner login",
+            "required": true,
+            "schema": {
+              "description": "Repository owner login",
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Repository name",
+            "required": true,
+            "schema": {
+              "description": "Repository name",
+              "type": "string"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "description": "Pull request number",
+            "required": true,
+            "schema": {
+              "description": "Pull request number",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillagePullRequestAttachmentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -2917,6 +3350,147 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/prompt-requests": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "description": "List the caller's attachments that are waiting for a transcript from the caller's machine, with each repository's normalized remote so a client can match the repository it is about to push.",
+        "operationId": "listMyPromptRequests",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillagePromptRequestsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me/settings": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "description": "Read the caller's settings, including preview_before_attach.",
+        "operationId": "getMySettings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageUserSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "users"
+        ],
+        "description": "Patch the caller's settings. A field that is omitted is left unchanged.",
+        "operationId": "updateMySettings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchemaVillageUpdateUserSettingsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageUserSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -4855,6 +5429,23 @@
         ],
         "type": "object"
       },
+      "SchemaDigestItemKind": {
+        "description": "Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor",
+        "enum": [
+          "session",
+          "prompt",
+          "skill",
+          "commit"
+        ],
+        "examples": [
+          "session",
+          "prompt",
+          "skill",
+          "commit"
+        ],
+        "title": "Digest Item Kind",
+        "type": "string"
+      },
       "SchemaEntryType": {
         "description": "Classification of a single entry within an agent session transcript",
         "enum": [
@@ -5073,6 +5664,160 @@
         "pattern": "^[0-9a-f]{64}$",
         "title": "Project Hash",
         "type": "string"
+      },
+      "SchemaPromptDigest": {
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/SchemaPromptDigestHeader"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaPromptDigestItem"
+            },
+            "type": "array"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaPromptDigestSkill"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "header",
+          "skills",
+          "items"
+        ],
+        "type": "object"
+      },
+      "SchemaPromptDigestHeader": {
+        "properties": {
+          "commitsCovered": {
+            "type": "integer"
+          },
+          "commitsTotal": {
+            "type": "integer"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/BestiaryHarness"
+          },
+          "promptCount": {
+            "type": "integer"
+          },
+          "redactionLevel": {
+            "type": "string"
+          },
+          "sessionCount": {
+            "type": "integer"
+          },
+          "villageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionCount",
+          "promptCount",
+          "commitsCovered",
+          "commitsTotal",
+          "harness",
+          "redactionLevel",
+          "villageUrl"
+        ],
+        "type": "object"
+      },
+      "SchemaPromptDigestItem": {
+        "properties": {
+          "commitCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "commitSha": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SchemaDigestItemKind"
+          },
+          "ordinal": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "transcriptId": {
+            "$ref": "#/components/schemas/SchemaTranscriptID"
+          },
+          "turnIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "transcriptId",
+          "timestamp",
+          "text"
+        ],
+        "type": "object"
+      },
+      "SchemaPromptDigestSkill": {
+        "properties": {
+          "invocationCount": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "invocationCount"
+        ],
+        "type": "object"
       },
       "SchemaProvenance": {
         "properties": {
@@ -6134,6 +6879,12 @@
         ],
         "type": "object"
       },
+      "SchemaVillageGitHubWebhookPayload": {
+        "additionalProperties": true,
+        "description": "GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape",
+        "title": "GitHub Webhook Payload",
+        "type": "object"
+      },
       "SchemaVillageGroup": {
         "properties": {
           "acceptance_mode": {
@@ -6184,6 +6935,12 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "type": "boolean"
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/SchemaVillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/SchemaVillageTranscriptDeletionPolicy"
           },
@@ -6203,7 +6960,9 @@
           "data_access",
           "linked_github_org",
           "display_members",
-          "transcript_deletion_policy"
+          "transcript_deletion_policy",
+          "post_prompts_check",
+          "prompts_check_mode"
         ],
         "type": "object"
       },
@@ -7527,6 +8286,65 @@
         "title": "Village Project Name Source",
         "type": "string"
       },
+      "SchemaVillagePromptRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SchemaVillagePullRequestAttachmentState"
+          }
+        },
+        "required": [
+          "owner",
+          "name",
+          "number",
+          "state",
+          "remote",
+          "requested_at"
+        ],
+        "type": "object"
+      },
+      "SchemaVillagePromptRequestsResponse": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaVillagePromptRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests"
+        ],
+        "type": "object"
+      },
+      "SchemaVillagePromptsCheckMode": {
+        "description": "Check-run conclusion policy for a collective's linked repositories when no prompts are attached",
+        "enum": [
+          "informational",
+          "required"
+        ],
+        "examples": [
+          "informational",
+          "required"
+        ],
+        "title": "Village Prompts Check Mode",
+        "type": "string"
+      },
       "SchemaVillagePublicGroup": {
         "properties": {
           "acceptance_mode": {
@@ -7592,6 +8410,234 @@
           "transcript_count"
         ],
         "type": "object"
+      },
+      "SchemaVillagePullRequestAttachedTranscript": {
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "previous_visibility": {
+            "$ref": "#/components/schemas/SchemaVillageTranscriptVisibility"
+          },
+          "session_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/SchemaTranscriptID"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "position",
+          "previous_visibility",
+          "title",
+          "session_start"
+        ],
+        "type": "object"
+      },
+      "SchemaVillagePullRequestAttachment": {
+        "properties": {
+          "author_user_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaVillageUUID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "check_run_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "detached_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "head_sha": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/SchemaVillageUUID"
+          },
+          "is_private_repository": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "requested_by_github_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/SchemaVillagePullRequestAttachmentState"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "name",
+          "number",
+          "head_sha",
+          "is_private_repository",
+          "state",
+          "author_user_id",
+          "requested_by_github_id",
+          "comment_id",
+          "check_run_id",
+          "created_at",
+          "updated_at",
+          "confirmed_at",
+          "detached_at"
+        ],
+        "type": "object"
+      },
+      "SchemaVillagePullRequestAttachmentResponse": {
+        "properties": {
+          "attachment": {
+            "$ref": "#/components/schemas/SchemaVillagePullRequestAttachment"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaPromptDigest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcripts": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"
+            },
+            "type": "array"
+          },
+          "viewer_is_author": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attachment",
+          "digest",
+          "transcripts",
+          "viewer_is_author"
+        ],
+        "type": "object"
+      },
+      "SchemaVillagePullRequestAttachmentState": {
+        "description": "Current lifecycle state of a pull request's prompt attachment",
+        "enum": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "examples": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "title": "Village Pull Request Attachment State",
+        "type": "string"
       },
       "SchemaVillageRemoveGroupMemberResponse": {
         "properties": {
@@ -8032,8 +9078,42 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/SchemaVillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/SchemaVillageTranscriptDeletionPolicy"
+          }
+        },
+        "type": "object"
+      },
+      "SchemaVillageUpdateUserSettingsRequest": {
+        "properties": {
+          "preview_before_attach": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object"
@@ -8249,6 +9329,17 @@
           "parent_session_id",
           "status",
           "shared_at"
+        ],
+        "type": "object"
+      },
+      "SchemaVillageUserSettings": {
+        "properties": {
+          "preview_before_attach": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "preview_before_attach"
         ],
         "type": "object"
       },

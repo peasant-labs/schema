@@ -1,0 +1,264 @@
+requiredCaseNames:
+  - duplicate-escaped-key
+  - null-detail-root
+  - null-token-input
+  - duplicate-turn-target
+  - duplicate-tool-target
+  - forbidden-null-attachment
+  - forbidden-null-message-role
+  - oversized-unused-source-ref
+  - lone-surrogate
+  - valid-surrogate-pair
+  - nbsp-trailing
+  - root-underflow
+  - root-zero-exponent
+  - selected-depth-over-limit
+  - selected-bytes-over-limit
+  - cost-hex-invalid
+  - cost-nan-invalid
+  - role-scope-mismatch
+  - usage-source-mismatch
+  - selected-array-index-underflow
+  - unselected-array-index-underflow
+  - escaped-pointer-underflow
+  - selected-null-root
+  - selected-scalar-root
+  - selected-depth-at-limit
+  - document-depth-independent
+  - selected-five-medium-strings
+  - selected-escaped-byte-span
+  - selected-whitespace-byte-span
+  - selected-bytes-below-limit
+  - ordinary-large-text
+  - legacy-null-turns
+  - legacy-empty-turns
+  - null-turn-child
+  - missing-turn-fields
+  - invalid-harness
+  - invalid-role
+  - invalid-entry-type
+  - invalid-stop-reason
+  - invalid-tool-kind
+  - null-tool-child
+  - missing-tool-fields
+  - oversized-unused-tool-id
+  - invalid-owner-unicode-value
+  - accepted-unicode-refs-cost-subsets
+  - complete-zero-owner
+  - partial-owner
+  - cost-only-owner
+  - required-usage-source-ref
+  - negative-token
+  - fractional-token
+  - unsafe-token
+  - valid-custom-data
+  - valid-custom-message-details
+  - valid-tool-result-details
+  - valid-compaction-details
+  - valid-branch-summary-details
+  - wrong-source-kind
+  - wrong-message-role
+  - wrong-custom-target
+  - wrong-tool-target
+  - wrong-summary-owner
+  - duplicate-metadata-id
+  - empty-custom-type
+  - oversized-custom-type
+  - forbidden-empty-tool-ref
+  - oversized-attachment-tool-ref
+  - metadata-null-data
+  - metadata-missing-data
+  - metadata-empty-attachment
+  - metadata-null-turn-index
+  - metadata-aggregate-raw-bytes
+  - metadata-record-raw-bytes
+  - metadata-record-escaped-bytes
+  - metadata-record-whitespace-bytes
+  - metadata-record-below-byte-limit
+  - metadata-ordinary-transcript-exemption
+  - metadata-record-depth-limit
+  - metadata-record-depth-over-limit
+  - metadata-record-count-over-limit
+  - complete-nonzero-owner
+  - total-token-mismatch
+  - total-token-overflow
+  - reasoning-subset-over-base
+  - cache-write-subset-over-base
+  - duplicate-usage-owner
+  - duplicate-usage-source
+  - equal-distinct-usage-owners
+  - surrogate-owner-at-raw-roots
+  - multibyte-source-ref-at-limit
+  - multibyte-source-ref-over-limit
+  - accepted-observed-model
+  - wrong-observed-model-role
+  - metadata-value-per-record-bytes
+  - metadata-value-aggregate-bytes
+  - metadata-unknown-kind
+  - metadata-unknown-source-type
+  - metadata-forbidden-null-custom-type
+  - trailing-comma-root
+  - trailing-comma-metadata-array
+cases:
+  - {name: duplicate-escaped-key, operation: scanner, accepted: false, errorCategory: lexical, errorContains: duplicate object key, raw: '{"data":1,"d\u0061ta":2}'}
+  - {name: null-detail-root, operation: detail, accepted: false, errorCategory: validation, raw: 'null'}
+  - name: null-token-input
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: explicitly null
+    raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"unknown","tokens":{"input":null}}}'
+  - name: duplicate-turn-target
+    operation: detail
+    accepted: false
+    errorCategory: validation
+    errorContains: duplicate turn index
+    raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":2,"toolCallCount":0,"turns":[{"index":1,"role":"user","content":"a","timestamp":"2020-01-01T00:00:00Z","depth":0},{"index":1,"role":"user","content":"b","timestamp":"2020-01-01T00:00:00Z","depth":0}]}'
+  - name: duplicate-tool-target
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: duplicate tool call id
+    raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{"id":"t","name":"a","arguments":"","result":""},{"id":"t","name":"b","arguments":"","result":""}]}'
+  - {name: forbidden-null-attachment, operation: metadata-records, targets: '[]', accepted: false, errorCategory: validation, errorContains: attachment, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"attachment":null,"customType":"x","data":{}}]'}
+  - {name: forbidden-null-message-role, operation: metadata-records, targets: '[]', accepted: false, errorCategory: validation, errorContains: messageRole, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom","messageRole":null},"customType":"x","data":{}}]'}
+  - name: oversized-unused-source-ref
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: exceeds 96 bytes
+    generate: {unit: x, repeat: 97}
+    raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"{{value}}"}'
+  - {name: lone-surrogate, operation: scanner, accepted: false, errorCategory: lexical, errorContains: surrogate, raw: '"\ud800"'}
+  - {name: valid-surrogate-pair, operation: scanner, accepted: true, raw: '"\ud83d\ude00"'}
+  - {name: nbsp-trailing, operation: scanner, accepted: false, errorCategory: lexical, errorContains: trailing, raw: "{}\u00a0"}
+  - {name: root-underflow, operation: metadata, accepted: false, errorCategory: lexical, errorContains: underflow, raw: '1e-999'}
+  - {name: root-zero-exponent, operation: metadata, accepted: true, raw: '0e-999'}
+  - name: selected-depth-over-limit
+    operation: scanner
+    pointers: [/data]
+    accepted: false
+    errorCategory: lexical
+    errorContains: depth
+    generate: {unit: '0', repeat: 1, depth: 32}
+    raw: '{"data":{{value}}}'
+  - name: selected-bytes-over-limit
+    operation: scanner
+    pointers: [/data]
+    accepted: false
+    errorCategory: lexical
+    errorContains: byte budget
+    generate: {unit: x, repeat: 1000, count: 70}
+    raw: '{"data":{{value}}}'
+  - name: cost-hex-invalid
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: JSON number
+    raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"0x1"}}}'
+  - name: cost-nan-invalid
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: JSON number
+    raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"NaN"}}}'
+  - name: role-scope-mismatch
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: role
+    raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"summary","completeness":"unknown"}}'
+  - name: usage-source-mismatch
+    operation: turn
+    accepted: false
+    errorCategory: validation
+    errorContains: source
+    raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"other","scope":"assistant","completeness":"unknown"}}'
+  - {name: selected-array-index-underflow, operation: scanner, pointers: [/0], accepted: false, errorCategory: lexical, errorContains: underflow, raw: '[1e-999]'}
+  - {name: unselected-array-index-underflow, operation: scanner, pointers: [/1], accepted: true, raw: '[1e-999,0]'}
+  - {name: escaped-pointer-underflow, operation: scanner, pointers: ['/a~1b/~0key/1'], accepted: false, errorCategory: lexical, errorContains: underflow, raw: '{"a/b":{"~key":[0,1e-999]}}'}
+  - {name: selected-null-root, operation: scanner, pointers: [''], accepted: true, raw: 'null'}
+  - {name: selected-scalar-root, operation: scanner, pointers: [''], accepted: true, raw: '"safe"'}
+  - {name: selected-depth-at-limit, operation: scanner, pointers: [/data], accepted: true, generate: {unit: '0', repeat: 1, depth: 31}, raw: '{"data":{{value}}}'}
+  - {name: document-depth-independent, operation: scanner, pointers: [/outer/data], maxDepth: 4, accepted: false, errorCategory: lexical, errorContains: depth, generate: {unit: '0', repeat: 1, depth: 2}, raw: '{"outer":{"data":{{value}}}}'}
+  - {name: selected-five-medium-strings, operation: scanner, pointers: [''], accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: x, repeat: 14000, count: 5}, raw: '{{value}}'}
+  - {name: selected-escaped-byte-span, operation: scanner, pointers: [/data], accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: '\u0078', repeat: 10, count: 2000}, raw: '{"data":{{value}}}'}
+  - {name: selected-whitespace-byte-span, operation: scanner, pointers: [/data], accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: x, repeat: 10, count: 100, whitespace: 1000}, raw: '{"data":{{value}}}'}
+  - {name: selected-bytes-below-limit, operation: scanner, pointers: [/data], accepted: true, generate: {unit: x, repeat: 1000, count: 64}, raw: '{"data":{{value}}}'}
+  - {name: ordinary-large-text, operation: turn, accepted: true, generate: {unit: x, repeat: 100000}, raw: '{"index":1,"role":"user","content":"{{value}}","timestamp":"2020-01-01T00:00:00Z","depth":0}'}
+  - {name: legacy-null-turns, operation: detail, accepted: true, raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":null}'}
+  - {name: legacy-empty-turns, operation: detail, accepted: true, raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[]}'}
+  - {name: null-turn-child, operation: turn, accepted: false, errorCategory: validation, raw: 'null'}
+  - {name: missing-turn-fields, operation: turn, accepted: false, errorCategory: validation, raw: '{}'}
+  - {name: invalid-harness, operation: detail, accepted: false, errorCategory: validation, errorContains: harness, raw: '{"id":"s","harness":"bogus","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[]}'}
+  - {name: invalid-role, operation: turn, accepted: false, errorCategory: validation, errorContains: role, raw: '{"index":1,"role":"bogus","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0}'}
+  - {name: invalid-entry-type, operation: turn, accepted: false, errorCategory: validation, errorContains: entryType, raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"entryType":"bogus"}'}
+  - {name: invalid-stop-reason, operation: turn, accepted: false, errorCategory: validation, errorContains: stopReason, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"stopReason":"bogus"}'}
+  - {name: invalid-tool-kind, operation: turn, accepted: false, errorCategory: validation, errorContains: toolKind, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{"id":"t","name":"a","arguments":"","result":"","toolKind":"bogus"}]}'}
+  - {name: null-tool-child, operation: turn, accepted: false, errorCategory: validation, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[null]}'}
+  - {name: missing-tool-fields, operation: turn, accepted: false, errorCategory: validation, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{}]}'}
+  - {name: oversized-unused-tool-id, operation: turn, accepted: false, errorCategory: validation, errorContains: exceeds 96 bytes, generate: {unit: x, repeat: 97}, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{"id":"{{value}}","name":"a","arguments":"","result":""}]}'}
+  - {name: invalid-owner-unicode-value, operation: owner-unicode, goOwnerBytesHex: ff, accepted: false, errorCategory: validation, errorContains: reference, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"\ud800","sourceEntryRef":"e","scope":"assistant","completeness":"unknown"}}'}
+  - name: accepted-unicode-refs-cost-subsets
+    operation: turn
+    accepted: true
+    raw: '{"index":1,"role":"assistant","content":"thinking and tools","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"entry-😀","usage":{"ownerId":"owner-😀","sourceEntryRef":"entry-😀","scope":"assistant","completeness":"unknown","tokens":{"reasoning":2,"cacheWrite1h":1},"cost":{"source":"recorded_harness_estimate","input":"0.30000000000000004","total":"1e-7"}},"toolCalls":[{"id":"tool-😀","name":"extension.do","arguments":"{\"nested\":{\"x\":1}}","result":"done","callEntryRef":"call-😀","resultEntryRef":"result-😀","usage":{"ownerId":"tool-owner","sourceEntryRef":"result-😀","scope":"tool","completeness":"unknown"}}]}'
+  - {name: complete-zero-owner, operation: turn, accepted: true, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"complete","tokens":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0}}}'}
+  - {name: partial-owner, operation: turn, accepted: true, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"input":0}}}'}
+  - {name: cost-only-owner, operation: turn, accepted: true, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"1e-7"}}}'}
+  - {name: required-usage-source-ref, operation: turn, accepted: false, errorCategory: validation, errorContains: sourceEntryRef, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","scope":"assistant","completeness":"unknown"}}'}
+  - {name: negative-token, operation: turn, accepted: false, errorCategory: validation, errorContains: token, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"input":-1}}}'}
+  - {name: fractional-token, operation: turn, accepted: false, errorCategory: validation, errorContains: token, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"input":0.5}}}'}
+  - {name: unsafe-token, operation: turn, accepted: false, errorCategory: validation, errorContains: token, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"input":9007199254740992}}}'}
+  - name: valid-custom-data
+    operation: metadata-records
+    accepted: true
+    targets: &targets '[{"index":7,"role":"system","content":"context","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"custom-entry"},{"index":10,"role":"system","content":"summary","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"summary-entry","usage":{"ownerId":"summary-owner","sourceEntryRef":"summary-entry","scope":"summary","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"0.30000000000000004"}}},{"index":20,"role":"assistant","content":"tools","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{"id":"t","name":"extension.do","arguments":"{}","result":"done","callEntryRef":"call-entry","resultEntryRef":"result-entry","usage":{"ownerId":"tool-owner","sourceEntryRef":"result-entry","scope":"tool","completeness":"unknown"}}]}]'
+    raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"extension","data":{"deferred":true,"responseId":"extension-local","nested":[null,0,1.25,"😀"]}}]'
+  - {name: valid-custom-message-details, operation: metadata-records, targets: *targets, accepted: true, raw: '[{"id":"m","kind":"pi.custommessage.details","source":{"entryRef":"custom-entry","sourceType":"pi.custom_message"},"attachment":{"turnIndex":7},"customType":"extension","data":{"visible":false,"context":"kept"}}]'}
+  - {name: valid-tool-result-details, operation: metadata-records, targets: *targets, accepted: true, raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":20,"toolCallId":"t"},"data":{"result":{"ok":true}}}]'}
+  - {name: valid-compaction-details, operation: metadata-records, targets: *targets, accepted: true, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"summary-entry","sourceType":"pi.compaction"},"attachment":{"turnIndex":10},"data":{"summary":"kept"}}]'}
+  - {name: valid-branch-summary-details, operation: metadata-records, targets: *targets, accepted: true, raw: '[{"id":"m","kind":"pi.branchsummary.details","source":{"entryRef":"summary-entry","sourceType":"pi.branch_summary"},"attachment":{"turnIndex":10},"data":{"summary":"kept"}}]'}
+  - {name: wrong-source-kind, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.compaction"},"customType":"x","data":{}}]'}
+  - {name: wrong-message-role, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: messageRole, raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"assistant"},"attachment":{"turnIndex":20,"toolCallId":"t"},"data":{}}]'}
+  - {name: wrong-custom-target, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.custommessage.details","source":{"entryRef":"custom-entry","sourceType":"pi.custom_message"},"attachment":{"turnIndex":20},"customType":"x","data":{}}]'}
+  - {name: wrong-tool-target, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"other-result","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":20,"toolCallId":"t"},"data":{}}]'}
+  - {name: wrong-summary-owner, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"custom-entry","sourceType":"pi.compaction"},"attachment":{"turnIndex":7},"data":{}}]'}
+  - {name: duplicate-metadata-id, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: duplicat, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{}},{"id":"m","kind":"pi.custom.data","source":{"entryRef":"other","sourceType":"pi.custom"},"customType":"y","data":{}}]'}
+  - {name: empty-custom-type, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"","data":{}}]'}
+  - {name: oversized-custom-type, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: customType, generate: {unit: x, repeat: 129}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"{{value}}","data":{}}]'}
+  - {name: forbidden-empty-tool-ref, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: toolCallId, raw: '[{"id":"m","kind":"pi.custommessage.details","source":{"entryRef":"custom-entry","sourceType":"pi.custom_message"},"attachment":{"turnIndex":7,"toolCallId":""},"customType":"x","data":{}}]'}
+  - {name: oversized-attachment-tool-ref, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: exceeds 96 bytes, generate: {unit: x, repeat: 97}, raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":20,"toolCallId":"{{value}}"},"data":{}}]'}
+  - {name: metadata-null-data, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: data, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":null}]'}
+  - {name: metadata-missing-data, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: data, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x"}]'}
+  - {name: metadata-empty-attachment, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: matrix, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"summary-entry","sourceType":"pi.compaction"},"attachment":{},"data":{}}]'}
+  - {name: metadata-null-turn-index, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: turnIndex, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"summary-entry","sourceType":"pi.compaction"},"attachment":{"turnIndex":null},"data":{}}]'}
+  - {name: metadata-aggregate-raw-bytes, operation: metadata-records, targets: '[]', accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: x, repeat: 1000, count: 64, copies: 17}, raw: '{"id":"m{{index}}","kind":"pi.custom.data","source":{"entryRef":"e{{index}}","sourceType":"pi.custom"},"customType":"x","data":{{value}}}'}
+  - {name: metadata-record-raw-bytes, operation: metadata-records, targets: '[]', accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: x, repeat: 1000, count: 70}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-record-escaped-bytes, operation: metadata-records, targets: '[]', accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: '\u0078', repeat: 10, count: 2000}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-record-whitespace-bytes, operation: metadata-records, targets: '[]', accepted: false, errorCategory: lexical, errorContains: byte budget, generate: {unit: x, repeat: 10, count: 100, whitespace: 1000}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-record-below-byte-limit, operation: metadata-records, targets: '[]', accepted: true, generate: {unit: x, repeat: 1000, count: 64}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-ordinary-transcript-exemption, operation: turn, accepted: true, generate: {unit: x, repeat: 100000}, raw: '{"index":1,"role":"assistant","content":"{{value}}","timestamp":"2020-01-01T00:00:00Z","depth":0,"toolCalls":[{"id":"t","name":"a","arguments":"","result":"{{value}}"}]}'}
+  - {name: metadata-record-depth-limit, operation: metadata-records, targets: '[]', accepted: true, generate: {unit: '0', repeat: 1, depth: 31}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-record-depth-over-limit, operation: metadata-records, targets: '[]', accepted: false, errorCategory: lexical, errorContains: depth, generate: {unit: '0', repeat: 1, depth: 32}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-record-count-over-limit, operation: metadata-records, targets: '[]', accepted: false, errorCategory: validation, errorContains: record count, generate: {unit: '0', repeat: 1, copies: 257}, raw: '{"id":"m{{index}}","kind":"pi.custom.data","source":{"entryRef":"e{{index}}","sourceType":"pi.custom"},"customType":"x","data":{{value}}}'}
+  - {name: complete-nonzero-owner, operation: turn, accepted: true, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"complete","tokens":{"input":1,"output":2,"cacheRead":3,"cacheWrite":4,"totalTokens":10}}}'}
+  - {name: total-token-mismatch, operation: turn, accepted: false, errorCategory: validation, errorContains: totalTokens, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"complete","tokens":{"input":1,"output":2,"cacheRead":3,"cacheWrite":4,"totalTokens":11}}}'}
+  - {name: total-token-overflow, operation: turn, accepted: false, errorCategory: validation, errorContains: totalTokens, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"complete","tokens":{"input":9007199254740991,"output":1,"cacheRead":0,"cacheWrite":0,"totalTokens":9007199254740991}}}'}
+  - {name: reasoning-subset-over-base, operation: turn, accepted: false, errorCategory: validation, errorContains: reasoning, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"output":1,"reasoning":2}}}'}
+  - {name: cache-write-subset-over-base, operation: turn, accepted: false, errorCategory: validation, errorContains: cacheWrite1h, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o","sourceEntryRef":"e","scope":"assistant","completeness":"partial","tokens":{"cacheWrite":1,"cacheWrite1h":2}}}'}
+  - {name: duplicate-usage-owner, operation: detail, accepted: false, errorCategory: validation, errorContains: duplicat, raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[{"index":1,"role":"assistant","content":"a","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e1","usage":{"ownerId":"o","sourceEntryRef":"e1","scope":"assistant","completeness":"unknown"}},{"index":2,"role":"assistant","content":"b","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e2","usage":{"ownerId":"o","sourceEntryRef":"e2","scope":"assistant","completeness":"unknown"}}]}'}
+  - {name: duplicate-usage-source, operation: detail, accepted: false, errorCategory: validation, errorContains: duplicat, raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[{"index":1,"role":"assistant","content":"a","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o1","sourceEntryRef":"e","scope":"assistant","completeness":"unknown"}},{"index":2,"role":"assistant","content":"b","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"o2","sourceEntryRef":"e","scope":"assistant","completeness":"unknown"}}]}'}
+  - {name: equal-distinct-usage-owners, operation: detail, accepted: true, raw: '{"id":"s","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[{"index":1,"role":"assistant","content":"a","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e1","usage":{"ownerId":"o1","sourceEntryRef":"e1","scope":"assistant","completeness":"unknown"}},{"index":2,"role":"assistant","content":"b","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e2","usage":{"ownerId":"o2","sourceEntryRef":"e2","scope":"assistant","completeness":"unknown"}}]}'}
+  - {name: surrogate-owner-at-raw-roots, operation: turn, accepted: false, errorCategory: lexical, errorContains: surrogate, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"e","usage":{"ownerId":"\ud800","sourceEntryRef":"e","scope":"assistant","completeness":"unknown"}}'}
+  - {name: multibyte-source-ref-at-limit, operation: turn, accepted: true, generate: {unit: é, repeat: 48}, raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"{{value}}"}'}
+  - {name: multibyte-source-ref-over-limit, operation: turn, accepted: false, errorCategory: validation, errorContains: exceeds 96 bytes, generate: {unit: é, repeat: 49}, raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"sourceEntryRef":"{{value}}"}'}
+  - {name: accepted-observed-model, operation: turn, accepted: true, raw: '{"index":1,"role":"assistant","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":1,"observedModel":"provider/Observed-Model"}'}
+  - {name: wrong-observed-model-role, operation: turn, accepted: false, errorCategory: validation, errorContains: role, raw: '{"index":1,"role":"user","content":"x","timestamp":"2020-01-01T00:00:00Z","depth":0,"observedModel":"provider/Observed-Model"}'}
+  - {name: metadata-value-per-record-bytes, operation: metadata-value, targets: '[]', accepted: false, errorCategory: validation, errorContains: byte budget, generate: {unit: x, repeat: 1000, count: 70}, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{{value}}}]'}
+  - {name: metadata-value-aggregate-bytes, operation: metadata-value, targets: '[]', accepted: false, errorCategory: validation, errorContains: byte budget, generate: {unit: x, repeat: 1000, count: 64, copies: 17}, raw: '{"id":"m{{index}}","kind":"pi.custom.data","source":{"entryRef":"e{{index}}","sourceType":"pi.custom"},"customType":"x","data":{{value}}}'}
+  - {name: metadata-unknown-kind, operation: metadata-records, targets: '[]', accepted: false, errorCategory: validation, errorContains: kind, raw: '[{"id":"m","kind":"pi.future","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":{}}]'}
+  - {name: metadata-unknown-source-type, operation: metadata-records, targets: '[]', accepted: false, errorCategory: validation, errorContains: sourceType, raw: '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.future"},"customType":"x","data":{}}]'}
+  - {name: metadata-forbidden-null-custom-type, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: customType, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"summary-entry","sourceType":"pi.compaction"},"attachment":{"turnIndex":10},"customType":null,"data":{}}]'}
+  - {name: trailing-comma-root, operation: scanner, accepted: false, errorCategory: lexical, raw: '{"x":1,}'}
+  - {name: trailing-comma-metadata-array, operation: metadata, accepted: false, errorCategory: lexical, raw: '[1,]'}

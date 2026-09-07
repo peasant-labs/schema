@@ -520,6 +520,38 @@ export interface components {
          */
         SchemaMessageType: Schema.MessageType;
         SchemaMockConfigResponse: Schema.MockConfigResponse;
+        SchemaNativeAttachmentRef: Schema.NativeAttachmentRef;
+        /**
+         * Native Metadata Kind
+         * @description Kind of bounded non-conversational native metadata
+         * @example pi.custom.data
+         * @example pi.custommessage.details
+         * @example pi.toolresult.details
+         * @example pi.compaction.details
+         * @example pi.branchsummary.details
+         * @enum {string}
+         */
+        SchemaNativeMetadataKind: Schema.NativeMetadataKind;
+        SchemaNativeMetadataRecord: Schema.NativeMetadataRecord;
+        /**
+         * Native Metadata Source Type
+         * @description Native source category for public metadata
+         * @example pi.custom
+         * @example pi.custom_message
+         * @example pi.message
+         * @example pi.compaction
+         * @example pi.branch_summary
+         * @enum {string}
+         */
+        SchemaNativeMetadataSourceType: Schema.NativeMetadataSourceType;
+        /**
+         * Native Pi Message Role
+         * @description Pi message role needed for public metadata validation
+         * @example toolResult
+         * @enum {string}
+         */
+        SchemaNativePiMessageRole: Schema.NativePiMessageRole;
+        SchemaNativeSourceRef: Schema.NativeSourceRef;
         /**
          * Observed Model ID
          * @description Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.
@@ -558,6 +590,7 @@ export interface components {
          * @enum {string}
          */
         SchemaReadStateGrade: Schema.ReadStateGrade;
+        SchemaRecordedCostDetail: Schema.RecordedCostDetail;
         SchemaReviewListPayload: Schema.ReviewListPayload;
         /**
          * Rewrite Method
@@ -657,6 +690,7 @@ export interface components {
         SchemaTargetKind: Schema.TargetKind;
         SchemaTaskSummary: Schema.TaskSummary;
         SchemaTimelineSessionRef: Schema.TimelineSessionRef;
+        SchemaTokenUsageDetail: Schema.TokenUsageDetail;
         SchemaToolCallDetail: Schema.ToolCallDetail;
         /**
          * Tool Call Kind
@@ -677,6 +711,25 @@ export interface components {
          */
         SchemaTypeOrigin: Schema.TypeOrigin;
         SchemaUnusualSignal: Schema.UnusualSignal;
+        /**
+         * Usage Completeness
+         * @description Completeness of the five base token fields
+         * @example complete
+         * @example partial
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaUsageCompleteness: Schema.UsageCompleteness;
+        SchemaUsageDetail: Schema.UsageDetail;
+        /**
+         * Usage Scope
+         * @description Native owner scope for detailed token and cost evidence
+         * @example assistant
+         * @example tool
+         * @example summary
+         * @enum {string}
+         */
+        SchemaUsageScope: Schema.UsageScope;
         SchemaValueDomain: Schema.ValueDomain;
         /**
          * Value Domain Kind

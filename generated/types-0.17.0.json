@@ -3,7 +3,7 @@
   "info": {
     "title": "Peasant Types",
     "description": "Shared domain type catalog for Peasant APIs. No operations; register these components for SDK code generation and cross-API type sharing.",
-    "version": "0.15.0"
+    "version": "0.17.0"
   },
   "components": {
     "schemas": {
@@ -3128,6 +3128,20 @@
         ],
         "type": "object"
       },
+      "CommandInvocation": {
+        "properties": {
+          "args": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "CommitInfo": {
         "properties": {
           "authorEmail": {
@@ -3547,6 +3561,23 @@
         "title": "Diff Line Kind",
         "type": "string"
       },
+      "DigestItemKind": {
+        "description": "Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor",
+        "enum": [
+          "session",
+          "prompt",
+          "skill",
+          "commit"
+        ],
+        "examples": [
+          "session",
+          "prompt",
+          "skill",
+          "commit"
+        ],
+        "title": "Digest Item Kind",
+        "type": "string"
+      },
       "EdgeViolation": {
         "properties": {
           "from": {
@@ -3921,7 +3952,8 @@
           "opencode",
           "cursor",
           "antigravity",
-          "strike"
+          "strike",
+          "pi"
         ],
         "examples": [
           "claude-code",
@@ -4519,6 +4551,128 @@
         ],
         "type": "object"
       },
+      "NativeAttachmentRef": {
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "turnIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "NativeMetadataKind": {
+        "description": "Kind of bounded non-conversational native metadata",
+        "enum": [
+          "pi.custom.data",
+          "pi.custommessage.details",
+          "pi.toolresult.details",
+          "pi.compaction.details",
+          "pi.branchsummary.details"
+        ],
+        "examples": [
+          "pi.custom.data",
+          "pi.custommessage.details",
+          "pi.toolresult.details",
+          "pi.compaction.details",
+          "pi.branchsummary.details"
+        ],
+        "title": "Native Metadata Kind",
+        "type": "string"
+      },
+      "NativeMetadataRecord": {
+        "properties": {
+          "attachment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NativeAttachmentRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customType": {
+            "type": "string"
+          },
+          "data": {},
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/NativeMetadataKind"
+          },
+          "source": {
+            "$ref": "#/components/schemas/NativeSourceRef"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "data"
+        ],
+        "type": "object"
+      },
+      "NativeMetadataSourceType": {
+        "description": "Native source category for public metadata",
+        "enum": [
+          "pi.custom",
+          "pi.custom_message",
+          "pi.message",
+          "pi.compaction",
+          "pi.branch_summary"
+        ],
+        "examples": [
+          "pi.custom",
+          "pi.custom_message",
+          "pi.message",
+          "pi.compaction",
+          "pi.branch_summary"
+        ],
+        "title": "Native Metadata Source Type",
+        "type": "string"
+      },
+      "NativePiMessageRole": {
+        "description": "Pi message role needed for public metadata validation",
+        "enum": [
+          "toolResult"
+        ],
+        "examples": [
+          "toolResult"
+        ],
+        "title": "Native Pi Message Role",
+        "type": "string"
+      },
+      "NativeSourceRef": {
+        "properties": {
+          "entryRef": {
+            "type": "string"
+          },
+          "messageRole": {
+            "$ref": "#/components/schemas/NativePiMessageRole"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/NativeMetadataSourceType"
+          }
+        },
+        "required": [
+          "entryRef",
+          "sourceType"
+        ],
+        "type": "object"
+      },
       "ObservedModelID": {
         "description": "Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.",
         "examples": [
@@ -4773,6 +4927,160 @@
         "required": [
           "projectHash",
           "tasks"
+        ],
+        "type": "object"
+      },
+      "PromptDigest": {
+        "properties": {
+          "header": {
+            "$ref": "#/components/schemas/PromptDigestHeader"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PromptDigestItem"
+            },
+            "type": "array"
+          },
+          "skills": {
+            "items": {
+              "$ref": "#/components/schemas/PromptDigestSkill"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "header",
+          "skills",
+          "items"
+        ],
+        "type": "object"
+      },
+      "PromptDigestHeader": {
+        "properties": {
+          "commitsCovered": {
+            "type": "integer"
+          },
+          "commitsTotal": {
+            "type": "integer"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/Harness"
+          },
+          "promptCount": {
+            "type": "integer"
+          },
+          "redactionLevel": {
+            "type": "string"
+          },
+          "sessionCount": {
+            "type": "integer"
+          },
+          "villageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionCount",
+          "promptCount",
+          "commitsCovered",
+          "commitsTotal",
+          "harness",
+          "redactionLevel",
+          "villageUrl"
+        ],
+        "type": "object"
+      },
+      "PromptDigestItem": {
+        "properties": {
+          "commitCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "commitSha": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DigestItemKind"
+          },
+          "ordinal": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "promptCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "transcriptId": {
+            "$ref": "#/components/schemas/TranscriptID"
+          },
+          "turnIndex": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "transcriptId",
+          "timestamp",
+          "text"
+        ],
+        "type": "object"
+      },
+      "PromptDigestSkill": {
+        "properties": {
+          "invocationCount": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "invocationCount"
         ],
         "type": "object"
       },
@@ -6028,6 +6336,88 @@
         "title": "Read State Grade",
         "type": "string"
       },
+      "RecordedCostAmount": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "RecordedCostDetail": {
+        "properties": {
+          "cacheRead": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "source"
+        ],
+        "type": "object"
+      },
       "RedactionInfo": {
         "properties": {
           "applied": {
@@ -6459,6 +6849,12 @@
           },
           "model": {
             "type": "string"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMetadataRecord"
+            },
+            "type": "array"
           },
           "outcome": {
             "$ref": "#/components/schemas/SessionOutcome"
@@ -7483,9 +7879,108 @@
         ],
         "type": "object"
       },
+      "TokenUsageDetail": {
+        "properties": {
+          "cacheRead": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cacheWrite1h": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "totalTokens": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
       "ToolCallDetail": {
         "properties": {
           "arguments": {
+            "type": "string"
+          },
+          "callEntryRef": {
             "type": "string"
           },
           "durationMs": {
@@ -7529,8 +8024,21 @@
           "result": {
             "type": "string"
           },
+          "resultEntryRef": {
+            "type": "string"
+          },
           "toolKind": {
             "$ref": "#/components/schemas/ToolCallKind"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7682,6 +8190,16 @@
           "agentName": {
             "type": "string"
           },
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandInvocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "content": {
             "type": "string"
           },
@@ -7715,6 +8233,9 @@
           },
           "role": {
             "$ref": "#/components/schemas/Role"
+          },
+          "sourceEntryRef": {
+            "type": "string"
           },
           "stopReason": {
             "anyOf": [
@@ -7761,6 +8282,16 @@
               "$ref": "#/components/schemas/ToolCallDetail"
             },
             "type": "array"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -7932,6 +8463,85 @@
           "perProject"
         ],
         "type": "object"
+      },
+      "UsageCompleteness": {
+        "description": "Completeness of the five base token fields",
+        "enum": [
+          "complete",
+          "partial",
+          "unknown"
+        ],
+        "examples": [
+          "complete",
+          "partial",
+          "unknown"
+        ],
+        "title": "Usage Completeness",
+        "type": "string"
+      },
+      "UsageDetail": {
+        "properties": {
+          "completeness": {
+            "$ref": "#/components/schemas/UsageCompleteness"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecordedCostDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/UsageScope"
+          },
+          "sourceEntryRef": {
+            "type": "string"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsageDetail"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "ownerId",
+          "sourceEntryRef",
+          "scope",
+          "completeness"
+        ],
+        "type": "object"
+      },
+      "UsageOwnerID": {
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "UsageScope": {
+        "description": "Native owner scope for detailed token and cost evidence",
+        "enum": [
+          "assistant",
+          "tool",
+          "summary"
+        ],
+        "examples": [
+          "assistant",
+          "tool",
+          "summary"
+        ],
+        "title": "Usage Scope",
+        "type": "string"
       },
       "ValueDomain": {
         "properties": {
@@ -8422,6 +9032,12 @@
         ],
         "type": "object"
       },
+      "VillageGitHubWebhookPayload": {
+        "additionalProperties": true,
+        "description": "GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape",
+        "title": "GitHub Webhook Payload",
+        "type": "object"
+      },
       "VillageGroup": {
         "properties": {
           "acceptance_mode": {
@@ -8472,6 +9088,12 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "type": "boolean"
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/VillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/VillageTranscriptDeletionPolicy"
           },
@@ -8491,7 +9113,9 @@
           "data_access",
           "linked_github_org",
           "display_members",
-          "transcript_deletion_policy"
+          "transcript_deletion_policy",
+          "post_prompts_check",
+          "prompts_check_mode"
         ],
         "type": "object"
       },
@@ -9815,6 +10439,65 @@
         "title": "Village Project Name Source",
         "type": "string"
       },
+      "VillagePromptRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "remote": {
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachmentState"
+          }
+        },
+        "required": [
+          "owner",
+          "name",
+          "number",
+          "state",
+          "remote",
+          "requested_at"
+        ],
+        "type": "object"
+      },
+      "VillagePromptRequestsResponse": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/VillagePromptRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests"
+        ],
+        "type": "object"
+      },
+      "VillagePromptsCheckMode": {
+        "description": "Check-run conclusion policy for a collective's linked repositories when no prompts are attached",
+        "enum": [
+          "informational",
+          "required"
+        ],
+        "examples": [
+          "informational",
+          "required"
+        ],
+        "title": "Village Prompts Check Mode",
+        "type": "string"
+      },
       "VillagePublicGroup": {
         "properties": {
           "acceptance_mode": {
@@ -9880,6 +10563,234 @@
           "transcript_count"
         ],
         "type": "object"
+      },
+      "VillagePullRequestAttachedTranscript": {
+        "properties": {
+          "position": {
+            "type": "integer"
+          },
+          "previous_visibility": {
+            "$ref": "#/components/schemas/VillageTranscriptVisibility"
+          },
+          "session_start": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "position",
+          "previous_visibility",
+          "title",
+          "session_start"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachment": {
+        "properties": {
+          "author_user_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageUUID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "check_run_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "comment_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "detached_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "head_sha": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "is_private_repository": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "requested_by_github_id": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachmentState"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "owner",
+          "name",
+          "number",
+          "head_sha",
+          "is_private_repository",
+          "state",
+          "author_user_id",
+          "requested_by_github_id",
+          "comment_id",
+          "check_run_id",
+          "created_at",
+          "updated_at",
+          "confirmed_at",
+          "detached_at"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachmentResponse": {
+        "properties": {
+          "attachment": {
+            "$ref": "#/components/schemas/VillagePullRequestAttachment"
+          },
+          "digest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptDigest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcripts": {
+            "items": {
+              "$ref": "#/components/schemas/VillagePullRequestAttachedTranscript"
+            },
+            "type": "array"
+          },
+          "viewer_is_author": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attachment",
+          "digest",
+          "transcripts",
+          "viewer_is_author"
+        ],
+        "type": "object"
+      },
+      "VillagePullRequestAttachmentState": {
+        "description": "Current lifecycle state of a pull request's prompt attachment",
+        "enum": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "examples": [
+          "requested",
+          "waiting",
+          "preview",
+          "attached",
+          "detached"
+        ],
+        "title": "Village Pull Request Attachment State",
+        "type": "string"
       },
       "VillageRemoveGroupMemberResponse": {
         "properties": {
@@ -11105,8 +12016,42 @@
           "name": {
             "type": "string"
           },
+          "post_prompts_check": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompts_check_mode": {
+            "$ref": "#/components/schemas/VillagePromptsCheckMode"
+          },
           "transcript_deletion_policy": {
             "$ref": "#/components/schemas/VillageTranscriptDeletionPolicy"
+          }
+        },
+        "type": "object"
+      },
+      "VillageUpdateUserSettingsRequest": {
+        "properties": {
+          "preview_before_attach": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object"
@@ -11322,6 +12267,17 @@
           "parent_session_id",
           "status",
           "shared_at"
+        ],
+        "type": "object"
+      },
+      "VillageUserSettings": {
+        "properties": {
+          "preview_before_attach": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "preview_before_attach"
         ],
         "type": "object"
       },
