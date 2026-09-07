@@ -110,12 +110,15 @@ func setRequestBodyExample(spec *openapi31.Spec, path, method, key, summary stri
 // Covers POST /api/v1/transcripts/publish request body and 200 response.
 func AddVillageExamples(spec *openapi31.Spec) {
 	const publishPath = "/api/v1/transcripts/publish"
+	// These examples intentionally retain valid historical metadata identity.
+	// Local metadata bookkeeping must not mutate a released Village API example.
+	const exampleMetadataSchemaVersion = 9
 
 	// Request body examples.
 	setRequestBodyExample(spec, publishPath, "post", "minimal", "Minimal publish request", map[string]any{
 		"identity": map[string]any{
 			"sessionId":     "99d59925-36bc-424c-a789-8be54d9702ba",
-			"schemaVersion": schema.MetadataSchemaVersion,
+			"schemaVersion": exampleMetadataSchemaVersion,
 		},
 		"model": map[string]any{
 			"harness":  schema.HarnessClaudeCode.String(),
@@ -154,7 +157,7 @@ func AddVillageExamples(spec *openapi31.Spec) {
 	setRequestBodyExample(spec, publishPath, "post", "full", "Full publish request with entries and quality", map[string]any{
 		"identity": map[string]any{
 			"sessionId":     "99d59925-36bc-424c-a789-8be54d9702ba",
-			"schemaVersion": schema.MetadataSchemaVersion,
+			"schemaVersion": exampleMetadataSchemaVersion,
 		},
 		"model": map[string]any{
 			"harness":  schema.HarnessClaudeCode.String(),

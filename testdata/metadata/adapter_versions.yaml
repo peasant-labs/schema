@@ -1,0 +1,55 @@
+cases:
+  - name: absent producer remains unknown
+    input: '{}'
+    expected: {accepted: true, schemaVersion: 10, adapterVersion: null}
+    classification: must-pass
+    provenance: {source: requirement, ref: UnifiedMetadata.AdapterVersion omission}
+    mutation: {description: omits producer evidence rather than inventing the current version}
+  - name: first positive revision
+    input: '{"adapterVersion":1}'
+    expected: {accepted: true, schemaVersion: 10, adapterVersion: 1}
+    classification: must-pass
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion minimum}
+    mutation: {description: sets the first valid producer revision}
+  - name: later positive revision
+    input: '{"adapterVersion":17}'
+    expected: {accepted: true, schemaVersion: 10, adapterVersion: 17}
+    classification: must-pass
+    provenance: {source: requirement, ref: UnifiedMetadata.AdapterVersion preservation}
+    mutation: {description: preserves an exact later producer revision without consulting a registry}
+  - name: legacy metadata nine
+    input: '{"schemaVersion":9}'
+    expected: {accepted: true, schemaVersion: 9, adapterVersion: null, legacyHash: a20d15fa1483a3526f133acd65f750edb2712c273143206838ef8cca2e9e4696}
+    classification: must-pass
+    provenance: {source: requirement, ref: metadata schema nine compatibility}
+    mutation: {description: reads historic metadata without fabricating adapter provenance or upgrading its stamp}
+  - name: zero is not unknown
+    input: '{"adapterVersion":0}'
+    expected: {accepted: false, schemaVersion: 10, adapterVersion: null}
+    classification: must-fail
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion positive values}
+    mutation: {description: replaces an omitted producer with invalid zero}
+  - name: negative revision rejected
+    input: '{"adapterVersion":-1}'
+    expected: {accepted: false, schemaVersion: 10, adapterVersion: null}
+    classification: must-fail
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion positive values}
+    mutation: {description: changes a valid positive revision to a negative revision}
+  - name: null is not a revision
+    input: '{"adapterVersion":null}'
+    expected: {accepted: false, schemaVersion: 10, adapterVersion: null}
+    classification: must-fail
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion omission semantics}
+    mutation: {description: supplies explicit null where omission is the unknown representation}
+  - name: fractional revision rejected
+    input: '{"adapterVersion":1.5}'
+    expected: {accepted: false, schemaVersion: 10, adapterVersion: null}
+    classification: must-fail
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion integer values}
+    mutation: {description: changes an integer revision to a fractional number}
+  - name: string revision rejected
+    input: '{"adapterVersion":"1"}'
+    expected: {accepted: false, schemaVersion: 10, adapterVersion: null}
+    classification: must-fail
+    provenance: {source: boundary, ref: UnifiedMetadata.AdapterVersion integer values}
+    mutation: {description: encodes an integer as a string instead of a JSON number}

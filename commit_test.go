@@ -136,20 +136,20 @@ func TestGitContextCommitsField_EmptySliceOmitted(t *testing.T) {
 	}
 }
 
-// --- MetadataSchemaVersion is 9 (v9: harness key unification — self-heal stale modelHarness) ---
+// --- MetadataSchemaVersion is 10 (optional adapter provenance) ---
 
-func TestMetadataSchemaVersion_IsV9(t *testing.T) {
-	if schema.MetadataSchemaVersion != 9 {
-		t.Errorf("MetadataSchemaVersion: got %d, want 9", schema.MetadataSchemaVersion)
+func TestMetadataSchemaVersion_IsV10(t *testing.T) {
+	if schema.MetadataSchemaVersion != 10 {
+		t.Errorf("MetadataSchemaVersion: got %d, want 10", schema.MetadataSchemaVersion)
 	}
 }
 
-// --- NewUnifiedMetadata sets v9 schema version ---
+// --- NewUnifiedMetadata sets v10 schema version ---
 
-func TestNewUnifiedMetadata_SchemaVersionV9(t *testing.T) {
+func TestNewUnifiedMetadata_SchemaVersionV10(t *testing.T) {
 	meta := schema.NewUnifiedMetadata()
-	if meta.SchemaVersion != 9 {
-		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 9", meta.SchemaVersion)
+	if meta.SchemaVersion != 10 {
+		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 10", meta.SchemaVersion)
 	}
 }
 
