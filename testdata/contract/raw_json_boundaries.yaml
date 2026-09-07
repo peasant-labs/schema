@@ -1,4 +1,15 @@
 requiredCaseNames:
+  - metadata-large-tool-result-string
+  - metadata-large-tool-result-string-value
+  - metadata-single-string-record-at-limit
+  - metadata-single-string-record-over-limit
+  - metadata-single-string-record-over-limit-value
+  - metadata-string-at-limit-still-exceeds-record
+  - metadata-string-over-limit
+  - metadata-multibyte-string-record-at-limit
+  - metadata-exact-aggregate-at-limit
+  - metadata-exact-aggregate-over-limit
+  - metadata-exact-aggregate-over-limit-value
   - tool-namespace-with-all-evidence
   - tool-namespace-absent
   - tool-namespace-empty
@@ -143,7 +154,7 @@ cases:
   - name: tool-namespace-outside-metadata-budget
     operation: turn
     accepted: true
-    generate: {unit: x, repeat: 16385}
+    generate: {unit: x, repeat: 65537}
     raw: '{"index":0,"depth":0,"role":"assistant","content":"","timestamp":"2020-01-01T00:00:00Z","toolCalls":[{"id":"call","namespace":"{{value}}","name":"Lookup","arguments":"{}","result":""}]}'
   - name: tool-namespace-null
     operation: turn
@@ -362,3 +373,97 @@ cases:
   - {name: metadata-forbidden-null-custom-type, operation: metadata-records, targets: *targets, accepted: false, errorCategory: validation, errorContains: customType, raw: '[{"id":"m","kind":"pi.compaction.details","source":{"entryRef":"summary-entry","sourceType":"pi.compaction"},"attachment":{"turnIndex":10},"customType":null,"data":{}}]'}
   - {name: trailing-comma-root, operation: scanner, accepted: false, errorCategory: lexical, raw: '{"x":1,}'}
   - {name: trailing-comma-metadata-array, operation: metadata, accepted: false, errorCategory: lexical, raw: '[1,]'}
+  - name: metadata-large-tool-result-string
+    operation: metadata-records
+    targets: *targets
+    accepted: true
+    generate: {unit: x, repeat: 51175, padding: 1407}
+    expectedDataBytes: 52620
+    expectedAggregateBytes: 52620
+    raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":20,"toolCallId":"t"},"data":{"details":{"output":"{{value}}"},"padding":"{{padding}}"}}]'
+  - name: metadata-large-tool-result-string-value
+    operation: metadata-value
+    targets: *targets
+    accepted: true
+    generate: {unit: x, repeat: 51175, padding: 1407}
+    expectedDataBytes: 52620
+    expectedAggregateBytes: 52620
+    raw: '[{"id":"m","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":20,"toolCallId":"t"},"data":{"details":{"output":"{{value}}"},"padding":"{{padding}}"}}]'
+  # JSON quotes consume two record bytes. 65534 is the largest scalar string
+  # that can fit unchanged inside a 65536-byte selected data record.
+  - name: metadata-single-string-record-at-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: true
+    generate: {unit: x, repeat: 65534}
+    expectedDataBytes: 65536
+    raw: &scalarRecord '[{"id":"m","kind":"pi.custom.data","source":{"entryRef":"e","sourceType":"pi.custom"},"customType":"x","data":"{{value}}"}]'
+  - name: metadata-single-string-record-over-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: false
+    errorCategory: lexical
+    errorContains: byte budget
+    generate: {unit: x, repeat: 65535}
+    expectedDataBytes: 65537
+    raw: *scalarRecord
+  - name: metadata-single-string-record-over-limit-value
+    operation: metadata-value
+    targets: '[]'
+    accepted: false
+    errorCategory: validation
+    errorContains: byte budget
+    generate: {unit: x, repeat: 65535}
+    expectedDataBytes: 65537
+    raw: *scalarRecord
+  - name: metadata-string-at-limit-still-exceeds-record
+    operation: metadata-records
+    targets: '[]'
+    accepted: false
+    errorCategory: lexical
+    errorContains: byte budget
+    generate: {unit: x, repeat: 65536}
+    expectedDataBytes: 65538
+    raw: *scalarRecord
+  - name: metadata-string-over-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: false
+    errorCategory: lexical
+    errorContains: metadata string exceeds
+    generate: {unit: x, repeat: 65537}
+    expectedDataBytes: 65539
+    raw: *scalarRecord
+  - name: metadata-multibyte-string-record-at-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: true
+    generate: {unit: é, repeat: 32767}
+    expectedDataBytes: 65536
+    raw: *scalarRecord
+  - name: metadata-exact-aggregate-at-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: true
+    generate: {unit: x, repeat: 65534, copies: 16}
+    expectedDataBytes: 65536
+    expectedAggregateBytes: 1048576
+    raw: &aggregateRecords '{"id":"m{{index}}","kind":"pi.custom.data","source":{"entryRef":"e{{index}}","sourceType":"pi.custom"},"customType":"x","data":"{{value}}"}'
+  - name: metadata-exact-aggregate-over-limit
+    operation: metadata-records
+    targets: '[]'
+    accepted: false
+    errorCategory: lexical
+    errorContains: byte budget
+    generate: {unit: x, repeat: 65533, copies: 17, lastRepeat: 15}
+    expectedAggregateBytes: 1048577
+    raw: *aggregateRecords
+  - name: metadata-exact-aggregate-over-limit-value
+    operation: metadata-value
+    targets: '[]'
+    accepted: false
+    errorCategory: validation
+    errorContains: byte budget
+    generate: {unit: x, repeat: 65533, copies: 17, lastRepeat: 15}
+    expectedAggregateBytes: 1048577
+    raw: *aggregateRecords

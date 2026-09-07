@@ -92,7 +92,24 @@ replace `observed_model_v1`, `detailed_usage_v1`, or `native_metadata_v1`. Disco
 remains forward-open with exact set matching and sorted, unique producer output.
 Dry-run derives these requirements locally without negotiation or upload.
 
-### Evolution
+### Native metadata byte budgets
+
+Selected `nativeMetadata[*].data` subtrees permit decoded strings of at most
+65,536 UTF-8 bytes. This is not a transcript-wide string limit. The independent
+data budgets remain 65,536 raw JSON bytes per record and 1,048,576 bytes in
+aggregate per session, both enforced before lossy decoding and again for typed
+values. Object syntax, JSON quotes, escaping and raw whitespace consume record
+bytes. Thus even a scalar string of exactly 65,536 decoded bytes cannot fit a
+record: its two JSON quotes exceed that record budget. A scalar ASCII string of
+65,534 bytes fits exactly; nested strings leave less room for other data.
+
+All other metadata bounds remain unchanged: depth 32, array length 4096, object
+members 256, keys 512 UTF-8 bytes, 256 records, and `customType` 128 UTF-8 bytes.
+The existing numeric, Unicode, attribution and redaction rules still apply.
+The Go metadata-string constant is the source for the generated internal
+TypeScript limit; both raw scanning and typed validation use that same limit.
+
+### Token evolution
 
 A token's meaning is immutable. Incompatible behavior mints a new token, such
 as `observed_model_v2`; a transitional deployment may advertise both revisions.
