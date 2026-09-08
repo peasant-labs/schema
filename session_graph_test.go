@@ -3,6 +3,7 @@ package schema
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -61,12 +62,15 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	caseassert.RequireMin(t, c.Recursive, 5)
+	caseassert.RequireMin(t, c.Recursive, 10)
 	caseassert.RequireValid(t, c.Recursive)
-	caseassert.RequireMin(t, c.RawDurable, 7)
+	caseassert.RequireMin(t, c.RawDurable, 11)
 	caseassert.RequireValid(t, c.RawDurable)
-	for _, arm := range []testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]{c.Recursive, c.RawDurable} {
-		for _, x := range arm.Cases {
+	for _, arm := range []struct {
+		corpus   testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]
+		semantic bool
+	}{{c.Recursive, true}, {c.RawDurable, false}} {
+		for _, x := range arm.corpus.Cases {
 			t.Run(x.Name, func(t *testing.T) {
 				raw := completeRawDetailFixture(t, x.Input.RawJSON)
 				_, detailErr := DecodeSessionDetailPayloadRaw(raw)
@@ -74,8 +78,61 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 				envelope := `{"kind":"session_detail","sessionDetail":` + string(raw) + `}`
 				_, envelopeErr := DecodeTranscriptContentRaw([]byte(envelope))
 				assertFixtureError(t, x.Name+" transcript", x.Classification, x.Expected.ErrorContains, envelopeErr)
+				if arm.semantic {
+					var detail SessionDetailPayload
+					if err := json.Unmarshal(raw, &detail); err != nil {
+						t.Fatal(err)
+					}
+					assertFixtureError(t, x.Name+" typed detail", x.Classification, x.Expected.ErrorContains, ValidateSessionDetailPayload(detail))
+					assertFixtureError(t, x.Name+" typed transcript", x.Classification, x.Expected.ErrorContains, ValidateTranscriptContent(TranscriptContent{Kind: ContentKindSessionDetail, SessionDetail: &detail}))
+					assertFixtureError(t, x.Name+" native validator", x.Classification, x.Expected.ErrorContains, ValidateNativeMetadata(detail))
+				}
 			})
 		}
+	}
+}
+
+func TestSessionGraphNativeAggregateBudget(t *testing.T) {
+	c, err := LoadSessionGraphFixtures()
+	if err != nil {
+		t.Fatal(err)
+	}
+	caseassert.RequireMin(t, c.NativeLimits, 2)
+	caseassert.RequireValid(t, c.NativeLimits)
+	for _, x := range c.NativeLimits.Cases {
+		t.Run(x.Name, func(t *testing.T) {
+			detail := SessionDetailPayload{ID: "ses_native_budget", Harness: HarnessPi, Turns: []TurnDetail{}, EarlierHistory: []EarlierHistorySection{{State: EarlierHistoryUncertainMigrated, Turns: []TurnDetail{}}}}
+			makeRecords := func(n, offset int) []NativeMetadataRecord {
+				out := make([]NativeMetadataRecord, n)
+				for i := range out {
+					suffix := fmt.Sprintf("%d", i+offset)
+					chunks := []string{}
+					for remaining := x.Input.DataBytes; remaining > 0; {
+						size := remaining
+						if size > 15000 {
+							size = 15000
+						}
+						chunks = append(chunks, strings.Repeat("x", size))
+						remaining -= size
+					}
+					data, err := json.Marshal(chunks)
+					if err != nil {
+						t.Fatal(err)
+					}
+					out[i] = NativeMetadataRecord{ID: "m_" + suffix, Kind: NativeMetadataPiCustomData, Source: NativeSourceRef{EntryRef: SourceEntryRef("source_" + suffix), SourceType: NativeSourcePiCustom}, CustomType: "fixture", Data: data}
+				}
+				return out
+			}
+			detail.NativeMetadata = makeRecords(x.Input.MainRecords, 0)
+			detail.EarlierHistory[0].NativeMetadata = makeRecords(x.Input.EarlierRecords, x.Input.MainRecords)
+			assertFixtureError(t, x.Name+" typed", x.Classification, x.Expected.ErrorContains, ValidateSessionDetailPayload(detail))
+			raw, err := json.Marshal(detail)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = DecodeSessionDetailPayloadRaw(raw)
+			assertFixtureError(t, x.Name+" raw", x.Classification, x.Expected.ErrorContains, err)
+		})
 	}
 }
 

@@ -337,16 +337,31 @@ func validateTurnEvidence(turns []TurnDetail) error {
 }
 
 type detailValidationState struct {
-	usageOwners  map[UsageOwnerID]bool
-	usageSources map[string]bool
-	blockRefs    map[string]bool
-	toolIDs      map[string]bool
-	nativeIDs    map[string]bool
-	nativeCount  int
+	usageOwners   map[UsageOwnerID]bool
+	usageSources  map[string]bool
+	blockRefs     map[string]bool
+	toolIDs       map[string]bool
+	nativeIDs     map[string]bool
+	nativeSources map[string]bool
+	nativeCount   int
+	nativeBytes   int
 }
 
 func newDetailValidationState() *detailValidationState {
-	return &detailValidationState{usageOwners: map[UsageOwnerID]bool{}, usageSources: map[string]bool{}, blockRefs: map[string]bool{}, toolIDs: map[string]bool{}, nativeIDs: map[string]bool{}}
+	return &detailValidationState{usageOwners: map[UsageOwnerID]bool{}, usageSources: map[string]bool{}, blockRefs: map[string]bool{}, toolIDs: map[string]bool{}, nativeIDs: map[string]bool{}, nativeSources: map[string]bool{}}
+}
+
+func projectedTurn(t *TurnDetail) bool {
+	if t.SourceEntryRef != "" || t.Provenance != nil {
+		return true
+	}
+	for i := range t.ToolCalls {
+		x := &t.ToolCalls[i]
+		if x.CallEntryRef != "" || x.ResultEntryRef != "" || x.CallProvenance != nil || x.ResultProvenance != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValidationState) error {
@@ -363,7 +378,7 @@ func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValida
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: duplicate turn index %d makes metadata attachment ambiguous; emit unique turn indices", t.Index)
 		}
 		turnIndexes[t.Index] = true
-		projected := t.SourceEntryRef != "" || t.Provenance != nil
+		projected := projectedTurn(t)
 		if projected && (t.Depth == 0 && t.ParentIndex != nil || t.Depth > 0 && t.ParentIndex == nil || t.Depth < 0) {
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: %s[%d] depth and parentIndex disagree; attachment ancestry cannot be reconstructed; use nil parentIndex at depth zero and a partition-local parent at positive depth", path, i)
 		}
@@ -436,7 +451,7 @@ func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValida
 		}
 	}
 	for i := range turns {
-		if (turns[i].SourceEntryRef != "" || turns[i].Provenance != nil) && turns[i].ParentIndex != nil && !turnIndexes[*turns[i].ParentIndex] {
+		if projectedTurn(&turns[i]) && turns[i].ParentIndex != nil && !turnIndexes[*turns[i].ParentIndex] {
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: %s[%d].parentIndex %d does not target an emitted turn in the same partition; folded attachment ownership is ambiguous; remap the parent after partition layout", path, i, *turns[i].ParentIndex)
 		}
 	}
@@ -480,10 +495,16 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 		return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: pi metadata is attached to harness %q; consumers would misattribute evidence; emit it only for harness pi", v.Harness)
 	}
 	state := newDetailValidationState()
+	if err := validateTurnEvidenceAt(v.Turns, "turns", state); err != nil {
+		return err
+	}
 	if err := validateNativeMetadataRecordsAt(v.NativeMetadata, v.Turns, "nativeMetadata", state); err != nil {
 		return err
 	}
 	for i := range v.EarlierHistory {
+		if err := validateTurnEvidenceAt(v.EarlierHistory[i].Turns, fmt.Sprintf("earlierHistory[%d].turns", i), state); err != nil {
+			return err
+		}
 		if err := validateNativeMetadataRecordsAt(v.EarlierHistory[i].NativeMetadata, v.EarlierHistory[i].Turns, fmt.Sprintf("earlierHistory[%d].nativeMetadata", i), state); err != nil {
 			return err
 		}
@@ -512,12 +533,11 @@ func validateNativeMetadataRecordsAt(records []NativeMetadataRecord, targets []T
 		}
 		turns[targets[i].Index] = &targets[i]
 	}
-	total := 0
 	for _, m := range records {
 		if len(m.Data) == 0 || isNullRaw(m.Data) {
 			return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadataRecords: required data is missing or null; evidence cannot be checked; provide a non-null JSON value")
 		}
-		if !m.Kind.IsValid() || !m.Source.SourceType.IsValid() || !validPublicRef(m.ID) || !validPublicRef(string(m.Source.EntryRef)) || state.nativeIDs[m.ID] {
+		if !m.Kind.IsValid() || !m.Source.SourceType.IsValid() || !validPublicRef(m.ID) || !validPublicRef(string(m.Source.EntryRef)) || state.nativeIDs[m.ID] || state.nativeSources[string(m.Source.EntryRef)] {
 			return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: id, kind, source type, or source ref is invalid or duplicated; attribution cannot be trusted; emit unique bounded refs and published enum values")
 		}
 		if m.CustomType != "" && (!utf8.ValidString(m.CustomType) || len(m.CustomType) > 128) {
@@ -527,9 +547,10 @@ func validateNativeMetadataRecordsAt(records []NativeMetadataRecord, targets []T
 			return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadataRecords: attachment tool reference is invalid UTF-8 or exceeds 96 bytes; attribution is unsafe; use a bounded public reference")
 		}
 		state.nativeIDs[m.ID] = true
+		state.nativeSources[string(m.Source.EntryRef)] = true
 		state.nativeCount++
-		total += len(m.Data)
-		if len(m.Data) > 65536 || total > 1048576 {
+		state.nativeBytes += len(m.Data)
+		if len(m.Data) > 65536 || state.nativeBytes > 1048576 {
 			return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: data exceeds per-record or aggregate byte budget; outward metadata is unsafe; reduce it below 64 KiB per record and 1 MiB total")
 		}
 		if _, err := DecodeNativeMetadataDataRaw(m.Data); err != nil {
@@ -677,10 +698,10 @@ type RawJSONPathPolicy struct {
 }
 
 func sessionDetailRawPolicy() RawJSONPathPolicy {
-	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/nativeMetadata/*/data"}}
+	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/nativeMetadata/*/data", "/earlierHistory/*/nativeMetadata/*/data"}}
 }
 func transcriptRawPolicy() RawJSONPathPolicy {
-	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data"}}
+	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data", "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"}}
 }
 func ScanRawJSONDocument(raw []byte, p RawJSONPathPolicy) error {
 	return scanRawJSONDocument(raw, p, false)
@@ -875,6 +896,9 @@ func validateSessionDetailRawShape(raw []byte) error {
 	if err := rejectDurableReadFields(root); err != nil {
 		return err
 	}
+	if err := validateRawGraphObjects(root, "sessionDetail"); err != nil {
+		return err
+	}
 	if err := validateWireShape(raw, reflect.TypeFor[SessionDetailPayload](), "sessionDetail"); err != nil {
 		return err
 	}
@@ -916,6 +940,92 @@ func validateSessionDetailRawShape(raw []byte) error {
 		}
 	}
 	return nil
+}
+
+func validateRawGraphObjects(root map[string]json.RawMessage, path string) error {
+	if relationships, ok := root["relationships"]; ok && !isNullRaw(relationships) {
+		var items []json.RawMessage
+		if json.Unmarshal(relationships, &items) == nil {
+			for i, item := range items {
+				fields, err := strictGraphObject(item, path+fmt.Sprintf("/relationships/%d", i), "kind", "targetState", "targetLocalId", "evidence", "anchor")
+				if err != nil {
+					return err
+				}
+				if anchor, ok := fields["anchor"]; ok && !isNullRaw(anchor) {
+					if _, err := strictGraphObject(anchor, path+fmt.Sprintf("/relationships/%d/anchor", i), "kind", "sourceEntryRef", "sourceRevisionRef"); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	if earlier, ok := root["earlierHistory"]; ok && !isNullRaw(earlier) {
+		var items []json.RawMessage
+		if json.Unmarshal(earlier, &items) == nil {
+			for i, item := range items {
+				fields, err := strictGraphObject(item, path+fmt.Sprintf("/earlierHistory/%d", i), "state", "turns", "nativeMetadata")
+				if err != nil {
+					return err
+				}
+				if err := validateRawTurnGraph(fields["turns"], path+fmt.Sprintf("/earlierHistory/%d/turns", i)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return validateRawTurnGraph(root["turns"], path+"/turns")
+}
+
+func validateRawTurnGraph(raw json.RawMessage, path string) error {
+	var turns []json.RawMessage
+	if json.Unmarshal(raw, &turns) != nil {
+		return nil
+	}
+	for i, item := range turns {
+		var turn map[string]json.RawMessage
+		if json.Unmarshal(item, &turn) != nil {
+			continue
+		}
+		if p, ok := turn["provenance"]; ok && !isNullRaw(p) {
+			if _, err := strictGraphObject(p, path+fmt.Sprintf("/%d/provenance", i), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
+				return err
+			}
+		}
+		var tools []json.RawMessage
+		if json.Unmarshal(turn["toolCalls"], &tools) == nil {
+			for j, toolRaw := range tools {
+				var tool map[string]json.RawMessage
+				if json.Unmarshal(toolRaw, &tool) != nil {
+					continue
+				}
+				for _, name := range []string{"callProvenance", "resultProvenance"} {
+					if p, ok := tool[name]; ok && !isNullRaw(p) {
+						if _, err := strictGraphObject(p, path+fmt.Sprintf("/%d/toolCalls/%d/%s", i, j, name), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func strictGraphObject(raw json.RawMessage, path string, allowed ...string) (map[string]json.RawMessage, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return fields, nil
+	}
+	set := map[string]bool{}
+	for _, name := range allowed {
+		set[name] = true
+	}
+	for name := range fields {
+		if !set[name] {
+			return nil, fmt.Errorf("session graph raw validation failed at schema decoder during pre-decode validation of %s: field %q is not part of the durable graph object; typed decoding would discard read or cooked state; remove the field before publication", path, name)
+		}
+	}
+	return fields, nil
 }
 
 func validateRawPartition(raw json.RawMessage, path string) error {

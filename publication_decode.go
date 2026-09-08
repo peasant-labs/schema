@@ -216,8 +216,14 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		if !present || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			continue
 		}
-		if _, err := decodeStrictObject(value, object.fields, "successor publication "+object.name); err != nil {
+		decoded, err := decodeStrictObject(value, object.fields, "successor publication "+object.name)
+		if err != nil {
 			return err
+		}
+		if object.name == "identity" {
+			if err := validateRawGraphObjects(decoded, "authoritativePublishRequest/identity"); err != nil {
+				return err
+			}
 		}
 	}
 	if statsRaw, present := raw["stats"]; present && !bytes.Equal(bytes.TrimSpace(statsRaw), []byte("null")) {
@@ -252,6 +258,22 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		if value, present := raw[array.name]; present {
 			if err := validateStrictObjectArray(value, array.fields, "successor publication "+array.name); err != nil {
 				return err
+			}
+		}
+	}
+	if value, present := raw["entries"]; present {
+		var entries []json.RawMessage
+		if json.Unmarshal(value, &entries) == nil {
+			for i, item := range entries {
+				var entry map[string]json.RawMessage
+				if json.Unmarshal(item, &entry) != nil {
+					continue
+				}
+				if p, ok := entry["provenance"]; ok && !bytes.Equal(bytes.TrimSpace(p), []byte("null")) {
+					if _, err := strictGraphObject(p, fmt.Sprintf("authoritativePublishRequest/entries/%d/provenance", i), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

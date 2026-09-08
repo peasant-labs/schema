@@ -24,6 +24,11 @@ type SessionGraphRawExpected struct {
 	RawJSON       string `yaml:"rawJson,omitempty"`
 	ErrorContains string `yaml:"error_contains,omitempty"`
 }
+type NativeLimitInput struct {
+	MainRecords    int `yaml:"main_records"`
+	EarlierRecords int `yaml:"earlier_records"`
+	DataBytes      int `yaml:"data_bytes"`
+}
 type SessionGraphRefInput struct {
 	Alias       string `yaml:"alias"`
 	BytesBase64 string `yaml:"bytesBase64"`
@@ -53,6 +58,7 @@ type SessionGraphFixtureCorpus struct {
 	RawNavigation      testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
 	Recursive          testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"recursive"`
 	RawDurable         testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"raw_durable"`
+	NativeLimits       testcase.Corpus[NativeLimitInput, SessionGraphFixtureExpected]              `yaml:"native_limits"`
 	RecursiveRequired  []string                                                                    `yaml:"recursive_required_names"`
 	RawDurableRequired []string                                                                    `yaml:"raw_durable_required_names"`
 }
@@ -121,7 +127,7 @@ func validatePrimitiveFixtureArms(c SessionGraphFixtureCorpus) error {
 		name     string
 		validate func() error
 	}{
-		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate}, {"recursive", c.Recursive.Validate}, {"raw_durable", c.RawDurable.Validate},
+		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate}, {"recursive", c.Recursive.Validate}, {"raw_durable", c.RawDurable.Validate}, {"native_limits", c.NativeLimits.Validate},
 	}
 	for _, arm := range arms {
 		if err := arm.validate(); err != nil {
