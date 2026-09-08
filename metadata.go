@@ -61,25 +61,28 @@ func (r RedactionInfo) IsRaw() bool {
 // UnifiedMetadata is the on-disk JSON stored alongside each raw transcript.
 // It drives the adapter layer for downstream consumers and incremental diff logic.
 type UnifiedMetadata struct {
-	SchemaVersion int             `json:"schemaVersion"`
-	SessionID     SessionID       `json:"sessionId"`
-	ParentUUID    *SessionID      `json:"parentUuid"` // nil for root sessions, pointer for nullable JSON
-	ModelHarness  Harness         `json:"harness"`
-	Model         ModelID         `json:"model"`
-	Version       string          `json:"version"` // provider tool version (e.g. "2.1.47")
-	Timestamp     TimestampInfo   `json:"timestamp"`
-	Source        SourceInfo      `json:"source"`
-	Git           GitContext      `json:"git"`
-	Project       ProjectContext  `json:"project"`
-	HostSlug      HostSlug        `json:"hostSlug"`
-	Stats         SessionStats    `json:"stats"`
-	Subagents     []SubagentRef   `json:"subagents"`
-	CWD           string          `json:"cwd,omitempty"`       // Real project working directory (v7+)
-	DerivedAt     *int64          `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
-	Diagnostics   DiagnosticsInfo `json:"diagnostics"`
-	ContentHash   string          `json:"contentHash"`  // SHA3-256 of transcript bytes
-	MetadataHash  string          `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
-	Redaction     RedactionInfo   `json:"redaction"`
+	SchemaVersion int                   `json:"schemaVersion"`
+	SessionID     SessionID             `json:"sessionId"`
+	ParentUUID    *SessionID            `json:"parentUuid"` // nil for root sessions, pointer for nullable JSON
+	ModelHarness  Harness               `json:"harness"`
+	Model         ModelID               `json:"model"`
+	Version       string                `json:"version"` // provider tool version (e.g. "2.1.47")
+	Timestamp     TimestampInfo         `json:"timestamp"`
+	Source        SourceInfo            `json:"source"`
+	Git           GitContext            `json:"git"`
+	Project       ProjectContext        `json:"project"`
+	HostSlug      HostSlug              `json:"hostSlug"`
+	Stats         SessionStats          `json:"stats"`
+	Subagents     []SubagentRef         `json:"subagents"`
+	RootSessionID *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose       SessionPurpose        `json:"purpose,omitempty"`
+	Relationships []SessionRelationship `json:"relationships,omitempty"`
+	CWD           string                `json:"cwd,omitempty"`       // Real project working directory (v7+)
+	DerivedAt     *int64                `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
+	Diagnostics   DiagnosticsInfo       `json:"diagnostics"`
+	ContentHash   string                `json:"contentHash"`  // SHA3-256 of transcript bytes
+	MetadataHash  string                `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
+	Redaction     RedactionInfo         `json:"redaction"`
 	// AdapterVersion identifies the Peasant adapter/parser that successfully
 	// produced this artifact, not the native harness release in Version.
 	// Omission means unknown historical provenance; a present value must be positive.
@@ -142,12 +145,13 @@ type ProjectContext struct {
 
 // SessionStats holds aggregate metrics extracted from transcript data.
 type SessionStats struct {
-	TurnCount     int   `json:"turnCount"`
-	ToolCallCount int   `json:"toolCallCount"`
-	SubagentCount int   `json:"subagentCount"`
-	DurationMs    int64 `json:"durationMs"`
-	TokensIn      int   `json:"tokensIn"`
-	TokensOut     int   `json:"tokensOut"`
+	TurnCount            int    `json:"turnCount"`
+	InputSubmissionCount *int64 `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount        int    `json:"toolCallCount"`
+	SubagentCount        int    `json:"subagentCount"`
+	DurationMs           int64  `json:"durationMs"`
+	TokensIn             int    `json:"tokensIn"`
+	TokensOut            int    `json:"tokensOut"`
 	// ACP-aligned token breakdown (optional — not all providers report these).
 	ThoughtTokens     *int `json:"thoughtTokens,omitempty"`     // Reasoning/thinking tokens
 	CachedReadTokens  *int `json:"cachedReadTokens,omitempty"`  // Prompt cache hits
@@ -181,6 +185,20 @@ type DiagnosticEntry struct {
 // correctly in the window before the v9 DIFF-stage re-extract rewrites it.
 // AdapterVersion is positive when present; omission represents unknown provenance.
 func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	if statsRaw, present := raw["stats"]; present && !bytes.Equal(bytes.TrimSpace(statsRaw), []byte("null")) {
+		var stats map[string]json.RawMessage
+		if err := json.Unmarshal(statsRaw, &stats); err == nil {
+			if count, exists := stats["inputSubmissionCount"]; exists {
+				if err := validateRawInputSubmissionCount(count, "metadata.stats.inputSubmissionCount"); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	type alias UnifiedMetadata // avoid recursion into this method
 	next := *m
 	next.AdapterVersion = nil
@@ -203,6 +221,20 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 	if err := next.validateAdapterVersion(); err != nil {
 		return err
 	}
+	if err := ValidateInputSubmissionCount(next.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if next.RootSessionID != nil {
+		if _, err := NewSessionID(string(*next.RootSessionID)); err != nil {
+			return fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.UnmarshalJSON: rootSessionId is malformed; durable identity cannot be decoded; provide a canonical session identifier: %w", err)
+		}
+	}
+	if !next.Purpose.IsValid() {
+		return fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.UnmarshalJSON: purpose %q is outside its closed set; consumers cannot classify the session; use a published purpose or omit it", next.Purpose)
+	}
+	if err := ValidateSessionRelationships(next.Relationships); err != nil {
+		return err
+	}
 	if next.ModelHarness == "" && aux.LegacyModelHarness != nil {
 		next.ModelHarness = *aux.LegacyModelHarness
 	}
@@ -216,8 +248,31 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 	if err := m.validateAdapterVersion(); err != nil {
 		return nil, err
 	}
+	if err := ValidateInputSubmissionCount(m.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
+		return nil, err
+	}
+	if m.RootSessionID != nil {
+		if _, err := NewSessionID(string(*m.RootSessionID)); err != nil {
+			return nil, fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.MarshalJSON: rootSessionId is malformed; durable identity cannot be serialized; provide a canonical session identifier: %w", err)
+		}
+	}
+	if !m.Purpose.IsValid() {
+		return nil, fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.MarshalJSON: purpose %q is outside its closed set; consumers cannot classify the session; use a published purpose or omit it", m.Purpose)
+	}
+	if err := ValidateSessionRelationships(m.Relationships); err != nil {
+		return nil, err
+	}
 	type alias UnifiedMetadata
 	return json.Marshal(alias(m))
+}
+
+// ValidateInputSubmissionCount preserves unknown (nil) separately from measured
+// zero and limits present values to the exact integer range shared with JS.
+func ValidateInputSubmissionCount(value *int64, path string) error {
+	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
+		return fmt.Errorf("input submission count validation failed at schema.ValidateInputSubmissionCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
+	}
+	return nil
 }
 
 func (m UnifiedMetadata) validateAdapterVersion() error {
