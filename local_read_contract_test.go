@@ -39,9 +39,9 @@ func loadLocalReadFixtures(t *testing.T) localReadFixtures {
 	if err := decoder.Decode(&fixtures); err != nil {
 		t.Fatalf("load local read contract: %v", err)
 	}
-	testassert.RequireMin(t, fixtures.RoundTrip, 7)
+	testassert.RequireMin(t, fixtures.RoundTrip, 10)
 	testassert.RequireValid(t, fixtures.RoundTrip)
-	testassert.RequireMin(t, fixtures.Validation, 3)
+	testassert.RequireMin(t, fixtures.Validation, 9)
 	testassert.RequireValid(t, fixtures.Validation)
 	seen := map[string]bool{}
 	for _, c := range fixtures.RoundTrip.Cases {
@@ -68,6 +68,16 @@ func TestLocalReadContractRoundTrip(t *testing.T) {
 			if (err == nil) != c.Expected.Valid {
 				t.Fatalf("valid=%v, want %v: %v", err == nil, c.Expected.Valid, err)
 			}
+			var inputValue, outputValue any
+			if err := json.Unmarshal([]byte(c.Input.JSON), &inputValue); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(encoded, &outputValue); err != nil {
+				t.Fatal(err)
+			}
+			if err := requireJSONSubset(inputValue, outputValue, "$"); err != nil {
+				t.Fatalf("round trip changed values: %v", err)
+			}
 			var root map[string]json.RawMessage
 			if err := json.Unmarshal(encoded, &root); err != nil {
 				t.Fatal(err)
@@ -86,12 +96,67 @@ func TestLocalReadContractRoundTrip(t *testing.T) {
 				}
 			}
 			for _, key := range c.Expected.ForbiddenKeys {
-				if _, ok := root[key]; ok {
+				if hasJSONKey(outputValue, key) {
 					t.Fatalf("root unexpectedly contains %q", key)
 				}
 			}
 		})
 	}
+}
+
+func requireJSONSubset(want, got any, path string) error {
+	switch expected := want.(type) {
+	case map[string]any:
+		actual, ok := got.(map[string]any)
+		if !ok {
+			return fmt.Errorf("%s type changed", path)
+		}
+		for key, value := range expected {
+			candidate, exists := actual[key]
+			if !exists {
+				return fmt.Errorf("%s.%s disappeared", path, key)
+			}
+			if err := requireJSONSubset(value, candidate, path+"."+key); err != nil {
+				return err
+			}
+		}
+	case []any:
+		actual, ok := got.([]any)
+		if !ok || len(actual) != len(expected) {
+			return fmt.Errorf("%s array changed", path)
+		}
+		for i := range expected {
+			if err := requireJSONSubset(expected[i], actual[i], fmt.Sprintf("%s[%d]", path, i)); err != nil {
+				return err
+			}
+		}
+	default:
+		if fmt.Sprint(want) != fmt.Sprint(got) {
+			return fmt.Errorf("%s=%v, want %v", path, got, want)
+		}
+	}
+	return nil
+}
+
+func hasJSONKey(value any, key string) bool {
+	switch typed := value.(type) {
+	case map[string]any:
+		if _, ok := typed[key]; ok {
+			return true
+		}
+		for _, child := range typed {
+			if hasJSONKey(child, key) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if hasJSONKey(child, key) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func TestLocalReadContractValidation(t *testing.T) {
@@ -116,6 +181,12 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 		value = &schema.LocalSessionListItem{}
 	case "members":
 		value = &schema.LocalHelperMembersPayload{}
+	case "list":
+		value = &schema.LocalSessionListPayload{}
+	case "sync-payload":
+		value = &schema.LocalSyncSessionsPayload{}
+	case "sessions":
+		value = &schema.SessionsPayload{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)
 	}
@@ -141,6 +212,10 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 			return nil, err
 		}
 	case *schema.LocalHelperMembersPayload:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.LocalSessionListPayload:
 		if err := typed.Validate(); err != nil {
 			return nil, err
 		}
