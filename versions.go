@@ -57,7 +57,9 @@ const (
 	// declared: the GitHub webhook receiver, the attachment read, confirm, and
 	// detach routes, the prompt-request and user-settings routes, and two
 	// collective settings (additive = minor bump).
-	VillageAPIVersion = "0.16.0"
+	// Bumped to 0.17.0 for grouped transcript listings, helper-member reads,
+	// durable provenance, and authorized relationship navigation.
+	VillageAPIVersion = "0.17.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -82,7 +84,9 @@ const (
 	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
 	// Bumped to 0.11.0 when TurnDetail gained the optional CommandInvocation
 	// for skill and user slash-command turns (additive = minor bump).
-	PeasantLocalAPIVersion = "0.11.0"
+	// Bumped to 0.12.0 for grouped session listings, helper-member reads, and
+	// the flat detail read projection with relationship navigation.
+	PeasantLocalAPIVersion = "0.12.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -121,5 +125,7 @@ const (
 	// Bumped to 0.17.0 when CommandInvocation, the PromptDigest projection with
 	// its DigestItemKind closed set, and the Village pull request attachment
 	// DTOs entered the catalog.
-	TypesVersion = "0.17.0"
+	// Bumped to 0.18.0 for durable session graph provenance, independent input
+	// submission counts, flat read navigation, and grouped list DTOs.
+	TypesVersion = "0.18.0"
 )

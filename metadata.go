@@ -30,7 +30,7 @@ import (
 //	The v9-to-v10 change is local metadata bookkeeping, not a reason to read
 //	native sources again. Consumers can losslessly adopt v9 metadata without
 //	inventing the missing producer revision. Native refresh is a separate decision.
-const MetadataSchemaVersion = 10
+const MetadataSchemaVersion = 11
 
 // RedactionInfo tracks whether and when redaction was applied to a session's transcript.
 // Level is stored as a string because this schema module is a public contract module that

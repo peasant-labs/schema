@@ -69,10 +69,11 @@ try {
   });
 
   const probe = [
-    `import { ${enumName}, ${schemaExportName} } from ${JSON.stringify(packageManifest.name)};`,
+    `import { ${enumName}, ${schemaExportName}, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
     `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
     `if (typeof ${schemaExportName}.safeParse !== "function") throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${schemaExportName} is not a Zod schema`)});`,
+    `for (const validator of [zPublicRevisionRef, zSourceEntryRef, zSubmissionRef]) { if (!validator.safeParse("界".repeat(32)).success || validator.safeParse("界".repeat(32) + "a").success) throw new TypeError("packed public reference validator does not enforce the 96-byte UTF-8 boundary"); }`,
   ].join("\n");
   await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
   execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });

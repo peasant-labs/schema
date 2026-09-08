@@ -1135,3 +1135,60 @@ types:
   - go_name: RawJSONPathPolicy
     disposition: runtime-only
     reason: raw decoder policy is runtime behavior, not serialized contract data
+  - {go_name: SourceEntryRef, disposition: catalog, component: SourceEntryRef, reason: public session graph and grouped read contract}
+  - {go_name: SubmissionRef, disposition: catalog, component: SubmissionRef, reason: public session graph and grouped read contract}
+  - {go_name: PublicRevisionRef, disposition: catalog, component: PublicRevisionRef, reason: public session graph and grouped read contract}
+  - {go_name: SessionRelationshipKind, disposition: catalog, component: SessionRelationshipKind, reason: public session graph and grouped read contract}
+  - {go_name: RelationshipTargetState, disposition: catalog, component: RelationshipTargetState, reason: public session graph and grouped read contract}
+  - {go_name: EvidenceKind, disposition: catalog, component: EvidenceKind, reason: public session graph and grouped read contract}
+  - {go_name: SessionPurpose, disposition: catalog, component: SessionPurpose, reason: public session graph and grouped read contract}
+  - {go_name: ContentOrigin, disposition: catalog, component: ContentOrigin, reason: public session graph and grouped read contract}
+  - {go_name: ActorOrigin, disposition: catalog, component: ActorOrigin, reason: public session graph and grouped read contract}
+  - {go_name: DeliveryOrigin, disposition: catalog, component: DeliveryOrigin, reason: public session graph and grouped read contract}
+  - {go_name: ContentOwnership, disposition: catalog, component: ContentOwnership, reason: public session graph and grouped read contract}
+  - {go_name: InputModality, disposition: catalog, component: InputModality, reason: public session graph and grouped read contract}
+  - {go_name: PublicSourceAnchorKind, disposition: catalog, component: PublicSourceAnchorKind, reason: public session graph and grouped read contract}
+  - {go_name: EarlierHistoryState, disposition: catalog, component: EarlierHistoryState, reason: public session graph and grouped read contract}
+  - {go_name: PublicSourceAnchor, disposition: catalog, component: PublicSourceAnchor, reason: public session graph and grouped read contract}
+  - {go_name: SessionRelationship, disposition: catalog, component: SessionRelationship, reason: public session graph and grouped read contract}
+  - {go_name: ContentProvenance, disposition: catalog, component: ContentProvenance, reason: public session graph and grouped read contract}
+  - {go_name: EarlierHistorySection, disposition: catalog, component: EarlierHistorySection, reason: public session graph and grouped read contract}
+  - {go_name: RelationshipNavigationStatus, disposition: catalog, component: RelationshipNavigationStatus, reason: public session graph and grouped read contract}
+  - {go_name: SessionRelationshipNavigation, disposition: catalog, component: SessionRelationshipNavigation, reason: public session graph and grouped read contract}
+  - {go_name: SessionListItemKind, disposition: catalog, component: SessionListItemKind, reason: public session graph and grouped read contract}
+  - {go_name: HelperGroupSummary, disposition: catalog, component: HelperGroupSummary, reason: public session graph and grouped read contract}
+  - {go_name: HelperContextSummary, disposition: catalog, component: HelperContextSummary, reason: public session graph and grouped read contract}
+  - {go_name: SessionDetailReadPayload, disposition: catalog, component: SessionDetailReadPayload, reason: public session graph and grouped read contract}
+  - {go_name: LocalSyncSummary, disposition: catalog, component: LocalSyncSummary, reason: public session graph and grouped read contract}
+  - {go_name: LocalSyncSessionsPayload, disposition: catalog, component: LocalSyncSessionsPayload, reason: public session graph and grouped read contract}
+  - {go_name: LocalSessionRow, disposition: catalog, component: LocalSessionRow, reason: public session graph and grouped read contract}
+  - {go_name: LocalSessionListItem, disposition: catalog, component: LocalSessionListItem, reason: public session graph and grouped read contract}
+  - {go_name: LocalSessionListPayload, disposition: catalog, component: LocalSessionListPayload, reason: public session graph and grouped read contract}
+  - {go_name: LocalHelperMembersPayload, disposition: catalog, component: LocalHelperMembersPayload, reason: public session graph and grouped read contract}
+  - {go_name: VillageTranscriptMetadataResponse, disposition: catalog, component: VillageTranscriptMetadataResponse, reason: public session graph and grouped read contract}
+  - {go_name: VillageTag, disposition: catalog, component: VillageTag, reason: public session graph and grouped read contract}
+  - {go_name: VillageUser, disposition: catalog, component: VillageUser, reason: public session graph and grouped read contract}
+  - {go_name: VillageMetadataUserOrganization, disposition: catalog, component: VillageMetadataUserOrganization, reason: public session graph and grouped read contract}
+  - {go_name: VillageListUserOrganization, disposition: catalog, component: VillageListUserOrganization, reason: public session graph and grouped read contract}
+  - {go_name: VillageEnrichedTranscriptShare, disposition: catalog, component: VillageEnrichedTranscriptShare, reason: public session graph and grouped read contract}
+  - {go_name: VillageTranscriptAttestation, disposition: catalog, component: VillageTranscriptAttestation, reason: public session graph and grouped read contract}
+  - {go_name: VillageListTranscriptAttestation, disposition: catalog, component: VillageListTranscriptAttestation, reason: public session graph and grouped read contract}
+  - {go_name: VillageTranscriptListRow, disposition: catalog, component: VillageTranscriptListRow, reason: public session graph and grouped read contract}
+  - {go_name: VillageTranscriptListResponse, disposition: catalog, component: VillageTranscriptListResponse, reason: public session graph and grouped read contract}
+  - {go_name: VillageSessionRow, disposition: catalog, component: VillageSessionRow, reason: public session graph and grouped read contract}
+  - {go_name: VillageSessionListItem, disposition: catalog, component: VillageSessionListItem, reason: public session graph and grouped read contract}
+  - {go_name: VillageSessionListPayload, disposition: catalog, component: VillageSessionListPayload, reason: public session graph and grouped read contract}
+  - {go_name: VillageHelperMembersPayload, disposition: catalog, component: VillageHelperMembersPayload, reason: public session graph and grouped read contract}
+  - {go_name: VillageGroupedGroupDetailResponse, disposition: catalog, component: VillageGroupedGroupDetailResponse, reason: public session graph and grouped read contract}
+  - {go_name: VillageGroupedContributableResponse, disposition: catalog, component: VillageGroupedContributableResponse, reason: public session graph and grouped read contract}
+  - {go_name: SessionGraphFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionRelationshipsInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphRawInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphRawExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: NativeLimitInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphRefInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphRefExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphEnumInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: SessionGraphFixtureCorpus, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: DurableGraphFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: DurableMirrorInput, disposition: fixture-only, reason: canonical shared fixture contract}

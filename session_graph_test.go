@@ -10,7 +10,6 @@ import (
 
 	"github.com/peasant-labs/schema/testcase"
 	caseassert "github.com/peasant-labs/schema/testcase/assert"
-	validator "github.com/santhosh-tekuri/jsonschema/v5"
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
@@ -248,17 +247,7 @@ func assertRefSchema(t *testing.T, alias, value string, wantValid bool) {
 		t.Fatal(e)
 	}
 	data, _ := json.Marshal(s)
-	old, had := validator.Formats[PublicRefUTF8ByteFormat]
-	validator.Formats[PublicRefUTF8ByteFormat] = ValidatePublicRefJSONSchemaFormat
-	defer func() {
-		if had {
-			validator.Formats[PublicRefUTF8ByteFormat] = old
-		} else {
-			delete(validator.Formats, PublicRefUTF8ByteFormat)
-		}
-	}()
-	compiler := validator.NewCompiler()
-	compiler.AssertFormat = true
+	compiler := NewJSONSchemaCompiler()
 	if e = compiler.AddResource("schema.json", strings.NewReader(string(data))); e != nil {
 		t.Fatal(e)
 	}
@@ -329,7 +318,7 @@ func testEnumFixture(t *testing.T, i SessionGraphEnumInput) {
 		t.Fatal(e)
 	}
 	data, _ := json.Marshal(s)
-	compiler := validator.NewCompiler()
+	compiler := NewJSONSchemaCompiler()
 	if e = compiler.AddResource("enum.json", strings.NewReader(string(data))); e != nil {
 		t.Fatal(e)
 	}

@@ -533,6 +533,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcript-groups/{groupId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Page the authorized saved helper threads selected by an originating grouped list. The required opaque scope is replayed with current authorization and cannot widen the original route filters. */
+        get: operations["listTranscriptGroupMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. */
+        get: operations["listTranscripts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcripts/publish": {
         parameters: {
             query?: never;
@@ -557,7 +591,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. */
+        get: operations["getTranscriptMetadata"];
         put?: never;
         post?: never;
         delete?: never;
@@ -576,6 +611,23 @@ export interface paths {
         };
         /** @description List visible collectives that hold a transcript. The server returns an empty collectives array, not a refusal, when memberships are hidden by collective visibility or contributor opt-in policy. */
         get: operations["listTranscriptCollectives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. */
+        get: operations["getTranscriptContent"];
         put?: never;
         post?: never;
         delete?: never;
@@ -743,6 +795,18 @@ export interface components {
         OpenapiTranscriptUpdateErrorResponse: {
             error: string;
         };
+        /** @enum {string} */
+        OpenapiVillageGroupedView: "grouped";
+        /**
+         * Actor Origin
+         * @description Closed session graph value
+         * @example operator
+         * @example agent_delegate
+         * @example harness
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaActorOrigin: Schema.ActorOrigin;
         SchemaAnnotationEntryTarget: Schema.AnnotationEntryTarget;
         SchemaAnnotationManifestResponse: Schema.AnnotationManifestResponse;
         SchemaAnnotationPushItem: Schema.AnnotationPushItem;
@@ -788,6 +852,45 @@ export interface components {
         SchemaAuthoritativeSourceInfo: Schema.AuthoritativeSourceInfo;
         SchemaAuthoritativeSubagentRef: Schema.AuthoritativeSubagentRef;
         SchemaAuthoritativeTimestampInfo: Schema.AuthoritativeTimestampInfo;
+        SchemaChildSessionRef: Schema.ChildSessionRef;
+        SchemaCommandInvocation: Schema.CommandInvocation;
+        /**
+         * Content Origin
+         * @description Closed session graph value
+         * @example submitted_input
+         * @example harness_context
+         * @example agent_output
+         * @example agent_communication
+         * @example tool_activity
+         * @example system_control
+         * @example generated_summary
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaContentOrigin: Schema.ContentOrigin;
+        /**
+         * Content Ownership
+         * @description Closed session graph value
+         * @example local
+         * @example inherited
+         * @example uncertain
+         * @enum {string}
+         */
+        SchemaContentOwnership: Schema.ContentOwnership;
+        SchemaContentProvenance: Schema.ContentProvenance;
+        /**
+         * Delivery Origin
+         * @description Closed session graph value
+         * @example session_admission
+         * @example guardian_review
+         * @example subagent_delivery
+         * @example inherited_context
+         * @example tool_delivery
+         * @example system_lifecycle
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaDeliveryOrigin: Schema.DeliveryOrigin;
         /**
          * Digest Item Kind
          * @description Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor
@@ -798,6 +901,15 @@ export interface components {
          * @enum {string}
          */
         SchemaDigestItemKind: Schema.DigestItemKind;
+        SchemaEarlierHistorySection: Schema.EarlierHistorySection;
+        /**
+         * Earlier History State
+         * @description Closed session graph value
+         * @example uncertain_migrated
+         * @example uncertain_unresolved
+         * @enum {string}
+         */
+        SchemaEarlierHistoryState: Schema.EarlierHistoryState;
         /**
          * Entry Type
          * @description Classification of a single entry within an agent session transcript
@@ -807,8 +919,22 @@ export interface components {
          * @enum {string}
          */
         SchemaEntryType: Schema.EntryType;
+        /**
+         * Evidence Kind
+         * @description Closed session graph value
+         * @example native_typed
+         * @example lifecycle_typed
+         * @example existing_adapter
+         * @example retained_last_good
+         * @example unknown
+         * @example conflict
+         * @enum {string}
+         */
+        SchemaEvidenceKind: Schema.EvidenceKind;
         SchemaExchangeCodeRequest: Schema.ExchangeCodeRequest;
         SchemaExchangeCodeResponse: Schema.ExchangeCodeResponse;
+        SchemaHelperContextSummary: Schema.HelperContextSummary;
+        SchemaHelperGroupSummary: Schema.HelperGroupSummary;
         /**
          * Host Slug
          * @description Sanitized, filesystem-safe identifier derived from git remote; contains only [a-zA-Z0-9._<>-]
@@ -816,6 +942,18 @@ export interface components {
          * @example local--home-user-projects-myapp
          */
         SchemaHostSlug: Schema.HostSlug;
+        /**
+         * Input Modality
+         * @description Closed session graph value
+         * @example none
+         * @example text
+         * @example media
+         * @example user_action
+         * @example mixed
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaInputModality: Schema.InputModality;
         /**
          * License
          * @description Content license for a published transcript
@@ -831,6 +969,45 @@ export interface components {
          * @example codex-mini-latest
          */
         SchemaModelID: Schema.ModelID;
+        SchemaNativeAttachmentRef: Schema.NativeAttachmentRef;
+        /**
+         * Native Metadata Kind
+         * @description Kind of bounded non-conversational native metadata
+         * @example pi.custom.data
+         * @example pi.custommessage.details
+         * @example pi.toolresult.details
+         * @example pi.compaction.details
+         * @example pi.branchsummary.details
+         * @enum {string}
+         */
+        SchemaNativeMetadataKind: Schema.NativeMetadataKind;
+        SchemaNativeMetadataRecord: Schema.NativeMetadataRecord;
+        /**
+         * Native Metadata Source Type
+         * @description Native source category for public metadata
+         * @example pi.custom
+         * @example pi.custom_message
+         * @example pi.message
+         * @example pi.compaction
+         * @example pi.branch_summary
+         * @enum {string}
+         */
+        SchemaNativeMetadataSourceType: Schema.NativeMetadataSourceType;
+        /**
+         * Native Pi Message Role
+         * @description Pi message role needed for public metadata validation
+         * @example toolResult
+         * @enum {string}
+         */
+        SchemaNativePiMessageRole: Schema.NativePiMessageRole;
+        SchemaNativeSourceRef: Schema.NativeSourceRef;
+        /**
+         * Observed Model ID
+         * @description Exact UTF-8 model identifier observed on an assistant-generated turn; producer-enforced as assistant or subagent evidence. Values are non-empty and may not have a Unicode White_Space code point at either edge; all accepted bytes, including Unicode, mixed case, slashes, and internal spaces, are preserved.
+         * @example anthropic/Claude-Opus-4-8
+         * @example provider/Model Family
+         */
+        SchemaObservedModelID: Schema.ObservedModelID;
         SchemaOwnerTranscriptUpdateRequest: Schema.OwnerTranscriptUpdateRequest;
         SchemaOwnerTranscriptUpdateResponse: Schema.OwnerTranscriptUpdateResponse;
         /** @description Omitted preserves, null requests clear, and a canonical license replaces */
@@ -846,6 +1023,21 @@ export interface components {
         SchemaPromptDigestItem: Schema.PromptDigestItem;
         SchemaPromptDigestSkill: Schema.PromptDigestSkill;
         SchemaProvenance: Schema.Provenance;
+        /**
+         * Public Revision Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaPublicRevisionRef: Schema.PublicRevisionRef;
+        SchemaPublicSourceAnchor: Schema.PublicSourceAnchor;
+        /**
+         * Public Source Anchor Kind
+         * @description Closed session graph value
+         * @example general_source_session
+         * @example before_redacted_entry
+         * @example through_redacted_entry
+         * @enum {string}
+         */
+        SchemaPublicSourceAnchorKind: Schema.PublicSourceAnchorKind;
         SchemaPublishAppliedState: Schema.PublishAppliedState;
         SchemaPublishNormalizedValues: Schema.PublishNormalizedValues;
         /**
@@ -861,6 +1053,30 @@ export interface components {
         SchemaPullSkipGateResponse: Schema.PullSkipGateResponse;
         SchemaPullSkipGateResult: Schema.PullSkipGateResult;
         SchemaPullTranscriptInfo: Schema.PullTranscriptInfo;
+        SchemaRecordedCostDetail: Schema.RecordedCostDetail;
+        /**
+         * Relationship Navigation Status
+         * @description Closed session graph value
+         * @example resolved
+         * @example general_link_only
+         * @example known_unavailable
+         * @example inaccessible
+         * @example unknown
+         * @example conflicting
+         * @enum {string}
+         */
+        SchemaRelationshipNavigationStatus: Schema.RelationshipNavigationStatus;
+        /**
+         * Relationship Target State
+         * @description Closed session graph value
+         * @example target_known
+         * @example target_known_retained
+         * @example explicit_none
+         * @example unknown
+         * @example conflicting_current_native_evidence
+         * @enum {string}
+         */
+        SchemaRelationshipTargetState: Schema.RelationshipTargetState;
         /**
          * Role
          * @description Sender role of a message turn
@@ -870,6 +1086,7 @@ export interface components {
          */
         SchemaRole: Schema.Role;
         SchemaSchemaVersionResponse: Schema.SchemaVersionResponse;
+        SchemaSessionDetailPayload: Schema.SessionDetailPayload;
         /**
          * Session ID
          * Format: session-id
@@ -882,6 +1099,14 @@ export interface components {
          * @example ABCDEFGHIJKLMNOPQRST234567
          */
         SchemaSessionID: Schema.SessionID;
+        /**
+         * Session List Item Kind
+         * @description Closed session graph value
+         * @example transcript
+         * @example context_container
+         * @enum {string}
+         */
+        SchemaSessionListItemKind: Schema.SessionListItemKind;
         /**
          * Session Origin
          * @description Who drove a recorded session, as declared by the producer that recorded it
@@ -901,6 +1126,32 @@ export interface components {
          */
         SchemaSessionOutcome: Schema.SessionOutcome;
         /**
+         * Session Purpose
+         * @description Closed session graph value
+         * @example interaction
+         * @example delegated_work
+         * @example helper_review
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaSessionPurpose: Schema.SessionPurpose;
+        SchemaSessionRelationship: Schema.SessionRelationship;
+        /**
+         * Session Relationship Kind
+         * @description Closed session graph value
+         * @example started_by
+         * @example context_from
+         * @enum {string}
+         */
+        SchemaSessionRelationshipKind: Schema.SessionRelationshipKind;
+        SchemaSessionRelationshipNavigation: Schema.SessionRelationshipNavigation;
+        SchemaSessionScorecard: Schema.SessionScorecard;
+        /**
+         * Source Entry Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaSourceEntryRef: Schema.SourceEntryRef;
+        /**
          * Source Format
          * @description Transcript file format
          * @example jsonl
@@ -917,6 +1168,11 @@ export interface components {
          */
         SchemaStopReason: Schema.StopReason;
         /**
+         * Submission Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaSubmissionRef: Schema.SubmissionRef;
+        /**
          * Target Kind
          * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
          * @example session
@@ -926,6 +1182,8 @@ export interface components {
          * @enum {string}
          */
         SchemaTargetKind: Schema.TargetKind;
+        SchemaTokenUsageDetail: Schema.TokenUsageDetail;
+        SchemaToolCallDetail: Schema.ToolCallDetail;
         /**
          * Tool Call Kind
          * @description Classification of a tool call, aligned with ACP ToolCallUpdate.kind
@@ -955,6 +1213,26 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
+        SchemaTurnDetail: Schema.TurnDetail;
+        /**
+         * Usage Completeness
+         * @description Completeness of the five base token fields
+         * @example complete
+         * @example partial
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaUsageCompleteness: Schema.UsageCompleteness;
+        SchemaUsageDetail: Schema.UsageDetail;
+        /**
+         * Usage Scope
+         * @description Native owner scope for detailed token and cost evidence
+         * @example assistant
+         * @example tool
+         * @example summary
+         * @enum {string}
+         */
+        SchemaUsageScope: Schema.UsageScope;
         /**
          * Village Assignable Group Role
          * @description Collective roles an owner may assign through the member role endpoint
@@ -984,6 +1262,7 @@ export interface components {
          */
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
         SchemaVillageCreateGroupRequest: Schema.VillageCreateGroupRequest;
+        SchemaVillageEnrichedTranscriptShare: Schema.VillageEnrichedTranscriptShare;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
         /**
          * GitHub Webhook Payload
@@ -1039,9 +1318,15 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageGroupViewerRole: Schema.VillageGroupViewerRole;
+        SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
+        SchemaVillageGroupedGroupDetailResponse: Schema.VillageGroupedGroupDetailResponse;
+        SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
         SchemaVillageLinkedRepositoriesResponse: Schema.VillageLinkedRepositoriesResponse;
         SchemaVillageLinkedRepository: Schema.VillageLinkedRepository;
+        SchemaVillageListTranscriptAttestation: Schema.VillageListTranscriptAttestation;
+        SchemaVillageListUserOrganization: Schema.VillageListUserOrganization;
+        SchemaVillageMetadataUserOrganization: Schema.VillageMetadataUserOrganization;
         SchemaVillagePendingShare: Schema.VillagePendingShare;
         /**
          * Village Project Name Source
@@ -1092,6 +1377,9 @@ export interface components {
         SchemaVillageReviewDecision: Schema.VillageReviewDecision;
         SchemaVillageReviewShareRequest: Schema.VillageReviewShareRequest;
         SchemaVillageReviewShareResponse: Schema.VillageReviewShareResponse;
+        SchemaVillageSessionListItem: Schema.VillageSessionListItem;
+        SchemaVillageSessionListPayload: Schema.VillageSessionListPayload;
+        SchemaVillageSessionRow: Schema.VillageSessionRow;
         SchemaVillageShareEvent: Schema.VillageShareEvent;
         /**
          * Village Share Event Actor
@@ -1116,6 +1404,9 @@ export interface components {
         SchemaVillageShareStatus: Schema.VillageShareStatus;
         SchemaVillageShareTranscriptRequest: Schema.VillageShareTranscriptRequest;
         SchemaVillageStatusResponse: Schema.VillageStatusResponse;
+        SchemaVillageTag: Schema.VillageTag;
+        SchemaVillageTranscript: Schema.VillageTranscript;
+        SchemaVillageTranscriptAttestation: Schema.VillageTranscriptAttestation;
         SchemaVillageTranscriptCollective: Schema.VillageTranscriptCollective;
         SchemaVillageTranscriptCollectivesResponse: Schema.VillageTranscriptCollectivesResponse;
         /**
@@ -1126,6 +1417,9 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageTranscriptDeletionPolicy: Schema.VillageTranscriptDeletionPolicy;
+        SchemaVillageTranscriptListResponse: Schema.VillageTranscriptListResponse;
+        SchemaVillageTranscriptListRow: Schema.VillageTranscriptListRow;
+        SchemaVillageTranscriptMetadataResponse: Schema.VillageTranscriptMetadataResponse;
         SchemaVillageTranscriptShare: Schema.VillageTranscriptShare;
         /**
          * Village Transcript Visibility
@@ -1145,6 +1439,7 @@ export interface components {
         SchemaVillageUUID: Schema.VillageUUID;
         SchemaVillageUpdateGroupRequest: Schema.VillageUpdateGroupRequest;
         SchemaVillageUpdateUserSettingsRequest: Schema.VillageUpdateUserSettingsRequest;
+        SchemaVillageUser: Schema.VillageUser;
         SchemaVillageUserGroup: Schema.VillageUserGroup;
         SchemaVillageUserGroupShare: Schema.VillageUserGroupShare;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
@@ -1466,6 +1761,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
             };
             header?: never;
             path: {
@@ -1482,7 +1779,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroupDetailResponse"];
+                    "application/json": components["schemas"]["SchemaVillageGroupDetailResponse"] | components["schemas"]["SchemaVillageGroupedGroupDetailResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1638,7 +1935,10 @@ export interface operations {
     };
     listContributableTranscripts: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
             header?: never;
             path: {
                 /** @description Collective identifier */
@@ -1654,7 +1954,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageContributableResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageGroupedContributableResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1992,7 +2292,10 @@ export interface operations {
     };
     listMyGroupShares: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
             header?: never;
             path: {
                 /** @description Collective identifier */
@@ -2008,7 +2311,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageUserGroupShare"][];
+                    "application/json": components["schemas"]["SchemaVillageUserGroupShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
                 };
             };
             /** @description Bad Request */
@@ -2042,7 +2345,10 @@ export interface operations {
     };
     listPendingShares: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
             header?: never;
             path: {
                 /** @description Collective identifier */
@@ -2058,7 +2364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillagePendingShare"][];
+                    "application/json": components["schemas"]["SchemaVillagePendingShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
                 };
             };
             /** @description Bad Request */
@@ -3105,6 +3411,113 @@ export interface operations {
             };
         };
     };
+    listTranscriptGroupMembers: {
+        parameters: {
+            query: {
+                /** @description Opaque scope returned by the originating grouped list */
+                scope: string;
+                page?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Stable helper group identifier */
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageHelperMembersPayload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listTranscripts: {
+        parameters: {
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the flat response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+                page?: number;
+                limit?: number;
+                q?: string;
+                provider?: string;
+                owner?: string;
+                project?: string;
+                repo?: string;
+                org?: string;
+                tags?: string;
+                origin?: components["schemas"]["SchemaSessionOrigin"];
+                sort?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptListResponse"] | components["schemas"]["SchemaVillageSessionListPayload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     publishTranscript: {
         parameters: {
             query?: never;
@@ -3134,6 +3547,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaAuthoritativePublishResponse"];
+                };
+            };
+        };
+    };
+    getTranscriptMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptMetadataResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
         };
@@ -3251,6 +3705,47 @@ export interface operations {
             };
             /** @description Internal Server Error */
             500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getTranscriptContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSessionDetailPayload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
