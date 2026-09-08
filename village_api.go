@@ -540,14 +540,14 @@ type VillageTranscript struct {
 // response plus viewer-authorized relationship navigation. Durable content
 // remains separate on the content endpoint.
 type VillageTranscriptMetadataResponse struct {
-	Transcript             VillageTranscript                `json:"transcript"`
-	Tags                   []VillageTag                     `json:"tags" nullable:"false"`
-	Shares                 []VillageTranscriptShare         `json:"shares" nullable:"false"`
-	EnrichedShares         []VillageEnrichedTranscriptShare `json:"enriched_shares" nullable:"false"`
-	Owner                  VillageUser                      `json:"owner"`
-	OwnerOrgs              []VillageUserOrganization        `json:"owner_orgs" nullable:"false"`
-	Attestations           []VillageTranscriptAttestation   `json:"attestations" nullable:"false"`
-	RelationshipNavigation []SessionRelationshipNavigation  `json:"relationshipNavigation,omitempty"`
+	Transcript             VillageTranscript                 `json:"transcript"`
+	Tags                   []VillageTag                      `json:"tags" nullable:"false"`
+	Shares                 []VillageTranscriptShare          `json:"shares" nullable:"false"`
+	EnrichedShares         []VillageEnrichedTranscriptShare  `json:"enriched_shares" nullable:"false"`
+	Owner                  VillageUser                       `json:"owner"`
+	OwnerOrgs              []VillageMetadataUserOrganization `json:"owner_orgs" nullable:"false"`
+	Attestations           []VillageTranscriptAttestation    `json:"attestations" nullable:"false"`
+	RelationshipNavigation []SessionRelationshipNavigation   `json:"relationshipNavigation,omitempty"`
 }
 
 type VillageTag struct {
@@ -568,13 +568,18 @@ type VillageUser struct {
 	UsernameChosen   bool        `json:"username_chosen"`
 	ProviderUsername *string     `json:"provider_username"`
 }
-type VillageUserOrganization struct {
+type VillageMetadataUserOrganization struct {
+	OrgLogin  string    `json:"org_login"`
+	OrgID     int64     `json:"org_id"`
+	AvatarURL *string   `json:"avatar_url"`
+	Visible   bool      `json:"visible"`
+	FetchedAt time.Time `json:"fetched_at"`
+}
+
+type VillageListUserOrganization struct {
 	UserID    VillageUUID `json:"user_id"`
 	OrgLogin  string      `json:"org_login"`
-	OrgID     int64       `json:"org_id"`
 	AvatarURL *string     `json:"avatar_url"`
-	Visible   bool        `json:"visible"`
-	FetchedAt time.Time   `json:"fetched_at"`
 }
 type VillageEnrichedTranscriptShare struct {
 	TranscriptID   TranscriptID               `json:"transcript_id"`
@@ -604,9 +609,9 @@ type VillageTranscriptListRow struct {
 	Transcript   VillageTranscript                  `json:"transcript"`
 	Tags         []VillageTag                       `json:"tags" nullable:"false"`
 	Owner        VillageUser                        `json:"owner"`
-	OwnerOrgs    []VillageUserOrganization          `json:"owner_orgs" nullable:"false"`
-	Shares       []VillageEnrichedTranscriptShare   `json:"shares" nullable:"false"`
-	Attestations []VillageListTranscriptAttestation `json:"attestations" nullable:"false"`
+	OwnerOrgs    []VillageListUserOrganization      `json:"owner_orgs"`
+	Shares       []VillageEnrichedTranscriptShare   `json:"shares"`
+	Attestations []VillageListTranscriptAttestation `json:"attestations"`
 }
 type VillageTranscriptListResponse struct {
 	Transcripts []VillageTranscriptListRow `json:"transcripts" nullable:"false"`
@@ -621,8 +626,8 @@ func (r VillageTranscriptListResponse) Validate() error {
 		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: transcripts must be initialized, page and limit must be positive, and totals must be nonnegative; clients cannot preserve the existing list envelope; emit [] for an empty page and one-based pagination")
 	}
 	for _, row := range r.Transcripts {
-		if row.Tags == nil || row.OwnerOrgs == nil || row.Shares == nil || row.Attestations == nil {
-			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags, owner_orgs, shares, or attestations collection is null; clients expect concrete arrays; initialize every empty collection")
+		if row.Tags == nil {
+			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
 		}
 	}
 	return nil
@@ -879,7 +884,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Collective.InputSubmissionCount, "VillageSessionRow.collective.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || r.Collective.OwnerID != r.Session.OwnerID || r.Collective.LocalID != r.Session.LocalID || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) {
+		if r.Collective.ID != r.Session.ID || r.Collective.OwnerID != r.Session.OwnerID || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -888,7 +893,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Pending.InputSubmissionCount, "VillageSessionRow.pending.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Pending.TranscriptID != r.Session.ID || r.Pending.OwnerID != r.Session.OwnerID || r.Pending.LocalID != r.Session.LocalID || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
+		if r.Pending.TranscriptID != r.Session.ID || r.Pending.OwnerID != r.Session.OwnerID || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: pending identity or inputSubmissionCount differs from session; the review route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -897,7 +902,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.MyShare.InputSubmissionCount, "VillageSessionRow.myShare.input_submission_count"); err != nil {
 			return err
 		}
-		if r.MyShare.ID != r.Session.ID || r.MyShare.OwnerID != r.Session.OwnerID || r.MyShare.LocalID != r.Session.LocalID || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+		if r.MyShare.ID != r.Session.ID || r.MyShare.OwnerID != r.Session.OwnerID || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -906,7 +911,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Contributable.InputSubmissionCount, "VillageSessionRow.contributable.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Contributable.ID != r.Session.ID || r.Contributable.LocalID != r.Session.LocalID || !equalOptionalInt64(r.Contributable.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Contributable.ModelProvider != r.Session.ModelProvider || r.Contributable.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Contributable.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Contributable.RootSessionID, r.Session.RootSessionID) || r.Contributable.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Contributable.Relationships, r.Session.Relationships) || r.Contributable.SessionOrigin != r.Session.SessionOrigin {
+		if r.Contributable.ID != r.Session.ID || r.Contributable.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Contributable.Title, r.Session.Title) || r.Contributable.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Contributable.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Contributable.ModelProvider != r.Session.ModelProvider || r.Contributable.ProjectHash != r.Session.ProjectHash || r.Contributable.ProjectDisplayName != r.Session.ProjectDisplayName || r.Contributable.ProjectNameSource != r.Session.ProjectNameSource || !reflect.DeepEqual(r.Contributable.GitBranch, r.Session.GitBranch) || !r.Contributable.PublishedAt.Equal(r.Session.PublishedAt) || !reflect.DeepEqual(r.Contributable.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Contributable.RootSessionID, r.Session.RootSessionID) || r.Contributable.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Contributable.Relationships, r.Session.Relationships) || r.Contributable.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: contributable identity or inputSubmissionCount differs from session; the contribution route would display contradictory data; project both values from the same transcript row")
 		}
 	}
