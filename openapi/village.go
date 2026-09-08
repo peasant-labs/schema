@@ -21,6 +21,15 @@ type AuthoritativeTranscriptPublishRequest schema.AuthoritativePublishRequest
 // Deprecated: use AuthoritativeTranscriptPublishRequest. See schema issue #55.
 type TranscriptPublishRequest = AuthoritativeTranscriptPublishRequest
 
+type villageGroupedView string
+
+func (villageGroupedView) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithEnum("grouped")
+	return s, nil
+}
+
 type transcriptPublishMultipartRequest struct {
 	Metadata       AuthoritativeTranscriptPublishRequest `formData:"metadata" required:"true" description:"PublishRequest JSON encoded with Content-Type application/json."`
 	TranscriptFile *multipart.FileHeader                 `formData:"transcript_file" required:"true" description:"Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash."`
@@ -412,7 +421,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	})
 	transcriptListQuery := new(struct {
-		View     string               `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
+		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
 		Page     int                  `query:"page"`
 		Limit    int                  `query:"limit"`
 		Query    string               `query:"q"`
@@ -426,7 +435,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		Sort     string               `query:"sort"`
 	})
 	groupedViewQuery := new(struct {
-		View string `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the legacy response."`
+		View villageGroupedView `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the legacy response."`
 	})
 	memberQuery := new(struct {
 		GroupID string `path:"groupId" description:"Stable helper group identifier"`

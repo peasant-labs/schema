@@ -35,6 +35,7 @@ type villageRouteInput struct {
 	View        bool     `yaml:"view"`
 	Scope       bool     `yaml:"scope"`
 	Legacy      string   `yaml:"legacy"`
+	LegacyItem  string   `yaml:"legacy_item"`
 	Grouped     string   `yaml:"grouped"`
 	Parameters  []string `yaml:"parameters"`
 }
@@ -76,7 +77,7 @@ func loadVillageGroupedFixtures(t *testing.T) villageGroupedFixtures {
 	assertcase.RequireValid(t, f.Items)
 	assertcase.RequireMin(t, f.Routes, 8)
 	assertcase.RequireValid(t, f.Routes)
-	assertcase.RequireMin(t, f.Collections, 6)
+	assertcase.RequireMin(t, f.Collections, 7)
 	assertcase.RequireValid(t, f.Collections)
 	requireNames(t, "rows", f.RequiredNames.Rows, namesOf(f.Rows))
 	requireNames(t, "items", f.RequiredNames.Items, namesOf(f.Items))
@@ -96,10 +97,16 @@ func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 					p.Items = []schema.VillageSessionListItem{}
 				}
 				err = p.Validate()
-			} else {
+			} else if c.Input.Target == "members" {
 				p := schema.VillageHelperMembersPayload{Page: c.Input.Page, Limit: c.Input.Limit}
 				if c.Input.Initialized {
 					p.Members = []schema.VillageSessionRow{}
+				}
+				err = p.Validate()
+			} else {
+				p := schema.VillageTranscriptListResponse{Page: c.Input.Page, Limit: c.Input.Limit}
+				if c.Input.Initialized {
+					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, OwnerOrgs: nil, Shares: nil, Attestations: nil}}
 				}
 				err = p.Validate()
 			}
@@ -158,9 +165,10 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	transcript := schema.VillageTranscript{ID: transcriptID, OwnerID: ownerID, LocalID: localID, Title: &title, Visibility: schema.VillageTranscriptVisibilityPublic, ModelProvider: "provider", SchemaVersion: "1", PublishedAt: now, UpdatedAt: now, ProjectHash: schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ProjectDisplayName: "project", ProjectNameSource: schema.VillageProjectNameSourceOverride, ProjectRemoteLabel: "owner/repo", SessionOrigin: schema.SessionOriginUser}
 	tags := []schema.VillageTag{{ID: ownerID, Name: "tag"}}
 	owner := schema.VillageUser{ID: ownerID, GithubID: 42, GithubUsername: "owner", DisplayName: &display, AvatarURL: &avatar, CreatedAt: now, UpdatedAt: now, IsDiscoverable: true, Provider: "github", ProviderUserID: "42", UsernameChosen: true}
-	orgs := []schema.VillageUserOrganization{{UserID: ownerID, OrgLogin: "org", OrgID: 7, AvatarURL: &avatar, Visible: true, FetchedAt: now}}
+	listOrgs := []schema.VillageListUserOrganization{{UserID: ownerID, OrgLogin: "org", AvatarURL: &avatar}}
+	metadataOrgs := []schema.VillageMetadataUserOrganization{{OrgLogin: "org", OrgID: 7, AvatarURL: &avatar, Visible: true, FetchedAt: now}}
 	shares := []schema.VillageEnrichedTranscriptShare{{TranscriptID: transcriptID, GroupID: ownerID, GroupName: "group", AcceptanceMode: schema.VillageGroupAcceptanceOpen, Status: schema.VillageShareStatusApproved, SharedAt: now}}
-	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: orgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
+	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
 	if err := list.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +183,7 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	if !reflect.DeepEqual(gotList, list) {
 		t.Fatalf("existing list envelope changed values: %#v", gotList)
 	}
-	metadata := schema.VillageTranscriptMetadataResponse{Transcript: transcript, Tags: tags, Shares: []schema.VillageTranscriptShare{{GroupID: ownerID, GroupName: "group", SharedAt: now}}, EnrichedShares: shares, Owner: owner, OwnerOrgs: orgs, Attestations: []schema.VillageTranscriptAttestation{{ID: ownerID, TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", Note: &note, CreatedAt: now, AttesterUsername: "attester", AttesterAvatar: &avatar}}, RelationshipNavigation: []schema.SessionRelationshipNavigation{{Kind: schema.SessionRelationshipStartedBy, Status: schema.RelationshipNavigationKnownUnavailable}}}
+	metadata := schema.VillageTranscriptMetadataResponse{Transcript: transcript, Tags: tags, Shares: []schema.VillageTranscriptShare{{GroupID: ownerID, GroupName: "group", SharedAt: now}}, EnrichedShares: shares, Owner: owner, OwnerOrgs: metadataOrgs, Attestations: []schema.VillageTranscriptAttestation{{ID: ownerID, TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", Note: &note, CreatedAt: now, AttesterUsername: "attester", AttesterAvatar: &avatar}}, RelationshipNavigation: []schema.SessionRelationshipNavigation{{Kind: schema.SessionRelationshipStartedBy, Status: schema.RelationshipNavigationKnownUnavailable}}}
 	if err := metadata.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +255,7 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 		if in.MismatchMetric {
 			variantTurns++
 		}
-		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
+		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
 	case "pending":
 		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "myShare":
@@ -310,7 +318,7 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 				if p["in"] == "path" && p["required"] != true {
 					t.Errorf("path parameter %s is not required", name)
 				}
-				typ := parameterType(p)
+				typ := parameterType(p, components)
 				if name == "page" || name == "limit" || name == "offset" {
 					if typ != "integer" {
 						t.Errorf("%s type=%s", name, typ)
@@ -319,19 +327,35 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 					t.Errorf("%s type=%s", name, typ)
 				}
 			}
+			if view := params["view"]; view != nil {
+				if view["in"] != "query" || view["required"] == true {
+					t.Error("view must be an optional query parameter")
+				}
+				resolved := resolveParameterSchema(t, view, components)
+				enum := resolved["enum"].([]any)
+				if len(enum) != 1 || enum[0] != "grouped" {
+					t.Errorf("view enum=%v, want [grouped]", enum)
+				}
+			}
 			if c.Input.View && params["view"] == nil {
 				t.Error("missing view query")
 			}
-			if c.Input.Scope && (params["scope"] == nil || params["scope"]["in"] != "query" || params["scope"]["required"] != true || parameterType(params["scope"]) != "string") {
+			if c.Input.Scope && (params["scope"] == nil || params["scope"]["in"] != "query" || params["scope"]["required"] != true || parameterType(params["scope"], components) != "string") {
 				t.Error("missing scope query")
 			}
 			responseSchema := op["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
 			refs := responseRefs(responseSchema)
+			if _, union := responseSchema["oneOf"]; union && len(responseSchema["oneOf"].([]any)) != 2 {
+				t.Errorf("response union has %d arms, want exactly 2", len(responseSchema["oneOf"].([]any)))
+			}
 			if c.Input.Legacy != "" && !refs[c.Input.Legacy] {
 				t.Errorf("missing legacy response arm %s in %v", c.Input.Legacy, refs)
 			}
 			if !refs[c.Input.Grouped] {
 				t.Errorf("missing selected response arm %s in %v", c.Input.Grouped, refs)
+			}
+			if c.Input.LegacyItem != "" && !refs[c.Input.LegacyItem] {
+				t.Errorf("legacy array item=%v, want %s", refs, c.Input.LegacyItem)
 			}
 			if c.Name == "metadata-navigation" {
 				requireExactProperties(t, components[c.Input.Grouped].(map[string]any), []string{"transcript", "tags", "shares", "enriched_shares", "owner", "owner_orgs", "attestations", "relationshipNavigation"})
@@ -345,6 +369,16 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 	}
 	requireExactProperties(t, components["SchemaVillageGroupedGroupDetailResponse"].(map[string]any), []string{"group", "members", "stats", "models", "contributors", "can_read", "your_role", "transcriptList", "pending_members"})
 	requireExactProperties(t, components["SchemaVillageGroupedContributableResponse"].(map[string]any), []string{"groupId", "transcriptList"})
+	requireExactProperties(t, components["SchemaVillageMetadataUserOrganization"].(map[string]any), []string{"org_login", "org_id", "avatar_url", "visible", "fetched_at"})
+	requireExactProperties(t, components["SchemaVillageListUserOrganization"].(map[string]any), []string{"user_id", "org_login", "avatar_url"})
+	legacyRow := schemaProperties(components["SchemaVillageTranscriptListRow"].(map[string]any))
+	for _, name := range []string{"owner_orgs", "shares", "attestations"} {
+		field := legacyRow[name].(map[string]any)
+		types := field["type"].([]any)
+		if len(types) != 2 || types[0] != "array" || types[1] != "null" {
+			t.Errorf("legacy %s type=%v, want [array null]", name, types)
+		}
+	}
 }
 
 func parameterMap(t *testing.T, op map[string]any) map[string]map[string]any {
@@ -356,15 +390,24 @@ func parameterMap(t *testing.T, op map[string]any) map[string]map[string]any {
 	}
 	return result
 }
-func parameterType(p map[string]any) string {
-	s := p["schema"].(map[string]any)
+func parameterType(p map[string]any, components map[string]any) string {
+	s := resolveParameterSchema(nil, p, components)
 	if typ, ok := s["type"].(string); ok {
 		return typ
 	}
-	if _, ok := s["$ref"]; ok {
-		return "string"
-	}
 	return ""
+}
+func resolveParameterSchema(t *testing.T, p map[string]any, components map[string]any) map[string]any {
+	s := p["schema"].(map[string]any)
+	if ref, ok := s["$ref"].(string); ok {
+		name := ref[len("#/components/schemas/"):]
+		resolved, ok := components[name].(map[string]any)
+		if !ok && t != nil {
+			t.Fatalf("parameter component %s missing", name)
+		}
+		return resolved
+	}
+	return s
 }
 func responseRefs(s map[string]any) map[string]bool {
 	r := map[string]bool{}
