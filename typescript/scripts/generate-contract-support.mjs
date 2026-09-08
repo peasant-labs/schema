@@ -17,6 +17,8 @@ const generatedRoot = join(packageRoot, "src", "internal", "generated");
 
 const versionsSource = await readFile(join(moduleRoot, "versions.go"), "utf8");
 const metadataSource = await readFile(join(moduleRoot, "metadata.go"), "utf8");
+const usageMetadataSource = await readFile(join(moduleRoot, "usage_metadata.go"), "utf8");
+const maxNativeMetadataStringBytes = Number(requiredMatch(usageMetadataSource, /^const maxNativeMetadataStringBytes = (\d+)$/m, "maxNativeMetadataStringBytes", "usage_metadata.go"));
 const versions = {
   VillageAPIVersion: requiredMatch(versionsSource, /VillageAPIVersion\s*=\s*"([^"]+)"/, "VillageAPIVersion", "versions.go"),
   PeasantLocalAPIVersion: requiredMatch(versionsSource, /PeasantLocalAPIVersion\s*=\s*"([^"]+)"/, "PeasantLocalAPIVersion", "versions.go"),
@@ -36,6 +38,7 @@ const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"
 await mkdir(generatedRoot, { recursive: true });
 await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
+await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
 await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog));
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));

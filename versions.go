@@ -82,7 +82,8 @@ const (
 	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
 	// Bumped to 0.11.0 when TurnDetail gained the optional CommandInvocation
 	// for skill and user slash-command turns (additive = minor bump).
-	PeasantLocalAPIVersion = "0.11.0"
+	// Bumped to 0.12.0 for independent optional tool namespace evidence.
+	PeasantLocalAPIVersion = "0.12.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -121,5 +122,6 @@ const (
 	// Bumped to 0.17.0 when CommandInvocation, the PromptDigest projection with
 	// its DigestItemKind closed set, and the Village pull request attachment
 	// DTOs entered the catalog.
-	TypesVersion = "0.17.0"
+	// Bumped to 0.18.0 for independent optional tool namespace evidence.
+	TypesVersion = "0.18.0"
 )

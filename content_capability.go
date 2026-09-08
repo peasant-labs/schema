@@ -18,10 +18,13 @@ const (
 	ContentCapabilityObservedModelV1  ContentCapability = "observed_model_v1"
 	ContentCapabilityDetailedUsageV1  ContentCapability = "detailed_usage_v1"
 	ContentCapabilityNativeMetadataV1 ContentCapability = "native_metadata_v1"
+	// ContentCapabilityToolNamespaceV1 guarantees exact separate namespace
+	// presence and value survival, including an explicitly recorded empty string.
+	ContentCapabilityToolNamespaceV1 ContentCapability = "tool_namespace_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilityToolNamespaceV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
 func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
@@ -94,7 +97,7 @@ func MissingContentCapabilities(advertised, required []ContentCapability) []Cont
 // capability. An observedModel on any assistant turn, including a nested
 // subagent turn, requires observed_model_v1.
 func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
-	required := make([]ContentCapability, 0, 3)
+	required := make([]ContentCapability, 0, len(AllContentCapabilities))
 	for _, turn := range payload.Turns {
 		if turn.ObservedModel != "" {
 			required = append(required, ContentCapabilityObservedModelV1)
@@ -103,6 +106,9 @@ func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapabili
 			required = append(required, ContentCapabilityDetailedUsageV1)
 		}
 		for _, tool := range turn.ToolCalls {
+			if tool.Namespace != nil {
+				required = append(required, ContentCapabilityToolNamespaceV1)
+			}
 			if tool.Usage != nil {
 				required = append(required, ContentCapabilityDetailedUsageV1)
 			}

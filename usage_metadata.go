@@ -17,6 +17,11 @@ import (
 
 const maxSafeJSONInteger int64 = 9007199254740991
 
+// maxNativeMetadataStringBytes limits decoded UTF-8 strings only inside selected
+// metadata data. The independent 64 KiB record budget includes JSON syntax.
+// TypeScript's internal constant is generated from this value.
+const maxNativeMetadataStringBytes = 65536
+
 var jsonNumberPattern = regexp.MustCompile(`^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$`)
 
 type UsageScope string
@@ -324,6 +329,9 @@ func validateTurnEvidence(turns []TurnDetail) error {
 		}
 		for j := range t.ToolCalls {
 			tool := &t.ToolCalls[j]
+			if tool.Namespace != nil && !utf8.ValidString(*tool.Namespace) {
+				return fmt.Errorf("tool namespace validation failed at schema.ValidateSessionDetailPayload during turn %d tool %d validation: namespace contains invalid UTF-8; encoding would replace tool identity evidence; supply a valid Unicode string or omit unrecorded namespace", t.Index, j)
+			}
 			if tool.ToolKind != "" && !tool.ToolKind.IsValid() {
 				return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: toolKind is outside its closed set; the tool cannot be classified; use a published tool kind")
 			}
@@ -685,8 +693,8 @@ func (s *rawJSONScanner) value(path string, depth, metadataDepth int) (result er
 			return err
 		}
 	case string:
-		if opaque && len(v) > 16384 {
-			return fmt.Errorf("raw JSON validation failed at schema.ScanRawJSONDocument: metadata string exceeds 16 KiB at %s; metadata is unsafe; shorten it", path)
+		if opaque && len(v) > maxNativeMetadataStringBytes {
+			return fmt.Errorf("raw JSON validation failed at schema.ScanRawJSONDocument: metadata string exceeds %d UTF-8 bytes at %s; metadata is unsafe; shorten it", maxNativeMetadataStringBytes, path)
 		}
 	case json.Number:
 		if opaque {
@@ -771,6 +779,9 @@ func validateSessionDetailRawShape(raw []byte) error {
 			for _, toolRaw := range tools {
 				var tool map[string]json.RawMessage
 				if json.Unmarshal(toolRaw, &tool) == nil {
+					if namespace, exists := tool["namespace"]; exists && isNullRaw(namespace) {
+						return fmt.Errorf("tool namespace validation failed at schema raw detail decoder during pre-decode validation: namespace is explicitly null; typed decoding would erase recorded presence; provide a string, including empty, or omit unrecorded namespace")
+					}
 					if usage, exists := tool["usage"]; exists && !isNullRaw(usage) {
 						if err := validateUsageRawShape(usage); err != nil {
 							return err

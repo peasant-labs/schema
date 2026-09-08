@@ -4,6 +4,7 @@ export * from "./internal/generated/content-capabilities.gen.js";
 export * from "./internal/generated/versions.gen.js";
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
+import { maxNativeMetadataStringBytes } from "./internal/generated/metadata-limits.gen.js";
 
 function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
   if (!isProjectHash(value)) {
@@ -122,7 +123,7 @@ class RawJsonScanner {
     this.space(); const c = this.text[this.position];
     if (c === "{") return this.object(path, depth, metadataDepth);
     if (c === "[") return this.array(path, depth, metadataDepth);
-    if (c === '"') { const value = this.string(); if (path === "/type") this.rootMessageType = value; if (opaque && new TextEncoder().encode(value).length > 16384) this.fail("metadata string exceeds 16 KiB"); return; }
+    if (c === '"') { const value = this.string(); if (path === "/type") this.rootMessageType = value; if (opaque && new TextEncoder().encode(value).length > maxNativeMetadataStringBytes) this.fail(`metadata string exceeds ${maxNativeMetadataStringBytes} UTF-8 bytes`); return; }
     if (c === "t") return this.literal("true"); if (c === "f") return this.literal("false"); if (c === "n") return this.literal("null");
     const match = this.text.slice(this.position).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/); if (match === null) this.fail("invalid value"); this.position += match![0].length;
     if (opaque) { const n = Number(match![0]); if (n === 0 && !/^-?0(?:\.0*)?(?:[eE][+-]?\d+)?$/.test(match![0])) this.fail("metadata number underflows to zero"); if (!Number.isFinite(n) || (Number.isInteger(n) && !Number.isSafeInteger(n))) this.fail("metadata number is outside the finite JS-safe domain"); }
@@ -196,7 +197,18 @@ function validateTurnEvidence(targets: NonNullable<Detail["turns"]>): Map<number
       if (!turn.sourceEntryRef || turn.usage.sourceEntryRef !== turn.sourceEntryRef) failSemantic("turn usage source reference disagrees");
       validateUsage(turn.usage, owners, sources);
     }
-    for (const tool of turn.toolCalls ?? []) { if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes"); if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous"); if (tool.id) toolIds.add(tool.id); if (tool.callEntryRef !== undefined && !validOptionalRef(tool.callEntryRef)) failSemantic("tool call reference is invalid or exceeds 96 bytes"); if (tool.resultEntryRef !== undefined && !validOptionalRef(tool.resultEntryRef)) failSemantic("tool result reference is invalid or exceeds 96 bytes"); if (tool.usage != null) { if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees"); validateUsage(tool.usage, owners, sources); } }
+    for (const tool of turn.toolCalls ?? []) {
+      if (tool.namespace !== undefined && !validUnicode(tool.namespace)) failSemantic("tool namespace contains invalid Unicode; provide a valid string or omit unrecorded namespace");
+      if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes");
+      if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous");
+      if (tool.id) toolIds.add(tool.id);
+      if (tool.callEntryRef !== undefined && !validOptionalRef(tool.callEntryRef)) failSemantic("tool call reference is invalid or exceeds 96 bytes");
+      if (tool.resultEntryRef !== undefined && !validOptionalRef(tool.resultEntryRef)) failSemantic("tool result reference is invalid or exceeds 96 bytes");
+      if (tool.usage != null) {
+        if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees");
+        validateUsage(tool.usage, owners, sources);
+      }
+    }
   }
   return turns;
 }
@@ -245,7 +257,7 @@ function validUnicode(value: string): boolean {
 }
 function validateMetadataValue(value: unknown, depth: number): void {
   if (depth > 32) failSemantic("metadata data exceeds depth 32");
-  if (typeof value === "string" && (!validUnicode(value) || new TextEncoder().encode(value).length > 16384)) failSemantic("metadata string is invalid Unicode or exceeds 16 KiB");
+  if (typeof value === "string" && (!validUnicode(value) || new TextEncoder().encode(value).length > maxNativeMetadataStringBytes)) failSemantic(`metadata string is invalid Unicode or exceeds ${maxNativeMetadataStringBytes} UTF-8 bytes`);
   if (typeof value === "number" && (!Number.isFinite(value) || (Number.isInteger(value) && !Number.isSafeInteger(value)))) failSemantic("metadata number is outside the finite JS-safe domain");
   if (value !== null && !["string", "number", "boolean", "object"].includes(typeof value)) failSemantic("metadata data is not a JSON value");
   if (Array.isArray(value)) {
