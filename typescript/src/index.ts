@@ -3,7 +3,7 @@ export * from "./internal/generated/enums.gen.js";
 export * from "./internal/generated/content-capabilities.gen.js";
 export * from "./internal/generated/versions.gen.js";
 
-import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
+import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
 
 function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
   if (!isProjectHash(value)) {
@@ -63,9 +63,25 @@ function scanRawJson(text: string, policy: RawJsonPathPolicy): RawJsonScanner {
 export function parseSessionDetailPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
   rejectExplicitNullEvidence(value);
   validateRawGraphValue(value);
-  const payload = zSessionDetailPayload.parse(value);
+  const normalized = structuredClone(value);
+  normalizeEmptySubmissionRefs(normalized);
+  const payload = zSessionDetailPayload.parse(normalized);
   validateSessionDetail(payload);
   return payload;
+}
+
+function normalizeEmptySubmissionRefs(value: unknown): void {
+  if (!isRecord(value)) return;
+  const visitTurns = (turns: unknown): void => {
+    if (!Array.isArray(turns)) return;
+    for (const turn of turns) if (isRecord(turn)) {
+      for (const provenance of [turn.provenance, ...(Array.isArray(turn.toolCalls) ? turn.toolCalls.flatMap(tool => isRecord(tool) ? [tool.callProvenance, tool.resultProvenance] : []) : [])]) {
+        if (isRecord(provenance) && provenance.submissionRef === "") delete provenance.submissionRef;
+      }
+    }
+  };
+  visitTurns(value.turns);
+  for (const section of Array.isArray(value.earlierHistory) ? value.earlierHistory : []) if (isRecord(section)) visitTurns(section.turns);
 }
 
 export function parseSessionDetailPayloadText(text: string): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
@@ -86,7 +102,7 @@ export function parseSchemaVersionAdvertisement(text: string): string[] {
 export function parseTranscriptContentText(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
   scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
   const raw: unknown = JSON.parse(text);
-  if (isRecord(raw)) rejectExplicitNullEvidence(raw.sessionDetail);
+  if (isRecord(raw)) parseSessionDetailPayloadValue(raw.sessionDetail);
   const content = zTranscriptContent.parse(raw);
   if (content.sessionDetail === undefined || content.sessionDetail === null) failSemantic("sessionDetail is required");
   parseSessionDetailPayloadValue(content.sessionDetail);
@@ -101,10 +117,10 @@ export function parseServerMessageRaw(text: string): import("./internal/generate
     scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/data/nativeMetadata/*/data"] });
   }
   const value: unknown = JSON.parse(text);
-  if (isRecord(value) && value.type === "session_detail") rejectExplicitNullEvidence(value.data);
+  if (isRecord(value) && value.type === "session_detail") parseSessionDetailReadPayloadValue(value.data);
   const message = zServerMessage.parse(value);
   if (message.type === "session_detail") {
-    parseSessionDetailPayloadValue(message.data);
+    parseSessionDetailReadPayloadValue(message.data);
   }
   return message;
 }
@@ -175,15 +191,50 @@ function pointerMatches(pattern: string, path: string): boolean { const expected
 
 type Detail = import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
 function validateSessionDetail(payload: Detail): void {
-  const refs = new Set<string>();
-  const turns = validateTurnEvidence(payload.turns ?? [], refs);
-  if ((payload.nativeMetadata?.length ?? 0) > 0 && String(payload.harness) !== "pi") failSemantic("Pi native metadata requires harness pi");
-  validateMetadataRecords(payload.nativeMetadata ?? [], turns, refs);
+  validateRelationships(payload);
+  const state = newDetailState();
+  const turns = validateTurnEvidence(payload.turns ?? [], state);
+  validateMetadataRecords(payload.nativeMetadata ?? [], turns, state);
   for (const section of payload.earlierHistory ?? []) {
-    const earlierTurns = validateTurnEvidence(section.turns ?? [], refs);
-    validateMetadataRecords(section.nativeMetadata ?? [], earlierTurns, refs);
+    const earlierTurns = validateTurnEvidence(section.turns ?? [], state);
+    validateMetadataRecords(section.nativeMetadata ?? [], earlierTurns, state);
   }
+  if (state.nativeCount > 0 && String(payload.harness) !== "pi") failSemantic("Pi native metadata requires harness pi across every history partition");
 }
+
+function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailReadPayload {
+  rejectExplicitNullEvidence(value);
+  if (!isRecord(value)) failSemantic("session detail read payload is not an object");
+  const durable = {...value}; delete durable.relationshipNavigation;
+  validateRawGraphValue(durable);
+  normalizeEmptySubmissionRefs(durable);
+  validateSessionDetail(zSessionDetailPayload.parse(durable));
+  return zSessionDetailReadPayload.parse(value);
+}
+
+function validateRelationships(payload: Detail): void {
+  const seen = new Set<string>(); let startedBy: string | undefined;
+  for (const relationship of payload.relationships ?? []) {
+    if (seen.has(relationship.kind)) failSemantic("relationship kind occurs more than once"); seen.add(relationship.kind);
+    const known = relationship.targetState === "target_known" || relationship.targetState === "target_known_retained";
+    if (known !== (relationship.targetLocalId != null)) failSemantic("relationship target state and targetLocalId presence disagree");
+    if (relationship.targetLocalId != null && !validSessionId(relationship.targetLocalId)) failSemantic("relationship targetLocalId is malformed");
+    if (relationship.anchor != null) {
+      if (relationship.kind !== "context_from" || !known) failSemantic("anchor is allowed only on a known context_from relationship");
+      const exact = relationship.anchor.kind !== "general_source_session";
+      const hasEntry = relationship.anchor.sourceEntryRef !== undefined, hasRevision = relationship.anchor.sourceRevisionRef !== undefined;
+      if ((!exact && (hasEntry || hasRevision)) || (exact && (!hasEntry || !hasRevision))) failSemantic("anchor references disagree with anchor kind");
+      if (exact && (!validRef(relationship.anchor.sourceEntryRef) || !validRef(relationship.anchor.sourceRevisionRef))) failSemantic("anchor reference is invalid");
+    }
+    if (relationship.kind === "started_by" && known) startedBy = relationship.targetLocalId ?? undefined;
+  }
+  if ((payload.relationships?.length ?? 0) > 0 && payload.parentSessionId !== undefined && payload.parentSessionId !== startedBy) failSemantic("parentSessionId disagrees with durable started_by relationship");
+}
+
+function validSessionId(value: string): boolean { return !value.includes("/") && !value.includes("\\") && !value.includes("..") && /^(?:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}|agent-[a-f0-9]+|ses_[a-zA-Z0-9]+|sess_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[A-Z2-7]{26}|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26})$/.test(value); }
+
+type DetailState = { blockRefs: Set<string>; owners: Set<string>; sources: Set<string>; toolIds: Set<string>; nativeIds: Set<string>; nativeSources: Set<string>; nativeCount: number; nativeBytes: number };
+function newDetailState(): DetailState { return {blockRefs:new Set(), owners:new Set(), sources:new Set(), toolIds:new Set(), nativeIds:new Set(), nativeSources:new Set(), nativeCount:0, nativeBytes:0}; }
 
 // Producers can validate metadata before attaching it to a harness envelope.
 // The full detail parsers reuse this same record and target validation.
@@ -191,7 +242,8 @@ export function parseNativeMetadataRecordsValue(value: unknown, targets: unknown
   rejectExplicitNullEvidence({nativeMetadata: value, turns: targets});
   const turns = zTurnDetail.array().parse(targets);
   const records = zNativeMetadataRecord.array().parse(value);
-  validateMetadataRecords(records, validateTurnEvidence(turns));
+  const state = newDetailState();
+  validateMetadataRecords(records, validateTurnEvidence(turns, state), state);
   return records;
 }
 
@@ -200,14 +252,15 @@ export function parseNativeMetadataRecordsText(text: string, targets: unknown = 
   return parseNativeMetadataRecordsValue(JSON.parse(text), targets);
 }
 
-function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, blockRefs = new Set<string>()): Map<number, NonNullable<Detail["turns"]>[number]> {
-  const owners = new Set<string>(); const sources = new Set<string>();
-  const turnIndexes = new Set<number>(); const toolIds = new Set<string>(); const turns = new Map<number, NonNullable<Detail["turns"]>[number]>();
+function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, state = newDetailState()): Map<number, NonNullable<Detail["turns"]>[number]> {
+  const blockRefs = state.blockRefs, owners = state.owners, sources = state.sources, toolIds = state.toolIds;
+  const turnIndexes = new Set<number>(); const turns = new Map<number, NonNullable<Detail["turns"]>[number]>();
   for (const turn of targets) {
     if (turn.observedModel !== undefined && (turn.role !== "assistant" || !validUnicode(turn.observedModel))) failSemantic("observedModel requires valid Unicode and an assistant role");
     if (turnIndexes.has(turn.index)) failSemantic("duplicate turn index makes metadata attachment ambiguous"); turnIndexes.add(turn.index); turns.set(turn.index, turn);
     if (turn.sourceEntryRef !== undefined && (!validOptionalRef(turn.sourceEntryRef) || blockRefs.has(turn.sourceEntryRef))) failSemantic("turn source reference is invalid, duplicated, or exceeds 96 bytes");
     if (turn.sourceEntryRef !== undefined) blockRefs.add(turn.sourceEntryRef);
+    if (turn.provenance != null) validateProvenance(turn.provenance);
     const projected = turn.sourceEntryRef !== undefined || turn.provenance !== undefined || (turn.toolCalls ?? []).some((tool) => tool.callEntryRef !== undefined || tool.resultEntryRef !== undefined || tool.callProvenance !== undefined || tool.resultProvenance !== undefined);
     if (projected && (((turn.depth ?? 0) === 0) !== (turn.parentIndex == null))) failSemantic("turn depth and parentIndex disagree");
     if (turn.usage != null) {
@@ -215,21 +268,20 @@ function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, blockRefs =
       if (!turn.sourceEntryRef || turn.usage.sourceEntryRef !== turn.sourceEntryRef) failSemantic("turn usage source reference disagrees");
       validateUsage(turn.usage, owners, sources);
     }
-    for (const tool of turn.toolCalls ?? []) { if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes"); if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous"); if (tool.id) toolIds.add(tool.id); for (const ref of [tool.callEntryRef, tool.resultEntryRef]) { if (ref !== undefined && (!validOptionalRef(ref) || blockRefs.has(ref))) failSemantic("tool reference is invalid, duplicated, or exceeds 96 bytes"); if (ref !== undefined) blockRefs.add(ref); } if (tool.usage != null) { if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees"); validateUsage(tool.usage, owners, sources); } }
+    for (const tool of turn.toolCalls ?? []) { if (tool.callProvenance != null) validateProvenance(tool.callProvenance); if (tool.resultProvenance != null) validateProvenance(tool.resultProvenance); if (!validOptionalRef(tool.id)) failSemantic("tool id reference is invalid or exceeds 96 bytes"); if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous"); if (tool.id) toolIds.add(tool.id); for (const ref of [tool.callEntryRef, tool.resultEntryRef]) { if (ref !== undefined && (!validOptionalRef(ref) || blockRefs.has(ref))) failSemantic("tool reference is invalid, duplicated, or exceeds 96 bytes"); if (ref !== undefined) blockRefs.add(ref); } if (tool.usage != null) { if (tool.usage.scope !== "tool" || !tool.resultEntryRef || tool.usage.sourceEntryRef !== tool.resultEntryRef) failSemantic("tool usage attribution disagrees"); validateUsage(tool.usage, owners, sources); } }
   }
   for (const turn of targets) if (turn.parentIndex != null && !turns.has(turn.parentIndex)) failSemantic("parentIndex does not target a turn in the same partition");
   return turns;
 }
 
-function validateMetadataRecords(records: NonNullable<Detail["nativeMetadata"]>, turns: Map<number, NonNullable<Detail["turns"]>[number]>, blockRefs = new Set<string>()): void {
-  const ids = new Set<string>();
-  let metadataBytes = 0;
-  if (records.length > 256) failSemantic("native metadata record count exceeds 256");
+function validateMetadataRecords(records: NonNullable<Detail["nativeMetadata"]>, turns: Map<number, NonNullable<Detail["turns"]>[number]>, state = newDetailState()): void {
+  const blockRefs = state.blockRefs;
+  if (state.nativeCount + records.length > 256) failSemantic("native metadata record count exceeds 256"); state.nativeCount += records.length;
   for (const metadata of records) {
-    if (!validRef(metadata.id) || !validRef(metadata.source.entryRef) || ids.has(metadata.id) || (metadata.attachment === undefined && blockRefs.has(metadata.source.entryRef))) failSemantic("metadata reference is invalid or duplicated"); ids.add(metadata.id); if (metadata.attachment === undefined) blockRefs.add(metadata.source.entryRef);
+    if (!validRef(metadata.id) || !validRef(metadata.source.entryRef) || state.nativeIds.has(metadata.id) || state.nativeSources.has(metadata.source.entryRef) || (metadata.attachment === undefined && blockRefs.has(metadata.source.entryRef))) failSemantic("metadata reference is invalid or duplicated"); state.nativeIds.add(metadata.id); state.nativeSources.add(metadata.source.entryRef); if (metadata.attachment === undefined) blockRefs.add(metadata.source.entryRef);
     if (metadata.customType !== undefined && (!validUnicode(metadata.customType) || new TextEncoder().encode(metadata.customType).length > 128)) failSemantic("customType is invalid Unicode or exceeds 128 bytes");
     validateMetadataValue(metadata.data, 1);
-    const encoded = new TextEncoder().encode(JSON.stringify(metadata.data)).length; metadataBytes += encoded; if (encoded > 65536 || metadataBytes > 1048576) failSemantic("metadata data exceeds its byte budget");
+    const encoded = new TextEncoder().encode(JSON.stringify(metadata.data)).length; state.nativeBytes += encoded; if (encoded > 65536 || state.nativeBytes > 1048576) failSemantic("metadata data exceeds its byte budget");
     const attachment = metadata.attachment; const target = attachment?.turnIndex == null ? undefined : turns.get(attachment.turnIndex);
     if (attachment?.toolCallId !== undefined && !validRef(attachment.toolCallId)) failSemantic("attachment tool reference is invalid or exceeds 96 bytes");
     switch (metadata.kind) {
@@ -240,6 +292,11 @@ function validateMetadataRecords(records: NonNullable<Detail["nativeMetadata"]>,
       default: failSemantic("metadata kind is outside its closed set");
     }
   }
+}
+function validateProvenance(value: NonNullable<NonNullable<Detail["turns"]>[number]["provenance"]>): void {
+  const sets = [[value.origin,["submitted_input","harness_context","agent_output","agent_communication","tool_activity","system_control","generated_summary","unknown"]],[value.actor,["operator","agent_delegate","harness","unknown"]],[value.delivery,["session_admission","guardian_review","subagent_delivery","inherited_context","tool_delivery","system_lifecycle","unknown"]],[value.ownership,["local","inherited","uncertain"]],[value.evidence,["native_typed","lifecycle_typed","existing_adapter","retained_last_good","unknown","conflict"]],[value.inputModality,["none","text","media","user_action","mixed","unknown"]]] as const;
+  if (sets.some(([v, allowed]) => !(allowed as readonly string[]).includes(v))) failSemantic("provenance dimension is missing or outside its closed set");
+  if (value.submissionRef !== undefined && value.submissionRef !== "" && !validRef(value.submissionRef)) failSemantic("submissionRef is invalid");
 }
 function validateUsage(usage: NonNullable<NonNullable<Detail["turns"]>[number]["usage"]>, owners: Set<string>, sources: Set<string>): void {
   if (!validRef(usage.ownerId) || !validRef(usage.sourceEntryRef) || owners.has(usage.ownerId) || sources.has(usage.sourceEntryRef)) failSemantic("usage owner/source reference is invalid or duplicated");
@@ -309,10 +366,11 @@ function rejectExplicitNullEvidence(value: unknown): void {
   }
 }
 
+const rootForbiddenGraphFields = new Set(["relationshipNavigation", "label", "explanation", "cooked", "collapsed", "url", "resolved", "detail"]);
 const forbiddenGraphFields = new Set(["relationshipNavigation", "status", "transcriptId", "label", "explanation", "cooked", "collapsed", "url", "resolved", "detail"]);
 function validateRawGraphValue(value: unknown): void {
   if (!isRecord(value)) return;
-  for (const key of Object.keys(value)) if (forbiddenGraphFields.has(key)) failSemantic(`durable payload contains forbidden read-only or cooked field ${key}`);
+  for (const key of Object.keys(value)) if (rootForbiddenGraphFields.has(key)) failSemantic(`durable payload contains forbidden read-only or cooked field ${key}`);
   for (const relationship of Array.isArray(value.relationships) ? value.relationships : []) if (isRecord(relationship)) {
     for (const key of Object.keys(relationship)) if (!["kind", "targetState", "targetLocalId", "evidence", "anchor"].includes(key)) failSemantic(`relationship contains forbidden field ${key}`);
     if (isRecord(relationship.anchor)) for (const key of Object.keys(relationship.anchor)) if (!["kind", "sourceEntryRef", "sourceRevisionRef"].includes(key)) failSemantic(`anchor contains forbidden field ${key}`);
