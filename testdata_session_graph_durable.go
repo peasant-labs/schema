@@ -15,6 +15,7 @@ type durableRoundTripExpected struct {
 	InputCount   int64    `yaml:"input_count"`
 	MainRefs     []string `yaml:"main_refs"`
 	EarlierRefs  []string `yaml:"earlier_refs"`
+	HelperCount  int      `yaml:"helper_count"`
 }
 type durableCountExpected struct {
 	Present bool  `yaml:"present"`
@@ -24,20 +25,27 @@ type durableErrorExpected struct {
 	ErrorContains string `yaml:"error_contains"`
 }
 type DurableMirrorInput struct {
-	DetailCount   int64  `yaml:"detail_count"`
-	MetadataCount int64  `yaml:"metadata_count"`
-	Parent        string `yaml:"parent"`
-	GraphParent   string `yaml:"graph_parent"`
+	DetailCount        *int64 `yaml:"detail_count"`
+	MetadataCount      *int64 `yaml:"metadata_count"`
+	Parent             string `yaml:"parent"`
+	GraphParent        string `yaml:"graph_parent"`
+	DetailRoot         string `yaml:"detail_root"`
+	MetadataRoot       string `yaml:"metadata_root"`
+	ProjectedMainCount bool   `yaml:"projected_main_count"`
+	DetailTurnCount    int    `yaml:"detail_turn_count"`
+	MetadataTurnCount  int    `yaml:"metadata_turn_count"`
 }
 type durableMirrorExpected struct {
 	Accept        bool   `yaml:"accept"`
 	ErrorContains string `yaml:"error_contains"`
 }
 type durableDigestInput struct {
-	LeftPresent  bool  `yaml:"left_present"`
-	LeftValue    int64 `yaml:"left_value"`
-	RightPresent bool  `yaml:"right_present"`
-	RightValue   int64 `yaml:"right_value"`
+	LeftPresent  bool   `yaml:"left_present"`
+	LeftValue    int64  `yaml:"left_value"`
+	RightPresent bool   `yaml:"right_present"`
+	RightValue   int64  `yaml:"right_value"`
+	LeftVariant  string `yaml:"left_variant"`
+	RightVariant string `yaml:"right_variant"`
 }
 type durableDigestExpected struct {
 	Different bool `yaml:"different"`
