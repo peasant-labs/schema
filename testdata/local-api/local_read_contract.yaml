@@ -1,0 +1,75 @@
+required_names:
+  - flat-detail-root
+  - input-count-absent
+  - input-count-zero
+  - sync-exact-mirrors
+  - search-exact-session
+  - context-arm-only
+  - typed-member-array
+  - mismatched-sync-count
+  - mismatched-search-session
+  - contradictory-item-arms
+round_trip:
+  cases:
+    - name: flat-detail-root
+      input: {kind: detail, json: '{"id":"child","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"relationshipNavigation":[{"kind":"started_by","status":"resolved","localId":"ses_parent"}]}' }
+      expected: {valid: true, requiredKeys: [id, turns, relationshipNavigation], forbiddenKeys: [detail, sessionDetail]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "flat additive local detail read"}
+      mutation: {description: "adds authorized navigation beside durable root fields"}
+    - name: input-count-absent
+      input: {kind: row, json: '{"session":{"id":"legacy","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":2,"turnCount":4,"toolCallCount":0}}'}
+      expected: {valid: true, requiredKeys: [session], forbiddenKeys: [inputSubmissionCount]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "absent input count remains unknown"}
+      mutation: {description: "omits inputSubmissionCount while retaining turnCount four"}
+    - name: input-count-zero
+      input: {kind: row, json: '{"session":{"id":"measured","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":2,"turnCount":5,"inputSubmissionCount":0,"toolCallCount":0,"rootSessionId":"ses_root","purpose":"interaction","relationships":[]}}'}
+      expected: {valid: true, requiredKeys: [session, inputSubmissionCount], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "measured zero is independent from main turns"}
+      mutation: {description: "sets measured zero beside five transcript records"}
+    - name: sync-exact-mirrors
+      input: {kind: row, json: '{"session":{"id":"sync","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0,"project":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"sync":{"id":"sync","harness":"codex","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"h","startTime":"2026-09-08T00:00:00Z","durationMs":60000,"totalTokens":9,"turnCount":5,"model":"m","inputSubmissionCount":1,"syncStatus":"ready"}}'}
+      expected: {valid: true, requiredKeys: [session, sync], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "sync row preserves exact identity and count mirrors"}
+      mutation: {description: "supplies equal session and sync identity/count values"}
+    - name: search-exact-session
+      input: {kind: row, json: '{"session":{"id":"search","harness":"opencode","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":2,"turnCount":1,"toolCallCount":0},"matches":[{"sessionId":"search","project":"p","entryIndex":0,"role":"user","snippet":"hit","score":1}]}' }
+      expected: {valid: true, requiredKeys: [session, matches], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "search matches belong to their concrete row"}
+      mutation: {description: "retains a typed matching SearchResult"}
+    - name: context-arm-only
+      input: {kind: item, json: '{"kind":"context_container","context":{"groupId":"hg_owner","ownerStatus":"known_unavailable"},"helperGroups":[{"groupId":"hg_owner","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}' }
+      expected: {valid: true, requiredKeys: [kind, context, helperGroups], forbiddenKeys: [transcript]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "helper-only context uses no fabricated transcript"}
+      mutation: {description: "selects only the context_container sum arm"}
+    - name: typed-member-array
+      input: {kind: members, json: '{"members":[{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}},{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}],"page":1,"limit":20,"total":2}' }
+      expected: {valid: true, requiredKeys: [members, page, limit, total], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "member response retains concrete LocalSessionRow values"}
+      mutation: {description: "contains two typed saved helper identities"}
+validation:
+  cases:
+    - name: mismatched-sync-count
+      input: {kind: row, json: '{"session":{"id":"sync","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0},"sync":{"id":"sync","harness":"codex","projectName":"p","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":1,"model":"m","inputSubmissionCount":5,"syncStatus":"ready"}}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "sync count mirrors"}
+      mutation: {description: "changes both sync counts away from the session row"}
+    - name: mismatched-search-session
+      input: {kind: row, json: '{"session":{"id":"search","harness":"opencode","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":2,"turnCount":1,"toolCallCount":0},"matches":[{"sessionId":"other","project":"p","entryIndex":0,"role":"user","snippet":"hit","score":1}]}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "search row identity"}
+      mutation: {description: "attaches another session's search match"}
+    - name: contradictory-item-arms
+      input: {kind: item, json: '{"kind":"transcript","transcript":{"session":{"id":"p","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}},"context":{"groupId":"hg_p","ownerStatus":"resolved"}}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "local list discriminated union"}
+      mutation: {description: "populates both transcript and context arms"}
