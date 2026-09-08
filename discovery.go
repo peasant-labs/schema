@@ -67,22 +67,36 @@ type VillageDiscoveryAttestation struct {
 	CreatedAt       time.Time    `json:"created_at"`
 }
 
+// VillageDiscoveryTranscriptProjection reuses the shared Village transcript
+// projection while overriding the two database JSON byte columns with their
+// actual browser serialization. The current handler stores them as []byte, so
+// encoding/json emits null for nil and a base64 string for populated values.
+// This browser-specific correction must not change other existing contracts
+// that already use VillageTranscript.
+type VillageDiscoveryTranscriptProjection struct {
+	VillageTranscript   `json:",inline"`
+	Subagents           []byte `json:"subagents"`
+	DiagnosticsWarnings []byte `json:"diagnostics_warnings"`
+}
+
 // VillageDiscoveryTranscript wraps one browser result exactly as the Village
 // list handler serves it. The wrapper is intentionally distinct from pull.
 type VillageDiscoveryTranscript struct {
-	Transcript   VillageTranscript             `json:"transcript"`
-	Tags         []VillageDiscoveryTag         `json:"tags" nullable:"false"`
-	Owner        VillageDiscoveryUser          `json:"owner"`
-	OwnerOrgs    []VillageDiscoveryOwnerOrg    `json:"owner_orgs" nullable:"false"`
-	Shares       []VillageDiscoveryShare       `json:"shares" nullable:"false"`
-	Attestations []VillageDiscoveryAttestation `json:"attestations" nullable:"false"`
+	Transcript   VillageDiscoveryTranscriptProjection `json:"transcript"`
+	Tags         []VillageDiscoveryTag                `json:"tags" nullable:"false"`
+	Owner        VillageDiscoveryUser                 `json:"owner"`
+	OwnerOrgs    []VillageDiscoveryOwnerOrg           `json:"owner_orgs"`
+	Shares       []VillageDiscoveryShare              `json:"shares"`
+	Attestations []VillageDiscoveryAttestation        `json:"attestations"`
 }
 
 // VillageDiscoveryResponse is the browser discovery envelope returned by GET
 // /api/v1/transcripts. HarnessFacets is independent of every active request
 // filter, sorting, and pagination. It covers all distinct transcripts readable
-// by the authenticated viewer under the default non-agent origin scope: user
-// and unknown origins are included and agent origin is excluded. Entries have
+// by the current viewer under the default non-agent origin scope. Authentication
+// is optional: an anonymous viewer's corpus contains public transcripts only;
+// an authenticated viewer additionally receives owned and readable shared
+// transcripts. User and unknown origins are included and agent origin is excluded. Entries have
 // positive counts and deterministic harness order; an empty corpus emits [].
 type VillageDiscoveryResponse struct {
 	Transcripts   []VillageDiscoveryTranscript `json:"transcripts" nullable:"false"`

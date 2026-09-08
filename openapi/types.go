@@ -142,6 +142,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageDiscoveryResponse", new(schema.VillageDiscoveryResponse)},
 		{"VillageDiscoveryShare", new(schema.VillageDiscoveryShare)}, {"VillageDiscoveryTag", new(schema.VillageDiscoveryTag)},
 		{"VillageDiscoveryTranscript", new(schema.VillageDiscoveryTranscript)}, {"VillageDiscoveryUser", new(schema.VillageDiscoveryUser)},
+		{"VillageDiscoveryTranscriptProjection", new(schema.VillageDiscoveryTranscriptProjection)},
 		{"VillageHarnessFacet", new(schema.VillageHarnessFacet)},
 		{"VillageGroup", new(schema.VillageGroup)},
 		{"VillageGroupAcceptanceMode", new(schema.VillageGroupAcceptanceMode)}, {"VillageGroupContributor", new(schema.VillageGroupContributor)},
@@ -264,6 +265,16 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 	}
 	var required []interface{}
 	properties, _ := schemaMap["properties"].(map[string]interface{})
+	overrides := map[string]bool{}
+	for i := 0; i < valueType.NumField(); i++ {
+		field := valueType.Field(i)
+		if field.IsExported() && !field.Anonymous {
+			name := strings.Split(field.Tag.Get("json"), ",")[0]
+			if name != "" && name != "-" {
+				overrides[name] = true
+			}
+		}
+	}
 	for i := 0; i < valueType.NumField(); i++ {
 		field := valueType.Field(i)
 		if !field.IsExported() {
@@ -273,6 +284,22 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 		parts := strings.Split(tag, ",")
 		name := parts[0]
 		if name == "-" {
+			continue
+		}
+		inline := false
+		for _, option := range parts[1:] {
+			inline = inline || option == "inline"
+		}
+		if field.Anonymous && inline {
+			embedded := map[string]interface{}{"properties": properties}
+			applyGoRequiredFields(embedded, field.Type)
+			if names, ok := embedded["required"].([]interface{}); ok {
+				for _, embeddedName := range names {
+					if name, ok := embeddedName.(string); !ok || !overrides[name] {
+						required = append(required, embeddedName)
+					}
+				}
+			}
 			continue
 		}
 		if name == "" {

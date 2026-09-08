@@ -577,6 +577,7 @@ types:
   - {go_name: VillageDiscoveryShare, disposition: catalog, component: VillageDiscoveryShare, reason: browser discovery collective share projection}
   - {go_name: VillageDiscoveryTag, disposition: catalog, component: VillageDiscoveryTag, reason: browser discovery tag projection}
   - {go_name: VillageDiscoveryTranscript, disposition: catalog, component: VillageDiscoveryTranscript, reason: browser discovery wrapped result}
+  - {go_name: VillageDiscoveryTranscriptProjection, disposition: catalog, component: VillageDiscoveryTranscriptProjection, reason: browser discovery transcript projection with encoded database JSON bytes}
   - {go_name: VillageDiscoveryUser, disposition: catalog, component: VillageDiscoveryUser, reason: browser discovery owner projection}
   - {go_name: VillageHarnessFacet, disposition: catalog, component: VillageHarnessFacet, reason: corpus-wide browser discovery harness count}
   - go_name: VillageGroup
