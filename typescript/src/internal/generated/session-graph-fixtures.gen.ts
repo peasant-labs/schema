@@ -1567,7 +1567,7 @@ export const canonicalSessionGraphFixtures = {
       {
         "name": "recursive-duplicate-folded-ref",
         "input": {
-          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_dup\",\"harness\":\"claude-code\",\"turnCount\":1,\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"sourceEntryRef\":\"e_carrier\",\"toolCalls\":[{\"id\":\"call_1\",\"name\":\"x\",\"arguments\":\"a\",\"result\":\"r\",\"callEntryRef\":\"e_carrier\",\"resultEntryRef\":\"e_result\"}]}]}"
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_dup\",\"harness\":\"claude-code\",\"inputSubmissionCount\":0,\"turnCount\":1,\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"sourceEntryRef\":\"e_carrier\",\"toolCalls\":[{\"id\":\"call_1\",\"name\":\"x\",\"arguments\":\"a\",\"result\":\"r\",\"callEntryRef\":\"e_carrier\",\"resultEntryRef\":\"e_result\"}]}]}"
         },
         "expected": {
           "errorContains": "duplicate block reference"
@@ -1578,7 +1578,7 @@ export const canonicalSessionGraphFixtures = {
           "ref": "folded-ref-uniqueness"
         },
         "mutation": {
-          "description": "folded call steals carrier ref"
+          "description": "folded call steals carrier ref in a graph payload"
         }
       },
       {
