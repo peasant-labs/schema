@@ -15,9 +15,10 @@ export const KnownContentCapability = Object.freeze({
   NativeMetadataV1: "native_metadata_v1",
   ObservedModelV1: "observed_model_v1",
   SessionGraphProvenanceV1: "session_graph_provenance_v1",
+  ToolNamespaceV1: "tool_namespace_v1",
 } as const);
 export type KnownContentCapability = (typeof KnownContentCapability)[keyof typeof KnownContentCapability];
-export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.SessionGraphProvenanceV1]) as readonly KnownContentCapability[];
+export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
 export function isContentCapability(value: unknown): value is KnownContentCapability {
   return typeof value === "string" && (AllContentCapabilities as readonly string[]).includes(value);
 }
@@ -44,6 +45,7 @@ export function validateContentCapabilityAdvertisements(values: readonly string[
 function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<KnownContentCapability>): void {
   for (const turn of turns ?? []) {
     if ((turn.observedModel ?? "") !== "") found.add(KnownContentCapability.ObservedModelV1);
+    if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(KnownContentCapability.ToolNamespaceV1);
     if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(KnownContentCapability.DetailedUsageV1);
     if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(KnownContentCapability.SessionGraphProvenanceV1);
   }

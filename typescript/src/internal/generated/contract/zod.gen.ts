@@ -2799,6 +2799,7 @@ export const zToolCallDetail = z.object({
     id: z.string(),
     isError: z.boolean().optional(),
     name: z.string(),
+    namespace: z.string().optional(),
     result: z.string(),
     resultEntryRef: zSourceEntryRef.optional(),
     resultProvenance: zContentProvenance.nullish(),

@@ -21,6 +21,8 @@ files:
   - dist/internal/generated/contract/zod.gen.js
   - dist/internal/generated/enums.gen.d.ts
   - dist/internal/generated/enums.gen.js
+  - dist/internal/generated/metadata-limits.gen.d.ts
+  - dist/internal/generated/metadata-limits.gen.js
   - dist/internal/generated/public-contract.gen.d.ts
   - dist/internal/generated/public-contract.gen.js
   - dist/internal/generated/quality-fixtures.gen.d.ts

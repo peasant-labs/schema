@@ -22,11 +22,15 @@ known:
     - {name: NativeMetadataV1, go_const: ContentCapabilityNativeMetadataV1, value: "native_metadata_v1"}
     - {name: ObservedModelV1, go_const: ContentCapabilityObservedModelV1, value: "observed_model_v1"}
     - {name: SessionGraphProvenanceV1, go_const: ContentCapabilitySessionGraphProvenanceV1, value: "session_graph_provenance_v1"}
-  all_values: ["detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "session_graph_provenance_v1"]
+    - {name: ToolNamespaceV1, go_const: ContentCapabilityToolNamespaceV1, value: "tool_namespace_v1"}
+  all_values: ["detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "session_graph_provenance_v1", "tool_namespace_v1"]
 # Discovery cases prove the open wire and the typed guard simultaneously: every
 # advertised list (including unknown future and duplicate tokens) parses, and
 # guarding/filtering it against the closed inventory yields only known tokens.
 discovery:
+  - name: namespace_with_unknown_and_duplicate
+    advertised: ["tool_namespace_v1", "future_v2", "tool_namespace_v1", "observed_model_v1"]
+    knownFiltered: ["tool_namespace_v1", "observed_model_v1"]
   - name: known_only
     advertised: ["observed_model_v1"]
     knownFiltered: ["observed_model_v1"]

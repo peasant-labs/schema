@@ -5028,6 +5028,9 @@
           "name": {
             "type": "string"
           },
+          "namespace": {
+            "type": "string"
+          },
           "result": {
             "type": "string"
           },

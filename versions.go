@@ -84,6 +84,7 @@ const (
 	// Bumped to 0.10.0 for detailed usage and native metadata evidence.
 	// Bumped to 0.11.0 when TurnDetail gained the optional CommandInvocation
 	// for skill and user slash-command turns (additive = minor bump).
+	// Bumped to 0.12.0 for independent optional tool namespace evidence.
 	// Bumped to 0.13.0 for grouped session listings, helper-member reads, and
 	// the flat detail read projection with relationship navigation.
 	PeasantLocalAPIVersion = "0.13.0"
@@ -125,6 +126,7 @@ const (
 	// Bumped to 0.17.0 when CommandInvocation, the PromptDigest projection with
 	// its DigestItemKind closed set, and the Village pull request attachment
 	// DTOs entered the catalog.
+	// Bumped to 0.18.0 for independent optional tool namespace evidence.
 	// Bumped to 0.19.0 for durable session graph provenance, independent input
 	// submission counts, flat read navigation, and grouped list DTOs.
 	TypesVersion = "0.19.0"

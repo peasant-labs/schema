@@ -22,10 +22,13 @@ const (
 	// durable session relationships, retained history, submission counts, and
 	// per-block provenance.
 	ContentCapabilitySessionGraphProvenanceV1 ContentCapability = "session_graph_provenance_v1"
+	// ContentCapabilityToolNamespaceV1 guarantees exact separate namespace
+	// presence and value survival, including an explicitly recorded empty string.
+	ContentCapabilityToolNamespaceV1 ContentCapability = "tool_namespace_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilitySessionGraphProvenanceV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilitySessionGraphProvenanceV1, ContentCapabilityToolNamespaceV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
 func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
@@ -112,6 +115,9 @@ func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapabili
 				graph = true
 			}
 			for _, tool := range turn.ToolCalls {
+				if tool.Namespace != nil {
+					required = append(required, ContentCapabilityToolNamespaceV1)
+				}
 				if tool.Usage != nil {
 					required = append(required, ContentCapabilityDetailedUsageV1)
 				}

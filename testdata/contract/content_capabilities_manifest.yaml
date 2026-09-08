@@ -1,5 +1,19 @@
-expectedCaseCount: 17
 requiredCaseNames:
+  - omitted-tool-namespace-needs-no-capability
+  - empty-tool-namespace-needs-capability
+  - namespace-and-observed
+  - namespace-and-tool-usage
+  - namespace-and-metadata
+  - namespace-observed-and-usage
+  - namespace-observed-and-metadata
+  - namespace-usage-and-metadata
+  - namespace-all-evidence-accumulates
+  - namespace-old-advertisement-refused
+  - namespace-matching-advertisement
+  - namespace-full-canonical-advertisement
+  - namespace-unsorted-advertisement
+  - namespace-discovery-dedup-and-unknown
+  - namespace-duplicate-advertisement
   - omitted-discovery-is-compatible-with-no-requirements
   - empty-discovery-is-compatible-with-no-requirements
   - known-filter-deduplicates-sorts-and-ignores-unknown
