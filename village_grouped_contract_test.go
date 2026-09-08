@@ -100,7 +100,7 @@ func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 			} else if c.Input.Target == "members" {
 				p := schema.VillageHelperMembersPayload{Page: c.Input.Page, Limit: c.Input.Limit}
 				if c.Input.Initialized {
-					p.Members = []schema.VillageSessionRow{}
+					p.Members = []schema.VillageSessionListItem{}
 				}
 				err = p.Validate()
 			} else {
@@ -121,7 +121,7 @@ func TestVillageGroupedWrappersRoundTripCompleteValues(t *testing.T) {
 	now := time.Date(2026, 9, 8, 1, 2, 3, 0, time.UTC)
 	id := schema.VillageUUID("123e4567-e89b-12d3-a456-426614174001")
 	list := schema.VillageSessionListPayload{Items: []schema.VillageSessionListItem{}, Page: 1, Limit: 20, TotalItems: 3, OrdinarySessionTotal: 2, HelperThreadTotal: 1}
-	group := schema.VillageGroupedGroupDetailResponse{Group: schema.VillageGroup{ID: id, Name: "collective", CreatedBy: id, CreatedAt: now, UpdatedAt: now, AcceptanceMode: schema.VillageGroupAcceptanceOpen, DataAccess: schema.VillageGroupDataAccessPublic, TranscriptDeletionPolicy: schema.VillageTranscriptDeletionUserChoice}, Members: []schema.VillageGroupMember{{ID: id, GithubUsername: "owner", GithubOrgs: []string{"org"}, JoinedAt: now, Role: schema.VillageGroupRoleOwner}}, Stats: schema.VillageGroupTranscriptStats{TotalTranscripts: 3, ContributorCount: 1, TotalTurns: 5, TotalDurationMs: 8, TotalTokens: 13}, Models: []schema.VillageGroupModelBreakdown{{ModelProvider: "provider", TranscriptCount: 3}}, Contributors: []schema.VillageGroupContributor{{ID: id, GithubUsername: "owner", TranscriptCount: 3}}, CanRead: true, YourRole: schema.VillageGroupViewerRoleOwner, TranscriptList: list, PendingMembers: []schema.VillageGroupMember{{ID: id, GithubUsername: "pending", GithubOrgs: []string{}, JoinedAt: now, Role: schema.VillageGroupRolePending}}}
+	group := schema.VillageGroupedGroupDetailResponse{Group: schema.VillageGroupDetailRecord{ID: id, Name: "collective", CreatedBy: id, CreatedAt: now, UpdatedAt: now, AcceptanceMode: schema.VillageGroupAcceptanceOpen, DataAccess: schema.VillageGroupDataAccessPublic, TranscriptDeletionPolicy: schema.VillageTranscriptDeletionUserChoice}, Members: []schema.VillageGroupMember{{ID: id, GithubUsername: "owner", GithubOrgs: []string{"org"}, JoinedAt: now, Role: schema.VillageGroupRoleOwner}}, Stats: schema.VillageGroupTranscriptStats{TotalTranscripts: 3, ContributorCount: 1, TotalTurns: 5, TotalDurationMs: 8, TotalTokens: 13}, Models: []schema.VillageGroupModelBreakdown{{ModelProvider: "provider", TranscriptCount: 3}}, Contributors: []schema.VillageGroupContributor{{ID: id, GithubUsername: "owner", TranscriptCount: 3}}, CanRead: true, YourRole: schema.VillageGroupViewerRoleOwner, TranscriptList: list, PendingMembers: []schema.VillageGroupMember{{ID: id, GithubUsername: "pending", GithubOrgs: []string{}, JoinedAt: now, Role: schema.VillageGroupRolePending}}}
 	contribution := schema.VillageGroupedContributableResponse{GroupID: id, TranscriptList: list}
 	encoded, err := json.Marshal(group)
 	if err != nil {

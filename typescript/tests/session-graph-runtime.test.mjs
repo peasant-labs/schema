@@ -6,6 +6,34 @@ import { sessionGraphFixtures } from "../dist/fixtures/session-graph.js";
 
 const fixtures = sessionGraphFixtures();
 
+test("canonical aggregate native budgets pass through every public envelope", async (t) => {
+  assert.deepEqual(new Set(fixtures.native_limits.cases.map(row => row.name)), new Set(fixtures.native_limit_required_names));
+  for (const row of fixtures.native_limits.cases) await t.test(row.name, () => {
+    const recipe = row.input;
+    const detail = JSON.parse(recipe.detailJSON);
+    let offset = 0;
+    const records = (count) => Array.from({length: count}, () => {
+      const record = JSON.parse(recipe.record_json);
+      const suffix = String(offset++);
+      record.id += suffix;
+      record.source.entryRef += suffix;
+      const chunkCount = Math.floor((recipe.data_bytes + 15002) / 15003);
+      let remaining = recipe.data_bytes - 1 - 3 * chunkCount;
+      record.data = [];
+      while (remaining > 0) {
+        const size = Math.min(remaining, 15000);
+        record.data.push("x".repeat(size));
+        remaining -= size;
+      }
+      assert.equal(new TextEncoder().encode(JSON.stringify(record.data)).length, recipe.data_bytes);
+      return record;
+    });
+    detail.nativeMetadata = records(recipe.main_records);
+    detail.earlierHistory = recipe.earlier_records.map(count => ({...JSON.parse(recipe.section_json), nativeMetadata: records(count)}));
+    assertPublicExits(row, detail);
+  });
+});
+
 test("generated durable graph schema consumes the canonical count and recursive corpus", async (t) => {
   const arms = [fixtures.durable.round_trip, fixtures.durable.counts, fixtures.durable.invalid_counts, fixtures.recursive, fixtures.raw_durable];
   for (const arm of arms) for (const row of arm.cases) await t.test(row.name, () => {
@@ -26,13 +54,10 @@ test("public envelope parsers apply durable graph semantics before generated par
   for (const arm of arms) for (const row of arm.cases) await t.test(row.name, () => {
     const raw = row.input.json ?? row.input.rawJSON;
     const detail = JSON.parse(raw);
-    const content = JSON.stringify({kind: "session_detail", contractVersion: "1", sessionDetail: detail});
-    const websocket = JSON.stringify({type: "session_detail", data: detail});
-    if (row.classification === "must-fail") assert.throws(() => parseTranscriptContentText(content));
-    else assert.doesNotThrow(() => parseTranscriptContentText(content));
-    if (row.name === "raw-forbidden-relationship-navigation") assert.doesNotThrow(() => parseServerMessageRaw(websocket));
-    else if (row.classification === "must-fail") assert.throws(() => parseServerMessageRaw(websocket));
-    else assert.doesNotThrow(() => parseServerMessageRaw(websocket));
+    if (row.name === "raw-forbidden-relationship-navigation") {
+      assert.throws(() => parseTranscriptContentText(JSON.stringify({kind: "session_detail", contractVersion: "1", sessionDetail: detail})));
+      assert.doesNotThrow(() => parseServerMessageRaw(JSON.stringify({type: "session_detail", data: detail})));
+    } else assertPublicExits(row, detail);
   });
 });
 
@@ -49,6 +74,9 @@ function assertPublicExits(row, detail) {
     assert.deepEqual(contentResult, directResult);
     assert.deepEqual(websocketResult, directResult);
     if (text.includes('"submissionRef":""')) assert.equal(JSON.stringify(directResult).includes('"submissionRef":""'), false);
+    if (row.name.startsWith("raw-empty-")) {
+      assert.doesNotMatch(JSON.stringify(directResult), /"(?:sourceEntryRef|sourceRevisionRef|callEntryRef|resultEntryRef|submissionRef)":""/, "optional empty references must be omitted on every exit");
+    }
   }
   assert.deepEqual(detail, original);
 }

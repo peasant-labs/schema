@@ -306,6 +306,31 @@ type VillageGroup struct {
 	PromptsCheckMode VillagePromptsCheckMode `json:"prompts_check_mode"`
 }
 
+// VillageGroupDetailRecord preserves the released collective detail fields.
+// Optional prompts settings are facts supplied by a capable producer, not defaults.
+type VillageGroupDetailRecord struct {
+	ID                       VillageUUID                     `json:"id"`
+	Name                     string                          `json:"name"`
+	Description              *string                         `json:"description"`
+	CreatedBy                VillageUUID                     `json:"created_by"`
+	CreatedAt                time.Time                       `json:"created_at"`
+	UpdatedAt                time.Time                       `json:"updated_at"`
+	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
+	DataAccess               VillageGroupDataAccess          `json:"data_access"`
+	LinkedGithubOrg          *string                         `json:"linked_github_org"`
+	DisplayMembers           bool                            `json:"display_members"`
+	TranscriptDeletionPolicy VillageTranscriptDeletionPolicy `json:"transcript_deletion_policy"`
+	PostPromptsCheck         *bool                           `json:"post_prompts_check,omitempty"`
+	PromptsCheckMode         *VillagePromptsCheckMode        `json:"prompts_check_mode,omitempty"`
+}
+
+func (r VillageGroupDetailRecord) Validate() error {
+	if r.PromptsCheckMode != nil && !r.PromptsCheckMode.IsValid() {
+		return fmt.Errorf("collective detail validation failed at schema.VillageGroupDetailRecord.Validate during read projection: prompts_check_mode is outside the closed set; clients cannot interpret this supplied setting; omit unavailable settings or emit a canonical VillagePromptsCheckMode")
+	}
+	return nil
+}
+
 // VillagePublicGroup is the compact row returned by GET /api/v1/groups/public.
 type VillagePublicGroup struct {
 	ID              VillageUUID                `json:"id"`
@@ -450,7 +475,7 @@ type VillageGroupContributor struct {
 }
 
 type VillageGroupDetailResponse struct {
-	Group          VillageGroup                 `json:"group"`
+	Group          VillageGroupDetailRecord     `json:"group"`
 	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
 	Models         []VillageGroupModelBreakdown `json:"models" nullable:"false"`
@@ -925,7 +950,7 @@ type VillageSessionListItem struct {
 	Kind         SessionListItemKind   `json:"kind"`
 	Transcript   *VillageSessionRow    `json:"transcript,omitempty"`
 	Context      *HelperContextSummary `json:"context,omitempty"`
-	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty"`
+	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty" nullable:"false"`
 }
 
 func (i VillageSessionListItem) Validate() error {
@@ -939,24 +964,22 @@ func (i VillageSessionListItem) Validate() error {
 	} else if err := i.Context.Validate(); err != nil {
 		return err
 	}
-	for _, group := range i.HelperGroups {
-		if err := group.Validate(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return validateHelperGroups(i.HelperGroups)
 }
 
 type VillageSessionListPayload struct {
 	Items                []VillageSessionListItem `json:"items" nullable:"false"`
-	Page                 int                      `json:"page"`
-	Limit                int                      `json:"limit"`
-	TotalItems           int                      `json:"totalItems"`
-	OrdinarySessionTotal int                      `json:"ordinarySessionTotal"`
-	HelperThreadTotal    int                      `json:"helperThreadTotal"`
+	Page                 int                      `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit                int                      `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	TotalItems           int                      `json:"totalItems" minimum:"0" maximum:"9007199254740991"`
+	OrdinarySessionTotal int                      `json:"ordinarySessionTotal" minimum:"0" maximum:"9007199254740991"`
+	HelperThreadTotal    int                      `json:"helperThreadTotal" minimum:"0" maximum:"9007199254740991"`
 }
 
 func (p VillageSessionListPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.TotalItems, p.OrdinarySessionTotal, p.HelperThreadTotal); err != nil {
+		return err
+	}
 	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
 		return fmt.Errorf("Village grouped list validation failed at schema.VillageSessionListPayload.Validate: pagination or totals are negative; clients cannot represent the selected result set; emit nonnegative page, limit, and totals")
 	}
@@ -969,26 +992,48 @@ func (p VillageSessionListPayload) Validate() error {
 }
 
 type VillageHelperMembersPayload struct {
-	Members []VillageSessionRow `json:"members" nullable:"false"`
-	Page    int                 `json:"page"`
-	Limit   int                 `json:"limit"`
-	Total   int                 `json:"total"`
+	Members []VillageSessionListItem `json:"members" nullable:"false"`
+	Page    int                      `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit   int                      `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	Total   int                      `json:"total" minimum:"0" maximum:"9007199254740991"`
 }
 
 func (p VillageHelperMembersPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.Total); err != nil {
+		return err
+	}
+	if len(p.Members) > p.Limit || len(p.Members) > p.Total {
+		return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during paging: member count exceeds limit or direct total; clients cannot page this scope; count direct saved helpers before paging")
+	}
 	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
 		return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate: pagination or total is negative; clients cannot page the authorized helper set; emit nonnegative values")
 	}
+	seen := make(map[TranscriptID]bool)
+	groups := make(map[string]bool)
 	for _, member := range p.Members {
+		if member.Kind != SessionListItemTranscript || member.Transcript == nil || member.Context != nil {
+			return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during scoped response construction: member is not a transcript; containers are not saved helpers; emit only transcript items with their immediate helper groups")
+		}
 		if err := member.Validate(); err != nil {
 			return err
+		}
+		id := member.Transcript.Session.ID
+		if seen[id] {
+			return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during scoped response construction: duplicate member identity; paging would count one helper twice; emit each saved transcript once")
+		}
+		seen[id] = true
+		for _, group := range member.HelperGroups {
+			if groups[group.GroupID] {
+				return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during paging: a groupId appears under multiple members; clients cannot assign its owner; emit each immediate-owner group once")
+			}
+			groups[group.GroupID] = true
 		}
 	}
 	return nil
 }
 
 type VillageGroupedGroupDetailResponse struct {
-	Group          VillageGroup                 `json:"group"`
+	Group          VillageGroupDetailRecord     `json:"group"`
 	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
 	Models         []VillageGroupModelBreakdown `json:"models" nullable:"false"`
@@ -1000,6 +1045,9 @@ type VillageGroupedGroupDetailResponse struct {
 }
 
 func (r VillageGroupedGroupDetailResponse) Validate() error {
+	if err := r.Group.Validate(); err != nil {
+		return err
+	}
 	if r.Members == nil || r.Models == nil || r.Contributors == nil {
 		return fmt.Errorf("Village grouped collective validation failed at schema.VillageGroupedGroupDetailResponse.Validate: members, models, or contributors is null; the retained collective envelope requires concrete arrays; initialize every empty collection")
 	}

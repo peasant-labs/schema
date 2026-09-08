@@ -3327,7 +3327,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaSessionDetailPayload"
+                  "$ref": "#/components/schemas/SchemaTranscriptContent"
                 }
               }
             }
@@ -5893,6 +5893,17 @@
         ],
         "type": "object"
       },
+      "SchemaContentKind": {
+        "description": "Payload kind carried by a transcript content envelope",
+        "enum": [
+          "session_detail"
+        ],
+        "examples": [
+          "session_detail"
+        ],
+        "title": "Content Kind",
+        "type": "string"
+      },
       "SchemaContentOrigin": {
         "description": "Closed session graph value",
         "enum": [
@@ -6145,6 +6156,8 @@
             "type": "string"
           },
           "helperThreadCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "memberScope": {
@@ -7979,6 +7992,31 @@
         "title": "Tool Call Kind",
         "type": "string"
       },
+      "SchemaTranscriptContent": {
+        "properties": {
+          "contractVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SchemaContentKind"
+          },
+          "sessionDetail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionDetailPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "contractVersion",
+          "kind"
+        ],
+        "type": "object"
+      },
       "SchemaTranscriptContentHash": {
         "description": "SHA3-256 digest of the exact transcript file bytes",
         "maxLength": 64,
@@ -8870,6 +8908,102 @@
         "title": "Village Group Data Access",
         "type": "string"
       },
+      "SchemaVillageGroupDetailRecord": {
+        "properties": {
+          "acceptance_mode": {
+            "$ref": "#/components/schemas/SchemaVillageGroupAcceptanceMode"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/SchemaVillageUUID"
+          },
+          "data_access": {
+            "$ref": "#/components/schemas/SchemaVillageGroupDataAccess"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "display_members": {
+            "type": "boolean"
+          },
+          "id": {
+            "$ref": "#/components/schemas/SchemaVillageUUID"
+          },
+          "linked_github_org": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "post_prompts_check": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "boolean"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompts_check_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaVillagePromptsCheckMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcript_deletion_policy": {
+            "$ref": "#/components/schemas/SchemaVillageTranscriptDeletionPolicy"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "acceptance_mode",
+          "data_access",
+          "linked_github_org",
+          "display_members",
+          "transcript_deletion_policy"
+        ],
+        "type": "object"
+      },
       "SchemaVillageGroupDetailResponse": {
         "properties": {
           "can_read": {
@@ -8882,7 +9016,7 @@
             "type": "array"
           },
           "group": {
-            "$ref": "#/components/schemas/SchemaVillageGroup"
+            "$ref": "#/components/schemas/SchemaVillageGroupDetailRecord"
           },
           "members": {
             "items": {
@@ -9965,7 +10099,7 @@
             "type": "array"
           },
           "group": {
-            "$ref": "#/components/schemas/SchemaVillageGroup"
+            "$ref": "#/components/schemas/SchemaVillageGroupDetailRecord"
           },
           "members": {
             "items": {
@@ -10010,18 +10144,48 @@
       "SchemaVillageHelperMembersPayload": {
         "properties": {
           "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "members": {
             "items": {
-              "$ref": "#/components/schemas/SchemaVillageSessionRow"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SchemaVillageSessionListItem"
+                },
+                {
+                  "properties": {
+                    "context": {
+                      "type": "null"
+                    },
+                    "kind": {
+                      "enum": [
+                        "transcript"
+                      ],
+                      "type": "string"
+                    },
+                    "transcript": {
+                      "$ref": "#/components/schemas/SchemaVillageSessionRow"
+                    }
+                  },
+                  "required": [
+                    "transcript"
+                  ],
+                  "type": "object"
+                }
+              ]
             },
             "type": "array"
           },
           "page": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -10932,6 +11096,8 @@
       "SchemaVillageSessionListPayload": {
         "properties": {
           "helperThreadTotal": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "items": {
@@ -10941,15 +11107,23 @@
             "type": "array"
           },
           "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "ordinarySessionTotal": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "page": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "totalItems": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },

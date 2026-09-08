@@ -1713,6 +1713,68 @@ export const canonicalSessionGraphFixtures = {
   "raw_durable": {
     "cases": [
       {
+        "name": "raw-empty-optional-main-tool-refs",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_emptyrefs\",\"harness\":\"claude-code\",\"turnCount\":1,\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"kept\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"sourceEntryRef\":\"\",\"toolCalls\":[{\"id\":\"call\",\"name\":\"x\",\"arguments\":\"a\",\"result\":\"r\",\"callEntryRef\":\"\",\"resultEntryRef\":\"\"}]}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "optional-public-references"
+        },
+        "mutation": {
+          "description": "empty optional main and folded references normalize to absence rather than invalid required aliases"
+        }
+      },
+      {
+        "name": "raw-empty-optional-earlier-refs",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_emptyrefs\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"kept\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"sourceEntryRef\":\"\",\"toolCalls\":[{\"id\":\"call\",\"name\":\"x\",\"arguments\":\"a\",\"result\":\"r\",\"callEntryRef\":\"\",\"resultEntryRef\":\"\"}]}]}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "optional-public-references"
+        },
+        "mutation": {
+          "description": "earlier partitions share optional reference normalization without crossing identity domains"
+        }
+      },
+      {
+        "name": "raw-empty-general-anchor-refs",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_emptyrefs\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"relationships\":[{\"kind\":\"context_from\",\"targetState\":\"target_known\",\"targetLocalId\":\"ses_parent\",\"evidence\":\"native_typed\",\"anchor\":{\"kind\":\"general_source_session\",\"sourceEntryRef\":\"\",\"sourceRevisionRef\":\"\"}}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "optional-public-references"
+        },
+        "mutation": {
+          "description": "general link treats empty optional source and revision as absent"
+        }
+      },
+      {
+        "name": "raw-empty-exact-anchor-refs-rejected",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_emptyrefs\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"relationships\":[{\"kind\":\"context_from\",\"targetState\":\"target_known\",\"targetLocalId\":\"ses_parent\",\"evidence\":\"native_typed\",\"anchor\":{\"kind\":\"before_redacted_entry\",\"sourceEntryRef\":\"\",\"sourceRevisionRef\":\"\"}}]}"
+        },
+        "expected": {
+          "errorContains": "requires both"
+        },
+        "classification": "must-fail",
+        "provenance": {
+          "source": "boundary",
+          "ref": "optional-public-references"
+        },
+        "mutation": {
+          "description": "normalization cannot make an exact anchor valid without its required reference pair"
+        }
+      },
+      {
         "name": "raw-null-earlier-provenance",
         "input": {
           "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_raw\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"user\",\"content\":\"old\",\"timestamp\":\"2026-09-07T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"provenance\":null}]}]}"
@@ -2047,10 +2109,76 @@ export const canonicalSessionGraphFixtures = {
         "mutation": {
           "description": "earlier folded tool contains cooked explanation"
         }
+      },
+      {
+        "name": "legacy-parent-omitted-with-unknown-target",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_parent_case\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"relationships\":[{\"kind\":\"started_by\",\"targetState\":\"unknown\",\"evidence\":\"unknown\"}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "legacy-parent-agreement"
+        },
+        "mutation": {
+          "description": "optional legacy parent is omitted"
+        }
+      },
+      {
+        "name": "legacy-parent-null-with-unknown-target",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_parent_case\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"parentSessionId\":null,\"relationships\":[{\"kind\":\"started_by\",\"targetState\":\"unknown\",\"evidence\":\"unknown\"}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "legacy-parent-agreement"
+        },
+        "mutation": {
+          "description": "JSON null decodes as an absent optional legacy parent"
+        }
+      },
+      {
+        "name": "legacy-parent-matches-known-target",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_parent_case\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"parentSessionId\":\"ses_parent1\",\"relationships\":[{\"kind\":\"started_by\",\"targetState\":\"target_known\",\"targetLocalId\":\"ses_parent1\",\"evidence\":\"native_typed\"}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "legacy-parent-agreement"
+        },
+        "mutation": {
+          "description": "legacy parent agrees with known durable target"
+        }
+      },
+      {
+        "name": "legacy-parent-conflicts-known-target",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_parent_case\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[],\"parentSessionId\":\"ses_other\",\"relationships\":[{\"kind\":\"started_by\",\"targetState\":\"target_known\",\"targetLocalId\":\"ses_parent1\",\"evidence\":\"native_typed\"}]}"
+        },
+        "expected": {
+          "errorContains": "parentSessionId disagrees"
+        },
+        "classification": "must-fail",
+        "provenance": {
+          "source": "requirement",
+          "ref": "legacy-parent-agreement"
+        },
+        "mutation": {
+          "description": "legacy parent conflicts with known durable target"
+        }
       }
     ]
   },
   "raw_durable_required_names": [
+    "raw-empty-optional-main-tool-refs",
+    "raw-empty-optional-earlier-refs",
+    "raw-empty-general-anchor-refs",
+    "raw-empty-exact-anchor-refs-rejected",
     "raw-null-earlier-provenance",
     "raw-null-folded-provenance",
     "raw-forbidden-relationship-navigation",
@@ -2070,7 +2198,11 @@ export const canonicalSessionGraphFixtures = {
     "raw-main-turn-explanation",
     "raw-earlier-turn-explanation",
     "raw-main-tool-explanation",
-    "raw-earlier-tool-explanation"
+    "raw-earlier-tool-explanation",
+    "legacy-parent-omitted-with-unknown-target",
+    "legacy-parent-null-with-unknown-target",
+    "legacy-parent-matches-known-target",
+    "legacy-parent-conflicts-known-target"
   ],
   "native_limits": {
     "cases": [
@@ -2082,7 +2214,10 @@ export const canonicalSessionGraphFixtures = {
             4,
             5
           ],
-          "data_bytes": 61000
+          "data_bytes": 61000,
+          "detailJSON": "{\"id\":\"ses_native_budget\",\"harness\":\"pi\",\"startTime\":\"2026-09-08T00:00:00Z\",\"endTime\":\"2026-09-08T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"turns\":[]}",
+          "record_json": "{\"id\":\"m_\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"source_\",\"sourceType\":\"pi.custom\"},\"customType\":\"fixture\",\"data\":[]}",
+          "section_json": "{\"state\":\"uncertain_migrated\",\"turns\":[]}"
         },
         "expected": {},
         "classification": "must-pass",
@@ -2102,7 +2237,10 @@ export const canonicalSessionGraphFixtures = {
             6,
             6
           ],
-          "data_bytes": 65536
+          "data_bytes": 65536,
+          "detailJSON": "{\"id\":\"ses_native_budget\",\"harness\":\"pi\",\"startTime\":\"2026-09-08T00:00:00Z\",\"endTime\":\"2026-09-08T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"turns\":[]}",
+          "record_json": "{\"id\":\"m_\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"source_\",\"sourceType\":\"pi.custom\"},\"customType\":\"fixture\",\"data\":[]}",
+          "section_json": "{\"state\":\"uncertain_migrated\",\"turns\":[]}"
         },
         "expected": {},
         "classification": "must-pass",
@@ -2122,7 +2260,10 @@ export const canonicalSessionGraphFixtures = {
             5,
             5
           ],
-          "data_bytes": 61000
+          "data_bytes": 61000,
+          "detailJSON": "{\"id\":\"ses_native_budget\",\"harness\":\"pi\",\"startTime\":\"2026-09-08T00:00:00Z\",\"endTime\":\"2026-09-08T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"turns\":[]}",
+          "record_json": "{\"id\":\"m_\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"source_\",\"sourceType\":\"pi.custom\"},\"customType\":\"fixture\",\"data\":[]}",
+          "section_json": "{\"state\":\"uncertain_migrated\",\"turns\":[]}"
         },
         "expected": {
           "errorContains": "aggregate"
@@ -2923,5 +3064,4989 @@ export const canonicalSessionGraphFixtures = {
       "digest-relationship-evidence",
       "digest-entry-provenance"
     ]
+  },
+  "grouped_read": {
+    "requiredNames": [
+      "nested-local-owner",
+      "nested-village-owner",
+      "nested-local-leaf",
+      "nested-village-leaf",
+      "local-member-context-rejected",
+      "village-member-context-rejected",
+      "local-member-both-arms-rejected",
+      "village-member-both-arms-rejected",
+      "local-duplicate-member",
+      "village-duplicate-member",
+      "local-duplicate-nested-group",
+      "village-duplicate-nested-group",
+      "local-empty-page-zero-total",
+      "village-empty-page-zero-total",
+      "local-null-members",
+      "village-null-members",
+      "local-null-total",
+      "village-null-total",
+      "local-unsafe-total",
+      "village-unsafe-total",
+      "local-member-over-limit",
+      "village-member-over-limit",
+      "local-count-zero-preserved",
+      "village-count-zero-preserved",
+      "local-count-null-rejected",
+      "village-count-null-rejected",
+      "local-count-absent-preserved",
+      "village-count-absent-preserved",
+      "local-group-count-negative",
+      "village-group-count-negative",
+      "local-member-missing-transcript",
+      "village-member-missing-transcript",
+      "legacy-group-missing-prompts",
+      "group-present-false-prompts",
+      "group-present-true-prompts",
+      "group-invalid-present-mode",
+      "canonical-group-required-prompts-control",
+      "canonical-group-present-prompts-control",
+      "content-resolved-envelope",
+      "content-bare-detail-rejected",
+      "nested-local-root-counts",
+      "nested-village-root-counts",
+      "local-second-member-page",
+      "village-second-member-page",
+      "flat-detail-legacy-group",
+      "grouped-detail-legacy-group",
+      "flat-detail-present-prompts",
+      "grouped-detail-present-prompts",
+      "local-null-nested-groups",
+      "village-null-nested-groups",
+      "local-null-search-matches",
+      "local-group-id-across-members",
+      "village-group-id-across-members",
+      "local-zero-nested-group-count",
+      "village-zero-nested-group-count",
+      "local-null-nested-group-count",
+      "village-null-nested-group-count",
+      "local-sync-member-mirrors",
+      "local-sync-member-count-mismatch",
+      "local-search-member-mirrors",
+      "local-search-member-identity-mismatch",
+      "village-collective-member-mirrors",
+      "village-collective-member-count-mismatch",
+      "village-pending-member-mirrors",
+      "village-pending-member-identity-mismatch",
+      "village-my-share-member-mirrors",
+      "village-my-share-member-count-mismatch",
+      "village-contributable-member-mirrors",
+      "village-contributable-member-identity-mismatch"
+    ],
+    "cases": {
+      "cases": [
+        {
+          "name": "nested-local-owner",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "P expansion returns G1 with its own group, direct total one rather than descendant total two"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "nested-village-owner",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public P expansion preserves G1 nested group and all nullable summary facts"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "nested-local-leaf",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "independent nested scope returns only G2 on the next expansion"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g2",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "nested-village-leaf",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public nested scope returns one stable G2 identity"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174004",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-member-context-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "a list-only context container cannot count as a saved helper member"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "context_container",
+                  "context": {
+                    "groupId": "hg_g1",
+                    "ownerStatus": "unknown"
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-member-context-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public member pages reject list-only containers"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "context_container",
+                  "context": {
+                    "groupId": "hg_g1",
+                    "ownerStatus": "unknown"
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-member-both-arms-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "member cannot carry a second context arm"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ],
+                  "context": {
+                    "groupId": "hg_g1",
+                    "ownerStatus": "unknown"
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-member-both-arms-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public member cannot carry a second context arm"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ],
+                  "context": {
+                    "groupId": "hg_g1",
+                    "ownerStatus": "unknown"
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-duplicate-member",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "duplicate saved identity cannot increase direct total"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 2,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-duplicate-member",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "duplicate public identity cannot increase direct total"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 2,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-duplicate-nested-group",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "duplicate group id cannot own independent disclosure state"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    },
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-duplicate-nested-group",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "duplicate public nested group rejected"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    },
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-empty-page-zero-total",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "no matching authorized saved helpers yields an empty page with measured zero total"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [],
+              "page": 2,
+              "limit": 1,
+              "total": 0
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-empty-page-zero-total",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public empty scope preserves measured zero"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [],
+              "page": 2,
+              "limit": 1,
+              "total": 0
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-null-members",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "members null is not an empty page"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": null,
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-null-members",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public members null is not an empty page"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": null,
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-null-total",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "null total cannot coerce to measured zero"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [],
+              "page": 1,
+              "limit": 1,
+              "total": null
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-null-total",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public null total cannot coerce to zero"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [],
+              "page": 1,
+              "limit": 1,
+              "total": null
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-unsafe-total",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "unsafe integer total cannot be preserved in JavaScript"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 9007199254740992
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-unsafe-total",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public unsafe integer total rejected"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 9007199254740992
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-member-over-limit",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "two distinct helper rows cannot fit a one-row page"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g2",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-member-over-limit",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "two public helper identities cannot fit a one-row page"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174004",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-count-zero-preserved",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "member retains measured zero input count independently of five turns and one nested helper"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 0
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-count-zero-preserved",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public member preserves zero input count and independent turn and helper counts"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "input_submission_count": 0
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-count-null-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "null input count is invalid rather than unknown"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": null
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-count-null-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public null input count must not disappear"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "input_submission_count": null
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-count-absent-preserved",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "historical local summary omits unknown input count"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-count-absent-preserved",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "historical public member retains unknown input count as absent"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-group-count-negative",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "nested helper count is never negative"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": -1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-group-count-negative",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public nested helper count is never negative"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": -1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-member-missing-transcript",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "member discriminator requires a saved row"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript"
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-member-missing-transcript",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public discriminator requires a saved row"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript"
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "legacy-group-missing-prompts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "eleven released base fields do not fabricate unavailable prompts settings"
+          },
+          "input": {
+            "schema": "VillageGroupDetailRecord",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice"
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "group-present-false-prompts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "explicit false is a supplied fact and must remain present"
+          },
+          "input": {
+            "schema": "VillageGroupDetailRecord",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice",
+              "post_prompts_check": false,
+              "prompts_check_mode": "informational"
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "group-present-true-prompts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "source-backed true setting remains present"
+          },
+          "input": {
+            "schema": "VillageGroupDetailRecord",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice",
+              "post_prompts_check": true,
+              "prompts_check_mode": "required"
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "group-invalid-present-mode",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "optional present mode still uses the closed menu"
+          },
+          "input": {
+            "schema": "VillageGroupDetailRecord",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice",
+              "prompts_check_mode": "invented"
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "canonical-group-required-prompts-control",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "independent canonical prompts contract remains required, not weakened by read compatibility"
+          },
+          "input": {
+            "schema": "VillageGroup",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice"
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "canonical-group-present-prompts-control",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "canonical group still accepts its supplied prompts configuration"
+          },
+          "input": {
+            "schema": "VillageGroup",
+            "payload": {
+              "id": "123e4567-e89b-12d3-a456-426614174001",
+              "name": "collective",
+              "description": null,
+              "created_by": "123e4567-e89b-12d3-a456-426614174001",
+              "created_at": "2026-09-08T00:00:00Z",
+              "updated_at": "2026-09-08T00:00:00Z",
+              "acceptance_mode": "open",
+              "data_access": "public",
+              "linked_github_org": null,
+              "display_members": false,
+              "transcript_deletion_policy": "user_choice",
+              "post_prompts_check": false,
+              "prompts_check_mode": "informational"
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "content-resolved-envelope",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "content response resolves to the durable envelope rather than a bare detail"
+          },
+          "input": {
+            "schema": "TranscriptContent",
+            "route": "/api/v1/transcripts/{id}/content",
+            "payload": {
+              "contractVersion": "1",
+              "kind": "session_detail",
+              "sessionDetail": {
+                "id": "g1",
+                "harness": "codex",
+                "startTime": "2026-09-08T00:00:00Z",
+                "endTime": "2026-09-08T00:00:00Z",
+                "durationMins": 0,
+                "totalTokens": 0,
+                "tokensIn": 0,
+                "tokensOut": 0,
+                "turnCount": 0,
+                "toolCallCount": 0,
+                "turns": []
+              }
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "content-bare-detail-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "a root detail cannot satisfy the actual content operation envelope schema"
+          },
+          "input": {
+            "schema": "TranscriptContent",
+            "route": "/api/v1/transcripts/{id}/content",
+            "payload": {
+              "id": "g1",
+              "harness": "codex",
+              "startTime": "2026-09-08T00:00:00Z",
+              "endTime": "2026-09-08T00:00:00Z",
+              "durationMins": 0,
+              "totalTokens": 0,
+              "tokensIn": 0,
+              "tokensOut": 0,
+              "turnCount": 0,
+              "toolCallCount": 0,
+              "turns": []
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "nested-local-root-counts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "P has one direct helper; total saved helper identities includes nested G2 without another top container"
+          },
+          "input": {
+            "schema": "LocalSessionListPayload",
+            "payload": {
+              "items": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "p",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_p",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_p"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "totalItems": 1,
+              "ordinarySessionTotal": 1,
+              "helperThreadTotal": 2
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "nested-village-root-counts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public P root retains ordinary one, helpers two, top items one and direct group one"
+          },
+          "input": {
+            "schema": "VillageSessionListPayload",
+            "payload": {
+              "items": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174005",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_p",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_p"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "totalItems": 1,
+              "ordinarySessionTotal": 1,
+              "helperThreadTotal": 2
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-second-member-page",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "second page retains full direct total and one loaded member with nested group"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 2,
+              "limit": 1,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-second-member-page",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public second page retains direct total independent of loaded descendants"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 2,
+              "limit": 1,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "flat-detail-legacy-group",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "omitted-view GET detail preserves the eleven group fields without invented prompts settings"
+          },
+          "input": {
+            "schema": "VillageGroupDetailResponse",
+            "route": "/api/v1/groups/{id}",
+            "payload": {
+              "group": {
+                "id": "123e4567-e89b-12d3-a456-426614174001",
+                "name": "collective",
+                "description": null,
+                "created_by": "123e4567-e89b-12d3-a456-426614174001",
+                "created_at": "2026-09-08T00:00:00Z",
+                "updated_at": "2026-09-08T00:00:00Z",
+                "acceptance_mode": "open",
+                "data_access": "public",
+                "linked_github_org": null,
+                "display_members": false,
+                "transcript_deletion_policy": "user_choice"
+              },
+              "members": [],
+              "stats": {
+                "total_transcripts": 0,
+                "contributor_count": 0,
+                "total_turns": 0,
+                "total_duration_ms": 0,
+                "total_tokens": 0
+              },
+              "models": [],
+              "contributors": [],
+              "can_read": true,
+              "your_role": "owner",
+              "transcripts": []
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "grouped-detail-legacy-group",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "grouped GET detail preserves identical base group values and omitted settings"
+          },
+          "input": {
+            "schema": "VillageGroupedGroupDetailResponse",
+            "route": "/api/v1/groups/{id}",
+            "payload": {
+              "group": {
+                "id": "123e4567-e89b-12d3-a456-426614174001",
+                "name": "collective",
+                "description": null,
+                "created_by": "123e4567-e89b-12d3-a456-426614174001",
+                "created_at": "2026-09-08T00:00:00Z",
+                "updated_at": "2026-09-08T00:00:00Z",
+                "acceptance_mode": "open",
+                "data_access": "public",
+                "linked_github_org": null,
+                "display_members": false,
+                "transcript_deletion_policy": "user_choice"
+              },
+              "members": [],
+              "stats": {
+                "total_transcripts": 0,
+                "contributor_count": 0,
+                "total_turns": 0,
+                "total_duration_ms": 0,
+                "total_tokens": 0
+              },
+              "models": [],
+              "contributors": [],
+              "can_read": true,
+              "your_role": "owner",
+              "transcriptList": {
+                "items": [],
+                "page": 1,
+                "limit": 1,
+                "totalItems": 0,
+                "ordinarySessionTotal": 0,
+                "helperThreadTotal": 0
+              }
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "flat-detail-present-prompts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "flat GET detail retains source-backed false and informational mode"
+          },
+          "input": {
+            "schema": "VillageGroupDetailResponse",
+            "route": "/api/v1/groups/{id}",
+            "payload": {
+              "group": {
+                "id": "123e4567-e89b-12d3-a456-426614174001",
+                "name": "collective",
+                "description": null,
+                "created_by": "123e4567-e89b-12d3-a456-426614174001",
+                "created_at": "2026-09-08T00:00:00Z",
+                "updated_at": "2026-09-08T00:00:00Z",
+                "acceptance_mode": "open",
+                "data_access": "public",
+                "linked_github_org": null,
+                "display_members": false,
+                "transcript_deletion_policy": "user_choice",
+                "post_prompts_check": false,
+                "prompts_check_mode": "informational"
+              },
+              "members": [],
+              "stats": {
+                "total_transcripts": 0,
+                "contributor_count": 0,
+                "total_turns": 0,
+                "total_duration_ms": 0,
+                "total_tokens": 0
+              },
+              "models": [],
+              "contributors": [],
+              "can_read": true,
+              "your_role": "owner",
+              "transcripts": []
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "grouped-detail-present-prompts",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "grouped GET detail retains the same explicit false settings as flat reads"
+          },
+          "input": {
+            "schema": "VillageGroupedGroupDetailResponse",
+            "route": "/api/v1/groups/{id}",
+            "payload": {
+              "group": {
+                "id": "123e4567-e89b-12d3-a456-426614174001",
+                "name": "collective",
+                "description": null,
+                "created_by": "123e4567-e89b-12d3-a456-426614174001",
+                "created_at": "2026-09-08T00:00:00Z",
+                "updated_at": "2026-09-08T00:00:00Z",
+                "acceptance_mode": "open",
+                "data_access": "public",
+                "linked_github_org": null,
+                "display_members": false,
+                "transcript_deletion_policy": "user_choice",
+                "post_prompts_check": false,
+                "prompts_check_mode": "informational"
+              },
+              "members": [],
+              "stats": {
+                "total_transcripts": 0,
+                "contributor_count": 0,
+                "total_turns": 0,
+                "total_duration_ms": 0,
+                "total_tokens": 0
+              },
+              "models": [],
+              "contributors": [],
+              "can_read": true,
+              "your_role": "owner",
+              "transcriptList": {
+                "items": [],
+                "page": 1,
+                "limit": 1,
+                "totalItems": 0,
+                "ordinarySessionTotal": 0,
+                "helperThreadTotal": 0
+              }
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-null-nested-groups",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "optional groups must be an array when supplied"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": null
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-null-nested-groups",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public optional groups reject explicit null"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": null
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-null-search-matches",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "optional search evidence must be an array when supplied"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    },
+                    "matches": null
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-group-id-across-members",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "distinct saved members cannot both claim the same immediate-owner group"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g2",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 2,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-group-id-across-members",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "distinct public members cannot both claim one group"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174004",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 2,
+              "total": 2
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-zero-nested-group-count",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "measured zero nested matches remains distinct from missing count"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 0,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-zero-nested-group-count",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public measured zero nested count remains zero"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 0,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-null-nested-group-count",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "null cannot become zero nested helper matches"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": null,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-null-nested-group-count",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "public null nested count cannot become zero"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": null,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-sync-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "nested local helper keeps the originating sync status and independent matching counts"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1,
+                      "project": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "sync": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "projectName": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "hostSlug": "host",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMs": 60000,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "inputSubmissionCount": 1,
+                      "model": "codex",
+                      "syncStatus": "synced"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-sync-member-count-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "sync member input count cannot disagree with its saved session"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1,
+                      "project": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "sync": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "projectName": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "hostSlug": "host",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMs": 60000,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "inputSubmissionCount": 0,
+                      "model": "codex",
+                      "syncStatus": "synced"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-search-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "helper search expansion retains only its own matched content evidence"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    },
+                    "matches": [
+                      {
+                        "sessionId": "g1",
+                        "project": "example",
+                        "entryIndex": 0,
+                        "role": "user",
+                        "snippet": "query",
+                        "score": 1
+                      }
+                    ]
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-search-member-identity-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "a search match from another helper cannot be attached to this member"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    },
+                    "matches": [
+                      {
+                        "sessionId": "g2",
+                        "project": "example",
+                        "entryIndex": 0,
+                        "role": "user",
+                        "snippet": "query",
+                        "score": 1
+                      }
+                    ]
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-collective-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "collective helper expansion preserves its owner usage summary and nested group"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "collective": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "owner_username": "owner",
+                      "owner_avatar_url": null,
+                      "owner_is_discoverable": true
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-collective-member-count-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "collective helper count cannot change unknown into measured zero"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "collective": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "owner_username": "owner",
+                      "owner_avatar_url": null,
+                      "owner_is_discoverable": true,
+                      "input_submission_count": 0
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-pending-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "pending route uses transcript_id and branch aliases without losing member context"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "pending": {
+                      "transcript_id": "123e4567-e89b-12d3-a456-426614174003",
+                      "title": null,
+                      "model_provider": "codex",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "parent_session_id": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "branch": null,
+                      "owner_username": "owner",
+                      "owner_is_discoverable": true,
+                      "shared_at": "2026-09-08T00:00:00Z"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-pending-member-identity-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "pending alias cannot target another public transcript"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "pending": {
+                      "transcript_id": "123e4567-e89b-12d3-a456-426614174004",
+                      "title": null,
+                      "model_provider": "codex",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "parent_session_id": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "branch": null,
+                      "owner_username": "owner",
+                      "owner_is_discoverable": true,
+                      "shared_at": "2026-09-08T00:00:00Z"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-my-share-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "my-shares helper keeps individual review status and usage mirrors"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "myShare": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "title": null,
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "visibility": "public",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "turn_count": 5,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "parent_session_id": null,
+                      "status": "approved",
+                      "shared_at": "2026-09-08T00:00:00Z"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-my-share-member-count-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "my-shares turn count cannot replace the stored member total"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "myShare": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "title": null,
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "visibility": "public",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "turn_count": 1,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "parent_session_id": null,
+                      "status": "approved",
+                      "shared_at": "2026-09-08T00:00:00Z"
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-contributable-member-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "contribution expansion preserves individual eligibility and project context"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "contributable": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "visibility": "public",
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "git_branch": null,
+                      "parent_session_id": null,
+                      "session_origin": "agent",
+                      "model_provider": "codex",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "already_shared": false
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-contributable-member-identity-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "contribution row cannot claim another local helper identity"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "contributable": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174004",
+                      "title": null,
+                      "visibility": "public",
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "git_branch": null,
+                      "parent_session_id": null,
+                      "session_origin": "agent",
+                      "model_provider": "codex",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "already_shared": false
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        }
+      ]
+    }
   }
 } as const;

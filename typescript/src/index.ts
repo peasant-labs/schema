@@ -64,18 +64,29 @@ export function parseSessionDetailPayloadValue(value: unknown): import("./intern
   rejectExplicitNullEvidence(value);
   validateRawGraphValue(value);
   const normalized = structuredClone(value);
-  normalizeEmptySubmissionRefs(normalized);
+  normalizeEmptyOptionalPublicRefs(normalized);
   const payload = zSessionDetailPayload.parse(normalized);
   validateSessionDetail(payload);
   return payload;
 }
 
-function normalizeEmptySubmissionRefs(value: unknown): void {
+function normalizeEmptyOptionalPublicRefs(value: unknown): void {
   if (!isRecord(value)) return;
   if (value.parentSessionId === null) delete value.parentSessionId;
+  for (const relation of Array.isArray(value.relationships) ? value.relationships : []) {
+    if (isRecord(relation) && isRecord(relation.anchor)) {
+      if (relation.anchor.sourceEntryRef === "") delete relation.anchor.sourceEntryRef;
+      if (relation.anchor.sourceRevisionRef === "") delete relation.anchor.sourceRevisionRef;
+    }
+  }
   const visitTurns = (turns: unknown): void => {
     if (!Array.isArray(turns)) return;
     for (const turn of turns) if (isRecord(turn)) {
+      if (turn.sourceEntryRef === "") delete turn.sourceEntryRef;
+      for (const tool of Array.isArray(turn.toolCalls) ? turn.toolCalls : []) if (isRecord(tool)) {
+        if (tool.callEntryRef === "") delete tool.callEntryRef;
+        if (tool.resultEntryRef === "") delete tool.resultEntryRef;
+      }
       for (const provenance of [turn.provenance, ...(Array.isArray(turn.toolCalls) ? turn.toolCalls.flatMap(tool => isRecord(tool) ? [tool.callProvenance, tool.resultProvenance] : []) : [])]) {
         if (isRecord(provenance) && provenance.submissionRef === "") delete provenance.submissionRef;
       }
@@ -119,12 +130,10 @@ export function parseServerMessageRaw(text: string): import("./internal/generate
     scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/data/nativeMetadata/*/data"] });
   }
   const value: unknown = JSON.parse(text);
-  if (isRecord(value) && value.type === "session_detail") parseSessionDetailReadPayloadValue(value.data);
-  const message = zServerMessage.parse(value);
-  if (message.type === "session_detail") {
-    parseSessionDetailReadPayloadValue(message.data);
-  }
-  return message;
+  const normalized = isRecord(value) && value.type === "session_detail"
+    ? {...value, data: parseSessionDetailReadPayloadValue(value.data)}
+    : value;
+  return zServerMessage.parse(normalized);
 }
 
 class RawJsonScanner {
@@ -208,10 +217,10 @@ function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/
   rejectExplicitNullEvidence(value);
   if (!isRecord(value)) failSemantic("session detail read payload is not an object");
   const durable = {...value}; delete durable.relationshipNavigation;
-  validateRawGraphValue(durable);
-  normalizeEmptySubmissionRefs(durable);
-  validateSessionDetail(zSessionDetailPayload.parse(durable));
-  return zSessionDetailReadPayload.parse({...durable, relationshipNavigation: value.relationshipNavigation});
+  const normalized = parseSessionDetailPayloadValue(durable);
+  return zSessionDetailReadPayload.parse(Object.hasOwn(value, "relationshipNavigation")
+    ? {...normalized, relationshipNavigation: value.relationshipNavigation}
+    : normalized);
 }
 
 function validateRelationships(payload: Detail): void {

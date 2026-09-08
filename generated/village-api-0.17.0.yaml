@@ -2021,7 +2021,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SchemaSessionDetailPayload'
+                $ref: '#/components/schemas/SchemaTranscriptContent'
           description: OK
         "400":
           content:
@@ -3669,6 +3669,14 @@ components:
       required:
       - name
       type: object
+    SchemaContentKind:
+      description: Payload kind carried by a transcript content envelope
+      enum:
+      - session_detail
+      examples:
+      - session_detail
+      title: Content Kind
+      type: string
     SchemaContentOrigin:
       description: Closed session graph value
       enum:
@@ -3865,6 +3873,8 @@ components:
         groupId:
           type: string
         helperThreadCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         memberScope:
           type: string
@@ -5082,6 +5092,20 @@ components:
       - execute
       title: Tool Call Kind
       type: string
+    SchemaTranscriptContent:
+      properties:
+        contractVersion:
+          type: string
+        kind:
+          $ref: '#/components/schemas/SchemaContentKind'
+        sessionDetail:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionDetailPayload'
+          - type: "null"
+      required:
+      - contractVersion
+      - kind
+      type: object
     SchemaTranscriptContentHash:
       description: SHA3-256 digest of the exact transcript file bytes
       maxLength: 64
@@ -5659,6 +5683,63 @@ components:
       - public
       title: Village Group Data Access
       type: string
+    SchemaVillageGroupDetailRecord:
+      properties:
+        acceptance_mode:
+          $ref: '#/components/schemas/SchemaVillageGroupAcceptanceMode'
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        data_access:
+          $ref: '#/components/schemas/SchemaVillageGroupDataAccess'
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        display_members:
+          type: boolean
+        id:
+          $ref: '#/components/schemas/SchemaVillageUUID'
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+        post_prompts_check:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        prompts_check_mode:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaVillagePromptsCheckMode'
+          - type: "null"
+        transcript_deletion_policy:
+          $ref: '#/components/schemas/SchemaVillageTranscriptDeletionPolicy'
+        updated_at:
+          format: date-time
+          type: string
+      required:
+      - id
+      - name
+      - description
+      - created_by
+      - created_at
+      - updated_at
+      - acceptance_mode
+      - data_access
+      - linked_github_org
+      - display_members
+      - transcript_deletion_policy
+      type: object
     SchemaVillageGroupDetailResponse:
       properties:
         can_read:
@@ -5668,7 +5749,7 @@ components:
             $ref: '#/components/schemas/SchemaVillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/SchemaVillageGroup'
+          $ref: '#/components/schemas/SchemaVillageGroupDetailRecord'
         members:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupMember'
@@ -6279,7 +6360,7 @@ components:
             $ref: '#/components/schemas/SchemaVillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/SchemaVillageGroup'
+          $ref: '#/components/schemas/SchemaVillageGroupDetailRecord'
         members:
           items:
             $ref: '#/components/schemas/SchemaVillageGroupMember'
@@ -6311,14 +6392,33 @@ components:
     SchemaVillageHelperMembersPayload:
       properties:
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         members:
           items:
-            $ref: '#/components/schemas/SchemaVillageSessionRow'
+            allOf:
+            - $ref: '#/components/schemas/SchemaVillageSessionListItem'
+            - properties:
+                context:
+                  type: "null"
+                kind:
+                  enum:
+                  - transcript
+                  type: string
+                transcript:
+                  $ref: '#/components/schemas/SchemaVillageSessionRow'
+              required:
+              - transcript
+              type: object
           type: array
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - members
@@ -6888,18 +6988,28 @@ components:
     SchemaVillageSessionListPayload:
       properties:
         helperThreadTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         items:
           items:
             $ref: '#/components/schemas/SchemaVillageSessionListItem'
           type: array
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         ordinarySessionTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         totalItems:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - items

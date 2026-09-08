@@ -482,7 +482,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
 			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation.",
-			requests:    []interface{}{transcriptPath}, response: new(schema.SessionDetailPayload),
+			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
 		},
 		{

@@ -57,7 +57,7 @@ round_trip:
       provenance: {source: requirement, ref: "helper-only context uses no fabricated transcript"}
       mutation: {description: "selects only the context_container sum arm"}
     - name: typed-member-array
-      input: {kind: members, json: '{"members":[{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}},{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}],"page":1,"limit":20,"total":2}' }
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}},{"kind":"transcript","transcript":{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}}],"page":1,"limit":20,"total":2}' }
       expected: {valid: true, requiredKeys: [members, page, limit, total], forbiddenKeys: []}
       classification: must-pass
       provenance: {source: requirement, ref: "member response retains concrete LocalSessionRow values"}
@@ -131,7 +131,7 @@ validation:
       provenance: {source: boundary, ref: "list validator traverses rows"}
       mutation: {description: "places one negative count inside a grouped list row"}
     - name: invalid-nested-member-row
-      input: {kind: members, json: '{"members":[{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}],"page":1,"limit":1,"total":1}' }
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}}],"page":1,"limit":1,"total":1}' }
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: "member validator traverses rows"}

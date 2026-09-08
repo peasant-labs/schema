@@ -570,6 +570,10 @@ types:
     component: VillageErrorResponse
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageGitHubWebhookPayload, disposition: catalog, component: VillageGitHubWebhookPayload, reason: pull request attachment contract}
+  - go_name: VillageGroupDetailRecord
+    disposition: catalog
+    component: VillageGroupDetailRecord
+    reason: Compatible collective detail read projection with optional source-backed prompts settings.
   - go_name: VillageGroup
     disposition: catalog
     component: VillageGroup

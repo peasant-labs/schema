@@ -1681,6 +1681,8 @@ components:
         groupId:
           type: string
         helperThreadCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         memberScope:
           type: string
@@ -1775,14 +1777,33 @@ components:
     SchemaLocalHelperMembersPayload:
       properties:
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         members:
           items:
-            $ref: '#/components/schemas/SchemaLocalSessionRow'
+            allOf:
+            - $ref: '#/components/schemas/SchemaLocalSessionListItem'
+            - properties:
+                context:
+                  type: "null"
+                kind:
+                  enum:
+                  - transcript
+                  type: string
+                transcript:
+                  $ref: '#/components/schemas/SchemaLocalSessionRow'
+              required:
+              - transcript
+              type: object
           type: array
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - members
@@ -1812,18 +1833,28 @@ components:
     SchemaLocalSessionListPayload:
       properties:
         helperThreadTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         items:
           items:
             $ref: '#/components/schemas/SchemaLocalSessionListItem'
           type: array
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         ordinarySessionTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         totalItems:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - items

@@ -855,6 +855,13 @@ export interface components {
         SchemaChildSessionRef: Schema.ChildSessionRef;
         SchemaCommandInvocation: Schema.CommandInvocation;
         /**
+         * Content Kind
+         * @description Payload kind carried by a transcript content envelope
+         * @example session_detail
+         * @enum {string}
+         */
+        SchemaContentKind: Schema.ContentKind;
+        /**
          * Content Origin
          * @description Closed session graph value
          * @example submitted_input
@@ -1193,6 +1200,7 @@ export interface components {
          * @enum {string}
          */
         SchemaToolCallKind: Schema.ToolCallKind;
+        SchemaTranscriptContent: Schema.TranscriptContent;
         /**
          * Transcript Content Hash
          * @description SHA3-256 digest of the exact transcript file bytes
@@ -1289,6 +1297,7 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageGroupDataAccess: Schema.VillageGroupDataAccess;
+        SchemaVillageGroupDetailRecord: Schema.VillageGroupDetailRecord;
         SchemaVillageGroupDetailResponse: Schema.VillageGroupDetailResponse;
         SchemaVillageGroupMember: Schema.VillageGroupMember;
         SchemaVillageGroupMemberRoleRequest: Schema.VillageGroupMemberRoleRequest;
@@ -3732,7 +3741,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSessionDetailPayload"];
+                    "application/json": components["schemas"]["SchemaTranscriptContent"];
                 };
             };
             /** @description Bad Request */

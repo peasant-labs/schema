@@ -89,7 +89,7 @@ func (SessionListItemKind) JSONSchema() (jsonschema.Schema, error) {
 type HelperGroupSummary struct {
 	GroupID           string         `json:"groupId" yaml:"groupId"`
 	Purpose           SessionPurpose `json:"purpose" yaml:"purpose"`
-	HelperThreadCount int            `json:"helperThreadCount" yaml:"helperThreadCount"`
+	HelperThreadCount int            `json:"helperThreadCount" yaml:"helperThreadCount" minimum:"0" maximum:"9007199254740991"`
 	MemberScope       string         `json:"memberScope" yaml:"memberScope"`
 }
 
@@ -100,8 +100,34 @@ func (s HelperGroupSummary) Validate() error {
 	if s.Purpose != SessionPurposeHelperReview {
 		return fmt.Errorf("helper group validation failed at schema.HelperGroupSummary.Validate: purpose %q is not helper_review; this grouped surface cannot classify the members; emit only saved helper-review groups", s.Purpose)
 	}
-	if s.HelperThreadCount < 0 {
+	if s.HelperThreadCount < 0 || int64(s.HelperThreadCount) > maxSafeJSONInteger {
 		return fmt.Errorf("helper group validation failed at schema.HelperGroupSummary.Validate: helperThreadCount is negative; saved thread identity totals cannot be represented; emit a nonnegative count")
+	}
+	return nil
+}
+
+func validateHelperGroups(groups []HelperGroupSummary) error {
+	seen := make(map[string]bool)
+	for _, group := range groups {
+		if err := group.Validate(); err != nil {
+			return err
+		}
+		if seen[group.GroupID] {
+			return fmt.Errorf("helper group validation failed at schema.validateHelperGroups during read projection: duplicate groupId; clients cannot maintain independent disclosure and paging state; emit each immediate-owner group once")
+		}
+		seen[group.GroupID] = true
+	}
+	return nil
+}
+
+func validateGroupedPagination(page, limit int, totals ...int) error {
+	if page < 1 || limit < 1 || int64(page) > maxSafeJSONInteger || int64(limit) > maxSafeJSONInteger {
+		return fmt.Errorf("grouped pagination validation failed at schema.validateGroupedPagination during read construction: page or limit is outside 1..9007199254740991; clients cannot page exactly; emit positive safe integers")
+	}
+	for _, total := range totals {
+		if total < 0 || int64(total) > maxSafeJSONInteger {
+			return fmt.Errorf("grouped pagination validation failed at schema.validateGroupedPagination during read construction: total is outside 0..9007199254740991; clients cannot preserve counts exactly; emit nonnegative safe integers")
+		}
 	}
 	return nil
 }

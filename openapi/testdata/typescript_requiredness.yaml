@@ -1,4 +1,15 @@
 cases:
+  - name: collective detail compatible group record
+    input:
+      component: VillageGroupDetailRecord
+      required: [id, name, description, created_by, created_at, updated_at, acceptance_mode, data_access, linked_github_org, display_members, transcript_deletion_policy]
+      optional: [post_prompts_check, prompts_check_mode]
+      nullable: [description, linked_github_org, post_prompts_check, prompts_check_mode]
+      nonnullable: [id, name, created_by, created_at, updated_at, acceptance_mode, data_access, display_members, transcript_deletion_policy]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: compatible collective read settings}
+    mutation: {description: preserves every released base field without fabricating unavailable prompts facts}
   - name: session detail payload
     input:
       component: SessionDetailPayload

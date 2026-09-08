@@ -100,7 +100,10 @@ func TestSessionGraphNativeAggregateBudget(t *testing.T) {
 	caseassert.RequireValid(t, c.NativeLimits)
 	for _, x := range c.NativeLimits.Cases {
 		t.Run(x.Name, func(t *testing.T) {
-			detail := SessionDetailPayload{ID: "ses_native_budget", Harness: HarnessPi, Turns: []TurnDetail{}}
+			var detail SessionDetailPayload
+			if err := json.Unmarshal([]byte(x.Input.DetailJSON), &detail); err != nil {
+				t.Fatal(err)
+			}
 			makeRecords := func(n, offset int) []NativeMetadataRecord {
 				out := make([]NativeMetadataRecord, n)
 				for i := range out {
@@ -123,14 +126,24 @@ func TestSessionGraphNativeAggregateBudget(t *testing.T) {
 					if len(data) != x.Input.DataBytes {
 						t.Fatalf("fixture recipe produced %d data bytes, want %d", len(data), x.Input.DataBytes)
 					}
-					out[i] = NativeMetadataRecord{ID: "m_" + suffix, Kind: NativeMetadataPiCustomData, Source: NativeSourceRef{EntryRef: SourceEntryRef("source_" + suffix), SourceType: NativeSourcePiCustom}, CustomType: "fixture", Data: data}
+					if err := json.Unmarshal([]byte(x.Input.RecordJSON), &out[i]); err != nil {
+						t.Fatal(err)
+					}
+					out[i].ID += suffix
+					out[i].Source.EntryRef += SourceEntryRef(suffix)
+					out[i].Data = data
 				}
 				return out
 			}
 			detail.NativeMetadata = makeRecords(x.Input.MainRecords, 0)
 			offset := x.Input.MainRecords
 			for _, count := range x.Input.EarlierRecords {
-				detail.EarlierHistory = append(detail.EarlierHistory, EarlierHistorySection{State: EarlierHistoryUncertainMigrated, Turns: []TurnDetail{}, NativeMetadata: makeRecords(count, offset)})
+				var section EarlierHistorySection
+				if err := json.Unmarshal([]byte(x.Input.SectionJSON), &section); err != nil {
+					t.Fatal(err)
+				}
+				section.NativeMetadata = makeRecords(count, offset)
+				detail.EarlierHistory = append(detail.EarlierHistory, section)
 				offset += count
 			}
 			assertFixtureError(t, x.Name+" typed", x.Classification, x.Expected.ErrorContains, ValidateSessionDetailPayload(detail))

@@ -119,7 +119,7 @@ routes:
       provenance: {source: requirement, ref: village-navigation-route}
       mutation: {description: adds authorized navigation only to metadata}
     - name: durable-content
-      input: {path: "/api/v1/transcripts/{id}/content", operation_id: getTranscriptContent, grouped: SchemaSessionDetailPayload, parameters: [id]}
+      input: {path: "/api/v1/transcripts/{id}/content", operation_id: getTranscriptContent, grouped: SchemaTranscriptContent, parameters: [id]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-content-route}

@@ -156,6 +156,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageGroup", new(schema.VillageGroup)},
 		{"VillageGroupAcceptanceMode", new(schema.VillageGroupAcceptanceMode)}, {"VillageGroupContributor", new(schema.VillageGroupContributor)},
 		{"VillageGroupDataAccess", new(schema.VillageGroupDataAccess)}, {"VillageGroupDetailResponse", new(schema.VillageGroupDetailResponse)},
+		{"VillageGroupDetailRecord", new(schema.VillageGroupDetailRecord)},
 		{"VillageGroupMember", new(schema.VillageGroupMember)}, {"VillageGroupMemberRoleRequest", new(schema.VillageGroupMemberRoleRequest)},
 		{"VillageGroupMemberUsernameRequest", new(schema.VillageGroupMemberUsernameRequest)}, {"VillageGroupModelBreakdown", new(schema.VillageGroupModelBreakdown)},
 		{"VillageGroupRole", new(schema.VillageGroupRole)}, {"VillageGroupStatusRoleResponse", new(schema.VillageGroupStatusRoleResponse)},
@@ -265,8 +266,34 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	if err := applyAnnotationPushIngressConstraints(r.Spec); err != nil {
 		return nil, err
 	}
+	if err := constrainHelperMemberItems(r.SpecEns().ComponentsEns().Schemas); err != nil {
+		return nil, err
+	}
 
 	return r.Spec, nil
+}
+
+// A member is the transcript arm of the existing display item, not a second
+// row definition. Keeping the reference here preserves nested helper groups
+// and route-specific rows in every generated API surface.
+func constrainHelperMemberItems(components map[string]map[string]interface{}) error {
+	for _, name := range []string{"LocalHelperMembersPayload", "VillageHelperMembersPayload"} {
+		properties, _ := components[name]["properties"].(map[string]interface{})
+		members, _ := properties["members"].(map[string]interface{})
+		item, ok := members["items"].(map[string]interface{})
+		if !ok || item["$ref"] == nil {
+			return fmt.Errorf("helper member OpenAPI generation failed at %s.members: canonical list item reference is missing; the member contract cannot preserve nested groups; restore the source member array type before generation", name)
+		}
+		members["items"] = map[string]interface{}{"allOf": []interface{}{item, map[string]interface{}{
+			"type": "object", "required": []interface{}{"transcript"},
+			"properties": map[string]interface{}{
+				"kind":       map[string]interface{}{"type": "string", "enum": []interface{}{"transcript"}},
+				"transcript": map[string]interface{}{"$ref": "#/components/schemas/" + strings.TrimSuffix(name, "HelperMembersPayload") + "SessionRow"},
+				"context":    map[string]interface{}{"type": "null"},
+			},
+		}}}
+	}
+	return nil
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical

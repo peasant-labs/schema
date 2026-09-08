@@ -2572,6 +2572,8 @@ components:
         groupId:
           type: string
         helperThreadCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         memberScope:
           type: string
@@ -2699,14 +2701,33 @@ components:
     LocalHelperMembersPayload:
       properties:
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         members:
           items:
-            $ref: '#/components/schemas/LocalSessionRow'
+            allOf:
+            - $ref: '#/components/schemas/LocalSessionListItem'
+            - properties:
+                context:
+                  type: "null"
+                kind:
+                  enum:
+                  - transcript
+                  type: string
+                transcript:
+                  $ref: '#/components/schemas/LocalSessionRow'
+              required:
+              - transcript
+              type: object
           type: array
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - members
@@ -2736,18 +2757,28 @@ components:
     LocalSessionListPayload:
       properties:
         helperThreadTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         items:
           items:
             $ref: '#/components/schemas/LocalSessionListItem'
           type: array
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         ordinarySessionTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         totalItems:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - items
@@ -6395,6 +6426,63 @@ components:
       - public
       title: Village Group Data Access
       type: string
+    VillageGroupDetailRecord:
+      properties:
+        acceptance_mode:
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
+        created_at:
+          format: date-time
+          type: string
+        created_by:
+          $ref: '#/components/schemas/VillageUUID'
+        data_access:
+          $ref: '#/components/schemas/VillageGroupDataAccess'
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        display_members:
+          type: boolean
+        id:
+          $ref: '#/components/schemas/VillageUUID'
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+        post_prompts_check:
+          anyOf:
+          - type:
+            - "null"
+            - boolean
+          - type: "null"
+        prompts_check_mode:
+          anyOf:
+          - $ref: '#/components/schemas/VillagePromptsCheckMode'
+          - type: "null"
+        transcript_deletion_policy:
+          $ref: '#/components/schemas/VillageTranscriptDeletionPolicy'
+        updated_at:
+          format: date-time
+          type: string
+      required:
+      - id
+      - name
+      - description
+      - created_by
+      - created_at
+      - updated_at
+      - acceptance_mode
+      - data_access
+      - linked_github_org
+      - display_members
+      - transcript_deletion_policy
+      type: object
     VillageGroupDetailResponse:
       properties:
         can_read:
@@ -6404,7 +6492,7 @@ components:
             $ref: '#/components/schemas/VillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/VillageGroup'
+          $ref: '#/components/schemas/VillageGroupDetailRecord'
         members:
           items:
             $ref: '#/components/schemas/VillageGroupMember'
@@ -7015,7 +7103,7 @@ components:
             $ref: '#/components/schemas/VillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/VillageGroup'
+          $ref: '#/components/schemas/VillageGroupDetailRecord'
         members:
           items:
             $ref: '#/components/schemas/VillageGroupMember'
@@ -7047,14 +7135,33 @@ components:
     VillageHelperMembersPayload:
       properties:
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         members:
           items:
-            $ref: '#/components/schemas/VillageSessionRow'
+            allOf:
+            - $ref: '#/components/schemas/VillageSessionListItem'
+            - properties:
+                context:
+                  type: "null"
+                kind:
+                  enum:
+                  - transcript
+                  type: string
+                transcript:
+                  $ref: '#/components/schemas/VillageSessionRow'
+              required:
+              - transcript
+              type: object
           type: array
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - members
@@ -7624,18 +7731,28 @@ components:
     VillageSessionListPayload:
       properties:
         helperThreadTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         items:
           items:
             $ref: '#/components/schemas/VillageSessionListItem'
           type: array
         limit:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         ordinarySessionTotal:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
           type: integer
         totalItems:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - items

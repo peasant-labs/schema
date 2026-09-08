@@ -1383,7 +1383,10 @@ export type RelationshipNavigationStatus = z.infer<typeof zRelationshipNavigatio
 export const zHelperContextSummary = z.object({
     groupId: z.string(),
     ownerStatus: zRelationshipNavigationStatus
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zHelperContextSummary during grouped read validation: " + reason });
+    if (value.groupId === "") fail("context groupId must identify its scoped group; refresh the original list");
+  });
 
 export type HelperContextSummary = z.infer<typeof zHelperContextSummary>;
 
@@ -1775,10 +1778,13 @@ export type SessionPurpose = z.infer<typeof zSessionPurpose>;
 
 export const zHelperGroupSummary = z.object({
     groupId: z.string(),
-    helperThreadCount: z.int(),
+    helperThreadCount: z.int().gte(0).lte(9007199254740991),
     memberScope: z.string(),
     purpose: zSessionPurpose
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zHelperGroupSummary during grouped read validation: " + reason });
+    if (value.groupId === "" || value.memberScope === "" || value.purpose !== "helper_review") fail("groupId/memberScope must identify an immediate helper_review group; refresh the original scoped list");
+  });
 
 export type HelperGroupSummary = z.infer<typeof zHelperGroupSummary>;
 
@@ -1911,35 +1917,71 @@ export const zLocalSessionRow = z.object({
     matches: z.array(zSearchResult).optional(),
     session: zSessionSummary,
     sync: zLocalSyncSummary.nullish()
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionRow during grouped read validation: " + reason });
+    if (value.session.id === "") fail("session.id is empty; provide the saved transcript identity");
+    if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
+    if (value.sync) {
+      const s = value.session, v = value.sync;
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount) fail("sync identity or count mirrors disagree; derive both from the same row");
+    }
+    if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");
+  });
 
 export type LocalSessionRow = z.infer<typeof zLocalSessionRow>;
-
-export const zLocalHelperMembersPayload = z.object({
-    limit: z.int(),
-    members: z.array(zLocalSessionRow),
-    page: z.int(),
-    total: z.int()
-});
-
-export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayload>;
 
 export const zLocalSessionListItem = z.object({
     context: zHelperContextSummary.nullish(),
     helperGroups: z.array(zHelperGroupSummary).optional(),
     kind: zSessionListItemKind,
     transcript: zLocalSessionRow.nullish()
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionListItem during grouped read validation: " + reason });
+    if ((value.kind === "transcript") !== (value.transcript != null) || (value.kind === "context_container") !== (value.context != null)) fail("kind must select exactly one matching transcript/context arm; omit the other arm");
+      const groups = new Set<string>();
+      for (const group of value.helperGroups ?? []) {
+        if (groups.has(group.groupId)) fail("duplicate groupId prevents independent paging; emit each immediate group once");
+        groups.add(group.groupId);
+      }
+  });
 
 export type LocalSessionListItem = z.infer<typeof zLocalSessionListItem>;
 
+export const zLocalHelperMembersPayload = z.object({
+    limit: z.int().gte(1).lte(9007199254740991),
+    members: z.array(zLocalSessionListItem.and(z.object({
+        context: z.null().optional(),
+        kind: z.enum(['transcript']).optional(),
+        transcript: zLocalSessionRow
+    }))),
+    page: z.int().gte(1).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991)
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalHelperMembersPayload during grouped read validation: " + reason });
+    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+      const ids = new Set<string>();
+      const groups = new Set<string>();
+      for (const member of value.members) {
+        if (member.kind !== "transcript" || member.transcript == null || member.context != null) { fail("members must be transcript items, never context containers; preserve nested groups on the item"); continue; }
+        const id = member.transcript.session.id;
+        if (ids.has(id)) fail("duplicate member identity would double count a saved helper; emit each transcript once");
+        ids.add(id);
+        for (const group of member.helperGroups ?? []) {
+          if (groups.has(group.groupId)) fail("groupId appears under multiple members; emit each immediate-owner group once");
+          groups.add(group.groupId);
+        }
+      }
+  });
+
+export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayload>;
+
 export const zLocalSessionListPayload = z.object({
-    helperThreadTotal: z.int(),
+    helperThreadTotal: z.int().gte(0).lte(9007199254740991),
     items: z.array(zLocalSessionListItem),
-    limit: z.int(),
-    ordinarySessionTotal: z.int(),
-    page: z.int(),
-    totalItems: z.int()
+    limit: z.int().gte(1).lte(9007199254740991),
+    ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
+    page: z.int().gte(1).lte(9007199254740991),
+    totalItems: z.int().gte(0).lte(9007199254740991)
 });
 
 export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
@@ -3431,6 +3473,24 @@ export const zVillageGroupContributor = z.object({
 
 export type VillageGroupContributor = z.infer<typeof zVillageGroupContributor>;
 
+export const zVillageGroupDetailRecord = z.object({
+    acceptance_mode: zVillageGroupAcceptanceMode,
+    created_at: z.iso.datetime(),
+    created_by: zVillageUUID,
+    data_access: zVillageGroupDataAccess,
+    description: z.string().nullable(),
+    display_members: z.boolean(),
+    id: zVillageUUID,
+    linked_github_org: z.string().nullable(),
+    name: z.string(),
+    post_prompts_check: z.boolean().nullish(),
+    prompts_check_mode: zVillagePromptsCheckMode.nullish(),
+    transcript_deletion_policy: zVillageTranscriptDeletionPolicy,
+    updated_at: z.iso.datetime()
+});
+
+export type VillageGroupDetailRecord = z.infer<typeof zVillageGroupDetailRecord>;
+
 export const zVillageGroupMember = z.object({
     avatar_url: z.string().nullable(),
     display_name: z.string().nullable(),
@@ -3523,7 +3583,7 @@ export type VillageGroupTranscript = z.infer<typeof zVillageGroupTranscript>;
 export const zVillageGroupDetailResponse = z.object({
     can_read: z.boolean(),
     contributors: z.array(zVillageGroupContributor),
-    group: zVillageGroup,
+    group: zVillageGroupDetailRecord,
     members: z.array(zVillageGroupMember),
     models: z.array(zVillageGroupModelBreakdown),
     pending_members: z.array(zVillageGroupMember).optional(),
@@ -3870,35 +3930,83 @@ export const zVillageSessionRow = z.object({
     myShare: zVillageUserGroupShare.nullish(),
     pending: zVillagePendingShare.nullish(),
     session: zVillageTranscript
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionRow during grouped read validation: " + reason });
+    const s = value.session;
+    const arms = [value.collective, value.pending, value.myShare, value.contributable].filter(v => v != null);
+    if (arms.length > 1) fail("multiple route arms supplied; retain the originating route only");
+    const equal = (a: unknown, b: unknown): boolean => {
+      if (a === b) return true;
+      if (a === null || b === null || typeof a !== "object" || typeof b !== "object") return false;
+      const left = a as Record<string, unknown>, right = b as Record<string, unknown>;
+      return Object.keys(left).length === Object.keys(right).length && Object.keys(left).every(k => Object.hasOwn(right, k) && equal(left[k], right[k]));
+    };
+    const check = (v: unknown, keys: string[], aliases: Record<string, string> = {}) => {
+      if (v == null) return;
+      const row = v as Record<string, unknown>, session = s as unknown as Record<string, unknown>;
+      for (const key of keys) if (!equal(row[key], session[aliases[key] ?? key])) fail("route identity or metric mirrors disagree; derive both from the same row");
+    };
+    const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
+    check(value.collective, [...graph, "id", "owner_id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    check(value.pending, [...graph, "transcript_id", "owner_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
+    check(value.myShare, [...graph, "id", "owner_id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
+  });
 
 export type VillageSessionRow = z.infer<typeof zVillageSessionRow>;
-
-export const zVillageHelperMembersPayload = z.object({
-    limit: z.int(),
-    members: z.array(zVillageSessionRow),
-    page: z.int(),
-    total: z.int()
-});
-
-export type VillageHelperMembersPayload = z.infer<typeof zVillageHelperMembersPayload>;
 
 export const zVillageSessionListItem = z.object({
     context: zHelperContextSummary.nullish(),
     helperGroups: z.array(zHelperGroupSummary).optional(),
     kind: zSessionListItemKind,
     transcript: zVillageSessionRow.nullish()
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionListItem during grouped read validation: " + reason });
+    if ((value.kind === "transcript") !== (value.transcript != null) || (value.kind === "context_container") !== (value.context != null)) fail("kind must select exactly one matching transcript/context arm; omit the other arm");
+      const groups = new Set<string>();
+      for (const group of value.helperGroups ?? []) {
+        if (groups.has(group.groupId)) fail("duplicate groupId prevents independent paging; emit each immediate group once");
+        groups.add(group.groupId);
+      }
+  });
 
 export type VillageSessionListItem = z.infer<typeof zVillageSessionListItem>;
 
+export const zVillageHelperMembersPayload = z.object({
+    limit: z.int().gte(1).lte(9007199254740991),
+    members: z.array(zVillageSessionListItem.and(z.object({
+        context: z.null().optional(),
+        kind: z.enum(['transcript']).optional(),
+        transcript: zVillageSessionRow
+    }))),
+    page: z.int().gte(1).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991)
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageHelperMembersPayload during grouped read validation: " + reason });
+    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+      const ids = new Set<string>();
+      const groups = new Set<string>();
+      for (const member of value.members) {
+        if (member.kind !== "transcript" || member.transcript == null || member.context != null) { fail("members must be transcript items, never context containers; preserve nested groups on the item"); continue; }
+        const id = member.transcript.session.id;
+        if (ids.has(id)) fail("duplicate member identity would double count a saved helper; emit each transcript once");
+        ids.add(id);
+        for (const group of member.helperGroups ?? []) {
+          if (groups.has(group.groupId)) fail("groupId appears under multiple members; emit each immediate-owner group once");
+          groups.add(group.groupId);
+        }
+      }
+  });
+
+export type VillageHelperMembersPayload = z.infer<typeof zVillageHelperMembersPayload>;
+
 export const zVillageSessionListPayload = z.object({
-    helperThreadTotal: z.int(),
+    helperThreadTotal: z.int().gte(0).lte(9007199254740991),
     items: z.array(zVillageSessionListItem),
-    limit: z.int(),
-    ordinarySessionTotal: z.int(),
-    page: z.int(),
-    totalItems: z.int()
+    limit: z.int().gte(1).lte(9007199254740991),
+    ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
+    page: z.int().gte(1).lte(9007199254740991),
+    totalItems: z.int().gte(0).lte(9007199254740991)
 });
 
 export type VillageSessionListPayload = z.infer<typeof zVillageSessionListPayload>;
@@ -3913,7 +4021,7 @@ export type VillageGroupedContributableResponse = z.infer<typeof zVillageGrouped
 export const zVillageGroupedGroupDetailResponse = z.object({
     can_read: z.boolean(),
     contributors: z.array(zVillageGroupContributor),
-    group: zVillageGroup,
+    group: zVillageGroupDetailRecord,
     members: z.array(zVillageGroupMember),
     models: z.array(zVillageGroupModelBreakdown),
     pending_members: z.array(zVillageGroupMember).optional(),

@@ -2553,6 +2553,8 @@
             "type": "string"
           },
           "helperThreadCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "memberScope": {
@@ -2681,18 +2683,48 @@
       "SchemaLocalHelperMembersPayload": {
         "properties": {
           "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "members": {
             "items": {
-              "$ref": "#/components/schemas/SchemaLocalSessionRow"
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/SchemaLocalSessionListItem"
+                },
+                {
+                  "properties": {
+                    "context": {
+                      "type": "null"
+                    },
+                    "kind": {
+                      "enum": [
+                        "transcript"
+                      ],
+                      "type": "string"
+                    },
+                    "transcript": {
+                      "$ref": "#/components/schemas/SchemaLocalSessionRow"
+                    }
+                  },
+                  "required": [
+                    "transcript"
+                  ],
+                  "type": "object"
+                }
+              ]
             },
             "type": "array"
           },
           "page": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -2744,6 +2776,8 @@
       "SchemaLocalSessionListPayload": {
         "properties": {
           "helperThreadTotal": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "items": {
@@ -2753,15 +2787,23 @@
             "type": "array"
           },
           "limit": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "ordinarySessionTotal": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "page": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
             "type": "integer"
           },
           "totalItems": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },

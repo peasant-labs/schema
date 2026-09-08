@@ -25,9 +25,12 @@ type SessionGraphRawExpected struct {
 	ErrorContains string `yaml:"error_contains,omitempty"`
 }
 type NativeLimitInput struct {
-	MainRecords    int   `yaml:"main_records"`
-	EarlierRecords []int `yaml:"earlier_records"`
-	DataBytes      int   `yaml:"data_bytes"`
+	MainRecords    int    `yaml:"main_records"`
+	EarlierRecords []int  `yaml:"earlier_records"`
+	DataBytes      int    `yaml:"data_bytes"`
+	DetailJSON     string `yaml:"detail_json"`
+	RecordJSON     string `yaml:"record_json"`
+	SectionJSON    string `yaml:"section_json"`
 }
 type SessionGraphRefInput struct {
 	Alias       string `yaml:"alias"`

@@ -71,11 +71,30 @@ try {
   const probe = [
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
+    `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,
     ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
     `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
     `if (typeof ${schemaExportName}.safeParse !== "function") throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${schemaExportName} is not a Zod schema`)});`,
     `for (const validator of [zPublicRevisionRef, zSourceEntryRef, zSubmissionRef]) { if (!validator.safeParse("界".repeat(32)).success || validator.safeParse("界".repeat(32) + "a").success) throw new TypeError("packed public reference validator does not enforce the 96-byte UTF-8 boundary"); }`,
     `const countCase = sessionGraphCapabilityFixtures().derivation.cases.find((row) => row.name === "count-only-zero"); if (countCase === undefined || requiredContentCapabilities(parseSessionDetailPayloadText(countCase.input.detailJSON))[0] !== "session_graph_provenance_v1") throw new TypeError("packed capability fixtures and runtime derivation are incoherent");`,
+    `for (const row of sessionGraphFixtures().grouped_read.cases.cases) { const result = publicSchema["z" + row.input.schema].safeParse(row.input.payload); if (result.success !== row.expected.valid) throw new TypeError("packed grouped read validator differs for " + row.name + ": " + result.error); }`,
+    `for (const row of sessionGraphFixtures().raw_durable.cases) {
+      const detail = JSON.parse(row.input.rawJSON);
+      const calls = [
+        () => publicSchema.parseSessionDetailPayloadText(row.input.rawJSON),
+        () => publicSchema.parseTranscriptContentText(JSON.stringify({kind: "session_detail", contractVersion: "1", sessionDetail: detail})).sessionDetail,
+        () => publicSchema.parseServerMessageRaw(JSON.stringify({type: "session_detail", data: detail})).data,
+      ];
+      const results = [];
+      for (const [index, call] of calls.entries()) {
+        let value, error; try { value = call(); } catch (caught) { error = caught; }
+        const valid = row.classification === "must-pass" || (index === 2 && row.name === "raw-forbidden-relationship-navigation");
+        if ((error === undefined) !== valid) throw new TypeError("packed raw parser boundary differs for " + row.name + " at exit " + index + ": " + error);
+        results.push(value);
+      }
+      if (row.classification === "must-pass" && results.some(result => JSON.stringify(result) !== JSON.stringify(results[0]))) throw new TypeError("packed parsers return different normalized evidence for " + row.name);
+    }`,
   ].join("\n");
   await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
   execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });

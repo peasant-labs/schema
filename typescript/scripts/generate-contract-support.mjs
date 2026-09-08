@@ -11,6 +11,7 @@ import { applyAssociationZodRefinements } from "./lib/association-zod-refinement
 import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinements.mjs";
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
+import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -32,7 +33,8 @@ const contentCapabilityCatalog = parse(await readFile(join(moduleRoot, "testdata
 const contentCapabilitySource = await readFile(join(moduleRoot, "content_capability.go"), "utf8");
 const qualitySource = parse(await readFile(join(moduleRoot, "testdata", "quality", "sessions.yaml"), "utf8"));
 const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-api", "timeline.yaml"), "utf8"));
-const sessionGraphSource = parse(await readFile(join(moduleRoot, "testdata", "session_graph_provenance.yaml"), "utf8"));
+const sessionGraphSource = parse(await readFile(join(moduleRoot, "testdata", "session_graph_provenance.yaml"), "utf8"), { merge: true });
+const groupedReadSource = parse(await readFile(join(moduleRoot, "testdata", "grouped_read_boundaries.yaml"), "utf8"), { merge: true });
 const sessionGraphCapabilitySource = parse(await readFile(join(moduleRoot, "testdata", "content_capability_session_graph.yaml"), "utf8"));
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
@@ -44,7 +46,7 @@ await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderConten
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
-await writeFile(join(generatedRoot, "session-graph-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphFixtures", sessionGraphSource));
+await writeFile(join(generatedRoot, "session-graph-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphFixtures", { ...sessionGraphSource, grouped_read: groupedReadSource }));
 await writeFile(join(generatedRoot, "session-graph-capability-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphCapabilityFixtures", sessionGraphCapabilitySource));
 await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
 await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
@@ -53,7 +55,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
   const source = await readFile(zodPath, "utf8");
-  await writeFile(zodPath, applyPublicRefZodRefinements(applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))));
+  await writeFile(zodPath, applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))));
 }
 
 function renderVersions(values) {

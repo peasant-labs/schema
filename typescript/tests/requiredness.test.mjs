@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { parse } from "yaml";
 
 import { Classification, loadCorpus } from "../dist/testcase.js";
 import * as schema from "../dist/index.js";
@@ -23,7 +24,10 @@ const fixture = loadCorpus(fixtureSource, {
   },
 });
 
-assert.equal(fixture.cases.length, 16, "requiredness fixture must retain its sixteen representative structures");
+const manifest = parse(await readFile(new URL("../../openapi/testdata/typescript_requiredness_names.yaml", import.meta.url), "utf8"));
+const names = requireNameList(requireRecord(manifest, "requiredness manifest", ["required_names"]).required_names, "required_names");
+assert.ok(names.length > 0, "requiredness manifest must name the representative structures");
+assert.deepEqual(new Set(fixture.cases.map(row => row.name)), new Set(names), "requiredness fixture must retain every named representative structure");
 
 test("built root Zod schemas preserve the shared listed-property requiredness corpus", async (t) => {
   for (const testCase of fixture.cases) {
