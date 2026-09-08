@@ -72,13 +72,9 @@ func requireCorpusNames[I any, E any](t *testing.T, arm string, required []strin
 	}
 }
 
-func compileVillageContractLocation(t *testing.T, location string) *jsonschema.Schema {
+func compileContractLocation(t *testing.T, documentSource any, location string) *jsonschema.Schema {
 	t.Helper()
-	spec, err := schemaopenapi.BuildVillageAPISpec()
-	if err != nil {
-		t.Fatal(err)
-	}
-	document, err := json.Marshal(spec)
+	document, err := json.Marshal(documentSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,6 +97,15 @@ func compileVillageContractLocation(t *testing.T, location string) *jsonschema.S
 		t.Fatal(err)
 	}
 	return validator
+}
+
+func compileVillageContractLocation(t *testing.T, location string) *jsonschema.Schema {
+	t.Helper()
+	spec, err := schemaopenapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return compileContractLocation(t, spec, location)
 }
 
 func validateFixtureJSON(t *testing.T, validator *jsonschema.Schema, corpus testcase.Corpus[string, bool]) {
@@ -132,8 +137,14 @@ func wrapFacetArrays(corpus testcase.Corpus[string, bool]) testcase.Corpus[strin
 
 func TestVillageDiscoveryEnvelopeFixtures(t *testing.T) {
 	fixtures := loadBrowserDiscoveryFixtures(t)
-	validator := compileVillageContractLocation(t, "#/paths/~1api~1v1~1transcripts/get/responses/200/content/application~1json/schema")
-	validateFixtureJSON(t, validator, fixtures.EnvelopeCases)
+	operationValidator := compileVillageContractLocation(t, "#/paths/~1api~1v1~1transcripts/get/responses/200/content/application~1json/schema")
+	typesSpec, err := schemaopenapi.BuildTypesSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalogValidator := compileContractLocation(t, typesSpec, "#/components/schemas/VillageDiscoveryResponse")
+	validateFixtureJSON(t, operationValidator, fixtures.EnvelopeCases)
+	validateFixtureJSON(t, catalogValidator, fixtures.EnvelopeCases)
 	for _, tc := range fixtures.EnvelopeCases.Cases {
 		if !tc.Expected {
 			continue
@@ -141,6 +152,26 @@ func TestVillageDiscoveryEnvelopeFixtures(t *testing.T) {
 		var decoded schema.VillageDiscoveryResponse
 		if err := json.Unmarshal([]byte(tc.Input), &decoded); err != nil {
 			t.Fatalf("%s: typed decode: %v", tc.Name, err)
+		}
+		reencoded, err := json.Marshal(decoded)
+		if err != nil {
+			t.Fatalf("%s: typed re-encode: %v", tc.Name, err)
+		}
+		var originalJSON, reencodedJSON any
+		if err := json.Unmarshal([]byte(tc.Input), &originalJSON); err != nil {
+			t.Fatalf("%s: decode original semantic JSON: %v", tc.Name, err)
+		}
+		if err := json.Unmarshal(reencoded, &reencodedJSON); err != nil {
+			t.Fatalf("%s: decode re-encoded semantic JSON: %v", tc.Name, err)
+		}
+		if !reflect.DeepEqual(originalJSON, reencodedJSON) {
+			t.Errorf("%s: typed round trip changed semantic JSON\noriginal: %s\nre-encoded: %s", tc.Name, tc.Input, reencoded)
+		}
+		if err := operationValidator.Validate(reencodedJSON); err != nil {
+			t.Errorf("%s: typed re-encoding violates registered operation: %v", tc.Name, err)
+		}
+		if err := catalogValidator.Validate(reencodedJSON); err != nil {
+			t.Errorf("%s: typed re-encoding violates Types catalog: %v", tc.Name, err)
 		}
 		if len(decoded.Transcripts) != 1 || len(decoded.HarnessFacets) != 1 {
 			t.Fatalf("%s: typed envelope lost wrapped transcript or facet", tc.Name)
