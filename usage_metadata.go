@@ -986,6 +986,9 @@ func validateRawTurnGraph(raw json.RawMessage, path string) error {
 		if json.Unmarshal(item, &turn) != nil {
 			continue
 		}
+		if err := rejectForbiddenGraphFields(turn, path+fmt.Sprintf("/%d", i)); err != nil {
+			return err
+		}
 		if p, ok := turn["provenance"]; ok && !isNullRaw(p) {
 			if _, err := strictGraphObject(p, path+fmt.Sprintf("/%d/provenance", i), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
 				return err
@@ -998,6 +1001,9 @@ func validateRawTurnGraph(raw json.RawMessage, path string) error {
 				if json.Unmarshal(toolRaw, &tool) != nil {
 					continue
 				}
+				if err := rejectForbiddenGraphFields(tool, path+fmt.Sprintf("/%d/toolCalls/%d", i, j)); err != nil {
+					return err
+				}
 				for _, name := range []string{"callProvenance", "resultProvenance"} {
 					if p, ok := tool[name]; ok && !isNullRaw(p) {
 						if _, err := strictGraphObject(p, path+fmt.Sprintf("/%d/toolCalls/%d/%s", i, j, name), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
@@ -1006,6 +1012,15 @@ func validateRawTurnGraph(raw json.RawMessage, path string) error {
 					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func rejectForbiddenGraphFields(fields map[string]json.RawMessage, path string) error {
+	for _, name := range []string{"relationshipNavigation", "status", "transcriptId", "label", "cooked", "collapsed", "url", "resolved", "detail"} {
+		if _, exists := fields[name]; exists {
+			return fmt.Errorf("session graph raw validation failed at schema decoder during pre-decode validation of %s: forbidden read-only or cooked field %q is present; typed decoding would silently discard authorization or presentation state; remove the field before publication", path, name)
 		}
 	}
 	return nil

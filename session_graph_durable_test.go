@@ -52,6 +52,46 @@ func requireDurableFixtures(t *testing.T) schema.DurableGraphFixtures {
 	return fx
 }
 
+func TestAuthoritativeGraphFieldsRejectReadStateBeforeDecode(t *testing.T) {
+	fx, err := schema.LoadSessionGraphFixtures()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.RequireMin(t, fx.AuthoritativeRaw, 2)
+	assert.RequireValid(t, fx.AuthoritativeRaw)
+	for _, c := range fx.AuthoritativeRaw.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			request := validPublishRequest()
+			request.Entries = []schema.AuthoritativeSessionEntry{{SessionID: "ses_digest", EntryIndex: 0, Harness: schema.HarnessClaudeCode, EntryType: schema.EntryTypeText, Role: schema.RoleAssistant}}
+			raw, err := json.Marshal(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var root map[string]json.RawMessage
+			if json.Unmarshal(raw, &root) != nil {
+				t.Fatal("decode request")
+			}
+			var entries []map[string]json.RawMessage
+			if json.Unmarshal(root["entries"], &entries) != nil || len(entries) == 0 {
+				t.Fatal("valid request has no entry")
+			}
+			var mutation map[string]json.RawMessage
+			if json.Unmarshal([]byte(c.Input.RawJSON), &mutation) != nil {
+				t.Fatal("decode fixture mutation")
+			}
+			for key, value := range mutation {
+				entries[0][key] = value
+			}
+			root["entries"], _ = json.Marshal(entries)
+			raw, _ = json.Marshal(root)
+			_, err = schema.DecodeAuthoritativePublishMetadataRaw(raw)
+			if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+				t.Fatalf("error=%v, want containing %q", err, c.Expected.ErrorContains)
+			}
+		})
+	}
+}
+
 func TestDurableGraphRoundTrip(t *testing.T) {
 	fx := requireDurableFixtures(t)
 	for _, row := range fx.RoundTrip.Cases {

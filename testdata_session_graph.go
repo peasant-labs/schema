@@ -25,9 +25,9 @@ type SessionGraphRawExpected struct {
 	ErrorContains string `yaml:"error_contains,omitempty"`
 }
 type NativeLimitInput struct {
-	MainRecords    int `yaml:"main_records"`
-	EarlierRecords int `yaml:"earlier_records"`
-	DataBytes      int `yaml:"data_bytes"`
+	MainRecords    int   `yaml:"main_records"`
+	EarlierRecords []int `yaml:"earlier_records"`
+	DataBytes      int   `yaml:"data_bytes"`
 }
 type SessionGraphRefInput struct {
 	Alias       string `yaml:"alias"`
@@ -44,23 +44,26 @@ type SessionGraphEnumInput struct {
 	Unknown string   `yaml:"unknown"`
 }
 type SessionGraphFixtureCorpus struct {
-	Durable            DurableGraphFixtures                                                        `yaml:"durable"`
-	Refs               testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
-	Enums              testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`
-	Relationships      testcase.Corpus[SessionRelationship, SessionGraphFixtureExpected]           `yaml:"relationships"`
-	RelationshipSets   testcase.Corpus[SessionRelationshipsInput, SessionGraphFixtureExpected]     `yaml:"relationship_sets"`
-	Provenance         testcase.Corpus[ContentProvenance, SessionGraphFixtureExpected]             `yaml:"provenance"`
-	Navigation         testcase.Corpus[SessionRelationshipNavigation, SessionGraphFixtureExpected] `yaml:"navigation"`
-	HelperGroups       testcase.Corpus[HelperGroupSummary, SessionGraphFixtureExpected]            `yaml:"helper_groups"`
-	HelperContexts     testcase.Corpus[HelperContextSummary, SessionGraphFixtureExpected]          `yaml:"helper_contexts"`
-	EarlierHistory     testcase.Corpus[EarlierHistorySection, SessionGraphFixtureExpected]         `yaml:"earlier_history"`
-	RawRelationships   testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_relationships"`
-	RawNavigation      testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
-	Recursive          testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"recursive"`
-	RawDurable         testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"raw_durable"`
-	NativeLimits       testcase.Corpus[NativeLimitInput, SessionGraphFixtureExpected]              `yaml:"native_limits"`
-	RecursiveRequired  []string                                                                    `yaml:"recursive_required_names"`
-	RawDurableRequired []string                                                                    `yaml:"raw_durable_required_names"`
+	Durable               DurableGraphFixtures                                                        `yaml:"durable"`
+	Refs                  testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
+	Enums                 testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`
+	Relationships         testcase.Corpus[SessionRelationship, SessionGraphFixtureExpected]           `yaml:"relationships"`
+	RelationshipSets      testcase.Corpus[SessionRelationshipsInput, SessionGraphFixtureExpected]     `yaml:"relationship_sets"`
+	Provenance            testcase.Corpus[ContentProvenance, SessionGraphFixtureExpected]             `yaml:"provenance"`
+	Navigation            testcase.Corpus[SessionRelationshipNavigation, SessionGraphFixtureExpected] `yaml:"navigation"`
+	HelperGroups          testcase.Corpus[HelperGroupSummary, SessionGraphFixtureExpected]            `yaml:"helper_groups"`
+	HelperContexts        testcase.Corpus[HelperContextSummary, SessionGraphFixtureExpected]          `yaml:"helper_contexts"`
+	EarlierHistory        testcase.Corpus[EarlierHistorySection, SessionGraphFixtureExpected]         `yaml:"earlier_history"`
+	RawRelationships      testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_relationships"`
+	RawNavigation         testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
+	Recursive             testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"recursive"`
+	RawDurable            testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"raw_durable"`
+	NativeLimits          testcase.Corpus[NativeLimitInput, SessionGraphFixtureExpected]              `yaml:"native_limits"`
+	AuthoritativeRaw      testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"authoritative_raw"`
+	RecursiveRequired     []string                                                                    `yaml:"recursive_required_names"`
+	RawDurableRequired    []string                                                                    `yaml:"raw_durable_required_names"`
+	NativeLimitRequired   []string                                                                    `yaml:"native_limit_required_names"`
+	AuthoritativeRequired []string                                                                    `yaml:"authoritative_required_names"`
 }
 
 func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
@@ -95,6 +98,12 @@ func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
 	if err := validateRequiredCaseNames("raw_durable", c.RawDurable.Cases, c.RawDurableRequired); err != nil {
 		return c, err
 	}
+	if err := validateRequiredCaseNames("native_limits", c.NativeLimits.Cases, c.NativeLimitRequired); err != nil {
+		return c, err
+	}
+	if err := validateRequiredCaseNames("authoritative_raw", c.AuthoritativeRaw.Cases, c.AuthoritativeRequired); err != nil {
+		return c, err
+	}
 	return c, nil
 }
 
@@ -127,7 +136,7 @@ func validatePrimitiveFixtureArms(c SessionGraphFixtureCorpus) error {
 		name     string
 		validate func() error
 	}{
-		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate}, {"recursive", c.Recursive.Validate}, {"raw_durable", c.RawDurable.Validate}, {"native_limits", c.NativeLimits.Validate},
+		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate}, {"recursive", c.Recursive.Validate}, {"raw_durable", c.RawDurable.Validate}, {"native_limits", c.NativeLimits.Validate}, {"authoritative_raw", c.AuthoritativeRaw.Validate},
 	}
 	for _, arm := range arms {
 		if err := arm.validate(); err != nil {

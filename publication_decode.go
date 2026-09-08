@@ -269,6 +269,9 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 				if json.Unmarshal(item, &entry) != nil {
 					continue
 				}
+				if err := rejectForbiddenGraphFields(entry, fmt.Sprintf("authoritativePublishRequest/entries/%d", i)); err != nil {
+					return err
+				}
 				if p, ok := entry["provenance"]; ok && !bytes.Equal(bytes.TrimSpace(p), []byte("null")) {
 					if _, err := strictGraphObject(p, fmt.Sprintf("authoritativePublishRequest/entries/%d/provenance", i), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
 						return err

@@ -64,7 +64,7 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 	}
 	caseassert.RequireMin(t, c.Recursive, 10)
 	caseassert.RequireValid(t, c.Recursive)
-	caseassert.RequireMin(t, c.RawDurable, 11)
+	caseassert.RequireMin(t, c.RawDurable, 16)
 	caseassert.RequireValid(t, c.RawDurable)
 	for _, arm := range []struct {
 		corpus   testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]
@@ -97,17 +97,19 @@ func TestSessionGraphNativeAggregateBudget(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	caseassert.RequireMin(t, c.NativeLimits, 2)
+	caseassert.RequireMin(t, c.NativeLimits, 3)
 	caseassert.RequireValid(t, c.NativeLimits)
 	for _, x := range c.NativeLimits.Cases {
 		t.Run(x.Name, func(t *testing.T) {
-			detail := SessionDetailPayload{ID: "ses_native_budget", Harness: HarnessPi, Turns: []TurnDetail{}, EarlierHistory: []EarlierHistorySection{{State: EarlierHistoryUncertainMigrated, Turns: []TurnDetail{}}}}
+			detail := SessionDetailPayload{ID: "ses_native_budget", Harness: HarnessPi, Turns: []TurnDetail{}}
 			makeRecords := func(n, offset int) []NativeMetadataRecord {
 				out := make([]NativeMetadataRecord, n)
 				for i := range out {
 					suffix := fmt.Sprintf("%d", i+offset)
+					chunkCount := (x.Input.DataBytes + 15002) / 15003
+					contentBytes := x.Input.DataBytes - 1 - 3*chunkCount
 					chunks := []string{}
-					for remaining := x.Input.DataBytes; remaining > 0; {
+					for remaining := contentBytes; remaining > 0; {
 						size := remaining
 						if size > 15000 {
 							size = 15000
@@ -119,19 +121,30 @@ func TestSessionGraphNativeAggregateBudget(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
+					if len(data) != x.Input.DataBytes {
+						t.Fatalf("fixture recipe produced %d data bytes, want %d", len(data), x.Input.DataBytes)
+					}
 					out[i] = NativeMetadataRecord{ID: "m_" + suffix, Kind: NativeMetadataPiCustomData, Source: NativeSourceRef{EntryRef: SourceEntryRef("source_" + suffix), SourceType: NativeSourcePiCustom}, CustomType: "fixture", Data: data}
 				}
 				return out
 			}
 			detail.NativeMetadata = makeRecords(x.Input.MainRecords, 0)
-			detail.EarlierHistory[0].NativeMetadata = makeRecords(x.Input.EarlierRecords, x.Input.MainRecords)
+			offset := x.Input.MainRecords
+			for _, count := range x.Input.EarlierRecords {
+				detail.EarlierHistory = append(detail.EarlierHistory, EarlierHistorySection{State: EarlierHistoryUncertainMigrated, Turns: []TurnDetail{}, NativeMetadata: makeRecords(count, offset)})
+				offset += count
+			}
 			assertFixtureError(t, x.Name+" typed", x.Classification, x.Expected.ErrorContains, ValidateSessionDetailPayload(detail))
+			assertFixtureError(t, x.Name+" native", x.Classification, x.Expected.ErrorContains, ValidateNativeMetadata(detail))
 			raw, err := json.Marshal(detail)
 			if err != nil {
 				t.Fatal(err)
 			}
 			_, err = DecodeSessionDetailPayloadRaw(raw)
 			assertFixtureError(t, x.Name+" raw", x.Classification, x.Expected.ErrorContains, err)
+			envelope := append(append([]byte(`{"kind":"session_detail","sessionDetail":`), raw...), '}')
+			_, err = DecodeTranscriptContentRaw(envelope)
+			assertFixtureError(t, x.Name+" raw transcript", x.Classification, x.Expected.ErrorContains, err)
 		})
 	}
 }
