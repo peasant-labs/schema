@@ -68,6 +68,27 @@ func ValidatePublicationRequest(r AuthoritativePublishRequest) error {
 	if r.Identity.SchemaVersion <= 0 {
 		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: identity.schemaVersion must be positive; the server cannot classify the producer schema; send the positive source schema version")
 	}
+	if err := ValidateInputSubmissionCount(r.Stats.InputSubmissionCount, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if r.Identity.RootSessionID != nil {
+		if _, err := NewSessionID(string(*r.Identity.RootSessionID)); err != nil {
+			return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: identity.rootSessionId: %w", err)
+		}
+	}
+	if !r.Identity.Purpose.IsValid() {
+		return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: identity.purpose %q is outside its closed set; the graph cannot be classified; use a published purpose or omit it", r.Identity.Purpose)
+	}
+	if err := ValidateSessionRelationships(r.Identity.Relationships); err != nil {
+		return err
+	}
+	parent, err := durableStartedByTarget(r.Identity.Relationships)
+	if err != nil {
+		return err
+	}
+	if len(r.Identity.Relationships) > 0 && r.Identity.ParentSessionID != nil && (parent == nil || *r.Identity.ParentSessionID != *parent) {
+		return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: identity.parentSessionId disagrees with durable started_by relationship; consumers could persist conflicting parents; derive the legacy field from the durable relationship")
+	}
 	if !r.Model.Harness.IsKnown() || r.Model.Model == "" {
 		return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: model harness or model id is invalid; the server cannot classify the transcript producer; send canonical nonempty model identity")
 	}
@@ -90,6 +111,16 @@ func ValidatePublicationRequest(r AuthoritativePublishRequest) error {
 	for i, entry := range r.Entries {
 		if entry.SessionID != r.Identity.SessionID || !entry.Harness.IsKnown() || !entry.EntryType.IsValid() || !entry.Role.IsValid() || entry.EntryIndex < 0 || entry.Depth < 0 {
 			return fmt.Errorf("publish request validation failed at schema.PublishRequest.Validate during publish-request validation: entries[%d] has inconsistent identity or classification; the server cannot canonicalize the complete replacement; use the root session id and canonical nonnegative entry fields", i)
+		}
+		if entry.SourceEntryRef != "" {
+			if err := entry.SourceEntryRef.Validate(); err != nil {
+				return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: entries[%d].sourceEntryRef: %w", i, err)
+			}
+		}
+		if entry.Provenance != nil {
+			if err := entry.Provenance.Validate(); err != nil {
+				return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: entries[%d].provenance: %w", i, err)
+			}
 		}
 	}
 	for i, subagent := range r.Subagents {

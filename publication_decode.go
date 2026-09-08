@@ -17,16 +17,16 @@ var (
 	associationOperationFields = map[string]struct{}{"kind": {}, "associations": {}}
 	publishedAssociationFields = map[string]struct{}{"id": {}, "observedCommitHash": {}}
 	authoritativeRequestFields = map[string]struct{}{"identity": {}, "model": {}, "contentHash": {}, "visibilityIntent": {}, "timestamp": {}, "source": {}, "git": {}, "project": {}, "stats": {}, "quality": {}, "entries": {}, "subagents": {}, "diagnostics": {}, "license": {}}
-	identityFields             = fieldSet("sessionId", "schemaVersion", "parentSessionId")
+	identityFields             = fieldSet("sessionId", "schemaVersion", "parentSessionId", "rootSessionId", "purpose", "relationships")
 	modelFields                = fieldSet("harness", "model", "harnessVersion", "hostSlug")
 	timestampFields            = fieldSet("start", "end", "ingested")
 	sourceFields               = fieldSet("format", "filePath")
 	commitFields               = fieldSet("hash", "message", "authorName", "authorEmail", "commitTime", "authorTime")
 	requestGitFields           = fieldSet("branch", "remote", "worktree", "tracking", "commits", "associations")
 	projectFields              = fieldSet("hash", "filePath", "name")
-	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens")
+	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "inputSubmissionCount")
 	qualityFields              = fieldSet("turnCount", "subagentCount", "totalTokens", "inputTokens", "outputTokens", "toolCalls", "titleGenerated", "outcome", "filesTouched", "linesChanged", "retryLoops", "retryTokensWasted", "withinSessionReverts", "signalDensity", "specQualityScore", "explorationRatio", "scopeBreadth", "discoveryTurns", "durationMinutes", "m2TokenOutcomeRatio", "m3UniqueToolCount", "m4ErrorRecoveryCount", "m4ConsecutiveErrorMax", "m5ContextUtilizationPct", "m5PeakContextTokens", "m5AvgMessageTokens", "m6OutputSurvivalPct", "m6LinesSurvived", "m6LinesTotal", "m7SpecWordCount", "m7SpecHasExamples", "m7SpecHasConstraints", "costInputUsd", "costOutputUsd", "costReasoningUsd", "costCacheReadUsd", "costCacheWriteUsd", "costTotalUsd", "costModelId", "scope", "computedAt", "computeVersion")
-	entryFields                = fieldSet("sessionId", "entryIndex", "harness", "entryType", "role", "timestampMs", "contentPreview", "tokensIn", "tokensOut", "hasToolUse", "toolKind", "toolNamesCsv", "hasThinking", "isError", "stopReason", "rawByteLength", "toolCallId", "entryId", "parentEntryId", "depth", "parentIndex", "toolInput", "toolOutput", "extra", "partType")
+	entryFields                = fieldSet("sessionId", "entryIndex", "harness", "entryType", "role", "timestampMs", "contentPreview", "tokensIn", "tokensOut", "hasToolUse", "toolKind", "toolNamesCsv", "hasThinking", "isError", "stopReason", "rawByteLength", "toolCallId", "entryId", "parentEntryId", "depth", "parentIndex", "toolInput", "toolOutput", "extra", "partType", "sourceEntryRef", "provenance")
 	subagentFields             = fieldSet("sessionId", "parentUuid")
 	diagnosticsFields          = fieldSet("warnings", "partial")
 	diagnosticEntryFields      = fieldSet("errorType", "location", "message", "remediation")
@@ -218,6 +218,16 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		}
 		if _, err := decodeStrictObject(value, object.fields, "successor publication "+object.name); err != nil {
 			return err
+		}
+	}
+	if statsRaw, present := raw["stats"]; present && !bytes.Equal(bytes.TrimSpace(statsRaw), []byte("null")) {
+		var stats map[string]json.RawMessage
+		if err := json.Unmarshal(statsRaw, &stats); err == nil {
+			if count, exists := stats["inputSubmissionCount"]; exists {
+				if err := validateRawInputSubmissionCount(count, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	gitFields := requestGitFields

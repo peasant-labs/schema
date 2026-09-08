@@ -130,9 +130,10 @@ type TurnDetail struct {
 	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
 	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
 	// validators do not infer it from Role.
-	ObservedModel  ObservedModelID `json:"observedModel,omitempty"`
-	SourceEntryRef string          `json:"sourceEntryRef,omitempty"`
-	Usage          *UsageDetail    `json:"usage,omitempty"`
+	ObservedModel  ObservedModelID    `json:"observedModel,omitempty"`
+	SourceEntryRef SourceEntryRef     `json:"sourceEntryRef,omitempty"`
+	Provenance     *ContentProvenance `json:"provenance,omitempty"`
+	Usage          *UsageDetail       `json:"usage,omitempty"`
 
 	// Command is present when this user-role turn invoked a skill or a
 	// user-defined slash command. It is optional and safely ignorable; the
@@ -150,18 +151,20 @@ type TurnDetail struct {
 
 // ToolCallDetail is a tool call in the detail view.
 type ToolCallDetail struct {
-	ID             string       `json:"id"`
-	Name           string       `json:"name"`
-	Arguments      string       `json:"arguments"`
-	Result         string       `json:"result"`
-	DurationMs     *int         `json:"durationMs,omitempty"`
-	ExitCode       *int         `json:"exitCode,omitempty"`
-	FilePath       string       `json:"filePath,omitempty"`
-	IsError        bool         `json:"isError,omitempty"`
-	ToolKind       ToolCallKind `json:"toolKind,omitempty"`
-	CallEntryRef   string       `json:"callEntryRef,omitempty"`
-	ResultEntryRef string       `json:"resultEntryRef,omitempty"`
-	Usage          *UsageDetail `json:"usage,omitempty"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	Arguments        string             `json:"arguments"`
+	Result           string             `json:"result"`
+	DurationMs       *int               `json:"durationMs,omitempty"`
+	ExitCode         *int               `json:"exitCode,omitempty"`
+	FilePath         string             `json:"filePath,omitempty"`
+	IsError          bool               `json:"isError,omitempty"`
+	ToolKind         ToolCallKind       `json:"toolKind,omitempty"`
+	CallEntryRef     SourceEntryRef     `json:"callEntryRef,omitempty"`
+	ResultEntryRef   SourceEntryRef     `json:"resultEntryRef,omitempty"`
+	CallProvenance   *ContentProvenance `json:"callProvenance,omitempty"`
+	ResultProvenance *ContentProvenance `json:"resultProvenance,omitempty"`
+	Usage            *UsageDetail       `json:"usage,omitempty"`
 }
 
 // SessionDetailPayload is the data sent on the session_detail WebSocket channel
@@ -176,18 +179,19 @@ type ToolCallDetail struct {
 // never sets it) does not gain a spurious "schemaVersion":"" field; the push
 // builder sets it explicitly.
 type SessionDetailPayload struct {
-	SchemaVersion PushContractVersion `json:"schemaVersion,omitempty"`
-	ID            string              `json:"id"`
-	Harness       Harness             `json:"harness"`
-	StartTime     time.Time           `json:"startTime"`
-	EndTime       time.Time           `json:"endTime"`
-	DurationMins  float64             `json:"durationMins"`
-	TotalTokens   int                 `json:"totalTokens"`
-	TokensIn      int                 `json:"tokensIn"`
-	TokensOut     int                 `json:"tokensOut"`
-	TurnCount     int                 `json:"turnCount"`
-	ToolCallCount int                 `json:"toolCallCount"`
-	Turns         []TurnDetail        `json:"turns"`
+	SchemaVersion        PushContractVersion `json:"schemaVersion,omitempty"`
+	ID                   string              `json:"id"`
+	Harness              Harness             `json:"harness"`
+	StartTime            time.Time           `json:"startTime"`
+	EndTime              time.Time           `json:"endTime"`
+	DurationMins         float64             `json:"durationMins"`
+	TotalTokens          int                 `json:"totalTokens"`
+	TokensIn             int                 `json:"tokensIn"`
+	TokensOut            int                 `json:"tokensOut"`
+	TurnCount            int                 `json:"turnCount"`
+	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty"`
+	ToolCallCount        int                 `json:"toolCallCount"`
+	Turns                []TurnDetail        `json:"turns"`
 	// Optional fields — populated when backend has the data.
 	Source  string `json:"source,omitempty"`
 	Status  string `json:"status,omitempty"`
@@ -196,11 +200,16 @@ type SessionDetailPayload struct {
 	// valid turn observation. It is the earliest valid root-assistant model in
 	// canonical order when one is available, otherwise legacy stored metadata. It
 	// is never the latest, most common, or final session model.
-	Model            string            `json:"model,omitempty"`
-	WorkingDirectory string            `json:"workingDirectory,omitempty"`
-	GitBranch        string            `json:"gitBranch,omitempty"`
-	GitRemote        string            `json:"gitRemote,omitempty"`
-	ChildSessions    []ChildSessionRef `json:"childSessions,omitempty"`
+	Model            string                  `json:"model,omitempty"`
+	WorkingDirectory string                  `json:"workingDirectory,omitempty"`
+	GitBranch        string                  `json:"gitBranch,omitempty"`
+	GitRemote        string                  `json:"gitRemote,omitempty"`
+	ChildSessions    []ChildSessionRef       `json:"childSessions,omitempty"`
+	ParentSessionID  *SessionID              `json:"parentSessionId,omitempty"`
+	RootSessionID    *SessionID              `json:"rootSessionId,omitempty"`
+	Purpose          SessionPurpose          `json:"purpose,omitempty"`
+	Relationships    []SessionRelationship   `json:"relationships,omitempty"`
+	EarlierHistory   []EarlierHistorySection `json:"earlierHistory,omitempty"`
 	// Outcome is the heuristic resolution status of the session
 	// (resolved/partial/failed), sourced from session_metrics.outcome. Empty
 	// when the session has no computed outcome. The metadata columns expose no

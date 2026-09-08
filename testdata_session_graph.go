@@ -40,6 +40,7 @@ type SessionGraphEnumInput struct {
 	Unknown string   `yaml:"unknown"`
 }
 type SessionGraphFixtureCorpus struct {
+	Durable   DurableGraphFixtures                                                   `yaml:"durable"`
 	Refs      testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]         `yaml:"refs"`
 	Enums     testcase.Corpus[SessionGraphEnumInput, struct{}]                       `yaml:"enums"`
 	Semantics testcase.Corpus[SessionGraphFixtureInput, SessionGraphFixtureExpected] `yaml:"semantics"`
@@ -67,6 +68,9 @@ func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
 	}
 	if err := c.Semantics.Validate(); err != nil {
 		return c, fmt.Errorf("load session graph semantic fixtures: %w", err)
+	}
+	if err := c.Durable.Validate(); err != nil {
+		return c, err
 	}
 	return c, nil
 }
