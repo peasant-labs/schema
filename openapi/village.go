@@ -461,7 +461,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts", id: "listTranscripts", tag: "transcripts",
 			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
-			requests:    []interface{}{transcriptListQuery}, responseAlternatives: []interface{}{new([]schema.VillageTranscript), new(schema.VillageSessionListPayload)},
+			requests:    []interface{}{transcriptListQuery}, responseAlternatives: []interface{}{new(schema.VillageTranscriptListResponse), new(schema.VillageSessionListPayload)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
 		},
 		{
@@ -473,7 +473,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
 			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation.",
-			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
+			requests:    []interface{}{transcriptPath}, response: new(schema.SessionDetailPayload),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
 		},
 		{
@@ -926,7 +926,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		legacy  map[string]interface{}
 		grouped string
 	}{
-		{"/api/v1/transcripts", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscript"}}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload"},
 		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageGroupDetailResponse"}, "SchemaVillageGroupedGroupDetailResponse"},
 		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse"},
 		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload"},
