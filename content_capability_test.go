@@ -29,10 +29,20 @@ func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
 			if err := schema.ValidateSessionDetailPayload(p); err != nil {
 				t.Fatalf("validate durable detail: %v", err)
 			}
+			before, err := json.Marshal(p)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if got := schema.RequiredContentCapabilities(p); !slices.Equal(got, c.Expected.Capabilities) {
 				t.Fatalf("capabilities=%v, want %v", got, c.Expected.Capabilities)
 			}
-			before := c.Input.DetailJSON
+			after, err := json.Marshal(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before, after) {
+				t.Fatal("capability derivation mutated decoded durable payload")
+			}
 			if c.Input.ReadJSON != "" {
 				var read schema.SessionDetailReadPayload
 				if err := json.Unmarshal([]byte(c.Input.ReadJSON), &read); err != nil {
@@ -41,9 +51,6 @@ func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
 				if _, err := schema.DecodeSessionDetailPayloadRaw([]byte(c.Input.RejectedDurableJSON)); err == nil {
 					t.Fatal("durable input accepted read-only navigation key")
 				}
-			}
-			if c.Input.DetailJSON != before {
-				t.Fatal("capability derivation mutated fixture input")
 			}
 		})
 	}
@@ -109,6 +116,35 @@ func TestContentCapabilitySessionGraphFixtureStrictness(t *testing.T) {
 	renamed := bytes.Replace(data, []byte("name: legacy-empty"), []byte("name: renamed-legacy-empty"), 1)
 	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(renamed); err == nil {
 		t.Fatal("count-preserving required-name rename was accepted")
+	}
+	cleared := fixtures
+	cleared.Derivation.Cases = nil
+	cleared.RequiredNames.Derivation = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "derivation")
+	cleared = fixtures
+	cleared.Reader.Cases = nil
+	cleared.RequiredNames.Reader = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "reader")
+	cleared = fixtures
+	cleared.Producer.Cases = nil
+	cleared.RequiredNames.Producer = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "producer")
+}
+
+func assertCapabilityFixtureMutationRejected(t *testing.T, fixtures schema.ContentCapabilitySessionGraphFixtures, name string) {
+	t.Helper()
+	data, err := yaml.Marshal(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(data); err == nil {
+		t.Fatalf("%s fixture mutation was accepted", name)
+	}
+}
+
+func TestContentCapabilitySessionGraphEmptyDocumentRejected(t *testing.T) {
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures([]byte("{}")); err == nil {
+		t.Fatal("empty fixture document was accepted")
 	}
 }
 
