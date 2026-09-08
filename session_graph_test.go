@@ -56,6 +56,49 @@ func TestSessionGraphPrimitiveCorpus(t *testing.T) {
 	runRawNavigationArm(t, c.RawNavigation)
 }
 
+func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
+	c, err := LoadSessionGraphFixtures()
+	if err != nil {
+		t.Fatal(err)
+	}
+	caseassert.RequireMin(t, c.Recursive, 5)
+	caseassert.RequireValid(t, c.Recursive)
+	caseassert.RequireMin(t, c.RawDurable, 7)
+	caseassert.RequireValid(t, c.RawDurable)
+	for _, arm := range []testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]{c.Recursive, c.RawDurable} {
+		for _, x := range arm.Cases {
+			t.Run(x.Name, func(t *testing.T) {
+				raw := completeRawDetailFixture(t, x.Input.RawJSON)
+				_, detailErr := DecodeSessionDetailPayloadRaw(raw)
+				assertFixtureError(t, x.Name+" detail", x.Classification, x.Expected.ErrorContains, detailErr)
+				envelope := `{"kind":"session_detail","sessionDetail":` + string(raw) + `}`
+				_, envelopeErr := DecodeTranscriptContentRaw([]byte(envelope))
+				assertFixtureError(t, x.Name+" transcript", x.Classification, x.Expected.ErrorContains, envelopeErr)
+			})
+		}
+	}
+}
+
+func completeRawDetailFixture(t *testing.T, fragment string) []byte {
+	t.Helper()
+	base, err := json.Marshal(SessionDetailPayload{ID: "ses_fixture", Harness: HarnessClaudeCode, Turns: []TurnDetail{}, ChildSessions: []ChildSessionRef{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var complete, overrides map[string]json.RawMessage
+	if json.Unmarshal(base, &complete) != nil || json.Unmarshal([]byte(fragment), &overrides) != nil {
+		t.Fatalf("invalid raw detail fixture %q", fragment)
+	}
+	for key, value := range overrides {
+		complete[key] = value
+	}
+	out, err := json.Marshal(complete)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return out
+}
+
 func runPrimitiveArm[I any](t *testing.T, c testcase.Corpus[I, SessionGraphFixtureExpected], min int, names []string, validate func(I) error) {
 	t.Helper()
 	caseassert.RequireMin(t, c, min)

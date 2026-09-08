@@ -39,18 +39,22 @@ type SessionGraphEnumInput struct {
 	Unknown string   `yaml:"unknown"`
 }
 type SessionGraphFixtureCorpus struct {
-	Durable          DurableGraphFixtures                                                        `yaml:"durable"`
-	Refs             testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
-	Enums            testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`
-	Relationships    testcase.Corpus[SessionRelationship, SessionGraphFixtureExpected]           `yaml:"relationships"`
-	RelationshipSets testcase.Corpus[SessionRelationshipsInput, SessionGraphFixtureExpected]     `yaml:"relationship_sets"`
-	Provenance       testcase.Corpus[ContentProvenance, SessionGraphFixtureExpected]             `yaml:"provenance"`
-	Navigation       testcase.Corpus[SessionRelationshipNavigation, SessionGraphFixtureExpected] `yaml:"navigation"`
-	HelperGroups     testcase.Corpus[HelperGroupSummary, SessionGraphFixtureExpected]            `yaml:"helper_groups"`
-	HelperContexts   testcase.Corpus[HelperContextSummary, SessionGraphFixtureExpected]          `yaml:"helper_contexts"`
-	EarlierHistory   testcase.Corpus[EarlierHistorySection, SessionGraphFixtureExpected]         `yaml:"earlier_history"`
-	RawRelationships testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_relationships"`
-	RawNavigation    testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
+	Durable            DurableGraphFixtures                                                        `yaml:"durable"`
+	Refs               testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
+	Enums              testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`
+	Relationships      testcase.Corpus[SessionRelationship, SessionGraphFixtureExpected]           `yaml:"relationships"`
+	RelationshipSets   testcase.Corpus[SessionRelationshipsInput, SessionGraphFixtureExpected]     `yaml:"relationship_sets"`
+	Provenance         testcase.Corpus[ContentProvenance, SessionGraphFixtureExpected]             `yaml:"provenance"`
+	Navigation         testcase.Corpus[SessionRelationshipNavigation, SessionGraphFixtureExpected] `yaml:"navigation"`
+	HelperGroups       testcase.Corpus[HelperGroupSummary, SessionGraphFixtureExpected]            `yaml:"helper_groups"`
+	HelperContexts     testcase.Corpus[HelperContextSummary, SessionGraphFixtureExpected]          `yaml:"helper_contexts"`
+	EarlierHistory     testcase.Corpus[EarlierHistorySection, SessionGraphFixtureExpected]         `yaml:"earlier_history"`
+	RawRelationships   testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_relationships"`
+	RawNavigation      testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
+	Recursive          testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"recursive"`
+	RawDurable         testcase.Corpus[SessionGraphRawInput, SessionGraphFixtureExpected]          `yaml:"raw_durable"`
+	RecursiveRequired  []string                                                                    `yaml:"recursive_required_names"`
+	RawDurableRequired []string                                                                    `yaml:"raw_durable_required_names"`
 }
 
 func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
@@ -79,7 +83,37 @@ func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
 	if err := c.Durable.Validate(); err != nil {
 		return c, err
 	}
+	if err := validateRequiredCaseNames("recursive", c.Recursive.Cases, c.RecursiveRequired); err != nil {
+		return c, err
+	}
+	if err := validateRequiredCaseNames("raw_durable", c.RawDurable.Cases, c.RawDurableRequired); err != nil {
+		return c, err
+	}
 	return c, nil
+}
+
+func validateRequiredCaseNames[I, E any](arm string, cases []testcase.Case[I, E], required []string) error {
+	want, got := map[string]bool{}, map[string]bool{}
+	for _, name := range required {
+		if want[name] {
+			return fmt.Errorf("load session graph %s fixtures: duplicate required name %q", arm, name)
+		}
+		want[name] = true
+	}
+	for _, c := range cases {
+		got[c.Name] = true
+	}
+	for name := range want {
+		if !got[name] {
+			return fmt.Errorf("load session graph %s fixtures: required case %q is missing", arm, name)
+		}
+	}
+	for name := range got {
+		if !want[name] {
+			return fmt.Errorf("load session graph %s fixtures: case %q is absent from required-name manifest", arm, name)
+		}
+	}
+	return nil
 }
 
 func validatePrimitiveFixtureArms(c SessionGraphFixtureCorpus) error {
@@ -87,7 +121,7 @@ func validatePrimitiveFixtureArms(c SessionGraphFixtureCorpus) error {
 		name     string
 		validate func() error
 	}{
-		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate},
+		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate}, {"recursive", c.Recursive.Validate}, {"raw_durable", c.RawDurable.Validate},
 	}
 	for _, arm := range arms {
 		if err := arm.validate(); err != nil {
