@@ -17,7 +17,9 @@ const fixtures = sessionGraphCapabilityFixtures();
 test("generated runtime derives capabilities from the canonical graph corpus", async (t) => {
   for (const row of fixtures.derivation.cases) await t.test(row.name, () => {
     const detail = parseSessionDetailPayloadText(row.input.detailJSON);
+    const before = structuredClone(detail);
     assert.deepEqual(requiredContentCapabilities(detail), row.expected.capabilities ?? []);
+    assert.deepEqual(detail, before, "capability derivation must not mutate decoded durable input");
     if (row.input.readJSON !== undefined) {
       zSessionDetailReadPayload.parse(JSON.parse(row.input.readJSON));
       assert.throws(() => parseSessionDetailPayloadText(row.input.rejectedDurableJSON));

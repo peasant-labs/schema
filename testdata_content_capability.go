@@ -71,6 +71,18 @@ func DecodeContentCapabilitySessionGraphFixtures(data []byte) (ContentCapability
 	if err := f.Producer.Validate(); err != nil {
 		return f, err
 	}
+	if err := f.Derivation.CheckMin(1); err != nil {
+		return f, fmt.Errorf("derivation fixtures: %w", err)
+	}
+	if err := f.Reader.CheckMin(1); err != nil {
+		return f, fmt.Errorf("reader fixtures: %w", err)
+	}
+	if err := f.Producer.CheckMin(1); err != nil {
+		return f, fmt.Errorf("producer fixtures: %w", err)
+	}
+	if len(f.RequiredNames.Derivation) == 0 || len(f.RequiredNames.Reader) == 0 || len(f.RequiredNames.Producer) == 0 {
+		return f, fmt.Errorf("content capability fixture required-name manifests must each be nonempty; deleted behavioral arms would otherwise pass; restore every canonical required name")
+	}
 	if err := requireFixtureNames(f.Derivation.Cases, f.RequiredNames.Derivation); err != nil {
 		return f, fmt.Errorf("derivation fixtures: %w", err)
 	}
