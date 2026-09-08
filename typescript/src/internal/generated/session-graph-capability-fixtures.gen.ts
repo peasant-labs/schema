@@ -64,7 +64,7 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "description": "decodes null root as absent"
         },
         "input": {
-          "detailJSON": "{\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"rootSessionId\":null,\"turns\":[]}"
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"rootSessionId\":null,\"turns\":[]}"
         },
         "expected": {}
       },
@@ -79,7 +79,7 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "description": "decodes null usage as absent"
         },
         "input": {
-          "detailJSON": "{\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"usage\":null}]}"
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\",\"usage\":null}]}"
         },
         "expected": {}
       },
