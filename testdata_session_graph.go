@@ -11,19 +11,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type SessionGraphFixtureInput struct {
-	Operation    string                         `yaml:"operation"`
-	Value        string                         `yaml:"value,omitempty"`
-	Relationship *SessionRelationship           `yaml:"relationship,omitempty"`
-	Relations    []SessionRelationship          `yaml:"relations,omitempty"`
-	Provenance   *ContentProvenance             `yaml:"provenance,omitempty"`
-	Navigation   *SessionRelationshipNavigation `yaml:"navigation,omitempty"`
-	Group        *HelperGroupSummary            `yaml:"group,omitempty"`
-	Context      *HelperContextSummary          `yaml:"context,omitempty"`
-	Earlier      *EarlierHistorySection         `yaml:"earlier,omitempty"`
-	RawJSON      string                         `yaml:"rawJson,omitempty"`
-}
 type SessionGraphFixtureExpected struct {
+	ErrorContains string `yaml:"error_contains,omitempty"`
+}
+type SessionRelationshipsInput struct {
+	Relationships []SessionRelationship `yaml:"relationships"`
+}
+type SessionGraphRawInput struct {
+	RawJSON string `yaml:"rawJson"`
+}
+type SessionGraphRawExpected struct {
+	RawJSON       string `yaml:"rawJson,omitempty"`
 	ErrorContains string `yaml:"error_contains,omitempty"`
 }
 type SessionGraphRefInput struct {
@@ -37,13 +35,22 @@ type SessionGraphRefExpected struct {
 type SessionGraphEnumInput struct {
 	Enum    string   `yaml:"enum"`
 	Members []string `yaml:"members"`
+	Empty   string   `yaml:"empty"`
 	Unknown string   `yaml:"unknown"`
 }
 type SessionGraphFixtureCorpus struct {
-	Durable   DurableGraphFixtures                                                   `yaml:"durable"`
-	Refs      testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]         `yaml:"refs"`
-	Enums     testcase.Corpus[SessionGraphEnumInput, struct{}]                       `yaml:"enums"`
-	Semantics testcase.Corpus[SessionGraphFixtureInput, SessionGraphFixtureExpected] `yaml:"semantics"`
+	Durable          DurableGraphFixtures                                                        `yaml:"durable"`
+	Refs             testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
+	Enums            testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`
+	Relationships    testcase.Corpus[SessionRelationship, SessionGraphFixtureExpected]           `yaml:"relationships"`
+	RelationshipSets testcase.Corpus[SessionRelationshipsInput, SessionGraphFixtureExpected]     `yaml:"relationship_sets"`
+	Provenance       testcase.Corpus[ContentProvenance, SessionGraphFixtureExpected]             `yaml:"provenance"`
+	Navigation       testcase.Corpus[SessionRelationshipNavigation, SessionGraphFixtureExpected] `yaml:"navigation"`
+	HelperGroups     testcase.Corpus[HelperGroupSummary, SessionGraphFixtureExpected]            `yaml:"helper_groups"`
+	HelperContexts   testcase.Corpus[HelperContextSummary, SessionGraphFixtureExpected]          `yaml:"helper_contexts"`
+	EarlierHistory   testcase.Corpus[EarlierHistorySection, SessionGraphFixtureExpected]         `yaml:"earlier_history"`
+	RawRelationships testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_relationships"`
+	RawNavigation    testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]              `yaml:"raw_navigation"`
 }
 
 func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
@@ -66,13 +73,28 @@ func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
 	if err := c.Enums.Validate(); err != nil {
 		return c, fmt.Errorf("load session graph enum fixtures: %w", err)
 	}
-	if err := c.Semantics.Validate(); err != nil {
-		return c, fmt.Errorf("load session graph semantic fixtures: %w", err)
+	if err := validatePrimitiveFixtureArms(c); err != nil {
+		return c, err
 	}
 	if err := c.Durable.Validate(); err != nil {
 		return c, err
 	}
 	return c, nil
+}
+
+func validatePrimitiveFixtureArms(c SessionGraphFixtureCorpus) error {
+	arms := []struct {
+		name     string
+		validate func() error
+	}{
+		{"relationships", c.Relationships.Validate}, {"relationship_sets", c.RelationshipSets.Validate}, {"provenance", c.Provenance.Validate}, {"navigation", c.Navigation.Validate}, {"helper_groups", c.HelperGroups.Validate}, {"helper_contexts", c.HelperContexts.Validate}, {"earlier_history", c.EarlierHistory.Validate}, {"raw_relationships", c.RawRelationships.Validate}, {"raw_navigation", c.RawNavigation.Validate},
+	}
+	for _, arm := range arms {
+		if err := arm.validate(); err != nil {
+			return fmt.Errorf("load session graph %s fixtures: %w", arm.name, err)
+		}
+	}
+	return nil
 }
 
 func ConstructSessionGraphRef(i SessionGraphRefInput) (string, error) {
@@ -96,62 +118,24 @@ func ConstructSessionGraphRef(i SessionGraphRefInput) (string, error) {
 	}
 }
 
-func ValidateSessionGraphFixtureInput(i SessionGraphFixtureInput) error {
-	switch i.Operation {
-	case "source_ref":
-		_, e := NewSourceEntryRef(i.Value)
-		return e
-	case "submission_ref":
-		_, e := NewSubmissionRef(i.Value)
-		return e
-	case "revision_ref":
-		_, e := NewPublicRevisionRef(i.Value)
-		return e
-	case "relationship":
-		if i.Relationship == nil {
-			return fmt.Errorf("missing relationship")
-		}
-		return i.Relationship.Validate()
-	case "relations":
-		return ValidateSessionRelationships(i.Relations)
-	case "provenance":
-		if i.Provenance == nil {
-			return fmt.Errorf("missing provenance")
-		}
-		return i.Provenance.Validate()
-	case "navigation":
-		if i.Navigation == nil {
-			return fmt.Errorf("missing navigation")
-		}
-		return i.Navigation.Validate()
-	case "group":
-		if i.Group == nil {
-			return fmt.Errorf("missing group")
-		}
-		return i.Group.Validate()
-	case "context":
-		if i.Context == nil {
-			return fmt.Errorf("missing context")
-		}
-		return i.Context.Validate()
-	case "earlier":
-		if i.Earlier == nil {
-			return fmt.Errorf("missing earlier")
-		}
-		return i.Earlier.Validate()
-	case "raw_relationship":
-		var value SessionRelationship
-		if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
-			return fmt.Errorf("decode raw relationship primitive: %w", err)
-		}
-		return value.Validate()
-	case "raw_navigation":
-		var value SessionRelationshipNavigation
-		if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
-			return fmt.Errorf("decode raw navigation primitive: %w", err)
-		}
-		return value.Validate()
-	default:
-		return fmt.Errorf("unknown fixture operation %q", i.Operation)
+func ValidateRawRelationshipFixture(i SessionGraphRawInput) (SessionRelationship, error) {
+	var value SessionRelationship
+	if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
+		return value, fmt.Errorf("decode raw relationship primitive: %w", err)
 	}
+	return value, value.Validate()
+}
+func ValidateRawNavigationFixture(i SessionGraphRawInput) (SessionRelationshipNavigation, string, error) {
+	var value SessionRelationshipNavigation
+	if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
+		return value, "", fmt.Errorf("decode raw navigation primitive: %w", err)
+	}
+	if err := value.Validate(); err != nil {
+		return value, "", err
+	}
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return value, "", fmt.Errorf("encode raw navigation primitive: %w", err)
+	}
+	return value, string(encoded), nil
 }

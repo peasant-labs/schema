@@ -3,7 +3,6 @@ package schema
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -23,9 +22,7 @@ func TestSessionGraphPrimitiveCorpus(t *testing.T) {
 	caseassert.RequireValid(t, c.Refs)
 	caseassert.RequireMin(t, c.Enums, 13)
 	caseassert.RequireValid(t, c.Enums)
-	caseassert.RequireMin(t, c.Semantics, 20)
-	caseassert.RequireValid(t, c.Semantics)
-	requireNames(t, c.Refs.Cases, []string{"source-empty", "submission-invalid-utf8", "revision-one-byte", "source-96-multibyte", "submission-97-multibyte", "revision-preserves-space"})
+	requireNames(t, c.Refs.Cases, []string{"source-empty", "submission-invalid-utf8", "revision-one-byte", "source-96-multibyte", "submission-97-multibyte", "revision-preserves-space", "source-invalid-bytes", "source-one-bytes", "source-97-bytes", "submission-empty-bytes", "submission-one-bytes", "submission-96-bytes", "revision-empty-bytes", "revision-invalid-bytes", "revision-96-bytes", "revision-97-bytes"})
 	for _, x := range c.Refs.Cases {
 		got, e := ConstructSessionGraphRef(x.Input)
 		assertFixtureError(t, x.Name, x.Classification, x.Expected.ErrorContains, e)
@@ -40,18 +37,61 @@ func TestSessionGraphPrimitiveCorpus(t *testing.T) {
 				t.Errorf("%s JSON roundtrip changed bytes", x.Name)
 			}
 			assertRefSchema(t, x.Input.Alias, got, true)
-		} else if raw, e2 := base64.StdEncoding.DecodeString(x.Input.BytesBase64); e2 == nil && json.Valid([]byte(fmt.Sprintf("%q", string(raw)))) {
+		} else if raw, e2 := base64.StdEncoding.DecodeString(x.Input.BytesBase64); e2 == nil {
 			assertRefSchema(t, x.Input.Alias, string(raw), false)
 		}
 	}
 	for _, x := range c.Enums.Cases {
 		testEnumFixture(t, x.Input)
 	}
-	required := []string{"relationship-known-target", "relationship-unknown-forbids-target", "relationship-unique-kinds", "anchor-general", "anchor-exact", "anchor-partial-rejected", "provenance-all-unknown", "provenance-empty-rejected", "navigation-local-resolved", "navigation-unavailable-no-id", "navigation-unavailable-leaks-id", "helper-group-valid", "helper-group-wrong-purpose", "helper-context-valid", "earlier-empty-valid", "earlier-null-invalid"}
-	requireNames(t, c.Semantics.Cases, required)
-	for _, x := range c.Semantics.Cases {
-		e := ValidateSessionGraphFixtureInput(x.Input)
-		assertFixtureError(t, x.Name, x.Classification, x.Expected.ErrorContains, e)
+	requireNames(t, c.Enums.Cases, []string{"enum-relationship", "enum-target", "enum-evidence", "enum-purpose", "enum-origin", "enum-actor", "enum-delivery", "enum-ownership", "enum-modality", "enum-anchor", "enum-earlier", "enum-navigation", "enum-list_item"})
+	runPrimitiveArm(t, c.Relationships, 12, []string{"relationship-known-target", "relationship-unknown-forbids-target", "anchor-general", "anchor-exact", "anchor-partial-rejected", "relationship-known-missing-target", "relationship-known-invalid-target", "relationship-explicit-none-forbids-target", "relationship-conflict-forbids-target", "anchor-forbidden-started-by", "anchor-forbidden-nonknown", "anchor-general-forbids-refs"}, func(v SessionRelationship) error { return v.Validate() })
+	runPrimitiveArm(t, c.RelationshipSets, 2, []string{"relationship-unique-kinds", "relationship-legal-unique-pair"}, func(v SessionRelationshipsInput) error { return ValidateSessionRelationships(v.Relationships) })
+	runPrimitiveArm(t, c.Provenance, 10, []string{"provenance-all-unknown", "provenance-empty-rejected", "provenance-invalid-origin", "provenance-invalid-actor", "provenance-invalid-delivery", "provenance-invalid-ownership", "provenance-invalid-evidence", "provenance-invalid-modality", "provenance-invalid-submission", "provenance-overlong-submission"}, func(v ContentProvenance) error { return v.Validate() })
+	runPrimitiveArm(t, c.Navigation, 9, []string{"navigation-local-resolved", "navigation-unavailable-no-id", "navigation-unavailable-leaks-id", "navigation-public-resolved", "navigation-resolved-missing-target", "navigation-resolved-dual-target", "navigation-general-link-absent-anchor", "navigation-general-link-general-anchor", "navigation-general-link-exact-anchor"}, func(v SessionRelationshipNavigation) error { return v.Validate() })
+	runPrimitiveArm(t, c.HelperGroups, 5, []string{"helper-group-valid", "helper-group-wrong-purpose", "helper-negative-count", "helper-empty-group", "helper-empty-scope"}, func(v HelperGroupSummary) error { return v.Validate() })
+	runPrimitiveArm(t, c.HelperContexts, 2, []string{"helper-context-valid", "helper-context-invalid-status"}, func(v HelperContextSummary) error { return v.Validate() })
+	runPrimitiveArm(t, c.EarlierHistory, 2, []string{"earlier-empty-valid", "earlier-null-invalid"}, func(v EarlierHistorySection) error { return v.Validate() })
+	runRawRelationshipArm(t, c.RawRelationships)
+	runRawNavigationArm(t, c.RawNavigation)
+}
+
+func runPrimitiveArm[I any](t *testing.T, c testcase.Corpus[I, SessionGraphFixtureExpected], min int, names []string, validate func(I) error) {
+	t.Helper()
+	caseassert.RequireMin(t, c, min)
+	caseassert.RequireValid(t, c)
+	requireNames(t, c.Cases, names)
+	for _, x := range c.Cases {
+		assertFixtureError(t, x.Name, x.Classification, x.Expected.ErrorContains, validate(x.Input))
+	}
+}
+func runRawRelationshipArm(t *testing.T, c testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]) {
+	t.Helper()
+	caseassert.RequireMin(t, c, 1)
+	caseassert.RequireValid(t, c)
+	requireNames(t, c.Cases, []string{"raw-relationship-wrong-target-type"})
+	for _, x := range c.Cases {
+		_, err := ValidateRawRelationshipFixture(x.Input)
+		assertFixtureError(t, x.Name, x.Classification, x.Expected.ErrorContains, err)
+	}
+}
+func runRawNavigationArm(t *testing.T, c testcase.Corpus[SessionGraphRawInput, SessionGraphRawExpected]) {
+	t.Helper()
+	caseassert.RequireMin(t, c, 1)
+	caseassert.RequireValid(t, c)
+	requireNames(t, c.Cases, []string{"raw-navigation-roundtrip-shape"})
+	for _, x := range c.Cases {
+		value, encoded, err := ValidateRawNavigationFixture(x.Input)
+		assertFixtureError(t, x.Name, x.Classification, x.Expected.ErrorContains, err)
+		if err == nil {
+			var expected SessionRelationshipNavigation
+			if e := json.Unmarshal([]byte(x.Expected.RawJSON), &expected); e != nil {
+				t.Fatalf("%s expected raw JSON: %v", x.Name, e)
+			}
+			if !reflect.DeepEqual(value, expected) || encoded != x.Expected.RawJSON {
+				t.Errorf("%s roundtrip value=%#v JSON=%s want %#v JSON=%s", x.Name, value, encoded, expected, x.Expected.RawJSON)
+			}
+		}
 	}
 }
 
@@ -189,7 +229,7 @@ func testEnumFixture(t *testing.T, i SessionGraphEnumInput) {
 			t.Errorf("enum %s member %q constructor=%v valid=%v", i.Enum, member, e, api.valid(member))
 		}
 	}
-	for _, bad := range []string{"", i.Unknown} {
+	for _, bad := range []string{i.Empty, i.Unknown} {
 		if api.construct(bad) == nil || compiled.Validate(bad) == nil {
 			t.Errorf("enum %s accepted off-menu %q", i.Enum, bad)
 		}
