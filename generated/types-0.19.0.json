@@ -3,7 +3,7 @@
   "info": {
     "title": "Peasant Types",
     "description": "Shared domain type catalog for Peasant APIs. No operations; register these components for SDK code generation and cross-API type sharing.",
-    "version": "0.18.0"
+    "version": "0.19.0"
   },
   "components": {
     "schemas": {
@@ -25,6 +25,23 @@
           "taskCount"
         ],
         "type": "object"
+      },
+      "ActorOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "operator",
+          "agent_delegate",
+          "harness",
+          "unknown"
+        ],
+        "examples": [
+          "operator",
+          "agent_delegate",
+          "harness",
+          "unknown"
+        ],
+        "title": "Actor Origin",
+        "type": "string"
       },
       "AnnotationAxis": {
         "description": "Subscription dimension for annotation channels",
@@ -2108,6 +2125,9 @@
               }
             ]
           },
+          "provenance": {
+            "$ref": "#/components/schemas/ContentProvenance"
+          },
           "rawByteLength": {
             "anyOf": [
               {
@@ -2126,6 +2146,9 @@
           },
           "sessionId": {
             "$ref": "#/components/schemas/SessionID"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
           },
           "stopReason": {
             "anyOf": [
@@ -2258,6 +2281,18 @@
           "parentSessionId": {
             "$ref": "#/components/schemas/SessionID"
           },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
           "schemaVersion": {
             "type": "integer"
           },
@@ -2302,6 +2337,11 @@
           },
           "durationMs": {
             "format": "int64",
+            "type": "integer"
+          },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "subagentCount": {
@@ -3252,6 +3292,80 @@
         "title": "Content Kind",
         "type": "string"
       },
+      "ContentOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "submitted_input",
+          "harness_context",
+          "agent_output",
+          "agent_communication",
+          "tool_activity",
+          "system_control",
+          "generated_summary",
+          "unknown"
+        ],
+        "examples": [
+          "submitted_input",
+          "harness_context",
+          "agent_output",
+          "agent_communication",
+          "tool_activity",
+          "system_control",
+          "generated_summary",
+          "unknown"
+        ],
+        "title": "Content Origin",
+        "type": "string"
+      },
+      "ContentOwnership": {
+        "description": "Closed session graph value",
+        "enum": [
+          "local",
+          "inherited",
+          "uncertain"
+        ],
+        "examples": [
+          "local",
+          "inherited",
+          "uncertain"
+        ],
+        "title": "Content Ownership",
+        "type": "string"
+      },
+      "ContentProvenance": {
+        "properties": {
+          "actor": {
+            "$ref": "#/components/schemas/ActorOrigin"
+          },
+          "delivery": {
+            "$ref": "#/components/schemas/DeliveryOrigin"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceKind"
+          },
+          "inputModality": {
+            "$ref": "#/components/schemas/InputModality"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ContentOrigin"
+          },
+          "ownership": {
+            "$ref": "#/components/schemas/ContentOwnership"
+          },
+          "submissionRef": {
+            "$ref": "#/components/schemas/SubmissionRef"
+          }
+        },
+        "required": [
+          "origin",
+          "actor",
+          "delivery",
+          "ownership",
+          "evidence",
+          "inputModality"
+        ],
+        "type": "object"
+      },
       "ContractVersion": {
         "type": [
           "null",
@@ -3436,6 +3550,29 @@
         "title": "Decay Level",
         "type": "string"
       },
+      "DeliveryOrigin": {
+        "description": "Closed session graph value",
+        "enum": [
+          "session_admission",
+          "guardian_review",
+          "subagent_delivery",
+          "inherited_context",
+          "tool_delivery",
+          "system_lifecycle",
+          "unknown"
+        ],
+        "examples": [
+          "session_admission",
+          "guardian_review",
+          "subagent_delivery",
+          "inherited_context",
+          "tool_delivery",
+          "system_lifecycle",
+          "unknown"
+        ],
+        "title": "Delivery Origin",
+        "type": "string"
+      },
       "DiagnosticEntry": {
         "properties": {
           "errorType": {
@@ -3578,6 +3715,43 @@
         "title": "Digest Item Kind",
         "type": "string"
       },
+      "EarlierHistorySection": {
+        "properties": {
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EarlierHistoryState"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnDetail"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "state",
+          "turns"
+        ],
+        "type": "object"
+      },
+      "EarlierHistoryState": {
+        "description": "Closed session graph value",
+        "enum": [
+          "uncertain_migrated",
+          "uncertain_unresolved"
+        ],
+        "examples": [
+          "uncertain_migrated",
+          "uncertain_unresolved"
+        ],
+        "title": "Earlier History State",
+        "type": "string"
+      },
       "EdgeViolation": {
         "properties": {
           "from": {
@@ -3627,6 +3801,27 @@
           "tool_result"
         ],
         "title": "Entry Type",
+        "type": "string"
+      },
+      "EvidenceKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "native_typed",
+          "lifecycle_typed",
+          "existing_adapter",
+          "retained_last_good",
+          "unknown",
+          "conflict"
+        ],
+        "examples": [
+          "native_typed",
+          "lifecycle_typed",
+          "existing_adapter",
+          "retained_last_good",
+          "unknown",
+          "conflict"
+        ],
+        "title": "Evidence Kind",
         "type": "string"
       },
       "ExchangeCodeRequest": {
@@ -3973,6 +4168,44 @@
         ],
         "type": "object"
       },
+      "HelperContextSummary": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "ownerStatus": {
+            "$ref": "#/components/schemas/RelationshipNavigationStatus"
+          }
+        },
+        "required": [
+          "groupId",
+          "ownerStatus"
+        ],
+        "type": "object"
+      },
+      "HelperGroupSummary": {
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "helperThreadCount": {
+            "type": "integer"
+          },
+          "memberScope": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          }
+        },
+        "required": [
+          "groupId",
+          "purpose",
+          "helperThreadCount",
+          "memberScope"
+        ],
+        "type": "object"
+      },
       "HostSlug": {
         "description": "Sanitized, filesystem-safe identifier derived from git remote; contains only [a-zA-Z0-9._\u003c\u003e-]",
         "examples": [
@@ -3981,6 +4214,27 @@
         ],
         "pattern": "^[a-zA-Z0-9._\u003c\u003e-]+$",
         "title": "Host Slug",
+        "type": "string"
+      },
+      "InputModality": {
+        "description": "Closed session graph value",
+        "enum": [
+          "none",
+          "text",
+          "media",
+          "user_action",
+          "mixed",
+          "unknown"
+        ],
+        "examples": [
+          "none",
+          "text",
+          "media",
+          "user_action",
+          "mixed",
+          "unknown"
+        ],
+        "title": "Input Modality",
         "type": "string"
       },
       "InsightClassification": {
@@ -4099,6 +4353,209 @@
         ],
         "title": "License",
         "type": "string"
+      },
+      "LocalHelperMembersPayload": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSessionRow"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "members",
+          "page",
+          "limit",
+          "total"
+        ],
+        "type": "object"
+      },
+      "LocalSessionListItem": {
+        "properties": {
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HelperContextSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "helperGroups": {
+            "items": {
+              "$ref": "#/components/schemas/HelperGroupSummary"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionListItemKind"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSessionRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "LocalSessionListPayload": {
+        "properties": {
+          "helperThreadTotal": {
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSessionListItem"
+            },
+            "type": "array"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "ordinarySessionTotal": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "totalItems",
+          "ordinarySessionTotal",
+          "helperThreadTotal"
+        ],
+        "type": "object"
+      },
+      "LocalSessionRow": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            },
+            "type": "array"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionSummary"
+          },
+          "sync": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalSyncSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "type": "object"
+      },
+      "LocalSyncSessionsPayload": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSyncSummary"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "sessions"
+        ],
+        "type": "object"
+      },
+      "LocalSyncSummary": {
+        "properties": {
+          "durationMs": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/Harness"
+          },
+          "hostSlug": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "projectHash": {
+            "$ref": "#/components/schemas/ProjectHash"
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "syncStatus": {
+            "type": "string"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "harness",
+          "projectName",
+          "projectHash",
+          "hostSlug",
+          "startTime",
+          "durationMs",
+          "totalTokens",
+          "turnCount",
+          "model",
+          "syncStatus"
+        ],
+        "type": "object"
       },
       "MapEdge": {
         "properties": {
@@ -4658,7 +5115,7 @@
       "NativeSourceRef": {
         "properties": {
           "entryRef": {
-            "type": "string"
+            "$ref": "#/components/schemas/SourceEntryRef"
           },
           "messageRole": {
             "$ref": "#/components/schemas/NativePiMessageRole"
@@ -4680,7 +5137,7 @@
           "provider/Model Family"
         ],
         "minLength": 1,
-        "pattern": "^(?:\\uFEFF|[^\\s\\x85])(?:[\\s\\S]*(?:\\uFEFF|[^\\s\\x85]))?(?![\\s\\S])",
+        "pattern": "^(?:﻿|[^\\s])(?:[\\s\\S]*(?:﻿|[^\\s]))?$",
         "title": "Observed Model ID",
         "type": "string"
       },
@@ -5106,6 +5563,45 @@
           "method"
         ],
         "type": "object"
+      },
+      "PublicRevisionRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Public Revision Reference",
+        "type": "string"
+      },
+      "PublicSourceAnchor": {
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PublicSourceAnchorKind"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "sourceRevisionRef": {
+            "$ref": "#/components/schemas/PublicRevisionRef"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "PublicSourceAnchorKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "general_source_session",
+          "before_redacted_entry",
+          "through_redacted_entry"
+        ],
+        "examples": [
+          "general_source_session",
+          "before_redacted_entry",
+          "through_redacted_entry"
+        ],
+        "title": "Public Source Anchor Kind",
+        "type": "string"
       },
       "PublishAppliedState": {
         "additionalProperties": false,
@@ -6451,6 +6947,46 @@
         ],
         "type": "object"
       },
+      "RelationshipNavigationStatus": {
+        "description": "Closed session graph value",
+        "enum": [
+          "resolved",
+          "general_link_only",
+          "known_unavailable",
+          "inaccessible",
+          "unknown",
+          "conflicting"
+        ],
+        "examples": [
+          "resolved",
+          "general_link_only",
+          "known_unavailable",
+          "inaccessible",
+          "unknown",
+          "conflicting"
+        ],
+        "title": "Relationship Navigation Status",
+        "type": "string"
+      },
+      "RelationshipTargetState": {
+        "description": "Closed session graph value",
+        "enum": [
+          "target_known",
+          "target_known_retained",
+          "explicit_none",
+          "unknown",
+          "conflicting_current_native_evidence"
+        ],
+        "examples": [
+          "target_known",
+          "target_known_retained",
+          "explicit_none",
+          "unknown",
+          "conflicting_current_native_evidence"
+        ],
+        "title": "Relationship Target State",
+        "type": "string"
+      },
       "ReviewListPayload": {
         "properties": {
           "changes": {
@@ -6831,6 +7367,12 @@
             "format": "double",
             "type": "number"
           },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/EarlierHistorySection"
+            },
+            "type": "array"
+          },
           "endTime": {
             "format": "date-time",
             "type": "string"
@@ -6847,6 +7389,19 @@
           "id": {
             "type": "string"
           },
+          "inputSubmissionCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model": {
             "type": "string"
           },
@@ -6859,8 +7414,37 @@
           "outcome": {
             "$ref": "#/components/schemas/SessionOutcome"
           },
+          "parentSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project": {
             "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "schemaVersion": {
             "type": "string"
@@ -6928,6 +7512,134 @@
           "turnCount",
           "toolCallCount",
           "turns"
+        ],
+        "type": "object"
+      },
+      "SessionDetailReadPayload": {
+        "properties": {
+          "childSessions": {
+            "items": {
+              "$ref": "#/components/schemas/ChildSessionRef"
+            },
+            "type": "array"
+          },
+          "durationMins": {
+            "format": "double",
+            "type": "number"
+          },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/EarlierHistorySection"
+            },
+            "type": "array"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gitBranch": {
+            "type": "string"
+          },
+          "gitRemote": {
+            "type": "string"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/Harness"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "nativeMetadata": {
+            "items": {
+              "$ref": "#/components/schemas/NativeMetadataRecord"
+            },
+            "type": "array"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SessionOutcome"
+          },
+          "parentSessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "project": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationshipNavigation": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationshipNavigation"
+            },
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "scorecard": {
+            "$ref": "#/components/schemas/SessionScorecard"
+          },
+          "sessionOrigin": {
+            "$ref": "#/components/schemas/SessionOrigin"
+          },
+          "source": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "tokensIn": {
+            "type": "integer"
+          },
+          "tokensOut": {
+            "type": "integer"
+          },
+          "toolCallCount": {
+            "type": "integer"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "type": "integer"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnDetail"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "workingDirectory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "SessionDetailPayload"
         ],
         "type": "object"
       },
@@ -7032,6 +7744,16 @@
               }
             ]
           },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "rawByteLength": {
             "anyOf": [
               {
@@ -7050,6 +7772,9 @@
           },
           "sessionId": {
             "$ref": "#/components/schemas/SessionID"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
           },
           "stopReason": {
             "anyOf": [
@@ -7266,6 +7991,19 @@
         ],
         "type": "object"
       },
+      "SessionListItemKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "transcript",
+          "context_container"
+        ],
+        "examples": [
+          "transcript",
+          "context_container"
+        ],
+        "title": "Session List Item Kind",
+        "type": "string"
+      },
       "SessionOrigin": {
         "description": "Who drove a recorded session, as declared by the producer that recorded it",
         "enum": [
@@ -7295,6 +8033,120 @@
         ],
         "title": "Session Outcome",
         "type": "string"
+      },
+      "SessionPurpose": {
+        "description": "Closed session graph value",
+        "enum": [
+          "interaction",
+          "delegated_work",
+          "helper_review",
+          "unknown"
+        ],
+        "examples": [
+          "interaction",
+          "delegated_work",
+          "helper_review",
+          "unknown"
+        ],
+        "title": "Session Purpose",
+        "type": "string"
+      },
+      "SessionRelationship": {
+        "properties": {
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicSourceAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceKind"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionRelationshipKind"
+          },
+          "targetLocalId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetState": {
+            "$ref": "#/components/schemas/RelationshipTargetState"
+          }
+        },
+        "required": [
+          "kind",
+          "targetState",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "SessionRelationshipKind": {
+        "description": "Closed session graph value",
+        "enum": [
+          "started_by",
+          "context_from"
+        ],
+        "examples": [
+          "started_by",
+          "context_from"
+        ],
+        "title": "Session Relationship Kind",
+        "type": "string"
+      },
+      "SessionRelationshipNavigation": {
+        "properties": {
+          "anchor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicSourceAnchor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionRelationshipKind"
+          },
+          "localId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/RelationshipNavigationStatus"
+          },
+          "transcriptId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TranscriptID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "status"
+        ],
+        "type": "object"
       },
       "SessionScorecard": {
         "properties": {
@@ -7492,6 +8344,11 @@
             "format": "int64",
             "type": "integer"
           },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
           "subagentCount": {
             "type": "integer"
           },
@@ -7543,6 +8400,19 @@
           "id": {
             "type": "string"
           },
+          "inputSubmissionCount": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "outcome": {
             "type": "string"
           },
@@ -7567,6 +8437,25 @@
           },
           "projectHash": {
             "$ref": "#/components/schemas/ProjectHash"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "sessionOrigin": {
             "$ref": "#/components/schemas/SessionOrigin"
@@ -7623,6 +8512,13 @@
           "status"
         ],
         "type": "object"
+      },
+      "SourceEntryRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Source Entry Reference",
+        "type": "string"
       },
       "SourceFormat": {
         "description": "Transcript file format",
@@ -7681,6 +8577,13 @@
           "parentUuid"
         ],
         "type": "object"
+      },
+      "SubmissionRef": {
+        "format": "public-ref-utf8-96-bytes",
+        "maxLength": 96,
+        "minLength": 1,
+        "title": "Submission Reference",
+        "type": "string"
       },
       "TargetKind": {
         "description": "What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association",
@@ -7981,7 +8884,17 @@
             "type": "string"
           },
           "callEntryRef": {
-            "type": "string"
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "callProvenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "durationMs": {
             "anyOf": [
@@ -8021,14 +8934,21 @@
           "name": {
             "type": "string"
           },
-          "namespace": {
-            "type": "string"
-          },
           "result": {
             "type": "string"
           },
           "resultEntryRef": {
-            "type": "string"
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "resultProvenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "toolKind": {
             "$ref": "#/components/schemas/ToolCallKind"
@@ -8234,11 +9154,21 @@
               }
             ]
           },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "role": {
             "$ref": "#/components/schemas/Role"
           },
           "sourceEntryRef": {
-            "type": "string"
+            "$ref": "#/components/schemas/SourceEntryRef"
           },
           "stopReason": {
             "anyOf": [
@@ -8390,8 +9320,27 @@
           "project": {
             "$ref": "#/components/schemas/ProjectContext"
           },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
           "redaction": {
             "$ref": "#/components/schemas/RedactionInfo"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "schemaVersion": {
             "type": "integer"
@@ -8504,7 +9453,7 @@
             "$ref": "#/components/schemas/UsageScope"
           },
           "sourceEntryRef": {
-            "type": "string"
+            "$ref": "#/components/schemas/SourceEntryRef"
           },
           "tokens": {
             "anyOf": [
@@ -8845,6 +9794,19 @@
           "id": {
             "$ref": "#/components/schemas/TranscriptID"
           },
+          "input_submission_count": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
           },
@@ -8873,6 +9835,25 @@
           "published_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "root_session_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "session_origin": {
             "$ref": "#/components/schemas/SessionOrigin"
@@ -9021,6 +10002,38 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "VillageEnrichedTranscriptShare": {
+        "properties": {
+          "acceptance_mode": {
+            "$ref": "#/components/schemas/VillageGroupAcceptanceMode"
+          },
+          "group_id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "group_name": {
+            "type": "string"
+          },
+          "shared_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VillageShareStatus"
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "group_id",
+          "group_name",
+          "acceptance_mode",
+          "status",
+          "shared_at"
         ],
         "type": "object"
       },
@@ -9574,6 +10587,19 @@
               }
             ]
           },
+          "input_submission_count": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "license_id": {
             "anyOf": [
               {
@@ -9856,6 +10882,15 @@
             "format": "date-time",
             "type": "string"
           },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
           "retry_loops": {
             "anyOf": [
               {
@@ -9876,6 +10911,16 @@
                   "null",
                   "integer"
                 ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "root_session_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
               },
               {
                 "type": "null"
@@ -10230,6 +11275,101 @@
         "title": "Village Group Viewer Role",
         "type": "string"
       },
+      "VillageGroupedContributableResponse": {
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "transcriptList": {
+            "$ref": "#/components/schemas/VillageSessionListPayload"
+          }
+        },
+        "required": [
+          "groupId",
+          "transcriptList"
+        ],
+        "type": "object"
+      },
+      "VillageGroupedGroupDetailResponse": {
+        "properties": {
+          "can_read": {
+            "type": "boolean"
+          },
+          "contributors": {
+            "items": {
+              "$ref": "#/components/schemas/VillageGroupContributor"
+            },
+            "type": "array"
+          },
+          "group": {
+            "$ref": "#/components/schemas/VillageGroup"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/VillageGroupMember"
+            },
+            "type": "array"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/VillageGroupModelBreakdown"
+            },
+            "type": "array"
+          },
+          "pending_members": {
+            "items": {
+              "$ref": "#/components/schemas/VillageGroupMember"
+            },
+            "type": "array"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/VillageGroupTranscriptStats"
+          },
+          "transcriptList": {
+            "$ref": "#/components/schemas/VillageSessionListPayload"
+          },
+          "your_role": {
+            "$ref": "#/components/schemas/VillageGroupViewerRole"
+          }
+        },
+        "required": [
+          "group",
+          "members",
+          "stats",
+          "models",
+          "contributors",
+          "can_read",
+          "your_role",
+          "transcriptList"
+        ],
+        "type": "object"
+      },
+      "VillageHelperMembersPayload": {
+        "properties": {
+          "limit": {
+            "type": "integer"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/VillageSessionRow"
+            },
+            "type": "array"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "members",
+          "page",
+          "limit",
+          "total"
+        ],
+        "type": "object"
+      },
       "VillageLinkRepositoryRequest": {
         "properties": {
           "installation_id": {
@@ -10330,6 +11470,98 @@
         ],
         "type": "object"
       },
+      "VillageListTranscriptAttestation": {
+        "properties": {
+          "attestation_type": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "org_login": {
+            "type": "string"
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "transcript_id",
+          "org_login",
+          "attestation_type",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "VillageListUserOrganization": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "org_login": {
+            "type": "string"
+          },
+          "user_id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          }
+        },
+        "required": [
+          "user_id",
+          "org_login",
+          "avatar_url"
+        ],
+        "type": "object"
+      },
+      "VillageMetadataUserOrganization": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fetched_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "org_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "org_login": {
+            "type": "string"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "org_login",
+          "org_id",
+          "avatar_url",
+          "visible",
+          "fetched_at"
+        ],
+        "type": "object"
+      },
       "VillagePendingShare": {
         "properties": {
           "branch": {
@@ -10338,6 +11570,19 @@
                 "type": [
                   "null",
                   "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_submission_count": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
                 ]
               },
               {
@@ -10380,6 +11625,25 @@
                   "null",
                   "string"
                 ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "root_session_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
               },
               {
                 "type": "null"
@@ -10973,6 +12237,128 @@
         ],
         "type": "object"
       },
+      "VillageSessionListItem": {
+        "properties": {
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HelperContextSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "helperGroups": {
+            "items": {
+              "$ref": "#/components/schemas/HelperGroupSummary"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SessionListItemKind"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageSessionRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object"
+      },
+      "VillageSessionListPayload": {
+        "properties": {
+          "helperThreadTotal": {
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VillageSessionListItem"
+            },
+            "type": "array"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "ordinarySessionTotal": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "totalItems": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "limit",
+          "totalItems",
+          "ordinarySessionTotal",
+          "helperThreadTotal"
+        ],
+        "type": "object"
+      },
+      "VillageSessionRow": {
+        "properties": {
+          "collective": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageGroupTranscript"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contributable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageContributableTranscript"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "myShare": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageUserGroupShare"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillagePendingShare"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "session": {
+            "$ref": "#/components/schemas/VillageTranscript"
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "type": "object"
+      },
       "VillageShareEvent": {
         "properties": {
           "decided_at": {
@@ -11071,6 +12457,21 @@
         },
         "required": [
           "status"
+        ],
+        "type": "object"
+      },
+      "VillageTag": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ],
         "type": "object"
       },
@@ -11269,6 +12670,19 @@
                 "type": [
                   "null",
                   "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_submission_count": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
                 ]
               },
               {
@@ -11539,6 +12953,15 @@
             "format": "date-time",
             "type": "string"
           },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
           "retry_loops": {
             "anyOf": [
               {
@@ -11559,6 +12982,16 @@
                   "null",
                   "integer"
                 ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "root_session_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
               },
               {
                 "type": "null"
@@ -11859,6 +13292,66 @@
         ],
         "type": "object"
       },
+      "VillageTranscriptAttestation": {
+        "properties": {
+          "attestation_type": {
+            "type": "string"
+          },
+          "attester_avatar": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "attester_username": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "org_login": {
+            "type": "string"
+          },
+          "transcript_id": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "id",
+          "transcript_id",
+          "org_login",
+          "attestation_type",
+          "note",
+          "created_at",
+          "attester_username",
+          "attester_avatar"
+        ],
+        "type": "object"
+      },
       "VillageTranscriptCollective": {
         "properties": {
           "description": {
@@ -11933,6 +13426,144 @@
         ],
         "title": "Village Transcript Deletion Policy",
         "type": "string"
+      },
+      "VillageTranscriptListResponse": {
+        "properties": {
+          "agent_total": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "transcripts": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscriptListRow"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "transcripts",
+          "total",
+          "agent_total",
+          "page",
+          "limit"
+        ],
+        "type": "object"
+      },
+      "VillageTranscriptListRow": {
+        "properties": {
+          "attestations": {
+            "items": {
+              "$ref": "#/components/schemas/VillageListTranscriptAttestation"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "owner": {
+            "$ref": "#/components/schemas/VillageUser"
+          },
+          "owner_orgs": {
+            "items": {
+              "$ref": "#/components/schemas/VillageListUserOrganization"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "shares": {
+            "items": {
+              "$ref": "#/components/schemas/VillageEnrichedTranscriptShare"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTag"
+            },
+            "type": "array"
+          },
+          "transcript": {
+            "$ref": "#/components/schemas/VillageTranscript"
+          }
+        },
+        "required": [
+          "transcript",
+          "tags",
+          "owner",
+          "owner_orgs",
+          "shares",
+          "attestations"
+        ],
+        "type": "object"
+      },
+      "VillageTranscriptMetadataResponse": {
+        "properties": {
+          "attestations": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscriptAttestation"
+            },
+            "type": "array"
+          },
+          "enriched_shares": {
+            "items": {
+              "$ref": "#/components/schemas/VillageEnrichedTranscriptShare"
+            },
+            "type": "array"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/VillageUser"
+          },
+          "owner_orgs": {
+            "items": {
+              "$ref": "#/components/schemas/VillageMetadataUserOrganization"
+            },
+            "type": "array"
+          },
+          "relationshipNavigation": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationshipNavigation"
+            },
+            "type": "array"
+          },
+          "shares": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscriptShare"
+            },
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTag"
+            },
+            "type": "array"
+          },
+          "transcript": {
+            "$ref": "#/components/schemas/VillageTranscript"
+          }
+        },
+        "required": [
+          "transcript",
+          "tags",
+          "shares",
+          "enriched_shares",
+          "owner",
+          "owner_orgs",
+          "attestations"
+        ],
+        "type": "object"
       },
       "VillageTranscriptShare": {
         "properties": {
@@ -12059,6 +13690,94 @@
         },
         "type": "object"
       },
+      "VillageUser": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "github_id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "github_username": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "is_discoverable": {
+            "type": "boolean"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "provider_user_id": {
+            "type": "string"
+          },
+          "provider_username": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "username_chosen": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "github_id",
+          "github_username",
+          "display_name",
+          "avatar_url",
+          "created_at",
+          "updated_at",
+          "is_discoverable",
+          "provider",
+          "provider_user_id",
+          "username_chosen",
+          "provider_username"
+        ],
+        "type": "object"
+      },
       "VillageUserGroup": {
         "properties": {
           "acceptance_mode": {
@@ -12156,6 +13875,19 @@
           "id": {
             "$ref": "#/components/schemas/TranscriptID"
           },
+          "input_submission_count": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
           },
@@ -12191,6 +13923,25 @@
           "published_at": {
             "format": "date-time",
             "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "root_session_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "shared_at": {
             "format": "date-time",

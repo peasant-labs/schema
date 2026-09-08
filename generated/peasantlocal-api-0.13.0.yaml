@@ -3,7 +3,7 @@ info:
   description: Local web dashboard API for viewing AI agent session analytics. Includes
     REST endpoints and WebSocket channel message schemas.
   title: Peasant Local Dashboard API
-  version: 0.12.0
+  version: 0.13.0
 paths:
   /api/v1/annotation-types:
     get:
@@ -352,15 +352,66 @@ paths:
         schema:
           description: Max results (default 20, capped at 50)
           type: integer
+      - description: Set to grouped to return owner-nested helper groups
+        in: query
+        name: view
+        schema:
+          description: Set to grouped to return owner-nested helper groups
+          enum:
+          - grouped
+          type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SchemaSearchPayload'
+                oneOf:
+                - $ref: '#/components/schemas/SearchPayload'
+                - $ref: '#/components/schemas/SchemaLocalSessionListPayload'
           description: OK
       tags:
       - search
+  /api/v1/session-groups/{groupId}/members:
+    get:
+      description: List authorized saved helper sessions within the originating grouped
+        query scope.
+      operationId: listLocalHelperGroupMembers
+      parameters:
+      - description: Opaque member scope from the originating grouped response
+        in: query
+        name: scope
+        required: true
+        schema:
+          description: Opaque member scope from the originating grouped response
+          type: string
+      - description: One-based member page
+        in: query
+        name: page
+        schema:
+          description: One-based member page
+          minimum: 1
+          type: integer
+      - description: Maximum members per page
+        in: query
+        name: limit
+        schema:
+          description: Maximum members per page
+          minimum: 1
+          type: integer
+      - in: path
+        name: groupId
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaLocalHelperMembersPayload'
+          description: OK
+      tags:
+      - sessions
   /api/v1/session-summaries:
     get:
       description: 'Get session summaries for an explicit set of session identifiers.
@@ -391,6 +442,15 @@ paths:
     get:
       description: List session summaries.
       operationId: listSessions
+      parameters:
+      - description: Set to grouped to return owner-nested helper groups
+        in: query
+        name: view
+        schema:
+          description: Set to grouped to return owner-nested helper groups
+          enum:
+          - grouped
+          type: string
       responses:
         "200":
           content:
@@ -417,7 +477,9 @@ paths:
                       totalTokens: 11500
                       turnCount: 6
               schema:
-                $ref: '#/components/schemas/SchemaSessionsPayload'
+                oneOf:
+                - $ref: '#/components/schemas/SchemaSessionsPayload'
+                - $ref: '#/components/schemas/SchemaLocalSessionListPayload'
           description: OK
       tags:
       - sessions
@@ -466,7 +528,26 @@ paths:
                         name: Read
                         result: file contents...
               schema:
-                $ref: '#/components/schemas/SchemaSessionDetailPayload'
+                $ref: '#/components/schemas/SchemaSessionDetailReadPayload'
+          description: OK
+      tags:
+      - sessions
+  /api/v1/sessions/{id}/transcript:
+    get:
+      description: Get the flat additive session transcript by ID.
+      operationId: getSessionTranscript
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaSessionDetailReadPayload'
           description: OK
       tags:
       - sessions
@@ -488,6 +569,30 @@ paths:
           description: OK
       tags:
       - lifecycle
+  /api/v1/sync/sessions:
+    get:
+      description: List sync candidates with optional owner-nested helper groups.
+      operationId: listSyncSessionsGrouped
+      parameters:
+      - description: Set to grouped for grouped rows
+        in: query
+        name: view
+        schema:
+          description: Set to grouped for grouped rows
+          enum:
+          - grouped
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                oneOf:
+                - $ref: '#/components/schemas/LocalSyncSessionsPayload'
+                - $ref: '#/components/schemas/SchemaLocalSessionListPayload'
+          description: OK
+      tags:
+      - sync
 components:
   schemas:
     AnnotationsPayload:
@@ -563,6 +668,15 @@ components:
       - avgTurnsPerSession
       - acceptanceRate
       type: object
+    LocalSyncSessionsPayload:
+      properties:
+        sessions:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSyncSummary'
+          type: array
+      required:
+      - sessions
+      type: object
     QualityPayload:
       properties:
         sessions:
@@ -587,6 +701,20 @@ components:
       - to
       - taskCount
       type: object
+    SchemaActorOrigin:
+      description: Closed session graph value
+      enum:
+      - operator
+      - agent_delegate
+      - harness
+      - unknown
+      examples:
+      - operator
+      - agent_delegate
+      - harness
+      - unknown
+      title: Actor Origin
+      type: string
     SchemaAnnotationAxis:
       description: Subscription dimension for annotation channels
       enum:
@@ -1194,6 +1322,64 @@ components:
       - low
       title: Confidence
       type: string
+    SchemaContentOrigin:
+      description: Closed session graph value
+      enum:
+      - submitted_input
+      - harness_context
+      - agent_output
+      - agent_communication
+      - tool_activity
+      - system_control
+      - generated_summary
+      - unknown
+      examples:
+      - submitted_input
+      - harness_context
+      - agent_output
+      - agent_communication
+      - tool_activity
+      - system_control
+      - generated_summary
+      - unknown
+      title: Content Origin
+      type: string
+    SchemaContentOwnership:
+      description: Closed session graph value
+      enum:
+      - local
+      - inherited
+      - uncertain
+      examples:
+      - local
+      - inherited
+      - uncertain
+      title: Content Ownership
+      type: string
+    SchemaContentProvenance:
+      properties:
+        actor:
+          $ref: '#/components/schemas/SchemaActorOrigin'
+        delivery:
+          $ref: '#/components/schemas/SchemaDeliveryOrigin'
+        evidence:
+          $ref: '#/components/schemas/SchemaEvidenceKind'
+        inputModality:
+          $ref: '#/components/schemas/SchemaInputModality'
+        origin:
+          $ref: '#/components/schemas/SchemaContentOrigin'
+        ownership:
+          $ref: '#/components/schemas/SchemaContentOwnership'
+        submissionRef:
+          $ref: '#/components/schemas/SchemaSubmissionRef'
+      required:
+      - origin
+      - actor
+      - delivery
+      - ownership
+      - evidence
+      - inputModality
+      type: object
     SchemaCreateAnnotationRequest:
       properties:
         annotatorName:
@@ -1262,6 +1448,26 @@ components:
       - tokens
       - sessions
       type: object
+    SchemaDeliveryOrigin:
+      description: Closed session graph value
+      enum:
+      - session_admission
+      - guardian_review
+      - subagent_delivery
+      - inherited_context
+      - tool_delivery
+      - system_lifecycle
+      - unknown
+      examples:
+      - session_admission
+      - guardian_review
+      - subagent_delivery
+      - inherited_context
+      - tool_delivery
+      - system_lifecycle
+      - unknown
+      title: Delivery Origin
+      type: string
     SchemaDiffHunk:
       properties:
         header:
@@ -1313,6 +1519,32 @@ components:
       - del
       title: Diff Line Kind
       type: string
+    SchemaEarlierHistorySection:
+      properties:
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/SchemaNativeMetadataRecord'
+          type: array
+        state:
+          $ref: '#/components/schemas/SchemaEarlierHistoryState'
+        turns:
+          items:
+            $ref: '#/components/schemas/SchemaTurnDetail'
+          type: array
+      required:
+      - state
+      - turns
+      type: object
+    SchemaEarlierHistoryState:
+      description: Closed session graph value
+      enum:
+      - uncertain_migrated
+      - uncertain_unresolved
+      examples:
+      - uncertain_migrated
+      - uncertain_unresolved
+      title: Earlier History State
+      type: string
     SchemaEdgeViolation:
       properties:
         from:
@@ -1351,6 +1583,24 @@ components:
       - tool_use
       - tool_result
       title: Entry Type
+      type: string
+    SchemaEvidenceKind:
+      description: Closed session graph value
+      enum:
+      - native_typed
+      - lifecycle_typed
+      - existing_adapter
+      - retained_last_good
+      - unknown
+      - conflict
+      examples:
+      - native_typed
+      - lifecycle_typed
+      - existing_adapter
+      - retained_last_good
+      - unknown
+      - conflict
+      title: Evidence Kind
       type: string
     SchemaFileChange:
       properties:
@@ -1414,6 +1664,50 @@ components:
       required:
       - status
       type: object
+    SchemaHelperContextSummary:
+      properties:
+        groupId:
+          type: string
+        ownerStatus:
+          $ref: '#/components/schemas/SchemaRelationshipNavigationStatus'
+      required:
+      - groupId
+      - ownerStatus
+      type: object
+    SchemaHelperGroupSummary:
+      properties:
+        groupId:
+          type: string
+        helperThreadCount:
+          type: integer
+        memberScope:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+      required:
+      - groupId
+      - purpose
+      - helperThreadCount
+      - memberScope
+      type: object
+    SchemaInputModality:
+      description: Closed session graph value
+      enum:
+      - none
+      - text
+      - media
+      - user_action
+      - mixed
+      - unknown
+      examples:
+      - none
+      - text
+      - media
+      - user_action
+      - mixed
+      - unknown
+      title: Input Modality
+      type: string
     SchemaInsightClassification:
       properties:
         category:
@@ -1476,6 +1770,126 @@ components:
       - mined
       title: Insight Provenance
       type: string
+    SchemaLocalHelperMembersPayload:
+      properties:
+        limit:
+          type: integer
+        members:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionRow'
+          type: array
+        page:
+          type: integer
+        total:
+          type: integer
+      required:
+      - members
+      - page
+      - limit
+      - total
+      type: object
+    SchemaLocalSessionListItem:
+      properties:
+        context:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaHelperContextSummary'
+          - type: "null"
+        helperGroups:
+          items:
+            $ref: '#/components/schemas/SchemaHelperGroupSummary'
+          type: array
+        kind:
+          $ref: '#/components/schemas/SchemaSessionListItemKind'
+        transcript:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaLocalSessionRow'
+          - type: "null"
+      required:
+      - kind
+      type: object
+    SchemaLocalSessionListPayload:
+      properties:
+        helperThreadTotal:
+          type: integer
+        items:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionListItem'
+          type: array
+        limit:
+          type: integer
+        ordinarySessionTotal:
+          type: integer
+        page:
+          type: integer
+        totalItems:
+          type: integer
+      required:
+      - items
+      - page
+      - limit
+      - totalItems
+      - ordinarySessionTotal
+      - helperThreadTotal
+      type: object
+    SchemaLocalSessionRow:
+      properties:
+        matches:
+          items:
+            $ref: '#/components/schemas/SchemaSearchResult'
+          type: array
+        session:
+          $ref: '#/components/schemas/SchemaSessionSummary'
+        sync:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaLocalSyncSummary'
+          - type: "null"
+      required:
+      - session
+      type: object
+    SchemaLocalSyncSummary:
+      properties:
+        durationMs:
+          format: int64
+          type: integer
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        hostSlug:
+          type: string
+        id:
+          type: string
+        inputSubmissionCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
+        model:
+          type: string
+        projectHash:
+          $ref: '#/components/schemas/SchemaProjectHash'
+        projectName:
+          type: string
+        startTime:
+          type: string
+        syncStatus:
+          type: string
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+      required:
+      - id
+      - harness
+      - projectName
+      - projectHash
+      - hostSlug
+      - startTime
+      - durationMs
+      - totalTokens
+      - turnCount
+      - model
+      - syncStatus
+      type: object
     SchemaMapEdge:
       properties:
         count:
@@ -1847,7 +2261,7 @@ components:
     SchemaNativeSourceRef:
       properties:
         entryRef:
-          type: string
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
         messageRole:
           $ref: '#/components/schemas/SchemaNativePiMessageRole'
         sourceType:
@@ -1865,7 +2279,7 @@ components:
       - anthropic/Claude-Opus-4-8
       - provider/Model Family
       minLength: 1
-      pattern: ^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])
+      pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
       title: Observed Model ID
       type: string
     SchemaProjectHash:
@@ -1957,6 +2371,35 @@ components:
       required:
       - method
       type: object
+    SchemaPublicRevisionRef:
+      format: public-ref-utf8-96-bytes
+      maxLength: 96
+      minLength: 1
+      title: Public Revision Reference
+      type: string
+    SchemaPublicSourceAnchor:
+      properties:
+        kind:
+          $ref: '#/components/schemas/SchemaPublicSourceAnchorKind'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        sourceRevisionRef:
+          $ref: '#/components/schemas/SchemaPublicRevisionRef'
+      required:
+      - kind
+      type: object
+    SchemaPublicSourceAnchorKind:
+      description: Closed session graph value
+      enum:
+      - general_source_session
+      - before_redacted_entry
+      - through_redacted_entry
+      examples:
+      - general_source_session
+      - before_redacted_entry
+      - through_redacted_entry
+      title: Public Source Anchor Kind
+      type: string
     SchemaQualitySession:
       properties:
         date:
@@ -2099,6 +2542,40 @@ components:
       required:
       - source
       type: object
+    SchemaRelationshipNavigationStatus:
+      description: Closed session graph value
+      enum:
+      - resolved
+      - general_link_only
+      - known_unavailable
+      - inaccessible
+      - unknown
+      - conflicting
+      examples:
+      - resolved
+      - general_link_only
+      - known_unavailable
+      - inaccessible
+      - unknown
+      - conflicting
+      title: Relationship Navigation Status
+      type: string
+    SchemaRelationshipTargetState:
+      description: Closed session graph value
+      enum:
+      - target_known
+      - target_known_retained
+      - explicit_none
+      - unknown
+      - conflicting_current_native_evidence
+      examples:
+      - target_known
+      - target_known_retained
+      - explicit_none
+      - unknown
+      - conflicting_current_native_evidence
+      title: Relationship Target State
+      type: string
     SchemaReviewListPayload:
       properties:
         changes:
@@ -2228,20 +2705,6 @@ components:
       - continuous
       title: Scale Kind
       type: string
-    SchemaSearchPayload:
-      properties:
-        query:
-          type: string
-        results:
-          items:
-            $ref: '#/components/schemas/SchemaSearchResult'
-          type:
-          - array
-          - "null"
-      required:
-      - query
-      - results
-      type: object
     SchemaSearchResult:
       properties:
         entryIndex:
@@ -2288,7 +2751,7 @@ components:
       - confidence
       - evidence
       type: object
-    SchemaSessionDetailPayload:
+    SchemaSessionDetailReadPayload:
       properties:
         childSessions:
           items:
@@ -2297,6 +2760,10 @@ components:
         durationMins:
           format: double
           type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/SchemaEarlierHistorySection'
+          type: array
         endTime:
           format: date-time
           type: string
@@ -2308,6 +2775,10 @@ components:
           $ref: '#/components/schemas/BestiaryHarness'
         id:
           type: string
+        inputSubmissionCount:
+          type:
+          - "null"
+          - integer
         model:
           type: string
         nativeMetadata:
@@ -2316,14 +2787,26 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
+        parentSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
         project:
           type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationshipNavigation:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationshipNavigation'
+          type: array
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        rootSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
         schemaVersion:
           type: string
         scorecard:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaSessionScorecard'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaSessionScorecard'
         sessionOrigin:
           $ref: '#/components/schemas/SchemaSessionOrigin'
         source:
@@ -2352,17 +2835,7 @@ components:
         workingDirectory:
           type: string
       required:
-      - id
-      - harness
-      - startTime
-      - endTime
-      - durationMins
-      - totalTokens
-      - tokensIn
-      - tokensOut
-      - turnCount
-      - toolCallCount
-      - turns
+      - SessionDetailPayload
       type: object
     SchemaSessionID:
       description: Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id}
@@ -2410,6 +2883,16 @@ components:
       - subjects
       - evidence
       type: object
+    SchemaSessionListItemKind:
+      description: Closed session graph value
+      enum:
+      - transcript
+      - context_container
+      examples:
+      - transcript
+      - context_container
+      title: Session List Item Kind
+      type: string
     SchemaSessionOrigin:
       description: Who drove a recorded session, as declared by the producer that
         recorded it
@@ -2435,6 +2918,73 @@ components:
       - failed
       title: Session Outcome
       type: string
+    SchemaSessionPurpose:
+      description: Closed session graph value
+      enum:
+      - interaction
+      - delegated_work
+      - helper_review
+      - unknown
+      examples:
+      - interaction
+      - delegated_work
+      - helper_review
+      - unknown
+      title: Session Purpose
+      type: string
+    SchemaSessionRelationship:
+      properties:
+        anchor:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
+          - type: "null"
+        evidence:
+          $ref: '#/components/schemas/SchemaEvidenceKind'
+        kind:
+          $ref: '#/components/schemas/SchemaSessionRelationshipKind'
+        targetLocalId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
+        targetState:
+          $ref: '#/components/schemas/SchemaRelationshipTargetState'
+      required:
+      - kind
+      - targetState
+      - evidence
+      type: object
+    SchemaSessionRelationshipKind:
+      description: Closed session graph value
+      enum:
+      - started_by
+      - context_from
+      examples:
+      - started_by
+      - context_from
+      title: Session Relationship Kind
+      type: string
+    SchemaSessionRelationshipNavigation:
+      properties:
+        anchor:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
+          - type: "null"
+        kind:
+          $ref: '#/components/schemas/SchemaSessionRelationshipKind'
+        localId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
+        status:
+          $ref: '#/components/schemas/SchemaRelationshipNavigationStatus'
+        transcriptId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaTranscriptID'
+          - type: "null"
+      required:
+      - kind
+      - status
+      type: object
     SchemaSessionScorecard:
       properties:
         costTotalUsd:
@@ -2521,6 +3071,12 @@ components:
           $ref: '#/components/schemas/BestiaryHarness'
         id:
           type: string
+        inputSubmissionCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         outcome:
           type: string
         parentSessionId:
@@ -2535,6 +3091,16 @@ components:
           type: string
         projectHash:
           $ref: '#/components/schemas/SchemaProjectHash'
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        rootSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
         sessionOrigin:
           $ref: '#/components/schemas/SchemaSessionOrigin'
         startTime:
@@ -2573,6 +3139,12 @@ components:
       required:
       - status
       type: object
+    SchemaSourceEntryRef:
+      format: public-ref-utf8-96-bytes
+      maxLength: 96
+      minLength: 1
+      title: Source Entry Reference
+      type: string
     SchemaStopReason:
       description: Reason why a session or turn ended (ACP-aligned)
       enum:
@@ -2585,6 +3157,12 @@ components:
       - end_turn
       - max_tokens
       title: Stop Reason
+      type: string
+    SchemaSubmissionRef:
+      format: public-ref-utf8-96-bytes
+      maxLength: 96
+      minLength: 1
+      title: Submission Reference
       type: string
     SchemaTargetKind:
       description: 'What is being annotated: session-level, entry-level (turn/tool
@@ -2722,7 +3300,11 @@ components:
         arguments:
           type: string
         callEntryRef:
-          type: string
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        callProvenance:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaContentProvenance'
+          - type: "null"
         durationMs:
           anyOf:
           - type:
@@ -2743,12 +3325,14 @@ components:
           type: boolean
         name:
           type: string
-        namespace:
-          type: string
         result:
           type: string
         resultEntryRef:
-          type: string
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        resultProvenance:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaContentProvenance'
+          - type: "null"
         toolKind:
           $ref: '#/components/schemas/SchemaToolCallKind'
         usage:
@@ -2779,6 +3363,14 @@ components:
       - execute
       title: Tool Call Kind
       type: string
+    SchemaTranscriptID:
+      description: Village-side transcript identifier (canonical lowercase-hex UUID)
+      examples:
+      - 99d59925-36bc-424c-a789-8be54d9702ba
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      title: Transcript ID
+      type: string
     SchemaTurnDetail:
       properties:
         agentName:
@@ -2805,10 +3397,14 @@ components:
             - "null"
             - integer
           - type: "null"
+        provenance:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaContentProvenance'
+          - type: "null"
         role:
           $ref: '#/components/schemas/SchemaRole'
         sourceEntryRef:
-          type: string
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
         stopReason:
           anyOf:
           - $ref: '#/components/schemas/SchemaStopReason'
@@ -2898,7 +3494,7 @@ components:
         scope:
           $ref: '#/components/schemas/SchemaUsageScope'
         sourceEntryRef:
-          type: string
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
         tokens:
           anyOf:
           - $ref: '#/components/schemas/SchemaTokenUsageDetail'
@@ -2948,6 +3544,20 @@ components:
       - described
       title: Value Domain Kind
       type: string
+    SearchPayload:
+      properties:
+        query:
+          type: string
+        results:
+          items:
+            $ref: '#/components/schemas/SchemaSearchResult'
+          type:
+          - array
+          - "null"
+      required:
+      - query
+      - results
+      type: object
     ServerMessage:
       properties:
         axis:
@@ -2975,6 +3585,10 @@ components:
         durationMins:
           format: double
           type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/SchemaEarlierHistorySection'
+          type: array
         endTime:
           format: date-time
           type: string
@@ -2986,6 +3600,12 @@ components:
           $ref: '#/components/schemas/BestiaryHarness'
         id:
           type: string
+        inputSubmissionCount:
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -2994,8 +3614,22 @@ components:
           type: array
         outcome:
           $ref: '#/components/schemas/SchemaSessionOutcome'
+        parentSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
         project:
           type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        rootSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
         schemaVersion:
           type: string
         scorecard:
@@ -3041,6 +3675,92 @@ components:
       - turnCount
       - toolCallCount
       - turns
+      type: object
+    SessionDetailReadPayload:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/SchemaChildSessionRef'
+          type: array
+        durationMins:
+          format: double
+          type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/SchemaEarlierHistorySection'
+          type: array
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        id:
+          type: string
+        inputSubmissionCount:
+          type:
+          - "null"
+          - integer
+        model:
+          type: string
+        nativeMetadata:
+          items:
+            $ref: '#/components/schemas/SchemaNativeMetadataRecord'
+          type: array
+        outcome:
+          $ref: '#/components/schemas/SchemaSessionOutcome'
+        parentSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        project:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationshipNavigation:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationshipNavigation'
+          type: array
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        rootSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        schemaVersion:
+          type: string
+        scorecard:
+          $ref: '#/components/schemas/SchemaSessionScorecard'
+        sessionOrigin:
+          $ref: '#/components/schemas/SchemaSessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        turns:
+          items:
+            $ref: '#/components/schemas/SchemaTurnDetail'
+          type:
+          - array
+          - "null"
+        workingDirectory:
+          type: string
+      required:
+      - SessionDetailPayload
       type: object
     TrendsPayload:
       properties:
