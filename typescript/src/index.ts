@@ -2,6 +2,7 @@ export * from "./internal/generated/public-contract.gen.js";
 export * from "./internal/generated/enums.gen.js";
 export * from "./internal/generated/content-capabilities.gen.js";
 export * from "./internal/generated/versions.gen.js";
+import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
 import { maxNativeMetadataStringBytes } from "./internal/generated/metadata-limits.gen.js";
@@ -204,7 +205,7 @@ function pointerMatches(pattern: string, path: string): boolean { const expected
 type Detail = import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
 function validateSessionDetail(payload: Detail): void {
   validateRelationships(payload);
-  const state = newDetailState();
+  const state = newDetailState(payload);
   const turns = validateTurnEvidence(payload.turns ?? [], state);
   validateMetadataRecords(payload.nativeMetadata ?? [], turns, state);
   for (const section of payload.earlierHistory ?? []) {
@@ -245,8 +246,8 @@ function validateRelationships(payload: Detail): void {
 
 function validSessionId(value: string): boolean { return !value.includes("/") && !value.includes("\\") && !value.includes("..") && /^(?:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}|agent-[a-f0-9]+|ses_[a-zA-Z0-9]+|sess_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[A-Z2-7]{26}|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26})$/.test(value); }
 
-type DetailState = { blockRefs: Set<string>; owners: Set<string>; sources: Set<string>; toolIds: Set<string>; nativeIds: Set<string>; nativeSources: Set<string>; nativeCount: number; nativeBytes: number };
-function newDetailState(): DetailState { return {blockRefs:new Set(), owners:new Set(), sources:new Set(), toolIds:new Set(), nativeIds:new Set(), nativeSources:new Set(), nativeCount:0, nativeBytes:0}; }
+type DetailState = { strictBlockIdentity: boolean; blockRefs: Set<string>; owners: Set<string>; sources: Set<string>; toolIds: Set<string>; nativeIds: Set<string>; nativeSources: Set<string>; nativeCount: number; nativeBytes: number };
+function newDetailState(payload: Detail): DetailState { return {strictBlockIdentity: requiredContentCapabilities(payload).includes(KnownContentCapability.SessionGraphProvenanceV1), blockRefs:new Set(), owners:new Set(), sources:new Set(), toolIds:new Set(), nativeIds:new Set(), nativeSources:new Set(), nativeCount:0, nativeBytes:0}; }
 
 // Producers can validate metadata before attaching it to a harness envelope.
 // The full detail parsers reuse this same record and target validation.
@@ -254,7 +255,7 @@ export function parseNativeMetadataRecordsValue(value: unknown, targets: unknown
   rejectExplicitNullEvidence({nativeMetadata: value, turns: targets});
   const turns = zTurnDetail.array().parse(targets);
   const records = zNativeMetadataRecord.array().parse(value);
-  const state = newDetailState();
+  const state = newDetailState({turns} as Detail);
   validateMetadataRecords(records, validateTurnEvidence(turns, state), state);
   return records;
 }
@@ -264,13 +265,13 @@ export function parseNativeMetadataRecordsText(text: string, targets: unknown = 
   return parseNativeMetadataRecordsValue(JSON.parse(text), targets);
 }
 
-function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, state = newDetailState()): Map<number, NonNullable<Detail["turns"]>[number]> {
+function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, state = newDetailState({turns: targets} as Detail)): Map<number, NonNullable<Detail["turns"]>[number]> {
   const blockRefs = state.blockRefs, owners = state.owners, sources = state.sources, toolIds = state.toolIds;
   const turnIndexes = new Set<number>(); const turns = new Map<number, NonNullable<Detail["turns"]>[number]>();
   for (const turn of targets) {
     if (turn.observedModel !== undefined && (turn.role !== "assistant" || !validUnicode(turn.observedModel))) failSemantic("observedModel requires valid Unicode and an assistant role");
     if (turnIndexes.has(turn.index)) failSemantic("duplicate turn index makes metadata attachment ambiguous"); turnIndexes.add(turn.index); turns.set(turn.index, turn);
-    if (turn.sourceEntryRef !== undefined && (!validOptionalRef(turn.sourceEntryRef) || blockRefs.has(turn.sourceEntryRef))) failSemantic("turn source reference is invalid, duplicated, or exceeds 96 bytes");
+    if (turn.sourceEntryRef !== undefined && (!validOptionalRef(turn.sourceEntryRef) || (state.strictBlockIdentity && blockRefs.has(turn.sourceEntryRef)))) failSemantic("turn source reference is invalid, duplicated, or exceeds 96 bytes");
     if (turn.sourceEntryRef !== undefined) blockRefs.add(turn.sourceEntryRef);
     if (turn.provenance != null) validateProvenance(turn.provenance);
     const projected = turn.sourceEntryRef !== undefined || turn.provenance !== undefined || (turn.toolCalls ?? []).some((tool) => tool.callEntryRef !== undefined || tool.resultEntryRef !== undefined || tool.callProvenance !== undefined || tool.resultProvenance !== undefined);
@@ -288,7 +289,7 @@ function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, state = new
       if (tool.id && toolIds.has(tool.id)) failSemantic("duplicate tool call id makes metadata attachment ambiguous");
       if (tool.id) toolIds.add(tool.id);
       for (const ref of [tool.callEntryRef, tool.resultEntryRef]) {
-        if (ref !== undefined && (!validOptionalRef(ref) || blockRefs.has(ref))) failSemantic("tool reference is invalid, duplicated, or exceeds 96 bytes");
+        if (ref !== undefined && (!validOptionalRef(ref) || (state.strictBlockIdentity && blockRefs.has(ref)))) failSemantic("tool reference is invalid, duplicated, or exceeds 96 bytes");
         if (ref !== undefined) blockRefs.add(ref);
       }
       if (tool.usage != null) {
@@ -301,11 +302,11 @@ function validateTurnEvidence(targets: NonNullable<Detail["turns"]>, state = new
   return turns;
 }
 
-function validateMetadataRecords(records: NonNullable<Detail["nativeMetadata"]>, turns: Map<number, NonNullable<Detail["turns"]>[number]>, state = newDetailState()): void {
+function validateMetadataRecords(records: NonNullable<Detail["nativeMetadata"]>, turns: Map<number, NonNullable<Detail["turns"]>[number]>, state: DetailState): void {
   const blockRefs = state.blockRefs;
   if (state.nativeCount + records.length > 256) failSemantic("native metadata record count exceeds 256"); state.nativeCount += records.length;
   for (const metadata of records) {
-    if (!validRef(metadata.id) || !validRef(metadata.source.entryRef) || state.nativeIds.has(metadata.id) || state.nativeSources.has(metadata.source.entryRef) || (metadata.attachment === undefined && blockRefs.has(metadata.source.entryRef))) failSemantic("metadata reference is invalid or duplicated"); state.nativeIds.add(metadata.id); state.nativeSources.add(metadata.source.entryRef); if (metadata.attachment === undefined) blockRefs.add(metadata.source.entryRef);
+    if (!validRef(metadata.id) || !validRef(metadata.source.entryRef) || state.nativeIds.has(metadata.id) || state.nativeSources.has(metadata.source.entryRef) || (state.strictBlockIdentity && metadata.attachment === undefined && blockRefs.has(metadata.source.entryRef))) failSemantic("metadata reference is invalid or duplicated"); state.nativeIds.add(metadata.id); state.nativeSources.add(metadata.source.entryRef); if (metadata.attachment === undefined) blockRefs.add(metadata.source.entryRef);
     if (metadata.customType !== undefined && (!validUnicode(metadata.customType) || new TextEncoder().encode(metadata.customType).length > 128)) failSemantic("customType is invalid Unicode or exceeds 128 bytes");
     validateMetadataValue(metadata.data, 1);
     const encoded = new TextEncoder().encode(JSON.stringify(metadata.data)).length; state.nativeBytes += encoded; if (encoded > 65536 || state.nativeBytes > 1048576) failSemantic("metadata data exceeds its byte budget");

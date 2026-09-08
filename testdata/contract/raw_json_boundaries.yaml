@@ -1,4 +1,8 @@
 requiredCaseNames:
+  - graph-count-zero-forbids-source-alias
+  - graph-root-forbids-source-alias
+  - graph-provenance-forbids-source-alias
+  - graph-distinct-call-preserves-all-evidence
   - metadata-large-tool-result-string
   - metadata-large-tool-result-string-value
   - metadata-single-string-record-at-limit
@@ -126,6 +130,30 @@ requiredCaseNames:
   - trailing-comma-root
   - trailing-comma-metadata-array
 cases:
+  - name: graph-count-zero-forbids-source-alias
+    operation: detail
+    accepted: false
+    errorCategory: validation
+    errorContains: duplicate
+    raw: '{"id":"s","harness":"pi","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":1,"inputSubmissionCount":0,"turns":[{"index":0,"depth":0,"role":"assistant","content":"preserved","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"assistant-entry","toolCalls":[{"id":"call","name":"Lookup","arguments":"{}","result":"found","callEntryRef":"assistant-entry","resultEntryRef":"result-entry"}]}]}'
+  - name: graph-root-forbids-source-alias
+    operation: detail
+    accepted: false
+    errorCategory: validation
+    errorContains: duplicate
+    raw: '{"id":"s","harness":"pi","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":1,"rootSessionId":"ses_root","turns":[{"index":0,"depth":0,"role":"assistant","content":"preserved","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"assistant-entry","toolCalls":[{"id":"call","name":"Lookup","arguments":"{}","result":"found","callEntryRef":"assistant-entry","resultEntryRef":"result-entry"}]}]}'
+  - name: graph-provenance-forbids-source-alias
+    operation: detail
+    accepted: false
+    errorCategory: validation
+    errorContains: duplicate
+    raw: '{"id":"s","harness":"pi","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":1,"turns":[{"index":0,"depth":0,"role":"assistant","content":"preserved","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"assistant-entry","provenance":{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"},"toolCalls":[{"id":"call","name":"Lookup","arguments":"{}","result":"found","callEntryRef":"assistant-entry","resultEntryRef":"result-entry"}]}]}'
+  - name: graph-distinct-call-preserves-all-evidence
+    operation: detail
+    accepted: true
+    requiredCapabilities: [detailed_usage_v1, native_metadata_v1, observed_model_v1, session_graph_provenance_v1, tool_namespace_v1]
+    raw: >-
+      {"id":"s","harness":"pi","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":1,"inputSubmissionCount":0,"turns":[{"index":0,"depth":0,"role":"assistant","content":"preserved","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"assistant-entry","observedModel":"Provider/Model","usage":{"ownerId":"assistant-owner","sourceEntryRef":"assistant-entry","scope":"assistant","completeness":"unknown"},"toolCalls":[{"id":"call","namespace":"Tools/Custom","name":"Lookup","arguments":"{\"nested\":{\"key\":true}}","result":"found","isError":true,"callEntryRef":"call-entry","resultEntryRef":"result-entry","usage":{"ownerId":"tool-owner","sourceEntryRef":"result-entry","scope":"tool","completeness":"unknown","cost":{"source":"recorded_harness_estimate","total":"1e-7"}}}]}],"nativeMetadata":[{"id":"metadata","kind":"pi.toolresult.details","source":{"entryRef":"result-entry","sourceType":"pi.message","messageRole":"toolResult"},"attachment":{"turnIndex":0,"toolCallId":"call"},"data":{"state":{"selected":true}}}]}
   - name: tool-namespace-with-all-evidence
     operation: detail
     accepted: true

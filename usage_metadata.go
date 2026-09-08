@@ -311,7 +311,7 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 	if len(value.Relationships) > 0 && value.ParentSessionID != nil && (parent == nil || *value.ParentSessionID != *parent) {
 		return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: parentSessionId disagrees with durable started_by relationship; consumers could navigate to the wrong parent; derive the legacy field from the durable relationship")
 	}
-	state := newDetailValidationState()
+	state := newDetailValidationState(value)
 	if err := validateTurnEvidenceAt(value.Turns, "turns", state); err != nil {
 		return err
 	}
@@ -338,22 +338,29 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 }
 
 func validateTurnEvidence(turns []TurnDetail) error {
-	return validateTurnEvidenceAt(turns, "turns", newDetailValidationState())
+	return validateTurnEvidenceAt(turns, "turns", newDetailValidationState(SessionDetailPayload{Turns: turns}))
 }
 
 type detailValidationState struct {
-	usageOwners   map[UsageOwnerID]bool
-	usageSources  map[string]bool
-	blockRefs     map[string]bool
-	toolIDs       map[string]bool
-	nativeIDs     map[string]bool
-	nativeSources map[string]bool
-	nativeCount   int
-	nativeBytes   int
+	strictBlockIdentity bool
+	usageOwners         map[UsageOwnerID]bool
+	usageSources        map[string]bool
+	blockRefs           map[string]bool
+	toolIDs             map[string]bool
+	nativeIDs           map[string]bool
+	nativeSources       map[string]bool
+	nativeCount         int
+	nativeBytes         int
 }
 
-func newDetailValidationState() *detailValidationState {
-	return &detailValidationState{usageOwners: map[UsageOwnerID]bool{}, usageSources: map[string]bool{}, blockRefs: map[string]bool{}, toolIDs: map[string]bool{}, nativeIDs: map[string]bool{}, nativeSources: map[string]bool{}}
+func newDetailValidationState(payload SessionDetailPayload) *detailValidationState {
+	state := &detailValidationState{usageOwners: map[UsageOwnerID]bool{}, usageSources: map[string]bool{}, blockRefs: map[string]bool{}, toolIDs: map[string]bool{}, nativeIDs: map[string]bool{}, nativeSources: map[string]bool{}}
+	for _, capability := range RequiredContentCapabilities(payload) {
+		if capability == ContentCapabilitySessionGraphProvenanceV1 {
+			state.strictBlockIdentity = true
+		}
+	}
+	return state
 }
 
 func projectedTurn(t *TurnDetail) bool {
@@ -470,7 +477,7 @@ func addUniqueBlockRef(state *detailValidationState, ref, path string, index int
 	if ref == "" {
 		return nil
 	}
-	if state.blockRefs[ref] {
+	if state.strictBlockIdentity && state.blockRefs[ref] {
 		return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: duplicate block reference %q at %s[%d].%s crosses a main, earlier, turn, call, or result owner; content identity is ambiguous; emit one unique source reference per block", ref, path, index, field)
 	}
 	state.blockRefs[ref] = true
@@ -502,7 +509,7 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 	if count > 0 && v.Harness != HarnessPi {
 		return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: pi metadata is attached to harness %q; consumers would misattribute evidence; emit it only for harness pi", v.Harness)
 	}
-	state := newDetailValidationState()
+	state := newDetailValidationState(v)
 	if err := validateTurnEvidenceAt(v.Turns, "turns", state); err != nil {
 		return err
 	}
@@ -523,7 +530,7 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 // ValidateNativeMetadataRecords validates metadata and its public targets before
 // a producer attaches them to a harness-specific session envelope.
 func ValidateNativeMetadataRecords(records []NativeMetadataRecord, targets []TurnDetail) error {
-	state := newDetailValidationState()
+	state := newDetailValidationState(SessionDetailPayload{Turns: targets, NativeMetadata: records})
 	if err := validateTurnEvidenceAt(targets, "turns", state); err != nil {
 		return err
 	}
