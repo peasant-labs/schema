@@ -11,8 +11,92 @@ import (
 
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase"
+	testassert "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed testdata/content_capability_session_graph.yaml
+var graphCapabilityFixtureYAML []byte
+
+type graphCapabilityInput struct {
+	Scenario string `yaml:"scenario"`
+	Value    string `yaml:"value,omitempty"`
+}
+type graphCapabilityExpected struct {
+	Capabilities []schema.ContentCapability `yaml:"capabilities,omitempty"`
+}
+
+func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
+	corpus, err := testcase.LoadCorpus[graphCapabilityInput, graphCapabilityExpected](graphCapabilityFixtureYAML)
+	if err != nil {
+		t.Fatalf("load graph capability fixtures: %v", err)
+	}
+	testassert.RequireMin(t, corpus, 15)
+	testassert.RequireValid(t, corpus)
+	requiredNames := []string{"legacy-empty", "model-only", "source-ref-only", "count-only-zero", "root-only", "purpose-only-interaction", "purpose-only-delegated", "purpose-only-helper", "purpose-only-unknown", "relationship-only", "earlier-only", "provenance-only", "populated-submission-provenance", "observed-and-graph", "folded-provenance"}
+	seen := map[string]bool{}
+	for _, c := range corpus.Cases {
+		seen[c.Name] = true
+		t.Run(c.Name, func(t *testing.T) {
+			p := graphCapabilityPayload(c.Input)
+			if err := schema.ValidateSessionDetailPayload(p); err != nil {
+				t.Fatalf("validate durable detail: %v", err)
+			}
+			if got := schema.RequiredContentCapabilities(p); !slices.Equal(got, c.Expected.Capabilities) {
+				t.Fatalf("capabilities=%v, want %v", got, c.Expected.Capabilities)
+			}
+		})
+	}
+	for _, name := range requiredNames {
+		if !seen[name] {
+			t.Errorf("required fixture %q is missing", name)
+		}
+	}
+}
+
+func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
+	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilitySessionGraphProvenanceV1}
+	if !slices.Equal(schema.AllContentCapabilities, want) {
+		t.Fatalf("AllContentCapabilities=%v, want exact canonical inventory %v", schema.AllContentCapabilities, want)
+	}
+	if err := schema.ValidateContentCapabilityAdvertisements(want); err != nil {
+		t.Fatalf("canonical producer advertisement rejected: %v", err)
+	}
+}
+
+func graphCapabilityPayload(in graphCapabilityInput) schema.SessionDetailPayload {
+	p := schema.SessionDetailPayload{Harness: schema.HarnessClaudeCode, Outcome: schema.OutcomeResolved, SessionOrigin: schema.SessionOriginUnknown, Turns: []schema.TurnDetail{}}
+	zero := int64(0)
+	root := schema.SessionID("00000000-0000-4000-8000-000000000001")
+	unknown := &schema.ContentProvenance{Origin: schema.ContentOriginUnknown, Actor: schema.ActorOriginUnknown, Delivery: schema.DeliveryOriginUnknown, Ownership: schema.ContentOwnershipUncertain, Evidence: schema.EvidenceUnknown, InputModality: schema.InputModalityUnknown}
+	switch in.Scenario {
+	case "model-only":
+		p.Model = "seed/model"
+	case "source-ref-only":
+		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, SourceEntryRef: "entry"}}
+	case "count-only-zero":
+		p.InputSubmissionCount = &zero
+	case "root-only":
+		p.RootSessionID = &root
+	case "purpose":
+		p.Purpose = schema.SessionPurpose(in.Value)
+	case "relationship-only":
+		p.Relationships = []schema.SessionRelationship{{Kind: schema.SessionRelationshipStartedBy, TargetState: schema.RelationshipTargetUnknown, Evidence: schema.EvidenceUnknown}}
+	case "earlier-only":
+		p.EarlierHistory = []schema.EarlierHistorySection{{State: schema.EarlierHistoryUncertainMigrated, Turns: []schema.TurnDetail{}}}
+	case "provenance-only":
+		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, Provenance: unknown}}
+	case "submission-provenance":
+		copy := *unknown
+		copy.SubmissionRef = "submission"
+		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, Provenance: &copy}}
+	case "observed-and-graph":
+		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleAssistant, ObservedModel: "provider/model", Provenance: unknown}}
+	case "folded-provenance":
+		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleAssistant, ToolCalls: []schema.ToolCallDetail{{ID: "tool", ResultProvenance: unknown}}}}
+	}
+	return p
+}
 
 //go:embed testdata/contract/content_capabilities.yaml
 var contentCapabilityFixtureYAML []byte

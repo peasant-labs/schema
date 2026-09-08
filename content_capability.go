@@ -18,10 +18,14 @@ const (
 	ContentCapabilityObservedModelV1  ContentCapability = "observed_model_v1"
 	ContentCapabilityDetailedUsageV1  ContentCapability = "detailed_usage_v1"
 	ContentCapabilityNativeMetadataV1 ContentCapability = "native_metadata_v1"
+	// ContentCapabilitySessionGraphProvenanceV1 guarantees preservation of
+	// durable session relationships, retained history, submission counts, and
+	// per-block provenance.
+	ContentCapabilitySessionGraphProvenanceV1 ContentCapability = "session_graph_provenance_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilitySessionGraphProvenanceV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
 func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
@@ -94,22 +98,41 @@ func MissingContentCapabilities(advertised, required []ContentCapability) []Cont
 // capability. An observedModel on any assistant turn, including a nested
 // subagent turn, requires observed_model_v1.
 func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
-	required := make([]ContentCapability, 0, 3)
-	for _, turn := range payload.Turns {
-		if turn.ObservedModel != "" {
-			required = append(required, ContentCapabilityObservedModelV1)
-		}
-		if turn.Usage != nil {
-			required = append(required, ContentCapabilityDetailedUsageV1)
-		}
-		for _, tool := range turn.ToolCalls {
-			if tool.Usage != nil {
+	required := make([]ContentCapability, 0, len(AllContentCapabilities))
+	graph := payload.InputSubmissionCount != nil || payload.RootSessionID != nil || payload.Purpose != "" || len(payload.Relationships) > 0 || len(payload.EarlierHistory) > 0
+	scanTurns := func(turns []TurnDetail) {
+		for _, turn := range turns {
+			if turn.ObservedModel != "" {
+				required = append(required, ContentCapabilityObservedModelV1)
+			}
+			if turn.Usage != nil {
 				required = append(required, ContentCapabilityDetailedUsageV1)
+			}
+			if turn.Provenance != nil {
+				graph = true
+			}
+			for _, tool := range turn.ToolCalls {
+				if tool.Usage != nil {
+					required = append(required, ContentCapabilityDetailedUsageV1)
+				}
+				if tool.CallProvenance != nil || tool.ResultProvenance != nil {
+					graph = true
+				}
 			}
 		}
 	}
+	scanTurns(payload.Turns)
 	if len(payload.NativeMetadata) > 0 {
 		required = append(required, ContentCapabilityNativeMetadataV1)
+	}
+	for _, section := range payload.EarlierHistory {
+		scanTurns(section.Turns)
+		if len(section.NativeMetadata) > 0 {
+			required = append(required, ContentCapabilityNativeMetadataV1)
+		}
+	}
+	if graph {
+		required = append(required, ContentCapabilitySessionGraphProvenanceV1)
 	}
 	return KnownContentCapabilities(required)
 }
