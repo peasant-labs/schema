@@ -57,7 +57,7 @@ func TestAuthoritativeGraphFieldsRejectReadStateBeforeDecode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.RequireMin(t, fx.AuthoritativeRaw, 2)
+	assert.RequireMin(t, fx.AuthoritativeRaw, 3)
 	assert.RequireValid(t, fx.AuthoritativeRaw)
 	for _, c := range fx.AuthoritativeRaw.Cases {
 		t.Run(c.Name, func(t *testing.T) {

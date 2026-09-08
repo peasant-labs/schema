@@ -1018,7 +1018,7 @@ func validateRawTurnGraph(raw json.RawMessage, path string) error {
 }
 
 func rejectForbiddenGraphFields(fields map[string]json.RawMessage, path string) error {
-	for _, name := range []string{"relationshipNavigation", "status", "transcriptId", "label", "cooked", "collapsed", "url", "resolved", "detail"} {
+	for _, name := range []string{"relationshipNavigation", "status", "transcriptId", "label", "explanation", "cooked", "collapsed", "url", "resolved", "detail"} {
 		if _, exists := fields[name]; exists {
 			return fmt.Errorf("session graph raw validation failed at schema decoder during pre-decode validation of %s: forbidden read-only or cooked field %q is present; typed decoding would silently discard authorization or presentation state; remove the field before publication", path, name)
 		}
