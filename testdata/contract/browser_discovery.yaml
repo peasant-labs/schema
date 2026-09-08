@@ -1,0 +1,64 @@
+required_names:
+  facet_cases:
+    - browser-discovery-multiple-harnesses
+    - browser-discovery-empty-corpus
+    - browser-discovery-invalid-unknown-harness
+    - browser-discovery-invalid-missing-count
+    - browser-discovery-invalid-non-integer-count
+    - browser-discovery-invalid-non-positive-count
+  token_cases:
+    - browser-discovery-token-split-only
+    - browser-discovery-token-partial-split
+    - browser-discovery-token-explicit-zero
+    - browser-discovery-token-legacy-fallback
+    - browser-discovery-token-all-null
+    - browser-discovery-token-stable-tie
+    - browser-discovery-token-greater-than-int64-sum
+
+facet_cases:
+  - name: browser-discovery-multiple-harnesses
+    input: '[{"harness":"claude-code","count":2},{"harness":"codex","count":24}]'
+    valid: true
+  - name: browser-discovery-empty-corpus
+    input: '[]'
+    valid: true
+  - name: browser-discovery-invalid-unknown-harness
+    input: '[{"harness":"not-a-harness","count":1}]'
+    valid: false
+  - name: browser-discovery-invalid-missing-count
+    input: '[{"harness":"codex"}]'
+    valid: false
+  - name: browser-discovery-invalid-non-integer-count
+    input: '[{"harness":"codex","count":1.5}]'
+    valid: false
+  - name: browser-discovery-invalid-non-positive-count
+    input: '[{"harness":"codex","count":0}]'
+    valid: false
+
+token_cases:
+  - name: browser-discovery-token-split-only
+    tokens_in: 7
+    tokens_out: 5
+    expected: "12"
+  - name: browser-discovery-token-partial-split
+    tokens_in: 7
+    legacy: 99
+    expected: "7"
+  - name: browser-discovery-token-explicit-zero
+    tokens_in: 0
+    tokens_out: 0
+    legacy: 99
+    expected: "0"
+  - name: browser-discovery-token-legacy-fallback
+    legacy: 11
+    expected: "11"
+  - name: browser-discovery-token-all-null
+    expected: null
+  - name: browser-discovery-token-stable-tie
+    tokens_in: 6
+    tokens_out: 6
+    expected: "12"
+  - name: browser-discovery-token-greater-than-int64-sum
+    tokens_in: 9223372036854775807
+    tokens_out: 9223372036854775807
+    expected: "18446744073709551614"

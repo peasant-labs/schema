@@ -570,6 +570,15 @@ types:
     component: VillageErrorResponse
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageGitHubWebhookPayload, disposition: catalog, component: VillageGitHubWebhookPayload, reason: pull request attachment contract}
+  - {go_name: VillageDiscoveryAttestation, disposition: catalog, component: VillageDiscoveryAttestation, reason: browser discovery result attestation projection}
+  - {go_name: VillageDiscoveryOwnerOrg, disposition: catalog, component: VillageDiscoveryOwnerOrg, reason: browser discovery owner organization projection}
+  - {go_name: VillageDiscoveryQuery, disposition: runtime-only, component: "", reason: operation query container represented by Village API parameters rather than shared JSON}
+  - {go_name: VillageDiscoveryResponse, disposition: catalog, component: VillageDiscoveryResponse, reason: browser discovery response envelope}
+  - {go_name: VillageDiscoveryShare, disposition: catalog, component: VillageDiscoveryShare, reason: browser discovery collective share projection}
+  - {go_name: VillageDiscoveryTag, disposition: catalog, component: VillageDiscoveryTag, reason: browser discovery tag projection}
+  - {go_name: VillageDiscoveryTranscript, disposition: catalog, component: VillageDiscoveryTranscript, reason: browser discovery wrapped result}
+  - {go_name: VillageDiscoveryUser, disposition: catalog, component: VillageDiscoveryUser, reason: browser discovery owner projection}
+  - {go_name: VillageHarnessFacet, disposition: catalog, component: VillageHarnessFacet, reason: corpus-wide browser discovery harness count}
   - go_name: VillageGroup
     disposition: catalog
     component: VillageGroup
