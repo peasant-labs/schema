@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.17.0] - 2026-09-06
+
 ### Added
 
 - Village API 0.16.0, Local API 0.11.0, and Types 0.17.0 open the pull request
