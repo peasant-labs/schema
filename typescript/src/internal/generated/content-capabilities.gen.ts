@@ -43,15 +43,15 @@ export function validateContentCapabilityAdvertisements(values: readonly string[
 
 function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<KnownContentCapability>): void {
   for (const turn of turns ?? []) {
-    if (turn.observedModel !== undefined) found.add(KnownContentCapability.ObservedModelV1);
-    if (turn.usage !== undefined || turn.toolCalls?.some((tool) => tool.usage !== undefined)) found.add(KnownContentCapability.DetailedUsageV1);
-    if (turn.provenance !== undefined || turn.toolCalls?.some((tool) => tool.callProvenance !== undefined || tool.resultProvenance !== undefined)) found.add(KnownContentCapability.SessionGraphProvenanceV1);
+    if ((turn.observedModel ?? "") !== "") found.add(KnownContentCapability.ObservedModelV1);
+    if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(KnownContentCapability.DetailedUsageV1);
+    if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(KnownContentCapability.SessionGraphProvenanceV1);
   }
 }
 
 export function requiredContentCapabilities(detail: SessionDetailPayload): KnownContentCapability[] {
   const found = new Set<KnownContentCapability>();
-  if (detail.inputSubmissionCount !== undefined || detail.rootSessionId !== undefined || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(KnownContentCapability.SessionGraphProvenanceV1);
+  if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(KnownContentCapability.SessionGraphProvenanceV1);
   if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(KnownContentCapability.NativeMetadataV1);
   visitTurns(detail.turns, found);
   for (const section of detail.earlierHistory ?? []) {

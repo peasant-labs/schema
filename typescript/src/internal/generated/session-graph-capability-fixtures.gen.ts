@@ -3,6 +3,8 @@ export const canonicalSessionGraphCapabilityFixtures = {
   "requiredNames": {
     "derivation": [
       "legacy-empty",
+      "root-null",
+      "usage-null",
       "model-only",
       "source-ref-only",
       "count-only-zero",
@@ -48,6 +50,36 @@ export const canonicalSessionGraphCapabilityFixtures = {
         },
         "input": {
           "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[]}"
+        },
+        "expected": {}
+      },
+      {
+        "name": "root-null",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "Go nil parity"
+        },
+        "mutation": {
+          "description": "decodes null root as absent"
+        },
+        "input": {
+          "detailJSON": "{\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"rootSessionId\":null,\"turns\":[]}"
+        },
+        "expected": {}
+      },
+      {
+        "name": "usage-null",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "boundary",
+          "ref": "Go nil parity"
+        },
+        "mutation": {
+          "description": "decodes null usage as absent"
+        },
+        "input": {
+          "detailJSON": "{\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"usage\":null}]}"
         },
         "expected": {}
       },
@@ -320,7 +352,7 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "description": "combines valid Pi earlier evidence"
         },
         "input": {
-          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"pi\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\"},{\"index\":1,\"role\":\"assistant\",\"depth\":1,\"parentIndex\":0,\"observedModel\":\"provider/model\",\"provenance\":{\"origin\":\"unknown\",\"actor\":\"unknown\",\"delivery\":\"unknown\",\"ownership\":\"uncertain\",\"evidence\":\"unknown\",\"inputModality\":\"unknown\"},\"sourceEntryRef\":\"e_assistant\",\"usage\":{\"ownerId\":\"u_assistant\",\"sourceEntryRef\":\"e_assistant\",\"scope\":\"assistant\",\"completeness\":\"unknown\"},\"toolCalls\":[{\"id\":\"t1\",\"resultEntryRef\":\"e_result\",\"usage\":{\"ownerId\":\"u_tool\",\"sourceEntryRef\":\"e_result\",\"scope\":\"tool\",\"completeness\":\"unknown\"},\"name\":\"\",\"arguments\":\"\",\"result\":\"\"}],\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00Z\"}],\"nativeMetadata\":[{\"id\":\"n1\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"e_native\",\"sourceType\":\"pi.custom\"},\"customType\":\"fixture\",\"data\":{}}]}]}"
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"pi\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\"},{\"index\":1,\"role\":\"assistant\",\"depth\":1,\"parentIndex\":0,\"observedModel\":\"provider/model\",\"provenance\":{\"origin\":\"unknown\",\"actor\":\"unknown\",\"delivery\":\"unknown\",\"ownership\":\"uncertain\",\"evidence\":\"unknown\",\"inputModality\":\"unknown\"},\"sourceEntryRef\":\"e_assistant\",\"usage\":{\"ownerId\":\"u_assistant\",\"sourceEntryRef\":\"e_assistant\",\"scope\":\"assistant\",\"completeness\":\"unknown\"},\"toolCalls\":[{\"id\":\"t1\",\"resultEntryRef\":\"e_result\",\"usage\":{\"ownerId\":\"u_tool\",\"sourceEntryRef\":\"e_result\",\"scope\":\"tool\",\"completeness\":\"unknown\"},\"name\":\"\",\"arguments\":\"\",\"result\":\"\"}],\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00Z\"}],\"nativeMetadata\":[{\"id\":\"n1\",\"kind\":\"pi.toolresult.details\",\"source\":{\"entryRef\":\"e_result\",\"sourceType\":\"pi.message\",\"messageRole\":\"toolResult\"},\"attachment\":{\"turnIndex\":1,\"toolCallId\":\"t1\"},\"data\":{}}]}]}"
         },
         "expected": {
           "capabilities": [
