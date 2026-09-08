@@ -11,13 +11,18 @@ import {
 const generation = z.strictObject({
   unit: z.string(), repeat: z.int().nonnegative(), count: z.int().nonnegative().optional(),
   depth: z.int().nonnegative().optional(), whitespace: z.int().nonnegative().optional(), copies: z.int().nonnegative().optional(),
-});
+  padding: z.int().nonnegative().optional(),
+  lastRepeat: z.int().nonnegative().optional(),
+}).refine(g => g.lastRepeat === undefined || (g.copies > 0 && !g.count && !g.depth && !g.padding), "lastRepeat needs scalar copies");
 const row = z.strictObject({
-  name: z.string().min(1), operation: z.enum(["scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode"]),
+  name: z.string().min(1), operation: z.enum(["scanner", "metadata", "detail", "turn", "metadata-records", "metadata-value", "owner-unicode", "namespace-unicode"]),
   raw: z.string(), accepted: z.boolean(), errorCategory: z.enum(["lexical", "validation"]).optional(),
   errorContains: z.string().optional(), targets: z.string().optional(), pointers: z.array(z.string()).optional(),
   goOwnerBytesHex: z.string().regex(/^(?:[0-9a-f]{2})+$/).optional(),
+  goNamespaceBytesHex: z.string().regex(/^(?:[0-9a-f]{2})+$/).optional(),
   maxDepth: z.int().positive().optional(), generate: generation.optional(),
+  requiredCapabilities: z.array(z.string()).optional(),
+  expectedDataBytes: z.int().positive().optional(), expectedAggregateBytes: z.int().positive().optional(),
 }).refine(value => value.accepted || value.errorCategory !== undefined, "rejections need an error category");
 const fixture = z.strictObject({requiredCaseNames: z.array(z.string().min(1)), cases: z.array(row)}).parse(
   parse(readFileSync(new URL("../../testdata/contract/raw_json_boundaries.yaml", import.meta.url), "utf8"), {uniqueKeys: true}),
@@ -38,7 +43,11 @@ function expand(item) {
     if (g.count) value = `[${Array(g.count).fill(`"${value}"`).join("," + " ".repeat(g.whitespace ?? 0))}]`;
     for (let i = 0; i < (g.depth ?? 0); i++) value = `{"x":${value}}`;
     raw = raw.replaceAll("{{value}}", value);
-    if (g.copies) raw = `[${Array.from({length: g.copies}, (_, i) => raw.replaceAll("{{index}}", String(i))).join(",")}]`;
+    raw = raw.replaceAll("{{padding}}", "p".repeat(g.padding ?? 0));
+    if (g.copies) raw = `[${Array.from({length: g.copies}, (_, i) => {
+      const copy = i === g.copies - 1 && g.lastRepeat !== undefined ? item.raw.replaceAll("{{value}}", g.unit.repeat(g.lastRepeat)) : raw;
+      return copy.replaceAll("{{index}}", String(i));
+    }).join(",")}]`;
   }
   return raw;
 }
@@ -75,13 +84,24 @@ async function detailExits(t, item, raw) {
 
 for (const item of fixture.cases) test(item.name, async t => {
   const raw = expand(item);
+  if (item.expectedDataBytes || item.expectedAggregateBytes) {
+    const sizes = JSON.parse(raw).map(record => new TextEncoder().encode(JSON.stringify(record.data)).length);
+    if (item.expectedDataBytes) for (const size of sizes) assert.equal(size, item.expectedDataBytes, "fixture selected data bytes");
+    if (item.expectedAggregateBytes) assert.equal(sizes.reduce((sum, size) => sum + size, 0), item.expectedAggregateBytes, "fixture aggregate selected data bytes");
+  }
   switch (item.operation) {
     case "scanner": outcome(item, () => scanRawJsonText(raw, {maxDocumentBytes: 8 << 20, maxDocumentDepth: item.maxDepth ?? 64, opaqueMetadataPointers: item.pointers}), raw); break;
     case "metadata": outcome(item, () => { scanRawJsonText(raw, {maxDocumentBytes: 65536, maxDocumentDepth: 32, opaqueMetadataPointers: [""]}); return JSON.parse(raw); }, raw); break;
     case "turn": await detailExits(t, item, detail(`[${raw}]`)); break;
     case "detail": await detailExits(t, item, raw); break;
     case "owner-unicode": outcome(item, () => parseSessionDetailPayloadValue(JSON.parse(detail(`[${raw}]`))), raw); break;
-    case "metadata-value": outcome(item, () => parseNativeMetadataRecordsValue(JSON.parse(raw), JSON.parse(item.targets)), raw); break;
+    case "namespace-unicode": outcome(item, () => parseSessionDetailPayloadValue(JSON.parse(detail(`[${raw}]`))), raw); break;
+    case "metadata-value": {
+      outcome(item, () => parseNativeMetadataRecordsValue(JSON.parse(raw), JSON.parse(item.targets)), raw);
+      const payload = detail(item.targets, raw, "pi");
+      outcome(item, () => parseSessionDetailPayloadValue(JSON.parse(payload)), payload);
+      break;
+    }
     case "metadata-records": {
       const targets = JSON.parse(item.targets);
       outcome(item, () => parseNativeMetadataRecordsText(raw, targets), raw);

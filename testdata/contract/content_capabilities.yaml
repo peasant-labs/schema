@@ -1,4 +1,99 @@
 cases:
+  - name: omitted-tool-namespace-needs-no-capability
+    input: {operation: scan, turns: [{role: assistant, tools: [{}]}]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: tool namespace omission is not recorded evidence}
+    mutation: {description: keeps a pending tool without a namespace}
+  - name: empty-tool-namespace-needs-capability
+    input: {operation: scan, turns: [{role: assistant, tools: [{namespace: ""}]}]}
+    expected: {accepted: true, capabilities: [tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: namespace presence requires preservation}
+    mutation: {description: adds an explicitly empty namespace to a pending tool}
+  - name: namespace-and-observed
+    input: {operation: scan, turns: [{role: assistant, observedModel: provider/model, tools: [{namespace: Tools}]}]}
+    expected: {accepted: true, capabilities: [observed_model_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines tool identity with observed model}
+  - name: namespace-and-tool-usage
+    input: {operation: scan, turns: [{role: assistant, tools: [{namespace: Tools, usage: true}]}]}
+    expected: {accepted: true, capabilities: [detailed_usage_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines namespace with tool-only usage}
+  - name: namespace-and-metadata
+    input: {operation: scan, nativeMetadata: true, turns: [{role: assistant, tools: [{namespace: Tools}]}]}
+    expected: {accepted: true, capabilities: [native_metadata_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines namespace with metadata}
+  - name: namespace-observed-and-usage
+    input: {operation: scan, turns: [{role: assistant, observedModel: provider/model, usage: true, tools: [{namespace: Tools}]}]}
+    expected: {accepted: true, capabilities: [detailed_usage_v1, observed_model_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines namespace with observed model and turn usage}
+  - name: namespace-observed-and-metadata
+    input: {operation: scan, nativeMetadata: true, turns: [{role: assistant, observedModel: provider/model, tools: [{namespace: Tools}]}]}
+    expected: {accepted: true, capabilities: [native_metadata_v1, observed_model_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines namespace with observed model and metadata}
+  - name: namespace-usage-and-metadata
+    input: {operation: scan, nativeMetadata: true, turns: [{role: assistant, usage: true, tools: [{namespace: Tools, usage: true}]}]}
+    expected: {accepted: true, capabilities: [detailed_usage_v1, native_metadata_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines namespace with both usage scopes and metadata}
+  - name: namespace-all-evidence-accumulates
+    input:
+      operation: scan
+      nativeMetadata: true
+      turns:
+        - {role: assistant, observedModel: provider/root, usage: true, tools: [{namespace: Tools, usage: true}]}
+        - {role: assistant, depth: 2, observedModel: provider/nested, tools: [{namespace: ""}, {namespace: Other, usage: true}]}
+    expected: {accepted: true, capabilities: [detailed_usage_v1, native_metadata_v1, observed_model_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: repeats namespace and usage at nested depth alongside every other evidence type}
+  - name: namespace-old-advertisement-refused
+    input: {operation: missing, advertised: [detailed_usage_v1, native_metadata_v1, observed_model_v1, tool_namespace_v2], required: [tool_namespace_v1]}
+    expected: {accepted: false, capabilities: [tool_namespace_v1]}
+    classification: must-fail
+    provenance: {source: requirement, ref: namespace must not silently downgrade}
+    mutation: {description: advertises all prior tokens and a nonmatching revision but omits namespace preservation}
+  - name: namespace-matching-advertisement
+    input: {operation: missing, advertised: [future_v9, tool_namespace_v1, observed_model_v1, native_metadata_v1, detailed_usage_v1], required: [tool_namespace_v1, observed_model_v1, detailed_usage_v1, native_metadata_v1, tool_namespace_v1]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: exact discovery set membership}
+    mutation: {description: satisfies every requirement despite duplicate requirements and an unknown advertisement}
+  - name: namespace-full-canonical-advertisement
+    input: {operation: validate, advertised: [detailed_usage_v1, native_metadata_v1, observed_model_v1, tool_namespace_v1]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: canonical producer inventory}
+    mutation: {description: emits every known token in canonical order}
+  - name: namespace-unsorted-advertisement
+    input: {operation: validate, advertised: [tool_namespace_v1, detailed_usage_v1, native_metadata_v1, observed_model_v1]}
+    expected: {accepted: false, errorContains: not in canonical lexicographic order}
+    classification: must-fail
+    provenance: {source: requirement, ref: canonical producer inventory}
+    mutation: {description: moves the namespace token before the older tokens}
+  - name: namespace-discovery-dedup-and-unknown
+    input: {operation: filter, advertised: [tool_namespace_v1, future_v9, observed_model_v1, tool_namespace_v1]}
+    expected: {accepted: true, capabilities: [observed_model_v1, tool_namespace_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: forward-open discovery}
+    mutation: {description: combines duplicate namespace with an unknown token and unsorted known tokens}
+  - name: namespace-duplicate-advertisement
+    input: {operation: validate, advertised: [tool_namespace_v1, tool_namespace_v1]}
+    expected: {accepted: false, errorContains: duplicated}
+    classification: must-fail
+    provenance: {source: requirement, ref: canonical producer inventory}
+    mutation: {description: duplicates namespace in server output}
   - name: omitted-discovery-is-compatible-with-no-requirements
     input: {operation: missing}
     expected: {accepted: true}
