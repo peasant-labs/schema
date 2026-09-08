@@ -1357,6 +1357,7 @@ components:
       title: Content Ownership
       type: string
     SchemaContentProvenance:
+      additionalProperties: false
       properties:
         actor:
           $ref: '#/components/schemas/SchemaActorOrigin'
@@ -1520,6 +1521,7 @@ components:
       title: Diff Line Kind
       type: string
     SchemaEarlierHistorySection:
+      additionalProperties: false
       properties:
         nativeMetadata:
           items:
@@ -1858,11 +1860,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         model:
           type: string
         projectHash:
@@ -2378,6 +2378,7 @@ components:
       title: Public Revision Reference
       type: string
     SchemaPublicSourceAnchor:
+      additionalProperties: false
       properties:
         kind:
           $ref: '#/components/schemas/SchemaPublicSourceAnchorKind'
@@ -2776,9 +2777,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          type:
-          - "null"
-          - integer
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         model:
           type: string
         nativeMetadata:
@@ -2933,19 +2934,16 @@ components:
       title: Session Purpose
       type: string
     SchemaSessionRelationship:
+      additionalProperties: false
       properties:
         anchor:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaPublicSourceAnchor'
         evidence:
           $ref: '#/components/schemas/SchemaEvidenceKind'
         kind:
           $ref: '#/components/schemas/SchemaSessionRelationshipKind'
         targetLocalId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaSessionID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaSessionID'
         targetState:
           $ref: '#/components/schemas/SchemaRelationshipTargetState'
       required:
@@ -2964,23 +2962,18 @@ components:
       title: Session Relationship Kind
       type: string
     SchemaSessionRelationshipNavigation:
+      additionalProperties: false
       properties:
         anchor:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaPublicSourceAnchor'
         kind:
           $ref: '#/components/schemas/SchemaSessionRelationshipKind'
         localId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaSessionID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaSessionID'
         status:
           $ref: '#/components/schemas/SchemaRelationshipNavigationStatus'
         transcriptId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaTranscriptID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaTranscriptID'
       required:
       - kind
       - status
@@ -3072,11 +3065,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         outcome:
           type: string
         parentSessionId:
@@ -3601,11 +3592,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         model:
           type: string
         nativeMetadata:
@@ -3701,9 +3690,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          type:
-          - "null"
-          - integer
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         model:
           type: string
         nativeMetadata:

@@ -90,7 +90,7 @@ type SessionSummary struct {
 	DurationMins         float64   `json:"durationMins"`
 	TotalTokens          int       `json:"totalTokens"`
 	TurnCount            int       `json:"turnCount"`
-	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty"`
+	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int       `json:"toolCallCount"`
 	Project              string    `json:"project,omitempty"`
 	// ProjectHash is the opaque project identifier (projects.project_hash).
@@ -134,7 +134,7 @@ type LocalSyncSummary struct {
 	TotalTokens          int         `json:"totalTokens"`
 	TurnCount            int         `json:"turnCount"`
 	Model                string      `json:"model"`
-	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty"`
+	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	SyncStatus           string      `json:"syncStatus"`
 }
 
@@ -342,7 +342,7 @@ type SessionDetailPayload struct {
 	TokensIn             int                 `json:"tokensIn"`
 	TokensOut            int                 `json:"tokensOut"`
 	TurnCount            int                 `json:"turnCount"`
-	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty"`
+	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int                 `json:"toolCallCount"`
 	Turns                []TurnDetail        `json:"turns"`
 	// Optional fields — populated when backend has the data.

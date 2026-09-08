@@ -301,7 +301,7 @@ function renderTimelineFixtures(source) {
 }
 
 function renderFixtureConstant(name, source) {
-  return `${header()}export const ${name} = ${JSON.stringify(mapKeys(source, { detail_json: "detailJSON", read_json: "readJSON", rejected_durable_json: "rejectedDurableJSON", error_contains: "errorContains", required_names: "requiredNames", rawJson: "rawJSON" }), null, 2)} as const;\n`;
+  return `${header()}export const ${name} = ${JSON.stringify(mapKeys(source, { detail_json: "detailJSON", read_json: "readJSON", rejected_durable_json: "rejectedDurableJSON", error_contains: "errorContains", required_names: "requiredNames", typescript_constraints: "typescriptConstraints", count_carriers: "countCarriers", strict_objects: "strictObjects", rawJson: "rawJSON" }), null, 2)} as const;\n`;
 }
 
 async function generateOperationContracts(surface, filename, outputName) {

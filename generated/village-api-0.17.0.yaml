@@ -3704,6 +3704,7 @@ components:
       title: Content Ownership
       type: string
     SchemaContentProvenance:
+      additionalProperties: false
       properties:
         actor:
           $ref: '#/components/schemas/SchemaActorOrigin'
@@ -3763,6 +3764,7 @@ components:
       title: Digest Item Kind
       type: string
     SchemaEarlierHistorySection:
+      additionalProperties: false
       properties:
         nativeMetadata:
           items:
@@ -4215,6 +4217,7 @@ components:
       title: Public Revision Reference
       type: string
     SchemaPublicSourceAnchor:
+      additionalProperties: false
       properties:
         kind:
           $ref: '#/components/schemas/SchemaPublicSourceAnchorKind'
@@ -4655,11 +4658,9 @@ components:
         id:
           type: string
         inputSubmissionCount:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         model:
           type: string
         nativeMetadata:
@@ -4794,19 +4795,16 @@ components:
       title: Session Purpose
       type: string
     SchemaSessionRelationship:
+      additionalProperties: false
       properties:
         anchor:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaPublicSourceAnchor'
         evidence:
           $ref: '#/components/schemas/SchemaEvidenceKind'
         kind:
           $ref: '#/components/schemas/SchemaSessionRelationshipKind'
         targetLocalId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaSessionID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaSessionID'
         targetState:
           $ref: '#/components/schemas/SchemaRelationshipTargetState'
       required:
@@ -4825,23 +4823,18 @@ components:
       title: Session Relationship Kind
       type: string
     SchemaSessionRelationshipNavigation:
+      additionalProperties: false
       properties:
         anchor:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaPublicSourceAnchor'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaPublicSourceAnchor'
         kind:
           $ref: '#/components/schemas/SchemaSessionRelationshipKind'
         localId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaSessionID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaSessionID'
         status:
           $ref: '#/components/schemas/SchemaRelationshipNavigationStatus'
         transcriptId:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaTranscriptID'
-          - type: "null"
+          $ref: '#/components/schemas/SchemaTranscriptID'
       required:
       - kind
       - status
@@ -5403,11 +5396,9 @@ components:
         id:
           $ref: '#/components/schemas/SchemaTranscriptID'
         input_submission_count:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         local_id:
           $ref: '#/components/schemas/SchemaSessionID'
         model_provider:
@@ -5890,11 +5881,9 @@ components:
             - string
           - type: "null"
         input_submission_count:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         license_id:
           anyOf:
           - $ref: '#/components/schemas/SchemaLicense'
@@ -6470,11 +6459,9 @@ components:
             - string
           - type: "null"
         input_submission_count:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         local_id:
           $ref: '#/components/schemas/SchemaSessionID'
         model_provider:
@@ -7126,11 +7113,9 @@ components:
             - string
           - type: "null"
         input_submission_count:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         license_id:
           anyOf:
           - $ref: '#/components/schemas/SchemaLicense'
@@ -7832,11 +7817,9 @@ components:
         id:
           $ref: '#/components/schemas/SchemaTranscriptID'
         input_submission_count:
-          anyOf:
-          - type:
-            - "null"
-            - integer
-          - type: "null"
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
         local_id:
           $ref: '#/components/schemas/SchemaSessionID'
         model_name:

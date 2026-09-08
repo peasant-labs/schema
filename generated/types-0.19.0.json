@@ -3333,6 +3333,7 @@
         "type": "string"
       },
       "ContentProvenance": {
+        "additionalProperties": false,
         "properties": {
           "actor": {
             "$ref": "#/components/schemas/ActorOrigin"
@@ -3716,6 +3717,7 @@
         "type": "string"
       },
       "EarlierHistorySection": {
+        "additionalProperties": false,
         "properties": {
           "nativeMetadata": {
             "items": {
@@ -4508,17 +4510,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -5572,6 +5566,7 @@
         "type": "string"
       },
       "PublicSourceAnchor": {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "$ref": "#/components/schemas/PublicSourceAnchorKind"
@@ -7390,17 +7385,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -7550,10 +7537,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "type": [
-              "null",
-              "integer"
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -8052,16 +8038,10 @@
         "type": "string"
       },
       "SessionRelationship": {
+        "additionalProperties": false,
         "properties": {
           "anchor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PublicSourceAnchor"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/PublicSourceAnchor"
           },
           "evidence": {
             "$ref": "#/components/schemas/EvidenceKind"
@@ -8070,14 +8050,7 @@
             "$ref": "#/components/schemas/SessionRelationshipKind"
           },
           "targetLocalId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SessionID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SessionID"
           },
           "targetState": {
             "$ref": "#/components/schemas/RelationshipTargetState"
@@ -8104,42 +8077,22 @@
         "type": "string"
       },
       "SessionRelationshipNavigation": {
+        "additionalProperties": false,
         "properties": {
           "anchor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PublicSourceAnchor"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/PublicSourceAnchor"
           },
           "kind": {
             "$ref": "#/components/schemas/SessionRelationshipKind"
           },
           "localId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SessionID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SessionID"
           },
           "status": {
             "$ref": "#/components/schemas/RelationshipNavigationStatus"
           },
           "transcriptId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/TranscriptID"
           }
         },
         "required": [
@@ -8401,17 +8354,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "outcome": {
             "type": "string"
@@ -9795,17 +9740,9 @@
             "$ref": "#/components/schemas/TranscriptID"
           },
           "input_submission_count": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
@@ -10588,17 +10525,9 @@
             ]
           },
           "input_submission_count": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "license_id": {
             "anyOf": [
@@ -11578,17 +11507,9 @@
             ]
           },
           "input_submission_count": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"
@@ -12678,17 +12599,9 @@
             ]
           },
           "input_submission_count": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "license_id": {
             "anyOf": [
@@ -13876,17 +13789,9 @@
             "$ref": "#/components/schemas/TranscriptID"
           },
           "input_submission_count": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "local_id": {
             "$ref": "#/components/schemas/SessionID"

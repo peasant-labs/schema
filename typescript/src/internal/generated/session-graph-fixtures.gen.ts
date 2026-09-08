@@ -2203,6 +2203,47 @@ export const canonicalSessionGraphFixtures = {
     "authoritative-entry-navigation",
     "authoritative-entry-explanation"
   ],
+  "typescriptConstraints": {
+    "countCarriers": [
+      "AuthoritativeSessionStats",
+      "LocalSyncSummary",
+      "SessionStats",
+      "SessionSummary",
+      "SessionDetailPayload",
+      "SessionDetailReadPayload",
+      "VillageContributableTranscript",
+      "VillageGroupTranscript",
+      "VillagePendingShare",
+      "VillageTranscript",
+      "VillageUserGroupShare"
+    ],
+    "strictObjects": {
+      "PublicSourceAnchor": {
+        "kind": "general_source_session"
+      },
+      "SessionRelationship": {
+        "kind": "started_by",
+        "targetState": "explicit_none",
+        "evidence": "native_typed"
+      },
+      "ContentProvenance": {
+        "origin": "unknown",
+        "actor": "unknown",
+        "delivery": "unknown",
+        "ownership": "uncertain",
+        "evidence": "unknown",
+        "inputModality": "unknown"
+      },
+      "EarlierHistorySection": {
+        "state": "uncertain_unresolved",
+        "turns": []
+      },
+      "SessionRelationshipNavigation": {
+        "kind": "started_by",
+        "status": "unknown"
+      }
+    }
+  },
   "durable": {
     "round_trip": {
       "cases": [

@@ -1256,6 +1256,7 @@
       "type": "string"
     },
     "SchemaContentProvenance": {
+      "additionalProperties": false,
       "properties": {
         "actor": {
           "$ref": "#/$defs/SchemaActorOrigin"
@@ -1426,6 +1427,7 @@
       "type": "string"
     },
     "SchemaPublicSourceAnchor": {
+      "additionalProperties": false,
       "properties": {
         "kind": {
           "$ref": "#/$defs/SchemaPublicSourceAnchorKind"
@@ -1555,16 +1557,10 @@
       "type": "string"
     },
     "SchemaSessionRelationship": {
+      "additionalProperties": false,
       "properties": {
         "anchor": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SchemaPublicSourceAnchor"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/SchemaPublicSourceAnchor"
         },
         "evidence": {
           "$ref": "#/$defs/SchemaEvidenceKind"
@@ -1573,14 +1569,7 @@
           "$ref": "#/$defs/SchemaSessionRelationshipKind"
         },
         "targetLocalId": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SchemaSessionID"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/SchemaSessionID"
         },
         "targetState": {
           "$ref": "#/$defs/SchemaRelationshipTargetState"

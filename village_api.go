@@ -530,7 +530,7 @@ type VillageTranscript struct {
 	ContentHash             *TranscriptContentHash      `json:"content_hash"`
 	LicenseID               *License                    `json:"license_id"`
 	SessionOrigin           SessionOrigin               `json:"session_origin"`
-	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty"`
+	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
 	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
@@ -718,7 +718,7 @@ type VillageGroupTranscript struct {
 	OwnerUsername           string                      `json:"owner_username"`
 	OwnerAvatarURL          *string                     `json:"owner_avatar_url"`
 	OwnerIsDiscoverable     bool                        `json:"owner_is_discoverable"`
-	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty"`
+	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
 	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
@@ -774,7 +774,7 @@ type VillagePendingShare struct {
 	OwnerUsername        string                `json:"owner_username"`
 	OwnerIsDiscoverable  bool                  `json:"owner_is_discoverable"`
 	SharedAt             time.Time             `json:"shared_at"`
-	InputSubmissionCount *int64                `json:"input_submission_count,omitempty"`
+	InputSubmissionCount *int64                `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID        *SessionID            `json:"root_session_id,omitempty"`
 	Purpose              SessionPurpose        `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship `json:"relationships,omitempty"`
@@ -797,7 +797,7 @@ type VillageUserGroupShare struct {
 	// live subset today; terminal values are reserved for ledger history.
 	Status               VillageShareStatus    `json:"status"`
 	SharedAt             time.Time             `json:"shared_at"`
-	InputSubmissionCount *int64                `json:"input_submission_count,omitempty"`
+	InputSubmissionCount *int64                `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID        *SessionID            `json:"root_session_id,omitempty"`
 	Purpose              SessionPurpose        `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship `json:"relationships,omitempty"`
@@ -852,7 +852,7 @@ type VillageContributableTranscript struct {
 	ModelProvider        string                      `json:"model_provider"`
 	PublishedAt          time.Time                   `json:"published_at"`
 	AlreadyShared        bool                        `json:"already_shared"`
-	InputSubmissionCount *int64                      `json:"input_submission_count,omitempty"`
+	InputSubmissionCount *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID        *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose              SessionPurpose              `json:"purpose,omitempty"`
 	Relationships        []SessionRelationship       `json:"relationships,omitempty"`

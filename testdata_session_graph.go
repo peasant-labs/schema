@@ -44,6 +44,10 @@ type SessionGraphEnumInput struct {
 	Unknown string   `yaml:"unknown"`
 }
 type SessionGraphFixtureCorpus struct {
+	TypeScriptConstraints struct {
+		CountCarriers []string                  `yaml:"count_carriers"`
+		StrictObjects map[string]map[string]any `yaml:"strict_objects"`
+	} `yaml:"typescript_constraints"`
 	Durable               DurableGraphFixtures                                                        `yaml:"durable"`
 	Refs                  testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`
 	Enums                 testcase.Corpus[SessionGraphEnumInput, struct{}]                            `yaml:"enums"`

@@ -1056,7 +1056,7 @@ export const zLocalSyncSummary = z.object({
     harness: zHarness,
     hostSlug: z.string(),
     id: z.string(),
-    inputSubmissionCount: z.int().nullish(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     model: z.string(),
     projectHash: zProjectHash,
     projectName: z.string(),
@@ -1860,17 +1860,17 @@ export const zPublicSourceAnchor = z.object({
     kind: zPublicSourceAnchorKind,
     sourceEntryRef: zSourceEntryRef.optional(),
     sourceRevisionRef: zPublicRevisionRef.optional()
-});
+}).strict();
 
 export type PublicSourceAnchor = z.infer<typeof zPublicSourceAnchor>;
 
 export const zSessionRelationship = z.object({
-    anchor: zPublicSourceAnchor.nullish(),
+    anchor: zPublicSourceAnchor.optional(),
     evidence: zEvidenceKind,
     kind: zSessionRelationshipKind,
-    targetLocalId: zSessionID.nullish(),
+    targetLocalId: zSessionID.optional(),
     targetState: zRelationshipTargetState
-});
+}).strict();
 
 export type SessionRelationship = z.infer<typeof zSessionRelationship>;
 
@@ -1889,7 +1889,7 @@ export const zSessionSummary = z.object({
     durationMins: z.number(),
     harness: zHarness,
     id: z.string(),
-    inputSubmissionCount: z.int().nullish(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     outcome: z.string().optional(),
     parentSessionId: z.string().nullish(),
     preview: z.string().optional(),
@@ -2010,7 +2010,7 @@ export const zContentProvenance = z.object({
     origin: zContentOrigin,
     ownership: zContentOwnership,
     submissionRef: zSubmissionRef.optional()
-});
+}).strict();
 
 export type ContentProvenance = z.infer<typeof zContentProvenance>;
 
@@ -2548,12 +2548,12 @@ export const zPullSkipGateResponse = z.object({
 export type PullSkipGateResponse = z.infer<typeof zPullSkipGateResponse>;
 
 export const zSessionRelationshipNavigation = z.object({
-    anchor: zPublicSourceAnchor.nullish(),
+    anchor: zPublicSourceAnchor.optional(),
     kind: zSessionRelationshipKind,
-    localId: zSessionID.nullish(),
+    localId: zSessionID.optional(),
     status: zRelationshipNavigationStatus,
-    transcriptId: zTranscriptID.nullish()
-});
+    transcriptId: zTranscriptID.optional()
+}).strict();
 
 export type SessionRelationshipNavigation = z.infer<typeof zSessionRelationshipNavigation>;
 
@@ -2793,7 +2793,7 @@ export const zEarlierHistorySection = z.object({
     nativeMetadata: z.array(zNativeMetadataRecord).optional(),
     state: zEarlierHistoryState,
     turns: z.array(zTurnDetail)
-});
+}).strict();
 
 export type EarlierHistorySection = z.infer<typeof zEarlierHistorySection>;
 
@@ -2806,7 +2806,7 @@ export const zSessionDetailPayload = z.object({
     gitRemote: z.string().optional(),
     harness: zHarness,
     id: z.string(),
-    inputSubmissionCount: z.int().nullish(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     model: z.string().optional(),
     nativeMetadata: z.array(zNativeMetadataRecord).optional(),
     outcome: zSessionOutcome.optional(),
@@ -2841,7 +2841,7 @@ export const zSessionDetailReadPayload = z.object({
     gitRemote: z.string().optional(),
     harness: zHarness.optional(),
     id: z.string().optional(),
-    inputSubmissionCount: z.int().nullish(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     model: z.string().optional(),
     nativeMetadata: z.array(zNativeMetadataRecord).optional(),
     outcome: zSessionOutcome.optional(),
@@ -3302,7 +3302,7 @@ export const zVillageContributableTranscript = z.object({
     already_shared: z.boolean(),
     git_branch: z.string().nullable(),
     id: zTranscriptID,
-    input_submission_count: z.int().nullish(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     local_id: zSessionID,
     model_provider: z.string(),
     parent_session_id: zSessionID.nullable(),
@@ -3460,7 +3460,7 @@ export const zVillageGroupTranscript = z.object({
     harness_version: z.string().nullable(),
     id: zTranscriptID,
     ingested_at: z.iso.datetime().nullable(),
-    input_submission_count: z.int().nullish(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     license_id: zLicense.nullable(),
     lines_changed: z.int().nullable(),
     local_id: zSessionID,
@@ -3564,7 +3564,7 @@ export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganiz
 
 export const zVillagePendingShare = z.object({
     branch: z.string().nullable(),
-    input_submission_count: z.int().nullish(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     local_id: zSessionID,
     model_provider: z.string(),
     owner_id: zVillageUUID,
@@ -3656,7 +3656,7 @@ export const zVillageTranscript = z.object({
     harness_version: z.string().nullable(),
     id: zTranscriptID,
     ingested_at: z.iso.datetime().nullable(),
-    input_submission_count: z.int().nullish(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     license_id: zLicense.nullable(),
     lines_changed: z.int().nullable(),
     local_id: zSessionID,
@@ -3843,7 +3843,7 @@ export type VillageUserGroup = z.infer<typeof zVillageUserGroup>;
 
 export const zVillageUserGroupShare = z.object({
     id: zTranscriptID,
-    input_submission_count: z.int().nullish(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     local_id: zSessionID,
     model_name: z.string().nullable(),
     model_provider: z.string(),

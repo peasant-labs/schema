@@ -252,6 +252,14 @@ authoritative_raw:
     - {name: authoritative-entry-navigation, input: {rawJson: '{"relationshipNavigation":[]}'}, expected: {error_contains: entries}, classification: must-fail, provenance: {source: requirement, ref: durable-read-separation}, mutation: {description: authoritative entry contains authorized navigation}}
     - {name: authoritative-entry-explanation, input: {rawJson: '{"explanation":"cooked"}'}, expected: {error_contains: entries}, classification: must-fail, provenance: {source: requirement, ref: durable-read-separation}, mutation: {description: authoritative entry contains cooked explanation}}
 authoritative_required_names: [authoritative-entry-label, authoritative-entry-navigation, authoritative-entry-explanation]
+typescript_constraints:
+  count_carriers: [AuthoritativeSessionStats, LocalSyncSummary, SessionStats, SessionSummary, SessionDetailPayload, SessionDetailReadPayload, VillageContributableTranscript, VillageGroupTranscript, VillagePendingShare, VillageTranscript, VillageUserGroupShare]
+  strict_objects:
+    PublicSourceAnchor: {kind: general_source_session}
+    SessionRelationship: {kind: started_by, targetState: explicit_none, evidence: native_typed}
+    ContentProvenance: {origin: unknown, actor: unknown, delivery: unknown, ownership: uncertain, evidence: unknown, inputModality: unknown}
+    EarlierHistorySection: {state: uncertain_unresolved, turns: []}
+    SessionRelationshipNavigation: {kind: started_by, status: unknown}
 durable:
   round_trip:
     cases:

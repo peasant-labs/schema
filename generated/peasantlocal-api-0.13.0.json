@@ -2081,6 +2081,7 @@
         "type": "string"
       },
       "SchemaContentProvenance": {
+        "additionalProperties": false,
         "properties": {
           "actor": {
             "$ref": "#/components/schemas/SchemaActorOrigin"
@@ -2331,6 +2332,7 @@
         "type": "string"
       },
       "SchemaEarlierHistorySection": {
+        "additionalProperties": false,
         "properties": {
           "nativeMetadata": {
             "items": {
@@ -2816,17 +2818,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -3559,6 +3553,7 @@
         "type": "string"
       },
       "SchemaPublicSourceAnchor": {
+        "additionalProperties": false,
         "properties": {
           "kind": {
             "$ref": "#/components/schemas/SchemaPublicSourceAnchorKind"
@@ -4122,10 +4117,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "type": [
-              "null",
-              "integer"
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -4341,16 +4335,10 @@
         "type": "string"
       },
       "SchemaSessionRelationship": {
+        "additionalProperties": false,
         "properties": {
           "anchor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaPublicSourceAnchor"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaPublicSourceAnchor"
           },
           "evidence": {
             "$ref": "#/components/schemas/SchemaEvidenceKind"
@@ -4359,14 +4347,7 @@
             "$ref": "#/components/schemas/SchemaSessionRelationshipKind"
           },
           "targetLocalId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaSessionID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaSessionID"
           },
           "targetState": {
             "$ref": "#/components/schemas/SchemaRelationshipTargetState"
@@ -4393,42 +4374,22 @@
         "type": "string"
       },
       "SchemaSessionRelationshipNavigation": {
+        "additionalProperties": false,
         "properties": {
           "anchor": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaPublicSourceAnchor"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaPublicSourceAnchor"
           },
           "kind": {
             "$ref": "#/components/schemas/SchemaSessionRelationshipKind"
           },
           "localId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaSessionID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaSessionID"
           },
           "status": {
             "$ref": "#/components/schemas/SchemaRelationshipNavigationStatus"
           },
           "transcriptId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaTranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "$ref": "#/components/schemas/SchemaTranscriptID"
           }
         },
         "required": [
@@ -4614,17 +4575,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "outcome": {
             "type": "string"
@@ -5462,17 +5415,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "integer"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
@@ -5622,10 +5567,9 @@
             "type": "string"
           },
           "inputSubmissionCount": {
-            "type": [
-              "null",
-              "integer"
-            ]
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
           },
           "model": {
             "type": "string"
