@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"time"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -83,20 +84,24 @@ func (SessionOrigin) JSONSchema() (jsonschema.Schema, error) {
 
 // SessionSummary is a session without turns, used in the sessions list.
 type SessionSummary struct {
-	ID            string    `json:"id"`
-	Harness       Harness   `json:"harness"`
-	StartTime     time.Time `json:"startTime"`
-	DurationMins  float64   `json:"durationMins"`
-	TotalTokens   int       `json:"totalTokens"`
-	TurnCount     int       `json:"turnCount"`
-	ToolCallCount int       `json:"toolCallCount"`
-	Project       string    `json:"project,omitempty"`
+	ID                   string    `json:"id"`
+	Harness              Harness   `json:"harness"`
+	StartTime            time.Time `json:"startTime"`
+	DurationMins         float64   `json:"durationMins"`
+	TotalTokens          int       `json:"totalTokens"`
+	TurnCount            int       `json:"turnCount"`
+	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty"`
+	ToolCallCount        int       `json:"toolCallCount"`
+	Project              string    `json:"project,omitempty"`
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
-	ProjectHash     ProjectHash `json:"projectHash,omitempty"`
-	Outcome         string      `json:"outcome,omitempty"`
-	ParentSessionID *string     `json:"parentSessionId,omitempty"`
+	ProjectHash     ProjectHash           `json:"projectHash,omitempty"`
+	Outcome         string                `json:"outcome,omitempty"`
+	ParentSessionID *string               `json:"parentSessionId,omitempty"`
+	RootSessionID   *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose         SessionPurpose        `json:"purpose,omitempty"`
+	Relationships   []SessionRelationship `json:"relationships,omitempty"`
 	// SessionOrigin is the producer's declaration of who drove this session.
 	// Absent when the producer expressed no opinion; see SessionOrigin for the
 	// rule a consumer applies to an absent or "unknown" value.
@@ -106,6 +111,139 @@ type SessionSummary struct {
 	// is redaction-safe by construction. Empty when the session has no indexed
 	// user entry. The web client formats it for display.
 	Preview string `json:"preview,omitempty"`
+}
+
+// SessionDetailReadPayload is the local read projection. Anonymous embedding
+// keeps every durable detail field at the JSON root while adding authorized
+// navigation metadata that is never part of published transcript content.
+type SessionDetailReadPayload struct {
+	SessionDetailPayload
+	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
+}
+
+// LocalSyncSummary preserves the existing sync-list row alongside its matching
+// SessionSummary when grouped list mode is requested.
+type LocalSyncSummary struct {
+	ID                   string      `json:"id"`
+	Harness              Harness     `json:"harness"`
+	ProjectName          string      `json:"projectName"`
+	ProjectHash          ProjectHash `json:"projectHash"`
+	HostSlug             string      `json:"hostSlug"`
+	StartTime            string      `json:"startTime"`
+	DurationMs           int64       `json:"durationMs"`
+	TotalTokens          int         `json:"totalTokens"`
+	TurnCount            int         `json:"turnCount"`
+	Model                string      `json:"model"`
+	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty"`
+	SyncStatus           string      `json:"syncStatus"`
+}
+
+// LocalSessionRow is one concrete local route row. Sync and Matches retain the
+// existing route-specific data instead of coercing every route into one shape.
+type LocalSessionRow struct {
+	Session SessionSummary    `json:"session"`
+	Sync    *LocalSyncSummary `json:"sync,omitempty"`
+	Matches []SearchResult    `json:"matches,omitempty"`
+}
+
+// LocalSessionListItem is exactly one transcript row or owner context
+// container, with zero or more collapsed helper groups.
+type LocalSessionListItem struct {
+	Kind         SessionListItemKind   `json:"kind"`
+	Transcript   *LocalSessionRow      `json:"transcript,omitempty"`
+	Context      *HelperContextSummary `json:"context,omitempty"`
+	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty"`
+}
+
+// LocalSessionListPayload is the opt-in grouped REST list response.
+type LocalSessionListPayload struct {
+	Items                []LocalSessionListItem `json:"items" nullable:"false"`
+	Page                 int                    `json:"page"`
+	Limit                int                    `json:"limit"`
+	TotalItems           int                    `json:"totalItems"`
+	OrdinarySessionTotal int                    `json:"ordinarySessionTotal"`
+	HelperThreadTotal    int                    `json:"helperThreadTotal"`
+}
+
+// LocalHelperMembersPayload is a page of saved helper sessions selected by an
+// opaque scope returned from the originating grouped query.
+type LocalHelperMembersPayload struct {
+	Members []LocalSessionRow `json:"members" nullable:"false"`
+	Page    int               `json:"page"`
+	Limit   int               `json:"limit"`
+	Total   int               `json:"total"`
+}
+
+// Validate checks route-variant identity and count mirrors without deriving
+// one metric from another.
+func (r LocalSessionRow) Validate() error {
+	if r.Session.ID == "" {
+		return fmt.Errorf("local session row validation failed at schema.LocalSessionRow.Validate during grouped response construction: session.id is empty; callers cannot open the saved transcript; provide its durable local session ID")
+	}
+	if r.Sync != nil {
+		s := r.Sync
+		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
+		}
+	}
+	for i, match := range r.Matches {
+		if match.SessionID != r.Session.ID {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped search projection: matches[%d].sessionId=%q; search evidence belongs to another transcript; retain only matches for this exact session", r.Session.ID, i, match.SessionID)
+		}
+	}
+	return nil
+}
+
+// Validate checks the discriminated item arm and every nested route row/group.
+func (i LocalSessionListItem) Validate() error {
+	if !i.Kind.IsValid() {
+		return fmt.Errorf("local session list item validation failed at schema.LocalSessionListItem.Validate during grouped response construction: kind %q is outside the closed set; callers cannot select an item arm; use a member of schema.AllSessionListItemKinds", i.Kind)
+	}
+	if (i.Transcript != nil) == (i.Context != nil) || i.Kind == SessionListItemTranscript && i.Transcript == nil || i.Kind == SessionListItemContextContainer && i.Context == nil {
+		return fmt.Errorf("local session list item validation failed at schema.LocalSessionListItem.Validate during grouped response construction: kind must select exactly one matching transcript or context arm; callers cannot safely render or select the item; populate only the arm named by kind")
+	}
+	if i.Transcript != nil {
+		if err := i.Transcript.Validate(); err != nil {
+			return err
+		}
+	}
+	if i.Context != nil {
+		if err := i.Context.Validate(); err != nil {
+			return err
+		}
+	}
+	for _, group := range i.HelperGroups {
+		if err := group.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Validate checks non-null collection and pagination/count boundaries.
+func (p LocalSessionListPayload) Validate() error {
+	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
+		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items must be an array and page, limit, and totals must be nonnegative with page/limit at least one; callers cannot page a coherent selected set; initialize items and emit bounded pagination values")
+	}
+	for _, item := range p.Items {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Validate checks a typed, non-null member page and every row mirror.
+func (p LocalHelperMembersPayload) Validate() error {
+	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members must be an array and page, limit, and total must be valid; callers cannot page the authorized scope; initialize members and emit bounded pagination values")
+	}
+	for _, row := range p.Members {
+		if err := row.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SessionsPayload is the data sent on the sessions WebSocket channel.
