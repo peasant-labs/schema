@@ -22,6 +22,21 @@ constants:
     value: "11"
     surfaces: [root]
 functions:
+  - name: parseSchemaVersionAdvertisement
+    target: runtime-capability-advertisement-parser
+    surfaces: [root]
+  - name: knownContentCapabilities
+    target: runtime-capability-reader
+    surfaces: [root]
+  - name: missingContentCapabilities
+    target: runtime-capability-negotiation
+    surfaces: [root]
+  - name: requiredContentCapabilities
+    target: runtime-capability-derivation
+    surfaces: [root]
+  - name: validateContentCapabilityAdvertisements
+    target: runtime-capability-producer-validation
+    surfaces: [root]
   - name: isProjectHash
     target: runtime-guard:ProjectHash
     surfaces: [root]

@@ -5,6 +5,10 @@ files:
   - dist/fixtures.js
   - dist/fixtures/quality.d.ts
   - dist/fixtures/quality.js
+  - dist/fixtures/session-graph-capability.d.ts
+  - dist/fixtures/session-graph-capability.js
+  - dist/fixtures/session-graph.d.ts
+  - dist/fixtures/session-graph.js
   - dist/fixtures/timeline.d.ts
   - dist/fixtures/timeline.js
   - dist/index.d.ts
@@ -21,6 +25,10 @@ files:
   - dist/internal/generated/public-contract.gen.js
   - dist/internal/generated/quality-fixtures.gen.d.ts
   - dist/internal/generated/quality-fixtures.gen.js
+  - dist/internal/generated/session-graph-capability-fixtures.gen.d.ts
+  - dist/internal/generated/session-graph-capability-fixtures.gen.js
+  - dist/internal/generated/session-graph-fixtures.gen.d.ts
+  - dist/internal/generated/session-graph-fixtures.gen.js
   - dist/internal/generated/testcase.gen.d.ts
   - dist/internal/generated/testcase.gen.js
   - dist/internal/generated/timeline-fixtures.gen.d.ts

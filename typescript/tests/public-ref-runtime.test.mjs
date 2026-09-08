@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { parse } from "yaml";
-
 import { zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from "../dist/index.js";
+import { sessionGraphFixtures } from "../dist/fixtures/session-graph.js";
 
-const fixture = parse(await readFile(new URL("../../testdata/session_graph_provenance.yaml", import.meta.url), "utf8"));
+const fixture = sessionGraphFixtures();
 const validators = { revision: zPublicRevisionRef, source: zSourceEntryRef, submission: zSubmissionRef };
 
 test("public reference runtime schemas enforce the canonical UTF-8 byte corpus", async (t) => {

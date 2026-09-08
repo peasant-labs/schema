@@ -69,11 +69,13 @@ try {
   });
 
   const probe = [
-    `import { ${enumName}, ${schemaExportName}, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
+    `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
+    `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
     `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
     `if (typeof ${schemaExportName}.safeParse !== "function") throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${schemaExportName} is not a Zod schema`)});`,
     `for (const validator of [zPublicRevisionRef, zSourceEntryRef, zSubmissionRef]) { if (!validator.safeParse("界".repeat(32)).success || validator.safeParse("界".repeat(32) + "a").success) throw new TypeError("packed public reference validator does not enforce the 96-byte UTF-8 boundary"); }`,
+    `const countCase = sessionGraphCapabilityFixtures().derivation.cases.find((row) => row.name === "count-only-zero"); if (countCase === undefined || requiredContentCapabilities(parseSessionDetailPayloadText(countCase.input.detailJSON))[0] !== "session_graph_provenance_v1") throw new TypeError("packed capability fixtures and runtime derivation are incoherent");`,
   ].join("\n");
   await writeFile(join(consumerDir, "probe.mjs"), `${probe}\n`);
   execFileSync(process.execPath, [join(consumerDir, "probe.mjs")], { cwd: consumerDir, stdio: "inherit" });

@@ -1192,3 +1192,9 @@ types:
   - {go_name: SessionGraphFixtureCorpus, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: DurableGraphFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: DurableMirrorInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilityDetailInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilityExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilityAdvertisementInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilityProducerInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilityFixtureNames, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentCapabilitySessionGraphFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
