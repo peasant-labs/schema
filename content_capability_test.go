@@ -3,6 +3,7 @@ package schema_test
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"slices"
@@ -11,46 +12,74 @@ import (
 
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase"
-	testassert "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed testdata/content_capability_session_graph.yaml
-var graphCapabilityFixtureYAML []byte
-
-type graphCapabilityInput struct {
-	Scenario string `yaml:"scenario"`
-	Value    string `yaml:"value,omitempty"`
-}
-type graphCapabilityExpected struct {
-	Capabilities []schema.ContentCapability `yaml:"capabilities,omitempty"`
-}
-
 func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
-	corpus, err := testcase.LoadCorpus[graphCapabilityInput, graphCapabilityExpected](graphCapabilityFixtureYAML)
+	fixtures, err := schema.LoadContentCapabilitySessionGraphFixtures()
 	if err != nil {
 		t.Fatalf("load graph capability fixtures: %v", err)
 	}
-	testassert.RequireMin(t, corpus, 15)
-	testassert.RequireValid(t, corpus)
-	requiredNames := []string{"legacy-empty", "model-only", "source-ref-only", "count-only-zero", "root-only", "purpose-only-interaction", "purpose-only-delegated", "purpose-only-helper", "purpose-only-unknown", "relationship-only", "earlier-only", "provenance-only", "populated-submission-provenance", "observed-and-graph", "folded-provenance"}
-	seen := map[string]bool{}
-	for _, c := range corpus.Cases {
-		seen[c.Name] = true
+	for _, c := range fixtures.Derivation.Cases {
 		t.Run(c.Name, func(t *testing.T) {
-			p := graphCapabilityPayload(c.Input)
+			var p schema.SessionDetailPayload
+			if err := json.Unmarshal([]byte(c.Input.DetailJSON), &p); err != nil {
+				t.Fatalf("decode durable detail: %v", err)
+			}
 			if err := schema.ValidateSessionDetailPayload(p); err != nil {
 				t.Fatalf("validate durable detail: %v", err)
 			}
 			if got := schema.RequiredContentCapabilities(p); !slices.Equal(got, c.Expected.Capabilities) {
 				t.Fatalf("capabilities=%v, want %v", got, c.Expected.Capabilities)
 			}
+			before := c.Input.DetailJSON
+			if c.Input.ReadJSON != "" {
+				var read schema.SessionDetailReadPayload
+				if err := json.Unmarshal([]byte(c.Input.ReadJSON), &read); err != nil {
+					t.Fatalf("decode read DTO: %v", err)
+				}
+				if _, err := schema.DecodeSessionDetailPayloadRaw([]byte(c.Input.RejectedDurableJSON)); err == nil {
+					t.Fatal("durable input accepted read-only navigation key")
+				}
+			}
+			if c.Input.DetailJSON != before {
+				t.Fatal("capability derivation mutated fixture input")
+			}
 		})
 	}
-	for _, name := range requiredNames {
-		if !seen[name] {
-			t.Errorf("required fixture %q is missing", name)
-		}
+	for _, c := range fixtures.Reader.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var r schema.SchemaVersionResponse
+			err := json.Unmarshal([]byte(c.Input.JSON), &r)
+			if c.Expected.ErrorContains != "" {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("error=%v, want containing %q", err, c.Expected.ErrorContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			known := schema.KnownContentCapabilities(r.ContentCapabilities)
+			if !slices.Equal(known, c.Expected.Known) && len(c.Expected.Known) > 0 {
+				t.Fatalf("known=%v want=%v", known, c.Expected.Known)
+			}
+			missing := schema.MissingContentCapabilities(r.ContentCapabilities, []schema.ContentCapability{schema.ContentCapabilitySessionGraphProvenanceV1})
+			if !slices.Equal(missing, c.Expected.Missing) {
+				t.Fatalf("missing=%v want=%v", missing, c.Expected.Missing)
+			}
+		})
+	}
+	for _, c := range fixtures.Producer.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			err := schema.ValidateContentCapabilityAdvertisements(c.Input.Tokens)
+			if c.Expected.Accepted != (err == nil) {
+				t.Fatalf("accepted=%v want=%v error=%v", err == nil, c.Expected.Accepted, err)
+			}
+			if err != nil && !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+				t.Fatalf("error=%v want containing %q", err, c.Expected.ErrorContains)
+			}
+		})
 	}
 }
 
@@ -64,38 +93,23 @@ func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
 	}
 }
 
-func graphCapabilityPayload(in graphCapabilityInput) schema.SessionDetailPayload {
-	p := schema.SessionDetailPayload{Harness: schema.HarnessClaudeCode, Outcome: schema.OutcomeResolved, SessionOrigin: schema.SessionOriginUnknown, Turns: []schema.TurnDetail{}}
-	zero := int64(0)
-	root := schema.SessionID("00000000-0000-4000-8000-000000000001")
-	unknown := &schema.ContentProvenance{Origin: schema.ContentOriginUnknown, Actor: schema.ActorOriginUnknown, Delivery: schema.DeliveryOriginUnknown, Ownership: schema.ContentOwnershipUncertain, Evidence: schema.EvidenceUnknown, InputModality: schema.InputModalityUnknown}
-	switch in.Scenario {
-	case "model-only":
-		p.Model = "seed/model"
-	case "source-ref-only":
-		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, SourceEntryRef: "entry"}}
-	case "count-only-zero":
-		p.InputSubmissionCount = &zero
-	case "root-only":
-		p.RootSessionID = &root
-	case "purpose":
-		p.Purpose = schema.SessionPurpose(in.Value)
-	case "relationship-only":
-		p.Relationships = []schema.SessionRelationship{{Kind: schema.SessionRelationshipStartedBy, TargetState: schema.RelationshipTargetUnknown, Evidence: schema.EvidenceUnknown}}
-	case "earlier-only":
-		p.EarlierHistory = []schema.EarlierHistorySection{{State: schema.EarlierHistoryUncertainMigrated, Turns: []schema.TurnDetail{}}}
-	case "provenance-only":
-		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, Provenance: unknown}}
-	case "submission-provenance":
-		copy := *unknown
-		copy.SubmissionRef = "submission"
-		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleUser, Provenance: &copy}}
-	case "observed-and-graph":
-		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleAssistant, ObservedModel: "provider/model", Provenance: unknown}}
-	case "folded-provenance":
-		p.Turns = []schema.TurnDetail{{Index: 0, Role: schema.RoleAssistant, ToolCalls: []schema.ToolCallDetail{{ID: "tool", ResultProvenance: unknown}}}}
+func TestContentCapabilitySessionGraphFixtureStrictness(t *testing.T) {
+	fixtures, err := schema.LoadContentCapabilitySessionGraphFixtures()
+	if err != nil {
+		t.Fatal(err)
 	}
-	return p
+	data, err := yaml.Marshal(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknown := bytes.Replace(data, []byte("detail_json:"), []byte("detail_jsno:"), 1)
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(unknown); err == nil {
+		t.Fatal("unknown fixture input key was accepted")
+	}
+	renamed := bytes.Replace(data, []byte("name: legacy-empty"), []byte("name: renamed-legacy-empty"), 1)
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(renamed); err == nil {
+		t.Fatal("count-preserving required-name rename was accepted")
+	}
 }
 
 //go:embed testdata/contract/content_capabilities.yaml

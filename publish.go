@@ -1,6 +1,12 @@
 package schema
 
-import jsonschema "github.com/swaggest/jsonschema-go"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+
+	jsonschema "github.com/swaggest/jsonschema-go"
+)
 
 // PublishRequest is the frozen rc11/Village 0.10.0 metadata shape retained for
 // compatibility. Village 0.12.0 publishing uses AuthoritativePublishRequest.
@@ -208,4 +214,21 @@ type SchemaVersionResponse struct {
 	// server output is invalid, clients tolerate and deduplicate it, order has no
 	// meaning, and canonical server serialization is lexicographically sorted.
 	ContentCapabilities []ContentCapability `json:"contentCapabilities,omitempty"`
+}
+
+func (r *SchemaVersionResponse) UnmarshalJSON(data []byte) error {
+	type plain SchemaVersionResponse
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	if raw, present := fields["contentCapabilities"]; present && bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return fmt.Errorf("schema version response decoding failed at schema.SchemaVersionResponse.UnmarshalJSON during capability discovery: contentCapabilities is null, but only omission or an array has defined support semantics; the caller cannot make a safe upload decision; emit [] for no support or a string-token array")
+	}
+	var decoded plain
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	*r = SchemaVersionResponse(decoded)
+	return nil
 }
