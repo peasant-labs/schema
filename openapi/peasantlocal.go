@@ -322,6 +322,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addComponentSchema(r, "SearchPayload", new(schema.SearchPayload)); err != nil {
 		return nil, err
 	}
+	if err := addComponentSchema(r, "LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)); err != nil {
+		return nil, err
+	}
 
 	// Fix annotation component $ref values (same rewrite as above).
 	if comps := r.SpecEns().Components; comps != nil {
@@ -337,6 +340,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// Express that wire-compatible conditional as a response union.
 	setResponseOneOf(r.Spec, "/api/v1/sessions", "get", "#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	setResponseOneOf(r.Spec, "/api/v1/search", "get", "#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload")
+	setResponseOneOf(r.Spec, "/api/v1/sync/sessions", "get", "#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	// Keep the public response component name identical across the Local API and
 	// Types catalogs instead of exposing the reflector's package-prefixed alias.
 	components := r.SpecEns().ComponentsEns().Schemas

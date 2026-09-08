@@ -138,6 +138,12 @@ type LocalSyncSummary struct {
 	SyncStatus           string      `json:"syncStatus"`
 }
 
+// LocalSyncSessionsPayload is the exact omitted-view response produced by the
+// existing local sync chooser.
+type LocalSyncSessionsPayload struct {
+	Sessions []LocalSyncSummary `json:"sessions" nullable:"false"`
+}
+
 // LocalSessionRow is one concrete local route row. Sync and Matches retain the
 // existing route-specific data instead of coercing every route into one shape.
 type LocalSessionRow struct {
@@ -180,8 +186,17 @@ func (r LocalSessionRow) Validate() error {
 	if r.Session.ID == "" {
 		return fmt.Errorf("local session row validation failed at schema.LocalSessionRow.Validate during grouped response construction: session.id is empty; callers cannot open the saved transcript; provide its durable local session ID")
 	}
+	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "LocalSessionRow.session.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if r.Sync != nil && len(r.Matches) != 0 {
+		return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped route projection: sync and matches are both populated; the row cannot belong to two incompatible route variants; retain only the originating sync or search arm", r.Session.ID)
+	}
 	if r.Sync != nil {
 		s := r.Sync
+		if err := ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSessionRow.sync.inputSubmissionCount"); err != nil {
+			return err
+		}
 		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) {
 			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
 		}

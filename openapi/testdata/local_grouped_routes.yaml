@@ -1,31 +1,37 @@
-cases:
+required_names: [grouped-session-list, grouped-search, grouped-sync, flat-transcript-read, scoped-helper-members]
+routes:
+  cases:
   - name: grouped-session-list
     input: {path: /api/v1/sessions, operationId: listSessions}
-    expected: {parameters: [view], responseRefs: ["#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload"]}
+    expected: {parameters: [{name: view, in: query, type: string, enum: [grouped]}], responseRefs: ["#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload"], requiredRoot: [items, page, limit, totalItems, ordinarySessionTotal, helperThreadTotal], nonnullArrays: [items]}
     classification: must-pass
     provenance: {source: requirement, ref: "grouped list is opt-in and legacy flat list remains"}
     mutation: {description: "binds the grouped view alongside the legacy response"}
   - name: grouped-search
     input: {path: /api/v1/search, operationId: searchMessages}
-    expected: {parameters: [q, limit, view], requiredParameters: [q], responseRefs: ["#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload"]}
+    expected: {parameters: [{name: q, in: query, type: string, required: true}, {name: limit, in: query, type: integer}, {name: view, in: query, type: string, enum: [grouped]}], responseRefs: ["#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload"]}
     classification: must-pass
     provenance: {source: requirement, ref: "search retains matches on grouped rows"}
     mutation: {description: "adds grouped view without removing the legacy search response"}
   - name: grouped-sync
     input: {path: /api/v1/sync/sessions, operationId: listSyncSessionsGrouped}
-    expected: {parameters: [view], responseRefs: ["#/components/schemas/SchemaLocalSessionListPayload"]}
+    expected:
+      parameters: [{name: view, in: query, type: string, enum: [grouped]}]
+      responseRefs: ["#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload"]
+      legacyBody: '{"sessions":[{"id":"s1","harness":"codex","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"host","startTime":"2026-09-08T00:00:00Z","durationMs":42,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new"}]}'
+      groupedBody: '{"items":[],"page":1,"limit":20,"totalItems":0,"ordinarySessionTotal":0,"helperThreadTotal":0}'
     classification: must-pass
     provenance: {source: requirement, ref: "sync chooser grouped route"}
     mutation: {description: "binds sync-specific rows to the grouped payload"}
   - name: flat-transcript-read
     input: {path: "/api/v1/sessions/{id}/transcript", operationId: getSessionTranscript}
-    expected: {parameters: [id], requiredParameters: [id], responseRefs: ["#/components/schemas/SchemaSessionDetailReadPayload"]}
+    expected: {parameters: [{name: id, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaSessionDetailReadPayload"], requiredRoot: [id, turns], forbiddenRoot: [detail, sessionDetail]}
     classification: must-pass
     provenance: {source: requirement, ref: "flat additive transcript read"}
     mutation: {description: "returns the embedded read DTO with root detail fields"}
   - name: scoped-helper-members
     input: {path: "/api/v1/session-groups/{groupId}/members", operationId: listLocalHelperGroupMembers}
-    expected: {parameters: [scope, page, limit, groupId], requiredParameters: [scope, groupId], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"]}
+    expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: limit, in: query, type: integer, minimum: 1}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, page, limit, total], nonnullArrays: [members]}
     classification: must-pass
     provenance: {source: requirement, ref: "bounded helper member operation"}
     mutation: {description: "requires opaque scope and accepts only paging inputs"}
