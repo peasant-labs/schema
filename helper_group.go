@@ -61,6 +61,9 @@ func (n SessionRelationshipNavigation) Validate() error {
 		if !resolved || n.Kind != SessionRelationshipContextFrom {
 			return fmt.Errorf("session relationship navigation validation failed at schema.SessionRelationshipNavigation.Validate: anchor is allowed only for linkable context_from navigation; omit the unsafe anchor")
 		}
+		if n.Status == RelationshipNavigationGeneralLinkOnly && n.Anchor.Kind != PublicSourceAnchorGeneral {
+			return fmt.Errorf("session relationship navigation validation failed at schema.SessionRelationshipNavigation.Validate: general_link_only carries an exact redacted-entry anchor; the status promises only a general source link and consumers could follow an unverified boundary; omit the anchor or use general_source_session, or emit resolved after verifying the exact public revision")
+		}
 		return n.Anchor.Validate()
 	}
 	return nil

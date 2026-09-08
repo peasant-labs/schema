@@ -37,7 +37,21 @@ func publicRefSchema(title string) jsonschema.Schema {
 	s.WithTitle(title)
 	s.WithMinLength(1)
 	s.WithMaxLength(96)
+	s.WithFormat(PublicRefUTF8ByteFormat)
 	return s
+}
+
+// PublicRefUTF8ByteFormat identifies the format assertion shared by generated
+// validators for opaque public references. Unlike maxLength, which counts
+// Unicode code points, this assertion counts the encoded UTF-8 bytes.
+const PublicRefUTF8ByteFormat = "public-ref-utf8-96-bytes"
+
+// ValidatePublicRefJSONSchemaFormat implements PublicRefUTF8ByteFormat for
+// JSON Schema runtimes. Register it as a format assertion before compiling a
+// schema that exposes one of the public reference types.
+func ValidatePublicRefJSONSchemaFormat(value any) bool {
+	raw, ok := value.(string)
+	return ok && validPublicRef(raw)
 }
 func (SourceEntryRef) JSONSchema() (jsonschema.Schema, error) {
 	return publicRefSchema("Source Entry Reference"), nil

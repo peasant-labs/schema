@@ -1,9 +1,14 @@
 package schema
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/peasant-labs/schema/testcase"
+	"gopkg.in/yaml.v3"
 )
 
 type SessionGraphFixtureInput struct {
@@ -16,18 +21,75 @@ type SessionGraphFixtureInput struct {
 	Group        *HelperGroupSummary            `yaml:"group,omitempty"`
 	Context      *HelperContextSummary          `yaml:"context,omitempty"`
 	Earlier      *EarlierHistorySection         `yaml:"earlier,omitempty"`
+	RawJSON      string                         `yaml:"rawJson,omitempty"`
 }
 type SessionGraphFixtureExpected struct {
 	ErrorContains string `yaml:"error_contains,omitempty"`
 }
-type SessionGraphFixtureCorpus = testcase.Corpus[SessionGraphFixtureInput, SessionGraphFixtureExpected]
+type SessionGraphRefInput struct {
+	Alias       string `yaml:"alias"`
+	BytesBase64 string `yaml:"bytesBase64"`
+}
+type SessionGraphRefExpected struct {
+	ValueBase64   string `yaml:"valueBase64,omitempty"`
+	ErrorContains string `yaml:"errorContains,omitempty"`
+}
+type SessionGraphEnumInput struct {
+	Enum    string   `yaml:"enum"`
+	Members []string `yaml:"members"`
+	Unknown string   `yaml:"unknown"`
+}
+type SessionGraphFixtureCorpus struct {
+	Refs      testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]         `yaml:"refs"`
+	Enums     testcase.Corpus[SessionGraphEnumInput, struct{}]                       `yaml:"enums"`
+	Semantics testcase.Corpus[SessionGraphFixtureInput, SessionGraphFixtureExpected] `yaml:"semantics"`
+}
 
 func LoadSessionGraphFixtures() (SessionGraphFixtureCorpus, error) {
-	c, err := testcase.LoadCorpus[SessionGraphFixtureInput, SessionGraphFixtureExpected](SessionGraphProvenanceYAML)
-	if err != nil {
+	var c SessionGraphFixtureCorpus
+	decoder := yaml.NewDecoder(bytes.NewReader(SessionGraphProvenanceYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&c); err != nil {
 		return c, fmt.Errorf("load session graph fixtures: %w", err)
 	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err != nil {
+			return c, fmt.Errorf("load session graph fixtures trailing document: %w", err)
+		}
+		return c, fmt.Errorf("load session graph fixtures: multiple YAML documents are not allowed")
+	}
+	if err := c.Refs.Validate(); err != nil {
+		return c, fmt.Errorf("load session graph ref fixtures: %w", err)
+	}
+	if err := c.Enums.Validate(); err != nil {
+		return c, fmt.Errorf("load session graph enum fixtures: %w", err)
+	}
+	if err := c.Semantics.Validate(); err != nil {
+		return c, fmt.Errorf("load session graph semantic fixtures: %w", err)
+	}
 	return c, nil
+}
+
+func ConstructSessionGraphRef(i SessionGraphRefInput) (string, error) {
+	b, e := base64.StdEncoding.DecodeString(i.BytesBase64)
+	if e != nil {
+		return "", fmt.Errorf("decode reference fixture bytes: %w", e)
+	}
+	raw := string(b)
+	switch i.Alias {
+	case "source":
+		v, e := NewSourceEntryRef(raw)
+		return string(v), e
+	case "submission":
+		v, e := NewSubmissionRef(raw)
+		return string(v), e
+	case "revision":
+		v, e := NewPublicRevisionRef(raw)
+		return string(v), e
+	default:
+		return "", fmt.Errorf("unknown reference alias %q", i.Alias)
+	}
 }
 
 func ValidateSessionGraphFixtureInput(i SessionGraphFixtureInput) error {
@@ -73,6 +135,18 @@ func ValidateSessionGraphFixtureInput(i SessionGraphFixtureInput) error {
 			return fmt.Errorf("missing earlier")
 		}
 		return i.Earlier.Validate()
+	case "raw_relationship":
+		var value SessionRelationship
+		if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
+			return fmt.Errorf("decode raw relationship primitive: %w", err)
+		}
+		return value.Validate()
+	case "raw_navigation":
+		var value SessionRelationshipNavigation
+		if err := json.Unmarshal([]byte(i.RawJSON), &value); err != nil {
+			return fmt.Errorf("decode raw navigation primitive: %w", err)
+		}
+		return value.Validate()
 	default:
 		return fmt.Errorf("unknown fixture operation %q", i.Operation)
 	}

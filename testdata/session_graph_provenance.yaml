@@ -1,21 +1,188 @@
-cases:
-  - {name: ref-96-ascii, input: {operation: source_ref, value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}, expected: {}, classification: must-pass, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: exact ASCII byte limit}}
-  - {name: ref-96-multibyte, input: {operation: submission_ref, value: "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界"}, expected: {}, classification: must-pass, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: exact multibyte byte limit}}
-  - {name: ref-over-byte-boundary, input: {operation: revision_ref, value: "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界a"}, expected: {error_contains: 1..96}, classification: must-fail, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: one byte over limit}}
-  - {name: ref-malformed-not-trimmed, input: {operation: source_ref, value: " "}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: exact-byte-preservation}, mutation: {description: whitespace bytes are preserved rather than trimmed}}
-  - {name: relationship-known-target, input: {operation: relationship, relationship: {kind: started_by, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: known target has ID}}
-  - {name: relationship-unknown-forbids-target, input: {operation: relationship, relationship: {kind: started_by, targetState: unknown, targetLocalId: ses_parent1, evidence: unknown}}, expected: {error_contains: disagree}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: unknown state carries forbidden ID}}
-  - {name: relationship-unique-kinds, input: {operation: relations, relations: [{kind: started_by, targetState: explicit_none, evidence: lifecycle_typed}, {kind: started_by, targetState: unknown, evidence: unknown}]}, expected: {error_contains: more than once}, classification: must-fail, provenance: {source: requirement, ref: unique-kind}, mutation: {description: duplicate relationship kind}}
-  - {name: anchor-general, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: general_source_session}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: general context anchor}}
-  - {name: anchor-exact, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known_retained, targetLocalId: ses_parent1, evidence: retained_last_good, anchor: {kind: before_redacted_entry, sourceEntryRef: e1, sourceRevisionRef: r1}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: exact context anchor}}
-  - {name: anchor-partial-rejected, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: through_redacted_entry, sourceEntryRef: e1}}}, expected: {error_contains: requires both}, classification: must-fail, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: exact anchor missing revision}}
-  - {name: provenance-all-unknown, input: {operation: provenance, provenance: {origin: unknown, actor: unknown, delivery: unknown, ownership: uncertain, evidence: unknown, inputModality: unknown}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: unknown-valid}, mutation: {description: complete unknown evidence}}
-  - {name: provenance-empty-rejected, input: {operation: provenance, provenance: {}}, expected: {error_contains: missing}, classification: must-fail, provenance: {source: requirement, ref: provenance-required}, mutation: {description: empty object}}
-  - {name: navigation-local-resolved, input: {operation: navigation, navigation: {kind: started_by, status: resolved, localId: ses_parent1}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: resolved local link}}
-  - {name: navigation-unavailable-no-id, input: {operation: navigation, navigation: {kind: started_by, status: known_unavailable}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: unavailable target hides ID}}
-  - {name: navigation-unavailable-leaks-id, input: {operation: navigation, navigation: {kind: started_by, status: inaccessible, localId: ses_parent1}}, expected: {error_contains: exactly one}, classification: must-fail, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: inaccessible target leaks ID}}
-  - {name: helper-group-valid, input: {operation: group, group: {groupId: hg_public, purpose: helper_review, helperThreadCount: 2, memberScope: scope_public}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: helper-summary}, mutation: {description: saved helper identities}}
-  - {name: helper-group-wrong-purpose, input: {operation: group, group: {groupId: hg_public, purpose: interaction, helperThreadCount: 2, memberScope: scope_public}}, expected: {error_contains: helper_review}, classification: must-fail, provenance: {source: requirement, ref: helper-summary}, mutation: {description: non-helper purpose}}
-  - {name: helper-context-valid, input: {operation: context, context: {groupId: hg_public, ownerStatus: known_unavailable}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: helper-context}, mutation: {description: unavailable owner context}}
-  - {name: earlier-empty-valid, input: {operation: earlier, earlier: {state: uncertain_migrated, turns: []}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: earlier-history}, mutation: {description: non-null empty retained section}}
-  - {name: earlier-null-invalid, input: {operation: earlier, earlier: {state: uncertain_unresolved, turns: null}}, expected: {error_contains: turns is null}, classification: must-fail, provenance: {source: requirement, ref: earlier-history}, mutation: {description: null turn array}}
+refs:
+  cases:
+    - {name: source-empty, input: {alias: source, bytesBase64: ""}, expected: {errorContains: 1..96}, classification: must-fail, provenance: {source: boundary, ref: required-ref}, mutation: {description: empty required source ref}}
+    - {name: submission-invalid-utf8, input: {alias: submission, bytesBase64: /w==}, expected: {errorContains: UTF-8}, classification: must-fail, provenance: {source: boundary, ref: invalid-utf8}, mutation: {description: invalid UTF-8 byte vector}}
+    - {name: revision-one-byte, input: {alias: revision, bytesBase64: YQ==}, expected: {valueBase64: YQ==}, classification: must-pass, provenance: {source: boundary, ref: one-byte}, mutation: {description: minimum valid ref}}
+    - {name: source-96-multibyte, input: {alias: source, bytesBase64: 55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM}, expected: {valueBase64: 55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM}, classification: must-pass, provenance: {source: boundary, ref: utf8-96}, mutation: {description: exact multibyte limit}}
+    - {name: submission-97-multibyte, input: {alias: submission, bytesBase64: 55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WMYQ==}, expected: {errorContains: 1..96}, classification: must-fail, provenance: {source: boundary, ref: utf8-97}, mutation: {description: one byte above multibyte limit}}
+    - {name: revision-preserves-space, input: {alias: revision, bytesBase64: IHIg}, expected: {valueBase64: IHIg}, classification: must-pass, provenance: {source: requirement, ref: exact-bytes}, mutation: {description: no trimming}}
+    - name: source-invalid-bytes
+      input:
+        alias: source
+        bytesBase64: "/w=="
+      expected:
+        errorContains: UTF-8
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: source-invalid
+      mutation:
+        description: invalid byte boundary for source
+    - name: source-one-bytes
+      input:
+        alias: source
+        bytesBase64: "YQ=="
+      expected:
+        valueBase64: YQ==
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: source-one
+      mutation:
+        description: one byte boundary for source
+    - name: source-97-bytes
+      input:
+        alias: source
+        bytesBase64: "55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WMYQ=="
+      expected:
+        errorContains: 1..96
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: source-97
+      mutation:
+        description: 97 byte boundary for source
+    - name: submission-empty-bytes
+      input:
+        alias: submission
+        bytesBase64: ""
+      expected:
+        errorContains: 1..96
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: submission-empty
+      mutation:
+        description: empty byte boundary for submission
+    - name: submission-one-bytes
+      input:
+        alias: submission
+        bytesBase64: "YQ=="
+      expected:
+        valueBase64: YQ==
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: submission-one
+      mutation:
+        description: one byte boundary for submission
+    - name: submission-96-bytes
+      input:
+        alias: submission
+        bytesBase64: "55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM"
+      expected:
+        valueBase64: 55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: submission-96
+      mutation:
+        description: 96 byte boundary for submission
+    - name: revision-empty-bytes
+      input:
+        alias: revision
+        bytesBase64: ""
+      expected:
+        errorContains: 1..96
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: revision-empty
+      mutation:
+        description: empty byte boundary for revision
+    - name: revision-invalid-bytes
+      input:
+        alias: revision
+        bytesBase64: "/w=="
+      expected:
+        errorContains: UTF-8
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: revision-invalid
+      mutation:
+        description: invalid byte boundary for revision
+    - name: revision-96-bytes
+      input:
+        alias: revision
+        bytesBase64: "55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM"
+      expected:
+        valueBase64: 55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM
+      classification: must-pass
+      provenance:
+        source: boundary
+        ref: revision-96
+      mutation:
+        description: 96 byte boundary for revision
+    - name: revision-97-bytes
+      input:
+        alias: revision
+        bytesBase64: "55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WM55WMYQ=="
+      expected:
+        errorContains: 1..96
+      classification: must-fail
+      provenance:
+        source: boundary
+        ref: revision-97
+      mutation:
+        description: 97 byte boundary for revision
+enums:
+  cases:
+    - {name: enum-relationship, input: {enum: relationship, members: [started_by, context_from], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: relationship-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-target, input: {enum: target, members: [target_known, target_known_retained, explicit_none, unknown, conflicting_current_native_evidence], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: target-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-evidence, input: {enum: evidence, members: [native_typed, lifecycle_typed, existing_adapter, retained_last_good, unknown, conflict], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: evidence-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-purpose, input: {enum: purpose, members: [interaction, delegated_work, helper_review, unknown], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: purpose-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-origin, input: {enum: origin, members: [submitted_input, harness_context, agent_output, agent_communication, tool_activity, system_control, generated_summary, unknown], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: origin-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-actor, input: {enum: actor, members: [operator, agent_delegate, harness, unknown], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: actor-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-delivery, input: {enum: delivery, members: [session_admission, guardian_review, subagent_delivery, inherited_context, tool_delivery, system_lifecycle, unknown], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: delivery-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-ownership, input: {enum: ownership, members: [local, inherited, uncertain], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: ownership-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-modality, input: {enum: modality, members: [none, text, media, user_action, mixed, unknown], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: modality-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-anchor, input: {enum: anchor, members: [general_source_session, before_redacted_entry, through_redacted_entry], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: anchor-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-earlier, input: {enum: earlier, members: [uncertain_migrated, uncertain_unresolved], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: earlier-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-navigation, input: {enum: navigation, members: [resolved, general_link_only, known_unavailable, inaccessible, unknown, conflicting], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: navigation-closed-set}, mutation: {description: exact members and unknown rejection}}
+    - {name: enum-list_item, input: {enum: list_item, members: [transcript, context_container], unknown: future_value}, expected: {}, classification: must-pass, provenance: {source: enum, ref: list_item-closed-set}, mutation: {description: exact members and unknown rejection}}
+semantics:
+  cases:
+    - {name: ref-96-ascii, input: {operation: source_ref, value: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}, expected: {}, classification: must-pass, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: exact ASCII byte limit}}
+    - {name: ref-96-multibyte, input: {operation: submission_ref, value: "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界"}, expected: {}, classification: must-pass, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: exact multibyte byte limit}}
+    - {name: ref-over-byte-boundary, input: {operation: revision_ref, value: "界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界界a"}, expected: {error_contains: 1..96}, classification: must-fail, provenance: {source: boundary, ref: ref-byte-limit}, mutation: {description: one byte over limit}}
+    - {name: ref-malformed-not-trimmed, input: {operation: source_ref, value: " "}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: exact-byte-preservation}, mutation: {description: whitespace bytes are preserved rather than trimmed}}
+    - {name: relationship-known-target, input: {operation: relationship, relationship: {kind: started_by, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: known target has ID}}
+    - {name: relationship-unknown-forbids-target, input: {operation: relationship, relationship: {kind: started_by, targetState: unknown, targetLocalId: ses_parent1, evidence: unknown}}, expected: {error_contains: disagree}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: unknown state carries forbidden ID}}
+    - {name: relationship-unique-kinds, input: {operation: relations, relations: [{kind: started_by, targetState: explicit_none, evidence: lifecycle_typed}, {kind: started_by, targetState: unknown, evidence: unknown}]}, expected: {error_contains: more than once}, classification: must-fail, provenance: {source: requirement, ref: unique-kind}, mutation: {description: duplicate relationship kind}}
+    - {name: anchor-general, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: general_source_session}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: general context anchor}}
+    - {name: anchor-exact, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known_retained, targetLocalId: ses_parent1, evidence: retained_last_good, anchor: {kind: before_redacted_entry, sourceEntryRef: e1, sourceRevisionRef: r1}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: exact context anchor}}
+    - {name: anchor-partial-rejected, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: through_redacted_entry, sourceEntryRef: e1}}}, expected: {error_contains: requires both}, classification: must-fail, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: exact anchor missing revision}}
+    - {name: provenance-all-unknown, input: {operation: provenance, provenance: {origin: unknown, actor: unknown, delivery: unknown, ownership: uncertain, evidence: unknown, inputModality: unknown}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: unknown-valid}, mutation: {description: complete unknown evidence}}
+    - {name: provenance-empty-rejected, input: {operation: provenance, provenance: {}}, expected: {error_contains: missing}, classification: must-fail, provenance: {source: requirement, ref: provenance-required}, mutation: {description: empty object}}
+    - {name: navigation-local-resolved, input: {operation: navigation, navigation: {kind: started_by, status: resolved, localId: ses_parent1}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: resolved local link}}
+    - {name: navigation-unavailable-no-id, input: {operation: navigation, navigation: {kind: started_by, status: known_unavailable}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: unavailable target hides ID}}
+    - {name: navigation-unavailable-leaks-id, input: {operation: navigation, navigation: {kind: started_by, status: inaccessible, localId: ses_parent1}}, expected: {error_contains: exactly one}, classification: must-fail, provenance: {source: requirement, ref: navigation-matrix}, mutation: {description: inaccessible target leaks ID}}
+    - {name: helper-group-valid, input: {operation: group, group: {groupId: hg_public, purpose: helper_review, helperThreadCount: 2, memberScope: scope_public}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: helper-summary}, mutation: {description: saved helper identities}}
+    - {name: helper-group-wrong-purpose, input: {operation: group, group: {groupId: hg_public, purpose: interaction, helperThreadCount: 2, memberScope: scope_public}}, expected: {error_contains: helper_review}, classification: must-fail, provenance: {source: requirement, ref: helper-summary}, mutation: {description: non-helper purpose}}
+    - {name: helper-context-valid, input: {operation: context, context: {groupId: hg_public, ownerStatus: known_unavailable}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: helper-context}, mutation: {description: unavailable owner context}}
+    - {name: earlier-empty-valid, input: {operation: earlier, earlier: {state: uncertain_migrated, turns: []}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: earlier-history}, mutation: {description: non-null empty retained section}}
+    - {name: earlier-null-invalid, input: {operation: earlier, earlier: {state: uncertain_unresolved, turns: null}}, expected: {error_contains: turns is null}, classification: must-fail, provenance: {source: requirement, ref: earlier-history}, mutation: {description: null turn array}}
+    - {name: relationship-known-missing-target, input: {operation: relationship, relationship: {kind: started_by, targetState: target_known, evidence: native_typed}}, expected: {error_contains: disagree}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: known state missing ID}}
+    - {name: relationship-known-invalid-target, input: {operation: relationship, relationship: {kind: started_by, targetState: target_known, targetLocalId: bad/id, evidence: native_typed}}, expected: {error_contains: malformed}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: malformed known ID}}
+    - {name: relationship-explicit-none-forbids-target, input: {operation: relationship, relationship: {kind: started_by, targetState: explicit_none, targetLocalId: ses_parent1, evidence: lifecycle_typed}}, expected: {error_contains: disagree}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: explicit none with ID}}
+    - {name: relationship-conflict-forbids-target, input: {operation: relationship, relationship: {kind: context_from, targetState: conflicting_current_native_evidence, targetLocalId: ses_parent1, evidence: conflict}}, expected: {error_contains: disagree}, classification: must-fail, provenance: {source: requirement, ref: relationship-matrix}, mutation: {description: conflict with ID}}
+    - {name: relationship-legal-unique-pair, input: {operation: relations, relations: [{kind: started_by, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed}, {kind: context_from, targetState: unknown, evidence: unknown}]}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: unique-kind}, mutation: {description: one relation of each kind}}
+    - {name: anchor-forbidden-started-by, input: {operation: relationship, relationship: {kind: started_by, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: general_source_session}}}, expected: {error_contains: only on a known context_from}, classification: must-fail, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: started-by anchor}}
+    - {name: anchor-forbidden-nonknown, input: {operation: relationship, relationship: {kind: context_from, targetState: unknown, evidence: unknown, anchor: {kind: general_source_session}}}, expected: {error_contains: only on a known context_from}, classification: must-fail, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: unknown relation anchor}}
+    - {name: anchor-general-forbids-refs, input: {operation: relationship, relationship: {kind: context_from, targetState: target_known, targetLocalId: ses_parent1, evidence: native_typed, anchor: {kind: general_source_session, sourceEntryRef: e1}}}, expected: {error_contains: carries an entry}, classification: must-fail, provenance: {source: requirement, ref: anchor-matrix}, mutation: {description: general anchor with exact ref}}
+    - {name: provenance-invalid-origin, input: {operation: provenance, provenance: {origin: future, actor: unknown, delivery: unknown, ownership: uncertain, evidence: unknown, inputModality: unknown}}, expected: {error_contains: outside}, classification: must-fail, provenance: {source: requirement, ref: provenance-dimensions}, mutation: {description: invalid origin dimension}}
+    - {name: provenance-invalid-submission, input: {operation: provenance, provenance: {origin: unknown, actor: unknown, delivery: unknown, ownership: uncertain, evidence: unknown, inputModality: unknown, submissionRef: ""}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: optional-submission}, mutation: {description: absent optional submission}}
+    - {name: provenance-overlong-submission, input: {operation: provenance, provenance: {origin: submitted_input, actor: unknown, delivery: session_admission, ownership: local, evidence: native_typed, inputModality: text, submissionRef: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}}, expected: {error_contains: 1..96}, classification: must-fail, provenance: {source: boundary, ref: submission-bound}, mutation: {description: overlong submission ref}}
+    - {name: navigation-public-resolved, input: {operation: navigation, navigation: {kind: context_from, status: resolved, transcriptId: 99d59925-36bc-424c-a789-8be54d9702ba, anchor: {kind: through_redacted_entry, sourceEntryRef: e1, sourceRevisionRef: r1}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: navigation-targets}, mutation: {description: public exact resolved target}}
+    - {name: navigation-resolved-missing-target, input: {operation: navigation, navigation: {kind: started_by, status: resolved}}, expected: {error_contains: exactly one}, classification: must-fail, provenance: {source: requirement, ref: navigation-targets}, mutation: {description: resolved without target}}
+    - {name: navigation-resolved-dual-target, input: {operation: navigation, navigation: {kind: started_by, status: resolved, localId: ses_parent1, transcriptId: 99d59925-36bc-424c-a789-8be54d9702ba}}, expected: {error_contains: exactly one}, classification: must-fail, provenance: {source: requirement, ref: navigation-targets}, mutation: {description: local and public targets conflict}}
+    - {name: navigation-general-link-absent-anchor, input: {operation: navigation, navigation: {kind: context_from, status: general_link_only, localId: ses_parent1}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: general-link}, mutation: {description: general link without anchor}}
+    - {name: navigation-general-link-general-anchor, input: {operation: navigation, navigation: {kind: context_from, status: general_link_only, localId: ses_parent1, anchor: {kind: general_source_session}}}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: general-link}, mutation: {description: explicit general anchor}}
+    - {name: navigation-general-link-exact-anchor, input: {operation: navigation, navigation: {kind: context_from, status: general_link_only, localId: ses_parent1, anchor: {kind: before_redacted_entry, sourceEntryRef: e1, sourceRevisionRef: r1}}}, expected: {error_contains: promises only a general source link}, classification: must-fail, provenance: {source: requirement, ref: general-link}, mutation: {description: contradictory exact anchor}}
+    - {name: helper-negative-count, input: {operation: group, group: {groupId: hg_public, purpose: helper_review, helperThreadCount: -1, memberScope: scope_public}}, expected: {error_contains: negative}, classification: must-fail, provenance: {source: requirement, ref: helper-summary}, mutation: {description: negative saved identity count}}
+    - {name: helper-empty-group, input: {operation: group, group: {groupId: "", purpose: helper_review, helperThreadCount: 0, memberScope: scope_public}}, expected: {error_contains: non-empty}, classification: must-fail, provenance: {source: requirement, ref: helper-summary}, mutation: {description: empty stable group ID}}
+    - {name: helper-empty-scope, input: {operation: group, group: {groupId: hg_public, purpose: helper_review, helperThreadCount: 0, memberScope: ""}}, expected: {error_contains: non-empty}, classification: must-fail, provenance: {source: requirement, ref: helper-summary}, mutation: {description: empty route scope}}
+    - {name: helper-context-invalid-status, input: {operation: context, context: {groupId: hg_public, ownerStatus: future}}, expected: {error_contains: outside}, classification: must-fail, provenance: {source: requirement, ref: helper-context}, mutation: {description: unknown owner status token}}
+    - {name: raw-relationship-wrong-target-type, input: {operation: raw_relationship, rawJson: '{"kind":"started_by","targetState":"target_known","targetLocalId":7,"evidence":"native_typed"}'}, expected: {error_contains: cannot unmarshal}, classification: must-fail, provenance: {source: boundary, ref: raw-primitive-shape}, mutation: {description: numeric target ID}}
+    - {name: raw-navigation-roundtrip-shape, input: {operation: raw_navigation, rawJson: '{"kind":"context_from","status":"general_link_only","localId":"ses_parent1","anchor":{"kind":"general_source_session"}}'}, expected: {}, classification: must-pass, provenance: {source: requirement, ref: raw-primitive-shape}, mutation: {description: valid raw navigation object}}
