@@ -72,6 +72,7 @@ export function parseSessionDetailPayloadValue(value: unknown): import("./intern
 
 function normalizeEmptySubmissionRefs(value: unknown): void {
   if (!isRecord(value)) return;
+  if (value.parentSessionId === null) delete value.parentSessionId;
   const visitTurns = (turns: unknown): void => {
     if (!Array.isArray(turns)) return;
     for (const turn of turns) if (isRecord(turn)) {
@@ -102,8 +103,9 @@ export function parseSchemaVersionAdvertisement(text: string): string[] {
 export function parseTranscriptContentText(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
   scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
   const raw: unknown = JSON.parse(text);
-  if (isRecord(raw)) parseSessionDetailPayloadValue(raw.sessionDetail);
-  const content = zTranscriptContent.parse(raw);
+  if (!isRecord(raw)) return zTranscriptContent.parse(raw);
+  const normalizedEnvelope = {...raw, sessionDetail: parseSessionDetailPayloadValue(raw.sessionDetail)};
+  const content = zTranscriptContent.parse(normalizedEnvelope);
   if (content.sessionDetail === undefined || content.sessionDetail === null) failSemantic("sessionDetail is required");
   parseSessionDetailPayloadValue(content.sessionDetail);
   return content;
@@ -209,7 +211,7 @@ function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/
   validateRawGraphValue(durable);
   normalizeEmptySubmissionRefs(durable);
   validateSessionDetail(zSessionDetailPayload.parse(durable));
-  return zSessionDetailReadPayload.parse(value);
+  return zSessionDetailReadPayload.parse({...durable, relationshipNavigation: value.relationshipNavigation});
 }
 
 function validateRelationships(payload: Detail): void {
@@ -228,7 +230,7 @@ function validateRelationships(payload: Detail): void {
     }
     if (relationship.kind === "started_by" && known) startedBy = relationship.targetLocalId ?? undefined;
   }
-  if ((payload.relationships?.length ?? 0) > 0 && payload.parentSessionId !== undefined && payload.parentSessionId !== startedBy) failSemantic("parentSessionId disagrees with durable started_by relationship");
+  if ((payload.relationships?.length ?? 0) > 0 && payload.parentSessionId != null && payload.parentSessionId !== startedBy) failSemantic("parentSessionId disagrees with durable started_by relationship");
 }
 
 function validSessionId(value: string): boolean { return !value.includes("/") && !value.includes("\\") && !value.includes("..") && /^(?:[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}|agent-[a-f0-9]+|ses_[a-zA-Z0-9]+|sess_[a-zA-Z0-9]+|msg_[a-zA-Z0-9]+|[A-Z2-7]{26}|[0-9]{8}T[0-9]{6}\.[0-9]{9}Z-[A-Z2-7]{26})$/.test(value); }

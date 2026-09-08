@@ -36,19 +36,37 @@ test("public envelope parsers apply durable graph semantics before generated par
   });
 });
 
-test("primitive relationship and provenance corpora pass through the public detail parser", async (t) => {
+function assertPublicExits(row, detail) {
+  const original = structuredClone(detail);
+  const text = JSON.stringify(detail);
+  const direct = () => parseSessionDetailPayloadText(text);
+  const content = () => parseTranscriptContentText(JSON.stringify({kind: "session_detail", contractVersion: "1", sessionDetail: detail})).sessionDetail;
+  const websocket = () => parseServerMessageRaw(JSON.stringify({type: "session_detail", data: detail})).data;
+  if (row.classification === "must-fail") {
+    assert.throws(direct); assert.throws(content); assert.throws(websocket);
+  } else {
+    const directResult = direct(), contentResult = content(), websocketResult = websocket();
+    assert.deepEqual(contentResult, directResult);
+    assert.deepEqual(websocketResult, directResult);
+    if (text.includes('"submissionRef":""')) assert.equal(JSON.stringify(directResult).includes('"submissionRef":""'), false);
+  }
+  assert.deepEqual(detail, original);
+}
+
+test("primitive relationship and provenance corpora pass through every public detail exit", async (t) => {
   const baseRow = fixtures.recursive.cases.find(row => row.classification === "must-pass");
   const base = JSON.parse(baseRow.input.json ?? baseRow.input.rawJSON);
   for (const row of [...fixtures.relationships.cases, ...fixtures.relationship_sets.cases]) await t.test(row.name, () => {
     const detail = {...base, relationships: row.input.relationships ?? [row.input]};
-    if (row.classification === "must-fail") assert.throws(() => parseSessionDetailPayloadText(JSON.stringify(detail)));
-    else assert.doesNotThrow(() => parseSessionDetailPayloadText(JSON.stringify(detail)));
+    assertPublicExits(row, detail);
   });
   for (const row of fixtures.provenance.cases) await t.test(row.name, () => {
     const detail = structuredClone(base);
     const turn = detail.turns[0] ?? detail.earlierHistory[0].turns[0];
     turn.provenance = row.input;
-    if (row.classification === "must-fail") assert.throws(() => parseSessionDetailPayloadText(JSON.stringify(detail)));
-    else assert.doesNotThrow(() => parseSessionDetailPayloadText(JSON.stringify(detail)));
+    assertPublicExits(row, detail);
+    if (row.name === "provenance-invalid-submission" && row.classification === "must-pass") {
+      assert.equal(turn.provenance.submissionRef, "");
+    }
   });
 });
