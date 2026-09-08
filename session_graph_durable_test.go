@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -20,11 +21,11 @@ func requireDurableFixtures(t *testing.T) schema.DurableGraphFixtures {
 	assert.RequireValid(t, fx.RoundTrip)
 	assert.RequireMin(t, fx.Counts, 4)
 	assert.RequireValid(t, fx.Counts)
-	assert.RequireMin(t, fx.InvalidCounts, 5)
+	assert.RequireMin(t, fx.InvalidCounts, 8)
 	assert.RequireValid(t, fx.InvalidCounts)
-	assert.RequireMin(t, fx.Mirrors, 3)
+	assert.RequireMin(t, fx.Mirrors, 11)
 	assert.RequireValid(t, fx.Mirrors)
-	assert.RequireMin(t, fx.Digest, 2)
+	assert.RequireMin(t, fx.Digest, 6)
 	assert.RequireValid(t, fx.Digest)
 	want := make(map[string]bool, len(fx.RequiredNames))
 	for _, name := range fx.RequiredNames {
@@ -72,6 +73,53 @@ func TestDurableGraphRoundTrip(t *testing.T) {
 			}
 			if back.InputSubmissionCount != nil && *back.InputSubmissionCount != row.Expected.InputCount {
 				t.Fatalf("input count=%d", *back.InputSubmissionCount)
+			}
+			if len(back.ChildSessions) != row.Expected.HelperCount {
+				t.Fatalf("saved helper count=%d want %d", len(back.ChildSessions), row.Expected.HelperCount)
+			}
+			var expectedJSON, actualJSON any
+			if err := json.Unmarshal(durableDetailJSON(t, row.Input.JSON), &expectedJSON); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(encoded, &actualJSON); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(expectedJSON, actualJSON) {
+				t.Fatalf("semantic round trip changed durable payload\nactual: %s\nexpected: %s", encoded, durableDetailJSON(t, row.Input.JSON))
+			}
+			if len(back.Turns) > 0 {
+				entry := schema.SessionEntry{SessionID: "ses_graph", EntryIndex: back.Turns[0].Index, Harness: back.Harness, EntryType: back.Turns[0].EntryType, Role: back.Turns[0].Role, SourceEntryRef: back.Turns[0].SourceEntryRef, Provenance: back.Turns[0].Provenance}
+				rawEntry, err := json.Marshal(entry)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var decodedEntry schema.SessionEntry
+				if err := json.Unmarshal(rawEntry, &decodedEntry); err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(entry, decodedEntry) {
+					t.Fatalf("session entry round trip changed evidence: %+v", decodedEntry)
+				}
+			}
+			if row.Expected.HelperCount > 0 {
+				metadata := schema.NewUnifiedMetadata()
+				metadata.SessionID = schema.SessionID(back.ID)
+				metadata.ModelHarness = back.Harness
+				metadata.ParentUUID = back.ParentSessionID
+				metadata.Purpose = back.Purpose
+				metadata.Relationships = append([]schema.SessionRelationship(nil), back.Relationships...)
+				metadata.Stats.TurnCount = back.TurnCount
+				count := *back.InputSubmissionCount
+				metadata.Stats.InputSubmissionCount = &count
+				root := *back.RootSessionID
+				metadata.RootSessionID = &root
+				identity, stats, helpers, err := schema.BuildAuthoritativePublicationProjections(back, metadata, 11, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if identity.RootSessionID == nil || *identity.RootSessionID != root || identity.Purpose != back.Purpose || stats.TurnCount != 5 || stats.InputSubmissionCount == nil || *stats.InputSubmissionCount != 1 || len(helpers) != 2 {
+					t.Fatalf("authoritative 1/5/2 projection differs: identity=%+v stats=%+v helpers=%+v", identity, stats, helpers)
+				}
 			}
 			gotMain := durableRefs(back.Turns)
 			gotEarlier := []string{}
@@ -205,11 +253,11 @@ func TestAuthoritativeGraphMirrors(t *testing.T) {
 	for _, row := range fx.Mirrors.Cases {
 		t.Run(row.Name, func(t *testing.T) {
 			detail, meta := projectionPair(t, row.Input)
-			identity, stats, children, err := schema.BuildAuthoritativePublicationProjections(detail, meta, 11)
+			identity, stats, children, err := schema.BuildAuthoritativePublicationProjections(detail, meta, 11, row.Input.ProjectedMainCount)
 			if (err == nil) != row.Expected.Accept || err != nil && !strings.Contains(err.Error(), row.Expected.ErrorContains) {
 				t.Fatalf("error=%v accept=%v", err, row.Expected.Accept)
 			}
-			if err == nil && (identity.ParentSessionID == nil || *identity.ParentSessionID != *detail.Relationships[0].TargetLocalID || stats.InputSubmissionCount == nil || *stats.InputSubmissionCount != row.Input.DetailCount || len(children) != 0) {
+			if err == nil && (identity.ParentSessionID == nil || *identity.ParentSessionID != *detail.Relationships[0].TargetLocalID || !optionalInt64Equal(stats.InputSubmissionCount, row.Input.DetailCount) || len(children) != 0) {
 				t.Fatalf("derived identity/stats/children=%+v %+v %+v", identity, stats, children)
 			}
 		})
@@ -227,15 +275,33 @@ func projectionPair(t *testing.T, input schema.DurableMirrorInput) (schema.Sessi
 		t.Fatal(err)
 	}
 	relation := schema.SessionRelationship{Kind: schema.SessionRelationshipStartedBy, TargetState: schema.RelationshipTargetKnown, TargetLocalID: &graphParent, Evidence: schema.EvidenceNativeTyped}
-	detail := schema.SessionDetailPayload{ID: "ses_child", Harness: schema.HarnessClaudeCode, TurnCount: 5, InputSubmissionCount: &input.DetailCount, ParentSessionID: &parent, Relationships: []schema.SessionRelationship{relation}, Turns: []schema.TurnDetail{}}
+	detail := schema.SessionDetailPayload{ID: "ses_child", Harness: schema.HarnessClaudeCode, TurnCount: input.DetailTurnCount, InputSubmissionCount: input.DetailCount, ParentSessionID: &parent, Relationships: []schema.SessionRelationship{relation}, Turns: []schema.TurnDetail{}}
 	meta := schema.NewUnifiedMetadata()
 	meta.SessionID = "ses_child"
 	meta.ModelHarness = schema.HarnessClaudeCode
 	meta.ParentUUID = &graphParent
 	meta.Relationships = []schema.SessionRelationship{relation}
-	meta.Stats.TurnCount = 5
-	meta.Stats.InputSubmissionCount = &input.MetadataCount
+	meta.Stats.TurnCount = input.MetadataTurnCount
+	meta.Stats.InputSubmissionCount = input.MetadataCount
+	if input.DetailRoot != "" {
+		root, err := schema.NewSessionID(input.DetailRoot)
+		if err != nil {
+			t.Fatal(err)
+		}
+		detail.RootSessionID = &root
+	}
+	if input.MetadataRoot != "" {
+		root, err := schema.NewSessionID(input.MetadataRoot)
+		if err != nil {
+			t.Fatal(err)
+		}
+		meta.RootSessionID = &root
+	}
 	return detail, meta
+}
+
+func optionalInt64Equal(a, b *int64) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
 
 func TestAuthoritativeDigestCountPresence(t *testing.T) {
@@ -250,6 +316,8 @@ func TestAuthoritativeDigestCountPresence(t *testing.T) {
 			if row.Input.RightPresent {
 				right.Stats.InputSubmissionCount = &row.Input.RightValue
 			}
+			applyDigestVariant(t, &left, row.Input.LeftVariant)
+			applyDigestVariant(t, &right, row.Input.RightVariant)
 			lop, err := schema.CanonicalizePublishRequest(left)
 			if err != nil {
 				t.Fatal(err)
@@ -270,6 +338,32 @@ func TestAuthoritativeDigestCountPresence(t *testing.T) {
 				t.Fatalf("digests %s %s", ld, rd)
 			}
 		})
+	}
+}
+
+func applyDigestVariant(t *testing.T, request *schema.AuthoritativePublishRequest, variant string) {
+	t.Helper()
+	switch variant {
+	case "":
+	case "root":
+		root, err := schema.NewSessionID("ses_root")
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Identity.RootSessionID = &root
+	case "purpose":
+		request.Identity.Purpose = schema.SessionPurposeDelegatedWork
+	case "relationship":
+		parent, err := schema.NewSessionID("ses_parent")
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Identity.ParentSessionID = &parent
+		request.Identity.Relationships = []schema.SessionRelationship{{Kind: schema.SessionRelationshipStartedBy, TargetState: schema.RelationshipTargetKnown, TargetLocalID: &parent, Evidence: schema.EvidenceNativeTyped}}
+	case "entry_provenance":
+		request.Entries = []schema.AuthoritativeSessionEntry{{SessionID: "ses_digest", EntryIndex: 0, Harness: schema.HarnessClaudeCode, EntryType: schema.EntryTypeText, Role: schema.RoleUser, SourceEntryRef: "e_u1", Provenance: &schema.ContentProvenance{Origin: schema.ContentOriginSubmittedInput, Actor: schema.ActorOriginUnknown, Delivery: schema.DeliveryOriginSessionAdmission, Ownership: schema.ContentOwnershipLocal, Evidence: schema.EvidenceNativeTyped, InputModality: schema.InputModalityText, SubmissionRef: "s_u1"}}}
+	default:
+		t.Fatalf("unknown digest variant %q", variant)
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"net/url"
-	"reflect"
 	"slices"
 	"sort"
 	"strconv"
@@ -154,7 +153,12 @@ type AuthoritativeDiagnosticsInfo struct {
 // BuildAuthoritativePublicationProjections derives the publication identity,
 // statistics, and legacy child projection from one durable detail payload. The
 // metadata argument is a mirror check, not a second authority.
-func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metadata UnifiedMetadata, schemaVersion int) (AuthoritativeSessionIdentity, AuthoritativeSessionStats, []AuthoritativeSubagentRef, error) {
+// projectedMainCount must be true only when the caller positively identified a
+// projected-format generation whose TurnCount is defined as emitted main
+// records. Legacy callers pass false so their established metadata and export
+// turn totals can remain different. InputSubmissionCount presence does not
+// identify the projection format.
+func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metadata UnifiedMetadata, schemaVersion int, projectedMainCount bool) (AuthoritativeSessionIdentity, AuthoritativeSessionStats, []AuthoritativeSubagentRef, error) {
 	if schemaVersion <= 0 {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "schemaVersion is not positive", "provide the positive source schema version")
 	}
@@ -162,10 +166,10 @@ func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metad
 	if err != nil {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "detail.id is not a canonical session identifier", "construct the detail from the committed session identity")
 	}
-	if metadata.SessionID != sessionID || metadata.ModelHarness != detail.Harness || metadata.Stats.TurnCount != detail.TurnCount || !equalOptionalInt64(metadata.Stats.InputSubmissionCount, detail.InputSubmissionCount) {
+	if metadata.SessionID != sessionID || metadata.ModelHarness != detail.Harness || projectedMainCount && metadata.Stats.TurnCount != detail.TurnCount || !equalOptionalInt64(metadata.Stats.InputSubmissionCount, detail.InputSubmissionCount) {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata and durable detail identity or count mirrors disagree", "reload one committed snapshot and derive every publication mirror from it")
 	}
-	if metadata.RootSessionID != detail.RootSessionID || metadata.Purpose != detail.Purpose || !reflect.DeepEqual(metadata.Relationships, detail.Relationships) {
+	if !equalOptionalSessionID(metadata.RootSessionID, detail.RootSessionID) || metadata.Purpose != detail.Purpose || !equalSessionRelationships(metadata.Relationships, detail.Relationships) {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata and durable detail graph mirrors disagree", "reload one committed snapshot and derive graph mirrors from its durable detail")
 	}
 	parent, err := durableStartedByTarget(detail.Relationships)
@@ -195,6 +199,26 @@ func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metad
 }
 
 func equalOptionalInt64(a, b *int64) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func equalOptionalSessionID(a, b *SessionID) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func equalSessionRelationships(a, b []SessionRelationship) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Kind != b[i].Kind || a[i].TargetState != b[i].TargetState || !equalOptionalSessionID(a[i].TargetLocalID, b[i].TargetLocalID) || a[i].Evidence != b[i].Evidence || !equalPublicSourceAnchor(a[i].Anchor, b[i].Anchor) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalPublicSourceAnchor(a, b *PublicSourceAnchor) bool {
 	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
 
