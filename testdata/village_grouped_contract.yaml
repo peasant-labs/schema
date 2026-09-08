@@ -1,0 +1,106 @@
+rows:
+  cases:
+    - name: global-count-zero
+      input: {variant: global, session_count: 0}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: grouped-global}
+      mutation: {description: preserves measured zero without a route summary}
+    - name: collective-same-row
+      input: {variant: collective, session_count: 7, variant_count: 7}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: grouped-collective}
+      mutation: {description: adds the collective route arm with equal identity and count}
+    - name: pending-count-mismatch
+      input: {variant: pending, session_count: 0, variant_count: 1}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: grouped-pending}
+      mutation: {description: changes the pending input count while retaining identity}
+    - name: my-share-identity-mismatch
+      input: {variant: myShare, session_count: 2, variant_count: 2, mismatch_id: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: grouped-my-shares}
+      mutation: {description: changes the route row transcript identity}
+    - name: contributable-same-row
+      input: {variant: contributable, session_count: 3, variant_count: 3}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: grouped-contributable}
+      mutation: {description: adds the contributable route arm with equal identity and count}
+items:
+  cases:
+    - name: transcript-arm
+      input: {kind: transcript, transcript: true}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: grouped-discriminator}
+      mutation: {description: selects only the transcript arm}
+    - name: context-arm
+      input: {kind: context_container, context: true}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: grouped-discriminator}
+      mutation: {description: selects only the context arm}
+    - name: both-arms
+      input: {kind: transcript, transcript: true, context: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: grouped-discriminator}
+      mutation: {description: adds a second discriminated arm}
+routes:
+  cases:
+    - name: global-profile-project-search
+      input: {path: /api/v1/transcripts, operation_id: listTranscripts, view: true, legacy: array, grouped: SchemaVillageSessionListPayload}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-global-routes}
+      mutation: {description: binds all existing list filters to the grouped view}
+    - name: collective-browse
+      input: {path: "/api/v1/groups/{id}", operation_id: getGroup, view: true, legacy: SchemaVillageGroupDetailResponse, grouped: SchemaVillageGroupedGroupDetailResponse}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-collective-route}
+      mutation: {description: adds grouped collective detail without replacing legacy detail}
+    - name: contribute
+      input: {path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscripts, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageGroupedContributableResponse}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-contribute-route}
+      mutation: {description: adds grouped contributable output}
+    - name: pending-review
+      input: {path: "/api/v1/groups/{id}/pending", operation_id: listPendingShares, view: true, legacy: array, grouped: SchemaVillageSessionListPayload}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-pending-route}
+      mutation: {description: adds grouped pending output}
+    - name: my-shares
+      input: {path: "/api/v1/groups/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, grouped: SchemaVillageSessionListPayload}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-my-shares-route}
+      mutation: {description: adds grouped own-share output}
+    - name: member-expansion
+      input: {path: "/api/v1/transcript-groups/{groupId}/members", operation_id: listTranscriptGroupMembers, scope: true, grouped: SchemaVillageHelperMembersPayload}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-members-route}
+      mutation: {description: binds scoped helper member paging}
+    - name: metadata-navigation
+      input: {path: "/api/v1/transcripts/{id}", operation_id: getTranscriptMetadata, grouped: SchemaVillageTranscriptMetadataResponse}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-navigation-route}
+      mutation: {description: adds authorized navigation only to metadata}
+    - name: durable-content
+      input: {path: "/api/v1/transcripts/{id}/content", operation_id: getTranscriptContent, grouped: SchemaTranscriptContent}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: village-content-route}
+      mutation: {description: keeps content on the durable envelope}
+required_names:
+  rows: [global-count-zero, collective-same-row, pending-count-mismatch, my-share-identity-mismatch, contributable-same-row]
+  items: [transcript-arm, context-arm, both-arms]
+  routes: [global-profile-project-search, collective-browse, contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
