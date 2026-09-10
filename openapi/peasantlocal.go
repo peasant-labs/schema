@@ -33,10 +33,13 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
-	// GET /api/v1/sessions
+	// GET /api/v1/sessions. The view parameter is opt-in; consumers that omit it
+	// continue to receive SessionsPayload from existing servers.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions",
 		"listSessions", "List session summaries.", []string{"sessions"},
-		nil, new(schema.SessionsPayload)); err != nil {
+		new(struct {
+			View string `query:"view" description:"Set to grouped to return owner-nested helper groups" enum:"grouped"`
+		}), new(schema.LocalSessionListPayload)); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +52,36 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		new(struct {
 			ID string `path:"id"`
 		}),
-		new(schema.SessionDetailPayload)); err != nil {
+		new(schema.SessionDetailReadPayload)); err != nil {
+		return nil, err
+	}
+	// GET /api/v1/sessions/{id}/transcript is the mounted full-transcript read.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/transcript",
+		"getSessionTranscript", "Get the flat additive session transcript by ID.", []string{"sessions"},
+		new(struct {
+			ID string `path:"id"`
+		}), new(schema.SessionDetailReadPayload)); err != nil {
+		return nil, err
+	}
+	// GET /api/v1/sync/sessions?view=grouped retains sync-specific row data.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/sync/sessions",
+		"listSyncSessionsGrouped", "List sync candidates with optional owner-nested helper groups.", []string{"sync"},
+		new(struct {
+			View string `query:"view" description:"Set to grouped for grouped rows" enum:"grouped"`
+		}),
+		new(schema.LocalSessionListPayload)); err != nil {
+		return nil, err
+	}
+	// GET /api/v1/session-groups/{groupId}/members requires the opaque scope
+	// returned by the originating grouped list and accepts no route filters.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-groups/{groupId}/members",
+		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope.", []string{"sessions"},
+		new(struct {
+			GroupID string `path:"groupId"`
+			Scope   string `query:"scope" required:"true" description:"Opaque member scope from the originating grouped response"`
+			Page    int    `query:"page" description:"One-based member page" minimum:"1"`
+			Limit   int    `query:"limit" description:"Maximum members per page" minimum:"1"`
+		}), new(schema.LocalHelperMembersPayload)); err != nil {
 		return nil, err
 	}
 
@@ -105,6 +137,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}{
 		{"DashboardPayload", new(schema.DashboardPayload)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
+		{"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},
@@ -274,8 +307,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		new(struct {
 			Q     string `query:"q" required:"true" description:"Search query (min 2 chars; whitespace tokens ANDed)"`
 			Limit int    `query:"limit" description:"Max results (default 20, capped at 50)"`
+			View  string `query:"view" description:"Set to grouped to return owner-nested helper groups" enum:"grouped"`
 		}),
-		new(schema.SearchPayload)); err != nil {
+		new(schema.LocalSessionListPayload)); err != nil {
 		return nil, err
 	}
 
@@ -283,6 +317,12 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// Register AnnotationsPayload as a component so the spec documents
 	// the shape of annotations WebSocket channel messages.
 	if err := addComponentSchema(r, "AnnotationsPayload", new(schema.AnnotationsPayload)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "SearchPayload", new(schema.SearchPayload)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)); err != nil {
 		return nil, err
 	}
 
@@ -295,6 +335,12 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
 		return nil, fmt.Errorf("harmonize Peasant Local API shared components: %w", err)
 	}
+	// The list and search routes retain their established flat response when
+	// view is omitted and return the grouped response only for view=grouped.
+	// Express that wire-compatible conditional as a response union.
+	setResponseOneOf(r.Spec, "/api/v1/sessions", "get", "#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
+	setResponseOneOf(r.Spec, "/api/v1/search", "get", "#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload")
+	setResponseOneOf(r.Spec, "/api/v1/sync/sessions", "get", "#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	// Keep the public response component name identical across the Local API and
 	// Types catalogs instead of exposing the reflector's package-prefixed alias.
 	components := r.SpecEns().ComponentsEns().Schemas
@@ -312,4 +358,27 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	return r.Spec, nil
+}
+
+func setResponseOneOf(spec *openapi31.Spec, path, method string, refs ...string) {
+	item := spec.Paths.MapOfPathItemValues[path]
+	var operation *openapi31.Operation
+	switch method {
+	case "get":
+		operation = item.Get
+	default:
+		return
+	}
+	if operation == nil {
+		return
+	}
+	response := operation.Responses.MapOfResponseOrReferenceValues["200"]
+	media := response.Response.Content["application/json"]
+	oneOf := make([]any, 0, len(refs))
+	for _, ref := range refs {
+		oneOf = append(oneOf, map[string]any{"$ref": ref})
+	}
+	media.Schema = map[string]any{"oneOf": oneOf}
+	response.Response.Content["application/json"] = media
+	operation.Responses.MapOfResponseOrReferenceValues["200"] = response
 }

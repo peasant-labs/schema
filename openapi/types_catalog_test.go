@@ -17,7 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed testdata/typescript_catalog.yaml testdata/typescript_requiredness.yaml
+//go:embed testdata/typescript_catalog.yaml testdata/typescript_requiredness.yaml testdata/typescript_requiredness_names.yaml
 var typeCatalogFixtures embed.FS
 
 type catalogFixture struct {
@@ -118,9 +118,19 @@ func TestTypesCatalogPreservesListedPropertyRequiredness(t *testing.T) {
 	if err := fixture.Validate(); err != nil {
 		t.Fatalf("validate requiredness fixture: %v", err)
 	}
-	if len(fixture.Cases) != 16 {
-		t.Fatalf("requiredness fixture has %d rows, want exactly 16 representative structures", len(fixture.Cases))
+	var manifest struct {
+		RequiredNames []string `yaml:"required_names"`
 	}
+	decodeStrictFixture(t, "testdata/typescript_requiredness_names.yaml", &manifest)
+	if len(manifest.RequiredNames) == 0 {
+		t.Fatal("requiredness manifest must name the representative structures")
+	}
+	collectUniqueNames(t, "requiredness", "required_names", manifest.RequiredNames)
+	var names []string
+	for _, c := range fixture.Cases {
+		names = append(names, c.Name)
+	}
+	assertSameStringSet(t, "requiredness fixture names", names, manifest.RequiredNames)
 	spec, err := specpkg.BuildTypesSpec()
 	if err != nil {
 		t.Fatalf("build Types spec: %v", err)

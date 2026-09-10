@@ -1,5 +1,9 @@
 # @peasant-labs/schema
 
+Read contracts and validation boundaries:
+[grouped reads](../docs/grouped-read-contract.md) and
+[optional versus required public references](../docs/public-reference-validation.md).
+
 Use this package when a TypeScript application needs typed, always-in-sync
 access to the peasant-labs wire contract: the same domain types, closed-set
 enums, and runtime validation Go services already produce and enforce,

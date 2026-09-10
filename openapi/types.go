@@ -106,6 +106,21 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"SearchPayload", new(schema.SearchPayload)}, {"SearchResult", new(schema.SearchResult)},
 		{"ServerMessage", new(schema.ServerMessage)}, {"SessionAssociation", new(schema.SessionAssociation)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
+		{"SourceEntryRef", new(schema.SourceEntryRef)}, {"SubmissionRef", new(schema.SubmissionRef)},
+		{"PublicRevisionRef", new(schema.PublicRevisionRef)}, {"SessionRelationshipKind", new(schema.SessionRelationshipKind)},
+		{"RelationshipTargetState", new(schema.RelationshipTargetState)}, {"EvidenceKind", new(schema.EvidenceKind)},
+		{"SessionPurpose", new(schema.SessionPurpose)}, {"ContentOrigin", new(schema.ContentOrigin)},
+		{"ActorOrigin", new(schema.ActorOrigin)}, {"DeliveryOrigin", new(schema.DeliveryOrigin)},
+		{"ContentOwnership", new(schema.ContentOwnership)}, {"InputModality", new(schema.InputModality)},
+		{"PublicSourceAnchorKind", new(schema.PublicSourceAnchorKind)}, {"EarlierHistoryState", new(schema.EarlierHistoryState)},
+		{"PublicSourceAnchor", new(schema.PublicSourceAnchor)}, {"SessionRelationship", new(schema.SessionRelationship)},
+		{"ContentProvenance", new(schema.ContentProvenance)}, {"EarlierHistorySection", new(schema.EarlierHistorySection)},
+		{"RelationshipNavigationStatus", new(schema.RelationshipNavigationStatus)}, {"SessionRelationshipNavigation", new(schema.SessionRelationshipNavigation)},
+		{"SessionListItemKind", new(schema.SessionListItemKind)}, {"HelperGroupSummary", new(schema.HelperGroupSummary)},
+		{"HelperContextSummary", new(schema.HelperContextSummary)}, {"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
+		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
+		{"LocalSessionListPayload", new(schema.LocalSessionListPayload)}, {"LocalHelperMembersPayload", new(schema.LocalHelperMembersPayload)},
 		{"SessionEntry", new(schema.SessionEntry)}, {"SessionID", new(schema.SessionID)},
 		{"SessionIdentity", new(schema.SessionIdentity)}, {"SessionInsight", new(schema.SessionInsight)},
 		{"SessionOrigin", new(schema.SessionOrigin)},
@@ -141,6 +156,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageGroup", new(schema.VillageGroup)},
 		{"VillageGroupAcceptanceMode", new(schema.VillageGroupAcceptanceMode)}, {"VillageGroupContributor", new(schema.VillageGroupContributor)},
 		{"VillageGroupDataAccess", new(schema.VillageGroupDataAccess)}, {"VillageGroupDetailResponse", new(schema.VillageGroupDetailResponse)},
+		{"VillageGroupDetailRecord", new(schema.VillageGroupDetailRecord)},
 		{"VillageGroupMember", new(schema.VillageGroupMember)}, {"VillageGroupMemberRoleRequest", new(schema.VillageGroupMemberRoleRequest)},
 		{"VillageGroupMemberUsernameRequest", new(schema.VillageGroupMemberUsernameRequest)}, {"VillageGroupModelBreakdown", new(schema.VillageGroupModelBreakdown)},
 		{"VillageGroupRole", new(schema.VillageGroupRole)}, {"VillageGroupStatusRoleResponse", new(schema.VillageGroupStatusRoleResponse)},
@@ -160,6 +176,14 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageShareEvent", new(schema.VillageShareEvent)}, {"VillageShareEventActor", new(schema.VillageShareEventActor)},
 		{"VillageShareStatus", new(schema.VillageShareStatus)}, {"VillageShareTranscriptRequest", new(schema.VillageShareTranscriptRequest)},
 		{"VillageStatusResponse", new(schema.VillageStatusResponse)}, {"VillageTranscript", new(schema.VillageTranscript)},
+		{"VillageTranscriptMetadataResponse", new(schema.VillageTranscriptMetadataResponse)}, {"VillageTag", new(schema.VillageTag)},
+		{"VillageUser", new(schema.VillageUser)}, {"VillageMetadataUserOrganization", new(schema.VillageMetadataUserOrganization)},
+		{"VillageListUserOrganization", new(schema.VillageListUserOrganization)}, {"VillageEnrichedTranscriptShare", new(schema.VillageEnrichedTranscriptShare)},
+		{"VillageTranscriptAttestation", new(schema.VillageTranscriptAttestation)}, {"VillageListTranscriptAttestation", new(schema.VillageListTranscriptAttestation)},
+		{"VillageTranscriptListRow", new(schema.VillageTranscriptListRow)}, {"VillageTranscriptListResponse", new(schema.VillageTranscriptListResponse)},
+		{"VillageSessionRow", new(schema.VillageSessionRow)}, {"VillageSessionListItem", new(schema.VillageSessionListItem)},
+		{"VillageSessionListPayload", new(schema.VillageSessionListPayload)}, {"VillageHelperMembersPayload", new(schema.VillageHelperMembersPayload)},
+		{"VillageGroupedGroupDetailResponse", new(schema.VillageGroupedGroupDetailResponse)}, {"VillageGroupedContributableResponse", new(schema.VillageGroupedContributableResponse)},
 		{"VillageTranscriptCollective", new(schema.VillageTranscriptCollective)}, {"VillageTranscriptCollectivesResponse", new(schema.VillageTranscriptCollectivesResponse)},
 		{"VillageTranscriptDeletionPolicy", new(schema.VillageTranscriptDeletionPolicy)}, {"VillageTranscriptShare", new(schema.VillageTranscriptShare)},
 		{"VillageTranscriptVisibility", new(schema.VillageTranscriptVisibility)}, {"VillageUpdateGroupRequest", new(schema.VillageUpdateGroupRequest)},
@@ -242,8 +266,34 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	if err := applyAnnotationPushIngressConstraints(r.Spec); err != nil {
 		return nil, err
 	}
+	if err := constrainHelperMemberItems(r.SpecEns().ComponentsEns().Schemas); err != nil {
+		return nil, err
+	}
 
 	return r.Spec, nil
+}
+
+// A member is the transcript arm of the existing display item, not a second
+// row definition. Keeping the reference here preserves nested helper groups
+// and route-specific rows in every generated API surface.
+func constrainHelperMemberItems(components map[string]map[string]interface{}) error {
+	for _, name := range []string{"LocalHelperMembersPayload", "VillageHelperMembersPayload"} {
+		properties, _ := components[name]["properties"].(map[string]interface{})
+		members, _ := properties["members"].(map[string]interface{})
+		item, ok := members["items"].(map[string]interface{})
+		if !ok || item["$ref"] == nil {
+			return fmt.Errorf("helper member OpenAPI generation failed at %s.members: canonical list item reference is missing; the member contract cannot preserve nested groups; restore the source member array type before generation", name)
+		}
+		members["items"] = map[string]interface{}{"allOf": []interface{}{item, map[string]interface{}{
+			"type": "object", "required": []interface{}{"transcript"},
+			"properties": map[string]interface{}{
+				"kind":       map[string]interface{}{"type": "string", "enum": []interface{}{"transcript"}},
+				"transcript": map[string]interface{}{"$ref": "#/components/schemas/" + strings.TrimSuffix(name, "HelperMembersPayload") + "SessionRow"},
+				"context":    map[string]interface{}{"type": "null"},
+			},
+		}}}
+	}
+	return nil
 }
 
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
@@ -419,7 +469,7 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 // breaking every consumer. Only a request body whose whole purpose is to say
 // exactly what changed belongs here, where an unrecognized field means the
 // caller asked for something the server will silently drop.
-var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse"}
+var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation"}
 
 var strictNullableProperties = map[string]map[string]struct{}{
 	"AuthoritativeTimestampInfo":    {"ingested": {}},

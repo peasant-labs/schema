@@ -10,6 +10,8 @@ import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
 import { applyAssociationZodRefinements } from "./lib/association-zod-refinements.mjs";
 import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinements.mjs";
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
+import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
+import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -33,6 +35,9 @@ const contentCapabilityCatalog = parse(await readFile(join(moduleRoot, "testdata
 const contentCapabilitySource = await readFile(join(moduleRoot, "content_capability.go"), "utf8");
 const qualitySource = parse(await readFile(join(moduleRoot, "testdata", "quality", "sessions.yaml"), "utf8"));
 const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-api", "timeline.yaml"), "utf8"));
+const sessionGraphSource = parse(await readFile(join(moduleRoot, "testdata", "session_graph_provenance.yaml"), "utf8"), { merge: true });
+const groupedReadSource = parse(await readFile(join(moduleRoot, "testdata", "grouped_read_boundaries.yaml"), "utf8"), { merge: true });
+const sessionGraphCapabilitySource = parse(await readFile(join(moduleRoot, "testdata", "content_capability_session_graph.yaml"), "utf8"));
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
@@ -44,6 +49,8 @@ await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderConten
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
+await writeFile(join(generatedRoot, "session-graph-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphFixtures", { ...sessionGraphSource, grouped_read: groupedReadSource }));
+await writeFile(join(generatedRoot, "session-graph-capability-fixtures.gen.ts"), renderFixtureConstant("canonicalSessionGraphCapabilityFixtures", sessionGraphCapabilitySource));
 await writeFile(join(generatedRoot, "testcase.gen.ts"), renderTestcaseModel(testcaseSource));
 await generateOperationContracts("local", `peasantlocal-api-${versions.PeasantLocalAPIVersion}.json`, "local-api.ts");
 await generateOperationContracts("village", `village-api-${versions.VillageAPIVersion}.json`, "village-api.ts");
@@ -51,7 +58,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
   const source = await readFile(zodPath, "utf8");
-  await writeFile(zodPath, applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))));
+  await writeFile(zodPath, applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))));
 }
 
 function renderVersions(values) {
@@ -178,7 +185,7 @@ function renderContentCapabilities(source, catalog) {
   }).join(", ");
 
   const doc = `/**\n * ${name} is the closed inventory of content-capability tokens known to this\n * pinned schema release. It is intentionally distinct from the OPEN discovery\n * wire alias ${known.wire_alias} (an arbitrary string): SchemaVersionResponse's\n * contentCapabilities parses unknown future tokens so an older client keeps\n * working, while these constants give strongly typed access to known tokens.\n * ${guard} narrows an arbitrary string to a ${name}, so consumers can filter a\n * discovered list down to the tokens they understand without stringly typing.\n */\n`;
-  return `${header()}${doc}export const ${name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${name} = (typeof ${name})[keyof typeof ${name}];\nexport const ${allName} = Object.freeze([${allMembers}]) as readonly ${name}[];\nexport function ${guard}(value: unknown): value is ${name} {\n  return typeof value === "string" && (${allName} as readonly string[]).includes(value);\n}\n`;
+  return `${header()}import type { SessionDetailPayload, TurnDetail } from "./contract/zod.gen.js";\n\n${doc}export const ${name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${name} = (typeof ${name})[keyof typeof ${name}];\nexport const ${allName} = Object.freeze([${allMembers}]) as readonly ${name}[];\nexport function ${guard}(value: unknown): value is ${name} {\n  return typeof value === "string" && (${allName} as readonly string[]).includes(value);\n}\n\nexport function knownContentCapabilities(values: readonly string[]): ${name}[] {\n  return [...new Set(values.filter(${guard}))].sort();\n}\n\nexport function missingContentCapabilities(advertised: readonly string[], required: readonly ${name}[]): ${name}[] {\n  const present = new Set(knownContentCapabilities(advertised));\n  return [...new Set(required)].filter((token) => !present.has(token)).sort();\n}\n\nexport function validateContentCapabilityAdvertisements(values: readonly string[]): void {\n  for (let index = 0; index < values.length; index++) {\n    const token = values[index];\n    if (token === undefined || !${guard}(token)) throw new TypeError(\`content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: unknown token \${JSON.stringify(token)}; callers cannot advertise unimplemented preservation; emit only AllContentCapabilities after deployment support is proven\`);\n    const previous = values[index - 1];\n    if (previous !== undefined && previous === token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: token is duplicated; callers cannot emit a canonical advertisement; deduplicate and sort the known inventory");\n    if (previous !== undefined && previous > token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: tokens are not in canonical lexicographic order; callers cannot emit a canonical advertisement; sort the unique known inventory");\n  }\n}\n\nfunction visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<${name}>): void {\n  for (const turn of turns ?? []) {\n    if ((turn.observedModel ?? "") !== "") found.add(${name}.ObservedModelV1);\n    if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(${name}.ToolNamespaceV1);\n    if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(${name}.DetailedUsageV1);\n    if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(${name}.SessionGraphProvenanceV1);\n  }\n}\n\nexport function requiredContentCapabilities(detail: SessionDetailPayload): ${name}[] {\n  const found = new Set<${name}>();\n  if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(${name}.SessionGraphProvenanceV1);\n  if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);\n  visitTurns(detail.turns, found);\n  for (const section of detail.earlierHistory ?? []) {\n    if ((section.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);\n    visitTurns(section.turns, found);\n  }\n  return [...found].sort();\n}\n`;
 }
 
 async function renderPublicContract(catalog) {
@@ -296,6 +303,10 @@ function renderTimelineFixtures(source) {
     }
   }
   return `${header()}import type { TimelineFixtureCorpus } from "../../fixtures/timeline.js";\n\nexport const canonicalTimelineFixtures: TimelineFixtureCorpus = ${JSON.stringify(fixtures, null, 2)};\n`;
+}
+
+function renderFixtureConstant(name, source) {
+  return `${header()}export const ${name} = ${JSON.stringify(mapKeys(source, { detail_json: "detailJSON", read_json: "readJSON", rejected_durable_json: "rejectedDurableJSON", error_contains: "errorContains", required_names: "requiredNames", typescript_constraints: "typescriptConstraints", count_carriers: "countCarriers", strict_objects: "strictObjects", rawJson: "rawJSON" }), null, 2)} as const;\n`;
 }
 
 async function generateOperationContracts(surface, filename, outputName) {

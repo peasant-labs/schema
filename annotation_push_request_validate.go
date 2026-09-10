@@ -20,7 +20,7 @@ var (
 )
 
 func compileAnnotationPushRequestSchema() {
-	compiler := jsonschema.NewCompiler()
+	compiler := NewJSONSchemaCompiler()
 	if err := compiler.AddResource(annotationPushRequestSchemaURL, bytes.NewReader(AnnotationPushRequestSchemaJSON())); err != nil {
 		annotationPushRequestSchemaErr = err
 		return

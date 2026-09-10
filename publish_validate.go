@@ -27,7 +27,7 @@ var releasedPublishRequestSchema []byte
 // the released rc11 compatibility validator. The successor validator has a
 // separate source type and must not silently change this legacy boundary.
 func compilePublishRequestSchema() {
-	compiler := jsonschema.NewCompiler()
+	compiler := NewJSONSchemaCompiler()
 	if err := compiler.AddResource(legacyPublishRequestSchemaURL, bytes.NewReader(releasedPublishRequestSchema)); err != nil {
 		publishRequestSchemaErr = err
 		return

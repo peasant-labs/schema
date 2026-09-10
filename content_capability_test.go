@@ -3,6 +3,7 @@ package schema_test
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"io"
 	"slices"
@@ -13,6 +14,139 @@ import (
 	"github.com/peasant-labs/schema/testcase"
 	"gopkg.in/yaml.v3"
 )
+
+func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
+	fixtures, err := schema.LoadContentCapabilitySessionGraphFixtures()
+	if err != nil {
+		t.Fatalf("load graph capability fixtures: %v", err)
+	}
+	for _, c := range fixtures.Derivation.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var p schema.SessionDetailPayload
+			if err := json.Unmarshal([]byte(c.Input.DetailJSON), &p); err != nil {
+				t.Fatalf("decode durable detail: %v", err)
+			}
+			if err := schema.ValidateSessionDetailPayload(p); err != nil {
+				t.Fatalf("validate durable detail: %v", err)
+			}
+			before, err := json.Marshal(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := schema.RequiredContentCapabilities(p); !slices.Equal(got, c.Expected.Capabilities) {
+				t.Fatalf("capabilities=%v, want %v", got, c.Expected.Capabilities)
+			}
+			after, err := json.Marshal(p)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before, after) {
+				t.Fatal("capability derivation mutated decoded durable payload")
+			}
+			if c.Input.ReadJSON != "" {
+				var read schema.SessionDetailReadPayload
+				if err := json.Unmarshal([]byte(c.Input.ReadJSON), &read); err != nil {
+					t.Fatalf("decode read DTO: %v", err)
+				}
+				if _, err := schema.DecodeSessionDetailPayloadRaw([]byte(c.Input.RejectedDurableJSON)); err == nil {
+					t.Fatal("durable input accepted read-only navigation key")
+				}
+			}
+		})
+	}
+	for _, c := range fixtures.Reader.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var r schema.SchemaVersionResponse
+			err := json.Unmarshal([]byte(c.Input.JSON), &r)
+			if c.Expected.ErrorContains != "" {
+				if err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("error=%v, want containing %q", err, c.Expected.ErrorContains)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			known := schema.KnownContentCapabilities(r.ContentCapabilities)
+			if !slices.Equal(known, c.Expected.Known) && len(c.Expected.Known) > 0 {
+				t.Fatalf("known=%v want=%v", known, c.Expected.Known)
+			}
+			missing := schema.MissingContentCapabilities(r.ContentCapabilities, []schema.ContentCapability{schema.ContentCapabilitySessionGraphProvenanceV1})
+			if !slices.Equal(missing, c.Expected.Missing) {
+				t.Fatalf("missing=%v want=%v", missing, c.Expected.Missing)
+			}
+		})
+	}
+	for _, c := range fixtures.Producer.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			err := schema.ValidateContentCapabilityAdvertisements(c.Input.Tokens)
+			if c.Expected.Accepted != (err == nil) {
+				t.Fatalf("accepted=%v want=%v error=%v", err == nil, c.Expected.Accepted, err)
+			}
+			if err != nil && !strings.Contains(err.Error(), c.Expected.ErrorContains) {
+				t.Fatalf("error=%v want containing %q", err, c.Expected.ErrorContains)
+			}
+		})
+	}
+}
+
+func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
+	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityToolNamespaceV1}
+	if !slices.Equal(schema.AllContentCapabilities, want) {
+		t.Fatalf("AllContentCapabilities=%v, want exact canonical inventory %v", schema.AllContentCapabilities, want)
+	}
+	if err := schema.ValidateContentCapabilityAdvertisements(want); err != nil {
+		t.Fatalf("canonical producer advertisement rejected: %v", err)
+	}
+}
+
+func TestContentCapabilitySessionGraphFixtureStrictness(t *testing.T) {
+	fixtures, err := schema.LoadContentCapabilitySessionGraphFixtures()
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := yaml.Marshal(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknown := bytes.Replace(data, []byte("detail_json:"), []byte("detail_jsno:"), 1)
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(unknown); err == nil {
+		t.Fatal("unknown fixture input key was accepted")
+	}
+	renamed := bytes.Replace(data, []byte("name: legacy-empty"), []byte("name: renamed-legacy-empty"), 1)
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(renamed); err == nil {
+		t.Fatal("count-preserving required-name rename was accepted")
+	}
+	cleared := fixtures
+	cleared.Derivation.Cases = nil
+	cleared.RequiredNames.Derivation = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "derivation")
+	cleared = fixtures
+	cleared.Reader.Cases = nil
+	cleared.RequiredNames.Reader = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "reader")
+	cleared = fixtures
+	cleared.Producer.Cases = nil
+	cleared.RequiredNames.Producer = nil
+	assertCapabilityFixtureMutationRejected(t, cleared, "producer")
+}
+
+func assertCapabilityFixtureMutationRejected(t *testing.T, fixtures schema.ContentCapabilitySessionGraphFixtures, name string) {
+	t.Helper()
+	data, err := yaml.Marshal(fixtures)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures(data); err == nil {
+		t.Fatalf("%s fixture mutation was accepted", name)
+	}
+}
+
+func TestContentCapabilitySessionGraphEmptyDocumentRejected(t *testing.T) {
+	if _, err := schema.DecodeContentCapabilitySessionGraphFixtures([]byte("{}")); err == nil {
+		t.Fatal("empty fixture document was accepted")
+	}
+}
 
 //go:embed testdata/contract/content_capabilities.yaml
 var contentCapabilityFixtureYAML []byte

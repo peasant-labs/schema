@@ -17,16 +17,16 @@ var (
 	associationOperationFields = map[string]struct{}{"kind": {}, "associations": {}}
 	publishedAssociationFields = map[string]struct{}{"id": {}, "observedCommitHash": {}}
 	authoritativeRequestFields = map[string]struct{}{"identity": {}, "model": {}, "contentHash": {}, "visibilityIntent": {}, "timestamp": {}, "source": {}, "git": {}, "project": {}, "stats": {}, "quality": {}, "entries": {}, "subagents": {}, "diagnostics": {}, "license": {}}
-	identityFields             = fieldSet("sessionId", "schemaVersion", "parentSessionId")
+	identityFields             = fieldSet("sessionId", "schemaVersion", "parentSessionId", "rootSessionId", "purpose", "relationships")
 	modelFields                = fieldSet("harness", "model", "harnessVersion", "hostSlug")
 	timestampFields            = fieldSet("start", "end", "ingested")
 	sourceFields               = fieldSet("format", "filePath")
 	commitFields               = fieldSet("hash", "message", "authorName", "authorEmail", "commitTime", "authorTime")
 	requestGitFields           = fieldSet("branch", "remote", "worktree", "tracking", "commits", "associations")
 	projectFields              = fieldSet("hash", "filePath", "name")
-	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens")
+	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "inputSubmissionCount")
 	qualityFields              = fieldSet("turnCount", "subagentCount", "totalTokens", "inputTokens", "outputTokens", "toolCalls", "titleGenerated", "outcome", "filesTouched", "linesChanged", "retryLoops", "retryTokensWasted", "withinSessionReverts", "signalDensity", "specQualityScore", "explorationRatio", "scopeBreadth", "discoveryTurns", "durationMinutes", "m2TokenOutcomeRatio", "m3UniqueToolCount", "m4ErrorRecoveryCount", "m4ConsecutiveErrorMax", "m5ContextUtilizationPct", "m5PeakContextTokens", "m5AvgMessageTokens", "m6OutputSurvivalPct", "m6LinesSurvived", "m6LinesTotal", "m7SpecWordCount", "m7SpecHasExamples", "m7SpecHasConstraints", "costInputUsd", "costOutputUsd", "costReasoningUsd", "costCacheReadUsd", "costCacheWriteUsd", "costTotalUsd", "costModelId", "scope", "computedAt", "computeVersion")
-	entryFields                = fieldSet("sessionId", "entryIndex", "harness", "entryType", "role", "timestampMs", "contentPreview", "tokensIn", "tokensOut", "hasToolUse", "toolKind", "toolNamesCsv", "hasThinking", "isError", "stopReason", "rawByteLength", "toolCallId", "entryId", "parentEntryId", "depth", "parentIndex", "toolInput", "toolOutput", "extra", "partType")
+	entryFields                = fieldSet("sessionId", "entryIndex", "harness", "entryType", "role", "timestampMs", "contentPreview", "tokensIn", "tokensOut", "hasToolUse", "toolKind", "toolNamesCsv", "hasThinking", "isError", "stopReason", "rawByteLength", "toolCallId", "entryId", "parentEntryId", "depth", "parentIndex", "toolInput", "toolOutput", "extra", "partType", "sourceEntryRef", "provenance")
 	subagentFields             = fieldSet("sessionId", "parentUuid")
 	diagnosticsFields          = fieldSet("warnings", "partial")
 	diagnosticEntryFields      = fieldSet("errorType", "location", "message", "remediation")
@@ -216,8 +216,24 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		if !present || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
 			continue
 		}
-		if _, err := decodeStrictObject(value, object.fields, "successor publication "+object.name); err != nil {
+		decoded, err := decodeStrictObject(value, object.fields, "successor publication "+object.name)
+		if err != nil {
 			return err
+		}
+		if object.name == "identity" {
+			if err := validateRawGraphObjects(decoded, "authoritativePublishRequest/identity"); err != nil {
+				return err
+			}
+		}
+	}
+	if statsRaw, present := raw["stats"]; present && !bytes.Equal(bytes.TrimSpace(statsRaw), []byte("null")) {
+		var stats map[string]json.RawMessage
+		if err := json.Unmarshal(statsRaw, &stats); err == nil {
+			if count, exists := stats["inputSubmissionCount"]; exists {
+				if err := validateRawInputSubmissionCount(count, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	gitFields := requestGitFields
@@ -242,6 +258,25 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		if value, present := raw[array.name]; present {
 			if err := validateStrictObjectArray(value, array.fields, "successor publication "+array.name); err != nil {
 				return err
+			}
+		}
+	}
+	if value, present := raw["entries"]; present {
+		var entries []json.RawMessage
+		if json.Unmarshal(value, &entries) == nil {
+			for i, item := range entries {
+				var entry map[string]json.RawMessage
+				if json.Unmarshal(item, &entry) != nil {
+					continue
+				}
+				if err := rejectForbiddenGraphFields(entry, fmt.Sprintf("authoritativePublishRequest/entries/%d", i)); err != nil {
+					return err
+				}
+				if p, ok := entry["provenance"]; ok && !bytes.Equal(bytes.TrimSpace(p), []byte("null")) {
+					if _, err := strictGraphObject(p, fmt.Sprintf("authoritativePublishRequest/entries/%d/provenance", i), "origin", "actor", "delivery", "ownership", "evidence", "inputModality", "submissionRef"); err != nil {
+						return err
+					}
+				}
 			}
 		}
 	}

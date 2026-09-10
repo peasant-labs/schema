@@ -164,7 +164,7 @@ func observedModelEdgeWhitespace(r rune) bool {
 // assertion: ECMAScript '$' may match before a final terminator. U+001C-U+001F
 // are intentionally absent because they are not Unicode White_Space, even
 // though Go's unicode.IsSpace classifies them as spaces.
-const observedModelPattern = `^(?:\uFEFF|[^\s\x85])(?:[\s\S]*(?:\uFEFF|[^\s\x85]))?(?![\s\S])`
+const observedModelPattern = `^(?:` + "\uFEFF" + `|[^\s])(?:[\s\S]*(?:` + "\uFEFF" + `|[^\s]))?$`
 
 // --- ProjectHash ---
 

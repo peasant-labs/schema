@@ -5,6 +5,28 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Session relationships, bounded source references, and content provenance with
+  independent origin, authorship, delivery, and history ownership.
+- An optional input-submission count that distinguishes unmeasured history from
+  measured zero and remains separate from transcript-turn and helper-thread counts.
+- Preserved earlier-history sections, viewer-authorized relationship navigation,
+  and grouped session contracts with nested helper-thread disclosure.
+- The `session_graph_provenance_v1` capability, including count-only evidence,
+  with shared Go and TypeScript validation and negotiation fixtures.
+
+### Changed
+
+- Village content reads use the durable transcript envelope. Read-only navigation
+  stays on metadata responses and is rejected at durable-content boundaries.
+- Grouped reads preserve existing local and Village response variants. Collective
+  detail records permit omission of prompts settings unavailable to older producers.
+- Public parsers validate graph evidence before structural decoding can discard
+  fields, normalize optional references consistently, and enforce UTF-8 byte bounds.
+- Graph-aware payloads enforce distinct block ownership while legacy source-message
+  aliases retain their existing meaning, including namespaced Pi tool calls.
+
 ## [v0.18.0] - 2026-09-07
 
 This release builds on the v0.17.0 prompt attachment contract. Generated Types

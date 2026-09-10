@@ -73,6 +73,9 @@ func validateWireShape(raw json.RawMessage, typ reflect.Type, path string) error
 				}
 				continue
 			}
+			if field.Tag.Get("nullable") == "false" && isNullRaw(value) {
+				return fail("field " + tag[0] + " must not be null")
+			}
 			if err := validateWireShape(value, field.Type, path+"/"+tag[0]); err != nil {
 				return err
 			}

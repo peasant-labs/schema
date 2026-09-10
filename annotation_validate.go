@@ -164,7 +164,7 @@ func compiledSchema(constraintSpec string) (*jsonschema.Schema, error) {
 	}
 
 	// Compile the schema. Use a unique URI to avoid compiler state conflicts.
-	compiler := jsonschema.NewCompiler()
+	compiler := NewJSONSchemaCompiler()
 	compiler.Draft = jsonschema.Draft7
 
 	const schemaURI = "peasant:///constraint"

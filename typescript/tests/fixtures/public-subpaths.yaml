@@ -7,3 +7,5 @@ subpaths:
   - "@peasant-labs/schema/fixtures"
   - "@peasant-labs/schema/fixtures/quality"
   - "@peasant-labs/schema/fixtures/timeline"
+  - "@peasant-labs/schema/fixtures/session-graph"
+  - "@peasant-labs/schema/fixtures/session-graph-capability"

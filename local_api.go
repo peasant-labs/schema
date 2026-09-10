@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"time"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -83,20 +84,24 @@ func (SessionOrigin) JSONSchema() (jsonschema.Schema, error) {
 
 // SessionSummary is a session without turns, used in the sessions list.
 type SessionSummary struct {
-	ID            string    `json:"id"`
-	Harness       Harness   `json:"harness"`
-	StartTime     time.Time `json:"startTime"`
-	DurationMins  float64   `json:"durationMins"`
-	TotalTokens   int       `json:"totalTokens"`
-	TurnCount     int       `json:"turnCount"`
-	ToolCallCount int       `json:"toolCallCount"`
-	Project       string    `json:"project,omitempty"`
+	ID                   string    `json:"id"`
+	Harness              Harness   `json:"harness"`
+	StartTime            time.Time `json:"startTime"`
+	DurationMins         float64   `json:"durationMins"`
+	TotalTokens          int       `json:"totalTokens"`
+	TurnCount            int       `json:"turnCount"`
+	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount        int       `json:"toolCallCount"`
+	Project              string    `json:"project,omitempty"`
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
-	ProjectHash     ProjectHash `json:"projectHash,omitempty"`
-	Outcome         string      `json:"outcome,omitempty"`
-	ParentSessionID *string     `json:"parentSessionId,omitempty"`
+	ProjectHash     ProjectHash           `json:"projectHash,omitempty"`
+	Outcome         string                `json:"outcome,omitempty"`
+	ParentSessionID *string               `json:"parentSessionId,omitempty"`
+	RootSessionID   *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose         SessionPurpose        `json:"purpose,omitempty"`
+	Relationships   []SessionRelationship `json:"relationships,omitempty"`
 	// SessionOrigin is the producer's declaration of who drove this session.
 	// Absent when the producer expressed no opinion; see SessionOrigin for the
 	// rule a consumer applies to an absent or "unknown" value.
@@ -106,6 +111,174 @@ type SessionSummary struct {
 	// is redaction-safe by construction. Empty when the session has no indexed
 	// user entry. The web client formats it for display.
 	Preview string `json:"preview,omitempty"`
+}
+
+// SessionDetailReadPayload is the local read projection. Anonymous embedding
+// keeps every durable detail field at the JSON root while adding authorized
+// navigation metadata that is never part of published transcript content.
+type SessionDetailReadPayload struct {
+	SessionDetailPayload
+	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
+}
+
+// LocalSyncSummary preserves the existing sync-list row alongside its matching
+// SessionSummary when grouped list mode is requested.
+type LocalSyncSummary struct {
+	ID                   string      `json:"id"`
+	Harness              Harness     `json:"harness"`
+	ProjectName          string      `json:"projectName"`
+	ProjectHash          ProjectHash `json:"projectHash"`
+	HostSlug             string      `json:"hostSlug"`
+	StartTime            string      `json:"startTime"`
+	DurationMs           int64       `json:"durationMs"`
+	TotalTokens          int         `json:"totalTokens"`
+	TurnCount            int         `json:"turnCount"`
+	Model                string      `json:"model"`
+	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	SyncStatus           string      `json:"syncStatus"`
+}
+
+// LocalSyncSessionsPayload is the exact omitted-view response produced by the
+// existing local sync chooser.
+type LocalSyncSessionsPayload struct {
+	Sessions []LocalSyncSummary `json:"sessions" nullable:"false"`
+}
+
+// LocalSessionRow is one concrete local route row. Sync and Matches retain the
+// existing route-specific data instead of coercing every route into one shape.
+type LocalSessionRow struct {
+	Session SessionSummary    `json:"session"`
+	Sync    *LocalSyncSummary `json:"sync,omitempty"`
+	Matches []SearchResult    `json:"matches,omitempty" nullable:"false"`
+}
+
+// LocalSessionListItem is exactly one transcript row or owner context
+// container, with zero or more collapsed helper groups.
+type LocalSessionListItem struct {
+	Kind         SessionListItemKind   `json:"kind"`
+	Transcript   *LocalSessionRow      `json:"transcript,omitempty"`
+	Context      *HelperContextSummary `json:"context,omitempty"`
+	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty" nullable:"false"`
+}
+
+// LocalSessionListPayload is the opt-in grouped REST list response.
+type LocalSessionListPayload struct {
+	Items                []LocalSessionListItem `json:"items" nullable:"false"`
+	Page                 int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit                int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	TotalItems           int                    `json:"totalItems" minimum:"0" maximum:"9007199254740991"`
+	OrdinarySessionTotal int                    `json:"ordinarySessionTotal" minimum:"0" maximum:"9007199254740991"`
+	HelperThreadTotal    int                    `json:"helperThreadTotal" minimum:"0" maximum:"9007199254740991"`
+}
+
+// LocalHelperMembersPayload is a page of saved helper sessions selected by an
+// opaque scope returned from the originating grouped query.
+type LocalHelperMembersPayload struct {
+	Members []LocalSessionListItem `json:"members" nullable:"false"`
+	Page    int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit   int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	Total   int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+}
+
+// Validate checks route-variant identity and count mirrors without deriving
+// one metric from another.
+func (r LocalSessionRow) Validate() error {
+	if r.Session.ID == "" {
+		return fmt.Errorf("local session row validation failed at schema.LocalSessionRow.Validate during grouped response construction: session.id is empty; callers cannot open the saved transcript; provide its durable local session ID")
+	}
+	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "LocalSessionRow.session.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if r.Sync != nil && len(r.Matches) != 0 {
+		return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped route projection: sync and matches are both populated; the row cannot belong to two incompatible route variants; retain only the originating sync or search arm", r.Session.ID)
+	}
+	if r.Sync != nil {
+		s := r.Sync
+		if err := ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSessionRow.sync.inputSubmissionCount"); err != nil {
+			return err
+		}
+		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
+		}
+	}
+	for i, match := range r.Matches {
+		if match.SessionID != r.Session.ID {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped search projection: matches[%d].sessionId=%q; search evidence belongs to another transcript; retain only matches for this exact session", r.Session.ID, i, match.SessionID)
+		}
+	}
+	return nil
+}
+
+// Validate checks the discriminated item arm and every nested route row/group.
+func (i LocalSessionListItem) Validate() error {
+	if !i.Kind.IsValid() {
+		return fmt.Errorf("local session list item validation failed at schema.LocalSessionListItem.Validate during grouped response construction: kind %q is outside the closed set; callers cannot select an item arm; use a member of schema.AllSessionListItemKinds", i.Kind)
+	}
+	if (i.Transcript != nil) == (i.Context != nil) || i.Kind == SessionListItemTranscript && i.Transcript == nil || i.Kind == SessionListItemContextContainer && i.Context == nil {
+		return fmt.Errorf("local session list item validation failed at schema.LocalSessionListItem.Validate during grouped response construction: kind must select exactly one matching transcript or context arm; callers cannot safely render or select the item; populate only the arm named by kind")
+	}
+	if i.Transcript != nil {
+		if err := i.Transcript.Validate(); err != nil {
+			return err
+		}
+	}
+	if i.Context != nil {
+		if err := i.Context.Validate(); err != nil {
+			return err
+		}
+	}
+	return validateHelperGroups(i.HelperGroups)
+}
+
+// Validate checks non-null collection and pagination/count boundaries.
+func (p LocalSessionListPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.TotalItems, p.OrdinarySessionTotal, p.HelperThreadTotal); err != nil {
+		return err
+	}
+	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
+		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items must be an array and page, limit, and totals must be nonnegative with page/limit at least one; callers cannot page a coherent selected set; initialize items and emit bounded pagination values")
+	}
+	for _, item := range p.Items {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Validate checks a typed, non-null member page and every row mirror.
+func (p LocalHelperMembersPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.Total); err != nil {
+		return err
+	}
+	if len(p.Members) > p.Limit || len(p.Members) > p.Total {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: member count exceeds limit or direct total; clients cannot page this scope; count direct saved helpers before paging")
+	}
+	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members must be an array and page, limit, and total must be valid; callers cannot page the authorized scope; initialize members and emit bounded pagination values")
+	}
+	seen := make(map[string]bool)
+	groups := make(map[string]bool)
+	for _, row := range p.Members {
+		if row.Kind != SessionListItemTranscript || row.Transcript == nil || row.Context != nil {
+			return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped response construction: member is not a transcript; containers are not saved helpers; emit only transcript items with their immediate helper groups")
+		}
+		if err := row.Validate(); err != nil {
+			return err
+		}
+		id := row.Transcript.Session.ID
+		if seen[id] {
+			return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped response construction: duplicate member identity; paging would count one helper twice; emit each saved transcript once")
+		}
+		seen[id] = true
+		for _, group := range row.HelperGroups {
+			if groups[group.GroupID] {
+				return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: a groupId appears under multiple members; clients cannot assign its owner; emit each immediate-owner group once")
+			}
+			groups[group.GroupID] = true
+		}
+	}
+	return nil
 }
 
 // SessionsPayload is the data sent on the sessions WebSocket channel.
@@ -130,9 +303,10 @@ type TurnDetail struct {
 	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
 	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
 	// validators do not infer it from Role.
-	ObservedModel  ObservedModelID `json:"observedModel,omitempty"`
-	SourceEntryRef string          `json:"sourceEntryRef,omitempty"`
-	Usage          *UsageDetail    `json:"usage,omitempty"`
+	ObservedModel  ObservedModelID    `json:"observedModel,omitempty"`
+	SourceEntryRef SourceEntryRef     `json:"sourceEntryRef,omitempty"`
+	Provenance     *ContentProvenance `json:"provenance,omitempty"`
+	Usage          *UsageDetail       `json:"usage,omitempty"`
 
 	// Command is present when this user-role turn invoked a skill or a
 	// user-defined slash command. It is optional and safely ignorable; the
@@ -154,17 +328,19 @@ type ToolCallDetail struct {
 	Name string `json:"name"`
 	// Namespace is independent source evidence, including a present empty string.
 	// Omission means not recorded; producers preserve the exact redacted value.
-	Namespace      *string      `json:"namespace,omitempty" nullable:"false"`
-	Arguments      string       `json:"arguments"`
-	Result         string       `json:"result"`
-	DurationMs     *int         `json:"durationMs,omitempty"`
-	ExitCode       *int         `json:"exitCode,omitempty"`
-	FilePath       string       `json:"filePath,omitempty"`
-	IsError        bool         `json:"isError,omitempty"`
-	ToolKind       ToolCallKind `json:"toolKind,omitempty"`
-	CallEntryRef   string       `json:"callEntryRef,omitempty"`
-	ResultEntryRef string       `json:"resultEntryRef,omitempty"`
-	Usage          *UsageDetail `json:"usage,omitempty"`
+	Namespace        *string            `json:"namespace,omitempty" nullable:"false"`
+	Arguments        string             `json:"arguments"`
+	Result           string             `json:"result"`
+	DurationMs       *int               `json:"durationMs,omitempty"`
+	ExitCode         *int               `json:"exitCode,omitempty"`
+	FilePath         string             `json:"filePath,omitempty"`
+	IsError          bool               `json:"isError,omitempty"`
+	ToolKind         ToolCallKind       `json:"toolKind,omitempty"`
+	CallEntryRef     SourceEntryRef     `json:"callEntryRef,omitempty"`
+	ResultEntryRef   SourceEntryRef     `json:"resultEntryRef,omitempty"`
+	CallProvenance   *ContentProvenance `json:"callProvenance,omitempty"`
+	ResultProvenance *ContentProvenance `json:"resultProvenance,omitempty"`
+	Usage            *UsageDetail       `json:"usage,omitempty"`
 }
 
 // SessionDetailPayload is the data sent on the session_detail WebSocket channel
@@ -179,18 +355,19 @@ type ToolCallDetail struct {
 // never sets it) does not gain a spurious "schemaVersion":"" field; the push
 // builder sets it explicitly.
 type SessionDetailPayload struct {
-	SchemaVersion PushContractVersion `json:"schemaVersion,omitempty"`
-	ID            string              `json:"id"`
-	Harness       Harness             `json:"harness"`
-	StartTime     time.Time           `json:"startTime"`
-	EndTime       time.Time           `json:"endTime"`
-	DurationMins  float64             `json:"durationMins"`
-	TotalTokens   int                 `json:"totalTokens"`
-	TokensIn      int                 `json:"tokensIn"`
-	TokensOut     int                 `json:"tokensOut"`
-	TurnCount     int                 `json:"turnCount"`
-	ToolCallCount int                 `json:"toolCallCount"`
-	Turns         []TurnDetail        `json:"turns"`
+	SchemaVersion        PushContractVersion `json:"schemaVersion,omitempty"`
+	ID                   string              `json:"id"`
+	Harness              Harness             `json:"harness"`
+	StartTime            time.Time           `json:"startTime"`
+	EndTime              time.Time           `json:"endTime"`
+	DurationMins         float64             `json:"durationMins"`
+	TotalTokens          int                 `json:"totalTokens"`
+	TokensIn             int                 `json:"tokensIn"`
+	TokensOut            int                 `json:"tokensOut"`
+	TurnCount            int                 `json:"turnCount"`
+	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount        int                 `json:"toolCallCount"`
+	Turns                []TurnDetail        `json:"turns"`
 	// Optional fields — populated when backend has the data.
 	Source  string `json:"source,omitempty"`
 	Status  string `json:"status,omitempty"`
@@ -199,11 +376,16 @@ type SessionDetailPayload struct {
 	// valid turn observation. It is the earliest valid root-assistant model in
 	// canonical order when one is available, otherwise legacy stored metadata. It
 	// is never the latest, most common, or final session model.
-	Model            string            `json:"model,omitempty"`
-	WorkingDirectory string            `json:"workingDirectory,omitempty"`
-	GitBranch        string            `json:"gitBranch,omitempty"`
-	GitRemote        string            `json:"gitRemote,omitempty"`
-	ChildSessions    []ChildSessionRef `json:"childSessions,omitempty"`
+	Model            string                  `json:"model,omitempty"`
+	WorkingDirectory string                  `json:"workingDirectory,omitempty"`
+	GitBranch        string                  `json:"gitBranch,omitempty"`
+	GitRemote        string                  `json:"gitRemote,omitempty"`
+	ChildSessions    []ChildSessionRef       `json:"childSessions,omitempty"`
+	ParentSessionID  *SessionID              `json:"parentSessionId,omitempty"`
+	RootSessionID    *SessionID              `json:"rootSessionId,omitempty"`
+	Purpose          SessionPurpose          `json:"purpose,omitempty"`
+	Relationships    []SessionRelationship   `json:"relationships,omitempty"`
+	EarlierHistory   []EarlierHistorySection `json:"earlierHistory,omitempty"`
 	// Outcome is the heuristic resolution status of the session
 	// (resolved/partial/failed), sourced from session_metrics.outcome. Empty
 	// when the session has no computed outcome. The metadata columns expose no
