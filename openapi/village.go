@@ -156,6 +156,24 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/transcripts is the browser discovery listing. This is not the
+	// pull listing: browser rows retain their transcript, owner, tag, membership,
+	// and attestation wrapper.
+	discoveryOC, err := r.NewOperationContext(http.MethodGet, "/api/v1/transcripts")
+	if err != nil {
+		return nil, fmt.Errorf("new browser discovery operation: %w", err)
+	}
+	discoveryOC.AddReqStructure(new(schema.VillageDiscoveryQuery))
+	discoveryOC.AddRespStructure(new(schema.VillageDiscoveryResponse))
+	discoveryOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusBadRequest))
+	discoveryOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusInternalServerError))
+	discoveryOC.SetDescription("List transcripts visible to the viewer for browser discovery. Authentication is optional: anonymous callers see public transcripts only; authenticated callers may additionally see their own and readable shared transcripts. No 401 response is introduced by this operation. harness_facets describes the full viewer-visible default corpus independently of all active filters, sorting, and pagination: user and unknown session origins are included, agent origin is excluded, distinct transcript IDs are counted, only positive counts are emitted, and harness order is deterministic. Token ordering computes an effective total before pagination: when either tokens_in or tokens_out is present, add the available split values with a missing component equal to zero using arithmetic that cannot overflow int64; only when both split fields are absent, fall back to token_count. An explicit zero is available data and overrides a legacy token_count when a split field is present. Rows with all three values absent have a null effective total and sort last. Equal effective totals are resolved by published_at descending and transcript id descending.")
+	discoveryOC.SetID("listTranscripts")
+	discoveryOC.SetTags("transcripts")
+	if err := r.AddOperation(discoveryOC); err != nil {
+		return nil, fmt.Errorf("add browser discovery operation: %w", err)
+	}
+
 	// GET /api/v1/auth/cli/login — browser OAuth initiation.
 	// The CLI opens this URL in the browser; the village handles the OAuth flow
 	// and redirects back to the CLI's local callback server.
