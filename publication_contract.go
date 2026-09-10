@@ -120,9 +120,12 @@ func (v PublishOperationKind) JSONSchema() (jsonschema.Schema, error) {
 // recursive unknown-field rejection does not tighten legacy uses of shared
 // metadata components.
 type AuthoritativeSessionIdentity struct {
-	SessionID       SessionID  `json:"sessionId"`
-	ParentSessionID *SessionID `json:"parentSessionId,omitempty" nullable:"false"`
-	SchemaVersion   int        `json:"schemaVersion"`
+	SessionID       SessionID             `json:"sessionId"`
+	ParentSessionID *SessionID            `json:"parentSessionId,omitempty" nullable:"false"`
+	RootSessionID   *SessionID            `json:"rootSessionId,omitempty" nullable:"false"`
+	Purpose         SessionPurpose        `json:"purpose,omitempty"`
+	Relationships   []SessionRelationship `json:"relationships,omitempty"`
+	SchemaVersion   int                   `json:"schemaVersion"`
 }
 type AuthoritativeModelInfo ModelInfo
 type AuthoritativeTimestampInfo TimestampInfo
@@ -145,6 +148,91 @@ type AuthoritativeDiagnosticEntry DiagnosticEntry
 type AuthoritativeDiagnosticsInfo struct {
 	Warnings []AuthoritativeDiagnosticEntry `json:"warnings"`
 	Partial  *bool                          `json:"partial,omitempty"`
+}
+
+// BuildAuthoritativePublicationProjections derives the publication identity,
+// statistics, and legacy child projection from one durable detail payload. The
+// metadata argument is a mirror check, not a second authority.
+// projectedMainCount must be true only when the caller positively identified a
+// projected-format generation whose TurnCount is defined as emitted main
+// records. Legacy callers pass false so their established metadata and export
+// turn totals can remain different. InputSubmissionCount presence does not
+// identify the projection format.
+func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metadata UnifiedMetadata, schemaVersion int, projectedMainCount bool) (AuthoritativeSessionIdentity, AuthoritativeSessionStats, []AuthoritativeSubagentRef, error) {
+	if schemaVersion <= 0 {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "schemaVersion is not positive", "provide the positive source schema version")
+	}
+	sessionID, err := NewSessionID(detail.ID)
+	if err != nil {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "detail.id is not a canonical session identifier", "construct the detail from the committed session identity")
+	}
+	if metadata.SessionID != sessionID || metadata.ModelHarness != detail.Harness || projectedMainCount && metadata.Stats.TurnCount != detail.TurnCount || !equalOptionalInt64(metadata.Stats.InputSubmissionCount, detail.InputSubmissionCount) {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata and durable detail identity or count mirrors disagree", "reload one committed snapshot and derive every publication mirror from it")
+	}
+	if !equalOptionalSessionID(metadata.RootSessionID, detail.RootSessionID) || metadata.Purpose != detail.Purpose || !equalSessionRelationships(metadata.Relationships, detail.Relationships) {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata and durable detail graph mirrors disagree", "reload one committed snapshot and derive graph mirrors from its durable detail")
+	}
+	parent, err := durableStartedByTarget(detail.Relationships)
+	if err != nil {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, err
+	}
+	if len(detail.Relationships) == 0 {
+		parent = detail.ParentSessionID
+	}
+	if detail.ParentSessionID != nil && (parent == nil || *detail.ParentSessionID != *parent) {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "legacy parentSessionId disagrees with the durable started_by relationship", "derive the legacy parent projection from the durable relationship")
+	}
+	if metadata.ParentUUID != nil && (parent == nil || *metadata.ParentUUID != *parent) {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata parentUuid disagrees with the durable started_by relationship", "derive the legacy parent projection from the durable relationship")
+	}
+	identity := AuthoritativeSessionIdentity{SessionID: sessionID, ParentSessionID: parent, RootSessionID: detail.RootSessionID, Purpose: detail.Purpose, Relationships: append([]SessionRelationship(nil), detail.Relationships...), SchemaVersion: schemaVersion}
+	stats := AuthoritativeSessionStats(metadata.Stats)
+	children := make([]AuthoritativeSubagentRef, 0, len(detail.ChildSessions))
+	for _, child := range detail.ChildSessions {
+		childID, childErr := NewSessionID(child.ID)
+		if childErr != nil {
+			return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "childSessions contains an invalid session identifier", "emit only canonical saved child session identifiers")
+		}
+		children = append(children, AuthoritativeSubagentRef{SessionID: childID, ParentUUID: sessionID})
+	}
+	return identity, stats, children, nil
+}
+
+func equalOptionalInt64(a, b *int64) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func equalOptionalSessionID(a, b *SessionID) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func equalSessionRelationships(a, b []SessionRelationship) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Kind != b[i].Kind || a[i].TargetState != b[i].TargetState || !equalOptionalSessionID(a[i].TargetLocalID, b[i].TargetLocalID) || a[i].Evidence != b[i].Evidence || !equalPublicSourceAnchor(a[i].Anchor, b[i].Anchor) {
+			return false
+		}
+	}
+	return true
+}
+
+func equalPublicSourceAnchor(a, b *PublicSourceAnchor) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func durableStartedByTarget(relationships []SessionRelationship) (*SessionID, error) {
+	if err := ValidateSessionRelationships(relationships); err != nil {
+		return nil, err
+	}
+	for _, relationship := range relationships {
+		if relationship.Kind == SessionRelationshipStartedBy && (relationship.TargetState == RelationshipTargetKnown || relationship.TargetState == RelationshipTargetKnownRetained) {
+			parent := *relationship.TargetLocalID
+			return &parent, nil
+		}
+	}
+	return nil, nil
 }
 
 type CanonicalPublishGitContext struct {
@@ -339,6 +427,31 @@ func encodeReplacement(v CanonicalPublishReplacement) []byte {
 	} else {
 		e.text(3, string(*v.Identity.ParentSessionID))
 	}
+	if v.Identity.RootSessionID != nil {
+		e.text(66, string(*v.Identity.RootSessionID))
+	}
+	if v.Identity.Purpose != "" {
+		e.text(67, string(v.Identity.Purpose))
+	}
+	for i, relationship := range v.Identity.Relationships {
+		var n fingerprintEncoder
+		n.text(1, string(relationship.Kind))
+		n.text(2, string(relationship.TargetState))
+		n.text(3, string(relationship.Evidence))
+		if relationship.TargetLocalID == nil {
+			writeFrame(&n.Buffer, 4, nil)
+		} else {
+			n.text(4, string(*relationship.TargetLocalID))
+		}
+		if relationship.Anchor != nil {
+			var a fingerprintEncoder
+			a.text(1, string(relationship.Anchor.Kind))
+			a.text(2, string(relationship.Anchor.SourceEntryRef))
+			a.text(3, string(relationship.Anchor.SourceRevisionRef))
+			writeFrame(&n.Buffer, 5, a.Bytes())
+		}
+		writeFrame(&e.Buffer, uint16(5000+i), n.Bytes())
+	}
 	e.text(4, string(v.Model.Harness))
 	e.text(5, string(v.Model.Model))
 	e.text(6, v.Model.HarnessVersion)
@@ -374,6 +487,9 @@ func encodeReplacement(v CanonicalPublishReplacement) []byte {
 	e.optionalInt(26, v.Stats.ThoughtTokens)
 	e.optionalInt(27, v.Stats.CachedReadTokens)
 	e.optionalInt(28, v.Stats.CachedWriteTokens)
+	if v.Stats.InputSubmissionCount != nil {
+		e.optionalInt64(65, v.Stats.InputSubmissionCount)
+	}
 	if v.Quality == nil {
 		writeFrame(&e.Buffer, 29, nil)
 	} else {
@@ -435,6 +551,24 @@ func encodeEntry(v SessionEntry) []byte {
 	e.optionalText(23, v.ToolOutput)
 	e.optionalText(24, v.Extra)
 	e.optionalText(25, v.PartType)
+	if v.SourceEntryRef != "" {
+		e.text(26, string(v.SourceEntryRef))
+	}
+	if v.Provenance != nil {
+		writeFrame(&e.Buffer, 27, encodeContentProvenance(*v.Provenance))
+	}
+	return e.Bytes()
+}
+
+func encodeContentProvenance(v ContentProvenance) []byte {
+	var e fingerprintEncoder
+	e.text(1, string(v.Origin))
+	e.text(2, string(v.Actor))
+	e.text(3, string(v.Delivery))
+	e.text(4, string(v.Ownership))
+	e.text(5, string(v.Evidence))
+	e.text(6, string(v.InputModality))
+	e.text(7, string(v.SubmissionRef))
 	return e.Bytes()
 }
 

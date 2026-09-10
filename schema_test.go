@@ -580,9 +580,9 @@ func TestComputeMetadataHash_ExcludesHashAndRedaction(t *testing.T) {
 
 // --- MetadataSchemaVersion ---
 
-func TestMetadataSchemaVersion_Is10(t *testing.T) {
-	if schema.MetadataSchemaVersion != 10 {
-		t.Errorf("MetadataSchemaVersion = %d, want 10", schema.MetadataSchemaVersion)
+func TestMetadataSchemaVersion_Is11(t *testing.T) {
+	if schema.MetadataSchemaVersion != 11 {
+		t.Errorf("MetadataSchemaVersion = %d, want 11", schema.MetadataSchemaVersion)
 	}
 }
 

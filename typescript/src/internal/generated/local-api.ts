@@ -239,6 +239,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/session-groups/{groupId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List authorized saved helper sessions within the originating grouped query scope. */
+        get: operations["listLocalHelperGroupMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/session-summaries": {
         parameters: {
             query?: never;
@@ -290,6 +307,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{id}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get the flat additive session transcript by ID. */
+        get: operations["getSessionTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shutdown": {
         parameters: {
             query?: never;
@@ -301,6 +335,23 @@ export interface paths {
         put?: never;
         /** @description Gracefully shutdown the server (localhost only). */
         post: operations["postShutdown"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List sync candidates with optional owner-nested helper groups. */
+        get: operations["listSyncSessionsGrouped"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -322,8 +373,19 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
+        LocalSyncSessionsPayload: Schema.LocalSyncSessionsPayload;
         QualityPayload: Schema.QualityPayload;
         SchemaActivityEdge: Schema.ActivityEdge;
+        /**
+         * Actor Origin
+         * @description Closed session graph value
+         * @example operator
+         * @example agent_delegate
+         * @example harness
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaActorOrigin: Schema.ActorOrigin;
         /**
          * Annotation Axis
          * @description Subscription dimension for annotation channels
@@ -423,9 +485,46 @@ export interface components {
          * @enum {string}
          */
         SchemaConfidence: Schema.Confidence;
+        /**
+         * Content Origin
+         * @description Closed session graph value
+         * @example submitted_input
+         * @example harness_context
+         * @example agent_output
+         * @example agent_communication
+         * @example tool_activity
+         * @example system_control
+         * @example generated_summary
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaContentOrigin: Schema.ContentOrigin;
+        /**
+         * Content Ownership
+         * @description Closed session graph value
+         * @example local
+         * @example inherited
+         * @example uncertain
+         * @enum {string}
+         */
+        SchemaContentOwnership: Schema.ContentOwnership;
+        SchemaContentProvenance: Schema.ContentProvenance;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;
+        /**
+         * Delivery Origin
+         * @description Closed session graph value
+         * @example session_admission
+         * @example guardian_review
+         * @example subagent_delivery
+         * @example inherited_context
+         * @example tool_delivery
+         * @example system_lifecycle
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaDeliveryOrigin: Schema.DeliveryOrigin;
         SchemaDiffHunk: Schema.DiffHunk;
         SchemaDiffLine: Schema.DiffLine;
         /**
@@ -437,6 +536,15 @@ export interface components {
          * @enum {string}
          */
         SchemaDiffLineKind: Schema.DiffLineKind;
+        SchemaEarlierHistorySection: Schema.EarlierHistorySection;
+        /**
+         * Earlier History State
+         * @description Closed session graph value
+         * @example uncertain_migrated
+         * @example uncertain_unresolved
+         * @enum {string}
+         */
+        SchemaEarlierHistoryState: Schema.EarlierHistoryState;
         SchemaEdgeViolation: Schema.EdgeViolation;
         /**
          * Edge Violation Kind
@@ -455,6 +563,18 @@ export interface components {
          * @enum {string}
          */
         SchemaEntryType: Schema.EntryType;
+        /**
+         * Evidence Kind
+         * @description Closed session graph value
+         * @example native_typed
+         * @example lifecycle_typed
+         * @example existing_adapter
+         * @example retained_last_good
+         * @example unknown
+         * @example conflict
+         * @enum {string}
+         */
+        SchemaEvidenceKind: Schema.EvidenceKind;
         SchemaFileChange: Schema.FileChange;
         /**
          * File Change Status
@@ -468,6 +588,20 @@ export interface components {
         SchemaFileChangeStatus: Schema.FileChangeStatus;
         SchemaFrictionCluster: Schema.FrictionCluster;
         SchemaHealthResponse: Schema.HealthResponse;
+        SchemaHelperContextSummary: Schema.HelperContextSummary;
+        SchemaHelperGroupSummary: Schema.HelperGroupSummary;
+        /**
+         * Input Modality
+         * @description Closed session graph value
+         * @example none
+         * @example text
+         * @example media
+         * @example user_action
+         * @example mixed
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaInputModality: Schema.InputModality;
         SchemaInsightClassification: Schema.InsightClassification;
         SchemaInsightEvidence: Schema.InsightEvidence;
         /**
@@ -488,6 +622,11 @@ export interface components {
          * @enum {string}
          */
         SchemaInsightProvenance: Schema.InsightProvenance;
+        SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
+        SchemaLocalSessionListItem: Schema.LocalSessionListItem;
+        SchemaLocalSessionListPayload: Schema.LocalSessionListPayload;
+        SchemaLocalSessionRow: Schema.LocalSessionRow;
+        SchemaLocalSyncSummary: Schema.LocalSyncSummary;
         SchemaMapEdge: Schema.MapEdge;
         SchemaMapGraphPayload: Schema.MapGraphPayload;
         SchemaMapNode: Schema.MapNode;
@@ -570,6 +709,21 @@ export interface components {
         SchemaProjectSummary: Schema.ProjectSummary;
         SchemaProjectTasksPayload: Schema.ProjectTasksPayload;
         SchemaProvenance: Schema.Provenance;
+        /**
+         * Public Revision Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaPublicRevisionRef: Schema.PublicRevisionRef;
+        SchemaPublicSourceAnchor: Schema.PublicSourceAnchor;
+        /**
+         * Public Source Anchor Kind
+         * @description Closed session graph value
+         * @example general_source_session
+         * @example before_redacted_entry
+         * @example through_redacted_entry
+         * @enum {string}
+         */
+        SchemaPublicSourceAnchorKind: Schema.PublicSourceAnchorKind;
         SchemaQualitySession: Schema.QualitySession;
         /**
          * Read Attribution State
@@ -591,6 +745,29 @@ export interface components {
          */
         SchemaReadStateGrade: Schema.ReadStateGrade;
         SchemaRecordedCostDetail: Schema.RecordedCostDetail;
+        /**
+         * Relationship Navigation Status
+         * @description Closed session graph value
+         * @example resolved
+         * @example general_link_only
+         * @example known_unavailable
+         * @example inaccessible
+         * @example unknown
+         * @example conflicting
+         * @enum {string}
+         */
+        SchemaRelationshipNavigationStatus: Schema.RelationshipNavigationStatus;
+        /**
+         * Relationship Target State
+         * @description Closed session graph value
+         * @example target_known
+         * @example target_known_retained
+         * @example explicit_none
+         * @example unknown
+         * @example conflicting_current_native_evidence
+         * @enum {string}
+         */
+        SchemaRelationshipTargetState: Schema.RelationshipTargetState;
         SchemaReviewListPayload: Schema.ReviewListPayload;
         /**
          * Rewrite Method
@@ -631,10 +808,9 @@ export interface components {
          * @enum {string}
          */
         SchemaScaleKind: Schema.ScaleKind;
-        SchemaSearchPayload: Schema.SearchPayload;
         SchemaSearchResult: Schema.SearchResult;
         SchemaSessionAssociation: Schema.SessionAssociation;
-        SchemaSessionDetailPayload: Schema.SessionDetailPayload;
+        SchemaSessionDetailReadPayload: Schema.SessionDetailReadPayload;
         /**
          * Session ID
          * Format: session-id
@@ -648,6 +824,14 @@ export interface components {
          */
         SchemaSessionID: Schema.SessionID;
         SchemaSessionInsight: Schema.SessionInsight;
+        /**
+         * Session List Item Kind
+         * @description Closed session graph value
+         * @example transcript
+         * @example context_container
+         * @enum {string}
+         */
+        SchemaSessionListItemKind: Schema.SessionListItemKind;
         /**
          * Session Origin
          * @description Who drove a recorded session, as declared by the producer that recorded it
@@ -666,10 +850,35 @@ export interface components {
          * @enum {string}
          */
         SchemaSessionOutcome: Schema.SessionOutcome;
+        /**
+         * Session Purpose
+         * @description Closed session graph value
+         * @example interaction
+         * @example delegated_work
+         * @example helper_review
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaSessionPurpose: Schema.SessionPurpose;
+        SchemaSessionRelationship: Schema.SessionRelationship;
+        /**
+         * Session Relationship Kind
+         * @description Closed session graph value
+         * @example started_by
+         * @example context_from
+         * @enum {string}
+         */
+        SchemaSessionRelationshipKind: Schema.SessionRelationshipKind;
+        SchemaSessionRelationshipNavigation: Schema.SessionRelationshipNavigation;
         SchemaSessionScorecard: Schema.SessionScorecard;
         SchemaSessionSummary: Schema.SessionSummary;
         SchemaSessionsPayload: Schema.SessionsPayload;
         SchemaShutdownResponse: Schema.ShutdownResponse;
+        /**
+         * Source Entry Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaSourceEntryRef: Schema.SourceEntryRef;
         /**
          * Stop Reason
          * @description Reason why a session or turn ended (ACP-aligned)
@@ -678,6 +887,11 @@ export interface components {
          * @enum {string}
          */
         SchemaStopReason: Schema.StopReason;
+        /**
+         * Submission Reference
+         * Format: public-ref-utf8-96-bytes
+         */
+        SchemaSubmissionRef: Schema.SubmissionRef;
         /**
          * Target Kind
          * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
@@ -701,6 +915,13 @@ export interface components {
          * @enum {string}
          */
         SchemaToolCallKind: Schema.ToolCallKind;
+        /**
+         * Transcript ID
+         * Format: uuid
+         * @description Village-side transcript identifier (canonical lowercase-hex UUID)
+         * @example 99d59925-36bc-424c-a789-8be54d9702ba
+         */
+        SchemaTranscriptID: Schema.TranscriptID;
         SchemaTurnDetail: Schema.TurnDetail;
         /**
          * Type Origin
@@ -739,8 +960,10 @@ export interface components {
          * @enum {string}
          */
         SchemaValueDomainKind: Schema.ValueDomainKind;
+        SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
         SessionDetailPayload: Schema.SessionDetailPayload;
+        SessionDetailReadPayload: Schema.SessionDetailReadPayload;
         TrendsPayload: Schema.TrendsPayload;
         UICapabilitiesResponse: Schema.UICapabilitiesResponse;
     };
@@ -1089,6 +1312,8 @@ export interface operations {
                 q: string;
                 /** @description Max results (default 20, capped at 50) */
                 limit?: number;
+                /** @description Set to grouped to return owner-nested helper groups */
+                view?: "grouped";
             };
             header?: never;
             path?: never;
@@ -1102,7 +1327,36 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSearchPayload"];
+                    "application/json": components["schemas"]["SearchPayload"] | components["schemas"]["SchemaLocalSessionListPayload"];
+                };
+            };
+        };
+    };
+    listLocalHelperGroupMembers: {
+        parameters: {
+            query: {
+                /** @description Opaque member scope from the originating grouped response */
+                scope: string;
+                /** @description One-based member page */
+                page?: number;
+                /** @description Maximum members per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                groupId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalHelperMembersPayload"];
                 };
             };
         };
@@ -1132,7 +1386,10 @@ export interface operations {
     };
     listSessions: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Set to grouped to return owner-nested helper groups */
+                view?: "grouped";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1145,7 +1402,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSessionsPayload"];
+                    "application/json": components["schemas"]["SchemaSessionsPayload"] | components["schemas"]["SchemaLocalSessionListPayload"];
                 };
             };
         };
@@ -1167,7 +1424,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaSessionDetailPayload"];
+                    "application/json": components["schemas"]["SchemaSessionDetailReadPayload"];
+                };
+            };
+        };
+    };
+    getSessionTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSessionDetailReadPayload"];
                 };
             };
         };
@@ -1188,6 +1467,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaShutdownResponse"];
+                };
+            };
+        };
+    };
+    listSyncSessionsGrouped: {
+        parameters: {
+            query?: {
+                /** @description Set to grouped for grouped rows */
+                view?: "grouped";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocalSyncSessionsPayload"] | components["schemas"]["SchemaLocalSessionListPayload"];
                 };
             };
         };

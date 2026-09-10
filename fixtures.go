@@ -66,3 +66,8 @@ var RedactionsYAML []byte
 //
 //go:embed testdata/local-api/timeline.yaml
 var TimelineYAML []byte
+
+// SessionGraphProvenanceYAML contains primitive graph validation cases.
+//
+//go:embed testdata/session_graph_provenance.yaml
+var SessionGraphProvenanceYAML []byte

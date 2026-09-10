@@ -47,6 +47,14 @@
     "./fixtures/timeline": {
       "types": "./dist/fixtures/timeline.d.ts",
       "default": "./dist/fixtures/timeline.js"
+    },
+    "./fixtures/session-graph": {
+      "types": "./dist/fixtures/session-graph.d.ts",
+      "default": "./dist/fixtures/session-graph.js"
+    },
+    "./fixtures/session-graph-capability": {
+      "types": "./dist/fixtures/session-graph-capability.d.ts",
+      "default": "./dist/fixtures/session-graph-capability.js"
     }
   },
   "scripts": {

@@ -490,3 +490,113 @@ enums:
       - {name: Informational, value: "informational"}
       - {name: Required, value: "required"}
     all_values: ["informational", "required"]
+  - name: SessionRelationshipKind
+    all_name: AllSessionRelationshipKinds
+    members:
+      - {name: StartedBy, value: "started_by"}
+      - {name: ContextFrom, value: "context_from"}
+    all_values: ["started_by", "context_from"]
+  - name: RelationshipTargetState
+    all_name: AllRelationshipTargetStates
+    members:
+      - {name: Known, value: "target_known"}
+      - {name: KnownRetained, value: "target_known_retained"}
+      - {name: ExplicitNone, value: "explicit_none"}
+      - {name: Unknown, value: "unknown"}
+      - {name: ConflictingCurrentNativeEvidence, value: "conflicting_current_native_evidence"}
+    all_values: ["target_known", "target_known_retained", "explicit_none", "unknown", "conflicting_current_native_evidence"]
+  - name: EvidenceKind
+    all_name: AllEvidenceKinds
+    members:
+      - {name: NativeTyped, value: "native_typed"}
+      - {name: LifecycleTyped, value: "lifecycle_typed"}
+      - {name: ExistingAdapter, value: "existing_adapter"}
+      - {name: RetainedLastGood, value: "retained_last_good"}
+      - {name: Unknown, value: "unknown"}
+      - {name: Conflict, value: "conflict"}
+    all_values: ["native_typed", "lifecycle_typed", "existing_adapter", "retained_last_good", "unknown", "conflict"]
+  - name: SessionPurpose
+    all_name: AllSessionPurposes
+    members:
+      - {name: Interaction, value: "interaction"}
+      - {name: DelegatedWork, value: "delegated_work"}
+      - {name: HelperReview, value: "helper_review"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["interaction", "delegated_work", "helper_review", "unknown"]
+  - name: ContentOrigin
+    all_name: AllContentOrigins
+    members:
+      - {name: SubmittedInput, value: "submitted_input"}
+      - {name: HarnessContext, value: "harness_context"}
+      - {name: AgentOutput, value: "agent_output"}
+      - {name: AgentCommunication, value: "agent_communication"}
+      - {name: ToolActivity, value: "tool_activity"}
+      - {name: SystemControl, value: "system_control"}
+      - {name: GeneratedSummary, value: "generated_summary"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["submitted_input", "harness_context", "agent_output", "agent_communication", "tool_activity", "system_control", "generated_summary", "unknown"]
+  - name: ActorOrigin
+    all_name: AllActorOrigins
+    members:
+      - {name: Operator, value: "operator"}
+      - {name: AgentDelegate, value: "agent_delegate"}
+      - {name: Harness, value: "harness"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["operator", "agent_delegate", "harness", "unknown"]
+  - name: DeliveryOrigin
+    all_name: AllDeliveryOrigins
+    members:
+      - {name: SessionAdmission, value: "session_admission"}
+      - {name: GuardianReview, value: "guardian_review"}
+      - {name: SubagentDelivery, value: "subagent_delivery"}
+      - {name: InheritedContext, value: "inherited_context"}
+      - {name: ToolDelivery, value: "tool_delivery"}
+      - {name: SystemLifecycle, value: "system_lifecycle"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["session_admission", "guardian_review", "subagent_delivery", "inherited_context", "tool_delivery", "system_lifecycle", "unknown"]
+  - name: ContentOwnership
+    all_name: AllContentOwnerships
+    members:
+      - {name: Local, value: "local"}
+      - {name: Inherited, value: "inherited"}
+      - {name: Uncertain, value: "uncertain"}
+    all_values: ["local", "inherited", "uncertain"]
+  - name: InputModality
+    all_name: AllInputModalities
+    members:
+      - {name: None, value: "none"}
+      - {name: Text, value: "text"}
+      - {name: Media, value: "media"}
+      - {name: UserAction, value: "user_action"}
+      - {name: Mixed, value: "mixed"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["none", "text", "media", "user_action", "mixed", "unknown"]
+  - name: PublicSourceAnchorKind
+    all_name: AllPublicSourceAnchorKinds
+    members:
+      - {name: General, value: "general_source_session"}
+      - {name: Before, value: "before_redacted_entry"}
+      - {name: Through, value: "through_redacted_entry"}
+    all_values: ["general_source_session", "before_redacted_entry", "through_redacted_entry"]
+  - name: EarlierHistoryState
+    all_name: AllEarlierHistoryStates
+    members:
+      - {name: UncertainMigrated, value: "uncertain_migrated"}
+      - {name: UncertainUnresolved, value: "uncertain_unresolved"}
+    all_values: ["uncertain_migrated", "uncertain_unresolved"]
+  - name: RelationshipNavigationStatus
+    all_name: AllRelationshipNavigationStatuses
+    members:
+      - {name: Resolved, value: "resolved"}
+      - {name: GeneralLinkOnly, value: "general_link_only"}
+      - {name: KnownUnavailable, value: "known_unavailable"}
+      - {name: Inaccessible, value: "inaccessible"}
+      - {name: Unknown, value: "unknown"}
+      - {name: Conflicting, value: "conflicting"}
+    all_values: ["resolved", "general_link_only", "known_unavailable", "inaccessible", "unknown", "conflicting"]
+  - name: SessionListItemKind
+    all_name: AllSessionListItemKinds
+    members:
+      - {name: Transcript, value: "transcript"}
+      - {name: ContextContainer, value: "context_container"}
+    all_values: ["transcript", "context_container"]

@@ -21,6 +21,15 @@ type AuthoritativeTranscriptPublishRequest schema.AuthoritativePublishRequest
 // Deprecated: use AuthoritativeTranscriptPublishRequest. See schema issue #55.
 type TranscriptPublishRequest = AuthoritativeTranscriptPublishRequest
 
+type villageGroupedView string
+
+func (villageGroupedView) JSONSchema() (jsonschema.Schema, error) {
+	s := jsonschema.Schema{}
+	s.AddType(jsonschema.String)
+	s.WithEnum("grouped")
+	return s, nil
+}
+
 type transcriptPublishMultipartRequest struct {
 	Metadata       AuthoritativeTranscriptPublishRequest `formData:"metadata" required:"true" description:"PublishRequest JSON encoded with Content-Type application/json."`
 	TranscriptFile *multipart.FileHeader                 `formData:"transcript_file" required:"true" description:"Exact transcript bytes whose SHA3-256 digest equals metadata.contentHash."`
@@ -371,15 +380,16 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 }
 
 type villageOperationSpec struct {
-	method        string
-	path          string
-	id            string
-	tag           string
-	description   string
-	requests      []interface{}
-	response      interface{}
-	successStatus int
-	errorStatuses []int
+	method               string
+	path                 string
+	id                   string
+	tag                  string
+	description          string
+	requests             []interface{}
+	response             interface{}
+	responseAlternatives []interface{}
+	successStatus        int
+	errorStatuses        []int
 }
 
 func addVillageCollectiveOperations(r *openapi31.Reflector) error {
@@ -410,6 +420,29 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	transcriptPath := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	})
+	transcriptListQuery := new(struct {
+		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
+		Page     int                  `query:"page"`
+		Limit    int                  `query:"limit"`
+		Query    string               `query:"q"`
+		Provider string               `query:"provider"`
+		Owner    string               `query:"owner"`
+		Project  string               `query:"project"`
+		Repo     string               `query:"repo"`
+		Org      string               `query:"org"`
+		Tags     string               `query:"tags"`
+		Origin   schema.SessionOrigin `query:"origin"`
+		Sort     string               `query:"sort"`
+	})
+	groupedViewQuery := new(struct {
+		View villageGroupedView `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the legacy response."`
+	})
+	memberQuery := new(struct {
+		GroupID string `path:"groupId" description:"Stable helper group identifier"`
+		Scope   string `query:"scope" required:"true" description:"Opaque scope returned by the originating grouped list"`
+		Page    int    `query:"page"`
+		Limit   int    `query:"limit"`
+	})
 	transcriptGroupPath := new(struct {
 		ID      schema.TranscriptID `path:"id" description:"Transcript identifier"`
 		GroupID schema.VillageUUID  `path:"groupID" description:"Collective identifier"`
@@ -434,6 +467,30 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	})
 
 	operations := []villageOperationSpec{
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts", id: "listTranscripts", tag: "transcripts",
+			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
+			requests:    []interface{}{transcriptListQuery}, responseAlternatives: []interface{}{new(schema.VillageTranscriptListResponse), new(schema.VillageSessionListPayload)},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}", id: "getTranscriptMetadata", tag: "transcripts",
+			description: "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content.",
+			requests:    []interface{}{transcriptPath}, response: new(schema.VillageTranscriptMetadataResponse),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
+			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation.",
+			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcript-groups/{groupId}/members", id: "listTranscriptGroupMembers", tag: "transcripts",
+			description: "Page the authorized saved helper threads selected by an originating grouped list. The required opaque scope is replayed with current authorization and cannot widen the original route filters.",
+			requests:    []interface{}{memberQuery}, response: new(schema.VillageHelperMembersPayload),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusForbidden, http.StatusConflict},
+		},
 		{
 			method:      http.MethodGet,
 			path:        "/api/v1/groups/public",
@@ -497,13 +554,14 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodGet,
-			path:        "/api/v1/groups/{id}",
-			id:          "getGroup",
-			tag:         "collectives",
-			description: "Get a collective with roster, stats, model breakdown, contributors, the caller's role, and a transcript page. pending_members is present only for owners. transcripts is an empty array when the caller may see the collective but may not read its data.",
-			requests:    []interface{}{groupPath, groupListQuery},
-			response:    new(schema.VillageGroupDetailResponse),
+			method:               http.MethodGet,
+			path:                 "/api/v1/groups/{id}",
+			id:                   "getGroup",
+			tag:                  "collectives",
+			description:          "Get a collective with roster, stats, model breakdown, contributors, the caller's role, and a transcript page. pending_members is present only for owners. transcripts is an empty array when the caller may see the collective but may not read its data.",
+			requests:             []interface{}{groupPath, groupListQuery, groupedViewQuery},
+			response:             new(schema.VillageGroupDetailResponse),
+			responseAlternatives: []interface{}{new(schema.VillageGroupDetailResponse), new(schema.VillageGroupedGroupDetailResponse)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusNotFound,
@@ -605,13 +663,14 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodGet,
-			path:        "/api/v1/groups/{id}/contributable",
-			id:          "listContributableTranscripts",
-			tag:         "contributions",
-			description: "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
-			requests:    []interface{}{groupPath},
-			response:    new(schema.VillageContributableResponse),
+			method:               http.MethodGet,
+			path:                 "/api/v1/groups/{id}/contributable",
+			id:                   "listContributableTranscripts",
+			tag:                  "contributions",
+			description:          "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
+			requests:             []interface{}{groupPath, groupedViewQuery},
+			response:             new(schema.VillageContributableResponse),
+			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
@@ -639,13 +698,13 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodGet,
-			path:        "/api/v1/groups/{id}/pending",
-			id:          "listPendingShares",
-			tag:         "contributions",
-			description: "List pending transcript submissions for an owned collective, oldest first.",
-			requests:    []interface{}{groupPath},
-			response:    new([]schema.VillagePendingShare),
+			method:               http.MethodGet,
+			path:                 "/api/v1/groups/{id}/pending",
+			id:                   "listPendingShares",
+			tag:                  "contributions",
+			description:          "List pending transcript submissions for an owned collective, oldest first.",
+			requests:             []interface{}{groupPath, groupedViewQuery},
+			responseAlternatives: []interface{}{new([]schema.VillagePendingShare), new(schema.VillageSessionListPayload)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
@@ -654,13 +713,13 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
-			method:      http.MethodGet,
-			path:        "/api/v1/groups/{id}/my-shares",
-			id:          "listMyGroupShares",
-			tag:         "contributions",
-			description: "List the authenticated caller's own live submissions to one collective, including pending and approved rows.",
-			requests:    []interface{}{groupPath},
-			response:    new([]schema.VillageUserGroupShare),
+			method:               http.MethodGet,
+			path:                 "/api/v1/groups/{id}/my-shares",
+			id:                   "listMyGroupShares",
+			tag:                  "contributions",
+			description:          "List the authenticated caller's own live submissions to one collective, including pending and approved rows.",
+			requests:             []interface{}{groupPath, groupedViewQuery},
+			responseAlternatives: []interface{}{new([]schema.VillageUserGroupShare), new(schema.VillageSessionListPayload)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,
@@ -871,6 +930,21 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	if err := addVillageOperations(r, operations); err != nil {
 		return err
 	}
+	for _, variant := range []struct {
+		path    string
+		legacy  map[string]interface{}
+		grouped string
+	}{
+		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageGroupDetailResponse"}, "SchemaVillageGroupedGroupDetailResponse"},
+		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse"},
+		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserGroupShare"}}, "SchemaVillageSessionListPayload"},
+	} {
+		if err := setVillageGroupedResponse(r.Spec, variant.path, variant.legacy, variant.grouped); err != nil {
+			return err
+		}
+	}
 
 	for _, body := range []struct {
 		method string
@@ -894,6 +968,26 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	return nil
 }
 
+func setVillageGroupedResponse(spec *openapi31.Spec, path string, legacy map[string]interface{}, grouped string) error {
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	if !ok || item.Get == nil || item.Get.Responses == nil {
+		return fmt.Errorf("configure grouped response for GET %s: operation is missing; clients could not distinguish grouped and omitted-view outputs; register the route before its response variants", path)
+	}
+	response, ok := item.Get.Responses.MapOfResponseOrReferenceValues["200"]
+	if !ok || response.Response == nil {
+		return fmt.Errorf("configure grouped response for GET %s: success response is missing; clients would have no legacy or grouped shape; register both response contracts", path)
+	}
+	media, ok := response.Response.Content["application/json"]
+	if !ok {
+		return fmt.Errorf("configure grouped response for GET %s: JSON media type is missing; clients cannot decode the selected view; register an application/json response", path)
+	}
+	media.Schema = map[string]interface{}{"oneOf": []interface{}{legacy, map[string]interface{}{"$ref": "#/components/schemas/" + grouped}}}
+	response.Response.Content["application/json"] = media
+	item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
+	spec.Paths.MapOfPathItemValues[path] = item
+	return nil
+}
+
 // addVillageOperations reflects one table of Village operations. Every request
 // structure is added, the success response takes its declared status, and each
 // error status shares the common VillageErrorResponse envelope.
@@ -906,7 +1000,11 @@ func addVillageOperations(r *openapi31.Reflector, operations []villageOperationS
 		for _, request := range op.requests {
 			oc.AddReqStructure(request)
 		}
-		if op.response != nil {
+		if len(op.responseAlternatives) > 0 {
+			for _, response := range op.responseAlternatives {
+				oc.AddRespStructure(response)
+			}
+		} else if op.response != nil {
 			if op.successStatus != 0 && op.successStatus != http.StatusOK {
 				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
 			} else {

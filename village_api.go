@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"fmt"
+	"reflect"
 	"time"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -304,6 +306,31 @@ type VillageGroup struct {
 	PromptsCheckMode VillagePromptsCheckMode `json:"prompts_check_mode"`
 }
 
+// VillageGroupDetailRecord preserves the released collective detail fields.
+// Optional prompts settings are facts supplied by a capable producer, not defaults.
+type VillageGroupDetailRecord struct {
+	ID                       VillageUUID                     `json:"id"`
+	Name                     string                          `json:"name"`
+	Description              *string                         `json:"description"`
+	CreatedBy                VillageUUID                     `json:"created_by"`
+	CreatedAt                time.Time                       `json:"created_at"`
+	UpdatedAt                time.Time                       `json:"updated_at"`
+	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
+	DataAccess               VillageGroupDataAccess          `json:"data_access"`
+	LinkedGithubOrg          *string                         `json:"linked_github_org"`
+	DisplayMembers           bool                            `json:"display_members"`
+	TranscriptDeletionPolicy VillageTranscriptDeletionPolicy `json:"transcript_deletion_policy"`
+	PostPromptsCheck         *bool                           `json:"post_prompts_check,omitempty"`
+	PromptsCheckMode         *VillagePromptsCheckMode        `json:"prompts_check_mode,omitempty"`
+}
+
+func (r VillageGroupDetailRecord) Validate() error {
+	if r.PromptsCheckMode != nil && !r.PromptsCheckMode.IsValid() {
+		return fmt.Errorf("collective detail validation failed at schema.VillageGroupDetailRecord.Validate during read projection: prompts_check_mode is outside the closed set; clients cannot interpret this supplied setting; omit unavailable settings or emit a canonical VillagePromptsCheckMode")
+	}
+	return nil
+}
+
 // VillagePublicGroup is the compact row returned by GET /api/v1/groups/public.
 type VillagePublicGroup struct {
 	ID              VillageUUID                `json:"id"`
@@ -448,7 +475,7 @@ type VillageGroupContributor struct {
 }
 
 type VillageGroupDetailResponse struct {
-	Group          VillageGroup                 `json:"group"`
+	Group          VillageGroupDetailRecord     `json:"group"`
 	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
 	Models         []VillageGroupModelBreakdown `json:"models" nullable:"false"`
@@ -528,6 +555,119 @@ type VillageTranscript struct {
 	ContentHash             *TranscriptContentHash      `json:"content_hash"`
 	LicenseID               *License                    `json:"license_id"`
 	SessionOrigin           SessionOrigin               `json:"session_origin"`
+	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
+	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
+	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
+}
+
+// VillageTranscriptMetadataResponse is the existing flat transcript metadata
+// response plus viewer-authorized relationship navigation. Durable content
+// remains separate on the content endpoint.
+type VillageTranscriptMetadataResponse struct {
+	Transcript             VillageTranscript                 `json:"transcript"`
+	Tags                   []VillageTag                      `json:"tags" nullable:"false"`
+	Shares                 []VillageTranscriptShare          `json:"shares" nullable:"false"`
+	EnrichedShares         []VillageEnrichedTranscriptShare  `json:"enriched_shares" nullable:"false"`
+	Owner                  VillageUser                       `json:"owner"`
+	OwnerOrgs              []VillageMetadataUserOrganization `json:"owner_orgs" nullable:"false"`
+	Attestations           []VillageTranscriptAttestation    `json:"attestations" nullable:"false"`
+	RelationshipNavigation []SessionRelationshipNavigation   `json:"relationshipNavigation,omitempty"`
+}
+
+type VillageTag struct {
+	ID   VillageUUID `json:"id"`
+	Name string      `json:"name"`
+}
+type VillageUser struct {
+	ID               VillageUUID `json:"id"`
+	GithubID         int64       `json:"github_id"`
+	GithubUsername   string      `json:"github_username"`
+	DisplayName      *string     `json:"display_name"`
+	AvatarURL        *string     `json:"avatar_url"`
+	CreatedAt        time.Time   `json:"created_at"`
+	UpdatedAt        time.Time   `json:"updated_at"`
+	IsDiscoverable   bool        `json:"is_discoverable"`
+	Provider         string      `json:"provider"`
+	ProviderUserID   string      `json:"provider_user_id"`
+	UsernameChosen   bool        `json:"username_chosen"`
+	ProviderUsername *string     `json:"provider_username"`
+}
+type VillageMetadataUserOrganization struct {
+	OrgLogin  string    `json:"org_login"`
+	OrgID     int64     `json:"org_id"`
+	AvatarURL *string   `json:"avatar_url"`
+	Visible   bool      `json:"visible"`
+	FetchedAt time.Time `json:"fetched_at"`
+}
+
+type VillageListUserOrganization struct {
+	UserID    VillageUUID `json:"user_id"`
+	OrgLogin  string      `json:"org_login"`
+	AvatarURL *string     `json:"avatar_url"`
+}
+type VillageEnrichedTranscriptShare struct {
+	TranscriptID   TranscriptID               `json:"transcript_id"`
+	GroupID        VillageUUID                `json:"group_id"`
+	GroupName      string                     `json:"group_name"`
+	AcceptanceMode VillageGroupAcceptanceMode `json:"acceptance_mode"`
+	Status         VillageShareStatus         `json:"status"`
+	SharedAt       time.Time                  `json:"shared_at"`
+}
+type VillageTranscriptAttestation struct {
+	ID               VillageUUID  `json:"id"`
+	TranscriptID     TranscriptID `json:"transcript_id"`
+	OrgLogin         string       `json:"org_login"`
+	AttestationType  string       `json:"attestation_type"`
+	Note             *string      `json:"note"`
+	CreatedAt        time.Time    `json:"created_at"`
+	AttesterUsername string       `json:"attester_username"`
+	AttesterAvatar   *string      `json:"attester_avatar"`
+}
+type VillageListTranscriptAttestation struct {
+	TranscriptID    TranscriptID `json:"transcript_id"`
+	OrgLogin        string       `json:"org_login"`
+	AttestationType string       `json:"attestation_type"`
+	CreatedAt       time.Time    `json:"created_at"`
+}
+type VillageTranscriptListRow struct {
+	Transcript   VillageTranscript                  `json:"transcript"`
+	Tags         []VillageTag                       `json:"tags" nullable:"false"`
+	Owner        VillageUser                        `json:"owner"`
+	OwnerOrgs    []VillageListUserOrganization      `json:"owner_orgs"`
+	Shares       []VillageEnrichedTranscriptShare   `json:"shares"`
+	Attestations []VillageListTranscriptAttestation `json:"attestations"`
+}
+type VillageTranscriptListResponse struct {
+	Transcripts []VillageTranscriptListRow `json:"transcripts" nullable:"false"`
+	Total       int                        `json:"total"`
+	AgentTotal  int                        `json:"agent_total"`
+	Page        int                        `json:"page"`
+	Limit       int                        `json:"limit"`
+}
+
+func (r VillageTranscriptListResponse) Validate() error {
+	if r.Transcripts == nil || r.Page < 1 || r.Limit < 1 || r.Total < 0 || r.AgentTotal < 0 {
+		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: transcripts must be initialized, page and limit must be positive, and totals must be nonnegative; clients cannot preserve the existing list envelope; emit [] for an empty page and one-based pagination")
+	}
+	for _, row := range r.Transcripts {
+		if row.Tags == nil {
+			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
+		}
+	}
+	return nil
+}
+
+func (r VillageTranscriptMetadataResponse) Validate() error {
+	if r.Tags == nil || r.Shares == nil || r.EnrichedShares == nil || r.OwnerOrgs == nil || r.Attestations == nil {
+		return fmt.Errorf("Village transcript metadata validation failed at schema.VillageTranscriptMetadataResponse.Validate: tags, shares, enriched_shares, owner_orgs, or attestations is null; the existing metadata envelope requires concrete arrays; initialize every empty collection")
+	}
+	for _, navigation := range r.RelationshipNavigation {
+		if err := navigation.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // VillageGroupTranscript deliberately lists the transcript fields instead of
@@ -603,6 +743,10 @@ type VillageGroupTranscript struct {
 	OwnerUsername           string                      `json:"owner_username"`
 	OwnerAvatarURL          *string                     `json:"owner_avatar_url"`
 	OwnerIsDiscoverable     bool                        `json:"owner_is_discoverable"`
+	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
+	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
+	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
 }
 
 type VillageTranscriptShare struct {
@@ -643,18 +787,22 @@ type VillageTranscriptCollectivesResponse struct {
 }
 
 type VillagePendingShare struct {
-	TranscriptID        TranscriptID `json:"transcript_id"`
-	Title               *string      `json:"title"`
-	ModelProvider       string       `json:"model_provider"`
-	OwnerID             VillageUUID  `json:"owner_id"`
-	LocalID             SessionID    `json:"local_id"`
-	ParentSessionID     *SessionID   `json:"parent_session_id"`
-	ProjectHash         ProjectHash  `json:"project_hash"`
-	ProjectName         *string      `json:"project_name"`
-	Branch              *string      `json:"branch"`
-	OwnerUsername       string       `json:"owner_username"`
-	OwnerIsDiscoverable bool         `json:"owner_is_discoverable"`
-	SharedAt            time.Time    `json:"shared_at"`
+	TranscriptID         TranscriptID          `json:"transcript_id"`
+	Title                *string               `json:"title"`
+	ModelProvider        string                `json:"model_provider"`
+	OwnerID              VillageUUID           `json:"owner_id"`
+	LocalID              SessionID             `json:"local_id"`
+	ParentSessionID      *SessionID            `json:"parent_session_id"`
+	ProjectHash          ProjectHash           `json:"project_hash"`
+	ProjectName          *string               `json:"project_name"`
+	Branch               *string               `json:"branch"`
+	OwnerUsername        string                `json:"owner_username"`
+	OwnerIsDiscoverable  bool                  `json:"owner_is_discoverable"`
+	SharedAt             time.Time             `json:"shared_at"`
+	InputSubmissionCount *int64                `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID        *SessionID            `json:"root_session_id,omitempty"`
+	Purpose              SessionPurpose        `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship `json:"relationships,omitempty"`
 }
 
 type VillageUserGroupShare struct {
@@ -672,8 +820,12 @@ type VillageUserGroupShare struct {
 	ParentSessionID *SessionID                  `json:"parent_session_id"`
 	// Status uses the shared lifecycle enum. Current my-shares responses emit the
 	// live subset today; terminal values are reserved for ledger history.
-	Status   VillageShareStatus `json:"status"`
-	SharedAt time.Time          `json:"shared_at"`
+	Status               VillageShareStatus    `json:"status"`
+	SharedAt             time.Time             `json:"shared_at"`
+	InputSubmissionCount *int64                `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID        *SessionID            `json:"root_session_id,omitempty"`
+	Purpose              SessionPurpose        `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship `json:"relationships,omitempty"`
 }
 
 type VillageBatchShareRequest struct {
@@ -712,24 +864,206 @@ type VillageReviewShareRequest struct {
 }
 
 type VillageContributableTranscript struct {
-	ID                 TranscriptID                `json:"id"`
-	LocalID            SessionID                   `json:"local_id"`
-	Title              *string                     `json:"title"`
-	Visibility         VillageTranscriptVisibility `json:"visibility"`
-	ProjectHash        ProjectHash                 `json:"project_hash"`
-	ProjectDisplayName string                      `json:"project_display_name"`
-	ProjectNameSource  VillageProjectNameSource    `json:"project_name_source"`
-	GitBranch          *string                     `json:"git_branch"`
-	ParentSessionID    *SessionID                  `json:"parent_session_id"`
-	SessionOrigin      SessionOrigin               `json:"session_origin"`
-	ModelProvider      string                      `json:"model_provider"`
-	PublishedAt        time.Time                   `json:"published_at"`
-	AlreadyShared      bool                        `json:"already_shared"`
+	ID                   TranscriptID                `json:"id"`
+	LocalID              SessionID                   `json:"local_id"`
+	Title                *string                     `json:"title"`
+	Visibility           VillageTranscriptVisibility `json:"visibility"`
+	ProjectHash          ProjectHash                 `json:"project_hash"`
+	ProjectDisplayName   string                      `json:"project_display_name"`
+	ProjectNameSource    VillageProjectNameSource    `json:"project_name_source"`
+	GitBranch            *string                     `json:"git_branch"`
+	ParentSessionID      *SessionID                  `json:"parent_session_id"`
+	SessionOrigin        SessionOrigin               `json:"session_origin"`
+	ModelProvider        string                      `json:"model_provider"`
+	PublishedAt          time.Time                   `json:"published_at"`
+	AlreadyShared        bool                        `json:"already_shared"`
+	InputSubmissionCount *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID        *SessionID                  `json:"root_session_id,omitempty"`
+	Purpose              SessionPurpose              `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship       `json:"relationships,omitempty"`
 }
 
 type VillageContributableResponse struct {
 	GroupID     VillageUUID                      `json:"group_id"`
 	Transcripts []VillageContributableTranscript `json:"transcripts" nullable:"false"`
+}
+
+// VillageSessionRow preserves the complete transcript summary and the one
+// route-specific projection that produced it.
+type VillageSessionRow struct {
+	Session       VillageTranscript               `json:"session"`
+	Collective    *VillageGroupTranscript         `json:"collective,omitempty"`
+	Pending       *VillagePendingShare            `json:"pending,omitempty"`
+	MyShare       *VillageUserGroupShare          `json:"myShare,omitempty"`
+	Contributable *VillageContributableTranscript `json:"contributable,omitempty"`
+}
+
+// Validate checks the route arm and the shared identity and count mirrors.
+func (r VillageSessionRow) Validate() error {
+	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "VillageSessionRow.session.input_submission_count"); err != nil {
+		return err
+	}
+	arms := 0
+	if r.Collective != nil {
+		arms++
+		if err := ValidateInputSubmissionCount(r.Collective.InputSubmissionCount, "VillageSessionRow.collective.input_submission_count"); err != nil {
+			return err
+		}
+		if r.Collective.ID != r.Session.ID || r.Collective.OwnerID != r.Session.OwnerID || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
+		}
+	}
+	if r.Pending != nil {
+		arms++
+		if err := ValidateInputSubmissionCount(r.Pending.InputSubmissionCount, "VillageSessionRow.pending.input_submission_count"); err != nil {
+			return err
+		}
+		if r.Pending.TranscriptID != r.Session.ID || r.Pending.OwnerID != r.Session.OwnerID || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: pending identity or inputSubmissionCount differs from session; the review route would display contradictory data; project both values from the same transcript row")
+		}
+	}
+	if r.MyShare != nil {
+		arms++
+		if err := ValidateInputSubmissionCount(r.MyShare.InputSubmissionCount, "VillageSessionRow.myShare.input_submission_count"); err != nil {
+			return err
+		}
+		if r.MyShare.ID != r.Session.ID || r.MyShare.OwnerID != r.Session.OwnerID || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
+		}
+	}
+	if r.Contributable != nil {
+		arms++
+		if err := ValidateInputSubmissionCount(r.Contributable.InputSubmissionCount, "VillageSessionRow.contributable.input_submission_count"); err != nil {
+			return err
+		}
+		if r.Contributable.ID != r.Session.ID || r.Contributable.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Contributable.Title, r.Session.Title) || r.Contributable.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Contributable.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Contributable.ModelProvider != r.Session.ModelProvider || r.Contributable.ProjectHash != r.Session.ProjectHash || r.Contributable.ProjectDisplayName != r.Session.ProjectDisplayName || r.Contributable.ProjectNameSource != r.Session.ProjectNameSource || !reflect.DeepEqual(r.Contributable.GitBranch, r.Session.GitBranch) || !r.Contributable.PublishedAt.Equal(r.Session.PublishedAt) || !reflect.DeepEqual(r.Contributable.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Contributable.RootSessionID, r.Session.RootSessionID) || r.Contributable.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Contributable.Relationships, r.Session.Relationships) || r.Contributable.SessionOrigin != r.Session.SessionOrigin {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: contributable identity or inputSubmissionCount differs from session; the contribution route would display contradictory data; project both values from the same transcript row")
+		}
+	}
+	if arms > 1 {
+		return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: more than one route-specific summary is present; clients cannot identify the originating route variant; emit at most one of collective, pending, myShare, or contributable")
+	}
+	return nil
+}
+
+type VillageSessionListItem struct {
+	Kind         SessionListItemKind   `json:"kind"`
+	Transcript   *VillageSessionRow    `json:"transcript,omitempty"`
+	Context      *HelperContextSummary `json:"context,omitempty"`
+	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty" nullable:"false"`
+}
+
+func (i VillageSessionListItem) Validate() error {
+	if !i.Kind.IsValid() || (i.Kind == SessionListItemTranscript) != (i.Transcript != nil) || (i.Kind == SessionListItemContextContainer) != (i.Context != nil) {
+		return fmt.Errorf("Village grouped item validation failed at schema.VillageSessionListItem.Validate: kind does not select exactly one transcript or context arm; clients cannot render a deterministic row; match kind to one arm and omit the other")
+	}
+	if i.Transcript != nil {
+		if err := i.Transcript.Validate(); err != nil {
+			return err
+		}
+	} else if err := i.Context.Validate(); err != nil {
+		return err
+	}
+	return validateHelperGroups(i.HelperGroups)
+}
+
+type VillageSessionListPayload struct {
+	Items                []VillageSessionListItem `json:"items" nullable:"false"`
+	Page                 int                      `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit                int                      `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	TotalItems           int                      `json:"totalItems" minimum:"0" maximum:"9007199254740991"`
+	OrdinarySessionTotal int                      `json:"ordinarySessionTotal" minimum:"0" maximum:"9007199254740991"`
+	HelperThreadTotal    int                      `json:"helperThreadTotal" minimum:"0" maximum:"9007199254740991"`
+}
+
+func (p VillageSessionListPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.TotalItems, p.OrdinarySessionTotal, p.HelperThreadTotal); err != nil {
+		return err
+	}
+	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
+		return fmt.Errorf("Village grouped list validation failed at schema.VillageSessionListPayload.Validate: pagination or totals are negative; clients cannot represent the selected result set; emit nonnegative page, limit, and totals")
+	}
+	for _, item := range p.Items {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type VillageHelperMembersPayload struct {
+	Members []VillageSessionListItem `json:"members" nullable:"false"`
+	Page    int                      `json:"page" minimum:"1" maximum:"9007199254740991"`
+	Limit   int                      `json:"limit" minimum:"1" maximum:"9007199254740991"`
+	Total   int                      `json:"total" minimum:"0" maximum:"9007199254740991"`
+}
+
+func (p VillageHelperMembersPayload) Validate() error {
+	if err := validateGroupedPagination(p.Page, p.Limit, p.Total); err != nil {
+		return err
+	}
+	if len(p.Members) > p.Limit || len(p.Members) > p.Total {
+		return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during paging: member count exceeds limit or direct total; clients cannot page this scope; count direct saved helpers before paging")
+	}
+	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
+		return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate: pagination or total is negative; clients cannot page the authorized helper set; emit nonnegative values")
+	}
+	seen := make(map[TranscriptID]bool)
+	groups := make(map[string]bool)
+	for _, member := range p.Members {
+		if member.Kind != SessionListItemTranscript || member.Transcript == nil || member.Context != nil {
+			return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during scoped response construction: member is not a transcript; containers are not saved helpers; emit only transcript items with their immediate helper groups")
+		}
+		if err := member.Validate(); err != nil {
+			return err
+		}
+		id := member.Transcript.Session.ID
+		if seen[id] {
+			return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during scoped response construction: duplicate member identity; paging would count one helper twice; emit each saved transcript once")
+		}
+		seen[id] = true
+		for _, group := range member.HelperGroups {
+			if groups[group.GroupID] {
+				return fmt.Errorf("Village helper members validation failed at schema.VillageHelperMembersPayload.Validate during paging: a groupId appears under multiple members; clients cannot assign its owner; emit each immediate-owner group once")
+			}
+			groups[group.GroupID] = true
+		}
+	}
+	return nil
+}
+
+type VillageGroupedGroupDetailResponse struct {
+	Group          VillageGroupDetailRecord     `json:"group"`
+	Members        []VillageGroupMember         `json:"members" nullable:"false"`
+	Stats          VillageGroupTranscriptStats  `json:"stats"`
+	Models         []VillageGroupModelBreakdown `json:"models" nullable:"false"`
+	Contributors   []VillageGroupContributor    `json:"contributors" nullable:"false"`
+	CanRead        bool                         `json:"can_read"`
+	YourRole       VillageGroupViewerRole       `json:"your_role"`
+	TranscriptList VillageSessionListPayload    `json:"transcriptList"`
+	PendingMembers []VillageGroupMember         `json:"pending_members,omitempty" nullable:"false"`
+}
+
+func (r VillageGroupedGroupDetailResponse) Validate() error {
+	if err := r.Group.Validate(); err != nil {
+		return err
+	}
+	if r.Members == nil || r.Models == nil || r.Contributors == nil {
+		return fmt.Errorf("Village grouped collective validation failed at schema.VillageGroupedGroupDetailResponse.Validate: members, models, or contributors is null; the retained collective envelope requires concrete arrays; initialize every empty collection")
+	}
+	return r.TranscriptList.Validate()
+}
+
+type VillageGroupedContributableResponse struct {
+	GroupID        VillageUUID               `json:"groupId"`
+	TranscriptList VillageSessionListPayload `json:"transcriptList"`
+}
+
+func (r VillageGroupedContributableResponse) Validate() error {
+	if r.GroupID == "" {
+		return fmt.Errorf("Village grouped contribution validation failed at schema.VillageGroupedContributableResponse.Validate: groupId is empty; the selected collective cannot be identified; emit the requested collective ID")
+	}
+	return r.TranscriptList.Validate()
 }
 
 type VillageShareEvent struct {

@@ -10,8 +10,8 @@ discarding data the user was told would be preserved.
 ### Discovery
 
 `GET /api/v1/schema/version` may return `contentCapabilities`, a flat array of
-opaque revision-token strings. The first known token is
-`observed_model_v1`.
+opaque revision-token strings. Known tokens are listed by
+`AllContentCapabilities`.
 
 ```json
 {
@@ -65,6 +65,31 @@ Nested and subagent assistant turns use the assistant role and receive the same
 validation. Byte-exact preservation applies to string values, not JSON envelope
 whitespace or object-key order.
 
+### `session_graph_provenance_v1`
+
+A publication requires `session_graph_provenance_v1` when its durable session
+detail contains a measured `inputSubmissionCount` (including zero), a root
+session ID, any nonempty purpose (including `unknown`), a relationship, retained
+earlier history, or provenance on a turn or folded tool call/result. A source
+entry reference by itself does not require this token.
+
+Requirement derivation uses the durable `SessionDetailPayload`, never read-only
+navigation metadata or a caller flag. It traverses every main turn at every
+depth, every earlier-history partition, and every folded call and result. The
+same traversal continues to derive `detailed_usage_v1`, `native_metadata_v1`,
+`observed_model_v1`, and `tool_namespace_v1`; required tokens are returned once
+in lexicographic order.
+
+An offline scan validates and derives requirements without contacting a
+receiver. It does not establish remote support. Before an actual publication,
+the client must fetch the receiver's current advertisement and refuse before
+upload if this exact token is absent. Clients must not remove optional graph
+evidence to bypass refusal. Plain local export needs no receiver and preserves
+the evidence. Navigation-only read metadata does not change the requirement.
+
+A server advertises this token only after its deployed validation, storage,
+migration, rewrite, serving, and pull paths preserve the accepted graph evidence.
+
 ### `tool_namespace_v1`
 
 A publication requires `tool_namespace_v1` whenever any tool call has a
@@ -87,8 +112,9 @@ preservation proof passes, including a field-loss mutation. An API or package
 version alone does not establish support. Missing advertisement requires refusal
 before upload, never stripping or name qualification as a downgrade.
 
-Requirements accumulate across the entire payload: `tool_namespace_v1` does not
-replace `observed_model_v1`, `detailed_usage_v1`, or `native_metadata_v1`. Discovery
+Requirements accumulate across every main and earlier-history turn and tool:
+`tool_namespace_v1` does not replace `observed_model_v1`, `detailed_usage_v1`,
+`native_metadata_v1`, or `session_graph_provenance_v1`. Discovery
 remains forward-open with exact set matching and sorted, unique producer output.
 Dry-run derives these requirements locally without negotiation or upload.
 

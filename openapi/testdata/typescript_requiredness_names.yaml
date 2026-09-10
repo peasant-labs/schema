@@ -1,0 +1,18 @@
+required_names:
+  - collective detail compatible group record
+  - session detail payload
+  - unified metadata
+  - publish request
+  - transcript content
+  - channel subscription
+  - review timeline payload
+  - commit session bindings
+  - session association observations
+  - rewritten commit associations
+  - annotation association target
+  - project resolution payload
+  - transcript update request
+  - turn detail
+  - command invocation
+  - pull request attachment
+  - update user settings request

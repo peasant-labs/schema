@@ -23,6 +23,11 @@
 // correspond to a component the Go source also closes, so this file cannot
 // quietly close something the OpenAPI document leaves open.
 export const STRICT_OBJECTS = [
+	"zPublicSourceAnchor",
+	"zSessionRelationship",
+	"zContentProvenance",
+	"zEarlierHistorySection",
+	"zSessionRelationshipNavigation",
   "zTranscriptUpdateRequest",
   "zAuthoritativePublishRequest",
   "zAuthoritativeSessionIdentity",

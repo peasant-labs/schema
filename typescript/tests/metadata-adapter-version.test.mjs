@@ -23,7 +23,7 @@ assert.ok(manifest.requiredCaseNames.length > 0);
 assert.deepEqual(new Set(corpus.cases.map((c) => c.name)), new Set(manifest.requiredCaseNames));
 
 test("metadata adapter revisions match the Go fixture contract", async (t) => {
-  assert.equal(MetadataSchemaVersion, 10);
+  assert.equal(MetadataSchemaVersion, 11);
   for (const c of corpus.cases) {
     await t.test(c.name, () => {
       const input = { ...JSON.parse(manifest.baseMetadata), ...JSON.parse(c.input) };

@@ -62,6 +62,19 @@ import { zNativePiMessageRole, type NativePiMessageRole as NativePiMessageRoleCo
 import { zDigestItemKind, type DigestItemKind as DigestItemKindContract } from "./contract/zod.gen.js";
 import { zVillagePullRequestAttachmentState, type VillagePullRequestAttachmentState as VillagePullRequestAttachmentStateContract } from "./contract/zod.gen.js";
 import { zVillagePromptsCheckMode, type VillagePromptsCheckMode as VillagePromptsCheckModeContract } from "./contract/zod.gen.js";
+import { zSessionRelationshipKind, type SessionRelationshipKind as SessionRelationshipKindContract } from "./contract/zod.gen.js";
+import { zRelationshipTargetState, type RelationshipTargetState as RelationshipTargetStateContract } from "./contract/zod.gen.js";
+import { zEvidenceKind, type EvidenceKind as EvidenceKindContract } from "./contract/zod.gen.js";
+import { zSessionPurpose, type SessionPurpose as SessionPurposeContract } from "./contract/zod.gen.js";
+import { zContentOrigin, type ContentOrigin as ContentOriginContract } from "./contract/zod.gen.js";
+import { zActorOrigin, type ActorOrigin as ActorOriginContract } from "./contract/zod.gen.js";
+import { zDeliveryOrigin, type DeliveryOrigin as DeliveryOriginContract } from "./contract/zod.gen.js";
+import { zContentOwnership, type ContentOwnership as ContentOwnershipContract } from "./contract/zod.gen.js";
+import { zInputModality, type InputModality as InputModalityContract } from "./contract/zod.gen.js";
+import { zPublicSourceAnchorKind, type PublicSourceAnchorKind as PublicSourceAnchorKindContract } from "./contract/zod.gen.js";
+import { zEarlierHistoryState, type EarlierHistoryState as EarlierHistoryStateContract } from "./contract/zod.gen.js";
+import { zRelationshipNavigationStatus, type RelationshipNavigationStatus as RelationshipNavigationStatusContract } from "./contract/zod.gen.js";
+import { zSessionListItemKind, type SessionListItemKind as SessionListItemKindContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -826,4 +839,166 @@ export const VillagePromptsCheckMode = Object.freeze({
 export const AllVillagePromptsCheckModes = Object.freeze([VillagePromptsCheckMode.Informational, VillagePromptsCheckMode.Required]) as readonly VillagePromptsCheckMode[];
 export function isVillagePromptsCheckMode(value: unknown): value is VillagePromptsCheckMode {
   return zVillagePromptsCheckMode.safeParse(value).success;
+}
+
+export type SessionRelationshipKind = SessionRelationshipKindContract;
+export const SessionRelationshipKind = Object.freeze({
+  StartedBy: zSessionRelationshipKind.parse("started_by"),
+  ContextFrom: zSessionRelationshipKind.parse("context_from"),
+} as const);
+export const AllSessionRelationshipKinds = Object.freeze([SessionRelationshipKind.StartedBy, SessionRelationshipKind.ContextFrom]) as readonly SessionRelationshipKind[];
+export function isSessionRelationshipKind(value: unknown): value is SessionRelationshipKind {
+  return zSessionRelationshipKind.safeParse(value).success;
+}
+
+export type RelationshipTargetState = RelationshipTargetStateContract;
+export const RelationshipTargetState = Object.freeze({
+  Known: zRelationshipTargetState.parse("target_known"),
+  KnownRetained: zRelationshipTargetState.parse("target_known_retained"),
+  ExplicitNone: zRelationshipTargetState.parse("explicit_none"),
+  Unknown: zRelationshipTargetState.parse("unknown"),
+  ConflictingCurrentNativeEvidence: zRelationshipTargetState.parse("conflicting_current_native_evidence"),
+} as const);
+export const AllRelationshipTargetStates = Object.freeze([RelationshipTargetState.Known, RelationshipTargetState.KnownRetained, RelationshipTargetState.ExplicitNone, RelationshipTargetState.Unknown, RelationshipTargetState.ConflictingCurrentNativeEvidence]) as readonly RelationshipTargetState[];
+export function isRelationshipTargetState(value: unknown): value is RelationshipTargetState {
+  return zRelationshipTargetState.safeParse(value).success;
+}
+
+export type EvidenceKind = EvidenceKindContract;
+export const EvidenceKind = Object.freeze({
+  NativeTyped: zEvidenceKind.parse("native_typed"),
+  LifecycleTyped: zEvidenceKind.parse("lifecycle_typed"),
+  ExistingAdapter: zEvidenceKind.parse("existing_adapter"),
+  RetainedLastGood: zEvidenceKind.parse("retained_last_good"),
+  Unknown: zEvidenceKind.parse("unknown"),
+  Conflict: zEvidenceKind.parse("conflict"),
+} as const);
+export const AllEvidenceKinds = Object.freeze([EvidenceKind.NativeTyped, EvidenceKind.LifecycleTyped, EvidenceKind.ExistingAdapter, EvidenceKind.RetainedLastGood, EvidenceKind.Unknown, EvidenceKind.Conflict]) as readonly EvidenceKind[];
+export function isEvidenceKind(value: unknown): value is EvidenceKind {
+  return zEvidenceKind.safeParse(value).success;
+}
+
+export type SessionPurpose = SessionPurposeContract;
+export const SessionPurpose = Object.freeze({
+  Interaction: zSessionPurpose.parse("interaction"),
+  DelegatedWork: zSessionPurpose.parse("delegated_work"),
+  HelperReview: zSessionPurpose.parse("helper_review"),
+  Unknown: zSessionPurpose.parse("unknown"),
+} as const);
+export const AllSessionPurposes = Object.freeze([SessionPurpose.Interaction, SessionPurpose.DelegatedWork, SessionPurpose.HelperReview, SessionPurpose.Unknown]) as readonly SessionPurpose[];
+export function isSessionPurpose(value: unknown): value is SessionPurpose {
+  return zSessionPurpose.safeParse(value).success;
+}
+
+export type ContentOrigin = ContentOriginContract;
+export const ContentOrigin = Object.freeze({
+  SubmittedInput: zContentOrigin.parse("submitted_input"),
+  HarnessContext: zContentOrigin.parse("harness_context"),
+  AgentOutput: zContentOrigin.parse("agent_output"),
+  AgentCommunication: zContentOrigin.parse("agent_communication"),
+  ToolActivity: zContentOrigin.parse("tool_activity"),
+  SystemControl: zContentOrigin.parse("system_control"),
+  GeneratedSummary: zContentOrigin.parse("generated_summary"),
+  Unknown: zContentOrigin.parse("unknown"),
+} as const);
+export const AllContentOrigins = Object.freeze([ContentOrigin.SubmittedInput, ContentOrigin.HarnessContext, ContentOrigin.AgentOutput, ContentOrigin.AgentCommunication, ContentOrigin.ToolActivity, ContentOrigin.SystemControl, ContentOrigin.GeneratedSummary, ContentOrigin.Unknown]) as readonly ContentOrigin[];
+export function isContentOrigin(value: unknown): value is ContentOrigin {
+  return zContentOrigin.safeParse(value).success;
+}
+
+export type ActorOrigin = ActorOriginContract;
+export const ActorOrigin = Object.freeze({
+  Operator: zActorOrigin.parse("operator"),
+  AgentDelegate: zActorOrigin.parse("agent_delegate"),
+  Harness: zActorOrigin.parse("harness"),
+  Unknown: zActorOrigin.parse("unknown"),
+} as const);
+export const AllActorOrigins = Object.freeze([ActorOrigin.Operator, ActorOrigin.AgentDelegate, ActorOrigin.Harness, ActorOrigin.Unknown]) as readonly ActorOrigin[];
+export function isActorOrigin(value: unknown): value is ActorOrigin {
+  return zActorOrigin.safeParse(value).success;
+}
+
+export type DeliveryOrigin = DeliveryOriginContract;
+export const DeliveryOrigin = Object.freeze({
+  SessionAdmission: zDeliveryOrigin.parse("session_admission"),
+  GuardianReview: zDeliveryOrigin.parse("guardian_review"),
+  SubagentDelivery: zDeliveryOrigin.parse("subagent_delivery"),
+  InheritedContext: zDeliveryOrigin.parse("inherited_context"),
+  ToolDelivery: zDeliveryOrigin.parse("tool_delivery"),
+  SystemLifecycle: zDeliveryOrigin.parse("system_lifecycle"),
+  Unknown: zDeliveryOrigin.parse("unknown"),
+} as const);
+export const AllDeliveryOrigins = Object.freeze([DeliveryOrigin.SessionAdmission, DeliveryOrigin.GuardianReview, DeliveryOrigin.SubagentDelivery, DeliveryOrigin.InheritedContext, DeliveryOrigin.ToolDelivery, DeliveryOrigin.SystemLifecycle, DeliveryOrigin.Unknown]) as readonly DeliveryOrigin[];
+export function isDeliveryOrigin(value: unknown): value is DeliveryOrigin {
+  return zDeliveryOrigin.safeParse(value).success;
+}
+
+export type ContentOwnership = ContentOwnershipContract;
+export const ContentOwnership = Object.freeze({
+  Local: zContentOwnership.parse("local"),
+  Inherited: zContentOwnership.parse("inherited"),
+  Uncertain: zContentOwnership.parse("uncertain"),
+} as const);
+export const AllContentOwnerships = Object.freeze([ContentOwnership.Local, ContentOwnership.Inherited, ContentOwnership.Uncertain]) as readonly ContentOwnership[];
+export function isContentOwnership(value: unknown): value is ContentOwnership {
+  return zContentOwnership.safeParse(value).success;
+}
+
+export type InputModality = InputModalityContract;
+export const InputModality = Object.freeze({
+  None: zInputModality.parse("none"),
+  Text: zInputModality.parse("text"),
+  Media: zInputModality.parse("media"),
+  UserAction: zInputModality.parse("user_action"),
+  Mixed: zInputModality.parse("mixed"),
+  Unknown: zInputModality.parse("unknown"),
+} as const);
+export const AllInputModalities = Object.freeze([InputModality.None, InputModality.Text, InputModality.Media, InputModality.UserAction, InputModality.Mixed, InputModality.Unknown]) as readonly InputModality[];
+export function isInputModality(value: unknown): value is InputModality {
+  return zInputModality.safeParse(value).success;
+}
+
+export type PublicSourceAnchorKind = PublicSourceAnchorKindContract;
+export const PublicSourceAnchorKind = Object.freeze({
+  General: zPublicSourceAnchorKind.parse("general_source_session"),
+  Before: zPublicSourceAnchorKind.parse("before_redacted_entry"),
+  Through: zPublicSourceAnchorKind.parse("through_redacted_entry"),
+} as const);
+export const AllPublicSourceAnchorKinds = Object.freeze([PublicSourceAnchorKind.General, PublicSourceAnchorKind.Before, PublicSourceAnchorKind.Through]) as readonly PublicSourceAnchorKind[];
+export function isPublicSourceAnchorKind(value: unknown): value is PublicSourceAnchorKind {
+  return zPublicSourceAnchorKind.safeParse(value).success;
+}
+
+export type EarlierHistoryState = EarlierHistoryStateContract;
+export const EarlierHistoryState = Object.freeze({
+  UncertainMigrated: zEarlierHistoryState.parse("uncertain_migrated"),
+  UncertainUnresolved: zEarlierHistoryState.parse("uncertain_unresolved"),
+} as const);
+export const AllEarlierHistoryStates = Object.freeze([EarlierHistoryState.UncertainMigrated, EarlierHistoryState.UncertainUnresolved]) as readonly EarlierHistoryState[];
+export function isEarlierHistoryState(value: unknown): value is EarlierHistoryState {
+  return zEarlierHistoryState.safeParse(value).success;
+}
+
+export type RelationshipNavigationStatus = RelationshipNavigationStatusContract;
+export const RelationshipNavigationStatus = Object.freeze({
+  Resolved: zRelationshipNavigationStatus.parse("resolved"),
+  GeneralLinkOnly: zRelationshipNavigationStatus.parse("general_link_only"),
+  KnownUnavailable: zRelationshipNavigationStatus.parse("known_unavailable"),
+  Inaccessible: zRelationshipNavigationStatus.parse("inaccessible"),
+  Unknown: zRelationshipNavigationStatus.parse("unknown"),
+  Conflicting: zRelationshipNavigationStatus.parse("conflicting"),
+} as const);
+export const AllRelationshipNavigationStatuses = Object.freeze([RelationshipNavigationStatus.Resolved, RelationshipNavigationStatus.GeneralLinkOnly, RelationshipNavigationStatus.KnownUnavailable, RelationshipNavigationStatus.Inaccessible, RelationshipNavigationStatus.Unknown, RelationshipNavigationStatus.Conflicting]) as readonly RelationshipNavigationStatus[];
+export function isRelationshipNavigationStatus(value: unknown): value is RelationshipNavigationStatus {
+  return zRelationshipNavigationStatus.safeParse(value).success;
+}
+
+export type SessionListItemKind = SessionListItemKindContract;
+export const SessionListItemKind = Object.freeze({
+  Transcript: zSessionListItemKind.parse("transcript"),
+  ContextContainer: zSessionListItemKind.parse("context_container"),
+} as const);
+export const AllSessionListItemKinds = Object.freeze([SessionListItemKind.Transcript, SessionListItemKind.ContextContainer]) as readonly SessionListItemKind[];
+export function isSessionListItemKind(value: unknown): value is SessionListItemKind {
+  return zSessionListItemKind.safeParse(value).success;
 }
