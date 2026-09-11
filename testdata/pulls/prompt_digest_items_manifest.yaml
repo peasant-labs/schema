@@ -1,4 +1,4 @@
-expectedCaseCount: 17
+expectedCaseCount: 21
 requiredCaseNames:
   - prompt-valid
   - skill-valid
@@ -17,3 +17,7 @@ requiredCaseNames:
   - commit-bad-sha-invalid
   - commit-with-turn-index-invalid
   - session-missing-counts-invalid
+  - commit-change-counts-valid
+  - commit-negative-change-count-invalid
+  - commit-partial-change-counts-invalid
+  - prompt-with-change-count-invalid
