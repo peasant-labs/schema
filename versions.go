@@ -59,7 +59,11 @@ const (
 	// collective settings (additive = minor bump).
 	// Bumped to 0.17.0 for grouped transcript listings, helper-member reads,
 	// durable provenance, and authorized relationship navigation.
-	VillageAPIVersion = "0.17.0"
+	// Bumped to 0.18.0 when the prompt digest's commit items gained the
+	// optional per-commit change counts, which harmonizeSharedTypeComponents
+	// propagates into this spec's embedded digest item component (additive =
+	// minor bump).
+	VillageAPIVersion = "0.18.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -129,5 +133,8 @@ const (
 	// Bumped to 0.18.0 for independent optional tool namespace evidence.
 	// Bumped to 0.19.0 for durable session graph provenance, independent input
 	// submission counts, flat read navigation, and grouped list DTOs.
-	TypesVersion = "0.19.0"
+	// Bumped to 0.20.0 when PromptDigestItem gained the optional additions,
+	// deletions, and filesChanged counts a commit anchor carries (additive =
+	// minor bump).
+	TypesVersion = "0.20.0"
 )
