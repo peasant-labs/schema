@@ -308,10 +308,13 @@ type TurnDetail struct {
 	Provenance     *ContentProvenance `json:"provenance,omitempty"`
 	Usage          *UsageDetail       `json:"usage,omitempty"`
 
-	// Command is present when this user-role turn invoked a skill or a
-	// user-defined slash command. It is optional and safely ignorable; the
-	// invocation name is also in Content. Producers set it only on RoleUser
-	// turns and never for built-in harness commands.
+	// Command is present when this turn invoked a skill or a user-defined
+	// slash command. It is optional and safely ignorable; the invocation name
+	// is also in Content. Producers set it on the turn that carries the
+	// invocation, whatever Role that turn has: a harness-injected command
+	// wrapper is commonly a RoleSystem turn. It is never set for built-in
+	// harness commands. Consumers must not infer Role from Command or Command
+	// from Role.
 	Command *CommandInvocation `json:"command,omitempty"`
 
 	// Enrichment fields — propagated from session_entries.

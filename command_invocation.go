@@ -6,8 +6,8 @@ import (
 	"unicode/utf8"
 )
 
-// CommandInvocation records that a user-role turn invoked a skill or a
-// user-defined slash command rather than typing a prompt. Name is slash-prefixed,
+// CommandInvocation records that a turn invoked a skill or a user-defined
+// slash command rather than typing a prompt. Name is slash-prefixed,
 // for example "/superpowers:brainstorming". Args is the text that followed the
 // command on the same line and may be empty. A harness that records a bare
 // command name gets the slash added by the producer before construction; the
