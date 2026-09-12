@@ -5,6 +5,22 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.20.0] - 2026-09-11
+
+### Added
+
+- Optional per-commit change counts on prompt digest commit items: `additions`,
+  `deletions`, and `filesChanged`, allowed only on the commit kind and only all
+  together, validated as non-negative. Village API 0.18.0, Types 0.20.0.
+
+### Changed
+
+- `TurnDetail.Command` is documented as set on the turn that carries the invocation,
+  whatever its role, never for built-in harness commands; consumers must not infer
+  one from the other. Documentation only.
+
+## [v0.19.0] - 2026-09-10
+
 ### Added
 
 - Session relationships, bounded source references, and content provenance with
