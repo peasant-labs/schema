@@ -2540,8 +2540,11 @@ export const zTranscriptID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4
 export type TranscriptID = z.infer<typeof zTranscriptID>;
 
 export const zPromptDigestItem = z.object({
+    additions: z.int().nullish(),
     commitCount: z.int().nullish(),
     commitSha: z.string().optional(),
+    deletions: z.int().nullish(),
+    filesChanged: z.int().nullish(),
     kind: zDigestItemKind,
     ordinal: z.int().nullish(),
     promptCount: z.int().nullish(),

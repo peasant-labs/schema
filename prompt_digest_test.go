@@ -32,6 +32,9 @@ type digestItemFixtureInput struct {
 	CommitSha    string    `yaml:"commitSha,omitempty"`
 	PromptCount  *int      `yaml:"promptCount,omitempty"`
 	CommitCount  *int      `yaml:"commitCount,omitempty"`
+	Additions    *int      `yaml:"additions,omitempty"`
+	Deletions    *int      `yaml:"deletions,omitempty"`
+	FilesChanged *int      `yaml:"filesChanged,omitempty"`
 }
 
 func (in digestItemFixtureInput) toItem() schema.PromptDigestItem {
@@ -45,6 +48,9 @@ func (in digestItemFixtureInput) toItem() schema.PromptDigestItem {
 		CommitSHA:    in.CommitSha,
 		PromptCount:  in.PromptCount,
 		CommitCount:  in.CommitCount,
+		Additions:    in.Additions,
+		Deletions:    in.Deletions,
+		FilesChanged: in.FilesChanged,
 	}
 }
 
