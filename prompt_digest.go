@@ -87,6 +87,13 @@ type PromptDigestItem struct {
 	// PromptCount and CommitCount summarise a session boundary. Sessions only.
 	PromptCount *int `json:"promptCount,omitempty"`
 	CommitCount *int `json:"commitCount,omitempty"`
+	// Additions, Deletions, and FilesChanged are the lines added, the lines
+	// deleted, and the number of files a commit touched, as the hosting
+	// provider reports them. Commits only, and all three together or not at
+	// all; they are absent when the counts were not read.
+	Additions    *int `json:"additions,omitempty"`
+	Deletions    *int `json:"deletions,omitempty"`
+	FilesChanged *int `json:"filesChanged,omitempty"`
 }
 
 // PromptDigest is the reviewer-facing projection of the prompts behind a pull
@@ -112,6 +119,9 @@ func (i PromptDigestItem) Validate() error {
 	}
 	if i.Timestamp.IsZero() {
 		return fmt.Errorf(where + "a zero timestamp cannot be ordered in the chain; supply the turn or commit time")
+	}
+	if i.Kind != DigestItemCommit && (i.Additions != nil || i.Deletions != nil || i.FilesChanged != nil) {
+		return fmt.Errorf(where+"only a commit anchor carries additions, deletions, and filesChanged; a %s item describes no commit", i.Kind)
 	}
 	switch i.Kind {
 	case DigestItemPrompt:
@@ -149,6 +159,19 @@ func (i PromptDigestItem) Validate() error {
 		}
 		if i.Ordinal != nil || i.PromptCount != nil || i.CommitCount != nil {
 			return fmt.Errorf(where + "a commit anchor carries no ordinal, promptCount, or commitCount")
+		}
+		supplied := 0
+		for _, count := range []*int{i.Additions, i.Deletions, i.FilesChanged} {
+			if count == nil {
+				continue
+			}
+			if *count < 0 {
+				return fmt.Errorf(where+"a change count cannot be negative; got %d for additions, deletions, or filesChanged", *count)
+			}
+			supplied++
+		}
+		if supplied != 0 && supplied != 3 {
+			return fmt.Errorf(where + "a commit anchor carries additions, deletions, and filesChanged together or not at all; a partial set would read as a zero the commit does not have")
 		}
 	case DigestItemSession:
 		if i.PromptCount == nil || *i.PromptCount < 0 || i.CommitCount == nil || *i.CommitCount < 0 {

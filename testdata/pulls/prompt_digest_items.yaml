@@ -236,3 +236,64 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: a boundary line reports both counts}
     mutation: {description: drops commitCount from a session boundary}
+
+  - name: commit-change-counts-valid
+    input:
+      kind: commit
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:10:00Z"
+      commitSha: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+      additions: 12
+      deletions: 3
+      filesChanged: 4
+    expected:
+      accepted: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "a commit anchor carries the lines added, the lines deleted, and the number of files changed"}
+    mutation: {description: adds the three per-commit change counts to a commit anchor}
+
+  - name: commit-negative-change-count-invalid
+    input:
+      kind: commit
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:10:00Z"
+      commitSha: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+      additions: -1
+      deletions: 3
+      filesChanged: 4
+    expected:
+      accepted: false
+      errorContains: cannot be negative
+    classification: must-fail
+    provenance: {source: boundary, ref: a change count is a cardinality and is never below zero}
+    mutation: {description: makes the addition count negative}
+
+  - name: commit-partial-change-counts-invalid
+    input:
+      kind: commit
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:10:00Z"
+      commitSha: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+      additions: 12
+    expected:
+      accepted: false
+      errorContains: together or not at all
+    classification: must-fail
+    provenance: {source: requirement, ref: "the three counts come from one commit read and are recorded as a set"}
+    mutation: {description: drops the deletion and file counts from a commit anchor}
+
+  - name: prompt-with-change-count-invalid
+    input:
+      kind: prompt
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:02:00Z"
+      text: add a github check that posts the prompts behind a PR
+      turnIndex: 4
+      ordinal: 1
+      additions: 12
+    expected:
+      accepted: false
+      errorContains: only a commit anchor carries additions
+    classification: must-fail
+    provenance: {source: boundary, ref: "a change count describes a commit, not a typed prompt"}
+    mutation: {description: adds a change count to a prompt}
