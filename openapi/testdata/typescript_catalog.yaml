@@ -642,6 +642,14 @@ types:
     disposition: catalog
     component: VillageLinkedRepository
     reason: schema-owned Village collectives wire contract
+  - go_name: VillageAvailableRepositoriesResponse
+    disposition: catalog
+    component: VillageAvailableRepositoriesResponse
+    reason: schema-owned Village collectives wire contract
+  - go_name: VillageAvailableRepository
+    disposition: catalog
+    component: VillageAvailableRepository
+    reason: schema-owned Village collectives wire contract
   - go_name: VillagePendingShare
     disposition: catalog
     component: VillagePendingShare

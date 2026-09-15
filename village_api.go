@@ -1110,6 +1110,18 @@ type VillageLinkedRepositoriesResponse struct {
 	Repositories []VillageLinkedRepository `json:"repositories" nullable:"false"`
 }
 
+// VillageAvailableRepository is one repository the App can offer a collective,
+// used to populate the repository picker before a link is created.
+type VillageAvailableRepository struct {
+	Owner     string `json:"owner"`
+	Name      string `json:"name"`
+	IsPrivate bool   `json:"is_private"`
+}
+
+type VillageAvailableRepositoriesResponse struct {
+	Repositories []VillageAvailableRepository `json:"repositories" nullable:"false"`
+}
+
 type VillageRepositoryCommit struct {
 	SHA         string     `json:"sha"`
 	Message     *string    `json:"message"`

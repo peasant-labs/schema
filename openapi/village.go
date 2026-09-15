@@ -875,6 +875,22 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			},
 		},
 		{
+			method:      http.MethodGet,
+			path:        "/api/v1/groups/{id}/repositories/available",
+			id:          "listAvailableGroupRepositories",
+			tag:         "repositories",
+			description: "List the repositories the GitHub App can offer this collective, from the installation for the collective's linked organization. The caller must be the collective owner; a collective with no linked organization returns an empty list.",
+			requests:    []interface{}{groupPath},
+			response:    new(schema.VillageAvailableRepositoriesResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusUnauthorized,
+				http.StatusForbidden,
+				http.StatusNotImplemented,
+				http.StatusInternalServerError,
+			},
+		},
+		{
 			method:        http.MethodPost,
 			path:          "/api/v1/groups/{id}/repositories",
 			id:            "linkGroupRepository",

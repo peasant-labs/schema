@@ -293,6 +293,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/{id}/repositories/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the repositories the GitHub App can offer this collective, from the installation for the collective's linked organization. The caller must be the collective owner; a collective with no linked organization returns an empty list. */
+        get: operations["listAvailableGroupRepositories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups/{id}/repositories/{owner}/{name}": {
         parameters: {
             query?: never;
@@ -1249,6 +1266,8 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageAssignableGroupRole: Schema.VillageAssignableGroupRole;
+        SchemaVillageAvailableRepositoriesResponse: Schema.VillageAvailableRepositoriesResponse;
+        SchemaVillageAvailableRepository: Schema.VillageAvailableRepository;
         SchemaVillageBatchReviewRequest: Schema.VillageBatchReviewRequest;
         SchemaVillageBatchReviewResponse: Schema.VillageBatchReviewResponse;
         SchemaVillageBatchShareEntry: Schema.VillageBatchShareEntry;
@@ -2496,6 +2515,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageLinkedRepository"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listAvailableGroupRepositories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAvailableRepositoriesResponse"];
                 };
             };
             /** @description Bad Request */
