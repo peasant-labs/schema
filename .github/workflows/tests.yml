@@ -14,9 +14,10 @@ name: Tests
 #                      required to diff against).
 #
 # Everything runs through the project's own nix dev shell so the toolchain (Go,
-# oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. Runs on
-# GitHub-hosted ubuntu-latest (no org-specific runner dependency for a fresh
-# public repo); swap in self-hosted runners if/when provisioned.
+# oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. The jobs
+# route to the organization self-hosted pool (self-hosted,nixos) when a runner
+# is online, falling back to hosted ubuntu-latest otherwise; the
+# determine-runner job below is the router that picks between them.
 on:
   pull_request:
     paths:
