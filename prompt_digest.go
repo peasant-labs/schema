@@ -94,6 +94,11 @@ type PromptDigestItem struct {
 	Additions    *int `json:"additions,omitempty"`
 	Deletions    *int `json:"deletions,omitempty"`
 	FilesChanged *int `json:"filesChanged,omitempty"`
+	// Args is the text that followed a skill or user command invocation on the
+	// same line, as the producer recorded it (for example "add retries" in
+	// "/plan add retries"). Skill items only and optional; it is absent when the
+	// invocation carried no argument.
+	Args string `json:"args,omitempty"`
 }
 
 // PromptDigest is the reviewer-facing projection of the prompts behind a pull
@@ -122,6 +127,9 @@ func (i PromptDigestItem) Validate() error {
 	}
 	if i.Kind != DigestItemCommit && (i.Additions != nil || i.Deletions != nil || i.FilesChanged != nil) {
 		return fmt.Errorf(where+"only a commit anchor carries additions, deletions, and filesChanged; a %s item describes no commit", i.Kind)
+	}
+	if i.Kind != DigestItemSkill && i.Args != "" {
+		return fmt.Errorf(where+"only a skill marker carries args; a %s item describes no command invocation", i.Kind)
 	}
 	switch i.Kind {
 	case DigestItemPrompt:

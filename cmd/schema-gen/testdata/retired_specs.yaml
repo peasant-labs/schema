@@ -73,3 +73,7 @@ specs:
   - {name: publish-request-0.17.0.schema, json_sha256: 8967be70e206ec60cb9c656093784e71269691f72fa27957a1e82282b103c611, json_only: true}
   - {name: annotation-push-request-0.17.0.schema, json_sha256: 33eb92d8a3a8c12b0238c95ebf1c6c3476d749c1936049e923da65855d6934d0, json_only: true}
   - {name: types-0.19.0, json_sha256: bb981883684a2802aaeffb387884a6b5926c77ced97be3a98b01e770d12410d7, yaml_sha256: 22db3f3ce6889df5a9d11baecbc30eb058e506bf07ec161a9f073f857c6bd2b9}
+  - {name: village-api-0.18.0, json_sha256: c24de01c26850cde44031806e5d8e0360759e414eea45d8e7fdf90a66ebf2604, yaml_sha256: 0dc32752f8771ba147a38a506d204ce50cbfa65c55720cd2ec6964525c17d446}
+  - {name: publish-request-0.18.0.schema, json_sha256: 00b3d0298388e27b3a2396de11a31c6a6bda10b7b08277f9276a166e1a9cec04, json_only: true}
+  - {name: annotation-push-request-0.18.0.schema, json_sha256: 6183053fec2a6628950de89db3319d9c7dd6b51bc2752b7d85c2085c0b38f1bc, json_only: true}
+  - {name: types-0.20.0, json_sha256: b54d86c73ae4c87749fbddb97fe84eeacefca960a2bf0e86d030230384f46d15, yaml_sha256: 76744cc6d30b3a96ca2bcb49c7808f701c73acfbcd637b577ee9c4edae7f5bb0}

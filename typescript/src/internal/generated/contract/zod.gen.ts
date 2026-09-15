@@ -2541,6 +2541,7 @@ export type TranscriptID = z.infer<typeof zTranscriptID>;
 
 export const zPromptDigestItem = z.object({
     additions: z.int().nullish(),
+    args: z.string().optional(),
     commitCount: z.int().nullish(),
     commitSha: z.string().optional(),
     deletions: z.int().nullish(),
@@ -3138,7 +3139,7 @@ export const zVillageGroupViewerRole = z.enum([
 export type VillageGroupViewerRole = z.infer<typeof zVillageGroupViewerRole>;
 
 export const zVillageLinkRepositoryRequest = z.object({
-    installation_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    installation_id: z.int().nullish(),
     name: z.string(),
     owner: z.string()
 });
