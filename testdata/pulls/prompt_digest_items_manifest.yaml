@@ -1,4 +1,4 @@
-expectedCaseCount: 21
+expectedCaseCount: 24
 requiredCaseNames:
   - prompt-valid
   - skill-valid
@@ -21,3 +21,6 @@ requiredCaseNames:
   - commit-negative-change-count-invalid
   - commit-partial-change-counts-invalid
   - prompt-with-change-count-invalid
+  - skill-with-args-valid
+  - prompt-with-args-invalid
+  - commit-with-args-invalid

@@ -2541,6 +2541,7 @@ export type TranscriptID = z.infer<typeof zTranscriptID>;
 
 export const zPromptDigestItem = z.object({
     additions: z.int().nullish(),
+    args: z.string().optional(),
     commitCount: z.int().nullish(),
     commitSha: z.string().optional(),
     deletions: z.int().nullish(),

@@ -35,6 +35,7 @@ type digestItemFixtureInput struct {
 	Additions    *int      `yaml:"additions,omitempty"`
 	Deletions    *int      `yaml:"deletions,omitempty"`
 	FilesChanged *int      `yaml:"filesChanged,omitempty"`
+	Args         string    `yaml:"args,omitempty"`
 }
 
 func (in digestItemFixtureInput) toItem() schema.PromptDigestItem {
@@ -51,6 +52,7 @@ func (in digestItemFixtureInput) toItem() schema.PromptDigestItem {
 		Additions:    in.Additions,
 		Deletions:    in.Deletions,
 		FilesChanged: in.FilesChanged,
+		Args:         in.Args,
 	}
 }
 

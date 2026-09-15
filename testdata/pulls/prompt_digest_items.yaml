@@ -297,3 +297,48 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "a change count describes a commit, not a typed prompt"}
     mutation: {description: adds a change count to a prompt}
+
+  - name: skill-with-args-valid
+    input:
+      kind: skill
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:02:30Z"
+      text: /plan
+      args: add retries to the uploader
+      turnIndex: 5
+    expected:
+      accepted: true
+    classification: must-pass
+    provenance: {source: requirement, ref: a command invocation carries the argument typed after it on the same line}
+    mutation: {description: a skill marker whose invocation carried an argument}
+
+  - name: prompt-with-args-invalid
+    input:
+      kind: prompt
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:02:00Z"
+      text: add a github check that posts the prompts behind a PR
+      turnIndex: 4
+      ordinal: 1
+      args: not a command
+    expected:
+      accepted: false
+      errorContains: only a skill marker carries args
+    classification: must-fail
+    provenance: {source: boundary, ref: "args describe a command invocation, not a typed prompt"}
+    mutation: {description: adds args to a prompt}
+
+  - name: commit-with-args-invalid
+    input:
+      kind: commit
+      transcriptId: 7b1e4d2a-9c3f-4e8b-a1d6-2f5c8e9a0b13
+      timestamp: "2026-09-06T14:10:00Z"
+      text: a1b2c3d
+      commitSha: a1b2c3d4e5f60718293a4b5c6d7e8f9012345678
+      args: not a command
+    expected:
+      accepted: false
+      errorContains: only a skill marker carries args
+    classification: must-fail
+    provenance: {source: boundary, ref: "args describe a command invocation, not a commit anchor"}
+    mutation: {description: adds args to a commit anchor}
