@@ -144,6 +144,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"UICapabilitiesResponse", new(schema.UICapabilitiesResponse)},
 		{"VillageAssignableGroupRole", new(schema.VillageAssignableGroupRole)},
+		{"VillageAvailableRepositoriesResponse", new(schema.VillageAvailableRepositoriesResponse)}, {"VillageAvailableRepository", new(schema.VillageAvailableRepository)},
 		{"VillageBatchReviewRequest", new(schema.VillageBatchReviewRequest)}, {"VillageBatchReviewResponse", new(schema.VillageBatchReviewResponse)},
 		{"VillageBatchShareEntry", new(schema.VillageBatchShareEntry)}, {"VillageBatchShareRequest", new(schema.VillageBatchShareRequest)},
 		{"VillageBatchShareResponse", new(schema.VillageBatchShareResponse)}, {"VillageCollectiveSearchResponse", new(schema.VillageCollectiveSearchResponse)},

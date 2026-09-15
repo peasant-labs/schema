@@ -2983,6 +2983,20 @@ export const zVillageAssignableGroupRole = z.enum(['contributor', 'member']);
 
 export type VillageAssignableGroupRole = z.infer<typeof zVillageAssignableGroupRole>;
 
+export const zVillageAvailableRepository = z.object({
+    is_private: z.boolean(),
+    name: z.string(),
+    owner: z.string()
+});
+
+export type VillageAvailableRepository = z.infer<typeof zVillageAvailableRepository>;
+
+export const zVillageAvailableRepositoriesResponse = z.object({
+    repositories: z.array(zVillageAvailableRepository)
+});
+
+export type VillageAvailableRepositoriesResponse = z.infer<typeof zVillageAvailableRepositoriesResponse>;
+
 export const zVillageBatchReviewResponse = z.object({
     already_decided: z.array(zTranscriptID),
     decided: z.array(zTranscriptID)

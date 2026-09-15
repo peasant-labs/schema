@@ -65,7 +65,10 @@ const (
 	// minor bump).
 	// Bumped to 0.19.0 when a prompt digest skill item gained the optional args
 	// typed after the command, propagated the same way (additive = minor bump).
-	VillageAPIVersion = "0.19.0"
+	// Bumped to 0.20.0 when the group repository surface gained the available-
+	// repositories read that feeds the repository picker (additive operation =
+	// minor bump).
+	VillageAPIVersion = "0.20.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -140,5 +143,7 @@ const (
 	// minor bump).
 	// Bumped to 0.21.0 when a prompt digest skill item gained the optional args
 	// typed after the command (additive = minor bump).
-	TypesVersion = "0.21.0"
+	// Bumped to 0.22.0 when the group available-repositories read added its
+	// response types to the catalog (additive = minor bump).
+	TypesVersion = "0.22.0"
 )
