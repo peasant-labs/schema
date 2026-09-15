@@ -1084,9 +1084,14 @@ type VillageCollectiveSubmission struct {
 }
 
 type VillageLinkRepositoryRequest struct {
-	Owner          string `json:"owner"`
-	Name           string `json:"name"`
-	InstallationID int64  `json:"installation_id"`
+	Owner string `json:"owner"`
+	Name  string `json:"name"`
+	// InstallationID is the GitHub App installation that grants the App access
+	// to the repository. It is OPTIONAL: Village resolves the installation from
+	// the repository using the App's own credentials, so a caller that does not
+	// already know the id (for example a repository chosen from a picker) omits
+	// it. Supplying it is still accepted and is used as given.
+	InstallationID *int64 `json:"installation_id,omitempty"`
 }
 
 type VillageLinkedRepository struct {

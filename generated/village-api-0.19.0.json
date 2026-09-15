@@ -10245,8 +10245,17 @@
       "SchemaVillageLinkRepositoryRequest": {
         "properties": {
           "installation_id": {
-            "format": "int64",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "name": {
             "type": "string"
@@ -10257,8 +10266,7 @@
         },
         "required": [
           "owner",
-          "name",
-          "installation_id"
+          "name"
         ],
         "type": "object"
       },

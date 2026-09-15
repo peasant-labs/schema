@@ -7194,8 +7194,11 @@ components:
     VillageLinkRepositoryRequest:
       properties:
         installation_id:
-          format: int64
-          type: integer
+          anyOf:
+          - type:
+            - "null"
+            - integer
+          - type: "null"
         name:
           type: string
         owner:
@@ -7203,7 +7206,6 @@ components:
       required:
       - owner
       - name
-      - installation_id
       type: object
     VillageLinkedRepositoriesResponse:
       properties:
