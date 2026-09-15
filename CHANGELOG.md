@@ -5,6 +5,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.22.0] - 2026-09-15
+
+### Added
+
+- `GET /api/v1/groups/{id}/repositories/available` and its response types
+  (`VillageAvailableRepository`, `VillageAvailableRepositoriesResponse`): the
+  repositories the GitHub App can offer a collective, from the installation for
+  the collective's linked organization, feeding the repository picker.
+  Village API 0.20.0, Types 0.22.0.
+
 ## [v0.21.0] - 2026-09-15
 
 ### Added
