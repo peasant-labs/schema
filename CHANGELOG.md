@@ -5,6 +5,21 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.21.0] - 2026-09-15
+
+### Added
+
+- Optional `args` on prompt digest skill items: the text typed after a slash
+  command on the same line, recorded from the invoking turn's command
+  invocation, and rejected on any other item kind. Village API 0.19.0,
+  Types 0.21.0.
+
+### Changed
+
+- `VillageLinkRepositoryRequest.installation_id` is optional: only `owner` and
+  `name` are required, because a caller may not know the App installation id and
+  the server resolves it from the repository. Supplying the id is still accepted.
+
 ## [v0.20.0] - 2026-09-11
 
 ### Added
