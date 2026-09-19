@@ -17,7 +17,8 @@ name: Tests
 # oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. The jobs
 # route to the organization self-hosted pool (self-hosted,container) when a runner
 # is online, falling back to hosted ubuntu-latest otherwise; the
-# determine-runner job below is the router that picks between them.
+# determine-runner job delegates to the shared reusable router
+# (peasant-labs/infra runner-router-v1) that picks between them.
 on:
   pull_request:
     paths:
@@ -99,32 +100,11 @@ permissions:
 
 jobs:
   determine-runner:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      runner: ${{ steps.pick.outputs.runner }}
-    steps:
-      - name: Pick a runner
-        id: pick
-        env:
-          GH_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
-        run: |
-          set -euo pipefail
-          if ! online=$(gh api /orgs/peasant-labs/actions/runners --paginate \
-              --jq '.runners[] | select(.status == "online") | select(any(.labels[]; .name == "container")) | .name' 2>/dev/null | wc -l); then
-            echo "::warning::runner availability query failed; using the fallback"
-            online=0
-          fi
-          echo "online runners: ${online}"
-          if [ "${online}" -gt 0 ]; then
-            echo 'runner=["self-hosted","container"]' >> "$GITHUB_OUTPUT"
-          else
-            echo 'runner=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
-          fi
-      - name: Report chosen runner
-        env:
-          CHOSEN: ${{ steps.pick.outputs.runner }}
-        run: 'echo "chosen: $CHOSEN"'
+    uses: peasant-labs/infra/.github/workflows/runner-router.yml@runner-router-v1
+    with:
+      fallback: '["ubuntu-latest"]'
+    secrets:
+      RUNNER_STATUS_TOKEN: ${{ secrets.RUNNER_STATUS_TOKEN }}
 
   check:
     name: make check
