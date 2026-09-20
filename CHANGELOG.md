@@ -5,6 +5,37 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.23.0] - 2026-09-19
+
+### Added
+
+- The complete local-account wire surface: account operations (bootstrap claim,
+  local login, invite acceptance, self-serve signup and email verification,
+  logout, password change, profile read, sign-in-method discovery), session
+  operations (listing and revocation), and the administrator provisioning
+  surface (account creation, read-only member list, invitation management, and
+  temporary-credential re-issue), with every declared status set including the
+  middleware outcomes (429 on the rate-limited credential entry points, 403 on
+  CSRF refusals and on the forced-change gate, and 401 or 403 on admin routes).
+  Village API 0.21.0, Types 0.23.0.
+- A neutral `username` on `VillageUser`, `VillageGroupMember`,
+  `VillageGroupContributor`, and the new `VillageAccountProfile`. The
+  `github_username` field stays populated on each and is now marked deprecated.
+- An optional `switch` boolean parameter on the CLI login query, so a forced
+  re-authentication revokes the presented browser session.
+- The `VillageRegistrationMode` (closed, invite, email) and
+  `VillageProvisioningStatus` (pending, activated) closed sets.
+
+### Security
+
+- The strict local-account request bodies (`VillageBootstrapClaimRequest`,
+  `VillageLocalLoginRequest`, `VillageAcceptInviteRequest`,
+  `VillageChangePasswordRequest`, `VillageSignupRequest`,
+  `VillageVerifyEmailRequest`, `VillageAdminCreateUserRequest`,
+  `VillageCreateInviteRequest`) reject unknown fields rather than silently
+  dropping them, matching the Go decode boundary and the generated Zod
+  validators.
+
 ## [v0.22.0] - 2026-09-15
 
 ### Added

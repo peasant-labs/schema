@@ -68,7 +68,16 @@ const (
 	// Bumped to 0.20.0 when the group repository surface gained the available-
 	// repositories read that feeds the repository picker (additive operation =
 	// minor bump).
-	VillageAPIVersion = "0.20.0"
+	// Bumped to 0.21.0 when the local-account wire surface was declared: the
+	// account operations (bootstrap claim, local login, invite acceptance,
+	// self-serve signup and verification, logout, password change, profile read,
+	// sign-in-method discovery), the session operations (listing and
+	// revocation), the administrator provisioning surface (account creation,
+	// read-only member list, invitation management, credential re-issue), the
+	// optional CLI login switch parameter, the middleware-produced status sets,
+	// and the neutral username on the user projection and collective rosters
+	// (additive = minor bump).
+	VillageAPIVersion = "0.21.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -145,5 +154,10 @@ const (
 	// typed after the command (additive = minor bump).
 	// Bumped to 0.22.0 when the group available-repositories read added its
 	// response types to the catalog (additive = minor bump).
-	TypesVersion = "0.22.0"
+	// Bumped to 0.23.0 when the local-account catalog entered the surface: the
+	// account, session, and admin DTOs, the registration-mode and provisioning-
+	// status closed sets, the neutral username on VillageUser and the collective
+	// rosters, and the optional CLI login switch parameter (additive = minor
+	// bump).
+	TypesVersion = "0.23.0"
 )

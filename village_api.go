@@ -445,13 +445,18 @@ type VillageGroupMemberRoleRequest struct {
 
 // VillageGroupMember is one member row in a collective roster.
 type VillageGroupMember struct {
-	Role           VillageGroupRole `json:"role"`
-	JoinedAt       time.Time        `json:"joined_at"`
-	ID             VillageUUID      `json:"id"`
-	GithubUsername string           `json:"github_username"`
-	DisplayName    *string          `json:"display_name"`
-	AvatarURL      *string          `json:"avatar_url"`
-	GithubOrgs     []string         `json:"github_orgs" nullable:"false"`
+	Role     VillageGroupRole `json:"role"`
+	JoinedAt time.Time        `json:"joined_at"`
+	ID       VillageUUID      `json:"id"`
+	// Username is the neutral handle. It is present on every roster row,
+	// whether the account originated locally or through a forge provider.
+	Username string `json:"username"`
+	// Deprecated: read username instead. github_username stays populated for
+	// accounts created through a software-forge provider.
+	GithubUsername string   `json:"github_username" deprecated:"true"`
+	DisplayName    *string  `json:"display_name"`
+	AvatarURL      *string  `json:"avatar_url"`
+	GithubOrgs     []string `json:"github_orgs" nullable:"false"`
 }
 
 type VillageGroupTranscriptStats struct {
@@ -468,10 +473,13 @@ type VillageGroupModelBreakdown struct {
 }
 
 type VillageGroupContributor struct {
-	ID              VillageUUID `json:"id"`
-	GithubUsername  string      `json:"github_username"`
-	AvatarURL       *string     `json:"avatar_url"`
-	TranscriptCount int32       `json:"transcript_count"`
+	ID VillageUUID `json:"id"`
+	// Username is the neutral handle; see VillageGroupMember.
+	Username string `json:"username"`
+	// Deprecated: read username instead.
+	GithubUsername  string  `json:"github_username" deprecated:"true"`
+	AvatarURL       *string `json:"avatar_url"`
+	TranscriptCount int32   `json:"transcript_count"`
 }
 
 type VillageGroupDetailResponse struct {
@@ -580,18 +588,22 @@ type VillageTag struct {
 	Name string      `json:"name"`
 }
 type VillageUser struct {
-	ID               VillageUUID `json:"id"`
-	GithubID         int64       `json:"github_id"`
-	GithubUsername   string      `json:"github_username"`
-	DisplayName      *string     `json:"display_name"`
-	AvatarURL        *string     `json:"avatar_url"`
-	CreatedAt        time.Time   `json:"created_at"`
-	UpdatedAt        time.Time   `json:"updated_at"`
-	IsDiscoverable   bool        `json:"is_discoverable"`
-	Provider         string      `json:"provider"`
-	ProviderUserID   string      `json:"provider_user_id"`
-	UsernameChosen   bool        `json:"username_chosen"`
-	ProviderUsername *string     `json:"provider_username"`
+	ID       VillageUUID `json:"id"`
+	GithubID int64       `json:"github_id"`
+	// Username is the neutral handle shared by local and forge accounts.
+	Username string `json:"username"`
+	// Deprecated: read username instead. github_username stays populated for
+	// accounts created through a software-forge provider.
+	GithubUsername   string    `json:"github_username" deprecated:"true"`
+	DisplayName      *string   `json:"display_name"`
+	AvatarURL        *string   `json:"avatar_url"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
+	IsDiscoverable   bool      `json:"is_discoverable"`
+	Provider         string    `json:"provider"`
+	ProviderUserID   string    `json:"provider_user_id"`
+	UsernameChosen   bool      `json:"username_chosen"`
+	ProviderUsername *string   `json:"provider_username"`
 }
 type VillageMetadataUserOrganization struct {
 	OrgLogin  string    `json:"org_login"`

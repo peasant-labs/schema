@@ -505,10 +505,94 @@ types:
     disposition: catalog
     component: UICapabilitiesResponse
     reason: public wire or domain contract type
+  - go_name: VillageAcceptInviteRequest
+    disposition: catalog
+    component: VillageAcceptInviteRequest
+    reason: local-account invitation acceptance contract
+  - go_name: VillageAccountProfile
+    disposition: catalog
+    component: VillageAccountProfile
+    reason: local-account self projection
+  - go_name: VillageAccountSession
+    disposition: catalog
+    component: VillageAccountSession
+    reason: local-account session record
+  - go_name: VillageAccountSessionListResponse
+    disposition: catalog
+    component: VillageAccountSessionListResponse
+    reason: local-account session list contract
+  - go_name: VillageAdminCreateUserRequest
+    disposition: catalog
+    component: VillageAdminCreateUserRequest
+    reason: local-account admin provisioning contract
+  - go_name: VillageAdminUser
+    disposition: catalog
+    component: VillageAdminUser
+    reason: local-account admin member row
+  - go_name: VillageAdminUserListResponse
+    disposition: catalog
+    component: VillageAdminUserListResponse
+    reason: local-account admin member list contract
   - go_name: VillageAssignableGroupRole
     disposition: catalog
     component: VillageAssignableGroupRole
     reason: schema-owned Village collectives wire contract
+  - go_name: VillageAuthProvidersResponse
+    disposition: catalog
+    component: VillageAuthProvidersResponse
+    reason: local-account sign-in discovery contract
+  - go_name: VillageBootstrapClaimRequest
+    disposition: catalog
+    component: VillageBootstrapClaimRequest
+    reason: local-account bootstrap claim contract
+  - go_name: VillageChangePasswordRequest
+    disposition: catalog
+    component: VillageChangePasswordRequest
+    reason: local-account password change contract
+  - go_name: VillageCreateInviteRequest
+    disposition: catalog
+    component: VillageCreateInviteRequest
+    reason: local-account admin invitation contract
+  - go_name: VillageCreateInviteResponse
+    disposition: catalog
+    component: VillageCreateInviteResponse
+    reason: local-account admin invitation receipt
+  - go_name: VillageInvite
+    disposition: catalog
+    component: VillageInvite
+    reason: local-account invitation row
+  - go_name: VillageInviteListResponse
+    disposition: catalog
+    component: VillageInviteListResponse
+    reason: local-account invitation list contract
+  - go_name: VillageLocalLoginRequest
+    disposition: catalog
+    component: VillageLocalLoginRequest
+    reason: local-account login contract
+  - go_name: VillageProvisioningStatus
+    disposition: catalog
+    component: VillageProvisioningStatus
+    reason: local-account provisioning status closed set
+  - go_name: VillageRegistrationMode
+    disposition: catalog
+    component: VillageRegistrationMode
+    reason: local-account registration mode closed set
+  - go_name: VillageSessionIssuedResponse
+    disposition: catalog
+    component: VillageSessionIssuedResponse
+    reason: local-account session issuance contract
+  - go_name: VillageSignupRequest
+    disposition: catalog
+    component: VillageSignupRequest
+    reason: local-account self-serve signup contract
+  - go_name: VillageTemporaryCredentialResponse
+    disposition: catalog
+    component: VillageTemporaryCredentialResponse
+    reason: local-account temporary credential receipt
+  - go_name: VillageVerifyEmailRequest
+    disposition: catalog
+    component: VillageVerifyEmailRequest
+    reason: local-account email verification contract
   - go_name: VillageBatchReviewRequest
     disposition: catalog
     component: VillageBatchReviewRequest

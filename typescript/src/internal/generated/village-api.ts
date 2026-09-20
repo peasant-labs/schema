@@ -1,5 +1,75 @@
 import type * as Schema from "../../index.js";
 export interface paths {
+    "/api/v1/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List outstanding and historical invitations as an administrator, without raw tokens. Anonymous callers receive 401 and authenticated non-admins receive 403. */
+        get: operations["adminListInvites"];
+        put?: never;
+        /** @description Issue a single-use, expiring invitation as an administrator. Email is optional, so an invitation may be a bare link. The plaintext token is returned once at creation; later reads expose only metadata, and only the digest is stored. Anonymous callers receive 401 and authenticated non-admins receive 403. */
+        post: operations["adminCreateInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/invites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Revoke an outstanding invitation as an administrator. A revoked invitation fails closed when presented for acceptance. Anonymous callers receive 401 and authenticated non-admins receive 403. */
+        delete: operations["adminRevokeInvite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the read-only member list: one row per account with the neutral handle, creation time, admin flag, and provisioning status (pending or activated). It carries no management actions. Anonymous callers receive 401 and authenticated non-admins receive 403. */
+        get: operations["adminListUsers"];
+        put?: never;
+        /** @description Provision an account as an administrator with a one-time temporary password whose expiry the server sets and enforces before, at, and after the window. Email is optional and never an authentication factor. The plaintext password is shown once and only its Argon2id hash is stored. A handle that already exists returns 409. Anonymous callers receive 401 and authenticated non-admins receive 403; neither mutates state or exposes secrets. */
+        post: operations["adminCreateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{username}/temporary-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Re-issue a one-time temporary password for an account that has not yet activated. An activated account returns 409, and issuing a new credential invalidates the previous one. The shown-once password carries a fresh, enforced expiry. Anonymous callers receive 401 and authenticated non-admins receive 403. */
+        post: operations["adminReissueTemporaryPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/annotations": {
         parameters: {
             query?: never;
@@ -28,6 +98,23 @@ export interface paths {
         get: operations["getAnnotationManifest"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/bootstrap/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Claim a fresh instance once by creating its first administrator. The request carries the one-time install claim token together with the administrator handle and password. Exactly one claim succeeds, including under concurrent attempts; the durable install lock closes after the first success and survives restarts, and a second claim or a bad or expired token fails closed. A handle that already exists returns 409 and leaves the claim usable. No SMTP dependency is involved. */
+        post: operations["bootstrapClaimInstance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -63,6 +150,176 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/local/accept-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Accept an invitation by consuming its single-use token and creating the account. The consume is transactional: a handle collision returns 409 and rolls the whole consume back, leaving the invitation usable so the person can choose another handle. A reused, expired, or revoked invitation fails closed. Invitation tokens are stored only as digests and never appear in logs. */
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/local/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Sign in with a local handle and password and mint a server-side session returned in an HttpOnly cookie. A wrong password and an unknown handle share one generic refusal that does not reveal whether an account exists. An expired temporary credential returns 401 with a distinct, actionable body. When a password change is required the session is minted with must_change_password true, and the forced-change gate then answers only allowlisted surfaces. Login works with no SMTP configuration. */
+        post: operations["localLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/local/signup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Self-serve registration with email, handle, and password. Accepted only when the deployment's registration mode is email; closed and invite modes refuse it and create no account. The response does not reveal whether an account already exists, so a duplicate email or handle and a successful signup are indistinguishable. The created account is inactive until the verification link is consumed and cannot sign in beforehand. The endpoint is rate limited through the shared limiter. */
+        post: operations["localSignup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/local/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Activate a self-serve account by consuming its single-use, expiring email verification token. Only the token digest is stored, and a replayed, expired, or invalid token fails closed. The activated account becomes able to sign in and is returned as the neutral account profile. */
+        post: operations["localVerifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Revoke the presented session immediately. The session is resolved server-side, so a replayed cookie returns 401 afterward. A cross-site cookie-authenticated request is refused with 403 by CSRF protection before the handler runs. */
+        post: operations["localLogout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the caller's own account projection. It carries the neutral username, the self-only fields email and must_change_password, and no other account's data. The deprecated github_username stays populated for forge-created accounts until callers migrate to the neutral handle. */
+        get: operations["getOwnAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Change the caller's password. A successful change rotates the current session, revokes every other session so a replayed cookie returns 401, and clears any temporary-credential expiry atomically. The current session's replacement is returned as an issued session. A cross-site cookie-authenticated request is refused with 403 by CSRF protection. */
+        post: operations["changeOwnPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Discover the enabled sign-in methods without attempting a login: whether the local username-and-password door is open, the deployment's registration mode, and the enabled forge providers. providers is always a concrete array, so a zero-provider instance is explicit rather than ambiguous. */
+        get: operations["listAuthProviders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the caller's server-side sessions. No token or digest is exposed: the raw session value lives only in the HttpOnly cookie. current marks the session that served the request. sessions is always a concrete array. */
+        get: operations["listOwnSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Revoke one of the caller's own sessions by identifier. A revoked session fails closed, so its replayed cookie returns 401. A session the caller does not own is not distinguishable from a missing one. A cross-site cookie-authenticated request is refused with 403 by CSRF protection. */
+        delete: operations["revokeOwnSession"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1258,6 +1515,13 @@ export interface components {
          * @enum {string}
          */
         SchemaUsageScope: Schema.UsageScope;
+        SchemaVillageAcceptInviteRequest: Schema.VillageAcceptInviteRequest;
+        SchemaVillageAccountProfile: Schema.VillageAccountProfile;
+        SchemaVillageAccountSession: Schema.VillageAccountSession;
+        SchemaVillageAccountSessionListResponse: Schema.VillageAccountSessionListResponse;
+        SchemaVillageAdminCreateUserRequest: Schema.VillageAdminCreateUserRequest;
+        SchemaVillageAdminUser: Schema.VillageAdminUser;
+        SchemaVillageAdminUserListResponse: Schema.VillageAdminUserListResponse;
         /**
          * Village Assignable Group Role
          * @description Collective roles an owner may assign through the member role endpoint
@@ -1266,6 +1530,7 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageAssignableGroupRole: Schema.VillageAssignableGroupRole;
+        SchemaVillageAuthProvidersResponse: Schema.VillageAuthProvidersResponse;
         SchemaVillageAvailableRepositoriesResponse: Schema.VillageAvailableRepositoriesResponse;
         SchemaVillageAvailableRepository: Schema.VillageAvailableRepository;
         SchemaVillageBatchReviewRequest: Schema.VillageBatchReviewRequest;
@@ -1273,6 +1538,8 @@ export interface components {
         SchemaVillageBatchShareEntry: Schema.VillageBatchShareEntry;
         SchemaVillageBatchShareRequest: Schema.VillageBatchShareRequest;
         SchemaVillageBatchShareResponse: Schema.VillageBatchShareResponse;
+        SchemaVillageBootstrapClaimRequest: Schema.VillageBootstrapClaimRequest;
+        SchemaVillageChangePasswordRequest: Schema.VillageChangePasswordRequest;
         SchemaVillageCollectiveSearchResponse: Schema.VillageCollectiveSearchResponse;
         SchemaVillageCollectiveSearchResult: Schema.VillageCollectiveSearchResult;
         SchemaVillageCollectiveSubmission: Schema.VillageCollectiveSubmission;
@@ -1289,6 +1556,8 @@ export interface components {
          */
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
         SchemaVillageCreateGroupRequest: Schema.VillageCreateGroupRequest;
+        SchemaVillageCreateInviteRequest: Schema.VillageCreateInviteRequest;
+        SchemaVillageCreateInviteResponse: Schema.VillageCreateInviteResponse;
         SchemaVillageEnrichedTranscriptShare: Schema.VillageEnrichedTranscriptShare;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
         /**
@@ -1349,11 +1618,14 @@ export interface components {
         SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
         SchemaVillageGroupedGroupDetailResponse: Schema.VillageGroupedGroupDetailResponse;
         SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
+        SchemaVillageInvite: Schema.VillageInvite;
+        SchemaVillageInviteListResponse: Schema.VillageInviteListResponse;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
         SchemaVillageLinkedRepositoriesResponse: Schema.VillageLinkedRepositoriesResponse;
         SchemaVillageLinkedRepository: Schema.VillageLinkedRepository;
         SchemaVillageListTranscriptAttestation: Schema.VillageListTranscriptAttestation;
         SchemaVillageListUserOrganization: Schema.VillageListUserOrganization;
+        SchemaVillageLocalLoginRequest: Schema.VillageLocalLoginRequest;
         SchemaVillageMetadataUserOrganization: Schema.VillageMetadataUserOrganization;
         SchemaVillagePendingShare: Schema.VillagePendingShare;
         /**
@@ -1377,6 +1649,14 @@ export interface components {
          * @enum {string}
          */
         SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
+        /**
+         * Village Provisioning Status
+         * @description Provisioning state of a local account: pending before first sign-in, activated afterward
+         * @example pending
+         * @example activated
+         * @enum {string}
+         */
+        SchemaVillageProvisioningStatus: Schema.VillageProvisioningStatus;
         SchemaVillagePublicGroup: Schema.VillagePublicGroup;
         SchemaVillagePullRequestAttachedTranscript: Schema.VillagePullRequestAttachedTranscript;
         SchemaVillagePullRequestAttachment: Schema.VillagePullRequestAttachment;
@@ -1392,6 +1672,15 @@ export interface components {
          * @enum {string}
          */
         SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
+        /**
+         * Village Registration Mode
+         * @description Account-creation policy: closed refuses self-serve signup, invite accepts single-use invitation links, and email enables signup with verification
+         * @example closed
+         * @example invite
+         * @example email
+         * @enum {string}
+         */
+        SchemaVillageRegistrationMode: Schema.VillageRegistrationMode;
         SchemaVillageRemoveGroupMemberResponse: Schema.VillageRemoveGroupMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;
         SchemaVillageRepositoryCommitsResponse: Schema.VillageRepositoryCommitsResponse;
@@ -1405,6 +1694,7 @@ export interface components {
         SchemaVillageReviewDecision: Schema.VillageReviewDecision;
         SchemaVillageReviewShareRequest: Schema.VillageReviewShareRequest;
         SchemaVillageReviewShareResponse: Schema.VillageReviewShareResponse;
+        SchemaVillageSessionIssuedResponse: Schema.VillageSessionIssuedResponse;
         SchemaVillageSessionListItem: Schema.VillageSessionListItem;
         SchemaVillageSessionListPayload: Schema.VillageSessionListPayload;
         SchemaVillageSessionRow: Schema.VillageSessionRow;
@@ -1431,8 +1721,10 @@ export interface components {
          */
         SchemaVillageShareStatus: Schema.VillageShareStatus;
         SchemaVillageShareTranscriptRequest: Schema.VillageShareTranscriptRequest;
+        SchemaVillageSignupRequest: Schema.VillageSignupRequest;
         SchemaVillageStatusResponse: Schema.VillageStatusResponse;
         SchemaVillageTag: Schema.VillageTag;
+        SchemaVillageTemporaryCredentialResponse: Schema.VillageTemporaryCredentialResponse;
         SchemaVillageTranscript: Schema.VillageTranscript;
         SchemaVillageTranscriptAttestation: Schema.VillageTranscriptAttestation;
         SchemaVillageTranscriptCollective: Schema.VillageTranscriptCollective;
@@ -1471,6 +1763,7 @@ export interface components {
         SchemaVillageUserGroup: Schema.VillageUserGroup;
         SchemaVillageUserGroupShare: Schema.VillageUserGroupShare;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
+        SchemaVillageVerifyEmailRequest: Schema.VillageVerifyEmailRequest;
         SchemaVillageVisibleGroup: Schema.VillageVisibleGroup;
         /**
          * Visibility
@@ -1505,6 +1798,374 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    adminListInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageInviteListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCreateInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCreateInviteResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    adminRevokeInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Invitation identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAdminUserListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    adminCreateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageAdminCreateUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTemporaryCredentialResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    adminReissueTemporaryPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Neutral account handle */
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTemporaryCredentialResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     pushAnnotations: {
         parameters: {
             query?: never;
@@ -1549,6 +2210,84 @@ export interface operations {
             };
         };
     };
+    bootstrapClaimInstance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageBootstrapClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageSessionIssuedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     cliExchangeCode: {
         parameters: {
             query?: never;
@@ -1580,6 +2319,8 @@ export interface operations {
                 port?: number;
                 /** @description OAuth state parameter for CSRF protection */
                 state?: string;
+                /** @description Revoke the presented browser session and require a fresh sign-in before an exchange code is minted */
+                switch?: boolean;
             };
             header?: never;
             path?: never;
@@ -1593,6 +2334,589 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageAcceptInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageSessionIssuedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    localLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageLocalLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageSessionIssuedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    localSignup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageSignupRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    localVerifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageVerifyEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAccountProfile"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Gone */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    localLogout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getOwnAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAccountProfile"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    changeOwnPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageSessionIssuedResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listAuthProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAuthProvidersResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listOwnSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAccountSessionListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeOwnSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Session identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
             };
         };
     };

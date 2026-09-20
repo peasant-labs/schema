@@ -1,0 +1,406 @@
+# This corpus asserts the local-account wire surface: every declared operation
+# and its exact status set, the middleware-produced status groups (rate limiting,
+# CSRF, the forced-change gate, and the admin boundary), the strict request
+# bodies that must reject unknown fields, and a round-trip value for every new
+# catalog type.
+#
+# Every declared status is asserted twice over: the routes arm pins the exact
+# response-code set of each operation, and the status_sets arm records which
+# middleware rule produces each shared status on which routes. A status that
+# drifts off an operation, or a route that gains an undeclared status, fails
+# both arms rather than passing vacuously.
+routes:
+  cases:
+    - name: bootstrap-claim
+      input: {method: POST, path: "/api/v1/auth/bootstrap/claim", operation_id: bootstrapClaimInstance, success_status: 200, statuses: [200, 400, 401, 403, 409, 429, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-bootstrap-claim}
+      mutation: {description: one-time instance claim with its rate limit and handle collision}
+    - name: local-login
+      input: {method: POST, path: "/api/v1/auth/local/login", operation_id: localLogin, success_status: 200, statuses: [200, 400, 401, 403, 429, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-password-login}
+      mutation: {description: uniform wrong-password and unknown-handle refusal plus the rate limit}
+    - name: accept-invite
+      input: {method: POST, path: "/api/v1/auth/local/accept-invite", operation_id: acceptInvite, success_status: 200, statuses: [200, 400, 401, 403, 409, 410, 429, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-invite-acceptance}
+      mutation: {description: single-use invitation consume with collision and gone outcomes}
+    - name: local-signup
+      input: {method: POST, path: "/api/v1/auth/local/signup", operation_id: localSignup, success_status: 202, statuses: [202, 400, 403, 429, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-self-serve-signup}
+      mutation: {description: non-revealing accepted signup with no account-existence oracle}
+    - name: local-verify
+      input: {method: POST, path: "/api/v1/auth/local/verify", operation_id: localVerifyEmail, success_status: 200, statuses: [200, 400, 403, 410, 429, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-email-verification}
+      mutation: {description: single-use expiring verification token with a gone outcome}
+    - name: local-logout
+      input: {method: POST, path: "/api/v1/auth/logout", operation_id: localLogout, success_status: 200, statuses: [200, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-logout}
+      mutation: {description: immediate session revocation with the CSRF refusal}
+    - name: change-password
+      input: {method: POST, path: "/api/v1/auth/me/password", operation_id: changeOwnPassword, success_status: 200, statuses: [200, 400, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-password-change}
+      mutation: {description: forced-change allowlisted mutation with the CSRF refusal}
+    - name: own-account
+      input: {method: GET, path: "/api/v1/auth/me", operation_id: getOwnAccount, success_status: 200, statuses: [200, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-profile-read}
+      mutation: {description: self profile carrying the neutral handle}
+    - name: auth-providers
+      input: {method: GET, path: "/api/v1/auth/providers", operation_id: listAuthProviders, success_status: 200, statuses: [200, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-provider-discovery}
+      mutation: {description: unauthenticated sign-in-method discovery carrying the registration mode}
+    - name: list-sessions
+      input: {method: GET, path: "/api/v1/auth/sessions", operation_id: listOwnSessions, success_status: 200, statuses: [200, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-session-listing}
+      mutation: {description: token-free session listing}
+    - name: revoke-session
+      input: {method: DELETE, path: "/api/v1/auth/sessions/{id}", operation_id: revokeOwnSession, success_status: 200, statuses: [200, 400, 401, 403, 404, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-session-revocation}
+      mutation: {description: own-session revocation with the CSRF refusal}
+    - name: admin-create-user
+      input: {method: POST, path: "/api/v1/admin/users", operation_id: adminCreateUser, success_status: 201, statuses: [201, 400, 401, 403, 409, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-create}
+      mutation: {description: administrator provisioning with the admin boundary and handle collision}
+    - name: admin-list-users
+      input: {method: GET, path: "/api/v1/admin/users", operation_id: adminListUsers, success_status: 200, statuses: [200, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-member-list}
+      mutation: {description: read-only member list behind the admin boundary}
+    - name: admin-create-invite
+      input: {method: POST, path: "/api/v1/admin/invites", operation_id: adminCreateInvite, success_status: 201, statuses: [201, 400, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-invite-create}
+      mutation: {description: invitation issue behind the admin boundary}
+    - name: admin-list-invites
+      input: {method: GET, path: "/api/v1/admin/invites", operation_id: adminListInvites, success_status: 200, statuses: [200, 401, 403, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-invite-list}
+      mutation: {description: invitation listing behind the admin boundary}
+    - name: admin-revoke-invite
+      input: {method: DELETE, path: "/api/v1/admin/invites/{id}", operation_id: adminRevokeInvite, success_status: 200, statuses: [200, 400, 401, 403, 404, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-invite-revoke}
+      mutation: {description: invitation revocation behind the admin boundary}
+    - name: admin-reissue-temporary-password
+      input: {method: POST, path: "/api/v1/admin/users/{username}/temporary-password", operation_id: adminReissueTemporaryPassword, success_status: 200, statuses: [200, 400, 401, 403, 404, 409, 500]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-admin-credential-reissue}
+      mutation: {description: never-activated credential re-issue with the activated-account conflict}
+status_sets:
+  cases:
+    - name: rate-limited-credential-entry-points
+      input:
+        status: 429
+        operations:
+          - {method: POST, path: "/api/v1/auth/bootstrap/claim"}
+          - {method: POST, path: "/api/v1/auth/local/login"}
+          - {method: POST, path: "/api/v1/auth/local/accept-invite"}
+          - {method: POST, path: "/api/v1/auth/local/signup"}
+          - {method: POST, path: "/api/v1/auth/local/verify"}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: middleware-rate-limit}
+      mutation: {description: shared limiter covers every unauthenticated credential entry point}
+    - name: csrf-refused-cookie-mutations
+      input:
+        status: 403
+        operations:
+          - {method: POST, path: "/api/v1/auth/logout"}
+          - {method: POST, path: "/api/v1/auth/me/password"}
+          - {method: DELETE, path: "/api/v1/auth/sessions/{id}"}
+          - {method: POST, path: "/api/v1/admin/users"}
+          - {method: POST, path: "/api/v1/admin/invites"}
+          - {method: DELETE, path: "/api/v1/admin/invites/{id}"}
+          - {method: POST, path: "/api/v1/admin/users/{username}/temporary-password"}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: middleware-csrf}
+      mutation: {description: cookie-authenticated unsafe requests are refused before the handler}
+    - name: forced-change-gate-protected-mutations
+      input:
+        status: 403
+        operations:
+          - {method: POST, path: "/api/v1/auth/logout"}
+          - {method: DELETE, path: "/api/v1/auth/sessions/{id}"}
+          - {method: POST, path: "/api/v1/admin/users"}
+          - {method: POST, path: "/api/v1/admin/invites"}
+          - {method: DELETE, path: "/api/v1/admin/invites/{id}"}
+          - {method: POST, path: "/api/v1/admin/users/{username}/temporary-password"}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: middleware-forced-change}
+      mutation: {description: forced-change gate blocks protected mutations outside the allowlist}
+    - name: admin-boundary-anonymous
+      input:
+        status: 401
+        operations:
+          - {method: POST, path: "/api/v1/admin/users"}
+          - {method: GET, path: "/api/v1/admin/users"}
+          - {method: POST, path: "/api/v1/admin/invites"}
+          - {method: GET, path: "/api/v1/admin/invites"}
+          - {method: DELETE, path: "/api/v1/admin/invites/{id}"}
+          - {method: POST, path: "/api/v1/admin/users/{username}/temporary-password"}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: middleware-admin-gate}
+      mutation: {description: anonymous admin calls are refused without a mutation or a secret}
+    - name: admin-boundary-member
+      input:
+        status: 403
+        operations:
+          - {method: POST, path: "/api/v1/admin/users"}
+          - {method: GET, path: "/api/v1/admin/users"}
+          - {method: POST, path: "/api/v1/admin/invites"}
+          - {method: GET, path: "/api/v1/admin/invites"}
+          - {method: DELETE, path: "/api/v1/admin/invites/{id}"}
+          - {method: POST, path: "/api/v1/admin/users/{username}/temporary-password"}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: middleware-admin-gate}
+      mutation: {description: authenticated non-admins are refused on every admin route}
+strict_bodies:
+  cases:
+    - name: bootstrap-claim-rejects-unknown-field
+      input: {component: VillageBootstrapClaimRequest, unknown_field: install_token}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: local-login-rejects-unknown-field
+      input: {component: VillageLocalLoginRequest, unknown_field: remember_me}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: accept-invite-rejects-unknown-field
+      input: {component: VillageAcceptInviteRequest, unknown_field: invite_id}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: change-password-rejects-unknown-field
+      input: {component: VillageChangePasswordRequest, unknown_field: username}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: signup-rejects-unknown-field
+      input: {component: VillageSignupRequest, unknown_field: is_admin}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: verify-email-rejects-unknown-field
+      input: {component: VillageVerifyEmailRequest, unknown_field: email}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: admin-create-user-rejects-unknown-field
+      input: {component: VillageAdminCreateUserRequest, unknown_field: password}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+    - name: admin-create-invite-rejects-unknown-field
+      input: {component: VillageCreateInviteRequest, unknown_field: token}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: strict-request-bodies}
+      mutation: {description: a body that must reject unknown fields stays closed}
+round_trip:
+  cases:
+    - name: accept-invite-request
+      input: {component: VillageAcceptInviteRequest, json: '{"token":"inv_fixture","username":"member","password":"correct horse"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the accept-invite body}
+    - name: account-profile
+      input: {component: VillageAccountProfile, json: '{"id":"123e4567-e89b-12d3-a456-426614174001","username":"member","email":"member@example.com","display_name":"Member","avatar_url":"https://example.com/avatar.png","is_admin":true,"provider":"local","github_username":"member","must_change_password":false,"created_at":"2026-09-01T00:00:00Z","updated_at":"2026-09-02T00:00:00Z","password_changed_at":"2026-09-02T00:00:00Z"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the neutral self projection}
+    - name: account-session
+      input: {component: VillageAccountSession, json: '{"id":"123e4567-e89b-12d3-a456-426614174002","created_at":"2026-09-01T00:00:00Z","last_seen_at":"2026-09-01T00:05:00Z","expires_at":"2026-09-08T00:00:00Z","current":true,"user_agent":"peasant/1.0","ip_address":"203.0.113.7"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves a token-free session row}
+    - name: account-session-list
+      input: {component: VillageAccountSessionListResponse, json: '{"sessions":[{"id":"123e4567-e89b-12d3-a456-426614174002","created_at":"2026-09-01T00:00:00Z","last_seen_at":"2026-09-01T00:05:00Z","expires_at":"2026-09-08T00:00:00Z","current":true,"user_agent":null,"ip_address":null}]}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the session listing envelope}
+    - name: admin-create-user-request
+      input: {component: VillageAdminCreateUserRequest, json: '{"username":"member","email":"member@example.com","is_admin":true}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the admin provisioning body}
+    - name: admin-user
+      input: {component: VillageAdminUser, json: '{"id":"123e4567-e89b-12d3-a456-426614174001","username":"member","email":null,"is_admin":false,"status":"pending","created_at":"2026-09-01T00:00:00Z"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves a provisioning row}
+    - name: admin-user-list
+      input: {component: VillageAdminUserListResponse, json: '{"users":[]}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves an empty member list}
+    - name: auth-providers
+      input: {component: VillageAuthProvidersResponse, json: '{"local":true,"registration_mode":"email","providers":["github","gitlab"]}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves provider discovery plus the registration mode}
+    - name: bootstrap-claim-request
+      input: {component: VillageBootstrapClaimRequest, json: '{"token":"claim_fixture","username":"admin","password":"correct horse"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the claim body}
+    - name: change-password-request
+      input: {component: VillageChangePasswordRequest, json: '{"current_password":"old","new_password":"new"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the password-change body}
+    - name: create-invite-request
+      input: {component: VillageCreateInviteRequest, json: '{"email":"member@example.com","is_admin":true,"expires_in_hours":72}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the invitation issue body}
+    - name: create-invite-response
+      input: {component: VillageCreateInviteResponse, json: '{"invite":{"id":"123e4567-e89b-12d3-a456-426614174003","email":null,"is_admin":false,"created_by":"123e4567-e89b-12d3-a456-426614174001","created_at":"2026-09-01T00:00:00Z","expires_at":"2026-09-04T00:00:00Z","accepted_at":null,"revoked_at":null},"token":"inv_fixture"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the one-time invitation receipt}
+    - name: invite
+      input: {component: VillageInvite, json: '{"id":"123e4567-e89b-12d3-a456-426614174003","email":"member@example.com","is_admin":true,"created_by":"123e4567-e89b-12d3-a456-426614174001","created_at":"2026-09-01T00:00:00Z","expires_at":"2026-09-04T00:00:00Z","accepted_at":"2026-09-02T00:00:00Z","revoked_at":null}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves an accepted invitation row}
+    - name: invite-list
+      input: {component: VillageInviteListResponse, json: '{"invites":[]}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves an empty invitation list}
+    - name: local-login-request
+      input: {component: VillageLocalLoginRequest, json: '{"username":"member","password":"correct horse"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the login body}
+    - name: provisioning-status
+      input: {component: VillageProvisioningStatus, json: '"pending"'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the provisioning status token}
+    - name: registration-mode
+      input: {component: VillageRegistrationMode, json: '"invite"'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the registration mode token}
+    - name: session-issued-response
+      input: {component: VillageSessionIssuedResponse, json: '{"account":{"id":"123e4567-e89b-12d3-a456-426614174001","username":"member","email":null,"display_name":null,"avatar_url":null,"is_admin":false,"provider":"local","github_username":"","must_change_password":true,"created_at":"2026-09-01T00:00:00Z","updated_at":"2026-09-01T00:00:00Z","password_changed_at":null},"must_change_password":true}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the session issuance envelope without a token}
+    - name: signup-request
+      input: {component: VillageSignupRequest, json: '{"email":"member@example.com","username":"member","password":"correct horse"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the self-serve signup body}
+    - name: temporary-credential-response
+      input: {component: VillageTemporaryCredentialResponse, json: '{"account":{"id":"123e4567-e89b-12d3-a456-426614174001","username":"member","email":null,"display_name":null,"avatar_url":null,"is_admin":false,"provider":"local","github_username":"","must_change_password":true,"created_at":"2026-09-01T00:00:00Z","updated_at":"2026-09-01T00:00:00Z","password_changed_at":null},"temporary_password":"one-time","temporary_password_expires_at":"2026-09-04T00:00:00Z"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the one-time credential receipt}
+    - name: verify-email-request
+      input: {component: VillageVerifyEmailRequest, json: '{"token":"verify_fixture"}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: local-account-wire-round-trip}
+      mutation: {description: preserves the verification body}
+required_names:
+  routes: [bootstrap-claim, local-login, accept-invite, local-signup, local-verify, local-logout, change-password, own-account, auth-providers, list-sessions, revoke-session, admin-create-user, admin-list-users, admin-create-invite, admin-list-invites, admin-revoke-invite, admin-reissue-temporary-password]
+  status_sets: [rate-limited-credential-entry-points, csrf-refused-cookie-mutations, forced-change-gate-protected-mutations, admin-boundary-anonymous, admin-boundary-member]
+  strict_bodies: [bootstrap-claim-rejects-unknown-field, local-login-rejects-unknown-field, accept-invite-rejects-unknown-field, change-password-rejects-unknown-field, signup-rejects-unknown-field, verify-email-rejects-unknown-field, admin-create-user-rejects-unknown-field, admin-create-invite-rejects-unknown-field]
+  round_trip: [accept-invite-request, account-profile, account-session, account-session-list, admin-create-user-request, admin-user, admin-user-list, auth-providers, bootstrap-claim-request, change-password-request, create-invite-request, create-invite-response, invite, invite-list, local-login-request, provisioning-status, registration-mode, session-issued-response, signup-request, temporary-credential-response, verify-email-request]
+  neutral_handles: [village-user, group-member, group-contributor]
+  cli_login: [switch-optional-query]
+neutral_handles:
+  cases:
+    - name: village-user
+      input: {component: SchemaVillageUser, deprecated_field: github_username, neutral_field: username}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: neutral-handle-projection}
+      mutation: {description: the user projection carries the neutral handle beside the deprecated forge field}
+    - name: group-member
+      input: {component: SchemaVillageGroupMember, deprecated_field: github_username, neutral_field: username}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: neutral-handle-roster}
+      mutation: {description: a collective roster row carries the neutral handle beside the deprecated forge field}
+    - name: group-contributor
+      input: {component: SchemaVillageGroupContributor, deprecated_field: github_username, neutral_field: username}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: neutral-handle-roster}
+      mutation: {description: a collective contributor row carries the neutral handle beside the deprecated forge field}
+cli_login:
+  cases:
+    - name: switch-optional-query
+      input: {path: "/api/v1/auth/cli/login", parameter: switch, location: query, required: false, type: boolean}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: cli-login-switch}
+      mutation: {description: forces re-authentication through one optional boolean query parameter}
+status_sets_exact_paths:
+  rate_limited: [bootstrap-claim, local-login, accept-invite, local-signup, local-verify]
+  csrf: [local-logout, change-password, revoke-session, admin-create-user, admin-create-invite, admin-revoke-invite, admin-reissue-temporary-password]
+  forced_change: [local-logout, revoke-session, admin-create-user, admin-create-invite, admin-revoke-invite, admin-reissue-temporary-password]
+  admin_401: [admin-create-user, admin-list-users, admin-create-invite, admin-list-invites, admin-revoke-invite, admin-reissue-temporary-password]
+  admin_403: [admin-create-user, admin-list-users, admin-create-invite, admin-list-invites, admin-revoke-invite, admin-reissue-temporary-password]
