@@ -55,6 +55,14 @@ export const STRICT_OBJECTS = [
   "zPublishNormalizedValues",
   "zPublishAppliedState",
   "zAuthoritativePublishResponse",
+  "zVillageBootstrapClaimRequest",
+  "zVillageLocalLoginRequest",
+  "zVillageAcceptInviteRequest",
+  "zVillageChangePasswordRequest",
+  "zVillageSignupRequest",
+  "zVillageVerifyEmailRequest",
+  "zVillageAdminCreateUserRequest",
+  "zVillageCreateInviteRequest",
 ];
 
 export function applyStrictObjectZodRefinements(source) {

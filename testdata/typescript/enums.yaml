@@ -600,3 +600,16 @@ enums:
       - {name: Transcript, value: "transcript"}
       - {name: ContextContainer, value: "context_container"}
     all_values: ["transcript", "context_container"]
+  - name: VillageRegistrationMode
+    all_name: AllVillageRegistrationModes
+    members:
+      - {name: Closed, value: "closed"}
+      - {name: Invite, value: "invite"}
+      - {name: Email, value: "email"}
+    all_values: ["closed", "invite", "email"]
+  - name: VillageProvisioningStatus
+    all_name: AllVillageProvisioningStatuses
+    members:
+      - {name: Pending, value: "pending"}
+      - {name: Activated, value: "activated"}
+    all_values: ["pending", "activated"]

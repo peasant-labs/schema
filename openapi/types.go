@@ -144,6 +144,27 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"UICapabilitiesResponse", new(schema.UICapabilitiesResponse)},
 		{"VillageAssignableGroupRole", new(schema.VillageAssignableGroupRole)},
+		{"VillageAcceptInviteRequest", new(schema.VillageAcceptInviteRequest)},
+		{"VillageAccountProfile", new(schema.VillageAccountProfile)},
+		{"VillageAccountSession", new(schema.VillageAccountSession)},
+		{"VillageAccountSessionListResponse", new(schema.VillageAccountSessionListResponse)},
+		{"VillageAdminCreateUserRequest", new(schema.VillageAdminCreateUserRequest)},
+		{"VillageAdminUser", new(schema.VillageAdminUser)},
+		{"VillageAdminUserListResponse", new(schema.VillageAdminUserListResponse)},
+		{"VillageAuthProvidersResponse", new(schema.VillageAuthProvidersResponse)},
+		{"VillageBootstrapClaimRequest", new(schema.VillageBootstrapClaimRequest)},
+		{"VillageChangePasswordRequest", new(schema.VillageChangePasswordRequest)},
+		{"VillageCreateInviteRequest", new(schema.VillageCreateInviteRequest)},
+		{"VillageCreateInviteResponse", new(schema.VillageCreateInviteResponse)},
+		{"VillageInvite", new(schema.VillageInvite)},
+		{"VillageInviteListResponse", new(schema.VillageInviteListResponse)},
+		{"VillageLocalLoginRequest", new(schema.VillageLocalLoginRequest)},
+		{"VillageProvisioningStatus", new(schema.VillageProvisioningStatus)},
+		{"VillageRegistrationMode", new(schema.VillageRegistrationMode)},
+		{"VillageSessionIssuedResponse", new(schema.VillageSessionIssuedResponse)},
+		{"VillageSignupRequest", new(schema.VillageSignupRequest)},
+		{"VillageTemporaryCredentialResponse", new(schema.VillageTemporaryCredentialResponse)},
+		{"VillageVerifyEmailRequest", new(schema.VillageVerifyEmailRequest)},
 		{"VillageAvailableRepositoriesResponse", new(schema.VillageAvailableRepositoriesResponse)}, {"VillageAvailableRepository", new(schema.VillageAvailableRepository)},
 		{"VillageBatchReviewRequest", new(schema.VillageBatchReviewRequest)}, {"VillageBatchReviewResponse", new(schema.VillageBatchReviewResponse)},
 		{"VillageBatchShareEntry", new(schema.VillageBatchShareEntry)}, {"VillageBatchShareRequest", new(schema.VillageBatchShareRequest)},
@@ -470,7 +491,7 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 // breaking every consumer. Only a request body whose whole purpose is to say
 // exactly what changed belongs here, where an unrecognized field means the
 // caller asked for something the server will silently drop.
-var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation"}
+var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation", "VillageBootstrapClaimRequest", "VillageLocalLoginRequest", "VillageAcceptInviteRequest", "VillageChangePasswordRequest", "VillageSignupRequest", "VillageVerifyEmailRequest", "VillageAdminCreateUserRequest", "VillageCreateInviteRequest"}
 
 var strictNullableProperties = map[string]map[string]struct{}{
 	"AuthoritativeTimestampInfo":    {"ingested": {}},

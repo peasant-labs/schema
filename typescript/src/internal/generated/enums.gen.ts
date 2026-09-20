@@ -75,6 +75,8 @@ import { zPublicSourceAnchorKind, type PublicSourceAnchorKind as PublicSourceAnc
 import { zEarlierHistoryState, type EarlierHistoryState as EarlierHistoryStateContract } from "./contract/zod.gen.js";
 import { zRelationshipNavigationStatus, type RelationshipNavigationStatus as RelationshipNavigationStatusContract } from "./contract/zod.gen.js";
 import { zSessionListItemKind, type SessionListItemKind as SessionListItemKindContract } from "./contract/zod.gen.js";
+import { zVillageRegistrationMode, type VillageRegistrationMode as VillageRegistrationModeContract } from "./contract/zod.gen.js";
+import { zVillageProvisioningStatus, type VillageProvisioningStatus as VillageProvisioningStatusContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -1001,4 +1003,25 @@ export const SessionListItemKind = Object.freeze({
 export const AllSessionListItemKinds = Object.freeze([SessionListItemKind.Transcript, SessionListItemKind.ContextContainer]) as readonly SessionListItemKind[];
 export function isSessionListItemKind(value: unknown): value is SessionListItemKind {
   return zSessionListItemKind.safeParse(value).success;
+}
+
+export type VillageRegistrationMode = VillageRegistrationModeContract;
+export const VillageRegistrationMode = Object.freeze({
+  Closed: zVillageRegistrationMode.parse("closed"),
+  Invite: zVillageRegistrationMode.parse("invite"),
+  Email: zVillageRegistrationMode.parse("email"),
+} as const);
+export const AllVillageRegistrationModes = Object.freeze([VillageRegistrationMode.Closed, VillageRegistrationMode.Invite, VillageRegistrationMode.Email]) as readonly VillageRegistrationMode[];
+export function isVillageRegistrationMode(value: unknown): value is VillageRegistrationMode {
+  return zVillageRegistrationMode.safeParse(value).success;
+}
+
+export type VillageProvisioningStatus = VillageProvisioningStatusContract;
+export const VillageProvisioningStatus = Object.freeze({
+  Pending: zVillageProvisioningStatus.parse("pending"),
+  Activated: zVillageProvisioningStatus.parse("activated"),
+} as const);
+export const AllVillageProvisioningStatuses = Object.freeze([VillageProvisioningStatus.Pending, VillageProvisioningStatus.Activated]) as readonly VillageProvisioningStatus[];
+export function isVillageProvisioningStatus(value: unknown): value is VillageProvisioningStatus {
+  return zVillageProvisioningStatus.safeParse(value).success;
 }

@@ -16,8 +16,14 @@ type ExchangeCodeResponse struct {
 }
 
 // CLILoginQuery represents the query parameters for the CLI login initiation endpoint.
-// GET /api/v1/auth/cli/login?port={port}&state={state}
+// GET /api/v1/auth/cli/login?port={port}&state={state}[&switch=true]
 type CLILoginQuery struct {
 	Port  int    `json:"port" query:"port" description:"Local callback server port"`
 	State string `json:"state" query:"state" description:"OAuth state parameter for CSRF protection"`
+	// Switch forces the browser session to be revoked and a fresh sign-in to be
+	// required, so a user who picks a different account cannot silently receive a
+	// key for the previously signed-in account. It is optional and defaults to
+	// false; the default URL path is unchanged, and the parameter is stripped
+	// from the sign-in redirect that follows a forced switch.
+	Switch bool `json:"switch,omitempty" query:"switch" description:"Revoke the presented browser session and require a fresh sign-in before an exchange code is minted"`
 }

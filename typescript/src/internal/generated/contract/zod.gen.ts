@@ -337,7 +337,8 @@ export type BuiltinCommand = z.infer<typeof zBuiltinCommand>;
 
 export const zCLILoginQuery = z.object({
     port: z.int(),
-    state: z.string()
+    state: z.string(),
+    switch: z.boolean().optional()
 });
 
 export type CLILoginQuery = z.infer<typeof zCLILoginQuery>;
@@ -2974,6 +2975,22 @@ export const zTaxonomyNode = z.object({
 
 export type TaxonomyNode = z.infer<typeof zTaxonomyNode>;
 
+export const zVillageAcceptInviteRequest = z.object({
+    password: z.string(),
+    token: z.string(),
+    username: z.string()
+}).strict();
+
+export type VillageAcceptInviteRequest = z.infer<typeof zVillageAcceptInviteRequest>;
+
+export const zVillageAdminCreateUserRequest = z.object({
+    email: z.string(),
+    is_admin: z.boolean().optional(),
+    username: z.string()
+}).strict();
+
+export type VillageAdminCreateUserRequest = z.infer<typeof zVillageAdminCreateUserRequest>;
+
 /**
  * Village Assignable Group Role
  *
@@ -3012,6 +3029,21 @@ export const zVillageBatchShareRequest = z.object({
 
 export type VillageBatchShareRequest = z.infer<typeof zVillageBatchShareRequest>;
 
+export const zVillageBootstrapClaimRequest = z.object({
+    password: z.string(),
+    token: z.string(),
+    username: z.string()
+}).strict();
+
+export type VillageBootstrapClaimRequest = z.infer<typeof zVillageBootstrapClaimRequest>;
+
+export const zVillageChangePasswordRequest = z.object({
+    current_password: z.string(),
+    new_password: z.string()
+}).strict();
+
+export type VillageChangePasswordRequest = z.infer<typeof zVillageChangePasswordRequest>;
+
 /**
  * Village Contribution Status
  *
@@ -3035,6 +3067,14 @@ export const zVillageBatchShareResponse = z.object({
 });
 
 export type VillageBatchShareResponse = z.infer<typeof zVillageBatchShareResponse>;
+
+export const zVillageCreateInviteRequest = z.object({
+    email: z.string(),
+    expires_in_hours: z.int().gte(1).lte(8760),
+    is_admin: z.boolean().optional()
+}).strict();
+
+export type VillageCreateInviteRequest = z.infer<typeof zVillageCreateInviteRequest>;
 
 export const zVillageErrorResponse = z.object({
     error: z.string()
@@ -3169,6 +3209,13 @@ export const zVillageListTranscriptAttestation = z.object({
 
 export type VillageListTranscriptAttestation = z.infer<typeof zVillageListTranscriptAttestation>;
 
+export const zVillageLocalLoginRequest = z.object({
+    password: z.string(),
+    username: z.string()
+}).strict();
+
+export type VillageLocalLoginRequest = z.infer<typeof zVillageLocalLoginRequest>;
+
 export const zVillageMetadataUserOrganization = z.object({
     avatar_url: z.string().nullable(),
     fetched_at: z.iso.datetime(),
@@ -3204,6 +3251,15 @@ export const zVillagePromptsCheckMode = z.enum(['informational', 'required']);
 export type VillagePromptsCheckMode = z.infer<typeof zVillagePromptsCheckMode>;
 
 /**
+ * Village Provisioning Status
+ *
+ * Provisioning state of a local account: pending before first sign-in, activated afterward
+ */
+export const zVillageProvisioningStatus = z.enum(['pending', 'activated']);
+
+export type VillageProvisioningStatus = z.infer<typeof zVillageProvisioningStatus>;
+
+/**
  * Village Pull Request Attachment State
  *
  * Current lifecycle state of a pull request's prompt attachment
@@ -3234,6 +3290,27 @@ export const zVillagePromptRequestsResponse = z.object({
 });
 
 export type VillagePromptRequestsResponse = z.infer<typeof zVillagePromptRequestsResponse>;
+
+/**
+ * Village Registration Mode
+ *
+ * Account-creation policy: closed refuses self-serve signup, invite accepts single-use invitation links, and email enables signup with verification
+ */
+export const zVillageRegistrationMode = z.enum([
+    'closed',
+    'invite',
+    'email'
+]);
+
+export type VillageRegistrationMode = z.infer<typeof zVillageRegistrationMode>;
+
+export const zVillageAuthProvidersResponse = z.object({
+    local: z.boolean(),
+    providers: z.array(z.string()),
+    registration_mode: zVillageRegistrationMode
+});
+
+export type VillageAuthProvidersResponse = z.infer<typeof zVillageAuthProvidersResponse>;
 
 export const zVillageRemoveGroupMemberResponse = z.object({
     retracted: z.boolean(),
@@ -3331,6 +3408,14 @@ export const zVillageShareEvent = z.object({
 
 export type VillageShareEvent = z.infer<typeof zVillageShareEvent>;
 
+export const zVillageSignupRequest = z.object({
+    email: z.string(),
+    password: z.string(),
+    username: z.string()
+}).strict();
+
+export type VillageSignupRequest = z.infer<typeof zVillageSignupRequest>;
+
 export const zVillageStatusResponse = z.object({
     status: z.string()
 });
@@ -3399,6 +3484,58 @@ export type VillagePullRequestAttachedTranscript = z.infer<typeof zVillagePullRe
 export const zVillageUUID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 
 export type VillageUUID = z.infer<typeof zVillageUUID>;
+
+export const zVillageAccountProfile = z.object({
+    avatar_url: z.string().nullable(),
+    created_at: z.iso.datetime(),
+    display_name: z.string().nullable(),
+    email: z.string().nullable(),
+    github_username: z.string(),
+    id: zVillageUUID,
+    is_admin: z.boolean(),
+    must_change_password: z.boolean(),
+    password_changed_at: z.iso.datetime().nullable(),
+    provider: z.string(),
+    updated_at: z.iso.datetime(),
+    username: z.string()
+});
+
+export type VillageAccountProfile = z.infer<typeof zVillageAccountProfile>;
+
+export const zVillageAccountSession = z.object({
+    created_at: z.iso.datetime(),
+    current: z.boolean(),
+    expires_at: z.iso.datetime(),
+    id: zVillageUUID,
+    ip_address: z.string().nullable(),
+    last_seen_at: z.iso.datetime(),
+    user_agent: z.string().nullable()
+});
+
+export type VillageAccountSession = z.infer<typeof zVillageAccountSession>;
+
+export const zVillageAccountSessionListResponse = z.object({
+    sessions: z.array(zVillageAccountSession)
+});
+
+export type VillageAccountSessionListResponse = z.infer<typeof zVillageAccountSessionListResponse>;
+
+export const zVillageAdminUser = z.object({
+    created_at: z.iso.datetime(),
+    email: z.string().nullable(),
+    id: zVillageUUID,
+    is_admin: z.boolean(),
+    status: zVillageProvisioningStatus,
+    username: z.string()
+});
+
+export type VillageAdminUser = z.infer<typeof zVillageAdminUser>;
+
+export const zVillageAdminUserListResponse = z.object({
+    users: z.array(zVillageAdminUser)
+});
+
+export type VillageAdminUserListResponse = z.infer<typeof zVillageAdminUserListResponse>;
 
 export const zVillageCollectiveSearchResult = z.object({
     description: z.string().nullable(),
@@ -3487,7 +3624,8 @@ export const zVillageGroupContributor = z.object({
     avatar_url: z.string().nullable(),
     github_username: z.string(),
     id: zVillageUUID,
-    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    username: z.string()
 });
 
 export type VillageGroupContributor = z.infer<typeof zVillageGroupContributor>;
@@ -3517,7 +3655,8 @@ export const zVillageGroupMember = z.object({
     github_username: z.string(),
     id: zVillageUUID,
     joined_at: z.iso.datetime(),
-    role: zVillageGroupRole
+    role: zVillageGroupRole,
+    username: z.string()
 });
 
 export type VillageGroupMember = z.infer<typeof zVillageGroupMember>;
@@ -3613,6 +3752,32 @@ export const zVillageGroupDetailResponse = z.object({
 
 export type VillageGroupDetailResponse = z.infer<typeof zVillageGroupDetailResponse>;
 
+export const zVillageInvite = z.object({
+    accepted_at: z.iso.datetime().nullable(),
+    created_at: z.iso.datetime(),
+    created_by: zVillageUUID,
+    email: z.string().nullable(),
+    expires_at: z.iso.datetime(),
+    id: zVillageUUID,
+    is_admin: z.boolean(),
+    revoked_at: z.iso.datetime().nullable()
+});
+
+export type VillageInvite = z.infer<typeof zVillageInvite>;
+
+export const zVillageCreateInviteResponse = z.object({
+    invite: zVillageInvite,
+    token: z.string()
+});
+
+export type VillageCreateInviteResponse = z.infer<typeof zVillageCreateInviteResponse>;
+
+export const zVillageInviteListResponse = z.object({
+    invites: z.array(zVillageInvite)
+});
+
+export type VillageInviteListResponse = z.infer<typeof zVillageInviteListResponse>;
+
 export const zVillageLinkedRepository = z.object({
     created_at: z.iso.datetime().nullable(),
     group_id: zVillageUUID,
@@ -3705,6 +3870,13 @@ export const zVillagePullRequestAttachmentResponse = z.object({
 
 export type VillagePullRequestAttachmentResponse = z.infer<typeof zVillagePullRequestAttachmentResponse>;
 
+export const zVillageSessionIssuedResponse = z.object({
+    account: zVillageAccountProfile,
+    must_change_password: z.boolean()
+});
+
+export type VillageSessionIssuedResponse = z.infer<typeof zVillageSessionIssuedResponse>;
+
 export const zVillageShareTranscriptRequest = z.object({
     group_ids: z.array(zVillageUUID)
 });
@@ -3717,6 +3889,14 @@ export const zVillageTag = z.object({
 });
 
 export type VillageTag = z.infer<typeof zVillageTag>;
+
+export const zVillageTemporaryCredentialResponse = z.object({
+    account: zVillageAccountProfile,
+    temporary_password: z.string(),
+    temporary_password_expires_at: z.iso.datetime()
+});
+
+export type VillageTemporaryCredentialResponse = z.infer<typeof zVillageTemporaryCredentialResponse>;
 
 export const zVillageTranscript = z.object({
     blob_size_bytes: z.int().nullable(),
@@ -3861,6 +4041,7 @@ export const zVillageUser = z.object({
     provider_user_id: z.string(),
     provider_username: z.string().nullable(),
     updated_at: z.iso.datetime(),
+    username: z.string(),
     username_chosen: z.boolean()
 });
 
@@ -4056,6 +4237,12 @@ export const zVillageUserSettings = z.object({
 });
 
 export type VillageUserSettings = z.infer<typeof zVillageUserSettings>;
+
+export const zVillageVerifyEmailRequest = z.object({
+    token: z.string()
+}).strict();
+
+export type VillageVerifyEmailRequest = z.infer<typeof zVillageVerifyEmailRequest>;
 
 export const zVillageVisibleGroup = z.object({
     acceptance_mode: zVillageGroupAcceptanceMode,

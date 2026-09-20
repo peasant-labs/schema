@@ -1,0 +1,77 @@
+# The local-account request bodies the contract declares as closed. The TypeScript
+# half of the published package must reject an unknown field on each, matching the
+# generated OpenAPI component's additionalProperties: false and the Go decode
+# boundary. A body the runtime validator silently strips is a success the caller
+# misreads as applied, so every case carries the unknown field that must fail.
+strict_bodies:
+  - name: bootstrap-claim-rejects-unknown-field
+    component: zVillageBootstrapClaimRequest
+    canonical: {token: claim_fixture, username: admin, password: correct horse}
+    unknown_field: install_token
+  - name: local-login-rejects-unknown-field
+    component: zVillageLocalLoginRequest
+    canonical: {username: member, password: correct horse}
+    unknown_field: remember_me
+  - name: accept-invite-rejects-unknown-field
+    component: zVillageAcceptInviteRequest
+    canonical: {token: inv_fixture, username: member, password: correct horse}
+    unknown_field: invite_id
+  - name: change-password-rejects-unknown-field
+    component: zVillageChangePasswordRequest
+    canonical: {current_password: old, new_password: new}
+    unknown_field: username
+  - name: signup-rejects-unknown-field
+    component: zVillageSignupRequest
+    canonical: {email: member@example.com, username: member, password: correct horse}
+    unknown_field: is_admin
+  - name: verify-email-rejects-unknown-field
+    component: zVillageVerifyEmailRequest
+    canonical: {token: verify_fixture}
+    unknown_field: email
+  - name: admin-create-user-rejects-unknown-field
+    component: zVillageAdminCreateUserRequest
+    canonical: {username: member, email: member@example.com, is_admin: true}
+    unknown_field: password
+  - name: admin-create-invite-rejects-unknown-field
+    component: zVillageCreateInviteRequest
+    canonical: {email: member@example.com, is_admin: true, expires_in_hours: 72}
+    unknown_field: token
+round_trip:
+  - name: account-profile-round-trip
+    component: zVillageAccountProfile
+    value:
+      id: 123e4567-e89b-12d3-a456-426614174001
+      username: member
+      email: member@example.com
+      display_name: Member
+      avatar_url: null
+      is_admin: true
+      provider: local
+      github_username: member
+      must_change_password: false
+      created_at: "2026-09-01T00:00:00Z"
+      updated_at: "2026-09-02T00:00:00Z"
+      password_changed_at: null
+  - name: auth-providers-round-trip
+    component: zVillageAuthProvidersResponse
+    value:
+      local: true
+      registration_mode: email
+      providers: [github, gitlab]
+  - name: session-issued-round-trip
+    component: zVillageSessionIssuedResponse
+    value:
+      account:
+        id: 123e4567-e89b-12d3-a456-426614174001
+        username: member
+        email: null
+        display_name: null
+        avatar_url: null
+        is_admin: false
+        provider: local
+        github_username: ""
+        must_change_password: true
+        created_at: "2026-09-01T00:00:00Z"
+        updated_at: "2026-09-01T00:00:00Z"
+        password_changed_at: null
+      must_change_password: true
