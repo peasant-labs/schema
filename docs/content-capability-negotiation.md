@@ -161,9 +161,22 @@ redaction applies before durable storage or publication, including unknown
 nested data. Additional fields on recognized native records do not by themselves
 make a record unknown; malformed known fields remain invalid.
 
+Raw detail and envelope decoders reject noncanonical case-fold aliases of known
+wire keys before typed decoding can overwrite validated evidence. This includes
+nested diagnostics and source evidence as well as existing model, usage, native
+metadata and provenance fields. Truly unrelated additive keys remain compatible.
+This key rule does not reinterpret the native JSON text inside `payload`, where
+JSON member names are case-sensitive and both `kind` and `Kind` may coexist.
+
 Existing whole-document 8 MiB and depth-64 boundaries remain in force. The decoded
 payload text is also checked at those bounds; native-metadata-only limits do not
 apply. JSON-string encoding overhead counts toward the actual outer document.
+Inbound limits measure the actual raw input, never an alternate reserialization
+with optional HTML escaping. Semantic typed-value validators do not reserialize
+the detail to impose another outer budget. Before upload, producers must check
+the actual chosen final serialized bytes with the public raw envelope boundary;
+an HTML-escaped encoding can exceed the transport limit even when an equivalent
+unescaped encoding fits. Neither encoding may silently truncate evidence.
 There is no truncation, size-exception bypass, or implicit stripping downgrade.
 When a complete document does not fit the current transport, refuse it and retain
 the prior good generation; splitting or raising transport limits requires a

@@ -21,6 +21,9 @@ import (
 var retainedUnknownYAML []byte
 
 type retainedUnknownInput struct {
+	PayloadUnit       string  `yaml:"payload_unit"`
+	TransportBytes    int     `yaml:"transport_bytes"`
+	SiblingBlocks     int     `yaml:"sibling_blocks"`
 	DropRecordField   string  `yaml:"drop_record_field"`
 	Harness           string  `yaml:"harness"`
 	RecordPatch       string  `yaml:"record_patch"`
@@ -33,11 +36,14 @@ type retainedUnknownInput struct {
 	MetadataMissing   bool    `yaml:"metadata_missing"`
 }
 type retainedUnknownExpected struct {
-	Valid         bool `yaml:"valid"`
-	ShapeValid    bool `yaml:"shape_valid"`
-	TypedValid    bool `yaml:"typed_valid"`
-	Capability    bool `yaml:"capability"`
-	MirrorInvalid bool `yaml:"mirror_invalid"`
+	ValueValid            *bool `yaml:"value_valid"`
+	EnvelopeValid         *bool `yaml:"envelope_valid"`
+	HTMLEncodingOverLimit bool  `yaml:"html_encoding_over_limit"`
+	Valid                 bool  `yaml:"valid"`
+	ShapeValid            bool  `yaml:"shape_valid"`
+	TypedValid            bool  `yaml:"typed_valid"`
+	Capability            bool  `yaml:"capability"`
+	MirrorInvalid         bool  `yaml:"mirror_invalid"`
 }
 type retainedUnknownFixtures struct {
 	BaseDetail        string                                                         `yaml:"base_detail"`
@@ -134,9 +140,23 @@ func retainedUnknownWire(t *testing.T, f retainedUnknownFixtures, in retainedUnk
 		delete(record, in.DropRecordField)
 	}
 	if in.PayloadBytes > 0 {
-		record["payload"] = `"` + strings.Repeat("x", in.PayloadBytes) + `"`
+		unit := in.PayloadUnit
+		if unit == "" {
+			unit = "x"
+		}
+		record["payload"] = `"` + strings.Repeat(unit, in.PayloadBytes) + `"`
 	}
 	detail["retainedUnknown"] = []any{record}
+	if in.SiblingBlocks > 0 {
+		records := make([]any, in.SiblingBlocks)
+		for i := range records {
+			sibling := decode(f.BaseRecord)
+			sibling["pointer"] = fmt.Sprintf("/content/%d", i)
+			sibling["position"] = i + 4
+			records[i] = sibling
+		}
+		detail["retainedUnknown"] = records
+	}
 	if in.SecondRecordPatch != nil {
 		second := decode(f.BaseRecord)
 		patch(second, *in.SecondRecordPatch)
@@ -152,9 +172,18 @@ func retainedUnknownWire(t *testing.T, f retainedUnknownFixtures, in retainedUnk
 		delete(detail, "diagnostics")
 	}
 	patch(detail, in.DetailPatch)
-	raw, err := json.Marshal(detail)
-	if err != nil {
+	var buffer bytes.Buffer
+	encoder := json.NewEncoder(&buffer)
+	encoder.SetEscapeHTML(false)
+	if err := encoder.Encode(detail); err != nil {
 		t.Fatal(err)
+	}
+	raw := bytes.TrimSuffix(buffer.Bytes(), []byte("\n"))
+	if in.TransportBytes > 0 {
+		if len(raw) > in.TransportBytes {
+			t.Fatal("fixture transport bytes smaller than document")
+		}
+		raw = append(raw, bytes.Repeat([]byte(" "), in.TransportBytes-len(raw))...)
 	}
 	return raw
 }
@@ -181,6 +210,17 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 	for _, row := range f.Cases {
 		t.Run(row.Name, func(t *testing.T) {
 			raw := retainedUnknownWire(t, f, row.Input)
+			// Capture the independent original evidence BEFORE either production
+			// decoder can normalize, truncate, reorder, or omit it.
+			var original struct {
+				Records     []originalRetainedRecord           `json:"retainedUnknown"`
+				Diagnostics *originalInterpretationDiagnostics `json:"diagnostics"`
+			}
+			if row.Expected.Valid {
+				if err := json.Unmarshal(raw, &original); err != nil {
+					t.Fatal(err)
+				}
+			}
 			var value any
 			if err := json.Unmarshal(raw, &value); err != nil {
 				t.Fatal(err)
@@ -203,11 +243,34 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 			envelopeRaw := append([]byte(`{"contractVersion":"1.0.0","kind":"session_detail","sessionDetail":`), raw...)
 			envelopeRaw = append(envelopeRaw, '}')
 			content, err := schema.DecodeTranscriptContentRaw(envelopeRaw)
-			if (err == nil) != row.Expected.Valid {
+			envelopeValid := row.Expected.Valid
+			if row.Expected.EnvelopeValid != nil {
+				envelopeValid = *row.Expected.EnvelopeValid
+			}
+			if (err == nil) != envelopeValid {
 				t.Fatalf("envelope=%v want valid=%v", err, row.Expected.Valid)
 			}
 			if !row.Expected.Valid {
 				return
+			}
+			if !retainedEvidenceEqual(detail, original.Records, original.Diagnostics) {
+				t.Fatal("first detail decode changed original fixture evidence")
+			}
+			if !envelopeValid {
+				return
+			}
+			if !retainedEvidenceEqual(*content.SessionDetail, original.Records, original.Diagnostics) {
+				t.Fatal("first envelope decode changed original fixture evidence")
+			}
+			if row.Input.PayloadBytes > 0 {
+				unit := row.Input.PayloadUnit
+				if unit == "" {
+					unit = "x"
+				}
+				want := `"` + strings.Repeat(unit, row.Input.PayloadBytes) + `"`
+				if len(detail.RetainedUnknown[0].Payload) != len(want) || detail.RetainedUnknown[0].Payload != want {
+					t.Fatal("expanded payload length/content differs from original recipe")
+				}
 			}
 			if !reflect.DeepEqual(content.SessionDetail, &detail) {
 				t.Fatal("envelope lost retained evidence")
@@ -215,6 +278,21 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 			encoded, err := json.Marshal(detail)
 			if err != nil {
 				t.Fatal(err)
+			}
+			if row.Expected.HTMLEncodingOverLimit {
+				if len(encoded) <= 8<<20 {
+					t.Fatal("HTML-escaped serializer did not cross transport boundary")
+				}
+				if _, err := schema.DecodeSessionDetailPayloadRaw(encoded); err == nil {
+					t.Fatal("actual oversized outgoing encoding accepted")
+				}
+				var buffer bytes.Buffer
+				encoder := json.NewEncoder(&buffer)
+				encoder.SetEscapeHTML(false)
+				if err := encoder.Encode(detail); err != nil {
+					t.Fatal(err)
+				}
+				encoded = buffer.Bytes()
 			}
 			roundTrip, err := schema.DecodeSessionDetailPayloadRaw(encoded)
 			if err != nil {
@@ -252,6 +330,21 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 				if before == after {
 					t.Fatal("canonical publish fingerprint failed to bind retained content and partial state")
 				}
+				payloadOnly := detail
+				payloadOnly.RetainedUnknown = append([]schema.RetainedUnknownRecord(nil), detail.RetainedUnknown...)
+				payloadOnly.RetainedUnknown[0].Payload += " "
+				mutatedBytes, err := json.Marshal(schema.TranscriptContent{ContractVersion: "1.0.0", Kind: schema.ContentKindSessionDetail, SessionDetail: &payloadOnly})
+				if err != nil {
+					t.Fatal(err)
+				}
+				operation.ContentHash = schema.ComputeTranscriptContentHash(mutatedBytes)
+				mutatedHash, err := schema.FingerprintPublishOperation(operation)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if before == mutatedHash {
+					t.Fatal("payload-only byte mutation did not change publication fingerprint")
+				}
 			}
 			required := schema.RequiredContentCapabilities(detail)
 			if slices.Contains(required, schema.ContentCapabilityRetainedUnknownV1) != row.Expected.Capability {
@@ -282,6 +375,38 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 			}
 		})
 	}
+}
+
+// These independent fixture wire structs intentionally have no production
+// decoding methods. A future custom contract decoder cannot normalize both
+// the value under test and its expected original evidence through one codec.
+type originalRetainedRecord struct {
+	SourceRef   string `json:"sourceRef"`
+	RecordIndex int64  `json:"recordIndex"`
+	Position    int64  `json:"position"`
+	Pointer     string `json:"pointer"`
+	Namespace   string `json:"namespace"`
+	Kind        string `json:"kind"`
+	Payload     string `json:"payload"`
+}
+type originalInterpretationDiagnostics struct {
+	Partial bool `json:"partial"`
+}
+
+func retainedEvidenceEqual(actual schema.SessionDetailPayload, records []originalRetainedRecord, diagnostics *originalInterpretationDiagnostics) bool {
+	if len(actual.RetainedUnknown) != len(records) || (actual.Diagnostics == nil) != (diagnostics == nil) {
+		return false
+	}
+	if diagnostics != nil && actual.Diagnostics.Partial != diagnostics.Partial {
+		return false
+	}
+	for i, expected := range records {
+		record := actual.RetainedUnknown[i]
+		if record.SourceRef != expected.SourceRef || record.RecordIndex != expected.RecordIndex || record.Position != expected.Position || record.Pointer != expected.Pointer || record.Namespace != expected.Namespace || record.Kind != expected.Kind || record.Payload != expected.Payload {
+			return false
+		}
+	}
+	return true
 }
 
 func TestRetainedUnknownFixtureDeletionProtection(t *testing.T) {

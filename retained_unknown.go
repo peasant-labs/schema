@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -35,7 +34,9 @@ type InterpretationDiagnostics struct {
 }
 
 // ValidateRetainedUnknown checks complete retained evidence and its source order.
-// The normal outer transport limits apply, never native-metadata-only budgets.
+// Payload text keeps the normal scanner bounds, never metadata-only budgets.
+// Outer byte limits belong to the actual raw input/output serialization, not a
+// semantic validator's alternate encoding of the same typed value.
 func ValidateRetainedUnknown(value SessionDetailPayload) error {
 	fail := func(reason string) error {
 		return fmt.Errorf("retained unknown validation failed at schema.ValidateRetainedUnknown during detail validation: %s; source evidence cannot be reconstructed safely; retain complete redacted JSON with unique ordered source positions and diagnostics.partial=true", reason)
@@ -45,7 +46,7 @@ func ValidateRetainedUnknown(value SessionDetailPayload) error {
 	}
 	type cursor struct {
 		position, record int64
-		pointers         []string
+		pointers         *retainedPointerNode
 	}
 	sources := map[string]cursor{}
 	for i, record := range value.RetainedUnknown {
@@ -63,28 +64,49 @@ func ValidateRetainedUnknown(value SessionDetailPayload) error {
 			return fail(fmt.Sprintf("retainedUnknown[%d] repeats or reverses a source position", i))
 		}
 		if !exists || record.RecordIndex != previous.record {
-			previous.pointers = nil
+			previous.pointers = &retainedPointerNode{}
 		}
-		for _, pointer := range previous.pointers {
-			if pointer == record.Pointer || strings.HasPrefix(pointer, record.Pointer+"/") || strings.HasPrefix(record.Pointer, pointer+"/") {
-				return fail(fmt.Sprintf("retainedUnknown[%d] duplicates or overlaps a source pointer", i))
-			}
+		if !previous.pointers.insert(record.Pointer) {
+			return fail(fmt.Sprintf("retainedUnknown[%d] duplicates or overlaps a source pointer", i))
 		}
 		if err := ScanRawJSONDocument([]byte(record.Payload), RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64}); err != nil {
 			return fail(fmt.Sprintf("retainedUnknown[%d].payload is not complete valid JSON: %v", i, err))
 		}
-		sources[record.SourceRef] = cursor{record.Position, record.RecordIndex, append(previous.pointers, record.Pointer)}
-	}
-	if len(value.RetainedUnknown) > 0 {
-		wire, err := json.Marshal(value)
-		if err != nil {
-			return fail("detail cannot be serialized: " + err.Error())
-		}
-		if len(wire) > 8<<20 {
-			return fail("detail exceeds the existing 8 MiB outer transport limit")
-		}
+		sources[record.SourceRef] = cursor{record.Position, record.RecordIndex, previous.pointers}
 	}
 	return nil
+}
+
+// One node per pointer component gives linear growth in source pointer bytes,
+// not pairwise scans or copies of all earlier sibling blocks. Encoded RFC 6901
+// components are unique, so decoding ~0/~1 is unnecessary for ancestry checks.
+type retainedPointerNode struct {
+	terminal bool
+	children map[string]*retainedPointerNode
+}
+
+func (node *retainedPointerNode) insert(pointer string) bool {
+	if pointer != "" {
+		for _, component := range strings.Split(pointer[1:], "/") {
+			if node.terminal {
+				return false
+			}
+			if node.children == nil {
+				node.children = make(map[string]*retainedPointerNode)
+			}
+			child := node.children[component]
+			if child == nil {
+				child = &retainedPointerNode{}
+				node.children[component] = child
+			}
+			node = child
+		}
+	}
+	if node.terminal || len(node.children) > 0 {
+		return false
+	}
+	node.terminal = true
+	return true
 }
 
 func validUnknownPointer(pointer string) bool {

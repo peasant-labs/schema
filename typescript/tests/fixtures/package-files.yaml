@@ -37,6 +37,8 @@ files:
   - dist/internal/generated/timeline-fixtures.gen.js
   - dist/internal/generated/versions.gen.d.ts
   - dist/internal/generated/versions.gen.js
+  - dist/internal/generated/wire-alias-shapes.gen.d.ts
+  - dist/internal/generated/wire-alias-shapes.gen.js
   - dist/internal/generated/village-api.d.ts
   - dist/internal/generated/village-api.js
   - dist/local-api.d.ts

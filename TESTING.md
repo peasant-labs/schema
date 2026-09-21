@@ -349,6 +349,17 @@ validation before persistence. Capability accumulation and producer ordering
 also run through `testdata/content_capability_session_graph.yaml` in both
 languages.
 
+`testdata/retained_unknown_boundaries.yaml` adds ordered canonical/alias
+overwrites at standalone, envelope and nested evidence boundaries. The baseline
+carries every preservation capability, so a case-fold overwrite cannot make
+negotiation disappear. Independent fixture-only structs capture original source
+evidence before production decoding; negative truncation and normalization
+mutations prove that preservation assertions fail on byte loss. Payload-only
+mutations must also change the real canonical publication fingerprint. The main
+corpus covers 12,000 sibling pointers without changing their external order,
+escape-heavy and Unicode input, and actual transport-byte boundaries independent
+of optional HTML escaping during a different serialization.
+
 Typed test corpora live in `testdata/` trees, one family per surface:
 
 - top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,

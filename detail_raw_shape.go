@@ -60,6 +60,9 @@ func validateWireShape(raw json.RawMessage, typ reflect.Type, path string) error
 		if err := json.Unmarshal(raw, &fields); err != nil {
 			return fail("object required")
 		}
+		if err := rejectNoncanonicalWireKeys(fields, typ, path); err != nil {
+			return err
+		}
 		for i := 0; i < typ.NumField(); i++ {
 			field := typ.Field(i)
 			tag := strings.Split(field.Tag.Get("json"), ",")
@@ -88,6 +91,25 @@ func validateWireShape(raw json.RawMessage, typ reflect.Type, path string) error
 		for i, item := range items {
 			if err := validateWireShape(item, typ.Elem(), fmt.Sprintf("%s/%d", path, i)); err != nil {
 				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Reject only aliases of declared keys. Truly unrelated additive fields remain
+// forward compatible, and opaque JSON payload strings/maps are not interpreted.
+// encoding/json folds Unicode case as well as ASCII, hence EqualFold here.
+func rejectNoncanonicalWireKeys(fields map[string]json.RawMessage, typ reflect.Type, path string) error {
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		name := strings.Split(field.Tag.Get("json"), ",")[0]
+		if field.PkgPath != "" || name == "" || name == "-" {
+			continue
+		}
+		for key := range fields {
+			if key != name && strings.EqualFold(key, name) {
+				return fmt.Errorf("wire alias validation failed at schema raw decoder during pre-decode validation of %s: key %q aliases canonical field %q; Go decoding could overwrite validated evidence; use only the exact published field name", path, key, name)
 			}
 		}
 	}

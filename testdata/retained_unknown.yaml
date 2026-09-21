@@ -21,6 +21,7 @@ required_names:
   - null_records
   - malformed_payload
   - duplicate_payload_keys
+  - plain_duplicate_payload_keys
   - unicode_payload
   - large_number_payload
   - empty_kind
@@ -49,6 +50,13 @@ required_names:
   - fractional_position
   - string_position
   - whitespace_preserved
+  - escape_heavy_transport
+  - unicode_transport
+  - exact_transport_limit
+  - over_actual_transport
+  - many_sibling_blocks
+  - descendant_then_ancestor
+  - opaque_payload_key_cases
 cases:
   - &valid
     name: claude_code
@@ -119,7 +127,10 @@ cases:
     input: {record_patch: '{"payload":"{broken"}'}
   - <<: *semantic_invalid
     name: duplicate_payload_keys
-    input: {record_patch: '{"payload":"{\"a\":1,\"\u0061\":2}"}'}
+    input: {record_patch: '{"payload":"{\"a\":1,\"\\u0061\":2}"}'}
+  - <<: *semantic_invalid
+    name: plain_duplicate_payload_keys
+    input: {record_patch: '{"payload":"{\"a\":1,\"a\":2}"}'}
   - <<: *semantic_invalid
     name: unicode_payload
     input: {record_patch: '{"payload":"\"\\uD800\""}'}
@@ -209,3 +220,27 @@ cases:
   - <<: *valid
     name: whitespace_preserved
     input: {record_patch: '{"payload":" \n { \"z\": 1e+099, \"a\": [null, true, \"<redacted>\"] } \n"}'}
+  - <<: *valid
+    name: escape_heavy_transport
+    input: {payload_bytes: 500000, payload_unit: '<>&'}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true, html_encoding_over_limit: true}
+  - <<: *valid
+    name: unicode_transport
+    input: {payload_bytes: 10000, payload_unit: "\u2028\u2029"}
+  - <<: *valid
+    name: exact_transport_limit
+    input: {transport_bytes: 8388608}
+    expected: {valid: true, shape_valid: true, typed_valid: true, value_valid: true, envelope_valid: false, capability: true}
+  - <<: *semantic_invalid
+    name: over_actual_transport
+    input: {transport_bytes: 8388609}
+    expected: {valid: false, shape_valid: true, typed_valid: true, value_valid: true}
+  - <<: *valid
+    name: many_sibling_blocks
+    input: {sibling_blocks: 12000}
+  - <<: *semantic_invalid
+    name: descendant_then_ancestor
+    input: {record_patch: '{"pointer":"/message/content/1"}', second_record_patch: '{"position":5,"pointer":"/message"}'}
+  - <<: *valid
+    name: opaque_payload_key_cases
+    input: {record_patch: '{"payload":"{\"Payload\":null,\"payload\":[],\"Diagnostics\":false,\"diagnostics\":true}"}'}
