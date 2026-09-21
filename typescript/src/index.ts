@@ -204,6 +204,7 @@ function pointerMatches(pattern: string, path: string): boolean { const expected
 
 type Detail = import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
 function validateSessionDetail(payload: Detail): void {
+	validateRetainedUnknown(payload);
   validateRelationships(payload);
   const state = newDetailState(payload);
   const turns = validateTurnEvidence(payload.turns ?? [], state);
@@ -213,6 +214,23 @@ function validateSessionDetail(payload: Detail): void {
     validateMetadataRecords(section.nativeMetadata ?? [], earlierTurns, state);
   }
   if (state.nativeCount > 0 && String(payload.harness) !== "pi") failSemantic("Pi native metadata requires harness pi across every history partition");
+}
+
+function validateRetainedUnknown(payload: Detail): void {
+  if ((payload.retainedUnknown?.length ?? 0) > 0 && payload.diagnostics?.partial !== true) failSemantic("retainedUnknown requires diagnostics.partial=true");
+  if ((payload.retainedUnknown?.length ?? 0) > 0 && new TextEncoder().encode(JSON.stringify(payload)).length > (8 << 20)) failSemantic("detail exceeds the existing 8 MiB outer transport limit");
+  const sources = new Map<string, { position: number; record: number; pointers: string[] }>();
+  for (const record of payload.retainedUnknown ?? []) {
+    if (!Number.isSafeInteger(record.recordIndex) || !Number.isSafeInteger(record.position) || record.recordIndex < 0 || record.position < record.recordIndex) failSemantic("retainedUnknown has invalid recordIndex or position");
+    // Scan strings as JSON as well: typed JS values can contain unpaired surrogates.
+    scanRawJsonText(JSON.stringify([record.sourceRef, record.namespace, record.kind, record.pointer]));
+    const previous = sources.get(record.sourceRef);
+    if (previous !== undefined && (record.position <= previous.position || record.recordIndex < previous.record)) failSemantic("retainedUnknown repeats or reverses a source position");
+    const pointers = previous?.record === record.recordIndex ? previous.pointers : [];
+    if (pointers.some(pointer => pointer === record.pointer || pointer.startsWith(record.pointer + "/") || record.pointer.startsWith(pointer + "/"))) failSemantic("retainedUnknown duplicates or overlaps a source pointer");
+    scanRawJsonText(record.payload, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64 });
+    sources.set(record.sourceRef, {position: record.position, record: record.recordIndex, pointers: [...pointers, record.pointer]});
+  }
 }
 
 function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailReadPayload {

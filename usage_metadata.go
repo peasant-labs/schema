@@ -280,6 +280,9 @@ func ValidateUsageDetail(v UsageDetail) error {
 }
 
 func ValidateSessionDetailPayload(value SessionDetailPayload) error {
+	if err := ValidateRetainedUnknown(value); err != nil {
+		return err
+	}
 	knownHarness := false
 	for _, harness := range Harnesses() {
 		if value.Harness == harness {

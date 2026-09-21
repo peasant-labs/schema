@@ -334,6 +334,21 @@ the JSON tags and struct shapes, and the validator behaviour.
 
 ## Layer 3: fixture families and the fixture idiom
 
+`testdata/retained_unknown.yaml` drives the Go typed/raw detail and envelope
+decoders, generated Types schema, TypeScript generated shape validators and
+public runtime parsers. Strict loading guards required case names and the full
+ingestion harness inventory (including all six native fallback producers).
+Deletion mutations prove every required case is load-bearing. The corpus covers
+legacy absence, open kind namespaces, required source positions and pointers,
+duplicate/overlapping locations, invalid JSON and Unicode, exact payload-text
+round trips with large number literals and whitespace, partial-state mirrors,
+canonical publication fingerprint binding, and existing transport byte limits.
+Shape checks are deliberately distinguished from semantic source-order and
+embedded-JSON checks: receivers use the public raw decoders, not shape-only
+validation before persistence. Capability accumulation and producer ordering
+also run through `testdata/content_capability_session_graph.yaml` in both
+languages.
+
 Typed test corpora live in `testdata/` trees, one family per surface:
 
 - top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,

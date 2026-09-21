@@ -622,6 +622,7 @@ export interface components {
          * @enum {string}
          */
         SchemaInsightProvenance: Schema.InsightProvenance;
+        SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
         SchemaLocalSessionListItem: Schema.LocalSessionListItem;
         SchemaLocalSessionListPayload: Schema.LocalSessionListPayload;
@@ -768,6 +769,7 @@ export interface components {
          * @enum {string}
          */
         SchemaRelationshipTargetState: Schema.RelationshipTargetState;
+        SchemaRetainedUnknownRecord: Schema.RetainedUnknownRecord;
         SchemaReviewListPayload: Schema.ReviewListPayload;
         /**
          * Rewrite Method

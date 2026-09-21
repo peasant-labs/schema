@@ -1,0 +1,211 @@
+base_detail: '{"id":"11111111-1111-4111-8111-111111111111","harness":"claude-code","startTime":"2026-01-01T00:00:00Z","endTime":"2026-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"turns":[],"diagnostics":{"partial":true}}'
+base_record: '{"sourceRef":"source-0","recordIndex":2,"position":4,"pointer":"","namespace":"record","kind":"future_kind","payload":"{\"type\":\"future_kind\",\"secret\":\"[REDACTED]\",\"big\":9007199254740993}"}'
+required_harnesses: [claude-code, codex, cursor, strike, opencode, pi, gemini-cli]
+required_names:
+  - absent_legacy
+  - claude_code
+  - codex
+  - cursor
+  - strike
+  - opencode
+  - pi
+  - gemini_cli
+  - unknown_block
+  - future_kind_open
+  - extra_known_fields
+  - invalid_known_field
+  - missing_partial
+  - false_partial
+  - diagnostics_only
+  - null_diagnostics
+  - null_records
+  - malformed_payload
+  - duplicate_payload_keys
+  - unicode_payload
+  - large_number_payload
+  - empty_kind
+  - empty_namespace
+  - empty_source
+  - negative_record
+  - unsafe_position
+  - position_before_record
+  - bad_pointer
+  - repeated_position
+  - reversed_record
+  - duplicate_pointer
+  - overlapping_pointer
+  - ordered_blocks
+  - independent_sources
+  - ordered_records
+  - large_payload
+  - over_transport
+  - metadata_mirror_true
+  - metadata_mirror_false
+  - metadata_mirror_missing
+  - missing_pointer
+  - missing_payload
+  - null_payload
+  - nonstring_payload
+  - fractional_position
+  - string_position
+  - whitespace_preserved
+cases:
+  - &valid
+    name: claude_code
+    classification: must-pass
+    provenance: {source: requirement, ref: retained-unknown-contract}
+    mutation: {description: Preserve unknown source evidence without native ordinal}
+    input: {harness: claude-code}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true}
+  - <<: *valid
+    name: codex
+    input: {harness: codex}
+  - <<: *valid
+    name: cursor
+    input: {harness: cursor}
+  - <<: *valid
+    name: strike
+    input: {harness: strike}
+  - <<: *valid
+    name: opencode
+    input: {harness: opencode}
+  - <<: *valid
+    name: pi
+    input: {harness: pi}
+  - <<: *valid
+    name: gemini_cli
+    input: {harness: gemini-cli}
+  - <<: *valid
+    name: absent_legacy
+    input: {drop_retention: true, drop_diagnostics: true}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: false}
+  - <<: *valid
+    name: unknown_block
+    input: {record_patch: '{"pointer":"/message/content/1","namespace":"message.block"}'}
+  - <<: *valid
+    name: future_kind_open
+    input: {record_patch: '{"kind":"future_2099_opaque","namespace":"future/namespace"}'}
+  - <<: *valid
+    name: extra_known_fields
+    input: {detail_patch: '{"futureOptionalField":42}'}
+  - &invalid
+    <<: *valid
+    name: invalid_known_field
+    classification: must-fail
+    mutation: {description: Invalid known harness must not be accepted as unknown evidence}
+    input: {harness: future-harness}
+    expected: {valid: false, shape_valid: false, typed_valid: false}
+  - &semantic_invalid
+    <<: *invalid
+    name: missing_partial
+    mutation: {description: Retention without partial signaling must refuse}
+    input: {drop_diagnostics: true}
+    expected: {valid: false, shape_valid: true, typed_valid: false}
+  - <<: *semantic_invalid
+    name: false_partial
+    input: {detail_patch: '{"diagnostics":{"partial":false}}'}
+  - <<: *valid
+    name: diagnostics_only
+    input: {drop_retention: true, detail_patch: '{"diagnostics":{"partial":false}}'}
+  - <<: *invalid
+    name: null_diagnostics
+    input: {detail_patch: '{"diagnostics":null}'}
+  - <<: *invalid
+    name: null_records
+    input: {detail_patch: '{"retainedUnknown":null}'}
+    expected: {valid: false, shape_valid: false, typed_valid: true}
+  - <<: *semantic_invalid
+    name: malformed_payload
+    input: {record_patch: '{"payload":"{broken"}'}
+  - <<: *semantic_invalid
+    name: duplicate_payload_keys
+    input: {record_patch: '{"payload":"{\"a\":1,\"\u0061\":2}"}'}
+  - <<: *semantic_invalid
+    name: unicode_payload
+    input: {record_patch: '{"payload":"\"\\uD800\""}'}
+  - <<: *valid
+    name: large_number_payload
+    input: {record_patch: '{"payload":"{\"huge\":1e999,\"tiny\":1e-999,\"integer\":9007199254740993}"}'}
+  - <<: *invalid
+    name: empty_kind
+    input: {record_patch: '{"kind":""}'}
+  - <<: *invalid
+    name: empty_namespace
+    input: {record_patch: '{"namespace":""}'}
+  - <<: *invalid
+    name: empty_source
+    input: {record_patch: '{"sourceRef":""}'}
+  - <<: *invalid
+    name: negative_record
+    input: {record_patch: '{"recordIndex":-1}'}
+  - <<: *invalid
+    name: unsafe_position
+    input: {record_patch: '{"position":9007199254740992}'}
+  - <<: *semantic_invalid
+    name: position_before_record
+    input: {record_patch: '{"position":1}'}
+  - <<: *invalid
+    name: bad_pointer
+    input: {record_patch: '{"pointer":"/bad~2escape"}'}
+  - <<: *semantic_invalid
+    name: repeated_position
+    input: {second_record_patch: '{}'}
+  - <<: *semantic_invalid
+    name: reversed_record
+    input: {second_record_patch: '{"position":5,"recordIndex":1}'}
+  - <<: *semantic_invalid
+    name: duplicate_pointer
+    input: {second_record_patch: '{"position":5}'}
+  - <<: *semantic_invalid
+    name: overlapping_pointer
+    input: {record_patch: '{"pointer":"/message"}', second_record_patch: '{"position":5,"pointer":"/message/content/1"}'}
+  - <<: *valid
+    name: ordered_blocks
+    input: {record_patch: '{"pointer":"/message/content/1"}', second_record_patch: '{"position":5,"pointer":"/message/content/3"}'}
+  - <<: *valid
+    name: independent_sources
+    input: {second_record_patch: '{"sourceRef":"source-1"}'}
+  - <<: *valid
+    name: ordered_records
+    input: {second_record_patch: '{"recordIndex":4,"position":8}'}
+  - <<: *valid
+    name: large_payload
+    mutation: {description: Full retained JSON exceeds native metadata budget without truncation}
+    input: {payload_bytes: 70000}
+  - <<: *semantic_invalid
+    name: over_transport
+    mutation: {description: Full document exceeds the existing outer transport limit and refuses without truncation}
+    input: {payload_bytes: 8388608}
+  - <<: *valid
+    name: metadata_mirror_true
+    input: {metadata_partial: true}
+  - <<: *valid
+    name: metadata_mirror_false
+    input: {metadata_partial: false}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true, mirror_invalid: true}
+  - <<: *valid
+    name: metadata_mirror_missing
+    input: {metadata_missing: true}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true, mirror_invalid: true}
+  - <<: *invalid
+    name: missing_pointer
+    input: {drop_record_field: pointer}
+    expected: {valid: false, shape_valid: false, typed_valid: true}
+  - <<: *invalid
+    name: missing_payload
+    input: {drop_record_field: payload}
+  - <<: *invalid
+    name: null_payload
+    input: {record_patch: '{"payload":null}'}
+  - <<: *invalid
+    name: nonstring_payload
+    input: {record_patch: '{"payload":{"future":true}}'}
+  - <<: *invalid
+    name: fractional_position
+    input: {record_patch: '{"position":4.5}'}
+  - <<: *invalid
+    name: string_position
+    input: {record_patch: '{"position":"4"}'}
+  - <<: *valid
+    name: whitespace_preserved
+    input: {record_patch: '{"payload":" \n { \"z\": 1e+099, \"a\": [null, true, \"<redacted>\"] } \n"}'}

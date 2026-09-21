@@ -12,6 +12,7 @@ import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinem
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
+import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -45,7 +46,12 @@ await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
-await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog));
+const capabilities = renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog);
+const detailVisit = "  visitTurns(detail.turns, found);";
+if (capabilities.split(detailVisit).length !== 2) throw new Error("retained capability generation failed: durable-detail visit is missing or duplicated; requirements cannot be derived safely; update the generator before publishing");
+await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), capabilities.replace(detailVisit,
+  `  if ((detail.retainedUnknown?.length ?? 0) > 0 || detail.diagnostics !== undefined) found.add(${contentCapabilityCatalog.known.name}.RetainedUnknownV1);\n${detailVisit}`,
+));
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
@@ -57,7 +63,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = await readFile(zodPath, "utf8");
+  const source = applyRetainedUnknownZodRefinements(await readFile(zodPath, "utf8"));
   await writeFile(zodPath, applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))));
 }
 
