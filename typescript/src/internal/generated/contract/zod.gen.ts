@@ -3219,6 +3219,7 @@ export const zVillagePullRequestAttachmentState = z.enum([
 export type VillagePullRequestAttachmentState = z.infer<typeof zVillagePullRequestAttachmentState>;
 
 export const zVillagePromptRequest = z.object({
+    head_remote: z.string(),
     name: z.string(),
     number: z.int(),
     owner: z.string(),
