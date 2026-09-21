@@ -114,11 +114,12 @@ type VillagePullRequestAttachmentResponse struct {
 }
 
 // VillagePromptRequest is one attachment waiting on the caller's machine.
-// Remote is the normalized remote of the repository the pull request was opened
-// against, and HeadRemote the one its head came from: a fork's repository, or
-// the base itself for a same-repository pull request. Together they let the CLI
-// match the repository it is pushing without re-deriving either rule, so a push
-// from a clone of a fork matches the request waiting on that fork's author.
+// Remote is the full name of the repository the pull request was opened against,
+// and HeadRemote the full name of the repository its head came from: a fork's
+// repository, or the base itself for a same-repository pull request. Together
+// they let the CLI match the repository it is pushing, normalizing its own git
+// remote first, without re-deriving either rule, so a push from a clone of a
+// fork matches the request waiting on that fork's author.
 type VillagePromptRequest struct {
 	Owner       string                            `json:"owner"`
 	Name        string                            `json:"name"`

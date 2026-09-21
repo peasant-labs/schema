@@ -745,7 +745,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the caller's attachments that are waiting for a transcript from the caller's machine, with each repository's normalized remote so a client can match the repository it is about to push. */
+        /** @description List the caller's attachments that are waiting for a transcript from the caller's machine, naming both the base and head remotes of each pull request so a client can match the repository it is about to push against either. */
         get: operations["listMyPromptRequests"];
         put?: never;
         post?: never;
