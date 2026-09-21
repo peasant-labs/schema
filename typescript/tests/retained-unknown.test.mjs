@@ -12,6 +12,7 @@ function input(recipe) {
   const detail = JSON.parse(fixture.base_detail), record = {...JSON.parse(fixture.base_record), ...JSON.parse(recipe.record_patch ?? "{}")};
   if (recipe.drop_record_field) delete record[recipe.drop_record_field];
   if (recipe.payload_bytes) record.payload = JSON.stringify((recipe.payload_unit ?? "x").repeat(recipe.payload_bytes));
+  if (recipe.payload_depth) record.payload = (`{${JSON.stringify(recipe.payload_depth_key)}:`).repeat(recipe.payload_depth) + "0" + "}".repeat(recipe.payload_depth);
   detail.retainedUnknown = [record];
   if (recipe.sibling_blocks) detail.retainedUnknown = Array.from({length: recipe.sibling_blocks}, (_, i) => ({...JSON.parse(fixture.base_record), pointer: `/content/${i}`, position: i + 4}));
   if (recipe.second_record_patch !== undefined) detail.retainedUnknown.push({...JSON.parse(fixture.base_record), ...JSON.parse(recipe.second_record_patch)});
@@ -27,6 +28,21 @@ test("retained evidence survives public TypeScript boundaries without numeric lo
     let text = JSON.stringify(detail);
     if (row.input.transport_bytes) text += " ".repeat(row.input.transport_bytes - Buffer.byteLength(text));
     const envelopeText = `{"contractVersion":"1.0.0","kind":"session_detail","sessionDetail":${text}}`;
+    if (row.expected.error_excludes) {
+      const safeRejection = (parse) => {
+        assert.throws(parse, error => {
+          assert.ok(String(error).includes(row.expected.error_contains));
+          for (const sentinel of row.expected.error_excludes) assert.ok(!String(error).includes(sentinel), "diagnostic disclosed untrusted retained evidence");
+          assert.equal(error.cause, undefined, "underlying scanner error must not escape through cause");
+          return true;
+        });
+      };
+      const original = structuredClone(detail);
+      safeRejection(() => parseSessionDetailPayloadValue(detail));
+      safeRejection(() => parseSessionDetailPayloadText(text));
+      safeRejection(() => parseTranscriptContentText(envelopeText));
+      assert.deepEqual(detail, original, "rejected evidence must not be sanitized or mutated");
+    }
     assert.equal(zSessionDetailPayload.safeParse(detail).success, row.expected.shape_valid, "generated shape");
     if (row.expected.value_valid ?? row.expected.valid) assert.doesNotThrow(() => parseSessionDetailPayloadValue(detail));
     else assert.throws(() => parseSessionDetailPayloadValue(detail));

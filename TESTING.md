@@ -360,6 +360,13 @@ corpus covers 12,000 sibling pointers without changing their external order,
 escape-heavy and Unicode input, and actual transport-byte boundaries independent
 of optional HTML escaping during a different serialization.
 
+The retained corpus also pins valid `~0`/`~1` pointer siblings, escaped-component
+ancestry and whole-record root conflicts in both insertion orders. Private-key
+sentinels in duplicate, malformed and depth-invalid JSON must remain absent from
+typed and raw Go detail/envelope errors and public TypeScript errors. These
+checks also forbid underlying scanner cause chains, require the safe canonical
+field/index, and prove rejection does not mutate the evidence.
+
 Typed test corpora live in `testdata/` trees, one family per surface:
 
 - top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,

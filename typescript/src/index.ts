@@ -222,7 +222,7 @@ function validateSessionDetail(payload: Detail): void {
 function validateRetainedUnknown(payload: Detail): void {
   if ((payload.retainedUnknown?.length ?? 0) > 0 && payload.diagnostics?.partial !== true) failSemantic("retainedUnknown requires diagnostics.partial=true");
   const sources = new Map<string, { position: number; record: number; pointers: RetainedPointerNode }>();
-  for (const record of payload.retainedUnknown ?? []) {
+  for (const [index, record] of (payload.retainedUnknown ?? []).entries()) {
     if (!Number.isSafeInteger(record.recordIndex) || !Number.isSafeInteger(record.position) || record.recordIndex < 0 || record.position < record.recordIndex) failSemantic("retainedUnknown has invalid recordIndex or position");
     // Scan strings as JSON as well: typed JS values can contain unpaired surrogates.
     scanRawJsonText(JSON.stringify([record.sourceRef, record.namespace, record.kind, record.pointer]));
@@ -230,7 +230,13 @@ function validateRetainedUnknown(payload: Detail): void {
     if (previous !== undefined && (record.position <= previous.position || record.recordIndex < previous.record)) failSemantic("retainedUnknown repeats or reverses a source position");
     const pointers = previous?.record === record.recordIndex ? previous.pointers : new RetainedPointerNode();
     if (!pointers.insert(record.pointer)) failSemantic("retainedUnknown duplicates or overlaps a source pointer");
-    scanRawJsonText(record.payload, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64 });
+    try {
+      scanRawJsonText(record.payload, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64 });
+    } catch {
+      // Native keys/paths are untrusted even when a producer claims redaction.
+      // Do not expose the scanner exception, its message, or a cause chain.
+      failSemantic(`retainedUnknown[${index}].payload failed JSON syntax or safety validation; provide one complete JSON value with valid Unicode, unique object keys, and the published byte/depth bounds`);
+    }
     sources.set(record.sourceRef, {position: record.position, record: record.recordIndex, pointers});
   }
 }

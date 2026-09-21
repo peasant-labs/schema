@@ -57,6 +57,14 @@ required_names:
   - many_sibling_blocks
   - descendant_then_ancestor
   - opaque_payload_key_cases
+  - escaped_pointer_siblings
+  - escaped_pointer_ancestor
+  - root_then_descendant
+  - descendant_then_root
+  - private_duplicate_diagnostic
+  - private_malformed_diagnostic
+  - private_depth_diagnostic
+  - private_second_record_diagnostic
 cases:
   - &valid
     name: claude_code
@@ -244,3 +252,38 @@ cases:
   - <<: *valid
     name: opaque_payload_key_cases
     input: {record_patch: '{"payload":"{\"Payload\":null,\"payload\":[],\"Diagnostics\":false,\"diagnostics\":true}"}'}
+  - <<: *valid
+    name: escaped_pointer_siblings
+    input: {record_patch: '{"pointer":"/content/a~0b~1c"}', second_record_patch: '{"position":5,"pointer":"/content/a~1b~0c"}'}
+  - <<: *semantic_invalid
+    name: escaped_pointer_ancestor
+    input: {record_patch: '{"pointer":"/content/a~1b"}', second_record_patch: '{"position":5,"pointer":"/content/a~1b/child~0name"}'}
+  - <<: *semantic_invalid
+    name: root_then_descendant
+    input: {second_record_patch: '{"position":5,"pointer":"/content/1"}'}
+  - <<: *semantic_invalid
+    name: descendant_then_root
+    input: {record_patch: '{"pointer":"/content/1"}', second_record_patch: '{"position":5,"pointer":""}'}
+  - &private_diagnostic
+    <<: *semantic_invalid
+    name: private_duplicate_diagnostic
+    mutation: {description: Rejection must not print native payload keys or source identity}
+    input: {record_patch: '{"sourceRef":"private-source","kind":"private-kind","namespace":"private-namespace","pointer":"/private-pointer","payload":"{\"/home/private/person/token-SENSITIVE\":1,\"/home/private/person/token-SENSITIVE\":2}"}'}
+    expected: &private_expected
+      valid: false
+      typed_valid: false
+      shape_valid: true
+      error_contains: retainedUnknown[0].payload
+      error_excludes: [token-SENSITIVE, /home/private/person, private-value, private-source, private-kind, private-namespace, /private-pointer]
+  - <<: *private_diagnostic
+    name: private_malformed_diagnostic
+    input: {record_patch: '{"sourceRef":"private-source","kind":"private-kind","namespace":"private-namespace","pointer":"/private-pointer","payload":"{\"/home/private/person/token-SENSITIVE\":{\"private-value\":!}}"}'}
+  - <<: *private_diagnostic
+    name: private_depth_diagnostic
+    input: {payload_depth: 65, payload_depth_key: '/home/private/person/token-SENSITIVE', record_patch: '{"sourceRef":"private-source","kind":"private-kind","namespace":"private-namespace","pointer":"/private-pointer"}'}
+  - <<: *private_diagnostic
+    name: private_second_record_diagnostic
+    input: {second_record_patch: '{"recordIndex":3,"position":5,"payload":"{\"/home/private/person/token-SENSITIVE\":1,\"/home/private/person/token-SENSITIVE\":2}"}'}
+    expected:
+      <<: *private_expected
+      error_contains: retainedUnknown[1].payload

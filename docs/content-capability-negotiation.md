@@ -161,6 +161,13 @@ redaction applies before durable storage or publication, including unknown
 nested data. Additional fields on recognized native records do not by themselves
 make a record unknown; malformed known fields remain invalid.
 
+Invalid retained payloads are untrusted even when a producer claims redaction.
+Public rejection diagnostics identify only the retained array index, canonical
+`payload` field and safe validation guidance. Native keys, paths, source
+references, pointers, snippets and original scanner messages or cause chains
+must never be copied into those diagnostics. This error boundary does not change
+JSON acceptance or mutate the rejected payload.
+
 Raw detail and envelope decoders reject noncanonical case-fold aliases of known
 wire keys before typed decoding can overwrite validated evidence. This includes
 nested diagnostics and source evidence as well as existing model, usage, native

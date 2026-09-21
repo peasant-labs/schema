@@ -70,7 +70,9 @@ func ValidateRetainedUnknown(value SessionDetailPayload) error {
 			return fail(fmt.Sprintf("retainedUnknown[%d] duplicates or overlaps a source pointer", i))
 		}
 		if err := ScanRawJSONDocument([]byte(record.Payload), RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64}); err != nil {
-			return fail(fmt.Sprintf("retainedUnknown[%d].payload is not complete valid JSON: %v", i, err))
+			// Scanner paths and keys are native, untrusted content. Do not render
+			// or wrap that error: even a cause chain could disclose private data.
+			return fail(fmt.Sprintf("retainedUnknown[%d].payload failed JSON syntax or safety validation; provide one complete JSON value with valid Unicode, unique object keys, and the published byte/depth bounds", i))
 		}
 		sources[record.SourceRef] = cursor{record.Position, record.RecordIndex, previous.pointers}
 	}

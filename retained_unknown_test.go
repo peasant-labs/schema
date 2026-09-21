@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -21,6 +22,8 @@ import (
 var retainedUnknownYAML []byte
 
 type retainedUnknownInput struct {
+	PayloadDepth      int     `yaml:"payload_depth"`
+	PayloadDepthKey   string  `yaml:"payload_depth_key"`
 	PayloadUnit       string  `yaml:"payload_unit"`
 	TransportBytes    int     `yaml:"transport_bytes"`
 	SiblingBlocks     int     `yaml:"sibling_blocks"`
@@ -36,14 +39,16 @@ type retainedUnknownInput struct {
 	MetadataMissing   bool    `yaml:"metadata_missing"`
 }
 type retainedUnknownExpected struct {
-	ValueValid            *bool `yaml:"value_valid"`
-	EnvelopeValid         *bool `yaml:"envelope_valid"`
-	HTMLEncodingOverLimit bool  `yaml:"html_encoding_over_limit"`
-	Valid                 bool  `yaml:"valid"`
-	ShapeValid            bool  `yaml:"shape_valid"`
-	TypedValid            bool  `yaml:"typed_valid"`
-	Capability            bool  `yaml:"capability"`
-	MirrorInvalid         bool  `yaml:"mirror_invalid"`
+	ErrorContains         string   `yaml:"error_contains"`
+	ErrorExcludes         []string `yaml:"error_excludes"`
+	ValueValid            *bool    `yaml:"value_valid"`
+	EnvelopeValid         *bool    `yaml:"envelope_valid"`
+	HTMLEncodingOverLimit bool     `yaml:"html_encoding_over_limit"`
+	Valid                 bool     `yaml:"valid"`
+	ShapeValid            bool     `yaml:"shape_valid"`
+	TypedValid            bool     `yaml:"typed_valid"`
+	Capability            bool     `yaml:"capability"`
+	MirrorInvalid         bool     `yaml:"mirror_invalid"`
 }
 type retainedUnknownFixtures struct {
 	BaseDetail        string                                                         `yaml:"base_detail"`
@@ -146,6 +151,13 @@ func retainedUnknownWire(t *testing.T, f retainedUnknownFixtures, in retainedUnk
 		}
 		record["payload"] = `"` + strings.Repeat(unit, in.PayloadBytes) + `"`
 	}
+	if in.PayloadDepth > 0 {
+		key, err := json.Marshal(in.PayloadDepthKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		record["payload"] = strings.Repeat("{"+string(key)+":", in.PayloadDepth) + "0" + strings.Repeat("}", in.PayloadDepth)
+	}
 	detail["retainedUnknown"] = []any{record}
 	if in.SiblingBlocks > 0 {
 		records := make([]any, in.SiblingBlocks)
@@ -236,13 +248,31 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 			if (err == nil) != row.Expected.TypedValid {
 				t.Errorf("typed=%v want valid=%v", err, row.Expected.TypedValid)
 			}
+			assertRetainedDiagnostic(t, err, row.Expected)
+			if len(row.Expected.ErrorExcludes) > 0 {
+				before, marshalErr := json.Marshal(typed)
+				if marshalErr != nil {
+					t.Fatal(marshalErr)
+				}
+				assertRetainedDiagnostic(t, schema.ValidateRetainedUnknown(typed), row.Expected)
+				assertRetainedDiagnostic(t, schema.ValidateTranscriptContent(schema.TranscriptContent{Kind: schema.ContentKindSessionDetail, SessionDetail: &typed}), row.Expected)
+				after, marshalErr := json.Marshal(typed)
+				if marshalErr != nil {
+					t.Fatal(marshalErr)
+				}
+				if !bytes.Equal(before, after) {
+					t.Fatal("rejected evidence was mutated to conceal a diagnostic")
+				}
+			}
 			detail, err := schema.DecodeSessionDetailPayloadRaw(raw)
+			assertRetainedDiagnostic(t, err, row.Expected)
 			if (err == nil) != row.Expected.Valid {
 				t.Fatalf("raw=%v want valid=%v", err, row.Expected.Valid)
 			}
 			envelopeRaw := append([]byte(`{"contractVersion":"1.0.0","kind":"session_detail","sessionDetail":`), raw...)
 			envelopeRaw = append(envelopeRaw, '}')
 			content, err := schema.DecodeTranscriptContentRaw(envelopeRaw)
+			assertRetainedDiagnostic(t, err, row.Expected)
 			envelopeValid := row.Expected.Valid
 			if row.Expected.EnvelopeValid != nil {
 				envelopeValid = *row.Expected.EnvelopeValid
@@ -374,6 +404,28 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 				t.Errorf("metadata mirror=%v want invalid=%v", err, row.Expected.MirrorInvalid)
 			}
 		})
+	}
+}
+
+func assertRetainedDiagnostic(t *testing.T, err error, expected retainedUnknownExpected) {
+	t.Helper()
+	if len(expected.ErrorExcludes) == 0 {
+		return
+	}
+	if err == nil {
+		t.Fatal("expected safe retained-evidence rejection")
+	}
+	message := fmt.Sprintf("%+v", err)
+	if !strings.Contains(message, expected.ErrorContains) {
+		t.Fatalf("diagnostic lacks canonical field/index %q: %s", expected.ErrorContains, message)
+	}
+	for _, sentinel := range expected.ErrorExcludes {
+		if strings.Contains(message, sentinel) {
+			t.Fatal("diagnostic disclosed untrusted retained evidence")
+		}
+	}
+	if errors.Unwrap(err) != nil {
+		t.Fatal("retained-payload rejection exposes an underlying scanner error chain")
 	}
 }
 
