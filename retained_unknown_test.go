@@ -228,7 +228,11 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 				if err := json.Unmarshal([]byte(publication.FingerprintMutations.Base), &operation); err != nil {
 					t.Fatal(err)
 				}
-				operation.ContentHash = schema.ComputeTranscriptContentHash(envelopeRaw)
+				canonicalContent, err := json.Marshal(content)
+				if err != nil {
+					t.Fatal(err)
+				}
+				operation.ContentHash = schema.ComputeTranscriptContentHash(canonicalContent)
 				before, err := schema.FingerprintPublishOperation(operation)
 				if err != nil {
 					t.Fatal(err)
