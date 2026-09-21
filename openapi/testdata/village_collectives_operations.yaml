@@ -236,7 +236,7 @@ operations:
     request_components: []
     response_components: [VillagePromptRequestsResponse]
     statuses: ["200", "401", "500"]
-    description_anchors: [waiting, remote]
+    description_anchors: [waiting, remote, head]
   - path: /api/v1/users/me/settings
     method: get
     operation_id: getMySettings
