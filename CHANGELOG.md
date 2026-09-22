@@ -5,6 +5,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.23.0] - 2026-09-20
+
+### Added
+
+- `head_remote` on prompt requests: the full name of the repository a pull
+  request's head came from (a fork's repository, or the base itself for a
+  same-repository pull request), beside the base the request already named. A
+  client matches the repository it is pushing against either, so a push from a
+  clone of the author's fork matches the request waiting on that author.
+  Village API 0.21.0, Types 0.23.0.
+
 ## [v0.22.0] - 2026-09-15
 
 ### Added
