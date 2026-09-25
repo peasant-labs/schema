@@ -25,10 +25,13 @@ const (
 	// ContentCapabilityToolNamespaceV1 guarantees exact separate namespace
 	// presence and value survival, including an explicitly recorded empty string.
 	ContentCapabilityToolNamespaceV1 ContentCapability = "tool_namespace_v1"
+	// ContentCapabilityRetainedUnknownV1 guarantees complete redacted unknown
+	// payload, source location, order, and partial-interpretation preservation.
+	ContentCapabilityRetainedUnknownV1 ContentCapability = "retained_unknown_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilitySessionGraphProvenanceV1, ContentCapabilityToolNamespaceV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilityRetainedUnknownV1, ContentCapabilitySessionGraphProvenanceV1, ContentCapabilityToolNamespaceV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
 func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
@@ -102,6 +105,9 @@ func MissingContentCapabilities(advertised, required []ContentCapability) []Cont
 // subagent turn, requires observed_model_v1.
 func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
 	required := make([]ContentCapability, 0, len(AllContentCapabilities))
+	if len(payload.RetainedUnknown) > 0 || payload.Diagnostics != nil {
+		required = append(required, ContentCapabilityRetainedUnknownV1)
+	}
 	graph := payload.InputSubmissionCount != nil || payload.RootSessionID != nil || payload.Purpose != "" || len(payload.Relationships) > 0 || len(payload.EarlierHistory) > 0
 	scanTurns := func(turns []TurnDetail) {
 		for _, turn := range turns {

@@ -231,6 +231,14 @@ types:
     disposition: catalog
     component: SessionDetailPayload
     reason: public wire or domain contract type
+  - go_name: RetainedUnknownRecord
+    disposition: catalog
+    component: RetainedUnknownRecord
+    reason: complete redacted unknown source record and ordered source location
+  - go_name: InterpretationDiagnostics
+    disposition: catalog
+    component: InterpretationDiagnostics
+    reason: durable partial interpretation status independent of outcome
   - go_name: SessionScorecard
     disposition: catalog
     component: SessionScorecard

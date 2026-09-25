@@ -6,6 +6,7 @@ import { requiredContentCapabilities, KnownContentCapability } from "./internal/
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";
 import { maxNativeMetadataStringBytes } from "./internal/generated/metadata-limits.gen.js";
+import { wireAliasShapes } from "./internal/generated/wire-alias-shapes.gen.js";
 
 function assertProjectHash(value: unknown, operation: "newProjectHash" | "validateProjectHash"): asserts value is ProjectHash {
   if (!isProjectHash(value)) {
@@ -63,6 +64,7 @@ function scanRawJson(text: string, policy: RawJsonPathPolicy): RawJsonScanner {
 }
 
 export function parseSessionDetailPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
+  rejectWireAliases(value, "SessionDetailPayload");
   rejectExplicitNullEvidence(value);
   validateRawGraphValue(value);
   const normalized = structuredClone(value);
@@ -117,6 +119,7 @@ export function parseTranscriptContentText(text: string): import("./internal/gen
   scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
   const raw: unknown = JSON.parse(text);
   if (!isRecord(raw)) return zTranscriptContent.parse(raw);
+  rejectWireAliases(raw, "TranscriptContent");
   const normalizedEnvelope = {...raw, sessionDetail: parseSessionDetailPayloadValue(raw.sessionDetail)};
   const content = zTranscriptContent.parse(normalizedEnvelope);
   if (content.sessionDetail === undefined || content.sessionDetail === null) failSemantic("sessionDetail is required");
@@ -204,6 +207,7 @@ function pointerMatches(pattern: string, path: string): boolean { const expected
 
 type Detail = import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
 function validateSessionDetail(payload: Detail): void {
+  validateRetainedUnknown(payload);
   validateRelationships(payload);
   const state = newDetailState(payload);
   const turns = validateTurnEvidence(payload.turns ?? [], state);
@@ -213,6 +217,64 @@ function validateSessionDetail(payload: Detail): void {
     validateMetadataRecords(section.nativeMetadata ?? [], earlierTurns, state);
   }
   if (state.nativeCount > 0 && String(payload.harness) !== "pi") failSemantic("Pi native metadata requires harness pi across every history partition");
+}
+
+function validateRetainedUnknown(payload: Detail): void {
+  if ((payload.retainedUnknown?.length ?? 0) > 0 && payload.diagnostics?.partial !== true) failSemantic("retainedUnknown requires diagnostics.partial=true");
+  const sources = new Map<string, { position: number; record: number; pointers: RetainedPointerNode }>();
+  for (const [index, record] of (payload.retainedUnknown ?? []).entries()) {
+    if (!Number.isSafeInteger(record.recordIndex) || !Number.isSafeInteger(record.position) || record.recordIndex < 0 || record.position < record.recordIndex) failSemantic("retainedUnknown has invalid recordIndex or position");
+    // Scan strings as JSON as well: typed JS values can contain unpaired surrogates.
+    scanRawJsonText(JSON.stringify([record.sourceRef, record.namespace, record.kind, record.pointer]));
+    const previous = sources.get(record.sourceRef);
+    if (previous !== undefined && (record.position <= previous.position || record.recordIndex < previous.record)) failSemantic("retainedUnknown repeats or reverses a source position");
+    const pointers = previous?.record === record.recordIndex ? previous.pointers : new RetainedPointerNode();
+    if (!pointers.insert(record.pointer)) failSemantic("retainedUnknown duplicates or overlaps a source pointer");
+    try {
+      scanRawJsonText(record.payload, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64 });
+    } catch {
+      // Native keys/paths are untrusted even when a producer claims redaction.
+      // Do not expose the scanner exception, its message, or a cause chain.
+      failSemantic(`retainedUnknown[${index}].payload failed JSON syntax or safety validation; provide one complete JSON value with valid Unicode, unique object keys, and the published byte/depth bounds`);
+    }
+    sources.set(record.sourceRef, {position: record.position, record: record.recordIndex, pointers});
+  }
+}
+
+class RetainedPointerNode {
+  private terminal = false;
+  private readonly children = new Map<string, RetainedPointerNode>();
+  insert(pointer: string): boolean {
+    let node: RetainedPointerNode = this;
+    for (const component of pointer === "" ? [] : pointer.slice(1).split("/")) {
+      if (node.terminal) return false;
+      let child = node.children.get(component);
+      if (child === undefined) { child = new RetainedPointerNode(); node.children.set(component, child); }
+      node = child;
+    }
+    if (node.terminal || node.children.size > 0) return false;
+    node.terminal = true;
+    return true;
+  }
+}
+
+type WireAliasShape = { fields?: Record<string, WireAliasShape | string>; items?: WireAliasShape | string };
+function rejectWireAliases(value: unknown, descriptor: WireAliasShape | string): void {
+  const shape: WireAliasShape | undefined = typeof descriptor === "string" ? (wireAliasShapes as Record<string, WireAliasShape>)[descriptor] : descriptor;
+  if (shape === undefined) return;
+  if (shape.items !== undefined && Array.isArray(value)) { for (const item of value) rejectWireAliases(item, shape.items); }
+  if (shape.fields === undefined || !isRecord(value)) return;
+  const fields = shape.fields;
+  // All canonical contract keys are ASCII. Go's Unicode simple-fold aliases
+  // additionally include long s and Kelvin sign; lowercasing handles the latter.
+  const fold = (key: string) => key.replaceAll("ſ", "s").toLowerCase();
+  const canonical = new Map(Object.keys(fields).map(key => [fold(key), key]));
+  for (const key of Object.keys(value)) {
+    const name = canonical.get(fold(key));
+    if (name !== undefined && key !== name) failSemantic(`key ${key} aliases canonical field ${name}; use only exact published field names`);
+    const child = fields[key];
+    if (child !== undefined) rejectWireAliases(value[key], child);
+  }
 }
 
 function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailReadPayload {

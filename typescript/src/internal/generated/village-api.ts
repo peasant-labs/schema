@@ -978,6 +978,7 @@ export interface components {
          * @enum {string}
          */
         SchemaInputModality: Schema.InputModality;
+        SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
         /**
          * License
          * @description Content license for a published transcript
@@ -1101,6 +1102,7 @@ export interface components {
          * @enum {string}
          */
         SchemaRelationshipTargetState: Schema.RelationshipTargetState;
+        SchemaRetainedUnknownRecord: Schema.RetainedUnknownRecord;
         /**
          * Role
          * @description Sender role of a message turn

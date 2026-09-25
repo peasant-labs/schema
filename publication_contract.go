@@ -159,6 +159,12 @@ type AuthoritativeDiagnosticsInfo struct {
 // turn totals can remain different. InputSubmissionCount presence does not
 // identify the projection format.
 func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metadata UnifiedMetadata, schemaVersion int, projectedMainCount bool) (AuthoritativeSessionIdentity, AuthoritativeSessionStats, []AuthoritativeSubagentRef, error) {
+	if err := ValidateRetainedUnknown(detail); err != nil {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, err
+	}
+	if detail.Diagnostics != nil && (metadata.Diagnostics.Partial == nil || *metadata.Diagnostics.Partial != detail.Diagnostics.Partial) {
+		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata diagnostics.partial disagrees with durable detail", "derive publication diagnostics.partial from the committed durable detail")
+	}
 	if schemaVersion <= 0 {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "schemaVersion is not positive", "provide the positive source schema version")
 	}
