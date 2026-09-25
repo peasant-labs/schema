@@ -5,6 +5,24 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.24.0] - 2026-09-25
+
+### Added
+
+- Retained unknown records and partial interpretation: harness formats
+  change often, and a new field or record kind must not make an otherwise
+  readable session unusable. `SessionDetailPayload.RetainedUnknown`
+  (`RetainedUnknownRecord`) carries each unfamiliar payload through export
+  and publication with its source position (`sourceRef`, `recordIndex`,
+  `position`, `pointer`), origin (`namespace`, `kind`), and complete
+  redacted JSON text (numeric spelling and lexical bytes preserved), while
+  `Diagnostics.Partial` (`InterpretationDiagnostics`) marks the
+  interpretation explicitly partial instead of claiming completeness. The
+  `retained_unknown_v1` content capability lets producers refuse to upload
+  to receivers that cannot preserve the evidence, rather than silently
+  stripping it. Consumers keep rendering known content; unknown display
+  remains a consumer concern. Village API 0.22.0, Types 0.24.0.
+
 ## [v0.23.0] - 2026-09-20
 
 ### Added
