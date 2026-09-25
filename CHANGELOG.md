@@ -5,6 +5,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.24.0] - 2026-09-25
+
+### Added
+
+- Retained unknown records and partial interpretation:
+  `SessionDetailPayload.RetainedUnknown` (`RetainedUnknownRecord`),
+  `Diagnostics.Partial` (`InterpretationDiagnostics`), and the
+  `retained_unknown_v1` content capability preserve complete redacted
+  unfamiliar payloads with source positions through export and publication.
+  Village API 0.22.0, Types 0.24.0.
+
 ## [v0.23.0] - 2026-09-20
 
 ### Added
