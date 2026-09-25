@@ -870,6 +870,12 @@ export const zInteractionType = z.enum([
 
 export type InteractionType = z.infer<typeof zInteractionType>;
 
+export const zInterpretationDiagnostics = z.object({
+    partial: z.boolean()
+});
+
+export type InterpretationDiagnostics = z.infer<typeof zInterpretationDiagnostics>;
+
 /**
  * License
  *
@@ -1404,6 +1410,18 @@ export const zRelationshipTargetState = z.enum([
 ]);
 
 export type RelationshipTargetState = z.infer<typeof zRelationshipTargetState>;
+
+export const zRetainedUnknownRecord = z.object({
+    kind: z.string().min(1),
+    namespace: z.string().min(1),
+    payload: z.string().min(1),
+    pointer: z.string().regex(/^(?:\/(?:[^~]|~[01])*)*$/),
+    position: z.number().int().min(0).max(9007199254740991),
+    recordIndex: z.number().int().min(0).max(9007199254740991),
+    sourceRef: z.string().min(1)
+});
+
+export type RetainedUnknownRecord = z.infer<typeof zRetainedUnknownRecord>;
 
 export const zReviewSuggestion = z.object({
     daysSince: z.int(),
@@ -2846,6 +2864,7 @@ export type EarlierHistorySection = z.infer<typeof zEarlierHistorySection>;
 
 export const zSessionDetailPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
     endTime: z.iso.datetime(),
@@ -2861,6 +2880,7 @@ export const zSessionDetailPayload = z.object({
     project: z.string().optional(),
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
     rootSessionId: zSessionID.nullish(),
     schemaVersion: z.string().optional(),
     scorecard: zSessionScorecard.nullish(),
@@ -2881,6 +2901,7 @@ export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 
 export const zSessionDetailReadPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number().optional(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
     endTime: z.iso.datetime().optional(),
@@ -2897,6 +2918,7 @@ export const zSessionDetailReadPayload = z.object({
     purpose: zSessionPurpose.optional(),
     relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
     relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
     rootSessionId: zSessionID.optional(),
     schemaVersion: z.string().optional(),
     scorecard: zSessionScorecard.optional(),

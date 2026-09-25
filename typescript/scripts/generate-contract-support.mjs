@@ -12,6 +12,7 @@ import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinem
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
+import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -45,7 +46,9 @@ await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
-await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog));
+const capabilities = renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog);
+await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), capabilities);
+await writeFile(join(generatedRoot, "wire-alias-shapes.gen.ts"), renderWireAliasShapes(spec));
 await writeFile(join(generatedRoot, "public-contract.gen.ts"), await renderPublicContract(enumCatalog));
 await writeFile(join(generatedRoot, "quality-fixtures.gen.ts"), renderQualityFixtures(qualitySource));
 await writeFile(join(generatedRoot, "timeline-fixtures.gen.ts"), renderTimelineFixtures(timelineSource));
@@ -57,12 +60,39 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = await readFile(zodPath, "utf8");
+  const source = applyRetainedUnknownZodRefinements(await readFile(zodPath, "utf8"));
   await writeFile(zodPath, applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))));
 }
 
 function renderVersions(values) {
   return `${header()}export const VillageAPIVersion = ${JSON.stringify(values.VillageAPIVersion)} as const;\nexport const PeasantLocalAPIVersion = ${JSON.stringify(values.PeasantLocalAPIVersion)} as const;\nexport const TypesVersion = ${JSON.stringify(values.TypesVersion)} as const;\nexport const MetadataSchemaVersion = ${values.MetadataSchemaVersion} as const;\n`;
+}
+
+// Derive exact known keys from the same canonical schemas as the public types.
+// Opaque JSON values have no properties, so their native vocabulary is untouched.
+function renderWireAliasShapes(spec) {
+  const components = spec.components.schemas;
+  const seen = new Map();
+  const shape = (value) => {
+    if (value.$ref) {
+      const name = value.$ref.split("/").at(-1);
+      if (!Object.hasOwn(components, name)) throw new Error(`wire alias generation: missing component ${name}; regenerate the canonical spec before publishing`);
+      visit(name);
+      return name;
+    }
+    if (value.properties) return {fields: Object.fromEntries(Object.entries(value.properties).map(([name, field]) => [name, shape(field)]))};
+    if (value.items) return {items: shape(value.items)};
+    for (const variant of value.anyOf ?? value.oneOf ?? []) {
+      const candidate = shape(variant);
+      if (typeof candidate === "string" || Object.keys(candidate).length) return candidate;
+    }
+    if (value.allOf) throw new Error("wire alias generation: unhandled allOf; extend canonical key derivation before publishing");
+    return {};
+  };
+  const visit = (name) => { if (!seen.has(name)) { seen.set(name, {}); seen.set(name, shape(components[name])); } };
+  visit("SessionDetailPayload");
+  visit("TranscriptContent");
+  return `${header()}export const wireAliasShapes = ${JSON.stringify(Object.fromEntries([...seen].sort(([a], [b]) => a.localeCompare(b))), null, 2)} as const;\n`;
 }
 
 function renderEnums(openapi, catalog) {
@@ -185,7 +215,58 @@ function renderContentCapabilities(source, catalog) {
   }).join(", ");
 
   const doc = `/**\n * ${name} is the closed inventory of content-capability tokens known to this\n * pinned schema release. It is intentionally distinct from the OPEN discovery\n * wire alias ${known.wire_alias} (an arbitrary string): SchemaVersionResponse's\n * contentCapabilities parses unknown future tokens so an older client keeps\n * working, while these constants give strongly typed access to known tokens.\n * ${guard} narrows an arbitrary string to a ${name}, so consumers can filter a\n * discovered list down to the tokens they understand without stringly typing.\n */\n`;
-  return `${header()}import type { SessionDetailPayload, TurnDetail } from "./contract/zod.gen.js";\n\n${doc}export const ${name} = Object.freeze({\n${renderedMembers}\n} as const);\nexport type ${name} = (typeof ${name})[keyof typeof ${name}];\nexport const ${allName} = Object.freeze([${allMembers}]) as readonly ${name}[];\nexport function ${guard}(value: unknown): value is ${name} {\n  return typeof value === "string" && (${allName} as readonly string[]).includes(value);\n}\n\nexport function knownContentCapabilities(values: readonly string[]): ${name}[] {\n  return [...new Set(values.filter(${guard}))].sort();\n}\n\nexport function missingContentCapabilities(advertised: readonly string[], required: readonly ${name}[]): ${name}[] {\n  const present = new Set(knownContentCapabilities(advertised));\n  return [...new Set(required)].filter((token) => !present.has(token)).sort();\n}\n\nexport function validateContentCapabilityAdvertisements(values: readonly string[]): void {\n  for (let index = 0; index < values.length; index++) {\n    const token = values[index];\n    if (token === undefined || !${guard}(token)) throw new TypeError(\`content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: unknown token \${JSON.stringify(token)}; callers cannot advertise unimplemented preservation; emit only AllContentCapabilities after deployment support is proven\`);\n    const previous = values[index - 1];\n    if (previous !== undefined && previous === token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: token is duplicated; callers cannot emit a canonical advertisement; deduplicate and sort the known inventory");\n    if (previous !== undefined && previous > token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: tokens are not in canonical lexicographic order; callers cannot emit a canonical advertisement; sort the unique known inventory");\n  }\n}\n\nfunction visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<${name}>): void {\n  for (const turn of turns ?? []) {\n    if ((turn.observedModel ?? "") !== "") found.add(${name}.ObservedModelV1);\n    if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(${name}.ToolNamespaceV1);\n    if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(${name}.DetailedUsageV1);\n    if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(${name}.SessionGraphProvenanceV1);\n  }\n}\n\nexport function requiredContentCapabilities(detail: SessionDetailPayload): ${name}[] {\n  const found = new Set<${name}>();\n  if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(${name}.SessionGraphProvenanceV1);\n  if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);\n  visitTurns(detail.turns, found);\n  for (const section of detail.earlierHistory ?? []) {\n    if ((section.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);\n    visitTurns(section.turns, found);\n  }\n  return [...found].sort();\n}\n`;
+  return `${header()}import type { SessionDetailPayload, TurnDetail } from "./contract/zod.gen.js";
+
+${doc}export const ${name} = Object.freeze({
+${renderedMembers}
+} as const);
+export type ${name} = (typeof ${name})[keyof typeof ${name}];
+export const ${allName} = Object.freeze([${allMembers}]) as readonly ${name}[];
+export function ${guard}(value: unknown): value is ${name} {
+  return typeof value === "string" && (${allName} as readonly string[]).includes(value);
+}
+
+export function knownContentCapabilities(values: readonly string[]): ${name}[] {
+  return [...new Set(values.filter(${guard}))].sort();
+}
+
+export function missingContentCapabilities(advertised: readonly string[], required: readonly ${name}[]): ${name}[] {
+  const present = new Set(knownContentCapabilities(advertised));
+  return [...new Set(required)].filter((token) => !present.has(token)).sort();
+}
+
+export function validateContentCapabilityAdvertisements(values: readonly string[]): void {
+  for (let index = 0; index < values.length; index++) {
+    const token = values[index];
+    if (token === undefined || !${guard}(token)) throw new TypeError(\`content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: unknown token \${JSON.stringify(token)}; callers cannot advertise unimplemented preservation; emit only AllContentCapabilities after deployment support is proven\`);
+    const previous = values[index - 1];
+    if (previous !== undefined && previous === token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: token is duplicated; callers cannot emit a canonical advertisement; deduplicate and sort the known inventory");
+    if (previous !== undefined && previous > token) throw new TypeError("content capability producer validation failed at @peasant-labs/schema validateContentCapabilityAdvertisements: tokens are not in canonical lexicographic order; callers cannot emit a canonical advertisement; sort the unique known inventory");
+  }
+}
+
+function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<${name}>): void {
+  for (const turn of turns ?? []) {
+    if ((turn.observedModel ?? "") !== "") found.add(${name}.ObservedModelV1);
+    if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(${name}.ToolNamespaceV1);
+    if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(${name}.DetailedUsageV1);
+    if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(${name}.SessionGraphProvenanceV1);
+  }
+}
+
+export function requiredContentCapabilities(detail: SessionDetailPayload): ${name}[] {
+  const found = new Set<${name}>();
+  if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(${name}.SessionGraphProvenanceV1);
+  if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);
+  if ((detail.retainedUnknown?.length ?? 0) > 0 || detail.diagnostics !== undefined) found.add(${name}.RetainedUnknownV1);
+  visitTurns(detail.turns, found);
+  for (const section of detail.earlierHistory ?? []) {
+    if ((section.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);
+    visitTurns(section.turns, found);
+  }
+  return [...found].sort();
+}
+`;
 }
 
 async function renderPublicContract(catalog) {

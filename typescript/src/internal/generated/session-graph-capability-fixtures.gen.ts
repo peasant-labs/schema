@@ -20,24 +20,53 @@ export const canonicalSessionGraphCapabilityFixtures = {
       "folded-result-provenance",
       "earlier-only",
       "earlier-nested-tool-native-usage-model",
-      "navigation-only-read"
+      "navigation-only-read",
+      "retained-accumulates-all"
     ],
     "reader": [
       "advertisement-omitted",
       "advertisement-empty",
       "advertisement-null",
       "advertisement-unknown-duplicate-unordered",
-      "advertisement-future-suffix"
+      "advertisement-future-suffix",
+      "advertisement-retained-duplicate"
     ],
     "producer": [
       "producer-canonical-four",
       "producer-unsorted-four",
       "producer-duplicate",
-      "producer-unknown"
+      "producer-unknown",
+      "producer-canonical-retained",
+      "producer-unsorted-retained",
+      "producer-duplicate-retained"
     ]
   },
   "derivation": {
     "cases": [
+      {
+        "name": "retained-accumulates-all",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Retained evidence accumulates every existing preservation requirement"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"harness\":\"pi\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":1,\"purpose\":\"interaction\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"depth\":0,\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00Z\",\"sourceEntryRef\":\"e1\",\"observedModel\":\"provider/model\",\"usage\":{\"ownerId\":\"u1\",\"sourceEntryRef\":\"e1\",\"scope\":\"assistant\",\"completeness\":\"unknown\"},\"toolCalls\":[{\"id\":\"t1\",\"name\":\"tool\",\"namespace\":\"extension\",\"arguments\":\"\",\"result\":\"\"}]}],\"nativeMetadata\":[{\"id\":\"n1\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"custom1\",\"sourceType\":\"pi.custom\"},\"customType\":\"extension\",\"data\":{}}],\"diagnostics\":{\"partial\":true},\"retainedUnknown\":[{\"sourceRef\":\"source-0\",\"recordIndex\":2,\"position\":4,\"pointer\":\"\",\"namespace\":\"record\",\"kind\":\"future\",\"payload\":\"{\\\"type\\\":\\\"future\\\"}\"}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "detailed_usage_v1",
+            "native_metadata_v1",
+            "observed_model_v1",
+            "retained_unknown_v1",
+            "session_graph_provenance_v1",
+            "tool_namespace_v1"
+          ]
+        }
+      },
       {
         "name": "legacy-empty",
         "classification": "must-pass",
@@ -385,6 +414,26 @@ export const canonicalSessionGraphCapabilityFixtures = {
   "reader": {
     "cases": [
       {
+        "name": "advertisement-retained-duplicate",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Exact retained token survives forward-open discovery"
+        },
+        "input": {
+          "json": "{\"contentCapabilities\":[\"retained_unknown_v1\",\"retained_unknown_v2\",\"retained_unknown_v1\",\"session_graph_provenance_v1\"]}"
+        },
+        "expected": {
+          "known": [
+            "retained_unknown_v1",
+            "session_graph_provenance_v1"
+          ]
+        }
+      },
+      {
         "name": "advertisement-omitted",
         "classification": "must-pass",
         "provenance": {
@@ -482,6 +531,70 @@ export const canonicalSessionGraphCapabilityFixtures = {
   },
   "producer": {
     "cases": [
+      {
+        "name": "producer-canonical-retained",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Emits sorted accumulated inventory"
+        },
+        "input": {
+          "tokens": [
+            "detailed_usage_v1",
+            "native_metadata_v1",
+            "observed_model_v1",
+            "retained_unknown_v1",
+            "session_graph_provenance_v1",
+            "tool_namespace_v1"
+          ]
+        },
+        "expected": {
+          "accepted": true
+        }
+      },
+      {
+        "name": "producer-unsorted-retained",
+        "classification": "must-fail",
+        "provenance": {
+          "source": "boundary",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Retained token out of canonical order refuses"
+        },
+        "input": {
+          "tokens": [
+            "retained_unknown_v1",
+            "observed_model_v1"
+          ]
+        },
+        "expected": {
+          "errorContains": "canonical lexicographic order"
+        }
+      },
+      {
+        "name": "producer-duplicate-retained",
+        "classification": "must-fail",
+        "provenance": {
+          "source": "boundary",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Duplicate retained token refuses"
+        },
+        "input": {
+          "tokens": [
+            "retained_unknown_v1",
+            "retained_unknown_v1"
+          ]
+        },
+        "expected": {
+          "errorContains": "duplicated"
+        }
+      },
       {
         "name": "producer-canonical-four",
         "classification": "must-pass",

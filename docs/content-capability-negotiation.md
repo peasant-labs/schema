@@ -118,6 +118,89 @@ Requirements accumulate across every main and earlier-history turn and tool:
 remains forward-open with exact set matching and sorted, unique producer output.
 Dry-run derives these requirements locally without negotiation or upload.
 
+### `retained_unknown_v1`
+
+A publication requires `retained_unknown_v1` when durable session detail has
+nonempty `retainedUnknown` or present `diagnostics` (including `partial: false`).
+Missing fields remain backwards compatible. Nonempty retained evidence requires
+`diagnostics.partial: true`; outcome and quality are not interpretation state.
+The same fields survive a standalone `SessionDetailPayload` export and its
+`TranscriptContent` envelope. Publication metadata `diagnostics.partial` must
+mirror present durable diagnostics; `BuildAuthoritativePublicationProjections`
+checks that mirror before creating authoritative projections.
+
+Each `RetainedUnknownRecord` contains:
+
+- `sourceRef`: nonempty stable opaque source-stream identity, not a raw path;
+- `recordIndex`: zero-based position among all source records, including known
+  records, assigned by traversal even if native records have no ID or ordinal;
+- `position`: zero-based record/block traversal position within the source,
+  greater than or equal to `recordIndex`;
+- `pointer`: RFC 6901 pointer within the containing record, empty for a whole
+  record;
+- `namespace`: nonempty native discriminator namespace, such as `record` or
+  `message.block`, preventing same-spelled nested kinds from being conflated;
+- `kind`: nonempty native discriminator string, deliberately forward-open;
+- `payload`: complete redacted JSON **text**, encoded as a string so arbitrary
+  native number literals survive JavaScript without rounding, overflow or
+  underflow. Receivers do not parse and re-encode it as a JavaScript value.
+
+For each source, positions strictly increase and record indices never decrease.
+Within one record, pointers cannot duplicate or overlap (ancestor/descendant).
+Indices and positions are safe nonnegative integers through 9007199254740991.
+Producers retain the array's original order; receivers never sort or deduplicate
+away source occurrences. Harness attribution comes from the containing detail.
+The channel is harness-neutral, not Pi native metadata, not conversational turns,
+not tool results, and not payload text hidden in warning strings. Unknown-record
+display is intentionally deferred.
+
+`payload` must contain exactly one valid JSON value with valid Unicode and no
+duplicate object members, including escaped-equivalent keys. Large numeric
+literals remain legal because no number conversion occurs. Ordinary producer
+redaction applies before durable storage or publication, including unknown
+nested data. Additional fields on recognized native records do not by themselves
+make a record unknown; malformed known fields remain invalid.
+
+Invalid retained payloads are untrusted even when a producer claims redaction.
+Public rejection diagnostics identify only the retained array index, canonical
+`payload` field and safe validation guidance. Native keys, paths, source
+references, pointers, snippets and original scanner messages or cause chains
+must never be copied into those diagnostics. This error boundary does not change
+JSON acceptance or mutate the rejected payload.
+
+Raw detail and envelope decoders reject noncanonical case-fold aliases of known
+wire keys before typed decoding can overwrite validated evidence. This includes
+nested diagnostics and source evidence as well as existing model, usage, native
+metadata and provenance fields. Truly unrelated additive keys remain compatible.
+This key rule does not reinterpret the native JSON text inside `payload`, where
+JSON member names are case-sensitive and both `kind` and `Kind` may coexist.
+
+Existing whole-document 8 MiB and depth-64 boundaries remain in force. The decoded
+payload text is also checked at those bounds; native-metadata-only limits do not
+apply. JSON-string encoding overhead counts toward the actual outer document.
+Inbound limits measure the actual raw input, never an alternate reserialization
+with optional HTML escaping. Semantic typed-value validators do not reserialize
+the detail to impose another outer budget. Before upload, producers must check
+the actual chosen final serialized bytes with the public raw envelope boundary;
+an HTML-escaped encoding can exceed the transport limit even when an equivalent
+unescaped encoding fits. Neither encoding may silently truncate evidence.
+There is no truncation, size-exception bypass, or implicit stripping downgrade.
+When a complete document does not fit the current transport, refuse it and retain
+the prior good generation; splitting or raising transport limits requires a
+separate product decision.
+
+A receiver advertises this token only after its deployed validation, storage,
+typed migration, rewrite, serve and pull paths preserve every accepted record,
+location, order, payload string byte and partial flag. JSON envelope formatting
+may change, but payload string bytes may not. `ComputeTranscriptContentHash`
+binds the exact envelope bytes; canonical publication fingerprints already bind
+that content hash and metadata diagnostics. No hash-domain change or lossy
+canonicalization is introduced. Validation precedes all persistence side effects.
+Clients derive requirements from durable detail, negotiate immediately before
+upload, and refuse unsupported receivers. Offline scan derives requirements
+without negotiation; standalone local export preserves evidence without a
+receiver. Requirements accumulate with the other content capabilities.
+
 ### Native metadata byte budgets
 
 Selected `nativeMetadata[*].data` subtrees permit decoded strings of at most

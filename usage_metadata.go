@@ -280,6 +280,9 @@ func ValidateUsageDetail(v UsageDetail) error {
 }
 
 func ValidateSessionDetailPayload(value SessionDetailPayload) error {
+	if err := ValidateRetainedUnknown(value); err != nil {
+		return err
+	}
 	knownHarness := false
 	for _, harness := range Harnesses() {
 		if value.Harness == harness {
@@ -676,6 +679,9 @@ func DecodeTranscriptContentRaw(raw []byte) (TranscriptContent, error) {
 	}
 	var envelope map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &envelope); err != nil {
+		return TranscriptContent{}, err
+	}
+	if err := rejectNoncanonicalWireKeys(envelope, reflect.TypeFor[TranscriptContent](), "transcriptContent"); err != nil {
 		return TranscriptContent{}, err
 	}
 	detail, ok := envelope["sessionDetail"]

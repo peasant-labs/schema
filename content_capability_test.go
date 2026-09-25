@@ -91,7 +91,7 @@ func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
 }
 
 func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
-	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityToolNamespaceV1}
+	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilityRetainedUnknownV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityToolNamespaceV1}
 	if !slices.Equal(schema.AllContentCapabilities, want) {
 		t.Fatalf("AllContentCapabilities=%v, want exact canonical inventory %v", schema.AllContentCapabilities, want)
 	}

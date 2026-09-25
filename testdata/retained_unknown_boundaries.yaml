@@ -1,0 +1,144 @@
+base_patch: '{"harness":"pi","purpose":"interaction","earlierHistory":[],"inputSubmissionCount":0,"turns":[{"index":0,"role":"assistant","depth":0,"content":"","timestamp":"2020-01-01T00:00:00Z","sourceEntryRef":"e1","observedModel":"provider/model","provenance":{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"},"usage":{"ownerId":"u1","sourceEntryRef":"e1","scope":"assistant","completeness":"unknown"},"toolCalls":[{"id":"t1","name":"tool","namespace":"extension","arguments":"","result":""}]}],"nativeMetadata":[{"id":"n1","kind":"pi.custom.data","source":{"entryRef":"custom1","sourceType":"pi.custom"},"customType":"extension","data":{"Payload":null,"payload":"native vocabulary is opaque"}}]}'
+required_alias_names:
+  - retained_empty_after
+  - retained_empty_before
+  - retained_null_after
+  - retained_null_before
+  - diagnostics_null_after
+  - diagnostics_null_before
+  - nested_partial_after
+  - nested_partial_before
+  - record_payload_after
+  - record_payload_before
+  - record_position
+  - record_kind_unicode_fold
+  - record_source
+  - envelope_detail_after
+  - envelope_detail_before
+  - envelope_kind
+  - envelope_version
+  - native_metadata
+  - input_count
+  - graph_purpose
+  - earlier_history
+  - observed_model
+  - detailed_usage
+  - usage_owner
+  - tool_namespace
+  - graph_provenance
+  - native_source
+  - unrelated_additive
+  - unrelated_record_additive
+required_mutation_names: [truncate_large_payload, normalize_numeric_spellings, normalize_whitespace]
+aliases:
+  cases:
+    - &alias
+      name: retained_empty_after
+      classification: must-fail
+      provenance: {source: boundary, ref: canonical-wire-key-preservation}
+      mutation: {description: A differently cased known key must not overwrite validated evidence}
+      input: {key: RetainedUnknown, value: '[]'}
+      expected: false
+    - <<: *alias
+      name: retained_empty_before
+      input: {key: RetainedUnknown, value: '[]', first: true}
+    - <<: *alias
+      name: retained_null_after
+      input: {key: RetainedUnknown, value: 'null'}
+    - <<: *alias
+      name: retained_null_before
+      input: {key: RetainedUnknown, value: 'null', first: true}
+    - <<: *alias
+      name: diagnostics_null_after
+      input: {key: Diagnostics, value: 'null'}
+    - <<: *alias
+      name: diagnostics_null_before
+      input: {key: Diagnostics, value: 'null', first: true}
+    - <<: *alias
+      name: nested_partial_after
+      input: {path: [diagnostics], key: Partial, value: 'false'}
+    - <<: *alias
+      name: nested_partial_before
+      input: {path: [diagnostics], key: Partial, value: 'false', first: true}
+    - <<: *alias
+      name: record_payload_after
+      input: {path: [retainedUnknown, '0'], key: Payload, value: '"null"'}
+    - <<: *alias
+      name: record_payload_before
+      input: {path: [retainedUnknown, '0'], key: Payload, value: '"null"', first: true}
+    - <<: *alias
+      name: record_position
+      input: {path: [retainedUnknown, '0'], key: Position, value: '0'}
+    - <<: *alias
+      name: record_kind_unicode_fold
+      input: {path: [retainedUnknown, '0'], key: 'Kind', value: '"overwritten"'}
+    - <<: *alias
+      name: record_source
+      input: {path: [retainedUnknown, '0'], key: SourceRef, value: '"other-source"'}
+    - <<: *alias
+      name: envelope_detail_after
+      input: {envelope: true, key: SessionDetail, value: 'null'}
+    - <<: *alias
+      name: envelope_detail_before
+      input: {envelope: true, key: SessionDetail, value: '{}', first: true}
+    - <<: *alias
+      name: envelope_kind
+      input: {envelope: true, key: Kind, value: '"session_detail"'}
+    - <<: *alias
+      name: envelope_version
+      input: {envelope: true, key: ContractVersion, value: '"2.0.0"'}
+    - <<: *alias
+      name: native_metadata
+      input: {key: NativeMetadata, value: '[]'}
+    - <<: *alias
+      name: input_count
+      input: {key: InputSubmissionCount, value: 'null'}
+    - <<: *alias
+      name: graph_purpose
+      input: {key: Purpose, value: '""'}
+    - <<: *alias
+      name: earlier_history
+      input: {key: EarlierHistory, value: '[]'}
+    - <<: *alias
+      name: observed_model
+      input: {path: [turns, '0'], key: ObservedModel, value: '""'}
+    - <<: *alias
+      name: detailed_usage
+      input: {path: [turns, '0'], key: Usage, value: 'null'}
+    - <<: *alias
+      name: usage_owner
+      input: {path: [turns, '0', usage], key: OwnerId, value: '"other-owner"'}
+    - <<: *alias
+      name: tool_namespace
+      input: {path: [turns, '0', toolCalls, '0'], key: Namespace, value: 'null'}
+    - <<: *alias
+      name: graph_provenance
+      input: {path: [turns, '0'], key: Provenance, value: 'null'}
+    - <<: *alias
+      name: native_source
+      input: {path: [nativeMetadata, '0', source], key: EntryRef, value: '"different"'}
+    - <<: *alias
+      name: unrelated_additive
+      classification: must-pass
+      input: {key: FutureAdditiveField, value: '{"Diagnostics":null}'}
+      expected: true
+    - <<: *alias
+      name: unrelated_record_additive
+      classification: must-pass
+      input: {path: [retainedUnknown, '0'], key: FutureNativeField, value: '{"Payload":null}'}
+      expected: true
+preservation_mutations:
+  cases:
+    - &mutation
+      name: truncate_large_payload
+      classification: must-fail
+      provenance: {source: boundary, ref: independent-preservation-oracle}
+      mutation: {description: Changing only returned payload bytes must fail original-wire preservation}
+      input: {source_case: large_payload, replacement: '"x"'}
+      expected: false
+    - <<: *mutation
+      name: normalize_numeric_spellings
+      input: {source_case: large_number_payload, replacement: '{"huge":null,"tiny":0,"integer":9007199254740992}'}
+    - <<: *mutation
+      name: normalize_whitespace
+      input: {source_case: whitespace_preserved, replacement: '{"z":1e+099,"a":[null,true,"<redacted>"]}'}

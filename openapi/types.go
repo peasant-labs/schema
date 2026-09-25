@@ -106,6 +106,8 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"SearchPayload", new(schema.SearchPayload)}, {"SearchResult", new(schema.SearchResult)},
 		{"ServerMessage", new(schema.ServerMessage)}, {"SessionAssociation", new(schema.SessionAssociation)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
+		{"RetainedUnknownRecord", new(schema.RetainedUnknownRecord)},
+		{"InterpretationDiagnostics", new(schema.InterpretationDiagnostics)},
 		{"SourceEntryRef", new(schema.SourceEntryRef)}, {"SubmissionRef", new(schema.SubmissionRef)},
 		{"PublicRevisionRef", new(schema.PublicRevisionRef)}, {"SessionRelationshipKind", new(schema.SessionRelationshipKind)},
 		{"RelationshipTargetState", new(schema.RelationshipTargetState)}, {"EvidenceKind", new(schema.EvidenceKind)},

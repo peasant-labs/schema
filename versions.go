@@ -71,7 +71,8 @@ const (
 	// Bumped to 0.21.0 when the prompt-request list gained the pull request's
 	// head remote beside its base, so a push from a clone of a fork matches the
 	// request waiting on that fork's author (additive field = minor bump).
-	VillageAPIVersion = "0.21.0"
+	// Bumped for retained unknown source evidence and preservation negotiation.
+	VillageAPIVersion = "0.22.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -99,7 +100,8 @@ const (
 	// Bumped to 0.12.0 for independent optional tool namespace evidence.
 	// Bumped to 0.13.0 for grouped session listings, helper-member reads, and
 	// the flat detail read projection with relationship navigation.
-	PeasantLocalAPIVersion = "0.13.0"
+	// Bumped for retained unknown source evidence and durable diagnostics.
+	PeasantLocalAPIVersion = "0.14.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -150,5 +152,6 @@ const (
 	// response types to the catalog (additive = minor bump).
 	// Bumped to 0.23.0 when the catalog's prompt request gained the pull
 	// request's head remote beside its base (additive = minor bump).
-	TypesVersion = "0.23.0"
+	// Bumped for retained unknown source evidence and durable diagnostics.
+	TypesVersion = "0.24.0"
 )

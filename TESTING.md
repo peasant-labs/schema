@@ -334,6 +334,39 @@ the JSON tags and struct shapes, and the validator behaviour.
 
 ## Layer 3: fixture families and the fixture idiom
 
+`testdata/retained_unknown.yaml` drives the Go typed/raw detail and envelope
+decoders, generated Types schema, TypeScript generated shape validators and
+public runtime parsers. Strict loading guards required case names and the full
+ingestion harness inventory (including all six native fallback producers).
+Deletion mutations prove every required case is load-bearing. The corpus covers
+legacy absence, open kind namespaces, required source positions and pointers,
+duplicate/overlapping locations, invalid JSON and Unicode, exact payload-text
+round trips with large number literals and whitespace, partial-state mirrors,
+canonical publication fingerprint binding, and existing transport byte limits.
+Shape checks are deliberately distinguished from semantic source-order and
+embedded-JSON checks: receivers use the public raw decoders, not shape-only
+validation before persistence. Capability accumulation and producer ordering
+also run through `testdata/content_capability_session_graph.yaml` in both
+languages.
+
+`testdata/retained_unknown_boundaries.yaml` adds ordered canonical/alias
+overwrites at standalone, envelope and nested evidence boundaries. The baseline
+carries every preservation capability, so a case-fold overwrite cannot make
+negotiation disappear. Independent fixture-only structs capture original source
+evidence before production decoding; negative truncation and normalization
+mutations prove that preservation assertions fail on byte loss. Payload-only
+mutations must also change the real canonical publication fingerprint. The main
+corpus covers 12,000 sibling pointers without changing their external order,
+escape-heavy and Unicode input, and actual transport-byte boundaries independent
+of optional HTML escaping during a different serialization.
+
+The retained corpus also pins valid `~0`/`~1` pointer siblings, escaped-component
+ancestry and whole-record root conflicts in both insertion orders. Private-key
+sentinels in duplicate, malformed and depth-invalid JSON must remain absent from
+typed and raw Go detail/envelope errors and public TypeScript errors. These
+checks also forbid underlying scanner cause chains, require the safe canonical
+field/index, and prove rejection does not mutate the evidence.
+
 Typed test corpora live in `testdata/` trees, one family per surface:
 
 - top level `testdata/`: `annotations`, `contract`, `local-api`, `publish`, `pull`,

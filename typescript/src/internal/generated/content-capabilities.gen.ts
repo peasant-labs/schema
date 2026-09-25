@@ -14,11 +14,12 @@ export const KnownContentCapability = Object.freeze({
   DetailedUsageV1: "detailed_usage_v1",
   NativeMetadataV1: "native_metadata_v1",
   ObservedModelV1: "observed_model_v1",
+  RetainedUnknownV1: "retained_unknown_v1",
   SessionGraphProvenanceV1: "session_graph_provenance_v1",
   ToolNamespaceV1: "tool_namespace_v1",
 } as const);
 export type KnownContentCapability = (typeof KnownContentCapability)[keyof typeof KnownContentCapability];
-export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
+export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.RetainedUnknownV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
 export function isContentCapability(value: unknown): value is KnownContentCapability {
   return typeof value === "string" && (AllContentCapabilities as readonly string[]).includes(value);
 }
@@ -55,6 +56,7 @@ export function requiredContentCapabilities(detail: SessionDetailPayload): Known
   const found = new Set<KnownContentCapability>();
   if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(KnownContentCapability.SessionGraphProvenanceV1);
   if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(KnownContentCapability.NativeMetadataV1);
+  if ((detail.retainedUnknown?.length ?? 0) > 0 || detail.diagnostics !== undefined) found.add(KnownContentCapability.RetainedUnknownV1);
   visitTurns(detail.turns, found);
   for (const section of detail.earlierHistory ?? []) {
     if ((section.nativeMetadata?.length ?? 0) > 0) found.add(KnownContentCapability.NativeMetadataV1);

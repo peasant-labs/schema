@@ -401,8 +401,10 @@ type SessionDetailPayload struct {
 	// Scorecard carries the per-session quality signals used by the "How this
 	// session went" self-assessment card. Nil when the session has no computed
 	// metrics. Sourced from the same session_metrics row that backs QualitySession.
-	Scorecard      *SessionScorecard      `json:"scorecard,omitempty"`
-	NativeMetadata []NativeMetadataRecord `json:"nativeMetadata,omitempty"`
+	Scorecard       *SessionScorecard          `json:"scorecard,omitempty"`
+	NativeMetadata  []NativeMetadataRecord     `json:"nativeMetadata,omitempty"`
+	RetainedUnknown []RetainedUnknownRecord    `json:"retainedUnknown,omitempty" nullable:"false"`
+	Diagnostics     *InterpretationDiagnostics `json:"diagnostics,omitempty" nullable:"false"`
 }
 
 // SessionScorecard holds the deterministic per-session quality signals needed
