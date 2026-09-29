@@ -10,19 +10,22 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - Publishing from the local transcript view. Local API 0.15.0 declares:
   - `GET /api/v1/publications?sessionIds=&include=audience`
     (`LocalPublicationsResponse`): the durable publication state of named
-    sessions regardless of the saved selection - `state`, `transcriptId`,
-    `transcriptUrl`, `publishedAt` (the last accepted content, so a client
-    counts newer turns itself), `lastAttempt` (the most recent failed attempt),
-    `autoPublish`, `outsideSelection`, and with `include=audience` the
-    collectives each transcript is shared with and their share status.
+    sessions for the signed-in Village account, regardless of the saved
+    selection - `state`, `transcriptId`, `transcriptUrl`, `publishedAt` (the
+    last accepted content, so a client counts newer turns itself),
+    `lastAttempt` (the most recent failed attempt), `autoPublish`,
+    `outsideSelection`, and with `include=audience` the collectives each
+    transcript is shared with (`[]` when none) and their share status.
   - A typed `POST /api/v1/sync/push` (`SyncPushRequest`, `SyncPushResponse`):
-    publishing is collectives only, so the request carries `collectives.add`
-    and `collectives.remove` and no visibility or license, and a publish that
-    names collectives gets no default license. The response keeps the existing
-    counts and adds, per session, `transcriptUrl`, the steps in the order they
-    ran (`content`, `add_collective`, `remove_collective`, each `succeeded`,
-    `pending_approval`, `failed`, or `not_attempted` after a failure), and the
-    Village prompt requests waiting for that session's repository.
+    publishing is collectives only, so the closed request carries
+    `collectives.add` and `collectives.remove` and no visibility or license,
+    and a publish that names collectives gets no default license. The
+    response keeps the existing counts and adds, per session, `transcriptUrl`,
+    the steps in run order (`content`, `add_collective`, `remove_collective`,
+    each `succeeded`, `pending_approval`, `skipped` with a reason, `failed`
+    with a reason, or `not_attempted` after a failure), and the Village prompt
+    requests waiting for that session's repository. A failed step makes its
+    session an error.
   - `GET /api/v1/village/collectives?sessionId=`
     (`LocalVillageCollectivesResponse`): the signed-in user's collectives as
     Village returns them, with a server-computed suggestion from
@@ -30,28 +33,35 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     web never normalizes a remote.
   - The routes the server already served: `GET /api/v1/sync/auth`,
     `POST /api/v1/sync/login`, and `GET /api/v1/sync/redactions`, whose items
-    now carry an optional `entryIndex` in the `TurnDetail.index` space. New
-    `POST /api/v1/sync/logout` removes this computer's stored Village
-    credential.
+    now carry `entryIndex` (the turn that shows the match) and `toolCallId`
+    for a match in a tool call. New `POST /api/v1/sync/logout` removes this
+    computer's stored Village credential.
   - `GET` and `PATCH /api/v1/settings` (`LocalSettingsResponse`,
-    `LocalSettingUpdateRequest`, `LocalSetting`): every setting with its kind
-    (`boolean`, `integer`, `string`, `string_list`, `choice`), value, options,
-    and `inPeasantConfig`, changed one key per request; and `PUT` and `DELETE
-    /api/v1/settings/auto-publish/{id}` (`AutoPublishBinding`,
-    `AutoPublishRemovalResponse`), which return the hook status (`active`,
-    `blocked`, `off`) and, for a blocked hook, the remedy.
-  - A 403 with a JSON error body on every write route, for a request that did
-    not come from the local server's own pages.
+    `LocalSettingUpdateRequest`, `LocalSetting`, `LocalSettingRefusal`):
+    every setting with its kind (`boolean`, `integer`, `string`,
+    `string_list`, `choice`, `structured`), value (null when unset), options,
+    `editable`, and `inPeasantConfig`, changed one key per request, with a
+    typed refusal that names the key.
+  - Auto-publish rules: `PUT` and `DELETE /api/v1/settings/auto-publish/{id}`
+    (`AutoPublishRule`, `AutoPublishRemovalResponse`) and
+    `POST /api/v1/settings/auto-publish/{id}/install`
+    (`AutoPublishRepository`). A rule lists the recorded repositories it
+    matches with each hook's state per event (`absent`, `installed`,
+    `blocked`, `failed`) and the remedy for a blocked or failed hook. Saving a
+    rule installs nothing; installing is one call per repository.
+  - A 403 with a JSON error body on every declared write route, for a request
+    that did not come from the local server's own pages.
 - The Village pages' reads. Village API 0.23.0 adds `GET
-  /api/v1/transcripts/{id}/pulls` (attached and detached pull requests only;
-  404, never 403, for a caller who may not read the transcript), `GET
-  /api/v1/users/me/stats` (`VillageUserStats`, totals over every published
-  transcript including the distinct pull request count), the personal
-  `auto_attach_pull_requests` setting (off by default), pull request `title`
-  and `head_ref` on the attachment row, a `pull_requests` summary
-  (`VillagePullRequestsSummary`: `count` and the `recent` few) on transcript
-  list rows and collective transcripts, `pull_request_count` on collective
-  stats, and `publisher_count` on available repositories.
+  /api/v1/transcripts/{id}/pulls` (attached and detached pull requests the
+  caller may read; 404, never 403, for a caller who may not read the
+  transcript), `GET /api/v1/users/me/stats` (`VillageUserStats`, totals over
+  every published transcript including the distinct attached pull request
+  count), the personal `auto_attach_pull_requests` setting (off by default),
+  pull request `title` and `head_ref` on the attachment row, a
+  `pull_requests` summary (`VillagePullRequestsSummary`: `count` and the
+  `recent` few) on transcript list rows and collective transcripts,
+  `pull_request_count` on collective stats, and `publisher_count` on
+  available repositories.
 - Types 0.25.0 catalogs every new type and closed set for both language
   bindings.
 
@@ -60,7 +70,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `LocalSyncSummary.syncStatus` is the closed `SyncStatus` (`new`, `updated`,
   `synced`, `held`); a held row names its `holdReason` (`metrics_missing` or
   `metadata_missing`), and every row carries `previouslyPushed`, durable
-  publication evidence independent of the status.
+  publication evidence independent of the status. The Go field type changes
+  from `string` to `SyncStatus`.
 - `VillageCreateGroupRequest.linked_github_org` accepts null, as the update
   request does; its Go field is now `*string`.
 

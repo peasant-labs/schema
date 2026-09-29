@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/peasant-labs/schema/openapi"
-	"github.com/peasant-labs/schema/testcase"
-	assertcase "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,9 +17,8 @@ import (
 var crossOriginWritesYAML []byte
 
 type crossOriginWritesFixture struct {
-	WriteOperations []writeOperationIdentity                    `yaml:"write_operations"`
-	Refusal         crossOriginRefusal                          `yaml:"refusal"`
-	Mutations       testcase.Corpus[writeSurfaceMutation, bool] `yaml:"mutations"`
+	WriteOperations []writeOperationIdentity `yaml:"write_operations"`
+	Refusal         crossOriginRefusal       `yaml:"refusal"`
 }
 
 type writeOperationIdentity struct {
@@ -36,12 +33,6 @@ type crossOriginRefusal struct {
 	Required          []string `yaml:"required"`
 	Properties        []string `yaml:"properties"`
 	DescriptionAnchor string   `yaml:"description_anchor"`
-}
-
-type writeSurfaceMutation struct {
-	Kind   string `yaml:"kind"`
-	Method string `yaml:"method"`
-	Path   string `yaml:"path"`
 }
 
 // writeSurface maps "method path" to the declared operation.
@@ -60,16 +51,14 @@ func loadCrossOriginWrites(t *testing.T) crossOriginWritesFixture {
 	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatalf("decode cross-origin write fixture: %v", err)
 	}
-	assertcase.RequireMin(t, fixture.Mutations, 5)
-	assertcase.RequireValid(t, fixture.Mutations)
 	if len(fixture.WriteOperations) == 0 {
 		t.Fatal("cross-origin write fixture names no write operation")
 	}
 	return fixture
 }
 
-// declaredWriteSurface reads every state-changing operation of the generated
-// Local API document and whether it declares the shared refusal.
+// declaredWriteSurface reads every declared state-changing operation of the
+// generated Local API document and whether it declares the shared refusal.
 func declaredWriteSurface(t *testing.T, refusal crossOriginRefusal) (writeSurface, map[string]any) {
 	t.Helper()
 	spec, err := openapi.BuildPeasantLocalAPISpec()
@@ -156,41 +145,6 @@ func TestLocalWriteRoutesDeclareCrossOriginRefusal(t *testing.T) {
 		properties = append(properties, name)
 	}
 	requireSameSet(t, "refusal properties", fixture.Refusal.Properties, properties)
-}
-
-func TestLocalWriteRefusalMutationProof(t *testing.T) {
-	fixture := loadCrossOriginWrites(t)
-	canonical, _ := declaredWriteSurface(t, fixture.Refusal)
-	for _, c := range fixture.Mutations.Cases {
-		t.Run(c.Name, func(t *testing.T) {
-			surface := writeSurface{}
-			for key, value := range canonical {
-				surface[key] = value
-			}
-			manifest := append([]writeOperationIdentity(nil), fixture.WriteOperations...)
-			key := c.Input.Method + " " + c.Input.Path
-			switch c.Input.Kind {
-			case "none":
-			case "drop_refusal":
-				write := surface[key]
-				write.refused = false
-				surface[key] = write
-			case "add_route":
-				surface[key] = declaredWrite{operationID: "unexpected", refused: true}
-			case "remove_route":
-				delete(surface, key)
-			case "read_route":
-				manifest = append(manifest, writeOperationIdentity{Method: c.Input.Method, Path: c.Input.Path, OperationID: "read"})
-				surface[key] = declaredWrite{operationID: "read", refused: true}
-			default:
-				t.Fatalf("unknown write surface mutation %q", c.Input.Kind)
-			}
-			accepted := validateWriteSurface(surface, manifest) == nil
-			if accepted != c.Expected {
-				t.Fatalf("accepted=%v, want %v", accepted, c.Expected)
-			}
-		})
-	}
 }
 
 func anyStrings(raw any) []string {

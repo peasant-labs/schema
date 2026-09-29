@@ -635,9 +635,10 @@ enums:
     members:
       - {name: Succeeded, value: "succeeded"}
       - {name: PendingApproval, value: "pending_approval"}
+      - {name: Skipped, value: "skipped"}
       - {name: Failed, value: "failed"}
       - {name: NotAttempted, value: "not_attempted"}
-    all_values: ["succeeded", "pending_approval", "failed", "not_attempted"]
+    all_values: ["succeeded", "pending_approval", "skipped", "failed", "not_attempted"]
   - name: SyncLoginStatus
     all_name: AllSyncLoginStatuses
     members:
@@ -650,14 +651,14 @@ enums:
       - {name: LoggedOut, value: "logged_out"}
       - {name: AlreadyLoggedOut, value: "already_logged_out"}
     all_values: ["logged_out", "already_logged_out"]
-  - name: PublicationState
-    all_name: AllPublicationStates
+  - name: LocalPublicationState
+    all_name: AllLocalPublicationStates
     members:
       - {name: Unpublished, value: "unpublished"}
       - {name: Published, value: "published"}
     all_values: ["unpublished", "published"]
-  - name: CollectiveSuggestionReason
-    all_name: AllCollectiveSuggestionReasons
+  - name: LocalCollectiveSuggestionReason
+    all_name: AllLocalCollectiveSuggestionReasons
     members:
       - {name: LinkedRepository, value: "linked_repository"}
       - {name: LinkedGithubOrg, value: "linked_github_org"}
@@ -670,7 +671,8 @@ enums:
       - {name: String, value: "string"}
       - {name: StringList, value: "string_list"}
       - {name: Choice, value: "choice"}
-    all_values: ["boolean", "integer", "string", "string_list", "choice"]
+      - {name: Structured, value: "structured"}
+    all_values: ["boolean", "integer", "string", "string_list", "choice", "structured"]
   - name: AutoPublishEvent
     all_name: AllAutoPublishEvents
     members:
@@ -680,7 +682,8 @@ enums:
   - name: AutoPublishHookStatus
     all_name: AllAutoPublishHookStatuses
     members:
-      - {name: Active, value: "active"}
+      - {name: Absent, value: "absent"}
+      - {name: Installed, value: "installed"}
       - {name: Blocked, value: "blocked"}
-      - {name: Off, value: "off"}
-    all_values: ["active", "blocked", "off"]
+      - {name: Failed, value: "failed"}
+    all_values: ["absent", "installed", "blocked", "failed"]

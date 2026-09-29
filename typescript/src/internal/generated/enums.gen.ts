@@ -82,8 +82,8 @@ import { zSyncPushStep, type SyncPushStep as SyncPushStepContract } from "./cont
 import { zSyncPushStepOutcome, type SyncPushStepOutcome as SyncPushStepOutcomeContract } from "./contract/zod.gen.js";
 import { zSyncLoginStatus, type SyncLoginStatus as SyncLoginStatusContract } from "./contract/zod.gen.js";
 import { zSyncLogoutStatus, type SyncLogoutStatus as SyncLogoutStatusContract } from "./contract/zod.gen.js";
-import { zPublicationState, type PublicationState as PublicationStateContract } from "./contract/zod.gen.js";
-import { zCollectiveSuggestionReason, type CollectiveSuggestionReason as CollectiveSuggestionReasonContract } from "./contract/zod.gen.js";
+import { zLocalPublicationState, type LocalPublicationState as LocalPublicationStateContract } from "./contract/zod.gen.js";
+import { zLocalCollectiveSuggestionReason, type LocalCollectiveSuggestionReason as LocalCollectiveSuggestionReasonContract } from "./contract/zod.gen.js";
 import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } from "./contract/zod.gen.js";
 import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
@@ -1065,10 +1065,11 @@ export type SyncPushStepOutcome = SyncPushStepOutcomeContract;
 export const SyncPushStepOutcome = Object.freeze({
   Succeeded: zSyncPushStepOutcome.parse("succeeded"),
   PendingApproval: zSyncPushStepOutcome.parse("pending_approval"),
+  Skipped: zSyncPushStepOutcome.parse("skipped"),
   Failed: zSyncPushStepOutcome.parse("failed"),
   NotAttempted: zSyncPushStepOutcome.parse("not_attempted"),
 } as const);
-export const AllSyncPushStepOutcomes = Object.freeze([SyncPushStepOutcome.Succeeded, SyncPushStepOutcome.PendingApproval, SyncPushStepOutcome.Failed, SyncPushStepOutcome.NotAttempted]) as readonly SyncPushStepOutcome[];
+export const AllSyncPushStepOutcomes = Object.freeze([SyncPushStepOutcome.Succeeded, SyncPushStepOutcome.PendingApproval, SyncPushStepOutcome.Skipped, SyncPushStepOutcome.Failed, SyncPushStepOutcome.NotAttempted]) as readonly SyncPushStepOutcome[];
 export function isSyncPushStepOutcome(value: unknown): value is SyncPushStepOutcome {
   return zSyncPushStepOutcome.safeParse(value).success;
 }
@@ -1093,24 +1094,24 @@ export function isSyncLogoutStatus(value: unknown): value is SyncLogoutStatus {
   return zSyncLogoutStatus.safeParse(value).success;
 }
 
-export type PublicationState = PublicationStateContract;
-export const PublicationState = Object.freeze({
-  Unpublished: zPublicationState.parse("unpublished"),
-  Published: zPublicationState.parse("published"),
+export type LocalPublicationState = LocalPublicationStateContract;
+export const LocalPublicationState = Object.freeze({
+  Unpublished: zLocalPublicationState.parse("unpublished"),
+  Published: zLocalPublicationState.parse("published"),
 } as const);
-export const AllPublicationStates = Object.freeze([PublicationState.Unpublished, PublicationState.Published]) as readonly PublicationState[];
-export function isPublicationState(value: unknown): value is PublicationState {
-  return zPublicationState.safeParse(value).success;
+export const AllLocalPublicationStates = Object.freeze([LocalPublicationState.Unpublished, LocalPublicationState.Published]) as readonly LocalPublicationState[];
+export function isLocalPublicationState(value: unknown): value is LocalPublicationState {
+  return zLocalPublicationState.safeParse(value).success;
 }
 
-export type CollectiveSuggestionReason = CollectiveSuggestionReasonContract;
-export const CollectiveSuggestionReason = Object.freeze({
-  LinkedRepository: zCollectiveSuggestionReason.parse("linked_repository"),
-  LinkedGithubOrg: zCollectiveSuggestionReason.parse("linked_github_org"),
+export type LocalCollectiveSuggestionReason = LocalCollectiveSuggestionReasonContract;
+export const LocalCollectiveSuggestionReason = Object.freeze({
+  LinkedRepository: zLocalCollectiveSuggestionReason.parse("linked_repository"),
+  LinkedGithubOrg: zLocalCollectiveSuggestionReason.parse("linked_github_org"),
 } as const);
-export const AllCollectiveSuggestionReasons = Object.freeze([CollectiveSuggestionReason.LinkedRepository, CollectiveSuggestionReason.LinkedGithubOrg]) as readonly CollectiveSuggestionReason[];
-export function isCollectiveSuggestionReason(value: unknown): value is CollectiveSuggestionReason {
-  return zCollectiveSuggestionReason.safeParse(value).success;
+export const AllLocalCollectiveSuggestionReasons = Object.freeze([LocalCollectiveSuggestionReason.LinkedRepository, LocalCollectiveSuggestionReason.LinkedGithubOrg]) as readonly LocalCollectiveSuggestionReason[];
+export function isLocalCollectiveSuggestionReason(value: unknown): value is LocalCollectiveSuggestionReason {
+  return zLocalCollectiveSuggestionReason.safeParse(value).success;
 }
 
 export type LocalSettingKind = LocalSettingKindContract;
@@ -1120,8 +1121,9 @@ export const LocalSettingKind = Object.freeze({
   String: zLocalSettingKind.parse("string"),
   StringList: zLocalSettingKind.parse("string_list"),
   Choice: zLocalSettingKind.parse("choice"),
+  Structured: zLocalSettingKind.parse("structured"),
 } as const);
-export const AllLocalSettingKinds = Object.freeze([LocalSettingKind.Boolean, LocalSettingKind.Integer, LocalSettingKind.String, LocalSettingKind.StringList, LocalSettingKind.Choice]) as readonly LocalSettingKind[];
+export const AllLocalSettingKinds = Object.freeze([LocalSettingKind.Boolean, LocalSettingKind.Integer, LocalSettingKind.String, LocalSettingKind.StringList, LocalSettingKind.Choice, LocalSettingKind.Structured]) as readonly LocalSettingKind[];
 export function isLocalSettingKind(value: unknown): value is LocalSettingKind {
   return zLocalSettingKind.safeParse(value).success;
 }
@@ -1138,11 +1140,12 @@ export function isAutoPublishEvent(value: unknown): value is AutoPublishEvent {
 
 export type AutoPublishHookStatus = AutoPublishHookStatusContract;
 export const AutoPublishHookStatus = Object.freeze({
-  Active: zAutoPublishHookStatus.parse("active"),
+  Absent: zAutoPublishHookStatus.parse("absent"),
+  Installed: zAutoPublishHookStatus.parse("installed"),
   Blocked: zAutoPublishHookStatus.parse("blocked"),
-  Off: zAutoPublishHookStatus.parse("off"),
+  Failed: zAutoPublishHookStatus.parse("failed"),
 } as const);
-export const AllAutoPublishHookStatuses = Object.freeze([AutoPublishHookStatus.Active, AutoPublishHookStatus.Blocked, AutoPublishHookStatus.Off]) as readonly AutoPublishHookStatus[];
+export const AllAutoPublishHookStatuses = Object.freeze([AutoPublishHookStatus.Absent, AutoPublishHookStatus.Installed, AutoPublishHookStatus.Blocked, AutoPublishHookStatus.Failed]) as readonly AutoPublishHookStatus[];
 export function isAutoPublishHookStatus(value: unknown): value is AutoPublishHookStatus {
   return zAutoPublishHookStatus.safeParse(value).success;
 }

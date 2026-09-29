@@ -1,6 +1,7 @@
 # The collectives proxy. The local server reads the signed-in user's
 # collectives from Village and computes suggestions with schema.RemoteLabel, so
-# the web never normalizes a git remote itself.
+# the web never normalizes a git remote itself. It answers 401 when this
+# computer is signed out and 502 when Village cannot be read.
 required_names:
   - no-suggestion-valid
   - linked-repository-suggestion-valid
@@ -16,7 +17,7 @@ operations:
     method: get
     path: /api/v1/village/collectives
     response: LocalVillageCollectivesResponse
-    statuses: ["200"]
+    statuses: ["200", "401", "502"]
     parameters:
       - {name: sessionId, in: query, required: false}
 cases:
@@ -65,7 +66,7 @@ cases:
         collectives:
           - group: *platform
             suggestion: {reason: recently_used, match: acme}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "CollectiveSuggestionReason is closed"}
     mutation: {description: "names a reason outside the menu"}
@@ -98,13 +99,13 @@ cases:
       payload:
         collectives:
           - suggestion: {reason: linked_github_org, match: acme}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "each row carries the Village collective"}
     mutation: {description: "sends a suggestion without its collective"}
   - name: null-collectives-rejected
     input: {schema: LocalVillageCollectivesResponse, payload: {collectives: null}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "collectives is an array"}
     mutation: {description: "sends null instead of an empty list"}

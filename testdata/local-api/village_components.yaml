@@ -1,0 +1,14 @@
+# The Village catalog rows the Local API embeds, pinned for one Local API
+# version. A change to any of them changes the Local API document, so it bumps
+# PeasantLocalAPIVersion and re-pins this file; the test prints the new pins.
+local_version: 0.15.0
+components:
+  - {name: VillageGroupAcceptanceMode, sha256: 531b0e725ec160560ca104e17b30f55d0123cdaa49d3c65f38503073a2fcdf9e}
+  - {name: VillageGroupDataAccess, sha256: 5c464846799d11cb2b11f6860c97ce018f22b973450b964e905ebcf5bb02e517}
+  - {name: VillageGroupRole, sha256: 3850a93d792a55c48d9905bf0d4b7143af77f1e05ffe160ef14ded4748c58415}
+  - {name: VillagePromptRequest, sha256: ee153c624297a1afc37bb6ce2405dfc5774a60dbd8b6bcd23e88d2e1d9105d7f}
+  - {name: VillagePullRequestAttachmentState, sha256: 59089a7dbd5ee091a8af5429116abc419218f66f4757ee33ffade11356efc29c}
+  - {name: VillageShareStatus, sha256: c0f41e9beb4d17c6bc4fa7b05977e161dbf49fc46e1b5739ff31a92d62cad1fc}
+  - {name: VillageTranscriptDeletionPolicy, sha256: 8e1e5bf3704f90ac463a3a8d5bbe8f4a2425d176b68ed91c57bd586a3cb9c735}
+  - {name: VillageUUID, sha256: 9873da81c6689ab13d5e647132ca65dbcab9f47780ff14c97fe696c6e93bc027}
+  - {name: VillageUserGroup, sha256: cd06a76e5b9375e84e9a7c33e242112ac3d5336c47d34e475b914864403da288}

@@ -8,6 +8,7 @@ required_names:
   - held-metrics-missing-valid
   - held-metadata-missing-previously-pushed-valid
   - empty-list-valid
+  - empty-row-id-rejected
   - held-without-reason-rejected
   - held-unknown-reason-rejected
   - reason-on-new-row-rejected
@@ -97,7 +98,7 @@ cases:
       payload:
         sessions:
           - {id: s-held, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, holdReason: disk_full, previouslyPushed: false}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "SyncHoldReason is closed"}
     mutation: {description: "names a hold reason outside the menu"}
@@ -117,7 +118,7 @@ cases:
       payload:
         sessions:
           - {id: s-ready, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: ready, previouslyPushed: false}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "SyncStatus is closed"}
     mutation: {description: "names a status outside the menu"}
@@ -127,7 +128,7 @@ cases:
       payload:
         sessions:
           - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the chooser never infers publication history"}
     mutation: {description: "omits previouslyPushed"}
@@ -144,7 +145,7 @@ cases:
     mutation: {description: "lists one session twice with different statuses"}
   - name: null-sessions-rejected
     input: {schema: LocalSyncSessionsPayload, payload: {sessions: null}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "sessions is an array"}
     mutation: {description: "sends null instead of an empty list"}
@@ -158,3 +159,13 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "the grouped sync arm carries the same row rules"}
     mutation: {description: "drops the hold reason inside a grouped row"}
+  - name: empty-row-id-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: "", harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: id is empty}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the chooser selects a row by its session ID"}
+    mutation: {description: "blanks the row ID"}

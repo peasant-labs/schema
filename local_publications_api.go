@@ -10,49 +10,52 @@ import (
 
 // --- Publication state ---
 
-// PublicationState is whether a local session has a publication on Village.
-type PublicationState string
+// LocalPublicationState is whether a local session has a publication on Village.
+type LocalPublicationState string
 
 const (
-	// PublicationStateUnpublished: no publication of this session is recorded.
-	PublicationStateUnpublished PublicationState = "unpublished"
-	// PublicationStatePublished: Village holds a transcript of this session.
-	PublicationStatePublished PublicationState = "published"
+	// LocalPublicationUnpublished: no publication of this session is recorded.
+	LocalPublicationUnpublished LocalPublicationState = "unpublished"
+	// LocalPublicationPublished: Village holds a transcript of this session.
+	LocalPublicationPublished LocalPublicationState = "published"
 )
 
-// AllPublicationStates is the canonical publication state menu.
-var AllPublicationStates = []PublicationState{PublicationStateUnpublished, PublicationStatePublished}
+// AllLocalPublicationStates is the canonical publication state menu.
+var AllLocalPublicationStates = []LocalPublicationState{LocalPublicationUnpublished, LocalPublicationPublished}
 
-func (s PublicationState) IsValid() bool  { return inSet(s, AllPublicationStates) }
-func (s PublicationState) String() string { return string(s) }
+func (s LocalPublicationState) IsValid() bool  { return inSet(s, AllLocalPublicationStates) }
+func (s LocalPublicationState) String() string { return string(s) }
 
 // JSONSchema implements jsonschema.Exposer.
-func (PublicationState) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema("Publication State", "Whether a local session has a publication on Village", AllPublicationStates), nil
+func (LocalPublicationState) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Local Publication State", "Whether a local session has a publication on Village", AllLocalPublicationStates), nil
 }
 
-// PublicationAttemptFailure is the most recent failed publish attempt recorded
+// LocalPublicationAttemptFailure is the most recent failed publish attempt recorded
 // for a session. A client compares AttemptedAt with the publication's
 // PublishedAt to tell whether the failure is newer than the last success.
-type PublicationAttemptFailure struct {
+type LocalPublicationAttemptFailure struct {
 	AttemptedAt time.Time `json:"attemptedAt"`
 	Message     string    `json:"message"`
 }
 
-// PublicationAudienceMember is one collective a published transcript is shared
+// LocalPublicationAudienceMember is one collective a published transcript is shared
 // with. Status is the collective's current share status: approved means its
 // members can read the transcript, pending means the collective's owner has
 // not approved it yet.
-type PublicationAudienceMember struct {
+type LocalPublicationAudienceMember struct {
 	CollectiveID VillageUUID        `json:"collectiveId"`
 	Name         string             `json:"name"`
 	Status       VillageShareStatus `json:"status"`
 }
 
-// LocalPublication is the durable publication state of one local session.
+// LocalPublication is the durable publication state of one local session for
+// the Village account this computer is signed in to: the stored credential's
+// Village and user. A publication recorded for another account is not
+// reported, and a signed-out computer reports every session unpublished.
 type LocalPublication struct {
-	SessionID string           `json:"sessionId"`
-	State     PublicationState `json:"state"`
+	SessionID string                `json:"sessionId"`
+	State     LocalPublicationState `json:"state"`
 	// TranscriptID, TranscriptURL, and PublishedAt are present exactly when
 	// State is published. PublishedAt is when Village last accepted this
 	// session's content, by a first publish or an update; a client counts the
@@ -62,7 +65,7 @@ type LocalPublication struct {
 	PublishedAt   *time.Time    `json:"publishedAt,omitempty" nullable:"false"`
 	// LastAttempt is the most recent failed attempt, absent when none is
 	// recorded.
-	LastAttempt *PublicationAttemptFailure `json:"lastAttempt,omitempty" nullable:"false"`
+	LastAttempt *LocalPublicationAttemptFailure `json:"lastAttempt,omitempty" nullable:"false"`
 	// AutoPublish reports that an auto-publish binding covers this session's
 	// project, so a git hook publishes it without a click.
 	AutoPublish bool `json:"autoPublish"`
@@ -72,8 +75,9 @@ type LocalPublication struct {
 	OutsideSelection bool `json:"outsideSelection"`
 	// Audience lists the collectives the transcript is shared with. It is
 	// present on a published row exactly when the request asked for
-	// include=audience, and never on an unpublished row.
-	Audience []PublicationAudienceMember `json:"audience,omitempty" nullable:"false"`
+	// include=audience, as [] when the transcript is shared with no
+	// collective, and never on an unpublished row.
+	Audience *[]LocalPublicationAudienceMember `json:"audience,omitempty" nullable:"false"`
 }
 
 // Validate checks the state pairing and the audience of one publication row.
@@ -82,9 +86,9 @@ func (p LocalPublication) Validate() error {
 		return fmt.Errorf("publication validation failed at schema.LocalPublication.Validate: sessionId is empty; the caller cannot match the row to a session; emit the requested session ID")
 	}
 	if !p.State.IsValid() {
-		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: state %q is outside the closed set; emit a member of schema.AllPublicationStates", p.SessionID, p.State)
+		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: state %q is outside the closed set; emit a member of schema.AllLocalPublicationStates", p.SessionID, p.State)
 	}
-	published := p.State == PublicationStatePublished
+	published := p.State == LocalPublicationPublished
 	if published != (p.TranscriptID != nil) || published != (p.TranscriptURL != "") || published != (p.PublishedAt != nil) {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: state %q disagrees with transcriptId, transcriptUrl, or publishedAt; a published row names its transcript and an unpublished row names none", p.SessionID, p.State)
 	}
@@ -97,8 +101,11 @@ func (p LocalPublication) Validate() error {
 	if !published && p.Audience != nil {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: an unpublished row carries an audience; nothing is shared before publication; omit audience", p.SessionID)
 	}
-	seen := make(map[VillageUUID]struct{}, len(p.Audience))
-	for _, member := range p.Audience {
+	if p.Audience == nil {
+		return nil
+	}
+	seen := make(map[VillageUUID]struct{}, len(*p.Audience))
+	for _, member := range *p.Audience {
 		if member.Status != VillageShareStatusApproved && member.Status != VillageShareStatusPending {
 			return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: audience member %q has status %q; the audience lists only approved and pending shares", p.SessionID, member.CollectiveID, member.Status)
 		}
@@ -137,37 +144,39 @@ func (r LocalPublicationsResponse) Validate() error {
 
 // --- Collectives for publishing ---
 
-// CollectiveSuggestionReason is why the server suggests a collective for a
+// LocalCollectiveSuggestionReason is why the server suggests a collective for a
 // session.
-type CollectiveSuggestionReason string
+type LocalCollectiveSuggestionReason string
 
 const (
-	// CollectiveSuggestionLinkedRepository: the collective links the session's
+	// LocalCollectiveSuggestionLinkedRepository: the collective links the session's
 	// repository.
-	CollectiveSuggestionLinkedRepository CollectiveSuggestionReason = "linked_repository"
-	// CollectiveSuggestionLinkedGithubOrg: the collective links the GitHub
+	LocalCollectiveSuggestionLinkedRepository LocalCollectiveSuggestionReason = "linked_repository"
+	// LocalCollectiveSuggestionLinkedGithubOrg: the collective links the GitHub
 	// organization that owns the session's repository.
-	CollectiveSuggestionLinkedGithubOrg CollectiveSuggestionReason = "linked_github_org"
+	LocalCollectiveSuggestionLinkedGithubOrg LocalCollectiveSuggestionReason = "linked_github_org"
 )
 
-// AllCollectiveSuggestionReasons is the canonical suggestion reason menu.
-var AllCollectiveSuggestionReasons = []CollectiveSuggestionReason{CollectiveSuggestionLinkedRepository, CollectiveSuggestionLinkedGithubOrg}
+// AllLocalCollectiveSuggestionReasons is the canonical suggestion reason menu.
+var AllLocalCollectiveSuggestionReasons = []LocalCollectiveSuggestionReason{LocalCollectiveSuggestionLinkedRepository, LocalCollectiveSuggestionLinkedGithubOrg}
 
-func (r CollectiveSuggestionReason) IsValid() bool  { return inSet(r, AllCollectiveSuggestionReasons) }
-func (r CollectiveSuggestionReason) String() string { return string(r) }
+func (r LocalCollectiveSuggestionReason) IsValid() bool {
+	return inSet(r, AllLocalCollectiveSuggestionReasons)
+}
+func (r LocalCollectiveSuggestionReason) String() string { return string(r) }
 
 // JSONSchema implements jsonschema.Exposer.
-func (CollectiveSuggestionReason) JSONSchema() (jsonschema.Schema, error) {
-	return closedStringEnumSchema("Collective Suggestion Reason", "Why the local server suggests a collective for a session", AllCollectiveSuggestionReasons), nil
+func (LocalCollectiveSuggestionReason) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Local Collective Suggestion Reason", "Why the local server suggests a collective for a session", AllLocalCollectiveSuggestionReasons), nil
 }
 
-// CollectiveSuggestion is the server's reason to suggest one collective.
+// LocalCollectiveSuggestion is the server's reason to suggest one collective.
 // Match is what matched: the linked repository's schema.RemoteLabel for a
 // linked_repository suggestion, or the organization login for a
 // linked_github_org suggestion.
-type CollectiveSuggestion struct {
-	Reason CollectiveSuggestionReason `json:"reason"`
-	Match  string                     `json:"match"`
+type LocalCollectiveSuggestion struct {
+	Reason LocalCollectiveSuggestionReason `json:"reason"`
+	Match  string                          `json:"match"`
 }
 
 // LocalVillageCollective is one Village collective the signed-in user belongs
@@ -176,7 +185,7 @@ type LocalVillageCollective struct {
 	Group VillageUserGroup `json:"group"`
 	// Suggestion is present when the server suggests this collective for the
 	// requested session.
-	Suggestion *CollectiveSuggestion `json:"suggestion,omitempty" nullable:"false"`
+	Suggestion *LocalCollectiveSuggestion `json:"suggestion,omitempty" nullable:"false"`
 }
 
 // LocalVillageCollectivesResponse is the response of GET

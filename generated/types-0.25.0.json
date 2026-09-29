@@ -2445,7 +2445,124 @@
         ],
         "type": "object"
       },
-      "AutoPublishBinding": {
+      "AutoPublishEvent": {
+        "description": "Git hook that publishes an auto-publish rule's sessions",
+        "enum": [
+          "pre-push",
+          "post-commit"
+        ],
+        "examples": [
+          "pre-push",
+          "post-commit"
+        ],
+        "title": "Auto Publish Event",
+        "type": "string"
+      },
+      "AutoPublishHook": {
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/AutoPublishEvent"
+          },
+          "remedy": {
+            "$ref": "#/components/schemas/AutoPublishHookRemedy"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AutoPublishHookStatus"
+          }
+        },
+        "required": [
+          "event",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AutoPublishHookRemedy": {
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "AutoPublishHookStatus": {
+        "description": "State of one repository's auto-publish hook for one event",
+        "enum": [
+          "absent",
+          "installed",
+          "blocked",
+          "failed"
+        ],
+        "examples": [
+          "absent",
+          "installed",
+          "blocked",
+          "failed"
+        ],
+        "title": "Auto Publish Hook Status",
+        "type": "string"
+      },
+      "AutoPublishInstallRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "AutoPublishRemovalResponse": {
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/AutoPublishRepository"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "repositories"
+        ],
+        "type": "object"
+      },
+      "AutoPublishRepository": {
+        "properties": {
+          "hooks": {
+            "items": {
+              "$ref": "#/components/schemas/AutoPublishHook"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "hooks"
+        ],
+        "type": "object"
+      },
+      "AutoPublishRule": {
         "properties": {
           "collectives": {
             "items": {
@@ -2459,9 +2576,6 @@
             },
             "type": "array"
           },
-          "hook": {
-            "$ref": "#/components/schemas/AutoPublishHook"
-          },
           "id": {
             "minLength": 1,
             "type": "string"
@@ -2469,6 +2583,12 @@
           "match": {
             "minLength": 1,
             "type": "string"
+          },
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/AutoPublishRepository"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -2476,11 +2596,12 @@
           "match",
           "events",
           "collectives",
-          "hook"
+          "repositories"
         ],
         "type": "object"
       },
-      "AutoPublishBindingRequest": {
+      "AutoPublishRuleRequest": {
+        "additionalProperties": false,
         "properties": {
           "collectives": {
             "items": {
@@ -2503,79 +2624,6 @@
           "match",
           "events",
           "collectives"
-        ],
-        "type": "object"
-      },
-      "AutoPublishEvent": {
-        "description": "Git hook that publishes an auto-publish binding's sessions",
-        "enum": [
-          "pre-push",
-          "post-commit"
-        ],
-        "examples": [
-          "pre-push",
-          "post-commit"
-        ],
-        "title": "Auto Publish Event",
-        "type": "string"
-      },
-      "AutoPublishHook": {
-        "properties": {
-          "remedy": {
-            "$ref": "#/components/schemas/AutoPublishHookRemedy"
-          },
-          "status": {
-            "$ref": "#/components/schemas/AutoPublishHookStatus"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "type": "object"
-      },
-      "AutoPublishHookRemedy": {
-        "properties": {
-          "command": {
-            "type": "string"
-          },
-          "message": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "message"
-        ],
-        "type": "object"
-      },
-      "AutoPublishHookStatus": {
-        "description": "State of an auto-publish binding's git hook",
-        "enum": [
-          "active",
-          "blocked",
-          "off"
-        ],
-        "examples": [
-          "active",
-          "blocked",
-          "off"
-        ],
-        "title": "Auto Publish Hook Status",
-        "type": "string"
-      },
-      "AutoPublishRemovalResponse": {
-        "properties": {
-          "hook": {
-            "$ref": "#/components/schemas/AutoPublishHook"
-          },
-          "id": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "hook"
         ],
         "type": "object"
       },
@@ -3301,34 +3349,6 @@
           "type"
         ],
         "type": "object"
-      },
-      "CollectiveSuggestion": {
-        "properties": {
-          "match": {
-            "type": "string"
-          },
-          "reason": {
-            "$ref": "#/components/schemas/CollectiveSuggestionReason"
-          }
-        },
-        "required": [
-          "reason",
-          "match"
-        ],
-        "type": "object"
-      },
-      "CollectiveSuggestionReason": {
-        "description": "Why the local server suggests a collective for a session",
-        "enum": [
-          "linked_repository",
-          "linked_github_org"
-        ],
-        "examples": [
-          "linked_repository",
-          "linked_github_org"
-        ],
-        "title": "Collective Suggestion Reason",
-        "type": "string"
       },
       "CommandInvocation": {
         "properties": {
@@ -4531,6 +4551,34 @@
         "title": "License",
         "type": "string"
       },
+      "LocalCollectiveSuggestion": {
+        "properties": {
+          "match": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/LocalCollectiveSuggestionReason"
+          }
+        },
+        "required": [
+          "reason",
+          "match"
+        ],
+        "type": "object"
+      },
+      "LocalCollectiveSuggestionReason": {
+        "description": "Why the local server suggests a collective for a session",
+        "enum": [
+          "linked_repository",
+          "linked_github_org"
+        ],
+        "examples": [
+          "linked_repository",
+          "linked_github_org"
+        ],
+        "title": "Local Collective Suggestion Reason",
+        "type": "string"
+      },
       "LocalHelperMembersPayload": {
         "properties": {
           "limit": {
@@ -4591,7 +4639,7 @@
         "properties": {
           "audience": {
             "items": {
-              "$ref": "#/components/schemas/PublicationAudienceMember"
+              "$ref": "#/components/schemas/LocalPublicationAudienceMember"
             },
             "type": "array"
           },
@@ -4599,7 +4647,7 @@
             "type": "boolean"
           },
           "lastAttempt": {
-            "$ref": "#/components/schemas/PublicationAttemptFailure"
+            "$ref": "#/components/schemas/LocalPublicationAttemptFailure"
           },
           "outsideSelection": {
             "type": "boolean"
@@ -4612,7 +4660,7 @@
             "type": "string"
           },
           "state": {
-            "$ref": "#/components/schemas/PublicationState"
+            "$ref": "#/components/schemas/LocalPublicationState"
           },
           "transcriptId": {
             "$ref": "#/components/schemas/TranscriptID"
@@ -4628,6 +4676,54 @@
           "outsideSelection"
         ],
         "type": "object"
+      },
+      "LocalPublicationAttemptFailure": {
+        "properties": {
+          "attemptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptedAt",
+          "message"
+        ],
+        "type": "object"
+      },
+      "LocalPublicationAudienceMember": {
+        "properties": {
+          "collectiveId": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VillageShareStatus"
+          }
+        },
+        "required": [
+          "collectiveId",
+          "name",
+          "status"
+        ],
+        "type": "object"
+      },
+      "LocalPublicationState": {
+        "description": "Whether a local session has a publication on Village",
+        "enum": [
+          "unpublished",
+          "published"
+        ],
+        "examples": [
+          "unpublished",
+          "published"
+        ],
+        "title": "Local Publication State",
+        "type": "string"
       },
       "LocalPublicationsResponse": {
         "properties": {
@@ -4756,6 +4852,9 @@
           "description": {
             "type": "string"
           },
+          "editable": {
+            "type": "boolean"
+          },
           "inPeasantConfig": {
             "type": "boolean"
           },
@@ -4780,6 +4879,7 @@
           "key",
           "kind",
           "value",
+          "editable",
           "inPeasantConfig"
         ],
         "type": "object"
@@ -4791,19 +4891,38 @@
           "integer",
           "string",
           "string_list",
-          "choice"
+          "choice",
+          "structured"
         ],
         "examples": [
           "boolean",
           "integer",
           "string",
           "string_list",
-          "choice"
+          "choice",
+          "structured"
         ],
         "title": "Local Setting Kind",
         "type": "string"
       },
+      "LocalSettingRefusal": {
+        "properties": {
+          "error": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "error"
+        ],
+        "type": "object"
+      },
       "LocalSettingUpdateRequest": {
+        "additionalProperties": false,
         "properties": {
           "key": {
             "minLength": 1,
@@ -4822,6 +4941,9 @@
       "LocalSettingValue": {
         "anyOf": [
           {
+            "type": "null"
+          },
+          {
             "type": "boolean"
           },
           {
@@ -4831,20 +4953,20 @@
             "type": "string"
           },
           {
-            "items": {
-              "type": "string"
-            },
             "type": "array"
+          },
+          {
+            "type": "object"
           }
         ],
-        "description": "One setting's value: a boolean, an integer, a string, or an array of strings, as its kind says",
+        "description": "One setting's value, of the JSON type its kind names; null means the key is unset and the server's default applies",
         "title": "Local Setting Value"
       },
       "LocalSettingsResponse": {
         "properties": {
           "autoPublish": {
             "items": {
-              "$ref": "#/components/schemas/AutoPublishBinding"
+              "$ref": "#/components/schemas/AutoPublishRule"
             },
             "type": "array"
           },
@@ -4945,7 +5067,7 @@
             "$ref": "#/components/schemas/VillageUserGroup"
           },
           "suggestion": {
-            "$ref": "#/components/schemas/CollectiveSuggestion"
+            "$ref": "#/components/schemas/LocalCollectiveSuggestion"
           }
         },
         "required": [
@@ -6054,54 +6176,6 @@
           "through_redacted_entry"
         ],
         "title": "Public Source Anchor Kind",
-        "type": "string"
-      },
-      "PublicationAttemptFailure": {
-        "properties": {
-          "attemptedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "attemptedAt",
-          "message"
-        ],
-        "type": "object"
-      },
-      "PublicationAudienceMember": {
-        "properties": {
-          "collectiveId": {
-            "$ref": "#/components/schemas/VillageUUID"
-          },
-          "name": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/VillageShareStatus"
-          }
-        },
-        "required": [
-          "collectiveId",
-          "name",
-          "status"
-        ],
-        "type": "object"
-      },
-      "PublicationState": {
-        "description": "Whether a local session has a publication on Village",
-        "enum": [
-          "unpublished",
-          "published"
-        ],
-        "examples": [
-          "unpublished",
-          "published"
-        ],
-        "title": "Publication State",
         "type": "string"
       },
       "PublishAppliedState": {
@@ -9182,6 +9256,7 @@
         "type": "string"
       },
       "SyncPushCollectives": {
+        "additionalProperties": false,
         "properties": {
           "add": {
             "description": "Collectives to share the published transcripts with",
@@ -9201,6 +9276,7 @@
         "type": "object"
       },
       "SyncPushRequest": {
+        "additionalProperties": false,
         "properties": {
           "collectives": {
             "$ref": "#/components/schemas/SyncPushCollectives",
@@ -9333,12 +9409,14 @@
         "enum": [
           "succeeded",
           "pending_approval",
+          "skipped",
           "failed",
           "not_attempted"
         ],
         "examples": [
           "succeeded",
           "pending_approval",
+          "skipped",
           "failed",
           "not_attempted"
         ],
@@ -9350,11 +9428,11 @@
           "collectiveId": {
             "$ref": "#/components/schemas/VillageUUID"
           },
-          "error": {
-            "type": "string"
-          },
           "outcome": {
             "$ref": "#/components/schemas/SyncPushStepOutcome"
+          },
+          "reason": {
+            "type": "string"
           },
           "step": {
             "$ref": "#/components/schemas/SyncPushStep"
@@ -9427,6 +9505,9 @@
             "type": "string"
           },
           "ruleId": {
+            "type": "string"
+          },
+          "toolCallId": {
             "type": "string"
           }
         },

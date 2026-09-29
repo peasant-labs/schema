@@ -256,8 +256,8 @@ operations:
     operation_id: listTranscriptPullRequests
     request_components: []
     response_components: [VillageTranscriptPullRequestsResponse]
-    statuses: ["200", "400", "404", "500"]
-    description_anchors: [attached or detached, receives 404, never 403]
+    statuses: ["200", "400", "404", "429", "500"]
+    description_anchors: [attached or detached, receives 404, never 403, omitted rather than refused]
   - path: /api/v1/users/me/stats
     method: get
     operation_id: getMyStats
@@ -465,6 +465,13 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"
+request_body_names:
+  - create-group-null-organization
+  - create-group-omitted-organization
+  - create-group-named-organization
+  - create-group-numeric-organization-rejected
+  - create-group-missing-name-rejected
+  - update-group-null-organization
 request_bodies:
   - name: create-group-null-organization
     path: /api/v1/groups

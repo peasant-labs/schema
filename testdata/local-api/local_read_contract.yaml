@@ -66,7 +66,7 @@ round_trip:
       input: {kind: sync-payload, json: '{"sessions":[{"id":"s1","harness":"codex","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"host","startTime":"2026-09-08T00:00:00Z","durationMs":42,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","previouslyPushed":false}]}' }
       expected: {valid: true, requiredKeys: [sessions], forbiddenKeys: [items, totalItems]}
       classification: must-pass
-      provenance: {source: requirement, ref: "actual sync_handler omitted-view response"}
+      provenance: {source: requirement, ref: "the Local API 0.15.0 omitted-view sync response, which adds previouslyPushed to the sync_handler body"}
       mutation: {description: "uses the concrete legacy sessions envelope and complete producer row"}
     - name: grouped-list-values
       input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"p1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0}},"helperGroups":[{"groupId":"hg_p1","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}],"page":1,"limit":2,"totalItems":3,"ordinarySessionTotal":3,"helperThreadTotal":3}' }

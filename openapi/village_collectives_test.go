@@ -18,6 +18,7 @@ type villageCollectivesOperationFixtures struct {
 	ComponentEnums    []villageComponentEnumFixture        `yaml:"component_enums"`
 	ComponentRequired []villageComponentRequiredFixture    `yaml:"component_required"`
 	ComponentProps    []villageComponentPropertyFixture    `yaml:"component_properties"`
+	RequestBodyNames  []string                             `yaml:"request_body_names"`
 	RequestBodies     []villageRequestBodyFixture          `yaml:"request_bodies"`
 }
 

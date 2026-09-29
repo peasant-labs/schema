@@ -60,12 +60,14 @@ type boundaryFixture struct {
 
 // boundaryOperation binds an operation to the Types components it carries.
 type boundaryOperation struct {
-	API        string              `yaml:"api"`
-	Method     string              `yaml:"method"`
-	Path       string              `yaml:"path"`
-	Request    string              `yaml:"request,omitempty"`
-	Response   string              `yaml:"response"`
-	Statuses   []string            `yaml:"statuses"`
+	API      string `yaml:"api"`
+	Method   string `yaml:"method"`
+	Path     string `yaml:"path"`
+	Request  string `yaml:"request,omitempty"`
+	Response string `yaml:"response"`
+	// Statuses is the exact status set, when this corpus owns it. An
+	// operation whose statuses another manifest owns omits it.
+	Statuses   []string            `yaml:"statuses,omitempty"`
 	Parameters []boundaryParameter `yaml:"parameters,omitempty"`
 }
 
@@ -87,6 +89,10 @@ type boundaryExpected struct {
 	// published component schema, semantics for the Go validator.
 	RejectedBy    string `yaml:"rejected_by,omitempty"`
 	ErrorContains string `yaml:"error_contains,omitempty"`
+	// GoRejects records, for a shape case, whether the Go decoder plus
+	// Validate also refuses the payload. Producers gate their output with
+	// Validate, so each shape rule states whether Go sees it too.
+	GoRejects *bool `yaml:"go_rejects,omitempty"`
 }
 
 // boundaryDecoders is the exact set of components the publishing corpora may
@@ -105,8 +111,12 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"LocalSettingsResponse":                 decodeValidated[schema.LocalSettingsResponse],
 	"LocalSetting":                          decodeValidated[schema.LocalSetting],
 	"LocalSettingUpdateRequest":             decodeValidated[schema.LocalSettingUpdateRequest],
-	"AutoPublishBindingRequest":             decodeValidated[schema.AutoPublishBindingRequest],
-	"AutoPublishBinding":                    decodeValidated[schema.AutoPublishBinding],
+	"AutoPublishRuleRequest":                decodeValidated[schema.AutoPublishRuleRequest],
+	"AutoPublishRule":                       decodeValidated[schema.AutoPublishRule],
+	"AutoPublishInstallRequest":             decodeValidated[schema.AutoPublishInstallRequest],
+	"AutoPublishRepository":                 decodeValidated[schema.AutoPublishRepository],
+	"LocalSettingRefusal":                   decodeOnly[schema.LocalSettingRefusal],
+	"VillageSessionRow":                     decodeValidated[schema.VillageSessionRow],
 	"AutoPublishRemovalResponse":            decodeValidated[schema.AutoPublishRemovalResponse],
 	"VillageUserSettings":                   decodeOnly[schema.VillageUserSettings],
 	"VillageUpdateUserSettingsRequest":      decodeOnly[schema.VillageUpdateUserSettingsRequest],
@@ -180,6 +190,8 @@ func loadBoundaryFixture(t *testing.T, data []byte) boundaryFixture {
 			t.Fatalf("case %s is valid but names a rejecting layer", c.Name)
 		case !c.Expected.Valid && c.Expected.RejectedBy != "shape" && c.Expected.RejectedBy != "semantics":
 			t.Fatalf("case %s is invalid and must name rejected_by shape or semantics, got %q", c.Name, c.Expected.RejectedBy)
+		case (c.Expected.RejectedBy == "shape") != (c.Expected.GoRejects != nil):
+			t.Fatalf("case %s must state go_rejects exactly when the shape layer rejects it", c.Name)
 		case c.Expected.Valid != (c.Classification == testcase.MustPass):
 			t.Fatalf("case %s classification %s disagrees with valid=%v", c.Name, c.Classification, c.Expected.Valid)
 		}
@@ -279,6 +291,9 @@ func (h *boundaryHarness) run(t *testing.T, c testcase.Case[boundaryInput, bound
 		if shapeErr == nil {
 			t.Fatalf("the published component accepted a case the shape layer must refuse (go=%v)", goErr)
 		}
+		if (goErr != nil) != *c.Expected.GoRejects {
+			t.Fatalf("Go rejects=%v, want %v: %v", goErr != nil, *c.Expected.GoRejects, goErr)
+		}
 		requireErrorContains(t, shapeErr, c.Expected.ErrorContains)
 	default:
 		if shapeErr != nil {
@@ -339,9 +354,11 @@ func (h *boundaryHarness) requireOperation(t *testing.T, want boundaryOperation)
 	for status := range responses {
 		statuses = append(statuses, status)
 	}
-	requireSameSet(t, label+" statuses", want.Statuses, statuses)
+	if want.Statuses != nil {
+		requireSameSet(t, label+" statuses", want.Statuses, statuses)
+	}
 	if want.Response != "" {
-		requireBinding(t, h, label+" response", want.API, want.Response, mediaSchema(t, label, responses[successStatus(want.Statuses)]))
+		requireBinding(t, h, label+" response", want.API, want.Response, mediaSchema(t, label, responses[successStatus(statuses)]))
 	}
 	if want.Request != "" {
 		body, _ := operation["requestBody"].(map[string]any)

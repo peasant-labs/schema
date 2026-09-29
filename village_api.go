@@ -457,8 +457,9 @@ type VillageGroupMember struct {
 }
 
 // VillageGroupTranscriptStats totals a collective's transcripts.
-// PullRequestCount counts the distinct pull requests attached to any
-// transcript counted in TotalTranscripts.
+// PullRequestCount counts the distinct pull requests whose attachment is in
+// state attached and includes a transcript counted in TotalTranscripts;
+// detached pull requests are not counted.
 type VillageGroupTranscriptStats struct {
 	TotalTranscripts int32 `json:"total_transcripts"`
 	ContributorCount int32 `json:"contributor_count"`
@@ -918,6 +919,9 @@ func (r VillageSessionRow) Validate() error {
 	if r.Collective != nil {
 		arms++
 		if err := ValidateInputSubmissionCount(r.Collective.InputSubmissionCount, "VillageSessionRow.collective.input_submission_count"); err != nil {
+			return err
+		}
+		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
 		if r.Collective.ID != r.Session.ID || r.Collective.OwnerID != r.Session.OwnerID || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {

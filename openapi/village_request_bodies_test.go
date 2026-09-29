@@ -23,6 +23,18 @@ func TestBuildVillageAPISpec_RequestBodies(t *testing.T) {
 	if err := compiler.AddResource("village.json", bytes.NewReader(raw)); err != nil {
 		t.Fatal(err)
 	}
+	names := map[string]bool{}
+	for _, fixture := range fixtures.RequestBodies {
+		names[fixture.Name] = true
+	}
+	for _, required := range fixtures.RequestBodyNames {
+		if !names[required] {
+			t.Fatalf("request body case %q named in request_body_names is missing", required)
+		}
+	}
+	if len(names) != len(fixtures.RequestBodyNames) || len(fixtures.RequestBodies) != len(fixtures.RequestBodyNames) {
+		t.Fatalf("request_bodies has %d cases and request_body_names names %d; the manifest is the exact case set", len(fixtures.RequestBodies), len(fixtures.RequestBodyNames))
+	}
 	seen := map[string]bool{}
 	for _, fixture := range fixtures.RequestBodies {
 		t.Run(fixture.Name, func(t *testing.T) {

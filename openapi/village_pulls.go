@@ -95,7 +95,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/transcripts/{id}/pulls",
 			id:          "listTranscriptPullRequests",
 			tag:         "pull-requests",
-			description: "List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists.",
+			description: "List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed, and an attachment the caller could not open through getPullRequestAttachment, such as one on a private repository the caller cannot see, is omitted rather than refused. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. 429 means the private-repository visibility check is rate limited; retry later.",
 			requests: []interface{}{new(struct {
 				ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 			})},
@@ -103,6 +103,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusNotFound,
+				http.StatusTooManyRequests,
 				http.StatusInternalServerError,
 			},
 		},
@@ -111,7 +112,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/users/me/stats",
 			id:          "getMyStats",
 			tag:         "users",
-			description: "Read totals over every transcript the caller published: transcripts, turns, recorded duration, tokens, and the distinct pull requests those transcripts are attached to. The totals cover every transcript, not one page of a list.",
+			description: "Read totals over every transcript the caller published: transcripts, turns, recorded duration, tokens, and the distinct pull requests attached to those transcripts (state attached; detached pull requests are not counted). The totals cover every transcript, not one page of a list.",
 			response:    new(schema.VillageUserStats),
 			errorStatuses: []int{
 				http.StatusUnauthorized,

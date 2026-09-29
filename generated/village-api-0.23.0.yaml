@@ -2096,9 +2096,12 @@ paths:
     get:
       description: List the pull requests whose prompt attachment includes this transcript,
         attached or detached, with each pull request's title and head branch. A requested,
-        waiting, or preview attachment is never listed. A caller who may not read
-        the transcript receives 404, never 403, so the read does not reveal that the
-        transcript exists.
+        waiting, or preview attachment is never listed, and an attachment the caller
+        could not open through getPullRequestAttachment, such as one on a private
+        repository the caller cannot see, is omitted rather than refused. A caller
+        who may not read the transcript receives 404, never 403, so the read does
+        not reveal that the transcript exists. 429 means the private-repository visibility
+        check is rate limited; retry later.
       operationId: listTranscriptPullRequests
       parameters:
       - description: Transcript identifier
@@ -2127,6 +2130,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaVillageErrorResponse'
           description: Not Found
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Too Many Requests
         "500":
           content:
             application/json:
@@ -2659,8 +2668,9 @@ paths:
   /api/v1/users/me/stats:
     get:
       description: 'Read totals over every transcript the caller published: transcripts,
-        turns, recorded duration, tokens, and the distinct pull requests those transcripts
-        are attached to. The totals cover every transcript, not one page of a list.'
+        turns, recorded duration, tokens, and the distinct pull requests attached
+        to those transcripts (state attached; detached pull requests are not counted).
+        The totals cover every transcript, not one page of a list.'
       operationId: getMyStats
       responses:
         "200":

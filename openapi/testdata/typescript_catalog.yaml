@@ -1237,13 +1237,8 @@ types:
   - {go_name: SyncRedactionRuleGroup, disposition: catalog, component: SyncRedactionRuleGroup, reason: local publishing sign-in and settings contract}
   - {go_name: SyncRedactionCategoryGroup, disposition: catalog, component: SyncRedactionCategoryGroup, reason: local publishing sign-in and settings contract}
   - {go_name: SyncRedactionsResponse, disposition: catalog, component: SyncRedactionsResponse, reason: local publishing sign-in and settings contract}
-  - {go_name: PublicationState, disposition: catalog, component: PublicationState, reason: local publishing sign-in and settings contract}
-  - {go_name: PublicationAttemptFailure, disposition: catalog, component: PublicationAttemptFailure, reason: local publishing sign-in and settings contract}
-  - {go_name: PublicationAudienceMember, disposition: catalog, component: PublicationAudienceMember, reason: local publishing sign-in and settings contract}
   - {go_name: LocalPublication, disposition: catalog, component: LocalPublication, reason: local publishing sign-in and settings contract}
   - {go_name: LocalPublicationsResponse, disposition: catalog, component: LocalPublicationsResponse, reason: local publishing sign-in and settings contract}
-  - {go_name: CollectiveSuggestionReason, disposition: catalog, component: CollectiveSuggestionReason, reason: local publishing sign-in and settings contract}
-  - {go_name: CollectiveSuggestion, disposition: catalog, component: CollectiveSuggestion, reason: local publishing sign-in and settings contract}
   - {go_name: LocalVillageCollective, disposition: catalog, component: LocalVillageCollective, reason: local publishing sign-in and settings contract}
   - {go_name: LocalVillageCollectivesResponse, disposition: catalog, component: LocalVillageCollectivesResponse, reason: local publishing sign-in and settings contract}
   - {go_name: LocalSettingKind, disposition: catalog, component: LocalSettingKind, reason: local publishing sign-in and settings contract}
@@ -1255,10 +1250,18 @@ types:
   - {go_name: AutoPublishHookStatus, disposition: catalog, component: AutoPublishHookStatus, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishHookRemedy, disposition: catalog, component: AutoPublishHookRemedy, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishHook, disposition: catalog, component: AutoPublishHook, reason: local publishing sign-in and settings contract}
-  - {go_name: AutoPublishBindingRequest, disposition: catalog, component: AutoPublishBindingRequest, reason: local publishing sign-in and settings contract}
-  - {go_name: AutoPublishBinding, disposition: catalog, component: AutoPublishBinding, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishRemovalResponse, disposition: catalog, component: AutoPublishRemovalResponse, reason: local publishing sign-in and settings contract}
   - {go_name: VillagePullRequestRef, disposition: catalog, component: VillagePullRequestRef, reason: pull request attachment contract}
   - {go_name: VillagePullRequestsSummary, disposition: catalog, component: VillagePullRequestsSummary, reason: pull request attachment contract}
   - {go_name: VillageTranscriptPullRequestsResponse, disposition: catalog, component: VillageTranscriptPullRequestsResponse, reason: pull request attachment contract}
   - {go_name: VillageUserStats, disposition: catalog, component: VillageUserStats, reason: pull request attachment contract}
+  - {go_name: LocalPublicationState, disposition: catalog, component: LocalPublicationState, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalPublicationAttemptFailure, disposition: catalog, component: LocalPublicationAttemptFailure, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalPublicationAudienceMember, disposition: catalog, component: LocalPublicationAudienceMember, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalCollectiveSuggestionReason, disposition: catalog, component: LocalCollectiveSuggestionReason, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalCollectiveSuggestion, disposition: catalog, component: LocalCollectiveSuggestion, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalSettingRefusal, disposition: catalog, component: LocalSettingRefusal, reason: local publishing sign-in and settings contract}
+  - {go_name: AutoPublishRepository, disposition: catalog, component: AutoPublishRepository, reason: local publishing sign-in and settings contract}
+  - {go_name: AutoPublishRuleRequest, disposition: catalog, component: AutoPublishRuleRequest, reason: local publishing sign-in and settings contract}
+  - {go_name: AutoPublishRule, disposition: catalog, component: AutoPublishRule, reason: local publishing sign-in and settings contract}
+  - {go_name: AutoPublishInstallRequest, disposition: catalog, component: AutoPublishInstallRequest, reason: local publishing sign-in and settings contract}

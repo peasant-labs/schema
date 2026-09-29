@@ -179,8 +179,8 @@ func (SyncPushSessionStatus) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema("Sync Push Session Status", "Outcome of one session in a push", AllSyncPushSessionStatuses), nil
 }
 
-// SyncPushStep is one step a push runs for a session, in order: the content
-// step first, then one step per collective added or removed.
+// SyncPushStep is one step a push runs for a session: the content step, then
+// one step per collective added or removed.
 type SyncPushStep string
 
 const (
@@ -212,14 +212,20 @@ const (
 	// SyncPushStepPendingApproval: the collective holds the share until its
 	// owner approves it. Only an add_collective step has this outcome.
 	SyncPushStepPendingApproval SyncPushStepOutcome = "pending_approval"
-	// SyncPushStepFailed: the step failed and Village keeps what it had.
+	// SyncPushStepSkipped: the step was not needed or not allowed, for example
+	// a collective that already holds the transcript. It is not a failure and
+	// carries its reason.
+	SyncPushStepSkipped SyncPushStepOutcome = "skipped"
+	// SyncPushStepFailed: the step failed, Village keeps what it had for it, and
+	// the step carries its reason.
 	SyncPushStepFailed SyncPushStepOutcome = "failed"
-	// SyncPushStepNotAttempted: an earlier step failed, so this step did not run.
+	// SyncPushStepNotAttempted: the step did not run because an earlier step of
+	// the same session failed.
 	SyncPushStepNotAttempted SyncPushStepOutcome = "not_attempted"
 )
 
 // AllSyncPushStepOutcomes is the canonical push step outcome menu.
-var AllSyncPushStepOutcomes = []SyncPushStepOutcome{SyncPushStepSucceeded, SyncPushStepPendingApproval, SyncPushStepFailed, SyncPushStepNotAttempted}
+var AllSyncPushStepOutcomes = []SyncPushStepOutcome{SyncPushStepSucceeded, SyncPushStepPendingApproval, SyncPushStepSkipped, SyncPushStepFailed, SyncPushStepNotAttempted}
 
 func (o SyncPushStepOutcome) IsValid() bool  { return inSet(o, AllSyncPushStepOutcomes) }
 func (o SyncPushStepOutcome) String() string { return string(o) }
@@ -236,8 +242,9 @@ type SyncPushStepResult struct {
 	// remove_collective step. The content step has none.
 	CollectiveID *VillageUUID        `json:"collectiveId,omitempty" nullable:"false"`
 	Outcome      SyncPushStepOutcome `json:"outcome"`
-	// Error is the reason a failed step failed. Only a failed step has one.
-	Error string `json:"error,omitempty"`
+	// Reason says why a skipped or failed step did not apply. No other outcome
+	// carries one.
+	Reason string `json:"reason,omitempty"`
 }
 
 // Validate checks the step, its collective, and the outcome pairing.
@@ -254,20 +261,23 @@ func (r SyncPushStepResult) Validate() error {
 	if r.Outcome == SyncPushStepPendingApproval && r.Step != SyncPushStepAddCollective {
 		return fmt.Errorf("sync push step validation failed at schema.SyncPushStepResult.Validate: step %q is pending_approval; only adding a collective can wait for its owner", r.Step)
 	}
-	if (r.Outcome == SyncPushStepFailed) != (strings.TrimSpace(r.Error) != "") {
-		return fmt.Errorf("sync push step validation failed at schema.SyncPushStepResult.Validate: outcome %q has the wrong error presence; a failed step says why and no other step carries an error", r.Outcome)
+	explained := r.Outcome == SyncPushStepSkipped || r.Outcome == SyncPushStepFailed
+	if explained != (strings.TrimSpace(r.Reason) != "") {
+		return fmt.Errorf("sync push step validation failed at schema.SyncPushStepResult.Validate: outcome %q has the wrong reason presence; a skipped or failed step says why and no other step carries a reason", r.Outcome)
 	}
 	return nil
 }
 
 // SyncPushSessionResult is the result for one session in a push.
 type SyncPushSessionResult struct {
-	SessionID string                `json:"sessionId"`
-	Status    SyncPushSessionStatus `json:"status"`
-	Error     string                `json:"error,omitempty"`
-	Title     string                `json:"title,omitempty"`
-	// TranscriptURL is the Village page of the published transcript, present
-	// once the content step succeeded.
+	SessionID string `json:"sessionId"`
+	// Status is the session's outcome. A session with a failed step has status
+	// error, and the response's errors count counts sessions with status error.
+	Status SyncPushSessionStatus `json:"status"`
+	Error  string                `json:"error,omitempty"`
+	Title  string                `json:"title,omitempty"`
+	// TranscriptURL is the Village page of the session's transcript, present
+	// once Village holds one.
 	TranscriptURL string `json:"transcriptUrl,omitempty"`
 	// Steps lists every step the push planned for this session, in the order
 	// it ran them.
@@ -277,9 +287,12 @@ type SyncPushSessionResult struct {
 	WaitingPullRequests []VillagePromptRequest `json:"waitingPullRequests,omitempty" nullable:"false"`
 }
 
-// Validate checks one session result and the order of its steps: at most one
-// content step, first when present; each collective once; and every step after
-// a failed step not attempted.
+// Validate checks one session result, its steps, and how the status follows
+// from them: a failed step makes the session an error, an error with steps
+// names the step that failed, a held session runs no step, and a step is
+// not_attempted only after an earlier step failed. Whether a later step still
+// runs after a failure is the producer's choice, so taking a collective back
+// is never forced to wait on an unrelated failure.
 func (r SyncPushSessionResult) Validate() error {
 	if strings.TrimSpace(r.SessionID) == "" {
 		return fmt.Errorf("sync push result validation failed at schema.SyncPushSessionResult.Validate: sessionId is empty; the caller cannot match the result to a session; emit the requested session ID")
@@ -290,8 +303,11 @@ func (r SyncPushSessionResult) Validate() error {
 	if r.Status == SyncPushSessionError && strings.TrimSpace(r.Error) == "" {
 		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status error has no error text; the caller cannot say what failed; emit the reason", r.SessionID)
 	}
+	if r.Status == SyncPushSessionHeld && len(r.Steps) > 0 {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a held session lists steps; nothing runs for a held session; omit steps", r.SessionID)
+	}
 	collectives := make(map[VillageUUID]struct{}, len(r.Steps))
-	stopped := false
+	failed := false
 	for i, step := range r.Steps {
 		if err := step.Validate(); err != nil {
 			return fmt.Errorf("sync push result validation failed for %q at steps[%d]: %w", r.SessionID, i, err)
@@ -305,12 +321,16 @@ func (r SyncPushSessionResult) Validate() error {
 			}
 			collectives[*step.CollectiveID] = struct{}{}
 		}
-		if stopped != (step.Outcome == SyncPushStepNotAttempted) {
-			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: steps[%d] outcome %q contradicts the step order; a push stops at a failed step, so every later step and only a later step is not_attempted", r.SessionID, i, step.Outcome)
+		if step.Outcome == SyncPushStepNotAttempted && !failed {
+			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: steps[%d] is not_attempted with no earlier failed step; a step only goes unattempted because an earlier step failed", r.SessionID, i)
 		}
-		if step.Outcome == SyncPushStepFailed {
-			stopped = true
-		}
+		failed = failed || step.Outcome == SyncPushStepFailed
+	}
+	if failed && r.Status != SyncPushSessionError {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a step failed but status is %q; a session with a failed step is an error, so the counts cannot report success", r.SessionID, r.Status)
+	}
+	if r.Status == SyncPushSessionError && len(r.Steps) > 0 && !failed {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status error lists steps but none failed; name the step that failed, or omit steps when the session failed before any step ran", r.SessionID)
 	}
 	return nil
 }
@@ -448,11 +468,17 @@ type SyncRedactionItem struct {
 	RedactedReplacement string `json:"redactedReplacement"`
 	Description         string `json:"description"`
 	LineNumber          int    `json:"lineNumber" minimum:"0"`
-	// EntryIndex is the index of the transcript entry the match was found in,
-	// in the same index space as TurnDetail.index, so a client can name the
-	// turn. It is absent when the match lies outside every entry, for example
+	// EntryIndex is the TurnDetail.index of the turn that shows the match, so
+	// a client can name and open the turn without projecting entries itself. A
+	// match in a tool call's arguments or result names the turn that owns the
+	// tool call, and ToolCallID names the call. One item stands for every
+	// occurrence of the same text under the same rule, and EntryIndex names the
+	// first. It is absent when the match lies outside every turn, for example
 	// in session metadata.
-	EntryIndex    *int     `json:"entryIndex,omitempty" minimum:"0" nullable:"false"`
+	EntryIndex *int `json:"entryIndex,omitempty" minimum:"0" nullable:"false"`
+	// ToolCallID is the ToolCallDetail.id of the tool call that holds the
+	// match, present only when the match lies in a tool call.
+	ToolCallID    string   `json:"toolCallId,omitempty"`
 	ContextBefore []string `json:"contextBefore" nullable:"false"`
 	ContextAfter  []string `json:"contextAfter" nullable:"false"`
 }
@@ -497,6 +523,9 @@ func (r SyncRedactionsResponse) Validate() error {
 			for _, item := range rule.Items {
 				if item.Category != category.Category || item.RuleID != rule.RuleID {
 					return fmt.Errorf("redaction preview validation failed at schema.SyncRedactionsResponse.Validate: an item of rule %q sits in the wrong group; group each match under its own category and rule", item.RuleID)
+				}
+				if item.ToolCallID != "" && item.EntryIndex == nil {
+					return fmt.Errorf("redaction preview validation failed at schema.SyncRedactionsResponse.Validate: an item of rule %q names tool call %q but no turn; a tool call match names the turn that owns the call", item.RuleID, item.ToolCallID)
 				}
 				if item.LineNumber < 0 || (item.EntryIndex != nil && *item.EntryIndex < 0) || item.ContextBefore == nil || item.ContextAfter == nil {
 					return fmt.Errorf("redaction preview validation failed at schema.SyncRedactionsResponse.Validate: an item of rule %q has a negative position or null context; emit nonnegative positions and arrays", item.RuleID)

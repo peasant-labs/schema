@@ -1,6 +1,7 @@
 # The personal automatic linking setting, the transcript pull request read,
 # pull request titles and head branches on the attachment row, and the pull
-# request summary on list rows.
+# request summary on list rows and collective rows. The operations' exact
+# status sets live in openapi/testdata/village_collectives_operations.yaml.
 required_names:
   - settings-auto-attach-off-valid
   - settings-auto-attach-on-valid
@@ -12,6 +13,10 @@ required_names:
   - transcript-pulls-empty-valid
   - transcript-pulls-null-rejected
   - transcript-pulls-preview-rejected
+  - transcript-pulls-requested-rejected
+  - transcript-pulls-waiting-rejected
+  - collective-row-summary-valid
+  - collective-row-summary-exceeds-count-rejected
   - transcript-pulls-duplicate-rejected
   - transcript-pulls-missing-title-rejected
   - summary-with-more-valid
@@ -26,20 +31,17 @@ operations:
     method: get
     path: "/api/v1/transcripts/{id}/pulls"
     response: VillageTranscriptPullRequestsResponse
-    statuses: ["200", "400", "404", "500"]
     parameters:
       - {name: id, in: path, required: true}
   - api: village
     method: get
     path: /api/v1/users/me/settings
     response: VillageUserSettings
-    statuses: ["200", "401", "500"]
   - api: village
     method: patch
     path: /api/v1/users/me/settings
     request: VillageUpdateUserSettingsRequest
     response: VillageUserSettings
-    statuses: ["200", "400", "401", "500"]
 cases:
   - name: settings-auto-attach-off-valid
     input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false}}
@@ -55,7 +57,7 @@ cases:
     mutation: {description: "the author turned automatic linking on"}
   - name: settings-missing-auto-attach-rejected
     input: {schema: VillageUserSettings, payload: {preview_before_attach: true}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the server holds the value, so it always states it"}
     mutation: {description: "omits auto_attach_pull_requests"}
@@ -73,7 +75,7 @@ cases:
     mutation: {description: "sends no field"}
   - name: update-auto-attach-string-rejected
     input: {schema: VillageUpdateUserSettingsRequest, payload: {auto_attach_pull_requests: "yes"}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "the setting is a boolean"}
     mutation: {description: "sends a string"}
@@ -96,7 +98,7 @@ cases:
     mutation: {description: "an empty list"}
   - name: transcript-pulls-null-rejected
     input: {schema: VillageTranscriptPullRequestsResponse, payload: {pull_requests: null}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "pull_requests is an array"}
     mutation: {description: "sends null instead of an empty list"}
@@ -127,7 +129,7 @@ cases:
       payload:
         pull_requests:
           - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "title is always present and null when unknown"}
     mutation: {description: "omits title"}
@@ -151,7 +153,7 @@ cases:
     mutation: {description: "lists more recent pull requests than the count"}
   - name: summary-negative-count-rejected
     input: {schema: VillagePullRequestsSummary, payload: {count: -1, recent: []}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "count is nonnegative"}
     mutation: {description: "sends a negative count"}
@@ -163,13 +165,53 @@ cases:
     mutation: {description: "repeats one pull request"}
   - name: summary-null-recent-rejected
     input: {schema: VillagePullRequestsSummary, payload: {count: 0, recent: null}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "recent is an array"}
     mutation: {description: "sends null instead of an empty list"}
   - name: summary-zero-number-rejected
     input: {schema: VillagePullRequestsSummary, payload: {count: 1, recent: [{owner: acme, name: ingest-api, number: 0}]}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "a pull request number is positive"}
     mutation: {description: "sends pull request number zero"}
+  - name: transcript-pulls-requested-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: requested, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+    expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a request that is not attached never reaches a reader"}
+    mutation: {description: "lists a requested attachment"}
+  - name: transcript-pulls-waiting-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: waiting, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+    expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a request that is not attached never reaches a reader"}
+    mutation: {description: "lists a waiting attachment"}
+  - name: collective-row-summary-valid
+    input:
+      schema: VillageSessionRow
+      payload:
+        session: &collectiveSession {"id":"123e4567-e89b-12d3-a456-426614174003","owner_id":"123e4567-e89b-12d3-a456-426614174001","local_id":"123e4567-e89b-12d3-a456-426614174002","title":null,"description":null,"visibility":"shared","model_provider":"codex","model_name":null,"harness_version":null,"session_start":null,"session_end":null,"turn_count":5,"token_count":null,"blob_size_bytes":null,"schema_version":"11","published_at":"2026-09-20T10:00:00Z","updated_at":"2026-09-20T10:00:00Z","parent_session_id":null,"ingested_at":null,"source_format":null,"git_branch":null,"git_remote":null,"project_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","project_name":null,"project_display_name":"ingest-api","project_name_source":"remote","project_remote_label":"github.com:acme/ingest-api","tool_call_count":null,"subagent_count":null,"duration_ms":null,"subagents":null,"diagnostics_warnings":null,"diagnostics_partial":null,"tokens_in":null,"tokens_out":null,"title_generated":null,"outcome":null,"files_touched":null,"lines_changed":null,"retry_loops":null,"retry_tokens_wasted":null,"within_session_reverts":null,"signal_density":null,"spec_quality_score":null,"exploration_ratio":null,"scope_breadth":null,"discovery_turns":null,"m2_token_outcome_ratio":null,"m3_unique_tool_count":null,"m4_error_recovery_count":null,"m4_consecutive_error_max":null,"m5_context_utilization_pct":null,"m5_peak_context_tokens":null,"m5_avg_message_tokens":null,"m6_output_survival_pct":null,"m6_lines_survived":null,"m6_lines_total":null,"m7_spec_word_count":null,"m7_spec_has_examples":null,"m7_spec_has_constraints":null,"computed_at":null,"compute_version":null,"content_hash":null,"license_id":null,"session_origin":"user"}
+        collective: {"id": "123e4567-e89b-12d3-a456-426614174003", "owner_id": "123e4567-e89b-12d3-a456-426614174001", "local_id": "123e4567-e89b-12d3-a456-426614174002", "title": null, "description": null, "visibility": "shared", "model_provider": "codex", "model_name": null, "harness_version": null, "session_start": null, "session_end": null, "turn_count": 5, "token_count": null, "blob_size_bytes": null, "schema_version": "11", "published_at": "2026-09-20T10:00:00Z", "updated_at": "2026-09-20T10:00:00Z", "parent_session_id": null, "ingested_at": null, "source_format": null, "git_branch": null, "git_remote": null, "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "project_name": null, "project_display_name": "ingest-api", "project_name_source": "remote", "project_remote_label": "github.com:acme/ingest-api", "tool_call_count": null, "subagent_count": null, "duration_ms": null, "subagents": null, "diagnostics_warnings": null, "diagnostics_partial": null, "tokens_in": null, "tokens_out": null, "title_generated": null, "outcome": null, "files_touched": null, "lines_changed": null, "retry_loops": null, "retry_tokens_wasted": null, "within_session_reverts": null, "signal_density": null, "spec_quality_score": null, "exploration_ratio": null, "scope_breadth": null, "discovery_turns": null, "m2_token_outcome_ratio": null, "m3_unique_tool_count": null, "m4_error_recovery_count": null, "m4_consecutive_error_max": null, "m5_context_utilization_pct": null, "m5_peak_context_tokens": null, "m5_avg_message_tokens": null, "m6_output_survival_pct": null, "m6_lines_survived": null, "m6_lines_total": null, "m7_spec_word_count": null, "m7_spec_has_examples": null, "m7_spec_has_constraints": null, "computed_at": null, "compute_version": null, "content_hash": null, "license_id": null, "session_origin": "user", "owner_username": "alice-dev", "owner_avatar_url": null, "owner_is_discoverable": true, "pull_requests": {"count": 3, "recent": [{"owner": "acme", "name": "ingest-api", "number": 42}, {"owner": "acme", "name": "ingest-api", "number": 45}]}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the grouped collective arm carries the pull request summary"}
+    mutation: {description: "a grouped collective row with three attached pull requests"}
+  - name: collective-row-summary-exceeds-count-rejected
+    input:
+      schema: VillageSessionRow
+      payload:
+        session: *collectiveSession
+        collective: {"id": "123e4567-e89b-12d3-a456-426614174003", "owner_id": "123e4567-e89b-12d3-a456-426614174001", "local_id": "123e4567-e89b-12d3-a456-426614174002", "title": null, "description": null, "visibility": "shared", "model_provider": "codex", "model_name": null, "harness_version": null, "session_start": null, "session_end": null, "turn_count": 5, "token_count": null, "blob_size_bytes": null, "schema_version": "11", "published_at": "2026-09-20T10:00:00Z", "updated_at": "2026-09-20T10:00:00Z", "parent_session_id": null, "ingested_at": null, "source_format": null, "git_branch": null, "git_remote": null, "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "project_name": null, "project_display_name": "ingest-api", "project_name_source": "remote", "project_remote_label": "github.com:acme/ingest-api", "tool_call_count": null, "subagent_count": null, "duration_ms": null, "subagents": null, "diagnostics_warnings": null, "diagnostics_partial": null, "tokens_in": null, "tokens_out": null, "title_generated": null, "outcome": null, "files_touched": null, "lines_changed": null, "retry_loops": null, "retry_tokens_wasted": null, "within_session_reverts": null, "signal_density": null, "spec_quality_score": null, "exploration_ratio": null, "scope_breadth": null, "discovery_turns": null, "m2_token_outcome_ratio": null, "m3_unique_tool_count": null, "m4_error_recovery_count": null, "m4_consecutive_error_max": null, "m5_context_utilization_pct": null, "m5_peak_context_tokens": null, "m5_avg_message_tokens": null, "m6_output_survival_pct": null, "m6_lines_survived": null, "m6_lines_total": null, "m7_spec_word_count": null, "m7_spec_has_examples": null, "m7_spec_has_constraints": null, "computed_at": null, "compute_version": null, "content_hash": null, "license_id": null, "session_origin": "user", "owner_username": "alice-dev", "owner_avatar_url": null, "owner_is_discoverable": true, "pull_requests": {"count": 1, "recent": [{"owner": "acme", "name": "ingest-api", "number": 42}, {"owner": "acme", "name": "ingest-api", "number": 45}]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: no longer than}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the grouped collective arm validates its summary like a list row"}
+    mutation: {description: "lists two recent pull requests under a count of one"}

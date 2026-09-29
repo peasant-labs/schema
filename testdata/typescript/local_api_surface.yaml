@@ -24,11 +24,12 @@ operations:
   - {path: /api/v1/publications, method: get, operation_id: listPublications}
   - {path: /api/v1/settings, method: get, operation_id: getSettings}
   - {path: /api/v1/settings, method: patch, operation_id: updateSetting}
-  - {path: "/api/v1/settings/auto-publish/{id}", method: delete, operation_id: deleteAutoPublishBinding}
-  - {path: "/api/v1/settings/auto-publish/{id}", method: put, operation_id: putAutoPublishBinding}
+  - {path: "/api/v1/settings/auto-publish/{id}", method: delete, operation_id: deleteAutoPublishRule}
+  - {path: "/api/v1/settings/auto-publish/{id}", method: put, operation_id: putAutoPublishRule}
+  - {path: "/api/v1/settings/auto-publish/{id}/install", method: post, operation_id: installAutoPublishHooks}
   - {path: /api/v1/sync/auth, method: get, operation_id: getSyncAuth}
-  - {path: /api/v1/sync/login, method: post, operation_id: startSyncLogin}
-  - {path: /api/v1/sync/logout, method: post, operation_id: endSyncLogin}
+  - {path: /api/v1/sync/login, method: post, operation_id: syncLogin}
+  - {path: /api/v1/sync/logout, method: post, operation_id: syncLogout}
   - {path: /api/v1/sync/push, method: post, operation_id: pushSyncSessions}
   - {path: /api/v1/sync/redactions, method: get, operation_id: getSyncRedactions}
   - {path: /api/v1/village/collectives, method: get, operation_id: listVillageCollectives}

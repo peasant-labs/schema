@@ -1,6 +1,6 @@
 # The publication read. It ignores the saved selection and returns the durable
-# publication state of each named session; include=audience adds the
-# collectives a published transcript is shared with.
+# publication state of each named session for the signed-in Village account;
+# include=audience adds the collectives a published transcript is shared with.
 required_names:
   - unpublished-row-valid
   - published-row-valid
@@ -18,12 +18,18 @@ required_names:
   - auto-publish-missing-rejected
   - duplicate-session-rejected
   - null-publications-rejected
+  - published-empty-audience-valid
+  - empty-session-id-rejected
+  - zero-published-at-rejected
+  - published-without-published-at-rejected
+  - unpublished-with-published-at-rejected
+  - null-published-at-rejected
 operations:
   - api: local
     method: get
     path: /api/v1/publications
     response: LocalPublicationsResponse
-    statuses: ["200"]
+    statuses: ["200", "502"]
     parameters:
       - {name: sessionIds, in: query, required: true}
       - {name: include, in: query, required: false, enum: [audience]}
@@ -176,7 +182,7 @@ cases:
       payload:
         publications:
           - {sessionId: s-1, state: publishing, autoPublish: false, outsideSelection: false}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "PublicationState is closed; publishing is client state"}
     mutation: {description: "names the transient client state as durable state"}
@@ -186,7 +192,7 @@ cases:
       payload:
         publications:
           - {sessionId: s-1, state: unpublished, outsideSelection: false}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "autoPublish is always stated"}
     mutation: {description: "omits autoPublish"}
@@ -203,7 +209,67 @@ cases:
     mutation: {description: "returns one session twice"}
   - name: null-publications-rejected
     input: {schema: LocalPublicationsResponse, payload: {publications: null}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "publications is an array"}
     mutation: {description: "sends null instead of an empty list"}
+  - name: published-empty-audience-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-09-20T10:00:00Z", autoPublish: false, outsideSelection: false, audience: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a transcript shared with no collective reports an empty audience, not a missing one"}
+    mutation: {description: "include=audience for a transcript that is shared with nobody"}
+  - name: empty-session-id-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: "", state: unpublished, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: sessionId is empty}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a row names its session"}
+    mutation: {description: "blanks the session ID"}
+  - name: zero-published-at-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "0001-01-01T00:00:00Z", autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: zero time}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a client counts new turns from publishedAt"}
+    mutation: {description: "sends the zero time"}
+  - name: published-without-published-at-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: publishedAt}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a published row says when Village accepted the content"}
+    mutation: {description: "drops publishedAt from a published row"}
+  - name: unpublished-with-published-at-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, publishedAt: "2026-09-20T10:00:00Z", autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: publishedAt}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an unpublished row has no publication time"}
+    mutation: {description: "adds publishedAt to an unpublished row"}
+  - name: null-published-at-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: null, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an absent time is omitted, not null"}
+    mutation: {description: "sends null for publishedAt"}

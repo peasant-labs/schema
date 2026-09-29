@@ -289,7 +289,7 @@ export type AuthoritativeTimestampInfo = z.infer<typeof zAuthoritativeTimestampI
 /**
  * Auto Publish Event
  *
- * Git hook that publishes an auto-publish binding's sessions
+ * Git hook that publishes an auto-publish rule's sessions
  */
 export const zAutoPublishEvent = z.enum(['pre-push', 'post-commit']);
 
@@ -305,26 +305,42 @@ export type AutoPublishHookRemedy = z.infer<typeof zAutoPublishHookRemedy>;
 /**
  * Auto Publish Hook Status
  *
- * State of an auto-publish binding's git hook
+ * State of one repository's auto-publish hook for one event
  */
 export const zAutoPublishHookStatus = z.enum([
-    'active',
+    'absent',
+    'installed',
     'blocked',
-    'off'
+    'failed'
 ]);
 
 export type AutoPublishHookStatus = z.infer<typeof zAutoPublishHookStatus>;
 
 export const zAutoPublishHook = z.object({
+    event: zAutoPublishEvent,
     remedy: zAutoPublishHookRemedy.optional(),
     status: zAutoPublishHookStatus
 });
 
 export type AutoPublishHook = z.infer<typeof zAutoPublishHook>;
 
+export const zAutoPublishInstallRequest = z.object({
+    path: z.string().min(1)
+}).strict();
+
+export type AutoPublishInstallRequest = z.infer<typeof zAutoPublishInstallRequest>;
+
+export const zAutoPublishRepository = z.object({
+    hooks: z.array(zAutoPublishHook),
+    label: z.string().optional(),
+    path: z.string().min(1)
+});
+
+export type AutoPublishRepository = z.infer<typeof zAutoPublishRepository>;
+
 export const zAutoPublishRemovalResponse = z.object({
-    hook: zAutoPublishHook,
-    id: z.string().min(1)
+    id: z.string().min(1),
+    repositories: z.array(zAutoPublishRepository)
 });
 
 export type AutoPublishRemovalResponse = z.infer<typeof zAutoPublishRemovalResponse>;
@@ -457,22 +473,6 @@ export const zChildSessionRef = z.object({
 });
 
 export type ChildSessionRef = z.infer<typeof zChildSessionRef>;
-
-/**
- * Collective Suggestion Reason
- *
- * Why the local server suggests a collective for a session
- */
-export const zCollectiveSuggestionReason = z.enum(['linked_repository', 'linked_github_org']);
-
-export type CollectiveSuggestionReason = z.infer<typeof zCollectiveSuggestionReason>;
-
-export const zCollectiveSuggestion = z.object({
-    match: z.string(),
-    reason: zCollectiveSuggestionReason
-});
-
-export type CollectiveSuggestion = z.infer<typeof zCollectiveSuggestion>;
 
 export const zCommandInvocation = z.object({
     args: z.string().optional(),
@@ -949,6 +949,38 @@ export const zLicense = z.enum([
 export type License = z.infer<typeof zLicense>;
 
 /**
+ * Local Collective Suggestion Reason
+ *
+ * Why the local server suggests a collective for a session
+ */
+export const zLocalCollectiveSuggestionReason = z.enum(['linked_repository', 'linked_github_org']);
+
+export type LocalCollectiveSuggestionReason = z.infer<typeof zLocalCollectiveSuggestionReason>;
+
+export const zLocalCollectiveSuggestion = z.object({
+    match: z.string(),
+    reason: zLocalCollectiveSuggestionReason
+});
+
+export type LocalCollectiveSuggestion = z.infer<typeof zLocalCollectiveSuggestion>;
+
+export const zLocalPublicationAttemptFailure = z.object({
+    attemptedAt: z.iso.datetime(),
+    message: z.string()
+});
+
+export type LocalPublicationAttemptFailure = z.infer<typeof zLocalPublicationAttemptFailure>;
+
+/**
+ * Local Publication State
+ *
+ * Whether a local session has a publication on Village
+ */
+export const zLocalPublicationState = z.enum(['unpublished', 'published']);
+
+export type LocalPublicationState = z.infer<typeof zLocalPublicationState>;
+
+/**
  * Local Setting Kind
  *
  * JSON type of one local setting's value
@@ -958,27 +990,37 @@ export const zLocalSettingKind = z.enum([
     'integer',
     'string',
     'string_list',
-    'choice'
+    'choice',
+    'structured'
 ]);
 
 export type LocalSettingKind = z.infer<typeof zLocalSettingKind>;
 
+export const zLocalSettingRefusal = z.object({
+    error: z.string().min(1),
+    key: z.string()
+});
+
+export type LocalSettingRefusal = z.infer<typeof zLocalSettingRefusal>;
+
 /**
  * Local Setting Value
  *
- * One setting's value: a boolean, an integer, a string, or an array of strings, as its kind says
+ * One setting's value, of the JSON type its kind names; null means the key is unset and the server's default applies
  */
 export const zLocalSettingValue = z.union([
     z.boolean(),
     z.int(),
     z.string(),
-    z.array(z.string())
-]);
+    z.array(z.unknown()),
+    z.record(z.string(), z.unknown())
+]).nullable();
 
 export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
 
 export const zLocalSetting = z.object({
     description: z.string().optional(),
+    editable: z.boolean(),
     inPeasantConfig: z.boolean(),
     key: z.string().min(1),
     kind: zLocalSettingKind,
@@ -991,7 +1033,7 @@ export type LocalSetting = z.infer<typeof zLocalSetting>;
 export const zLocalSettingUpdateRequest = z.object({
     key: z.string().min(1),
     value: zLocalSettingValue
-});
+}).strict();
 
 export type LocalSettingUpdateRequest = z.infer<typeof zLocalSettingUpdateRequest>;
 
@@ -1243,22 +1285,6 @@ export const zPublicSourceAnchorKind = z.enum([
 ]);
 
 export type PublicSourceAnchorKind = z.infer<typeof zPublicSourceAnchorKind>;
-
-export const zPublicationAttemptFailure = z.object({
-    attemptedAt: z.iso.datetime(),
-    message: z.string()
-});
-
-export type PublicationAttemptFailure = z.infer<typeof zPublicationAttemptFailure>;
-
-/**
- * Publication State
- *
- * Whether a local session has a publication on Village
- */
-export const zPublicationState = z.enum(['unpublished', 'published']);
-
-export type PublicationState = z.infer<typeof zPublicationState>;
 
 /**
  * Publish Operation Kind
@@ -2184,6 +2210,7 @@ export type SyncPushStep = z.infer<typeof zSyncPushStep>;
 export const zSyncPushStepOutcome = z.enum([
     'succeeded',
     'pending_approval',
+    'skipped',
     'failed',
     'not_attempted'
 ]);
@@ -2200,7 +2227,8 @@ export const zSyncRedactionItem = z.object({
     originalText: z.string(),
     redactedReplacement: z.string(),
     ruleDisplayName: z.string(),
-    ruleId: z.string()
+    ruleId: z.string(),
+    toolCallId: z.string().optional()
 });
 
 export type SyncRedactionItem = z.infer<typeof zSyncRedactionItem>;
@@ -3707,47 +3735,40 @@ export const zVillageUUID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}
 
 export type VillageUUID = z.infer<typeof zVillageUUID>;
 
-export const zAutoPublishBinding = z.object({
+export const zAutoPublishRule = z.object({
     collectives: z.array(zVillageUUID),
     events: z.array(zAutoPublishEvent),
-    hook: zAutoPublishHook,
     id: z.string().min(1),
-    match: z.string().min(1)
+    match: z.string().min(1),
+    repositories: z.array(zAutoPublishRepository)
 });
 
-export type AutoPublishBinding = z.infer<typeof zAutoPublishBinding>;
+export type AutoPublishRule = z.infer<typeof zAutoPublishRule>;
 
-export const zAutoPublishBindingRequest = z.object({
+export const zAutoPublishRuleRequest = z.object({
     collectives: z.array(zVillageUUID),
     events: z.array(zAutoPublishEvent),
     match: z.string().min(1)
-});
+}).strict();
 
-export type AutoPublishBindingRequest = z.infer<typeof zAutoPublishBindingRequest>;
+export type AutoPublishRuleRequest = z.infer<typeof zAutoPublishRuleRequest>;
 
-export const zLocalSettingsResponse = z.object({
-    autoPublish: z.array(zAutoPublishBinding),
-    settings: z.array(zLocalSetting)
-});
-
-export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
-
-export const zPublicationAudienceMember = z.object({
+export const zLocalPublicationAudienceMember = z.object({
     collectiveId: zVillageUUID,
     name: z.string(),
     status: zVillageShareStatus
 });
 
-export type PublicationAudienceMember = z.infer<typeof zPublicationAudienceMember>;
+export type LocalPublicationAudienceMember = z.infer<typeof zLocalPublicationAudienceMember>;
 
 export const zLocalPublication = z.object({
-    audience: z.array(zPublicationAudienceMember).optional(),
+    audience: z.array(zLocalPublicationAudienceMember).optional(),
     autoPublish: z.boolean(),
-    lastAttempt: zPublicationAttemptFailure.optional(),
+    lastAttempt: zLocalPublicationAttemptFailure.optional(),
     outsideSelection: z.boolean(),
     publishedAt: z.iso.datetime().optional(),
     sessionId: z.string(),
-    state: zPublicationState,
+    state: zLocalPublicationState,
     transcriptId: zTranscriptID.optional(),
     transcriptUrl: z.string().optional()
 });
@@ -3760,10 +3781,17 @@ export const zLocalPublicationsResponse = z.object({
 
 export type LocalPublicationsResponse = z.infer<typeof zLocalPublicationsResponse>;
 
+export const zLocalSettingsResponse = z.object({
+    autoPublish: z.array(zAutoPublishRule),
+    settings: z.array(zLocalSetting)
+});
+
+export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
+
 export const zSyncPushCollectives = z.object({
     add: z.array(zVillageUUID).optional(),
     remove: z.array(zVillageUUID).optional()
-});
+}).strict();
 
 export type SyncPushCollectives = z.infer<typeof zSyncPushCollectives>;
 
@@ -3771,14 +3799,14 @@ export const zSyncPushRequest = z.object({
     collectives: zSyncPushCollectives.optional(),
     redactionLevel: z.string().optional(),
     sessionIds: z.array(z.string()).min(1)
-});
+}).strict();
 
 export type SyncPushRequest = z.infer<typeof zSyncPushRequest>;
 
 export const zSyncPushStepResult = z.object({
     collectiveId: zVillageUUID.optional(),
-    error: z.string().optional(),
     outcome: zSyncPushStepOutcome,
+    reason: z.string().optional(),
     step: zSyncPushStep
 });
 
@@ -4339,7 +4367,7 @@ export type VillageUserGroup = z.infer<typeof zVillageUserGroup>;
 
 export const zLocalVillageCollective = z.object({
     group: zVillageUserGroup,
-    suggestion: zCollectiveSuggestion.optional()
+    suggestion: zLocalCollectiveSuggestion.optional()
 });
 
 export type LocalVillageCollective = z.infer<typeof zLocalVillageCollective>;

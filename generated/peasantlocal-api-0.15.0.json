@@ -400,7 +400,7 @@
         "tags": [
           "publications"
         ],
-        "description": "Read the durable publication state of named local sessions. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with. A client counts the turns recorded after publishedAt to say how many turns are new.",
+        "description": "Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. A client counts the turns recorded after publishedAt to say how many turns are new.",
         "operationId": "listPublications",
         "parameters": [
           {
@@ -434,6 +434,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchemaLocalPublicationsResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
                 }
               }
             }
@@ -904,7 +914,7 @@
         "tags": [
           "settings"
         ],
-        "description": "Read every setting the local settings page edits, with each key's kind, value, and metadata, and every auto-publish binding with its hook state.",
+        "description": "Read every setting the local settings page shows, with each key's kind, value (null when unset), and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event.",
         "operationId": "getSettings",
         "responses": {
           "200": {
@@ -923,7 +933,7 @@
         "tags": [
           "settings"
         ],
-        "description": "Change one setting. The body names one key and its new value, which must match the key's kind; the response is the setting as saved, with its metadata. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
+        "description": "Change one editable setting. The body names one key and its new value, which must match the key's kind; null unsets the key so the default applies. The response is the setting as saved, with its metadata. A refused update changes nothing and returns the key and the reason: 400 for an unknown or read-only key, a value of the wrong kind, or a configuration the value would make invalid, and 500 when the configuration file cannot be read or written. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
         "operationId": "updateSetting",
         "requestBody": {
           "content": {
@@ -946,12 +956,32 @@
               }
             }
           },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaLocalSettingRefusal"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaLocalSettingRefusal"
                 }
               }
             }
@@ -964,16 +994,16 @@
         "tags": [
           "settings"
         ],
-        "description": "Create or replace one auto-publish binding and install or update its git hook. The response carries the hook status and, for a blocked hook, the remedy: Peasant never overwrites a hook it does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "putAutoPublishBinding",
+        "description": "Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
+        "operationId": "putAutoPublishRule",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Auto-publish binding identifier",
+            "description": "Auto-publish rule identifier",
             "required": true,
             "schema": {
-              "description": "Auto-publish binding identifier",
+              "description": "Auto-publish rule identifier",
               "minLength": 1,
               "type": "string"
             }
@@ -983,7 +1013,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SchemaAutoPublishBindingRequest"
+                "$ref": "#/components/schemas/SchemaAutoPublishRuleRequest"
               }
             }
           },
@@ -995,7 +1025,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchemaAutoPublishBinding"
+                  "$ref": "#/components/schemas/SchemaAutoPublishRule"
                 }
               }
             }
@@ -1016,16 +1046,16 @@
         "tags": [
           "settings"
         ],
-        "description": "Remove one auto-publish binding and its git hook. The response carries the hook status after removal and, when a line must be removed from a hook Peasant does not manage, the remedy. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "deleteAutoPublishBinding",
+        "description": "Remove one auto-publish rule and Peasant's hooks that no other rule needs. The response reports each matched repository's hooks after removal, with the remedy for a section that must be removed by hand from a hook Peasant does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
+        "operationId": "deleteAutoPublishRule",
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Auto-publish binding identifier",
+            "description": "Auto-publish rule identifier",
             "required": true,
             "schema": {
-              "description": "Auto-publish binding identifier",
+              "description": "Auto-publish rule identifier",
               "minLength": 1,
               "type": "string"
             }
@@ -1038,6 +1068,60 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchemaAutoPublishRemovalResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/auto-publish/{id}/install": {
+      "post": {
+        "tags": [
+          "settings"
+        ],
+        "description": "Install the rule's hooks in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
+        "operationId": "installAutoPublishHooks",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Auto-publish rule identifier",
+            "required": true,
+            "schema": {
+              "description": "Auto-publish rule identifier",
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchemaAutoPublishInstallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaAutoPublishRepository"
                 }
               }
             }
@@ -1121,7 +1205,7 @@
           "sync"
         ],
         "description": "Start the Village sign-in in the browser and return at once. pending means the sign-in started; poll getSyncAuth until it reports authenticated. already_authenticated means nothing started. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "startSyncLogin",
+        "operationId": "syncLogin",
         "responses": {
           "200": {
             "description": "OK",
@@ -1152,7 +1236,7 @@
           "sync"
         ],
         "description": "End this computer's Village sign-in by removing its stored Village credential. This route changes local state only. Logging out a computer that holds no credential returns already_logged_out. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "endSyncLogin",
+        "operationId": "syncLogout",
         "responses": {
           "200": {
             "description": "OK",
@@ -1182,7 +1266,7 @@
         "tags": [
           "sync"
         ],
-        "description": "Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran; a push stops at a failed step, so later steps are not_attempted and Village keeps what it had. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
+        "description": "Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error, which the errors count counts; a later step the server did not run after a failure is not_attempted. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
         "operationId": "pushSyncSessions",
         "requestBody": {
           "content": {
@@ -1223,7 +1307,7 @@
         "tags": [
           "sync"
         ],
-        "description": "Preview what the redaction engine hides in one session before it leaves the machine, grouped by category and rule. Each item names its line and, when the match lies inside a transcript entry, its entryIndex in the same index space as TurnDetail.index. An omitted level uses the configured default; a level the server does not offer is refused.",
+        "description": "Preview what the redaction engine hides in one session before it leaves the machine, grouped by category and rule. Each item names its line and, when the match lies inside a turn, the entryIndex of the turn that shows it (the TurnDetail.index space) and, for a match in a tool call, its toolCallId. One item stands for every occurrence of the same text under the same rule and names the first. An omitted level uses the configured default; a level the server does not offer is refused.",
         "operationId": "getSyncRedactions",
         "parameters": [
           {
@@ -1308,7 +1392,7 @@
         "tags": [
           "village"
         ],
-        "description": "List the Village collectives the signed-in user belongs to. The local server reads them from Village with this computer's stored credential. With sessionId, the server suggests collectives by comparing schema.RemoteLabel of the session's git remote with each collective's linked repositories and linked GitHub organization; clients must not normalize remotes themselves.",
+        "description": "List the Village collectives the signed-in user belongs to. The local server reads them from Village with this computer's stored credential: 401 when this computer is not signed in, 502 when Village cannot be read. With sessionId, the server suggests collectives by comparing schema.RemoteLabel of the session's git remote with each collective's linked repositories and linked GitHub organization; clients must not normalize remotes themselves.",
         "operationId": "listVillageCollectives",
         "parameters": [
           {
@@ -1328,6 +1412,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchemaLocalVillageCollectivesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
                 }
               }
             }
@@ -1981,7 +2085,124 @@
         "title": "Association ID",
         "type": "string"
       },
-      "SchemaAutoPublishBinding": {
+      "SchemaAutoPublishEvent": {
+        "description": "Git hook that publishes an auto-publish rule's sessions",
+        "enum": [
+          "pre-push",
+          "post-commit"
+        ],
+        "examples": [
+          "pre-push",
+          "post-commit"
+        ],
+        "title": "Auto Publish Event",
+        "type": "string"
+      },
+      "SchemaAutoPublishHook": {
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/SchemaAutoPublishEvent"
+          },
+          "remedy": {
+            "$ref": "#/components/schemas/SchemaAutoPublishHookRemedy"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SchemaAutoPublishHookStatus"
+          }
+        },
+        "required": [
+          "event",
+          "status"
+        ],
+        "type": "object"
+      },
+      "SchemaAutoPublishHookRemedy": {
+        "properties": {
+          "command": {
+            "type": "string"
+          },
+          "message": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "SchemaAutoPublishHookStatus": {
+        "description": "State of one repository's auto-publish hook for one event",
+        "enum": [
+          "absent",
+          "installed",
+          "blocked",
+          "failed"
+        ],
+        "examples": [
+          "absent",
+          "installed",
+          "blocked",
+          "failed"
+        ],
+        "title": "Auto Publish Hook Status",
+        "type": "string"
+      },
+      "SchemaAutoPublishInstallRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "type": "object"
+      },
+      "SchemaAutoPublishRemovalResponse": {
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaAutoPublishRepository"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "repositories"
+        ],
+        "type": "object"
+      },
+      "SchemaAutoPublishRepository": {
+        "properties": {
+          "hooks": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaAutoPublishHook"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          },
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "hooks"
+        ],
+        "type": "object"
+      },
+      "SchemaAutoPublishRule": {
         "properties": {
           "collectives": {
             "items": {
@@ -1995,9 +2216,6 @@
             },
             "type": "array"
           },
-          "hook": {
-            "$ref": "#/components/schemas/SchemaAutoPublishHook"
-          },
           "id": {
             "minLength": 1,
             "type": "string"
@@ -2005,6 +2223,12 @@
           "match": {
             "minLength": 1,
             "type": "string"
+          },
+          "repositories": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaAutoPublishRepository"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -2012,11 +2236,12 @@
           "match",
           "events",
           "collectives",
-          "hook"
+          "repositories"
         ],
         "type": "object"
       },
-      "SchemaAutoPublishBindingRequest": {
+      "SchemaAutoPublishRuleRequest": {
+        "additionalProperties": false,
         "properties": {
           "collectives": {
             "items": {
@@ -2039,79 +2264,6 @@
           "match",
           "events",
           "collectives"
-        ],
-        "type": "object"
-      },
-      "SchemaAutoPublishEvent": {
-        "description": "Git hook that publishes an auto-publish binding's sessions",
-        "enum": [
-          "pre-push",
-          "post-commit"
-        ],
-        "examples": [
-          "pre-push",
-          "post-commit"
-        ],
-        "title": "Auto Publish Event",
-        "type": "string"
-      },
-      "SchemaAutoPublishHook": {
-        "properties": {
-          "remedy": {
-            "$ref": "#/components/schemas/SchemaAutoPublishHookRemedy"
-          },
-          "status": {
-            "$ref": "#/components/schemas/SchemaAutoPublishHookStatus"
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "type": "object"
-      },
-      "SchemaAutoPublishHookRemedy": {
-        "properties": {
-          "command": {
-            "type": "string"
-          },
-          "message": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "message"
-        ],
-        "type": "object"
-      },
-      "SchemaAutoPublishHookStatus": {
-        "description": "State of an auto-publish binding's git hook",
-        "enum": [
-          "active",
-          "blocked",
-          "off"
-        ],
-        "examples": [
-          "active",
-          "blocked",
-          "off"
-        ],
-        "title": "Auto Publish Hook Status",
-        "type": "string"
-      },
-      "SchemaAutoPublishRemovalResponse": {
-        "properties": {
-          "hook": {
-            "$ref": "#/components/schemas/SchemaAutoPublishHook"
-          },
-          "id": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "hook"
         ],
         "type": "object"
       },
@@ -2533,34 +2685,6 @@
           "startTime"
         ],
         "type": "object"
-      },
-      "SchemaCollectiveSuggestion": {
-        "properties": {
-          "match": {
-            "type": "string"
-          },
-          "reason": {
-            "$ref": "#/components/schemas/SchemaCollectiveSuggestionReason"
-          }
-        },
-        "required": [
-          "reason",
-          "match"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveSuggestionReason": {
-        "description": "Why the local server suggests a collective for a session",
-        "enum": [
-          "linked_repository",
-          "linked_github_org"
-        ],
-        "examples": [
-          "linked_repository",
-          "linked_github_org"
-        ],
-        "title": "Collective Suggestion Reason",
-        "type": "string"
       },
       "SchemaCommandInvocation": {
         "properties": {
@@ -3288,6 +3412,34 @@
         ],
         "type": "object"
       },
+      "SchemaLocalCollectiveSuggestion": {
+        "properties": {
+          "match": {
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/SchemaLocalCollectiveSuggestionReason"
+          }
+        },
+        "required": [
+          "reason",
+          "match"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalCollectiveSuggestionReason": {
+        "description": "Why the local server suggests a collective for a session",
+        "enum": [
+          "linked_repository",
+          "linked_github_org"
+        ],
+        "examples": [
+          "linked_repository",
+          "linked_github_org"
+        ],
+        "title": "Local Collective Suggestion Reason",
+        "type": "string"
+      },
       "SchemaLocalHelperMembersPayload": {
         "properties": {
           "limit": {
@@ -3348,7 +3500,7 @@
         "properties": {
           "audience": {
             "items": {
-              "$ref": "#/components/schemas/SchemaPublicationAudienceMember"
+              "$ref": "#/components/schemas/SchemaLocalPublicationAudienceMember"
             },
             "type": "array"
           },
@@ -3356,7 +3508,7 @@
             "type": "boolean"
           },
           "lastAttempt": {
-            "$ref": "#/components/schemas/SchemaPublicationAttemptFailure"
+            "$ref": "#/components/schemas/SchemaLocalPublicationAttemptFailure"
           },
           "outsideSelection": {
             "type": "boolean"
@@ -3369,7 +3521,7 @@
             "type": "string"
           },
           "state": {
-            "$ref": "#/components/schemas/SchemaPublicationState"
+            "$ref": "#/components/schemas/SchemaLocalPublicationState"
           },
           "transcriptId": {
             "$ref": "#/components/schemas/SchemaTranscriptID"
@@ -3385,6 +3537,54 @@
           "outsideSelection"
         ],
         "type": "object"
+      },
+      "SchemaLocalPublicationAttemptFailure": {
+        "properties": {
+          "attemptedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "attemptedAt",
+          "message"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalPublicationAudienceMember": {
+        "properties": {
+          "collectiveId": {
+            "$ref": "#/components/schemas/SchemaVillageUUID"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SchemaVillageShareStatus"
+          }
+        },
+        "required": [
+          "collectiveId",
+          "name",
+          "status"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalPublicationState": {
+        "description": "Whether a local session has a publication on Village",
+        "enum": [
+          "unpublished",
+          "published"
+        ],
+        "examples": [
+          "unpublished",
+          "published"
+        ],
+        "title": "Local Publication State",
+        "type": "string"
       },
       "SchemaLocalPublicationsResponse": {
         "properties": {
@@ -3513,6 +3713,9 @@
           "description": {
             "type": "string"
           },
+          "editable": {
+            "type": "boolean"
+          },
           "inPeasantConfig": {
             "type": "boolean"
           },
@@ -3537,6 +3740,7 @@
           "key",
           "kind",
           "value",
+          "editable",
           "inPeasantConfig"
         ],
         "type": "object"
@@ -3548,19 +3752,38 @@
           "integer",
           "string",
           "string_list",
-          "choice"
+          "choice",
+          "structured"
         ],
         "examples": [
           "boolean",
           "integer",
           "string",
           "string_list",
-          "choice"
+          "choice",
+          "structured"
         ],
         "title": "Local Setting Kind",
         "type": "string"
       },
+      "SchemaLocalSettingRefusal": {
+        "properties": {
+          "error": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "error"
+        ],
+        "type": "object"
+      },
       "SchemaLocalSettingUpdateRequest": {
+        "additionalProperties": false,
         "properties": {
           "key": {
             "minLength": 1,
@@ -3579,6 +3802,9 @@
       "SchemaLocalSettingValue": {
         "anyOf": [
           {
+            "type": "null"
+          },
+          {
             "type": "boolean"
           },
           {
@@ -3588,20 +3814,20 @@
             "type": "string"
           },
           {
-            "items": {
-              "type": "string"
-            },
             "type": "array"
+          },
+          {
+            "type": "object"
           }
         ],
-        "description": "One setting's value: a boolean, an integer, a string, or an array of strings, as its kind says",
+        "description": "One setting's value, of the JSON type its kind names; null means the key is unset and the server's default applies",
         "title": "Local Setting Value"
       },
       "SchemaLocalSettingsResponse": {
         "properties": {
           "autoPublish": {
             "items": {
-              "$ref": "#/components/schemas/SchemaAutoPublishBinding"
+              "$ref": "#/components/schemas/SchemaAutoPublishRule"
             },
             "type": "array"
           },
@@ -3688,7 +3914,7 @@
             "$ref": "#/components/schemas/SchemaVillageUserGroup"
           },
           "suggestion": {
-            "$ref": "#/components/schemas/SchemaCollectiveSuggestion"
+            "$ref": "#/components/schemas/SchemaLocalCollectiveSuggestion"
           }
         },
         "required": [
@@ -4434,54 +4660,6 @@
           "through_redacted_entry"
         ],
         "title": "Public Source Anchor Kind",
-        "type": "string"
-      },
-      "SchemaPublicationAttemptFailure": {
-        "properties": {
-          "attemptedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "attemptedAt",
-          "message"
-        ],
-        "type": "object"
-      },
-      "SchemaPublicationAudienceMember": {
-        "properties": {
-          "collectiveId": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "name": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/SchemaVillageShareStatus"
-          }
-        },
-        "required": [
-          "collectiveId",
-          "name",
-          "status"
-        ],
-        "type": "object"
-      },
-      "SchemaPublicationState": {
-        "description": "Whether a local session has a publication on Village",
-        "enum": [
-          "unpublished",
-          "published"
-        ],
-        "examples": [
-          "unpublished",
-          "published"
-        ],
-        "title": "Publication State",
         "type": "string"
       },
       "SchemaQualitySession": {
@@ -5745,6 +5923,7 @@
         "type": "string"
       },
       "SchemaSyncPushCollectives": {
+        "additionalProperties": false,
         "properties": {
           "add": {
             "description": "Collectives to share the published transcripts with",
@@ -5764,6 +5943,7 @@
         "type": "object"
       },
       "SchemaSyncPushRequest": {
+        "additionalProperties": false,
         "properties": {
           "collectives": {
             "$ref": "#/components/schemas/SchemaSyncPushCollectives",
@@ -5896,12 +6076,14 @@
         "enum": [
           "succeeded",
           "pending_approval",
+          "skipped",
           "failed",
           "not_attempted"
         ],
         "examples": [
           "succeeded",
           "pending_approval",
+          "skipped",
           "failed",
           "not_attempted"
         ],
@@ -5913,11 +6095,11 @@
           "collectiveId": {
             "$ref": "#/components/schemas/SchemaVillageUUID"
           },
-          "error": {
-            "type": "string"
-          },
           "outcome": {
             "$ref": "#/components/schemas/SchemaSyncPushStepOutcome"
+          },
+          "reason": {
+            "type": "string"
           },
           "step": {
             "$ref": "#/components/schemas/SchemaSyncPushStep"
@@ -5990,6 +6172,9 @@
             "type": "string"
           },
           "ruleId": {
+            "type": "string"
+          },
+          "toolCallId": {
             "type": "string"
           }
         },

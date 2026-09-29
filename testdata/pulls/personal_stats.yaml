@@ -1,10 +1,13 @@
 # The caller's totals, the collective's pull request count, and the
 # repository picker's publisher count. Each is a count the server takes over
-# data a client cannot see or has only one page of.
+# data a client cannot see or has only one page of. The operations' exact
+# status sets live in openapi/testdata/village_collectives_operations.yaml.
 required_names:
   - stats-valid
   - stats-zero-valid
   - stats-negative-rejected
+  - stats-negative-tokens-rejected
+  - stats-negative-pull-request-count-rejected
   - stats-missing-pull-request-count-rejected
   - group-stats-with-pull-request-count-valid
   - group-stats-missing-pull-request-count-rejected
@@ -17,12 +20,10 @@ operations:
     method: get
     path: /api/v1/users/me/stats
     response: VillageUserStats
-    statuses: ["200", "401", "500"]
   - api: village
     method: get
     path: "/api/v1/groups/{id}/repositories/available"
     response: VillageAvailableRepositoriesResponse
-    statuses: ["200", "400", "401", "403", "500", "501"]
     parameters:
       - {name: id, in: path, required: true}
 cases:
@@ -40,13 +41,13 @@ cases:
     mutation: {description: "all totals zero"}
   - name: stats-negative-rejected
     input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: -2, total_duration_ms: 0, total_tokens: 0, pull_request_count: 0}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "totals are nonnegative"}
     mutation: {description: "sends a negative total"}
   - name: stats-missing-pull-request-count-rejected
     input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: 2, total_duration_ms: 3, total_tokens: 4}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the pull request count is part of the totals"}
     mutation: {description: "omits pull_request_count"}
@@ -58,13 +59,13 @@ cases:
     mutation: {description: "a collective with linked pull requests"}
   - name: group-stats-missing-pull-request-count-rejected
     input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the client sees only the rows it loaded, so the server states the count"}
     mutation: {description: "omits pull_request_count"}
   - name: group-stats-negative-pull-request-count-rejected
     input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: -1}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "the count is nonnegative"}
     mutation: {description: "sends a negative count"}
@@ -81,13 +82,25 @@ cases:
     mutation: {description: "one repository members publish from and one they do not"}
   - name: available-repositories-missing-publisher-count-rejected
     input: {schema: VillageAvailableRepositoriesResponse, payload: {repositories: [{owner: acme, name: worker, is_private: false}]}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the client cannot see other members' transcripts"}
     mutation: {description: "omits publisher_count"}
   - name: available-repositories-negative-publisher-count-rejected
     input: {schema: VillageAvailableRepositoriesResponse, payload: {repositories: [{owner: acme, name: worker, is_private: false, publisher_count: -3}]}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "the count is nonnegative"}
     mutation: {description: "sends a negative count"}
+  - name: stats-negative-tokens-rejected
+    input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: 2, total_duration_ms: 3, total_tokens: -4, pull_request_count: 0}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "totals are nonnegative"}
+    mutation: {description: "sends a negative token total"}
+  - name: stats-negative-pull-request-count-rejected
+    input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: 2, total_duration_ms: 3, total_tokens: 4, pull_request_count: -1}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the count is nonnegative"}
+    mutation: {description: "sends a negative pull request count"}

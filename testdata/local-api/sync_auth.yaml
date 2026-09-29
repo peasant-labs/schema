@@ -18,7 +18,12 @@ required_names:
   - redactions-negative-entry-index-rejected
   - redactions-null-entry-index-rejected
   - redactions-items-exceed-count-rejected
-  - redactions-item-in-wrong-group-rejected
+  - auth-signed-out-with-village-url-rejected
+  - auth-signed-out-configured-rejected
+  - redactions-tool-call-match-valid
+  - redactions-tool-call-without-turn-rejected
+  - redactions-item-wrong-category-rejected
+  - redactions-item-wrong-rule-rejected
   - redactions-null-categories-rejected
 operations:
   - api: local
@@ -65,7 +70,7 @@ cases:
     mutation: {description: "names an account while signed out"}
   - name: auth-missing-flag-rejected
     input: {schema: SyncAuthResponse, payload: {username: alice-dev}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "authenticated is required"}
     mutation: {description: "omits authenticated"}
@@ -83,7 +88,7 @@ cases:
     mutation: {description: "nothing to start"}
   - name: login-unknown-status-rejected
     input: {schema: SyncLoginResponse, payload: {status: started}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "SyncLoginStatus is closed"}
     mutation: {description: "names a status outside the menu"}
@@ -101,7 +106,7 @@ cases:
     mutation: {description: "sign-out is idempotent"}
   - name: logout-unknown-status-rejected
     input: {schema: SyncLogoutResponse, payload: {status: revoked}}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "SyncLogoutStatus is closed; the route changes local state only"}
     mutation: {description: "claims a Village-side revocation"}
@@ -161,7 +166,7 @@ cases:
                 count: 1
                 items:
                   - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: alice@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 5, entryIndex: -1, contextBefore: [], contextAfter: []}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "entryIndex is nonnegative"}
     mutation: {description: "sends a negative entry index"}
@@ -179,7 +184,7 @@ cases:
                 count: 1
                 items:
                   - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: alice@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 5, entryIndex: null, contextBefore: [], contextAfter: []}
-    expected: {valid: false, rejected_by: shape}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "an absent entry is omitted, not null"}
     mutation: {description: "sends null for entryIndex"}
@@ -202,7 +207,61 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "items are capped by the rule count"}
     mutation: {description: "lists more items than the rule counts"}
-  - name: redactions-item-in-wrong-group-rejected
+  - name: redactions-null-categories-rejected
+    input: {schema: SyncRedactionsResponse, payload: {total: 0, categories: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "categories is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: auth-signed-out-with-village-url-rejected
+    input: {schema: SyncAuthResponse, payload: {authenticated: false, villageUrl: "https://village.example"}}
+    expected: {valid: false, rejected_by: semantics, error_contains: names an account}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a signed-out computer names no Village"}
+    mutation: {description: "names a Village while signed out"}
+  - name: auth-signed-out-configured-rejected
+    input: {schema: SyncAuthResponse, payload: {authenticated: false, villageConfigured: true}}
+    expected: {valid: false, rejected_by: semantics, error_contains: names an account}
+    classification: must-fail
+    provenance: {source: requirement, ref: "villageConfigured is stated only when signed in"}
+    mutation: {description: "reports a configured Village while signed out"}
+  - name: redactions-tool-call-match-valid
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: CREDENTIAL
+            totalCount: 1
+            rules:
+              - ruleId: aws_access_key
+                displayName: x
+                count: 1
+                items:
+                  - {category: CREDENTIAL, ruleId: aws_access_key, ruleDisplayName: x, originalText: y, redactedReplacement: "<Z>", description: d, lineNumber: 5, entryIndex: 11, toolCallId: toolu_01, contextBefore: [], contextAfter: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a tool result match names the turn that owns the tool call and the call"}
+    mutation: {description: "a secret in tool output"}
+  - name: redactions-tool-call-without-turn-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: CREDENTIAL
+            totalCount: 1
+            rules:
+              - ruleId: aws_access_key
+                displayName: x
+                count: 1
+                items:
+                  - {category: CREDENTIAL, ruleId: aws_access_key, ruleDisplayName: x, originalText: y, redactedReplacement: "<Z>", description: d, lineNumber: 5, toolCallId: toolu_01, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: no turn}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a tool call match names the turn that owns the call"}
+    mutation: {description: "names a tool call without its turn"}
+  - name: redactions-item-wrong-category-rejected
     input:
       schema: SyncRedactionsResponse
       payload:
@@ -212,17 +271,29 @@ cases:
             totalCount: 1
             rules:
               - ruleId: email
-                displayName: Email Address
+                displayName: x
                 count: 1
                 items:
-                  - {category: CREDENTIAL, ruleId: aws_access_key, ruleDisplayName: AWS Access Key ID, originalText: AKIAIOSFODNN7EXAMPLE, redactedReplacement: "<AWS_ACCESS_KEY>", description: AWS access key ID, lineNumber: 5, contextBefore: [], contextAfter: []}
+                  - {category: CREDENTIAL, ruleId: email, ruleDisplayName: x, originalText: y, redactedReplacement: "<Z>", description: d, lineNumber: 5, contextBefore: [], contextAfter: []}
     expected: {valid: false, rejected_by: semantics, error_contains: wrong group}
     classification: must-fail
-    provenance: {source: requirement, ref: "each match sits under its own category and rule"}
-    mutation: {description: "files a credential match under the email rule"}
-  - name: redactions-null-categories-rejected
-    input: {schema: SyncRedactionsResponse, payload: {total: 0, categories: null}}
-    expected: {valid: false, rejected_by: shape}
+    provenance: {source: requirement, ref: "each match sits under its own category"}
+    mutation: {description: "files a match under another category with its own rule"}
+  - name: redactions-item-wrong-rule-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: PII
+            totalCount: 1
+            rules:
+              - ruleId: email
+                displayName: x
+                count: 1
+                items:
+                  - {category: PII, ruleId: phone_number, ruleDisplayName: x, originalText: y, redactedReplacement: "<Z>", description: d, lineNumber: 5, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: wrong group}
     classification: must-fail
-    provenance: {source: boundary, ref: "categories is an array"}
-    mutation: {description: "sends null instead of an empty list"}
+    provenance: {source: requirement, ref: "each match sits under its own rule"}
+    mutation: {description: "files a match under another rule of the same category"}

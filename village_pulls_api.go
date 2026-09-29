@@ -78,8 +78,8 @@ func (VillagePromptsCheckMode) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // VillagePullRequestAttachment is one pull request's attachment row. Title and
-// HeadRef are the pull request's title and head branch as Village last saw
-// them; they are null for a row Village recorded before it kept them.
+// HeadRef are the pull request's title and head branch; they are null when
+// Village does not know them.
 type VillagePullRequestAttachment struct {
 	ID                  VillageUUID                       `json:"id"`
 	Owner               string                            `json:"owner"`
@@ -159,7 +159,8 @@ type VillageUpdateUserSettingsRequest struct {
 
 // VillageTranscriptPullRequestsResponse is the response of GET
 // /api/v1/transcripts/{id}/pulls: the attachments that include the transcript,
-// attached or detached.
+// attached or detached, that the caller may read. An attachment the caller
+// could not open through the attachment read is omitted.
 type VillageTranscriptPullRequestsResponse struct {
 	PullRequests []VillagePullRequestAttachment `json:"pull_requests" nullable:"false"`
 }
@@ -203,9 +204,11 @@ func (r VillagePullRequestRef) Validate() error {
 }
 
 // VillagePullRequestsSummary summarizes the pull requests a transcript is
-// attached to, for a list row. Count is the number of attached pull requests;
-// Recent holds the most recent of them, at most as many as the server shows,
-// so a row reads "#42, #45 +2" without one read per row.
+// attached to, for a list row. Count is the number of pull requests whose
+// attachment is in state attached and that the caller may read; detached pull
+// requests are not counted. Recent holds the most recent of them, at most as
+// many as the server shows, so a row reads "#42, #45 +2" without one read per
+// row.
 type VillagePullRequestsSummary struct {
 	Count  int32                   `json:"count" minimum:"0"`
 	Recent []VillagePullRequestRef `json:"recent" nullable:"false"`
@@ -231,7 +234,8 @@ func (s VillagePullRequestsSummary) Validate() error {
 
 // VillageUserStats is the response of GET /api/v1/users/me/stats: totals over
 // every transcript the caller published. PullRequestCount counts the distinct
-// pull requests any of those transcripts is attached to.
+// pull requests whose attachment is in state attached and includes one of
+// those transcripts; detached pull requests are not counted.
 type VillageUserStats struct {
 	TotalTranscripts int32 `json:"total_transcripts" minimum:"0"`
 	TotalTurns       int64 `json:"total_turns" minimum:"0"`

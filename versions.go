@@ -111,6 +111,11 @@ const (
 	// sign-in and redaction preview routes with sign-out, the settings routes,
 	// the typed sync chooser status, and the declared cross-origin refusal on
 	// write routes (additive = minor bump).
+	// The Local API embeds Village catalog rows: VillageUserGroup in the
+	// collectives proxy, VillagePromptRequest in push results, and
+	// VillageShareStatus in the publication audience, with their closed sets.
+	// A change to any of them also bumps this version;
+	// testdata/local-api/village_components.yaml pins them per Local version.
 	PeasantLocalAPIVersion = "0.15.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").

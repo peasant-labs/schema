@@ -255,7 +255,7 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 		if in.MismatchMetric {
 			variantTurns++
 		}
-		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
+		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
 	case "pending":
 		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "myShare":
