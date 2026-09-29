@@ -18,6 +18,19 @@ type villageCollectivesOperationFixtures struct {
 	ComponentEnums    []villageComponentEnumFixture        `yaml:"component_enums"`
 	ComponentRequired []villageComponentRequiredFixture    `yaml:"component_required"`
 	ComponentProps    []villageComponentPropertyFixture    `yaml:"component_properties"`
+	RequestBodyNames  []string                             `yaml:"request_body_names"`
+	RequestBodies     []villageRequestBodyFixture          `yaml:"request_bodies"`
+}
+
+// villageRequestBodyFixture is one request body sent to an operation. Village
+// enforces request bodies against the served document, so the operation's
+// declared body schema decides whether the body is accepted.
+type villageRequestBodyFixture struct {
+	Name   string         `yaml:"name"`
+	Path   string         `yaml:"path"`
+	Method string         `yaml:"method"`
+	Body   map[string]any `yaml:"body"`
+	Valid  bool           `yaml:"valid"`
 }
 
 type villageCollectivesOperationFixture struct {
@@ -213,6 +226,9 @@ func loadVillageCollectivesFixtures(t *testing.T) villageCollectivesOperationFix
 	}
 	if len(fixtures.ComponentProps) == 0 {
 		t.Fatal("Village collectives operation fixtures must name at least one property contract")
+	}
+	if len(fixtures.RequestBodies) == 0 {
+		t.Fatal("Village collectives operation fixtures must name at least one request body")
 	}
 	return fixtures
 }

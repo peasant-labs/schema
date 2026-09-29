@@ -75,6 +75,19 @@ import { zPublicSourceAnchorKind, type PublicSourceAnchorKind as PublicSourceAnc
 import { zEarlierHistoryState, type EarlierHistoryState as EarlierHistoryStateContract } from "./contract/zod.gen.js";
 import { zRelationshipNavigationStatus, type RelationshipNavigationStatus as RelationshipNavigationStatusContract } from "./contract/zod.gen.js";
 import { zSessionListItemKind, type SessionListItemKind as SessionListItemKindContract } from "./contract/zod.gen.js";
+import { zSyncStatus, type SyncStatus as SyncStatusContract } from "./contract/zod.gen.js";
+import { zSyncHoldReason, type SyncHoldReason as SyncHoldReasonContract } from "./contract/zod.gen.js";
+import { zSyncPushSessionStatus, type SyncPushSessionStatus as SyncPushSessionStatusContract } from "./contract/zod.gen.js";
+import { zSyncPushStep, type SyncPushStep as SyncPushStepContract } from "./contract/zod.gen.js";
+import { zSyncPushStepOutcome, type SyncPushStepOutcome as SyncPushStepOutcomeContract } from "./contract/zod.gen.js";
+import { zSyncLoginStatus, type SyncLoginStatus as SyncLoginStatusContract } from "./contract/zod.gen.js";
+import { zSyncLogoutStatus, type SyncLogoutStatus as SyncLogoutStatusContract } from "./contract/zod.gen.js";
+import { zLocalPublicationState, type LocalPublicationState as LocalPublicationStateContract } from "./contract/zod.gen.js";
+import { zLocalCollectiveSuggestionReason, type LocalCollectiveSuggestionReason as LocalCollectiveSuggestionReasonContract } from "./contract/zod.gen.js";
+import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } from "./contract/zod.gen.js";
+import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
+import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
+import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -1001,4 +1014,149 @@ export const SessionListItemKind = Object.freeze({
 export const AllSessionListItemKinds = Object.freeze([SessionListItemKind.Transcript, SessionListItemKind.ContextContainer]) as readonly SessionListItemKind[];
 export function isSessionListItemKind(value: unknown): value is SessionListItemKind {
   return zSessionListItemKind.safeParse(value).success;
+}
+
+export type SyncStatus = SyncStatusContract;
+export const SyncStatus = Object.freeze({
+  New: zSyncStatus.parse("new"),
+  Updated: zSyncStatus.parse("updated"),
+  Synced: zSyncStatus.parse("synced"),
+  Held: zSyncStatus.parse("held"),
+} as const);
+export const AllSyncStatuses = Object.freeze([SyncStatus.New, SyncStatus.Updated, SyncStatus.Synced, SyncStatus.Held]) as readonly SyncStatus[];
+export function isSyncStatus(value: unknown): value is SyncStatus {
+  return zSyncStatus.safeParse(value).success;
+}
+
+export type SyncHoldReason = SyncHoldReasonContract;
+export const SyncHoldReason = Object.freeze({
+  MetricsMissing: zSyncHoldReason.parse("metrics_missing"),
+  MetadataMissing: zSyncHoldReason.parse("metadata_missing"),
+} as const);
+export const AllSyncHoldReasons = Object.freeze([SyncHoldReason.MetricsMissing, SyncHoldReason.MetadataMissing]) as readonly SyncHoldReason[];
+export function isSyncHoldReason(value: unknown): value is SyncHoldReason {
+  return zSyncHoldReason.safeParse(value).success;
+}
+
+export type SyncPushSessionStatus = SyncPushSessionStatusContract;
+export const SyncPushSessionStatus = Object.freeze({
+  New: zSyncPushSessionStatus.parse("new"),
+  Updated: zSyncPushSessionStatus.parse("updated"),
+  Skipped: zSyncPushSessionStatus.parse("skipped"),
+  Error: zSyncPushSessionStatus.parse("error"),
+  Held: zSyncPushSessionStatus.parse("held"),
+} as const);
+export const AllSyncPushSessionStatuses = Object.freeze([SyncPushSessionStatus.New, SyncPushSessionStatus.Updated, SyncPushSessionStatus.Skipped, SyncPushSessionStatus.Error, SyncPushSessionStatus.Held]) as readonly SyncPushSessionStatus[];
+export function isSyncPushSessionStatus(value: unknown): value is SyncPushSessionStatus {
+  return zSyncPushSessionStatus.safeParse(value).success;
+}
+
+export type SyncPushStep = SyncPushStepContract;
+export const SyncPushStep = Object.freeze({
+  Content: zSyncPushStep.parse("content"),
+  AddCollective: zSyncPushStep.parse("add_collective"),
+  RemoveCollective: zSyncPushStep.parse("remove_collective"),
+} as const);
+export const AllSyncPushSteps = Object.freeze([SyncPushStep.Content, SyncPushStep.AddCollective, SyncPushStep.RemoveCollective]) as readonly SyncPushStep[];
+export function isSyncPushStep(value: unknown): value is SyncPushStep {
+  return zSyncPushStep.safeParse(value).success;
+}
+
+export type SyncPushStepOutcome = SyncPushStepOutcomeContract;
+export const SyncPushStepOutcome = Object.freeze({
+  Succeeded: zSyncPushStepOutcome.parse("succeeded"),
+  PendingApproval: zSyncPushStepOutcome.parse("pending_approval"),
+  Skipped: zSyncPushStepOutcome.parse("skipped"),
+  Failed: zSyncPushStepOutcome.parse("failed"),
+  NotAttempted: zSyncPushStepOutcome.parse("not_attempted"),
+} as const);
+export const AllSyncPushStepOutcomes = Object.freeze([SyncPushStepOutcome.Succeeded, SyncPushStepOutcome.PendingApproval, SyncPushStepOutcome.Skipped, SyncPushStepOutcome.Failed, SyncPushStepOutcome.NotAttempted]) as readonly SyncPushStepOutcome[];
+export function isSyncPushStepOutcome(value: unknown): value is SyncPushStepOutcome {
+  return zSyncPushStepOutcome.safeParse(value).success;
+}
+
+export type SyncLoginStatus = SyncLoginStatusContract;
+export const SyncLoginStatus = Object.freeze({
+  Pending: zSyncLoginStatus.parse("pending"),
+  AlreadyAuthenticated: zSyncLoginStatus.parse("already_authenticated"),
+} as const);
+export const AllSyncLoginStatuses = Object.freeze([SyncLoginStatus.Pending, SyncLoginStatus.AlreadyAuthenticated]) as readonly SyncLoginStatus[];
+export function isSyncLoginStatus(value: unknown): value is SyncLoginStatus {
+  return zSyncLoginStatus.safeParse(value).success;
+}
+
+export type SyncLogoutStatus = SyncLogoutStatusContract;
+export const SyncLogoutStatus = Object.freeze({
+  LoggedOut: zSyncLogoutStatus.parse("logged_out"),
+  AlreadyLoggedOut: zSyncLogoutStatus.parse("already_logged_out"),
+} as const);
+export const AllSyncLogoutStatuses = Object.freeze([SyncLogoutStatus.LoggedOut, SyncLogoutStatus.AlreadyLoggedOut]) as readonly SyncLogoutStatus[];
+export function isSyncLogoutStatus(value: unknown): value is SyncLogoutStatus {
+  return zSyncLogoutStatus.safeParse(value).success;
+}
+
+export type LocalPublicationState = LocalPublicationStateContract;
+export const LocalPublicationState = Object.freeze({
+  Unpublished: zLocalPublicationState.parse("unpublished"),
+  Published: zLocalPublicationState.parse("published"),
+} as const);
+export const AllLocalPublicationStates = Object.freeze([LocalPublicationState.Unpublished, LocalPublicationState.Published]) as readonly LocalPublicationState[];
+export function isLocalPublicationState(value: unknown): value is LocalPublicationState {
+  return zLocalPublicationState.safeParse(value).success;
+}
+
+export type LocalCollectiveSuggestionReason = LocalCollectiveSuggestionReasonContract;
+export const LocalCollectiveSuggestionReason = Object.freeze({
+  LinkedRepository: zLocalCollectiveSuggestionReason.parse("linked_repository"),
+  LinkedGithubOrg: zLocalCollectiveSuggestionReason.parse("linked_github_org"),
+} as const);
+export const AllLocalCollectiveSuggestionReasons = Object.freeze([LocalCollectiveSuggestionReason.LinkedRepository, LocalCollectiveSuggestionReason.LinkedGithubOrg]) as readonly LocalCollectiveSuggestionReason[];
+export function isLocalCollectiveSuggestionReason(value: unknown): value is LocalCollectiveSuggestionReason {
+  return zLocalCollectiveSuggestionReason.safeParse(value).success;
+}
+
+export type LocalSettingKind = LocalSettingKindContract;
+export const LocalSettingKind = Object.freeze({
+  Boolean: zLocalSettingKind.parse("boolean"),
+  Integer: zLocalSettingKind.parse("integer"),
+  String: zLocalSettingKind.parse("string"),
+  StringList: zLocalSettingKind.parse("string_list"),
+  Choice: zLocalSettingKind.parse("choice"),
+  Structured: zLocalSettingKind.parse("structured"),
+} as const);
+export const AllLocalSettingKinds = Object.freeze([LocalSettingKind.Boolean, LocalSettingKind.Integer, LocalSettingKind.String, LocalSettingKind.StringList, LocalSettingKind.Choice, LocalSettingKind.Structured]) as readonly LocalSettingKind[];
+export function isLocalSettingKind(value: unknown): value is LocalSettingKind {
+  return zLocalSettingKind.safeParse(value).success;
+}
+
+export type AutoPublishEvent = AutoPublishEventContract;
+export const AutoPublishEvent = Object.freeze({
+  PrePush: zAutoPublishEvent.parse("pre-push"),
+  PostCommit: zAutoPublishEvent.parse("post-commit"),
+} as const);
+export const AllAutoPublishEvents = Object.freeze([AutoPublishEvent.PrePush, AutoPublishEvent.PostCommit]) as readonly AutoPublishEvent[];
+export function isAutoPublishEvent(value: unknown): value is AutoPublishEvent {
+  return zAutoPublishEvent.safeParse(value).success;
+}
+
+export type AutoPublishHookStatus = AutoPublishHookStatusContract;
+export const AutoPublishHookStatus = Object.freeze({
+  Absent: zAutoPublishHookStatus.parse("absent"),
+  Installed: zAutoPublishHookStatus.parse("installed"),
+  Blocked: zAutoPublishHookStatus.parse("blocked"),
+  Failed: zAutoPublishHookStatus.parse("failed"),
+} as const);
+export const AllAutoPublishHookStatuses = Object.freeze([AutoPublishHookStatus.Absent, AutoPublishHookStatus.Installed, AutoPublishHookStatus.Blocked, AutoPublishHookStatus.Failed]) as readonly AutoPublishHookStatus[];
+export function isAutoPublishHookStatus(value: unknown): value is AutoPublishHookStatus {
+  return zAutoPublishHookStatus.safeParse(value).success;
+}
+
+export type AutoPublishRuleKind = AutoPublishRuleKindContract;
+export const AutoPublishRuleKind = Object.freeze({
+  Folder: zAutoPublishRuleKind.parse("folder"),
+  Remote: zAutoPublishRuleKind.parse("remote"),
+} as const);
+export const AllAutoPublishRuleKinds = Object.freeze([AutoPublishRuleKind.Folder, AutoPublishRuleKind.Remote]) as readonly AutoPublishRuleKind[];
+export function isAutoPublishRuleKind(value: unknown): value is AutoPublishRuleKind {
+  return zAutoPublishRuleKind.safeParse(value).success;
 }

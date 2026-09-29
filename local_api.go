@@ -135,11 +135,19 @@ type LocalSyncSummary struct {
 	TurnCount            int         `json:"turnCount"`
 	Model                string      `json:"model"`
 	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	SyncStatus           string      `json:"syncStatus"`
+	SyncStatus           SyncStatus  `json:"syncStatus"`
+	// HoldReason says why a held row waits. Only a held row carries one.
+	HoldReason SyncHoldReason `json:"holdReason,omitempty"`
+	// PreviouslyPushed reports durable evidence that this session was
+	// published before. It is independent of SyncStatus: a held row can have
+	// been published, so a client reads this field instead of inferring it.
+	PreviouslyPushed bool `json:"previouslyPushed"`
 }
 
 // LocalSyncSessionsPayload is the exact omitted-view response produced by the
-// existing local sync chooser.
+// existing local sync chooser. Every row carries its status; a session absent
+// from the response has no status here, and a client must not read absence as
+// new.
 type LocalSyncSessionsPayload struct {
 	Sessions []LocalSyncSummary `json:"sessions" nullable:"false"`
 }
@@ -194,7 +202,7 @@ func (r LocalSessionRow) Validate() error {
 	}
 	if r.Sync != nil {
 		s := r.Sync
-		if err := ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSessionRow.sync.inputSubmissionCount"); err != nil {
+		if err := s.Validate(); err != nil {
 			return err
 		}
 		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) {

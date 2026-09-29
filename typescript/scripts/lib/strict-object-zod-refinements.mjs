@@ -55,6 +55,11 @@ export const STRICT_OBJECTS = [
   "zPublishNormalizedValues",
   "zPublishAppliedState",
   "zAuthoritativePublishResponse",
+  "zSyncPushRequest",
+  "zSyncPushCollectives",
+  "zLocalSettingUpdateRequest",
+  "zAutoPublishRuleRequest",
+  "zAutoPublishInstallRequest",
 ];
 
 export function applyStrictObjectZodRefinements(source) {

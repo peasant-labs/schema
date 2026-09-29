@@ -1,0 +1,22 @@
+# The local server refuses a state-changing request that did not come from its
+# own pages. Every write operation the Local API declares states that 403 with
+# the shared JSON error body. The manifest is the exact set of declared write
+# operations, so a newly declared write route that omits the refusal fails, and
+# so does a route that stops declaring it. Write routes the server serves but
+# the contract does not declare are outside this manifest.
+write_operations:
+  - {method: post, path: /api/v1/annotations, operation_id: createAnnotation}
+  - {method: post, path: /api/v1/shutdown, operation_id: postShutdown}
+  - {method: post, path: /api/v1/sync/push, operation_id: pushSyncSessions}
+  - {method: post, path: /api/v1/sync/login, operation_id: syncLogin}
+  - {method: post, path: /api/v1/sync/logout, operation_id: syncLogout}
+  - {method: patch, path: /api/v1/settings, operation_id: updateSetting}
+  - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: saveAutoPublishRule}
+  - {method: post, path: "/api/v1/settings/auto-publish/{id}/install", operation_id: installAutoPublishHooks}
+  - {method: delete, path: "/api/v1/settings/auto-publish/{id}", operation_id: deleteAutoPublishRule}
+refusal:
+  status: "403"
+  component: OpenapiLocalErrorResponse
+  required: [error]
+  properties: [error, code]
+  description_anchor: did not come from this local server
