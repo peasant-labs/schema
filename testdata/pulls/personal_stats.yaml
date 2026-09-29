@@ -26,6 +26,7 @@ operations:
     path: "/api/v1/groups/{id}/repositories/available"
     response: VillageAvailableRepositoriesResponse
     statuses: ["200", "400", "401", "403", "500", "501"]
+    error_responses: {"400": VillageErrorResponse, "401": VillageErrorResponse, "403": VillageErrorResponse, "500": VillageErrorResponse, "501": VillageErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
 cases:

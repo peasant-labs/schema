@@ -68,9 +68,10 @@ type LocalPublication struct {
 	// LastAttempt is the most recent failed attempt, absent when none is
 	// recorded.
 	LastAttempt *LocalPublicationAttemptFailure `json:"lastAttempt,omitempty" nullable:"false"`
-	// AutoPublish reports that an auto-publish rule matches this session's
-	// repository and at least one of the rule's hooks is installed there, so a
-	// git hook publishes the session without a click.
+	// AutoPublish reports that a Peasant-managed hook is installed in this
+	// session's repository, for a rule or from the terminal, so a commit or
+	// push publishes the session without a click. A hook outlives the rule it
+	// was installed for.
 	AutoPublish bool `json:"autoPublish"`
 	// OutsideSelection reports that the saved selection leaves this session
 	// out of the local lists. The read ignores the selection, so such a

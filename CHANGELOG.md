@@ -42,7 +42,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     `LocalSettingUpdateRequest`, `LocalSetting`, `LocalSettingRefusal`):
     every setting with its kind (`boolean`, `integer`, `string`,
     `string_list`, `choice`, `structured`), its value in the file (null when
-    unset), the `effective` value that applies, options, `editable`, and
+    unset, and for a choice possibly a value the server no longer offers), the
+    `effective` value that applies, options, `editable`, and
     `inPeasantConfig`, changed one key per request, with a typed refusal that
     names the key.
   - Auto-publish rules: `PUT` and `DELETE /api/v1/settings/auto-publish/{id}`

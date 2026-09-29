@@ -159,10 +159,11 @@ type VillageUpdateUserSettingsRequest struct {
 
 // VillageTranscriptPullRequestsResponse is the response of GET
 // /api/v1/transcripts/{id}/pulls: the attachments that include the transcript,
-// attached or detached, that the caller may read. An attachment on a private
-// repository is listed only to the pull request author, a member of a
-// collective that links the repository, or a reader of the repository, and
-// one whose visibility check cannot complete is omitted.
+// attached or detached, that the caller may read. This is the visibility rule
+// the pull request counts refer to: an attachment on a private repository is
+// listed only to the pull request author, a member of the collective the
+// attachment belongs to, or, for an attached attachment, a reader of the
+// repository, and one whose visibility check cannot complete is omitted.
 type VillageTranscriptPullRequestsResponse struct {
 	PullRequests []VillagePullRequestAttachment `json:"pull_requests" nullable:"false"`
 }
@@ -207,9 +208,9 @@ func (r VillagePullRequestRef) Validate() error {
 
 // VillagePullRequestsSummary summarizes the pull requests a transcript is
 // attached to, for a list row. Count is the number of pull requests whose
-// attachment is in state attached and that the caller may read, under the
-// same rule as the transcript pull request read; detached pull requests and
-// pull requests whose visibility check cannot complete are not counted. Recent holds the most recent of them, at most as
+// attachment is in state attached and that the caller may read under the
+// visibility rule of VillageTranscriptPullRequestsResponse, failing closed;
+// detached pull requests are not counted. Recent holds the most recent of them, at most as
 // many as the server shows, so a row reads "#42, #45 +2" without one read per
 // row.
 type VillagePullRequestsSummary struct {
@@ -238,8 +239,9 @@ func (s VillagePullRequestsSummary) Validate() error {
 // VillageUserStats is the response of GET /api/v1/users/me/stats: totals over
 // every transcript the caller published. PullRequestCount counts the distinct
 // pull requests whose attachment is in state attached, includes one of those
-// transcripts, and that the caller may read; detached pull requests are not
-// counted.
+// transcripts, and that the caller may read under the visibility rule of
+// VillageTranscriptPullRequestsResponse, failing closed; detached pull
+// requests are not counted.
 type VillageUserStats struct {
 	TotalTranscripts int32 `json:"total_transcripts" minimum:"0"`
 	TotalTurns       int64 `json:"total_turns" minimum:"0"`

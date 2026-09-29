@@ -274,8 +274,9 @@ type SyncPushSessionResult struct {
 	// Status is the session's outcome. It describes the content: new or
 	// updated when Village accepted it, skipped when it was already current
 	// (also when only collectives changed), held when it cannot be published
-	// yet, and error when any step failed or the session failed before a step
-	// ran. The response counts tally sessions by this status.
+	// yet, and error when any step failed or the session failed before or
+	// after its steps ran, for example while recording Village's receipt on
+	// this computer. The response counts tally sessions by this status.
 	Status SyncPushSessionStatus `json:"status"`
 	Error  string                `json:"error,omitempty"`
 	Title  string                `json:"title,omitempty"`
@@ -293,10 +294,10 @@ type SyncPushSessionResult struct {
 
 // Validate checks one session result, its steps, and how the status follows
 // from them. Steps start with the content step. A failed step makes the
-// session an error, and an error with steps names the step that failed. New
-// and updated sessions have a succeeded content step and a transcript URL;
-// skipped and held sessions have a skipped content step, and a held session
-// can only take a transcript back from collectives. A step is not_attempted
+// session an error. New and updated sessions have a succeeded content step,
+// and any session whose content Village accepted carries a transcript URL.
+// Skipped and held sessions have a skipped content step, and a held session
+// can only take a transcript back from collectives or skip a share. A step is not_attempted
 // only after an earlier step failed. Whether a later step still runs after a
 // failure is the producer's choice, so taking a collective back is never
 // forced to wait on an unrelated failure.
@@ -333,11 +334,9 @@ func (r SyncPushSessionResult) Validate() error {
 	if failed && r.Status != SyncPushSessionError {
 		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a step failed but status is %q; a session with a failed step is an error, so the counts cannot report success", r.SessionID, r.Status)
 	}
-	if r.Status == SyncPushSessionError && len(r.Steps) > 0 && !failed {
-		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status error lists steps but none failed; name the step that failed, or omit steps when the session failed before any step ran", r.SessionID)
-	}
-	if (r.Status == SyncPushSessionNew || r.Status == SyncPushSessionUpdated) && strings.TrimSpace(r.TranscriptURL) == "" {
-		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q has no transcriptUrl; Village accepted the content, so the caller can open it; emit the transcript URL", r.SessionID, r.Status)
+	accepted := len(r.Steps) > 0 && r.Steps[0].Step == SyncPushStepContent && r.Steps[0].Outcome == SyncPushStepSucceeded
+	if (accepted || r.Status == SyncPushSessionNew || r.Status == SyncPushSessionUpdated) && strings.TrimSpace(r.TranscriptURL) == "" {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q has no transcriptUrl although Village accepted the content; the caller can open it; emit the transcript URL", r.SessionID, r.Status)
 	}
 	if len(r.Steps) == 0 {
 		if r.Status == SyncPushSessionNew || r.Status == SyncPushSessionUpdated {
@@ -361,8 +360,8 @@ func (r SyncPushSessionResult) Validate() error {
 	}
 	if r.Status == SyncPushSessionHeld {
 		for _, step := range r.Steps[1:] {
-			if step.Step != SyncPushStepRemoveCollective {
-				return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a held session has a %s step; a held session can only be taken back from collectives", r.SessionID, step.Step)
+			if step.Step == SyncPushStepAddCollective && step.Outcome != SyncPushStepSkipped {
+				return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a held session reports a share that ran; a held session can only be taken back from collectives, and a requested share is skipped", r.SessionID)
 			}
 		}
 	}

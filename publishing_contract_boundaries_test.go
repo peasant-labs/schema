@@ -76,6 +76,9 @@ type boundaryExpected struct {
 	// Validate also refuses the payload. Producers gate their output with
 	// Validate, so each shape rule states whether Go sees it too.
 	GoRejects *bool `yaml:"go_rejects,omitempty"`
+	// GoErrorContains pins which Go rule rejects a shape case, so a closed-set
+	// guard cannot be masked by an unrelated relational rule.
+	GoErrorContains string `yaml:"go_error_contains,omitempty"`
 }
 
 // boundaryDecoders is the exact set of components the publishing corpora may
@@ -136,20 +139,25 @@ func TestPublishingContractBoundaries(t *testing.T) {
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(raw))
 	decoder.KnownFields(true)
-	if err := decoder.Decode(&manifest); err != nil || len(manifest.Corpora) == 0 {
+	if err := decoder.Decode(&manifest); err != nil {
 		t.Fatalf("decode %s: %v", publishingCorpora, err)
 	}
+	if len(manifest.Corpora) == 0 {
+		t.Fatalf("%s lists no corpus", publishingCorpora)
+	}
+	listed := map[string]bool{}
+	defer requireEveryCorpusListed(t, listed)
 	for _, path := range manifest.Corpora {
+		if listed[path] {
+			t.Fatalf("%s lists %s twice", publishingCorpora, path)
+		}
+		listed[path] = true
 		data, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
-		corpus := struct {
-			name string
-			data []byte
-		}{path, data}
-		t.Run(corpus.name, func(t *testing.T) {
-			fixture := loadBoundaryFixture(t, corpus.data)
+		t.Run(path, func(t *testing.T) {
+			fixture := loadBoundaryFixture(t, data)
 			for _, operation := range fixture.Operations {
 				harness.requireOperation(t, operation)
 			}
@@ -184,6 +192,8 @@ func loadBoundaryFixture(t *testing.T, data []byte) boundaryFixture {
 			t.Fatalf("case %s is invalid and must name rejected_by shape or semantics, got %q", c.Name, c.Expected.RejectedBy)
 		case (c.Expected.RejectedBy == "shape") != (c.Expected.GoRejects != nil):
 			t.Fatalf("case %s must state go_rejects exactly when the shape layer rejects it", c.Name)
+		case c.Expected.GoErrorContains != "" && (c.Expected.GoRejects == nil || !*c.Expected.GoRejects):
+			t.Fatalf("case %s names a Go error but Go does not reject it", c.Name)
 		case c.Expected.Valid != (c.Classification == testcase.MustPass):
 			t.Fatalf("case %s classification %s disagrees with valid=%v", c.Name, c.Classification, c.Expected.Valid)
 		}
@@ -286,6 +296,9 @@ func (h *boundaryHarness) run(t *testing.T, c testcase.Case[boundaryInput, bound
 		if (goErr != nil) != *c.Expected.GoRejects {
 			t.Fatalf("Go rejects=%v, want %v: %v", goErr != nil, *c.Expected.GoRejects, goErr)
 		}
+		if c.Expected.GoErrorContains != "" {
+			requireErrorContains(t, goErr, c.Expected.GoErrorContains)
+		}
 		requireErrorContains(t, shapeErr, c.Expected.ErrorContains)
 	default:
 		if shapeErr != nil {
@@ -348,6 +361,21 @@ func (h *boundaryHarness) requireOperation(t *testing.T, want boundaryOperation)
 	}
 	if want.Statuses != nil {
 		requireSameSet(t, label+" statuses", want.Statuses, statuses)
+	}
+	if want.Statuses != nil {
+		var refusals []string
+		for _, status := range want.Statuses {
+			if !strings.HasPrefix(status, "2") && status != "403" {
+				refusals = append(refusals, status)
+			}
+		}
+		var pinned []string
+		for status := range want.ErrorResponses {
+			if status != "403" {
+				pinned = append(pinned, status)
+			}
+		}
+		requireSameSet(t, label+" refusal bodies", refusals, pinned)
 	}
 	for status, component := range want.ErrorResponses {
 		ref, _ := mediaSchema(t, label+" "+status, responses[status])["$ref"].(string)
@@ -453,5 +481,38 @@ func requireSameSet(t *testing.T, label string, want, got []string) {
 	sort.Strings(g)
 	if strings.Join(w, ",") != strings.Join(g, ",") {
 		t.Fatalf("%s = %v, want %v", label, g, w)
+	}
+}
+
+// requireEveryCorpusListed fails when a boundary-shaped corpus in the
+// publishing fixture directories is missing from the shared list, so removing
+// a list entry cannot silently stop a corpus from running in both languages.
+func requireEveryCorpusListed(t *testing.T, listed map[string]bool) {
+	t.Helper()
+	for _, dir := range []string{"testdata/local-api", "testdata/pulls"} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			path := dir + "/" + entry.Name()
+			if entry.IsDir() || !strings.HasSuffix(path, ".yaml") {
+				continue
+			}
+			raw, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var keys map[string]any
+			if err := yaml.Unmarshal(raw, &keys); err != nil {
+				continue
+			}
+			_, names := keys["required_names"]
+			_, operations := keys["operations"]
+			_, cases := keys["cases"]
+			if names && operations && cases && !listed[path] {
+				t.Errorf("%s is a boundary corpus missing from %s", path, publishingCorpora)
+			}
+		}
 	}
 }

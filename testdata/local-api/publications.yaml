@@ -26,6 +26,7 @@ required_names:
   - published-without-published-at-rejected
   - unpublished-with-published-at-rejected
   - null-published-at-rejected
+  - zero-attempted-at-rejected
 operations:
   - api: local
     method: get
@@ -56,7 +57,7 @@ cases:
     expected: {valid: true}
     classification: must-pass
     provenance: {source: enum, ref: "PublicationState published"}
-    mutation: {description: "a published session covered by an auto-publish binding"}
+    mutation: {description: "a published session whose repository has a Peasant-managed hook installed"}
   - name: published-with-audience-valid
     input:
       schema: LocalPublicationsResponse
@@ -296,3 +297,13 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "a collective whose access was taken back is not audience"}
     mutation: {description: "lists a retracted share as audience"}
+  - name: zero-attempted-at-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, lastAttempt: {attemptedAt: "0001-01-01T00:00:00Z", message: upload failed}, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: lastAttempt}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a failed attempt says when it happened"}
+    mutation: {description: "sends the zero time for a failed attempt"}

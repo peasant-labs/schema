@@ -80,6 +80,10 @@ func (LocalSettingValue) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
+// LocalSettingUnset is the JSON null a producer sets for an unset value or
+// when no effective value applies.
+var LocalSettingUnset = LocalSettingValue("null")
+
 // IsUnset reports whether the value is JSON null. A nil value is unset too:
 // it marshals as null.
 func (v LocalSettingValue) IsUnset() bool {
@@ -88,9 +92,9 @@ func (v LocalSettingValue) IsUnset() bool {
 }
 
 // ValidateFor checks that a set value has the JSON type kind names and, for a
-// choice, is one of options. An unset value, nil or JSON null, is valid for
-// every kind. A producer checks an update's value against the key's kind with
-// this method.
+// choice, is one of options; nil options check only that a choice is a
+// string. An unset value, nil or JSON null, is valid for every kind. A
+// producer checks an update's value against the key's kind with this method.
 func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) error {
 	if v.IsUnset() {
 		return nil
@@ -126,7 +130,7 @@ func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) 
 			return nil
 		}
 	case LocalSettingChoice:
-		if text, ok := value.(string); ok && inSet(text, options) {
+		if text, ok := value.(string); ok && (options == nil || inSet(text, options)) {
 			return nil
 		}
 	case LocalSettingStructured:
@@ -145,7 +149,9 @@ type LocalSetting struct {
 	Key  string           `json:"key" minLength:"1"`
 	Kind LocalSettingKind `json:"kind"`
 	// Value is what the configuration file names for the key, or null when
-	// the file does not name it.
+	// the file does not name it. A choice value may lie outside Options when
+	// the server still accepts it from an existing file but no longer offers
+	// it; Effective then names what applies.
 	Value LocalSettingValue `json:"value"`
 	// Effective is the value that applies now: normally Value when the key is
 	// set, otherwise the server's default, and it can differ from Value when
@@ -154,7 +160,8 @@ type LocalSetting struct {
 	// an unset key never reads as off or blank when its default is on or
 	// filled.
 	Effective LocalSettingValue `json:"effective"`
-	// Options is the menu of a choice setting. Other kinds have none.
+	// Options is the menu of a choice setting; an option may be the empty
+	// string when that is a meaningful setting. Other kinds have none.
 	Options []string `json:"options,omitempty" nullable:"false"`
 	// Editable reports that PATCH /api/v1/settings accepts this key. A key
 	// that changes another way, such as village.connected through sign-in and
@@ -181,16 +188,22 @@ func (s LocalSetting) Validate() error {
 	}
 	seen := make(map[string]struct{}, len(s.Options))
 	for _, option := range s.Options {
-		if _, duplicate := seen[option]; duplicate || option == "" {
-			return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: option %q is empty or repeated; list each option once", s.Key, option)
+		if _, duplicate := seen[option]; duplicate {
+			return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: option %q is repeated; list each option once", s.Key, option)
 		}
 		seen[option] = struct{}{}
 	}
-	if err := s.Value.ValidateFor(s.Kind, s.Options); err != nil {
+	if err := s.Value.ValidateFor(s.Kind, nil); err != nil {
 		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: %v; emit a value of kind %q or null when the key is unset", s.Key, err, s.Kind)
+	}
+	if s.Effective == nil {
+		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective is missing; the settings page shows what applies; emit it, or schema.LocalSettingUnset when no value applies", s.Key)
 	}
 	if err := s.Effective.ValidateFor(s.Kind, s.Options); err != nil {
 		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective %v; emit the value that applies, of kind %q", s.Key, err, s.Kind)
+	}
+	if !s.Value.IsUnset() && s.Effective.IsUnset() {
+		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: a set value has a null effective; a value the file names always applies or is replaced; emit the value that applies", s.Key)
 	}
 	return nil
 }
@@ -299,7 +312,8 @@ const (
 	// repository. Peasant never overwrites such a file. It carries a remedy.
 	AutoPublishHookBlocked AutoPublishHookStatus = "blocked"
 	// AutoPublishHookFailed: installing the hook failed. Only an install
-	// response reports it, and it carries a remedy naming the failure.
+	// response reports it, and it carries a remedy naming the failure. A rule
+	// or a removal response never reports it.
 	AutoPublishHookFailed AutoPublishHookStatus = "failed"
 )
 
@@ -462,6 +476,9 @@ func (r AutoPublishRule) Validate() error {
 			if !inSet(hook.Event, r.Events) {
 				return fmt.Errorf("auto-publish rule validation failed for %q at schema.AutoPublishRule.Validate: repository %q reports event %q, which the rule does not name", r.ID, repository.Path, hook.Event)
 			}
+			if hook.Status == AutoPublishHookFailed {
+				return fmt.Errorf("auto-publish rule validation failed for %q at schema.AutoPublishRule.Validate: repository %q reports a failed hook; failed is an install outcome; report the hook as it is now", r.ID, repository.Path)
+			}
 		}
 	}
 	return nil
@@ -536,6 +553,11 @@ func (r AutoPublishRemovalResponse) Validate() error {
 			return fmt.Errorf("auto-publish removal validation failed for %q at schema.AutoPublishRemovalResponse.Validate: repository %q is listed twice; list each repository once", r.ID, repository.Path)
 		}
 		paths[repository.Path] = struct{}{}
+		for _, hook := range repository.Hooks {
+			if hook.Status == AutoPublishHookFailed {
+				return fmt.Errorf("auto-publish removal validation failed for %q at schema.AutoPublishRemovalResponse.Validate: repository %q reports a failed hook; removing a rule changes no hook; report the hook as it is", r.ID, repository.Path)
+			}
+		}
 	}
 	return nil
 }

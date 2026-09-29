@@ -257,14 +257,14 @@ operations:
     request_components: []
     response_components: [VillageTranscriptPullRequestsResponse]
     statuses: ["200", "400", "404", "429", "500"]
-    description_anchors: [attached or detached, receives 404, never 403, omitted rather than refused]
+    description_anchors: [attached or detached, receives 404, never 403, omitted rather than refused, collective the attachment belongs to, for an attached attachment, visibility check cannot complete]
   - path: /api/v1/users/me/stats
     method: get
     operation_id: getMyStats
     request_components: []
     response_components: [VillageUserStats]
     statuses: ["200", "401", "500"]
-    description_anchors: [distinct pull requests, not one page]
+    description_anchors: [distinct pull requests, not one page, may read under the visibility rule]
 component_enums:
   - component: VillageGroupAcceptanceMode
     values: [open, verified_only, curated]

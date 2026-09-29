@@ -25,6 +25,9 @@ required_names:
   - redactions-item-wrong-category-rejected
   - redactions-item-wrong-rule-rejected
   - redactions-null-categories-rejected
+  - redactions-null-rules-rejected
+  - redactions-negative-line-rejected
+  - redactions-null-context-rejected
 operations:
   - api: local
     method: get
@@ -299,3 +302,36 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "each match sits under its own rule"}
     mutation: {description: "files a match under another rule of the same category"}
+  - name: redactions-null-rules-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: 1, rules: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: null rules}
+    classification: must-fail
+    provenance: {source: boundary, ref: "rules is an array"}
+    mutation: {description: "sends null rules"}
+  - name: redactions-negative-line-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: 1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: [{category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: a@b.c, redactedReplacement: "<EMAIL>", description: d, lineNumber: -1, contextBefore: [], contextAfter: []}]}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: negative position}
+    classification: must-fail
+    provenance: {source: boundary, ref: "line numbers are nonnegative"}
+    mutation: {description: "sends a negative line number"}
+  - name: redactions-null-context-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: 1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: [{category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: a@b.c, redactedReplacement: "<EMAIL>", description: d, lineNumber: 5, contextBefore: null, contextAfter: []}]}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: null context}
+    classification: must-fail
+    provenance: {source: boundary, ref: "context is an array"}
+    mutation: {description: "sends null context before the match"}

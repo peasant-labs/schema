@@ -86,8 +86,13 @@ func TestLocalAPIPinsEmbeddedVillageComponents(t *testing.T) {
 	}
 	sort.Strings(changed)
 	if len(changed) > 0 || len(pinned) != len(fixture.Components) {
-		// No re-pin block is printed here on purpose: under an unchanged
-		// version, pasting new pins would rewrite a released Local spec in place.
-		t.Fatalf("Village rows embedded in Local API %s changed: %v. If Local API %s is released, bump PeasantLocalAPIVersion first; the test then prints the pins for the new version. Only a version that is not yet released may be re-pinned in place, by editing the listed hashes by hand.", schema.PeasantLocalAPIVersion, changed, schema.PeasantLocalAPIVersion)
+		// The new sums are printed without a local_version line on purpose:
+		// under an unchanged version, a pasted block would rewrite a released
+		// Local spec in place, so the reader decides which case applies.
+		var sums []string
+		for _, name := range changed {
+			sums = append(sums, fmt.Sprintf("%s: %s", name, actual[name]))
+		}
+		t.Fatalf("Village rows embedded in Local API %s changed: %v. If Local API %s is released, bump PeasantLocalAPIVersion first; the test then prints the pins for the new version. Only a version that is not yet released may be re-pinned in place, with these sums:\n%s", schema.PeasantLocalAPIVersion, changed, schema.PeasantLocalAPIVersion, strings.Join(sums, "\n"))
 	}
 }
