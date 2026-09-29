@@ -1,0 +1,899 @@
+# The settings routes. Peasant owns the key set, each key's description, and
+# which keys are editable; the contract owns the value kinds, the effective
+# value, the one-key update and its refusal, and the auto-publish rule with the
+# recorded repositories it matches and each one's hook state per event. Saving
+# a rule installs nothing, installing is one call per repository, and removing
+# a rule changes no hook.
+required_names:
+  - settings-every-kind-valid
+  - settings-empty-valid
+  - setting-unset-with-default-valid
+  - setting-override-differs-valid
+  - setting-read-only-valid
+  - setting-unset-choice-valid
+  - setting-missing-effective-rejected
+  - setting-effective-wrong-kind-rejected
+  - setting-boolean-given-string-rejected
+  - setting-string-given-number-rejected
+  - setting-integer-given-fraction-rejected
+  - setting-choice-value-not-string-rejected
+  - setting-choice-without-options-rejected
+  - setting-options-on-string-rejected
+  - setting-empty-option-valid
+  - setting-repeated-option-rejected
+  - setting-list-with-number-rejected
+  - setting-list-given-string-rejected
+  - setting-structured-given-string-rejected
+  - setting-unknown-kind-rejected
+  - setting-empty-key-rejected
+  - setting-missing-editable-rejected
+  - setting-missing-in-peasant-config-rejected
+  - settings-response-bad-setting-rejected
+  - settings-duplicate-key-rejected
+  - settings-null-lists-rejected
+  - update-one-key-valid
+  - update-structured-value-valid
+  - update-unset-value-valid
+  - update-missing-value-rejected
+  - update-empty-key-rejected
+  - update-unknown-field-rejected
+  - refusal-valid
+  - refusal-empty-error-rejected
+  - refusal-empty-key-rejected
+  - rule-request-valid
+  - rule-request-remote-valid
+  - rule-request-no-events-valid
+  - rule-request-missing-kind-rejected
+  - rule-request-unknown-event-rejected
+  - rule-request-duplicate-event-rejected
+  - rule-request-duplicate-collective-rejected
+  - rule-request-unknown-field-rejected
+  - rule-with-repositories-valid
+  - rule-no-repositories-valid
+  - rule-duplicate-event-rejected
+  - rule-empty-id-rejected
+  - rule-null-repositories-rejected
+  - rule-repository-missing-event-rejected
+  - rule-repository-foreign-event-rejected
+  - rule-duplicate-repository-rejected
+  - settings-response-bad-rule-rejected
+  - settings-duplicate-rule-rejected
+  - repository-failed-hook-valid
+  - repository-blocked-without-remedy-rejected
+  - repository-installed-with-remedy-rejected
+  - repository-failed-with-snippet-rejected
+  - repository-remedy-empty-message-rejected
+  - repository-duplicate-event-rejected
+  - repository-unknown-status-rejected
+  - repository-null-hooks-rejected
+  - repository-empty-path-rejected
+  - install-request-valid
+  - install-request-empty-path-rejected
+  - install-request-unknown-field-rejected
+  - removal-valid
+  - removal-bad-repository-rejected
+  - removal-null-repositories-rejected
+  - removal-duplicate-repository-rejected
+  - setting-value-no-longer-offered-valid
+  - setting-effective-outside-options-rejected
+  - setting-set-value-null-effective-rejected
+  - rule-failed-hook-rejected
+  - removal-failed-hook-rejected
+  - rule-request-unknown-kind-rejected
+  - rule-request-empty-match-rejected
+  - rule-request-null-events-rejected
+  - repository-unknown-event-rejected
+  - removal-empty-id-rejected
+  - settings-null-rules-rejected
+  - rule-request-null-collectives-rejected
+operations:
+  - api: local
+    method: get
+    path: /api/v1/settings
+    response: LocalSettingsResponse
+    statuses: ["200"]
+  - api: local
+    method: patch
+    path: /api/v1/settings
+    request: LocalSettingUpdateRequest
+    response: LocalSetting
+    statuses: ["200", "400", "403", "500"]
+    error_responses: {"400": LocalSettingRefusal, "500": LocalSettingRefusal, "403": OpenapiLocalErrorResponse}
+  - api: local
+    method: put
+    path: "/api/v1/settings/auto-publish/{id}"
+    request: AutoPublishRuleRequest
+    response: AutoPublishRule
+    statuses: ["200", "400", "403"]
+    error_responses: {"400": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: post
+    path: "/api/v1/settings/auto-publish/{id}/install"
+    request: AutoPublishInstallRequest
+    response: AutoPublishRepository
+    statuses: ["200", "400", "403", "404"]
+    error_responses: {"400": OpenapiLocalErrorResponse, "404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: delete
+    path: "/api/v1/settings/auto-publish/{id}"
+    response: AutoPublishRemovalResponse
+    statuses: ["200", "403", "404"]
+    error_responses: {"404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+cases:
+  - name: settings-every-kind-valid
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings:
+          - {key: sources.claude-code, kind: boolean, value: true, effective: true, editable: true, inPeasantConfig: false, description: read Claude Code sessions}
+          - {key: push.concurrency, kind: integer, value: null, effective: 4, editable: true, inPeasantConfig: false}
+          - {key: village.url, kind: string, value: "https://village.example", effective: "https://village.example", editable: true, inPeasantConfig: false}
+          - {key: push.sources, kind: string_list, value: [claude-code, codex], effective: [claude-code, codex], editable: true, inPeasantConfig: false}
+          - {key: display.theme, kind: choice, value: dark, effective: dark, options: [dark, light], editable: true, inPeasantConfig: false}
+          - {key: redaction.custom_patterns, kind: structured, value: [{id: acme-internal-host, category: project, pattern: "[a-z0-9-]+\\.acme\\.internal", replacement: "<INTERNAL_HOST>"}], effective: [{id: acme-internal-host, category: project, pattern: "[a-z0-9-]+\\.acme\\.internal", replacement: "<INTERNAL_HOST>"}], editable: true, inPeasantConfig: false}
+          - {key: village.connected, kind: boolean, value: true, effective: true, editable: false, inPeasantConfig: false}
+          - {key: push.license, kind: choice, value: null, effective: null, options: [CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0], editable: true, inPeasantConfig: false}
+        autoPublish: []
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "every LocalSettingKind, an unset key with a default, a key with no value at all, and a read-only key"}
+    mutation: {description: "one setting of each kind plus unset and read-only keys"}
+  - name: settings-empty-valid
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings: []
+        autoPublish: []
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "empty lists"}
+    mutation: {description: "nothing to show"}
+  - name: setting-unset-with-default-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.fields.gitRemote, kind: boolean, value: null, effective: true, editable: true, inPeasantConfig: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: bug, ref: "an unset privacy toggle must show the default that applies, not off"}
+    mutation: {description: "gitRemote is unset and is sent by default"}
+  - name: setting-override-differs-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: village.url, kind: string, value: "https://village.example", effective: "https://village.staging.example", editable: true, inPeasantConfig: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an environment variable can override the file"}
+    mutation: {description: "the effective value differs from the file"}
+  - name: setting-read-only-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: village.connected, kind: boolean, value: false, effective: false, editable: false, inPeasantConfig: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "village.connected changes through sign-in and sign-out only"}
+    mutation: {description: "a shown but not editable key"}
+  - name: setting-unset-choice-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.license, kind: choice, value: null, effective: null, options: [CC0-1.0, CC-BY-4.0, CC-BY-SA-4.0], editable: true, inPeasantConfig: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "unset is valid for every kind"}
+    mutation: {description: "an unset choice with no default"}
+  - name: setting-missing-effective-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.fields.gitRemote, kind: boolean, value: null, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: bug, ref: "each row says what applies"}
+    mutation: {description: "omits effective"}
+  - name: setting-effective-wrong-kind-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.fields.gitRemote, kind: boolean, value: null, effective: "yes", editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: effective}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the effective value has the key kind"}
+    mutation: {description: "sends a string as the effective boolean"}
+  - name: setting-boolean-given-string-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: sources.codex, kind: boolean, value: "true", effective: true, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: not a boolean}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the value matches the kind"}
+    mutation: {description: "sends a boolean as a string"}
+  - name: setting-string-given-number-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: user.email, kind: string, value: 4, effective: 4, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: not a string}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the value matches the kind"}
+    mutation: {description: "sends a number for a string key"}
+  - name: setting-integer-given-fraction-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.concurrency, kind: integer, value: 1.5, effective: 1.5, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a setting value is never a fraction"}
+    mutation: {description: "sends a fractional number"}
+  - name: setting-choice-value-not-string-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: display.theme, kind: choice, value: 3, effective: dark, options: [dark, light], editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: not a choice}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a choice value is a string, even one the server no longer offers"}
+    mutation: {description: "sends a number for a choice value"}
+  - name: setting-choice-without-options-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: display.theme, kind: choice, value: dark, effective: dark, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: wrong options}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a choice setting lists its options"}
+    mutation: {description: "drops the options of a choice"}
+  - name: setting-options-on-string-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: user.email, kind: string, value: alice@example.com, effective: alice@example.com, options: [alice@example.com], editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: wrong options}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a choice setting has options"}
+    mutation: {description: "adds options to a string setting"}
+  - name: setting-empty-option-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.sharePreference, kind: choice, value: "", effective: "", options: ["", collectives], editable: true, inPeasantConfig: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an empty string can be a meaningful choice, such as keep-local"}
+    mutation: {description: "offers the empty keep-local choice"}
+  - name: setting-repeated-option-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: display.theme, kind: choice, value: dark, effective: dark, options: [dark, dark], editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: repeated}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each option is listed once"}
+    mutation: {description: "repeats an option"}
+  - name: setting-list-with-number-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.sources, kind: string_list, value: [codex, 7], effective: [codex, 7], editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: non-string item}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a string list holds strings"}
+    mutation: {description: "puts a number in a string list"}
+  - name: setting-list-given-string-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.sources, kind: string_list, value: codex, effective: codex, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: not a string_list}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a string list is an array"}
+    mutation: {description: "sends one string for a list key"}
+  - name: setting-structured-given-string-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: redaction.custom_patterns, kind: structured, value: acme, effective: acme, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: not a structured}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a structured value is an object or an array"}
+    mutation: {description: "sends a string for a structured key"}
+  - name: setting-unknown-kind-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: user.email, kind: email, value: null, effective: null, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: AllLocalSettingKinds}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalSettingKind is closed"}
+    mutation: {description: "names a kind outside the menu"}
+  - name: setting-empty-key-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: "", kind: string, value: alice@example.com, effective: alice@example.com, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a setting is addressed by its key"}
+    mutation: {description: "blanks the key"}
+  - name: setting-missing-editable-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: user.email, kind: string, value: alice@example.com, effective: alice@example.com, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each key says whether it can be changed here"}
+    mutation: {description: "omits editable"}
+  - name: setting-missing-in-peasant-config-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: user.email, kind: string, value: alice@example.com, effective: alice@example.com, editable: true}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each key says whether peasant config edits it"}
+    mutation: {description: "omits inPeasantConfig"}
+  - name: settings-response-bad-setting-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings:
+          - {key: display.theme, kind: choice, value: sepia, effective: sepia, options: [dark, light], editable: true, inPeasantConfig: false}
+        autoPublish: []
+    expected: {valid: false, rejected_by: semantics, error_contains: not a choice}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the settings read validates each setting"}
+    mutation: {description: "nests an invalid setting in the settings read"}
+  - name: settings-duplicate-key-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings:
+          - {key: push.concurrency, kind: integer, value: 4, effective: 4, editable: true, inPeasantConfig: false}
+          - {key: push.concurrency, kind: integer, value: 8, effective: 8, editable: true, inPeasantConfig: false}
+        autoPublish: []
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each key is listed once"}
+    mutation: {description: "lists one key twice"}
+  - name: settings-null-lists-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings: null
+        autoPublish: []
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "settings is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: update-one-key-valid
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: push.concurrency, value: 8}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "one key per request"}
+    mutation: {description: "changes one integer setting"}
+  - name: update-structured-value-valid
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: redaction.custom_patterns, value: [{id: acme-employee-id, category: pii, pattern: "EMP-[0-9]{6}", replacement: "<EMPLOYEE_ID>"}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalSettingKind structured"}
+    mutation: {description: "replaces the custom pattern list"}
+  - name: update-unset-value-valid
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: push.license, value: null}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "null unsets the key so the default applies"}
+    mutation: {description: "restores the default"}
+  - name: update-missing-value-rejected
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: push.concurrency}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an update carries a value"}
+    mutation: {description: "omits the new value"}
+  - name: update-empty-key-rejected
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: "", value: 8}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an update names a key"}
+    mutation: {description: "blanks the key"}
+  - name: update-unknown-field-rejected
+    input:
+      schema: LocalSettingUpdateRequest
+      payload:
+        {key: push.concurrency, value: 8, scope: global}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: bug, ref: "an unknown field would be dropped silently"}
+    mutation: {description: "adds an unknown field"}
+  - name: refusal-valid
+    input:
+      schema: LocalSettingRefusal
+      payload:
+        {key: village.connected, error: village.connected changes through sign-in and sign-out; it cannot be set here}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a refused update returns the key and the reason"}
+    mutation: {description: "refuses a read-only key"}
+  - name: refusal-empty-error-rejected
+    input:
+      schema: LocalSettingRefusal
+      payload:
+        {key: push.concurrency, error: ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a refusal says why"}
+    mutation: {description: "blanks the reason"}
+  - name: refusal-empty-key-rejected
+    input:
+      schema: LocalSettingRefusal
+      payload:
+        {key: "", error: invalid}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a refusal names the key"}
+    mutation: {description: "blanks the key"}
+  - name: rule-request-valid
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [11111111-1111-4111-8111-111111111111]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a folder rule publishes on push"}
+    mutation: {description: "maps a folder to one collective"}
+  - name: rule-request-remote-valid
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: remote, match: "github.com:acme/*", events: [post-commit], collectives: [22222222-2222-4222-8222-222222222222]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "AutoPublishRuleKind remote"}
+    mutation: {description: "maps a git remote pattern to one collective"}
+  - name: rule-request-no-events-valid
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/personal/**", events: [], collectives: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an empty event list never publishes"}
+    mutation: {description: "keeps a rule that publishes nothing"}
+  - name: rule-request-missing-kind-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {match: "acme/*", events: [pre-push], collectives: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a rule says whether it matches a folder or a remote"}
+    mutation: {description: "omits kind for an ambiguous pattern"}
+  - name: rule-request-unknown-event-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [post-merge], collectives: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: enum, ref: "AutoPublishEvent is closed"}
+    mutation: {description: "names a hook outside the menu"}
+  - name: rule-request-duplicate-event-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [pre-push, pre-push], collectives: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: event}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each event is listed once"}
+    mutation: {description: "names one event twice"}
+  - name: rule-request-duplicate-collective-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: remote, match: "github.com:acme/*", events: [pre-push], collectives: [11111111-1111-4111-8111-111111111111, 11111111-1111-4111-8111-111111111111]}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each collective is listed once"}
+    mutation: {description: "names one collective twice"}
+  - name: rule-request-unknown-field-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [], install: true}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: bug, ref: "saving a rule installs nothing"}
+    mutation: {description: "asks the save to install"}
+  - name: rule-with-repositories-valid
+    input:
+      schema: AutoPublishRule
+      payload:
+        id: acme-org
+        kind: remote
+        match: "github.com:acme/*"
+        events: [pre-push]
+        collectives: [22222222-2222-4222-8222-222222222222]
+        repositories:
+          - path: /Users/alice/work/acme/ingest-api
+            label: "github.com:acme/ingest-api"
+            hooks: [{event: pre-push, status: installed}]
+          - path: /Users/alice/work/acme/worker
+            label: "github.com:acme/worker"
+            hooks:
+              - event: pre-push
+                status: blocked
+                remedy: {message: "acme/worker already has its own pre-push hook, and peasant never overwrites one. add this section to it:", snippet: "peasant village push --non-interactive --quiet --timeout 5s --repository acme/worker"}
+          - path: /Users/alice/work/acme/web
+            label: "github.com:acme/web"
+            hooks: [{event: pre-push, status: absent}]
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a rule lists the recorded repositories it matches with each hook state"}
+    mutation: {description: "one installed, one blocked, and one repository still to install"}
+  - name: rule-no-repositories-valid
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: personal, kind: folder, match: "~/personal/**", events: [], collectives: [], repositories: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a rule can match no recorded repository"}
+    mutation: {description: "a rule with nothing to install"}
+  - name: rule-duplicate-event-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: acme-work, kind: folder, match: "~/work/acme/**", events: [pre-push, pre-push], collectives: [], repositories: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the saved rule is checked like the request"}
+    mutation: {description: "names one event twice in a saved rule"}
+  - name: rule-empty-id-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: "", kind: folder, match: "~/personal/**", events: [], collectives: [], repositories: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a rule is addressed by its identifier"}
+    mutation: {description: "blanks the rule identifier"}
+  - name: rule-null-repositories-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: personal, kind: folder, match: "~/personal/**", events: [], collectives: [], repositories: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "repositories is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: rule-repository-missing-event-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: acme-work, kind: folder, match: "~/work/acme/**", events: [pre-push, post-commit], collectives: [11111111-1111-4111-8111-111111111111], repositories: [{path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: absent}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: one hook per rule event}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each repository reports every rule event"}
+    mutation: {description: "reports one of two events"}
+  - name: rule-repository-foreign-event-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: acme-work, kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [11111111-1111-4111-8111-111111111111], repositories: [{path: /Users/alice/work/acme/web, hooks: [{event: post-commit, status: absent}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: does not name}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a repository reports only the rule events"}
+    mutation: {description: "reports an event the rule does not name"}
+  - name: rule-duplicate-repository-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: personal, kind: folder, match: "~/personal/**", events: [], collectives: [], repositories: [{path: /Users/alice/personal/notes, hooks: []}, {path: /Users/alice/personal/notes, hooks: []}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each repository is listed once"}
+    mutation: {description: "lists one repository twice"}
+  - name: settings-response-bad-rule-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings: []
+        autoPublish:
+          - {id: acme-work, kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [11111111-1111-4111-8111-111111111111], repositories: [{path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: blocked}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: remedy presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the settings read validates each rule"}
+    mutation: {description: "nests a blocked hook without a remedy"}
+  - name: settings-duplicate-rule-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings: []
+        autoPublish:
+          - {id: personal, kind: folder, match: "~/personal/**", events: [], collectives: [], repositories: []}
+          - {id: personal, kind: folder, match: "~/private/**", events: [], collectives: [], repositories: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each rule is listed once"}
+    mutation: {description: "lists one rule identifier twice"}
+  - name: repository-failed-hook-valid
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: failed, remedy: {message: "the hook file could not be written: permission denied"}}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "AutoPublishHookStatus failed"}
+    mutation: {description: "an install that failed"}
+  - name: repository-blocked-without-remedy-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/worker, hooks: [{event: pre-push, status: blocked}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: remedy presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a blocked hook says what to do"}
+    mutation: {description: "drops the remedy from a blocked hook"}
+  - name: repository-installed-with-remedy-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: installed, remedy: {message: nothing to do}}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: remedy presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a blocked or failed hook carries a remedy"}
+    mutation: {description: "adds a remedy to an installed hook"}
+  - name: repository-failed-with-snippet-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: failed, remedy: {message: permission denied, snippet: "peasant village push"}}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: only a blocked hook}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a section to paste belongs to a hook Peasant could otherwise manage"}
+    mutation: {description: "offers a paste for a failed write"}
+  - name: repository-remedy-empty-message-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/worker, hooks: [{event: pre-push, status: blocked, remedy: {message: ""}}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a remedy has a message"}
+    mutation: {description: "blanks the remedy message"}
+  - name: repository-duplicate-event-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: absent}, {event: pre-push, status: installed}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: two hooks}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each event is reported once"}
+    mutation: {description: "reports one event twice"}
+  - name: repository-unknown-status-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: removed}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: enum, ref: "AutoPublishHookStatus is closed"}
+    mutation: {description: "names a hook status outside the menu"}
+  - name: repository-null-hooks-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "hooks is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: repository-empty-path-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: "", hooks: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a repository is named by its root"}
+    mutation: {description: "blanks the repository path"}
+  - name: install-request-valid
+    input:
+      schema: AutoPublishInstallRequest
+      payload:
+        {path: /Users/alice/work/acme/web}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "install is one call per repository"}
+    mutation: {description: "installs in one recorded repository"}
+  - name: install-request-empty-path-rejected
+    input:
+      schema: AutoPublishInstallRequest
+      payload:
+        {path: ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an install names a repository"}
+    mutation: {description: "blanks the path"}
+  - name: install-request-unknown-field-rejected
+    input:
+      schema: AutoPublishInstallRequest
+      payload:
+        {path: /Users/alice/work/acme/web, all: true}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: bug, ref: "install is one repository per call"}
+    mutation: {description: "asks to install everywhere"}
+  - name: removal-valid
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        id: acme-org
+        repositories:
+          - {path: /Users/alice/work/acme/ingest-api, hooks: [{event: pre-push, status: installed}]}
+          - {path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: absent}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: bug, ref: "removing a rule changes no hook, so a hook installed from the terminal keeps publishing"}
+    mutation: {description: "reports the matched repositories hooks as they are"}
+  - name: removal-bad-repository-rejected
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        {id: acme-org, repositories: [{path: /Users/alice/work/acme/worker, hooks: [{event: pre-push, status: blocked}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: remedy presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the removal response validates each repository"}
+    mutation: {description: "nests a blocked hook without a remedy"}
+  - name: removal-null-repositories-rejected
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        {id: acme-org, repositories: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "repositories is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: removal-duplicate-repository-rejected
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        {id: acme-org, repositories: [{path: /Users/alice/work/acme/web, hooks: []}, {path: /Users/alice/work/acme/web, hooks: []}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each repository is listed once"}
+    mutation: {description: "lists one repository twice"}
+  - name: setting-value-no-longer-offered-valid
+    input:
+      schema: LocalSetting
+      payload:
+        {key: redaction.level, kind: choice, value: minimal, effective: standard, options: [standard], editable: true, inPeasantConfig: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: bug, ref: "a level the file still names but the server no longer offers is reported with the level that applies"}
+    mutation: {description: "minimal in the file, raised to standard"}
+  - name: setting-effective-outside-options-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: redaction.level, kind: choice, value: minimal, effective: minimal, options: [standard], editable: true, inPeasantConfig: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: effective}
+    classification: must-fail
+    provenance: {source: requirement, ref: "what applies is one of the offered options"}
+    mutation: {description: "reports an unoffered level as effective"}
+  - name: setting-set-value-null-effective-rejected
+    input:
+      schema: LocalSetting
+      payload:
+        {key: push.fields.gitRemote, kind: boolean, value: false, effective: null, editable: true, inPeasantConfig: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: null effective}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a value the file names always applies or is replaced"}
+    mutation: {description: "names a value but reports nothing applies"}
+  - name: rule-failed-hook-rejected
+    input:
+      schema: AutoPublishRule
+      payload:
+        {id: acme-work, kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [11111111-1111-4111-8111-111111111111], repositories: [{path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: failed, remedy: {message: permission denied}}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: install outcome}
+    classification: must-fail
+    provenance: {source: requirement, ref: "failed is reported by an install response only"}
+    mutation: {description: "reports a failed hook in a saved rule"}
+  - name: removal-failed-hook-rejected
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        {id: acme-org, repositories: [{path: /Users/alice/work/acme/web, hooks: [{event: pre-push, status: failed, remedy: {message: permission denied}}]}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: changes no hook}
+    classification: must-fail
+    provenance: {source: requirement, ref: "removing a rule changes no hook, so nothing fails"}
+    mutation: {description: "reports a failed hook after removal"}
+  - name: rule-request-unknown-kind-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: glob, match: "~/work/acme/**", events: [pre-push], collectives: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: AllAutoPublishRuleKinds}
+    classification: must-fail
+    provenance: {source: enum, ref: "AutoPublishRuleKind is closed"}
+    mutation: {description: "names a rule kind outside the menu"}
+  - name: rule-request-empty-match-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "", events: [pre-push], collectives: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: match is empty}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a rule covers something"}
+    mutation: {description: "blanks the match"}
+  - name: rule-request-null-events-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: null, collectives: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: is null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "events is an array"}
+    mutation: {description: "sends null for events"}
+  - name: repository-unknown-event-rejected
+    input:
+      schema: AutoPublishRepository
+      payload:
+        {path: /Users/alice/work/acme/web, hooks: [{event: post-merge, status: absent}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: AllAutoPublishEvents}
+    classification: must-fail
+    provenance: {source: enum, ref: "AutoPublishEvent is closed"}
+    mutation: {description: "reports a hook event outside the menu"}
+  - name: removal-empty-id-rejected
+    input:
+      schema: AutoPublishRemovalResponse
+      payload:
+        {id: "", repositories: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: id is empty}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a removal names the removed rule"}
+    mutation: {description: "blanks the removed rule identifier"}
+  - name: settings-null-rules-rejected
+    input:
+      schema: LocalSettingsResponse
+      payload:
+        settings: []
+        autoPublish: null
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: is null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "autoPublish is an array"}
+    mutation: {description: "sends null instead of an empty rule list"}
+  - name: rule-request-null-collectives-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [], collectives: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: is null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "collectives is an array"}
+    mutation: {description: "sends null for collectives"}

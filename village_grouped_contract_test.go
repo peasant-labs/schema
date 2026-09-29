@@ -106,7 +106,7 @@ func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 			} else {
 				p := schema.VillageTranscriptListResponse{Page: c.Input.Page, Limit: c.Input.Limit}
 				if c.Input.Initialized {
-					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, OwnerOrgs: nil, Shares: nil, Attestations: nil}}
+					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, OwnerOrgs: nil, Shares: nil, Attestations: nil, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}
 				}
 				err = p.Validate()
 			}
@@ -168,7 +168,7 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	listOrgs := []schema.VillageListUserOrganization{{UserID: ownerID, OrgLogin: "org", AvatarURL: &avatar}}
 	metadataOrgs := []schema.VillageMetadataUserOrganization{{OrgLogin: "org", OrgID: 7, AvatarURL: &avatar, Visible: true, FetchedAt: now}}
 	shares := []schema.VillageEnrichedTranscriptShare{{TranscriptID: transcriptID, GroupID: ownerID, GroupName: "group", AcceptanceMode: schema.VillageGroupAcceptanceOpen, Status: schema.VillageShareStatusApproved, SharedAt: now}}
-	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
+	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}, PullRequests: schema.VillagePullRequestsSummary{Count: 3, Recent: []schema.VillagePullRequestRef{{Owner: "owner", Name: "repo", Number: 42}, {Owner: "owner", Name: "repo", Number: 45}}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
 	if err := list.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +255,7 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 		if in.MismatchMetric {
 			variantTurns++
 		}
-		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
+		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
 	case "pending":
 		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "myShare":

@@ -1,0 +1,112 @@
+# The collectives proxy. The local server reads the signed-in user's
+# collectives from Village and computes suggestions with schema.RemoteLabel, so
+# the web never normalizes a git remote itself. It answers 401 when this
+# computer is signed out and 502 when Village cannot be read.
+required_names:
+  - no-suggestion-valid
+  - linked-repository-suggestion-valid
+  - linked-github-org-suggestion-valid
+  - no-collectives-valid
+  - unknown-reason-rejected
+  - empty-match-rejected
+  - duplicate-collective-rejected
+  - missing-group-rejected
+  - null-collectives-rejected
+operations:
+  - api: local
+    method: get
+    path: /api/v1/village/collectives
+    response: LocalVillageCollectivesResponse
+    statuses: ["200", "401", "502"]
+    error_responses: {"401": OpenapiLocalErrorResponse, "502": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: sessionId, in: query, required: false}
+cases:
+  - name: no-suggestion-valid
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: &platform {id: 11111111-1111-4111-8111-111111111111, name: Acme Platform, description: null, created_by: 33333333-3333-4333-8333-333333333333, created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-01T00:00:00Z", acceptance_mode: open, data_access: members_only, linked_github_org: acme, display_members: true, transcript_deletion_policy: user_choice, role: owner, member_since: "2026-09-01T00:00:00Z", member_count: 12, transcript_count: 248}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "suggestions need a session"}
+    mutation: {description: "a collective listed without a session"}
+  - name: linked-repository-suggestion-valid
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: *platform
+            suggestion: {reason: linked_repository, match: "github.com:acme/ingest-api"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "CollectiveSuggestionReason linked_repository"}
+    mutation: {description: "the collective links the session's repository"}
+  - name: linked-github-org-suggestion-valid
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: {id: 22222222-2222-4222-8222-222222222222, name: Acme Company, description: null, created_by: 33333333-3333-4333-8333-333333333333, created_at: "2026-09-01T00:00:00Z", updated_at: "2026-09-01T00:00:00Z", acceptance_mode: verified_only, data_access: members_only, linked_github_org: acme, display_members: true, transcript_deletion_policy: user_choice, role: member, member_since: "2026-09-02T00:00:00Z", member_count: 87, transcript_count: 900}
+            suggestion: {reason: linked_github_org, match: acme}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "CollectiveSuggestionReason linked_github_org"}
+    mutation: {description: "the collective links the organization that owns the repository"}
+  - name: no-collectives-valid
+    input: {schema: LocalVillageCollectivesResponse, payload: {collectives: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a user in no collective"}
+    mutation: {description: "an empty list"}
+  - name: unknown-reason-rejected
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: *platform
+            suggestion: {reason: recently_used, match: acme}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: enum, ref: "CollectiveSuggestionReason is closed"}
+    mutation: {description: "names a reason outside the menu"}
+  - name: empty-match-rejected
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: *platform
+            suggestion: {reason: linked_repository, match: ""}
+    expected: {valid: false, rejected_by: semantics, error_contains: what matched}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a suggestion names what matched"}
+    mutation: {description: "blanks the match"}
+  - name: duplicate-collective-rejected
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - group: *platform
+          - group: *platform
+            suggestion: {reason: linked_github_org, match: acme}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each collective is listed once"}
+    mutation: {description: "lists one collective twice"}
+  - name: missing-group-rejected
+    input:
+      schema: LocalVillageCollectivesResponse
+      payload:
+        collectives:
+          - suggestion: {reason: linked_github_org, match: acme}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each row carries the Village collective"}
+    mutation: {description: "sends a suggestion without its collective"}
+  - name: null-collectives-rejected
+    input: {schema: LocalVillageCollectivesResponse, payload: {collectives: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "collectives is an array"}
+    mutation: {description: "sends null instead of an empty list"}

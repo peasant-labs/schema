@@ -1,0 +1,13 @@
+# The publishing contract corpora. publishing_contract_boundaries_test.go runs
+# each through the published component schemas and the Go validators, and
+# typescript/tests/publishing-contract-zod.test.mjs replays each against the
+# generated Zod schemas. Both read this list.
+corpora:
+  - testdata/local-api/sync_sessions.yaml
+  - testdata/local-api/publications.yaml
+  - testdata/local-api/sync_push.yaml
+  - testdata/local-api/village_collectives.yaml
+  - testdata/local-api/sync_auth.yaml
+  - testdata/local-api/settings.yaml
+  - testdata/pulls/transcript_pull_requests.yaml
+  - testdata/pulls/personal_stats.yaml

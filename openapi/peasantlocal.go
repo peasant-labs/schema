@@ -122,9 +122,16 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// POST /api/v1/shutdown
-	if err := addRESTOp(r, http.MethodPost, "/api/v1/shutdown",
-		"postShutdown", "Gracefully shutdown the server (localhost only).", []string{"lifecycle"},
-		nil, new(schema.ShutdownResponse)); err != nil {
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodPost, path: "/api/v1/shutdown", id: "postShutdown", tag: "lifecycle",
+		description: "Gracefully shutdown the server (localhost only).",
+		response:    new(schema.ShutdownResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
+	// The publishing, sign-in, and settings surface of the local web.
+	if err := addLocalPublishingOperations(r); err != nil {
 		return nil, err
 	}
 
@@ -189,19 +196,14 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// POST /api/v1/annotations (201 Created)
-	{
-		oc, err := r.NewOperationContext(http.MethodPost, "/api/v1/annotations")
-		if err != nil {
-			return nil, fmt.Errorf("new operation POST /api/v1/annotations: %w", err)
-		}
-		oc.AddReqStructure(new(schema.CreateAnnotationRequest))
-		oc.AddRespStructure(new(schema.CreateAnnotationResponse), openapicore.WithHTTPStatus(http.StatusCreated))
-		oc.SetDescription("Create a new annotation.")
-		oc.SetID("createAnnotation")
-		oc.SetTags("annotations")
-		if err := r.AddOperation(oc); err != nil {
-			return nil, fmt.Errorf("add operation POST /api/v1/annotations: %w", err)
-		}
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodPost, path: "/api/v1/annotations", id: "createAnnotation", tag: "annotations",
+		description:   "Create a new annotation.",
+		requests:      []interface{}{new(schema.CreateAnnotationRequest)},
+		response:      new(schema.CreateAnnotationResponse),
+		successStatus: http.StatusCreated,
+	}}); err != nil {
+		return nil, err
 	}
 
 	// GET /api/v1/annotation-types
@@ -381,4 +383,78 @@ func setResponseOneOf(spec *openapi31.Spec, path, method string, refs ...string)
 	media.Schema = map[string]any{"oneOf": oneOf}
 	response.Response.Content["application/json"] = media
 	operation.Responses.MapOfResponseOrReferenceValues["200"] = response
+}
+
+// LocalErrorResponse is the JSON error body the local server writes when it
+// refuses a request. Code is a stable machine-readable reason when the server
+// names one.
+//
+// It is operation-scoped rather than catalogued, for the same reason as
+// TranscriptUpdateErrorResponse: a generic {error, code} envelope does not
+// belong in the cross-language catalog as a side effect of declaring one
+// status.
+type LocalErrorResponse struct {
+	Error string `json:"error" required:"true"`
+	Code  string `json:"code,omitempty"`
+}
+
+// localWriteRefusal states the cross-origin refusal every declared local write
+// route shares. The server refuses a state-changing request that did not come
+// from its own pages before the handler runs, so nothing changes.
+const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin."
+
+// localOperationSpec is one Local API operation. Every operation whose method
+// changes state declares the shared 403 refusal. Other refusals are declared
+// per operation with their own body.
+type localOperationSpec struct {
+	method        string
+	path          string
+	id            string
+	tag           string
+	description   string
+	requests      []interface{}
+	response      interface{}
+	successStatus int
+	requiredBody  bool
+	errorStatuses []int
+	errorResponse interface{}
+}
+
+func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec) error {
+	for _, op := range operations {
+		oc, err := r.NewOperationContext(op.method, op.path)
+		if err != nil {
+			return fmt.Errorf("new Local API operation %s %s: %w", op.method, op.path, err)
+		}
+		for _, request := range op.requests {
+			oc.AddReqStructure(request)
+		}
+		if op.response != nil {
+			if op.successStatus != 0 && op.successStatus != http.StatusOK {
+				oc.AddRespStructure(op.response, openapicore.WithHTTPStatus(op.successStatus))
+			} else {
+				oc.AddRespStructure(op.response)
+			}
+		}
+		for _, status := range op.errorStatuses {
+			oc.AddRespStructure(op.errorResponse, openapicore.WithHTTPStatus(status))
+		}
+		description := op.description
+		if op.method != http.MethodGet {
+			oc.AddRespStructure(new(LocalErrorResponse), openapicore.WithHTTPStatus(http.StatusForbidden))
+			description += " " + localWriteRefusal
+		}
+		oc.SetDescription(description)
+		oc.SetID(op.id)
+		oc.SetTags(op.tag)
+		if err := r.AddOperation(oc); err != nil {
+			return fmt.Errorf("add Local API operation %s %s: %w", op.method, op.path, err)
+		}
+		if op.requiredBody {
+			if err := requireRequestBody(r.Spec, op.method, op.path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

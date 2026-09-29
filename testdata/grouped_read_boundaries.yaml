@@ -436,7 +436,7 @@ cases:
         payload: &flatDetail
           group: *group
           members: []
-          stats: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0}
+          stats: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: 0}
           models: []
           contributors: []
           can_read: true
@@ -453,7 +453,7 @@ cases:
         payload: &groupedDetail
           group: *group
           members: []
-          stats: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0}
+          stats: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: 0}
           models: []
           contributors: []
           can_read: true
@@ -538,7 +538,7 @@ cases:
             - <<: *localG1
               transcript: &syncRow
                 session: {<<: *localSession, project: example, projectHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}
-                sync: &sync {id: g1, harness: codex, projectName: example, projectHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', hostSlug: host, startTime: '2026-09-08T00:00:00Z', durationMs: 60000, totalTokens: 13, turnCount: 5, inputSubmissionCount: 1, model: codex, syncStatus: synced}
+                sync: &sync {id: g1, harness: codex, projectName: example, projectHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', hostSlug: host, startTime: '2026-09-08T00:00:00Z', durationMs: 60000, totalTokens: 13, turnCount: 5, inputSubmissionCount: 1, model: codex, syncStatus: synced, previouslyPushed: true}
       expected: {valid: true}
     - name: local-sync-member-count-mismatch
       classification: must-fail
@@ -562,7 +562,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'collective helper expansion preserves its owner usage summary and nested group'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, collective: &collective {<<: *villageSession, owner_username: owner, owner_avatar_url: null, owner_is_discoverable: true}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, collective: &collective {<<: *villageSession, owner_username: owner, owner_avatar_url: null, owner_is_discoverable: true, pull_requests: {count: 0, recent: []}}}}]}}
       expected: {valid: true}
     - name: village-collective-member-count-mismatch
       classification: must-fail

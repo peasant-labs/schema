@@ -194,6 +194,31 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageUserGroup", new(schema.VillageUserGroup)}, {"VillageUserGroupShare", new(schema.VillageUserGroupShare)},
 		{"VillageUserSettings", new(schema.VillageUserSettings)},
 		{"VillageUUID", new(schema.VillageUUID)}, {"VillageVisibleGroup", new(schema.VillageVisibleGroup)},
+		{"VillagePullRequestRef", new(schema.VillagePullRequestRef)}, {"VillagePullRequestsSummary", new(schema.VillagePullRequestsSummary)},
+		{"VillageTranscriptPullRequestsResponse", new(schema.VillageTranscriptPullRequestsResponse)}, {"VillageUserStats", new(schema.VillageUserStats)},
+		{"SyncStatus", new(schema.SyncStatus)}, {"SyncHoldReason", new(schema.SyncHoldReason)},
+		{"SyncPushCollectives", new(schema.SyncPushCollectives)}, {"SyncPushRequest", new(schema.SyncPushRequest)},
+		{"SyncPushSessionStatus", new(schema.SyncPushSessionStatus)}, {"SyncPushStep", new(schema.SyncPushStep)},
+		{"SyncPushStepOutcome", new(schema.SyncPushStepOutcome)}, {"SyncPushStepResult", new(schema.SyncPushStepResult)},
+		{"SyncPushSessionResult", new(schema.SyncPushSessionResult)}, {"SyncPushResponse", new(schema.SyncPushResponse)},
+		{"SyncAuthResponse", new(schema.SyncAuthResponse)}, {"SyncLoginStatus", new(schema.SyncLoginStatus)},
+		{"SyncLoginResponse", new(schema.SyncLoginResponse)}, {"SyncLogoutStatus", new(schema.SyncLogoutStatus)},
+		{"SyncLogoutResponse", new(schema.SyncLogoutResponse)}, {"SyncRedactionItem", new(schema.SyncRedactionItem)},
+		{"SyncRedactionRuleGroup", new(schema.SyncRedactionRuleGroup)}, {"SyncRedactionCategoryGroup", new(schema.SyncRedactionCategoryGroup)},
+		{"SyncRedactionsResponse", new(schema.SyncRedactionsResponse)},
+		{"LocalPublicationState", new(schema.LocalPublicationState)}, {"LocalPublicationAttemptFailure", new(schema.LocalPublicationAttemptFailure)},
+		{"LocalPublicationAudienceMember", new(schema.LocalPublicationAudienceMember)}, {"LocalPublication", new(schema.LocalPublication)},
+		{"LocalPublicationsResponse", new(schema.LocalPublicationsResponse)},
+		{"LocalCollectiveSuggestionReason", new(schema.LocalCollectiveSuggestionReason)}, {"LocalCollectiveSuggestion", new(schema.LocalCollectiveSuggestion)},
+		{"LocalVillageCollective", new(schema.LocalVillageCollective)}, {"LocalVillageCollectivesResponse", new(schema.LocalVillageCollectivesResponse)},
+		{"LocalSettingKind", new(schema.LocalSettingKind)}, {"LocalSettingValue", new(schema.LocalSettingValue)},
+		{"LocalSetting", new(schema.LocalSetting)}, {"LocalSettingUpdateRequest", new(schema.LocalSettingUpdateRequest)},
+		{"LocalSettingRefusal", new(schema.LocalSettingRefusal)}, {"LocalSettingsResponse", new(schema.LocalSettingsResponse)},
+		{"AutoPublishEvent", new(schema.AutoPublishEvent)}, {"AutoPublishHookStatus", new(schema.AutoPublishHookStatus)},
+		{"AutoPublishHookRemedy", new(schema.AutoPublishHookRemedy)}, {"AutoPublishHook", new(schema.AutoPublishHook)},
+		{"AutoPublishRepository", new(schema.AutoPublishRepository)}, {"AutoPublishRuleKind", new(schema.AutoPublishRuleKind)}, {"AutoPublishRuleRequest", new(schema.AutoPublishRuleRequest)},
+		{"AutoPublishRule", new(schema.AutoPublishRule)}, {"AutoPublishInstallRequest", new(schema.AutoPublishInstallRequest)},
+		{"AutoPublishRemovalResponse", new(schema.AutoPublishRemovalResponse)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
 		{"TypeOrigin", new(schema.TypeOrigin)},
 		{"UnifiedMetadata", new(schema.UnifiedMetadata)}, {"UnusualSignal", new(schema.UnusualSignal)},
@@ -472,7 +497,7 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 // breaking every consumer. Only a request body whose whole purpose is to say
 // exactly what changed belongs here, where an unrecognized field means the
 // caller asked for something the server will silently drop.
-var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation"}
+var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation", "SyncPushRequest", "SyncPushCollectives", "LocalSettingUpdateRequest", "AutoPublishRuleRequest", "AutoPublishInstallRequest"}
 
 var strictNullableProperties = map[string]map[string]struct{}{
 	"AuthoritativeTimestampInfo":    {"ingested": {}},

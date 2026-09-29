@@ -519,7 +519,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:          "/api/v1/groups",
 			id:            "createGroup",
 			tag:           "collectives",
-			description:   "Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted.",
+			description:   "Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted. linked_github_org may be omitted or null for no organization, as on update.",
 			requests:      []interface{}{new(schema.VillageCreateGroupRequest)},
 			response:      new(schema.VillageGroup),
 			successStatus: http.StatusCreated,
@@ -1074,6 +1074,14 @@ func requireRequestBody(spec *openapi31.Spec, method, path string) error {
 			return fmt.Errorf("require PATCH request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
 		}
 		item.Patch.RequestBody.RequestBody.Required = &required
+	case http.MethodPut:
+		if item.Put == nil {
+			return fmt.Errorf("require PUT request body for %s: the path declares no PUT operation; the body would remain advertised as optional", path)
+		}
+		if item.Put.RequestBody == nil || item.Put.RequestBody.RequestBody == nil {
+			return fmt.Errorf("require PUT request body for %s: the operation declares no request body to mark required; the server decodes a body unconditionally, so a contract without one would describe a request that always fails", path)
+		}
+		item.Put.RequestBody.RequestBody.Required = &required
 	default:
 		return fmt.Errorf("require %s request body for %s: unsupported method; extend requireRequestBody before adding this body gate", method, path)
 	}
