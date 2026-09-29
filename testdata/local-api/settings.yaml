@@ -16,7 +16,7 @@ required_names:
   - setting-boolean-given-string-rejected
   - setting-string-given-number-rejected
   - setting-integer-given-fraction-rejected
-  - setting-choice-outside-options-rejected
+  - setting-choice-value-not-string-rejected
   - setting-choice-without-options-rejected
   - setting-options-on-string-rejected
   - setting-empty-option-valid
@@ -85,6 +85,7 @@ required_names:
   - repository-unknown-event-rejected
   - removal-empty-id-rejected
   - settings-null-rules-rejected
+  - rule-request-null-collectives-rejected
 operations:
   - api: local
     method: get
@@ -234,15 +235,15 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "a setting value is never a fraction"}
     mutation: {description: "sends a fractional number"}
-  - name: setting-choice-outside-options-rejected
+  - name: setting-choice-value-not-string-rejected
     input:
       schema: LocalSetting
       payload:
-        {key: display.theme, kind: choice, value: sepia, effective: sepia, options: [dark, light], editable: true, inPeasantConfig: false}
+        {key: display.theme, kind: choice, value: 3, effective: dark, options: [dark, light], editable: true, inPeasantConfig: false}
     expected: {valid: false, rejected_by: semantics, error_contains: not a choice}
     classification: must-fail
-    provenance: {source: requirement, ref: "a choice value is one of its options"}
-    mutation: {description: "sends a value outside the options"}
+    provenance: {source: requirement, ref: "a choice value is a string, even one the server no longer offers"}
+    mutation: {description: "sends a number for a choice value"}
   - name: setting-choice-without-options-rejected
     input:
       schema: LocalSetting
@@ -887,3 +888,12 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "autoPublish is an array"}
     mutation: {description: "sends null instead of an empty rule list"}
+  - name: rule-request-null-collectives-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload:
+        {kind: folder, match: "~/work/acme/**", events: [], collectives: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: is null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "collectives is an array"}
+    mutation: {description: "sends null for collectives"}

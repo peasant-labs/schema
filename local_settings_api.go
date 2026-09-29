@@ -59,9 +59,10 @@ func (v LocalSettingValue) MarshalJSON() ([]byte, error) {
 	return append([]byte(nil), v...), nil
 }
 
-// UnmarshalJSON keeps the JSON text as received.
+// UnmarshalJSON keeps the JSON text as received, in fresh storage so decoding
+// never writes into a value another variable shares.
 func (v *LocalSettingValue) UnmarshalJSON(data []byte) error {
-	*v = append((*v)[:0], data...)
+	*v = append(LocalSettingValue(nil), data...)
 	return nil
 }
 
@@ -80,9 +81,9 @@ func (LocalSettingValue) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
-// LocalSettingUnset is the JSON null a producer sets for an unset value or
-// when no effective value applies.
-var LocalSettingUnset = LocalSettingValue("null")
+// LocalSettingNull returns a fresh JSON null, which a producer sets for an
+// unset value or when no effective value applies.
+func LocalSettingNull() LocalSettingValue { return LocalSettingValue("null") }
 
 // IsUnset reports whether the value is JSON null. A nil value is unset too:
 // it marshals as null.
@@ -92,10 +93,16 @@ func (v LocalSettingValue) IsUnset() bool {
 }
 
 // ValidateFor checks that a set value has the JSON type kind names and, for a
-// choice, is one of options; nil options check only that a choice is a
-// string. An unset value, nil or JSON null, is valid for every kind. A
-// producer checks an update's value against the key's kind with this method.
+// choice, is one of options. An unset value, nil or JSON null, is valid for
+// every kind. A producer checks an update's value against the key's kind with
+// this method.
 func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) error {
+	return v.validate(kind, options, true)
+}
+
+// validate checks the JSON type kind names; menu reports whether a choice must
+// also be one of options.
+func (v LocalSettingValue) validate(kind LocalSettingKind, options []string, menu bool) error {
 	if v.IsUnset() {
 		return nil
 	}
@@ -130,7 +137,7 @@ func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) 
 			return nil
 		}
 	case LocalSettingChoice:
-		if text, ok := value.(string); ok && (options == nil || inSet(text, options)) {
+		if text, ok := value.(string); ok && (!menu || inSet(text, options)) {
 			return nil
 		}
 	case LocalSettingStructured:
@@ -193,11 +200,11 @@ func (s LocalSetting) Validate() error {
 		}
 		seen[option] = struct{}{}
 	}
-	if err := s.Value.ValidateFor(s.Kind, nil); err != nil {
+	if err := s.Value.validate(s.Kind, nil, false); err != nil {
 		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: %v; emit a value of kind %q or null when the key is unset", s.Key, err, s.Kind)
 	}
 	if s.Effective == nil {
-		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective is missing; the settings page shows what applies; emit it, or schema.LocalSettingUnset when no value applies", s.Key)
+		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective is missing; the settings page shows what applies; emit it, or schema.LocalSettingNull() when no value applies", s.Key)
 	}
 	if err := s.Effective.ValidateFor(s.Kind, s.Options); err != nil {
 		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective %v; emit the value that applies, of kind %q", s.Key, err, s.Kind)

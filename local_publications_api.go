@@ -71,8 +71,9 @@ type LocalPublication struct {
 	// AutoPublish reports that a Peasant-managed hook is installed in this
 	// session's repository, for a rule or from the terminal, so a commit or
 	// push publishes the session without a click. A hook outlives the rule it
-	// was installed for.
-	AutoPublish bool `json:"autoPublish"`
+	// was installed for. It is false when the saved selection leaves the
+	// session out, because the hook's push applies the selection.
+	AutoPublish bool `json:"autoPublish" description:"A Peasant-managed git hook is installed in this session's repository, for an auto-publish rule or from the terminal, so a commit or push publishes the session without a click. False when the saved selection leaves the session out."`
 	// OutsideSelection reports that the saved selection leaves this session
 	// out of the local lists. The read ignores the selection, so such a
 	// session is still returned.

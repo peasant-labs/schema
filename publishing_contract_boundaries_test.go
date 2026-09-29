@@ -146,7 +146,6 @@ func TestPublishingContractBoundaries(t *testing.T) {
 		t.Fatalf("%s lists no corpus", publishingCorpora)
 	}
 	listed := map[string]bool{}
-	defer requireEveryCorpusListed(t, listed)
 	for _, path := range manifest.Corpora {
 		if listed[path] {
 			t.Fatalf("%s lists %s twice", publishingCorpora, path)
@@ -166,6 +165,7 @@ func TestPublishingContractBoundaries(t *testing.T) {
 			}
 		})
 	}
+	requireEveryCorpusListed(t, listed)
 }
 
 func loadBoundaryFixture(t *testing.T, data []byte) boundaryFixture {
@@ -505,12 +505,12 @@ func requireEveryCorpusListed(t *testing.T, listed map[string]bool) {
 			}
 			var keys map[string]any
 			if err := yaml.Unmarshal(raw, &keys); err != nil {
+				t.Errorf("%s does not parse as YAML: %v", path, err)
 				continue
 			}
 			_, names := keys["required_names"]
-			_, operations := keys["operations"]
 			_, cases := keys["cases"]
-			if names && operations && cases && !listed[path] {
+			if names && cases && !listed[path] {
 				t.Errorf("%s is a boundary corpus missing from %s", path, publishingCorpora)
 			}
 		}

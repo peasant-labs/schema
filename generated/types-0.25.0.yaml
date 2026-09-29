@@ -2914,6 +2914,10 @@ components:
             $ref: '#/components/schemas/LocalPublicationAudienceMember'
           type: array
         autoPublish:
+          description: A Peasant-managed git hook is installed in this session's repository,
+            for an auto-publish rule or from the terminal, so a commit or push publishes
+            the session without a click. False when the saved selection leaves the
+            session out.
           type: boolean
         lastAttempt:
           $ref: '#/components/schemas/LocalPublicationAttemptFailure'

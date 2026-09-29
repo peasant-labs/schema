@@ -28,6 +28,10 @@ required_names:
   - redactions-null-rules-rejected
   - redactions-negative-line-rejected
   - redactions-null-context-rejected
+  - redactions-negative-total-rejected
+  - redactions-negative-category-total-rejected
+  - redactions-null-items-rejected
+  - redactions-null-context-after-rejected
 operations:
   - api: local
     method: get
@@ -335,3 +339,47 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "context is an array"}
     mutation: {description: "sends null context before the match"}
+  - name: redactions-negative-total-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: -1
+        categories:
+          - {category: PII, totalCount: 1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: [{category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: a@b.c, redactedReplacement: "<EMAIL>", description: d, lineNumber: 5, contextBefore: [], contextAfter: []}]}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: negative total}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the total is nonnegative"}
+    mutation: {description: "sends a negative total"}
+  - name: redactions-negative-category-total-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: -1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: [{category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: a@b.c, redactedReplacement: "<EMAIL>", description: d, lineNumber: 5, contextBefore: [], contextAfter: []}]}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: negative totalCount}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a category total is nonnegative"}
+    mutation: {description: "sends a negative category total"}
+  - name: redactions-null-items-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: 1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: null}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: null items}
+    classification: must-fail
+    provenance: {source: boundary, ref: "items is an array"}
+    mutation: {description: "sends null items"}
+  - name: redactions-null-context-after-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - {category: PII, totalCount: 1, rules: [{ruleId: email, displayName: Email Address, count: 1, items: [{category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: a@b.c, redactedReplacement: "<EMAIL>", description: d, lineNumber: 5, contextBefore: [], contextAfter: null}]}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: null context}
+    classification: must-fail
+    provenance: {source: boundary, ref: "context is an array"}
+    mutation: {description: "sends null context after the match"}

@@ -274,14 +274,14 @@ type SyncPushSessionResult struct {
 	// Status is the session's outcome. It describes the content: new or
 	// updated when Village accepted it, skipped when it was already current
 	// (also when only collectives changed), held when it cannot be published
-	// yet, and error when any step failed or the session failed before or
-	// after its steps ran, for example while recording Village's receipt on
-	// this computer. The response counts tally sessions by this status.
+	// yet, and error when any step failed or the session failed before,
+	// between, or after its steps ran, for example while recording Village's
+	// receipt on this computer. The response counts tally sessions by this status.
 	Status SyncPushSessionStatus `json:"status"`
 	Error  string                `json:"error,omitempty"`
 	Title  string                `json:"title,omitempty"`
-	// TranscriptURL is the Village page of the session's transcript. A new or
-	// updated session always carries it.
+	// TranscriptURL is the Village page of the session's transcript. Every
+	// session whose content step succeeded carries it.
 	TranscriptURL string `json:"transcriptUrl,omitempty"`
 	// Steps lists every step the push planned for this session, in the order
 	// it ran them. When present, the content step comes first: skipped when
@@ -326,8 +326,8 @@ func (r SyncPushSessionResult) Validate() error {
 			}
 			collectives[*step.CollectiveID] = struct{}{}
 		}
-		if step.Outcome == SyncPushStepNotAttempted && !failed {
-			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: steps[%d] is not_attempted with no earlier failed step; a step only goes unattempted because an earlier step failed", r.SessionID, i)
+		if step.Outcome == SyncPushStepNotAttempted && !failed && r.Status != SyncPushSessionError {
+			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: steps[%d] is not_attempted although nothing failed; a step only goes unattempted after an earlier step failed or the session failed between steps", r.SessionID, i)
 		}
 		failed = failed || step.Outcome == SyncPushStepFailed
 	}
