@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -75,12 +77,16 @@ func (VillagePromptsCheckMode) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema("Village Prompts Check Mode", "Check-run conclusion policy for a collective's linked repositories when no prompts are attached", AllVillagePromptsCheckModes), nil
 }
 
-// VillagePullRequestAttachment is one pull request's attachment row.
+// VillagePullRequestAttachment is one pull request's attachment row. Title and
+// HeadRef are the pull request's title and head branch as Village last saw
+// them; they are null for a row Village recorded before it kept them.
 type VillagePullRequestAttachment struct {
 	ID                  VillageUUID                       `json:"id"`
 	Owner               string                            `json:"owner"`
 	Name                string                            `json:"name"`
 	Number              int                               `json:"number"`
+	Title               *string                           `json:"title"`
+	HeadRef             *string                           `json:"head_ref"`
 	HeadSHA             string                            `json:"head_sha"`
 	IsPrivateRepository bool                              `json:"is_private_repository"`
 	State               VillagePullRequestAttachmentState `json:"state"`
@@ -135,14 +141,111 @@ type VillagePromptRequestsResponse struct {
 }
 
 // VillageUserSettings is the caller's own settings surface.
+// AutoAttachPullRequests is the caller's choice to link their own transcripts
+// to a pull request automatically when it opens in a repository one of their
+// collectives links. It is off by default and never changes who can read a
+// transcript.
 type VillageUserSettings struct {
-	PreviewBeforeAttach bool `json:"preview_before_attach"`
+	PreviewBeforeAttach    bool `json:"preview_before_attach"`
+	AutoAttachPullRequests bool `json:"auto_attach_pull_requests"`
 }
 
 // VillageUpdateUserSettingsRequest patches the caller's settings. An omitted
 // field is left unchanged.
 type VillageUpdateUserSettingsRequest struct {
-	PreviewBeforeAttach *bool `json:"preview_before_attach,omitempty"`
+	PreviewBeforeAttach    *bool `json:"preview_before_attach,omitempty"`
+	AutoAttachPullRequests *bool `json:"auto_attach_pull_requests,omitempty"`
+}
+
+// VillageTranscriptPullRequestsResponse is the response of GET
+// /api/v1/transcripts/{id}/pulls: the attachments that include the transcript,
+// attached or detached.
+type VillageTranscriptPullRequestsResponse struct {
+	PullRequests []VillagePullRequestAttachment `json:"pull_requests" nullable:"false"`
+}
+
+// Validate checks the attachment states and that each pull request appears
+// once.
+func (r VillageTranscriptPullRequestsResponse) Validate() error {
+	if r.PullRequests == nil {
+		return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: pull_requests is null; emit [] when no pull request includes the transcript")
+	}
+	seen := make(map[VillagePullRequestRef]struct{}, len(r.PullRequests))
+	for _, attachment := range r.PullRequests {
+		if attachment.State != VillagePullRequestAttachmentAttached && attachment.State != VillagePullRequestAttachmentDetached {
+			return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: %s/%s#%d has state %q; the read lists only attached and detached pull requests, so a pending request never reaches a reader", attachment.Owner, attachment.Name, attachment.Number, attachment.State)
+		}
+		ref := VillagePullRequestRef{Owner: attachment.Owner, Name: attachment.Name, Number: attachment.Number}
+		if err := ref.Validate(); err != nil {
+			return err
+		}
+		if _, duplicate := seen[ref]; duplicate {
+			return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: %s/%s#%d is listed twice; list each pull request once", ref.Owner, ref.Name, ref.Number)
+		}
+		seen[ref] = struct{}{}
+	}
+	return nil
+}
+
+// VillagePullRequestRef names one pull request.
+type VillagePullRequestRef struct {
+	Owner  string `json:"owner" minLength:"1"`
+	Name   string `json:"name" minLength:"1"`
+	Number int    `json:"number" minimum:"1"`
+}
+
+// Validate checks that the reference names a repository and a pull request.
+func (r VillagePullRequestRef) Validate() error {
+	if strings.TrimSpace(r.Owner) == "" || strings.TrimSpace(r.Name) == "" || r.Number < 1 {
+		return fmt.Errorf("pull request reference validation failed at schema.VillagePullRequestRef.Validate: %q/%q#%d does not name a pull request; emit the repository owner, name, and a positive number", r.Owner, r.Name, r.Number)
+	}
+	return nil
+}
+
+// VillagePullRequestsSummary summarizes the pull requests a transcript is
+// attached to, for a list row. Count is the number of attached pull requests;
+// Recent holds the most recent of them, at most as many as the server shows,
+// so a row reads "#42, #45 +2" without one read per row.
+type VillagePullRequestsSummary struct {
+	Count  int32                   `json:"count" minimum:"0"`
+	Recent []VillagePullRequestRef `json:"recent" nullable:"false"`
+}
+
+// Validate checks that the recent list fits in the count and does not repeat.
+func (s VillagePullRequestsSummary) Validate() error {
+	if s.Count < 0 || s.Recent == nil || len(s.Recent) > int(s.Count) {
+		return fmt.Errorf("pull request summary validation failed at schema.VillagePullRequestsSummary.Validate: count %d with %d recent pull requests; recent is an array no longer than a nonnegative count", s.Count, len(s.Recent))
+	}
+	seen := make(map[VillagePullRequestRef]struct{}, len(s.Recent))
+	for _, ref := range s.Recent {
+		if err := ref.Validate(); err != nil {
+			return err
+		}
+		if _, duplicate := seen[ref]; duplicate {
+			return fmt.Errorf("pull request summary validation failed at schema.VillagePullRequestsSummary.Validate: %s/%s#%d is listed twice; list each pull request once", ref.Owner, ref.Name, ref.Number)
+		}
+		seen[ref] = struct{}{}
+	}
+	return nil
+}
+
+// VillageUserStats is the response of GET /api/v1/users/me/stats: totals over
+// every transcript the caller published. PullRequestCount counts the distinct
+// pull requests any of those transcripts is attached to.
+type VillageUserStats struct {
+	TotalTranscripts int32 `json:"total_transcripts" minimum:"0"`
+	TotalTurns       int64 `json:"total_turns" minimum:"0"`
+	TotalDurationMs  int64 `json:"total_duration_ms" minimum:"0"`
+	TotalTokens      int64 `json:"total_tokens" minimum:"0"`
+	PullRequestCount int32 `json:"pull_request_count" minimum:"0"`
+}
+
+// Validate checks that every total is nonnegative.
+func (s VillageUserStats) Validate() error {
+	if s.TotalTranscripts < 0 || s.TotalTurns < 0 || s.TotalDurationMs < 0 || s.TotalTokens < 0 || s.PullRequestCount < 0 {
+		return fmt.Errorf("personal stats validation failed at schema.VillageUserStats.Validate: a total is negative; emit nonnegative totals")
+	}
+	return nil
 }
 
 // VillageGitHubWebhookPayload is GitHub's event payload, forwarded verbatim.

@@ -1,0 +1,209 @@
+# The publication read. It ignores the saved selection and returns the durable
+# publication state of each named session; include=audience adds the
+# collectives a published transcript is shared with.
+required_names:
+  - unpublished-row-valid
+  - published-row-valid
+  - published-with-audience-valid
+  - outside-selection-row-valid
+  - failed-attempt-after-publication-valid
+  - empty-response-valid
+  - published-without-url-rejected
+  - unpublished-with-transcript-rejected
+  - unpublished-with-audience-rejected
+  - audience-rejected-share-rejected
+  - audience-duplicate-collective-rejected
+  - attempt-without-message-rejected
+  - unknown-state-rejected
+  - auto-publish-missing-rejected
+  - duplicate-session-rejected
+  - null-publications-rejected
+operations:
+  - api: local
+    method: get
+    path: /api/v1/publications
+    response: LocalPublicationsResponse
+    statuses: ["200"]
+    parameters:
+      - {name: sessionIds, in: query, required: true}
+      - {name: include, in: query, required: false, enum: [audience]}
+cases:
+  - name: unpublished-row-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, autoPublish: false, outsideSelection: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "PublicationState unpublished"}
+    mutation: {description: "a session with no recorded publication"}
+  - name: published-row-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-09-20T10:00:00Z", autoPublish: true, outsideSelection: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "PublicationState published"}
+    mutation: {description: "a published session covered by an auto-publish binding"}
+  - name: published-with-audience-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - sessionId: s-1
+            state: published
+            transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            publishedAt: "2026-09-20T10:00:00Z"
+            autoPublish: false
+            outsideSelection: false
+            audience:
+              - {collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: approved}
+              - {collectiveId: 22222222-2222-4222-8222-222222222222, name: ML Reading Group, status: pending}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "include=audience lists approved and pending collectives"}
+    mutation: {description: "one readable and one waiting collective"}
+  - name: outside-selection-row-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-2, state: unpublished, autoPublish: false, outsideSelection: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the read ignores the saved selection"}
+    mutation: {description: "a session the lists leave out, opened by link"}
+  - name: failed-attempt-after-publication-valid
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-09-20T10:00:00Z", lastAttempt: {attemptedAt: "2026-09-21T09:00:00Z", message: village was unreachable}, autoPublish: false, outsideSelection: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "lastAttempt is the most recent failed attempt"}
+    mutation: {description: "an update that failed after the first publication"}
+  - name: empty-response-valid
+    input: {schema: LocalPublicationsResponse, payload: {publications: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "unknown identifiers are omitted"}
+    mutation: {description: "no named session exists on this computer"}
+  - name: published-without-url-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, publishedAt: "2026-09-20T10:00:00Z", autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: transcriptUrl}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a published row names its transcript"}
+    mutation: {description: "drops the transcript URL from a published row"}
+  - name: unpublished-with-transcript-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: names none}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an unpublished row names no transcript"}
+    mutation: {description: "adds a transcript to an unpublished row"}
+  - name: unpublished-with-audience-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, autoPublish: false, outsideSelection: false, audience: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: nothing is shared}
+    classification: must-fail
+    provenance: {source: requirement, ref: "audience is only on published rows"}
+    mutation: {description: "adds an audience to an unpublished row"}
+  - name: audience-rejected-share-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - sessionId: s-1
+            state: published
+            transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            publishedAt: "2026-09-20T10:00:00Z"
+            autoPublish: false
+            outsideSelection: false
+            audience:
+              - {collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: rejected}
+    expected: {valid: false, rejected_by: semantics, error_contains: approved and pending}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the audience is who can read or will read the transcript"}
+    mutation: {description: "lists a rejected share as audience"}
+  - name: audience-duplicate-collective-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - sessionId: s-1
+            state: published
+            transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            publishedAt: "2026-09-20T10:00:00Z"
+            autoPublish: false
+            outsideSelection: false
+            audience:
+              - {collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: approved}
+              - {collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: pending}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each collective is listed once"}
+    mutation: {description: "lists one collective twice"}
+  - name: attempt-without-message-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, lastAttempt: {attemptedAt: "2026-09-21T09:00:00Z", message: ""}, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: lastAttempt}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a failed attempt says what failed"}
+    mutation: {description: "blanks the failure message"}
+  - name: unknown-state-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: publishing, autoPublish: false, outsideSelection: false}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "PublicationState is closed; publishing is client state"}
+    mutation: {description: "names the transient client state as durable state"}
+  - name: auto-publish-missing-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, outsideSelection: false}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "autoPublish is always stated"}
+    mutation: {description: "omits autoPublish"}
+  - name: duplicate-session-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: unpublished, autoPublish: false, outsideSelection: false}
+          - {sessionId: s-1, state: unpublished, autoPublish: false, outsideSelection: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: two rows}
+    classification: must-fail
+    provenance: {source: boundary, ref: "one row per session"}
+    mutation: {description: "returns one session twice"}
+  - name: null-publications-rejected
+    input: {schema: LocalPublicationsResponse, payload: {publications: null}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "publications is an array"}
+    mutation: {description: "sends null instead of an empty list"}

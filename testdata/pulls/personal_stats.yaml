@@ -1,0 +1,93 @@
+# The caller's totals, the collective's pull request count, and the
+# repository picker's publisher count. Each is a count the server takes over
+# data a client cannot see or has only one page of.
+required_names:
+  - stats-valid
+  - stats-zero-valid
+  - stats-negative-rejected
+  - stats-missing-pull-request-count-rejected
+  - group-stats-with-pull-request-count-valid
+  - group-stats-missing-pull-request-count-rejected
+  - group-stats-negative-pull-request-count-rejected
+  - available-repositories-publisher-count-valid
+  - available-repositories-missing-publisher-count-rejected
+  - available-repositories-negative-publisher-count-rejected
+operations:
+  - api: village
+    method: get
+    path: /api/v1/users/me/stats
+    response: VillageUserStats
+    statuses: ["200", "401", "500"]
+  - api: village
+    method: get
+    path: "/api/v1/groups/{id}/repositories/available"
+    response: VillageAvailableRepositoriesResponse
+    statuses: ["200", "400", "401", "403", "500", "501"]
+    parameters:
+      - {name: id, in: path, required: true}
+cases:
+  - name: stats-valid
+    input: {schema: VillageUserStats, payload: {total_transcripts: 38, total_turns: 1400, total_duration_ms: 111600000, total_tokens: 19100000, pull_request_count: 9}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the home page shows your totals"}
+    mutation: {description: "totals over every published transcript"}
+  - name: stats-zero-valid
+    input: {schema: VillageUserStats, payload: {total_transcripts: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: 0}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a caller who has published nothing"}
+    mutation: {description: "all totals zero"}
+  - name: stats-negative-rejected
+    input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: -2, total_duration_ms: 0, total_tokens: 0, pull_request_count: 0}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "totals are nonnegative"}
+    mutation: {description: "sends a negative total"}
+  - name: stats-missing-pull-request-count-rejected
+    input: {schema: VillageUserStats, payload: {total_transcripts: 1, total_turns: 2, total_duration_ms: 3, total_tokens: 4}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the pull request count is part of the totals"}
+    mutation: {description: "omits pull_request_count"}
+  - name: group-stats-with-pull-request-count-valid
+    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000, pull_request_count: 31}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a collective shows its pull requests linked"}
+    mutation: {description: "a collective with linked pull requests"}
+  - name: group-stats-missing-pull-request-count-rejected
+    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the client sees only the rows it loaded, so the server states the count"}
+    mutation: {description: "omits pull_request_count"}
+  - name: group-stats-negative-pull-request-count-rejected
+    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: -1}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the count is nonnegative"}
+    mutation: {description: "sends a negative count"}
+  - name: available-repositories-publisher-count-valid
+    input:
+      schema: VillageAvailableRepositoriesResponse
+      payload:
+        repositories:
+          - {owner: acme, name: worker, is_private: false, publisher_count: 3}
+          - {owner: acme, name: infra, is_private: true, publisher_count: 0}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the picker shows how many members publish from each repository"}
+    mutation: {description: "one repository members publish from and one they do not"}
+  - name: available-repositories-missing-publisher-count-rejected
+    input: {schema: VillageAvailableRepositoriesResponse, payload: {repositories: [{owner: acme, name: worker, is_private: false}]}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the client cannot see other members' transcripts"}
+    mutation: {description: "omits publisher_count"}
+  - name: available-repositories-negative-publisher-count-rejected
+    input: {schema: VillageAvailableRepositoriesResponse, payload: {repositories: [{owner: acme, name: worker, is_private: false, publisher_count: -3}]}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the count is nonnegative"}
+    mutation: {description: "sends a negative count"}

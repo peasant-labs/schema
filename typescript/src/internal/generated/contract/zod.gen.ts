@@ -286,6 +286,49 @@ export const zAuthoritativeTimestampInfo = z.object({
 
 export type AuthoritativeTimestampInfo = z.infer<typeof zAuthoritativeTimestampInfo>;
 
+/**
+ * Auto Publish Event
+ *
+ * Git hook that publishes an auto-publish binding's sessions
+ */
+export const zAutoPublishEvent = z.enum(['pre-push', 'post-commit']);
+
+export type AutoPublishEvent = z.infer<typeof zAutoPublishEvent>;
+
+export const zAutoPublishHookRemedy = z.object({
+    command: z.string().optional(),
+    message: z.string().min(1)
+});
+
+export type AutoPublishHookRemedy = z.infer<typeof zAutoPublishHookRemedy>;
+
+/**
+ * Auto Publish Hook Status
+ *
+ * State of an auto-publish binding's git hook
+ */
+export const zAutoPublishHookStatus = z.enum([
+    'active',
+    'blocked',
+    'off'
+]);
+
+export type AutoPublishHookStatus = z.infer<typeof zAutoPublishHookStatus>;
+
+export const zAutoPublishHook = z.object({
+    remedy: zAutoPublishHookRemedy.optional(),
+    status: zAutoPublishHookStatus
+});
+
+export type AutoPublishHook = z.infer<typeof zAutoPublishHook>;
+
+export const zAutoPublishRemovalResponse = z.object({
+    hook: zAutoPublishHook,
+    id: z.string().min(1)
+});
+
+export type AutoPublishRemovalResponse = z.infer<typeof zAutoPublishRemovalResponse>;
+
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
     failingIndex: z.int()
@@ -414,6 +457,22 @@ export const zChildSessionRef = z.object({
 });
 
 export type ChildSessionRef = z.infer<typeof zChildSessionRef>;
+
+/**
+ * Collective Suggestion Reason
+ *
+ * Why the local server suggests a collective for a session
+ */
+export const zCollectiveSuggestionReason = z.enum(['linked_repository', 'linked_github_org']);
+
+export type CollectiveSuggestionReason = z.infer<typeof zCollectiveSuggestionReason>;
+
+export const zCollectiveSuggestion = z.object({
+    match: z.string(),
+    reason: zCollectiveSuggestionReason
+});
+
+export type CollectiveSuggestion = z.infer<typeof zCollectiveSuggestion>;
 
 export const zCommandInvocation = z.object({
     args: z.string().optional(),
@@ -889,6 +948,53 @@ export const zLicense = z.enum([
 
 export type License = z.infer<typeof zLicense>;
 
+/**
+ * Local Setting Kind
+ *
+ * JSON type of one local setting's value
+ */
+export const zLocalSettingKind = z.enum([
+    'boolean',
+    'integer',
+    'string',
+    'string_list',
+    'choice'
+]);
+
+export type LocalSettingKind = z.infer<typeof zLocalSettingKind>;
+
+/**
+ * Local Setting Value
+ *
+ * One setting's value: a boolean, an integer, a string, or an array of strings, as its kind says
+ */
+export const zLocalSettingValue = z.union([
+    z.boolean(),
+    z.int(),
+    z.string(),
+    z.array(z.string())
+]);
+
+export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
+
+export const zLocalSetting = z.object({
+    description: z.string().optional(),
+    inPeasantConfig: z.boolean(),
+    key: z.string().min(1),
+    kind: zLocalSettingKind,
+    options: z.array(z.string()).optional(),
+    value: zLocalSettingValue
+});
+
+export type LocalSetting = z.infer<typeof zLocalSetting>;
+
+export const zLocalSettingUpdateRequest = z.object({
+    key: z.string().min(1),
+    value: zLocalSettingValue
+});
+
+export type LocalSettingUpdateRequest = z.infer<typeof zLocalSettingUpdateRequest>;
+
 export const zMapEdge = z.object({
     count: z.int(),
     from: z.string(),
@@ -1057,29 +1163,6 @@ export const zAuthoritativeProjectContext = z.object({
 
 export type AuthoritativeProjectContext = z.infer<typeof zAuthoritativeProjectContext>;
 
-export const zLocalSyncSummary = z.object({
-    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
-    harness: zHarness,
-    hostSlug: z.string(),
-    id: z.string(),
-    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
-    model: z.string(),
-    projectHash: zProjectHash,
-    projectName: z.string(),
-    startTime: z.string(),
-    syncStatus: z.string(),
-    totalTokens: z.int(),
-    turnCount: z.int()
-});
-
-export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
-
-export const zLocalSyncSessionsPayload = z.object({
-    sessions: z.array(zLocalSyncSummary)
-});
-
-export type LocalSyncSessionsPayload = z.infer<typeof zLocalSyncSessionsPayload>;
-
 export const zProjectContext = z.object({
     filePath: z.string().optional(),
     hash: zProjectHash,
@@ -1160,6 +1243,22 @@ export const zPublicSourceAnchorKind = z.enum([
 ]);
 
 export type PublicSourceAnchorKind = z.infer<typeof zPublicSourceAnchorKind>;
+
+export const zPublicationAttemptFailure = z.object({
+    attemptedAt: z.iso.datetime(),
+    message: z.string()
+});
+
+export type PublicationAttemptFailure = z.infer<typeof zPublicationAttemptFailure>;
+
+/**
+ * Publication State
+ *
+ * Whether a local session has a publication on Village
+ */
+export const zPublicationState = z.enum(['unpublished', 'published']);
+
+export type PublicationState = z.infer<typeof zPublicationState>;
 
 /**
  * Publish Operation Kind
@@ -1931,6 +2030,238 @@ export const zSessionSummary = z.object({
 
 export type SessionSummary = z.infer<typeof zSessionSummary>;
 
+export const zSessionsPayload = z.object({
+    sessions: z.array(zSessionSummary).nullable()
+});
+
+export type SessionsPayload = z.infer<typeof zSessionsPayload>;
+
+/**
+ * Source Format
+ *
+ * Transcript file format
+ */
+export const zSourceFormat = z.enum(['jsonl', 'json']);
+
+export type SourceFormat = z.infer<typeof zSourceFormat>;
+
+export const zAuthoritativeSourceInfo = z.object({
+    filePath: z.string().optional(),
+    format: zSourceFormat
+}).strict();
+
+export type AuthoritativeSourceInfo = z.infer<typeof zAuthoritativeSourceInfo>;
+
+export const zSourceInfo = z.object({
+    filePath: z.string().optional(),
+    format: zSourceFormat
+});
+
+export type SourceInfo = z.infer<typeof zSourceInfo>;
+
+/**
+ * Stop Reason
+ *
+ * Reason why a session or turn ended (ACP-aligned)
+ */
+export const zStopReason = z.enum([
+    'end_turn',
+    'cancelled',
+    'max_tokens',
+    'max_turn_requests',
+    'refusal'
+]);
+
+export type StopReason = z.infer<typeof zStopReason>;
+
+export const zSubagentRef = z.object({
+    parentUuid: zSessionID,
+    sessionId: zSessionID
+});
+
+export type SubagentRef = z.infer<typeof zSubagentRef>;
+
+/**
+ * Submission Reference
+ */
+export const zSubmissionRef = z.string().min(1).max(96).refine((value) => !/[\uD800-\uDFFF]/u.test(value) && new TextEncoder().encode(value).length <= 96, { error: "SubmissionRef is invalid UTF-8 or exceeds 96 bytes" });
+
+export type SubmissionRef = z.infer<typeof zSubmissionRef>;
+
+export const zContentProvenance = z.object({
+    actor: zActorOrigin,
+    delivery: zDeliveryOrigin,
+    evidence: zEvidenceKind,
+    inputModality: zInputModality,
+    origin: zContentOrigin,
+    ownership: zContentOwnership,
+    submissionRef: zSubmissionRef.optional()
+}).strict();
+
+export type ContentProvenance = z.infer<typeof zContentProvenance>;
+
+export const zSyncAuthResponse = z.object({
+    authenticated: z.boolean(),
+    username: z.string().optional(),
+    villageConfigured: z.boolean().optional(),
+    villageUrl: z.string().optional()
+});
+
+export type SyncAuthResponse = z.infer<typeof zSyncAuthResponse>;
+
+/**
+ * Sync Hold Reason
+ *
+ * Why a held local session cannot be published yet
+ */
+export const zSyncHoldReason = z.enum(['metrics_missing', 'metadata_missing']);
+
+export type SyncHoldReason = z.infer<typeof zSyncHoldReason>;
+
+/**
+ * Sync Login Status
+ *
+ * Result of starting the Village sign-in from the local server
+ */
+export const zSyncLoginStatus = z.enum(['pending', 'already_authenticated']);
+
+export type SyncLoginStatus = z.infer<typeof zSyncLoginStatus>;
+
+export const zSyncLoginResponse = z.object({
+    status: zSyncLoginStatus
+});
+
+export type SyncLoginResponse = z.infer<typeof zSyncLoginResponse>;
+
+/**
+ * Sync Logout Status
+ *
+ * Result of ending this computer's Village sign-in
+ */
+export const zSyncLogoutStatus = z.enum(['logged_out', 'already_logged_out']);
+
+export type SyncLogoutStatus = z.infer<typeof zSyncLogoutStatus>;
+
+export const zSyncLogoutResponse = z.object({
+    status: zSyncLogoutStatus
+});
+
+export type SyncLogoutResponse = z.infer<typeof zSyncLogoutResponse>;
+
+/**
+ * Sync Push Session Status
+ *
+ * Outcome of one session in a push
+ */
+export const zSyncPushSessionStatus = z.enum([
+    'new',
+    'updated',
+    'skipped',
+    'error',
+    'held'
+]);
+
+export type SyncPushSessionStatus = z.infer<typeof zSyncPushSessionStatus>;
+
+/**
+ * Sync Push Step
+ *
+ * One step a push runs for a session
+ */
+export const zSyncPushStep = z.enum([
+    'content',
+    'add_collective',
+    'remove_collective'
+]);
+
+export type SyncPushStep = z.infer<typeof zSyncPushStep>;
+
+/**
+ * Sync Push Step Outcome
+ *
+ * Result of one push step
+ */
+export const zSyncPushStepOutcome = z.enum([
+    'succeeded',
+    'pending_approval',
+    'failed',
+    'not_attempted'
+]);
+
+export type SyncPushStepOutcome = z.infer<typeof zSyncPushStepOutcome>;
+
+export const zSyncRedactionItem = z.object({
+    category: z.string(),
+    contextAfter: z.array(z.string()),
+    contextBefore: z.array(z.string()),
+    description: z.string(),
+    entryIndex: z.int().gte(0).optional(),
+    lineNumber: z.int().gte(0),
+    originalText: z.string(),
+    redactedReplacement: z.string(),
+    ruleDisplayName: z.string(),
+    ruleId: z.string()
+});
+
+export type SyncRedactionItem = z.infer<typeof zSyncRedactionItem>;
+
+export const zSyncRedactionRuleGroup = z.object({
+    count: z.int().gte(0),
+    displayName: z.string(),
+    items: z.array(zSyncRedactionItem),
+    ruleId: z.string()
+});
+
+export type SyncRedactionRuleGroup = z.infer<typeof zSyncRedactionRuleGroup>;
+
+export const zSyncRedactionCategoryGroup = z.object({
+    category: z.string(),
+    rules: z.array(zSyncRedactionRuleGroup),
+    totalCount: z.int().gte(0)
+});
+
+export type SyncRedactionCategoryGroup = z.infer<typeof zSyncRedactionCategoryGroup>;
+
+export const zSyncRedactionsResponse = z.object({
+    categories: z.array(zSyncRedactionCategoryGroup),
+    total: z.int().gte(0)
+});
+
+export type SyncRedactionsResponse = z.infer<typeof zSyncRedactionsResponse>;
+
+/**
+ * Sync Status
+ *
+ * Publication status of one listed local session; held rows always carry a hold reason
+ */
+export const zSyncStatus = z.enum([
+    'new',
+    'updated',
+    'synced',
+    'held'
+]);
+
+export type SyncStatus = z.infer<typeof zSyncStatus>;
+
+export const zLocalSyncSummary = z.object({
+    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    harness: zHarness,
+    holdReason: zSyncHoldReason.optional(),
+    hostSlug: z.string(),
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string(),
+    previouslyPushed: z.boolean(),
+    projectHash: zProjectHash,
+    projectName: z.string(),
+    startTime: z.string(),
+    syncStatus: zSyncStatus,
+    totalTokens: z.int(),
+    turnCount: z.int()
+});
+
+export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
+
 export const zLocalSessionRow = z.object({
     matches: z.array(zSearchResult).optional(),
     session: zSessionSummary,
@@ -2004,75 +2335,11 @@ export const zLocalSessionListPayload = z.object({
 
 export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
 
-export const zSessionsPayload = z.object({
-    sessions: z.array(zSessionSummary).nullable()
+export const zLocalSyncSessionsPayload = z.object({
+    sessions: z.array(zLocalSyncSummary)
 });
 
-export type SessionsPayload = z.infer<typeof zSessionsPayload>;
-
-/**
- * Source Format
- *
- * Transcript file format
- */
-export const zSourceFormat = z.enum(['jsonl', 'json']);
-
-export type SourceFormat = z.infer<typeof zSourceFormat>;
-
-export const zAuthoritativeSourceInfo = z.object({
-    filePath: z.string().optional(),
-    format: zSourceFormat
-}).strict();
-
-export type AuthoritativeSourceInfo = z.infer<typeof zAuthoritativeSourceInfo>;
-
-export const zSourceInfo = z.object({
-    filePath: z.string().optional(),
-    format: zSourceFormat
-});
-
-export type SourceInfo = z.infer<typeof zSourceInfo>;
-
-/**
- * Stop Reason
- *
- * Reason why a session or turn ended (ACP-aligned)
- */
-export const zStopReason = z.enum([
-    'end_turn',
-    'cancelled',
-    'max_tokens',
-    'max_turn_requests',
-    'refusal'
-]);
-
-export type StopReason = z.infer<typeof zStopReason>;
-
-export const zSubagentRef = z.object({
-    parentUuid: zSessionID,
-    sessionId: zSessionID
-});
-
-export type SubagentRef = z.infer<typeof zSubagentRef>;
-
-/**
- * Submission Reference
- */
-export const zSubmissionRef = z.string().min(1).max(96).refine((value) => !/[\uD800-\uDFFF]/u.test(value) && new TextEncoder().encode(value).length <= 96, { error: "SubmissionRef is invalid UTF-8 or exceeds 96 bytes" });
-
-export type SubmissionRef = z.infer<typeof zSubmissionRef>;
-
-export const zContentProvenance = z.object({
-    actor: zActorOrigin,
-    delivery: zDeliveryOrigin,
-    evidence: zEvidenceKind,
-    inputModality: zInputModality,
-    origin: zContentOrigin,
-    ownership: zContentOwnership,
-    submissionRef: zSubmissionRef.optional()
-}).strict();
-
-export type ContentProvenance = z.infer<typeof zContentProvenance>;
+export type LocalSyncSessionsPayload = z.infer<typeof zLocalSyncSessionsPayload>;
 
 /**
  * Target Kind
@@ -3008,7 +3275,8 @@ export type VillageAssignableGroupRole = z.infer<typeof zVillageAssignableGroupR
 export const zVillageAvailableRepository = z.object({
     is_private: z.boolean(),
     name: z.string(),
-    owner: z.string()
+    owner: z.string(),
+    publisher_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });
 
 export type VillageAvailableRepository = z.infer<typeof zVillageAvailableRepository>;
@@ -3103,7 +3371,7 @@ export const zVillageCreateGroupRequest = z.object({
     acceptance_mode: zVillageGroupAcceptanceMode.optional(),
     data_access: zVillageGroupDataAccess.optional(),
     description: z.string().optional(),
-    linked_github_org: z.string().optional(),
+    linked_github_org: z.string().nullish(),
     name: z.string()
 });
 
@@ -3151,6 +3419,7 @@ export type VillageGroupStatusRoleResponse = z.infer<typeof zVillageGroupStatusR
 
 export const zVillageGroupTranscriptStats = z.object({
     contributor_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    pull_request_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     total_duration_ms: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     total_tokens: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     total_transcripts: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
@@ -3257,6 +3526,21 @@ export const zVillagePromptRequestsResponse = z.object({
 });
 
 export type VillagePromptRequestsResponse = z.infer<typeof zVillagePromptRequestsResponse>;
+
+export const zVillagePullRequestRef = z.object({
+    name: z.string().min(1),
+    number: z.int().gte(1),
+    owner: z.string().min(1)
+});
+
+export type VillagePullRequestRef = z.infer<typeof zVillagePullRequestRef>;
+
+export const zVillagePullRequestsSummary = z.object({
+    count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    recent: z.array(zVillagePullRequestRef)
+});
+
+export type VillagePullRequestsSummary = z.infer<typeof zVillagePullRequestsSummary>;
 
 export const zVillageRemoveGroupMemberResponse = z.object({
     retracted: z.boolean(),
@@ -3422,6 +3706,105 @@ export type VillagePullRequestAttachedTranscript = z.infer<typeof zVillagePullRe
 export const zVillageUUID = z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 
 export type VillageUUID = z.infer<typeof zVillageUUID>;
+
+export const zAutoPublishBinding = z.object({
+    collectives: z.array(zVillageUUID),
+    events: z.array(zAutoPublishEvent),
+    hook: zAutoPublishHook,
+    id: z.string().min(1),
+    match: z.string().min(1)
+});
+
+export type AutoPublishBinding = z.infer<typeof zAutoPublishBinding>;
+
+export const zAutoPublishBindingRequest = z.object({
+    collectives: z.array(zVillageUUID),
+    events: z.array(zAutoPublishEvent),
+    match: z.string().min(1)
+});
+
+export type AutoPublishBindingRequest = z.infer<typeof zAutoPublishBindingRequest>;
+
+export const zLocalSettingsResponse = z.object({
+    autoPublish: z.array(zAutoPublishBinding),
+    settings: z.array(zLocalSetting)
+});
+
+export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
+
+export const zPublicationAudienceMember = z.object({
+    collectiveId: zVillageUUID,
+    name: z.string(),
+    status: zVillageShareStatus
+});
+
+export type PublicationAudienceMember = z.infer<typeof zPublicationAudienceMember>;
+
+export const zLocalPublication = z.object({
+    audience: z.array(zPublicationAudienceMember).optional(),
+    autoPublish: z.boolean(),
+    lastAttempt: zPublicationAttemptFailure.optional(),
+    outsideSelection: z.boolean(),
+    publishedAt: z.iso.datetime().optional(),
+    sessionId: z.string(),
+    state: zPublicationState,
+    transcriptId: zTranscriptID.optional(),
+    transcriptUrl: z.string().optional()
+});
+
+export type LocalPublication = z.infer<typeof zLocalPublication>;
+
+export const zLocalPublicationsResponse = z.object({
+    publications: z.array(zLocalPublication)
+});
+
+export type LocalPublicationsResponse = z.infer<typeof zLocalPublicationsResponse>;
+
+export const zSyncPushCollectives = z.object({
+    add: z.array(zVillageUUID).optional(),
+    remove: z.array(zVillageUUID).optional()
+});
+
+export type SyncPushCollectives = z.infer<typeof zSyncPushCollectives>;
+
+export const zSyncPushRequest = z.object({
+    collectives: zSyncPushCollectives.optional(),
+    redactionLevel: z.string().optional(),
+    sessionIds: z.array(z.string()).min(1)
+});
+
+export type SyncPushRequest = z.infer<typeof zSyncPushRequest>;
+
+export const zSyncPushStepResult = z.object({
+    collectiveId: zVillageUUID.optional(),
+    error: z.string().optional(),
+    outcome: zSyncPushStepOutcome,
+    step: zSyncPushStep
+});
+
+export type SyncPushStepResult = z.infer<typeof zSyncPushStepResult>;
+
+export const zSyncPushSessionResult = z.object({
+    error: z.string().optional(),
+    sessionId: z.string(),
+    status: zSyncPushSessionStatus,
+    steps: z.array(zSyncPushStepResult).optional(),
+    title: z.string().optional(),
+    transcriptUrl: z.string().optional(),
+    waitingPullRequests: z.array(zVillagePromptRequest).optional()
+});
+
+export type SyncPushSessionResult = z.infer<typeof zSyncPushSessionResult>;
+
+export const zSyncPushResponse = z.object({
+    errors: z.int().gte(0),
+    new: z.int().gte(0),
+    sessions: z.array(zSyncPushSessionResult),
+    skipped: z.int().gte(0),
+    updated: z.int().gte(0)
+});
+
+export type SyncPushResponse = z.infer<typeof zSyncPushResponse>;
 
 export const zVillageCollectiveSearchResult = z.object({
     description: z.string().nullable(),
@@ -3593,6 +3976,7 @@ export const zVillageGroupTranscript = z.object({
     project_name_source: zVillageProjectNameSource,
     project_remote_label: z.string(),
     published_at: z.iso.datetime(),
+    pull_requests: zVillagePullRequestsSummary,
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
     retry_loops: z.int().nullable(),
@@ -3706,6 +4090,7 @@ export const zVillagePullRequestAttachment = z.object({
     confirmed_at: z.iso.datetime().nullable(),
     created_at: z.iso.datetime(),
     detached_at: z.iso.datetime().nullable(),
+    head_ref: z.string().nullable(),
     head_sha: z.string(),
     id: zVillageUUID,
     is_private_repository: z.boolean(),
@@ -3714,6 +4099,7 @@ export const zVillagePullRequestAttachment = z.object({
     owner: z.string(),
     requested_by_github_id: z.int().nullable(),
     state: zVillagePullRequestAttachmentState,
+    title: z.string().nullable(),
     updated_at: z.iso.datetime()
 });
 
@@ -3844,6 +4230,12 @@ export const zVillageTranscriptCollectivesResponse = z.object({
 
 export type VillageTranscriptCollectivesResponse = z.infer<typeof zVillageTranscriptCollectivesResponse>;
 
+export const zVillageTranscriptPullRequestsResponse = z.object({
+    pull_requests: z.array(zVillagePullRequestAttachment)
+});
+
+export type VillageTranscriptPullRequestsResponse = z.infer<typeof zVillageTranscriptPullRequestsResponse>;
+
 export const zVillageTranscriptShare = z.object({
     group_id: zVillageUUID,
     group_name: z.string(),
@@ -3867,6 +4259,7 @@ export const zVillageUpdateGroupRequest = z.object({
 export type VillageUpdateGroupRequest = z.infer<typeof zVillageUpdateGroupRequest>;
 
 export const zVillageUpdateUserSettingsRequest = z.object({
+    auto_attach_pull_requests: z.boolean().nullish(),
     preview_before_attach: z.boolean().nullish()
 });
 
@@ -3893,6 +4286,7 @@ export const zVillageTranscriptListRow = z.object({
     attestations: z.array(zVillageListTranscriptAttestation).nullable(),
     owner: zVillageUser,
     owner_orgs: z.array(zVillageListUserOrganization).nullable(),
+    pull_requests: zVillagePullRequestsSummary,
     shares: z.array(zVillageEnrichedTranscriptShare).nullable(),
     tags: z.array(zVillageTag),
     transcript: zVillageTranscript
@@ -3942,6 +4336,19 @@ export const zVillageUserGroup = z.object({
 });
 
 export type VillageUserGroup = z.infer<typeof zVillageUserGroup>;
+
+export const zLocalVillageCollective = z.object({
+    group: zVillageUserGroup,
+    suggestion: zCollectiveSuggestion.optional()
+});
+
+export type LocalVillageCollective = z.infer<typeof zLocalVillageCollective>;
+
+export const zLocalVillageCollectivesResponse = z.object({
+    collectives: z.array(zLocalVillageCollective)
+});
+
+export type LocalVillageCollectivesResponse = z.infer<typeof zLocalVillageCollectivesResponse>;
 
 export const zVillageUserGroupShare = z.object({
     id: zTranscriptID,
@@ -4075,10 +4482,21 @@ export const zVillageGroupedGroupDetailResponse = z.object({
 export type VillageGroupedGroupDetailResponse = z.infer<typeof zVillageGroupedGroupDetailResponse>;
 
 export const zVillageUserSettings = z.object({
+    auto_attach_pull_requests: z.boolean(),
     preview_before_attach: z.boolean()
 });
 
 export type VillageUserSettings = z.infer<typeof zVillageUserSettings>;
+
+export const zVillageUserStats = z.object({
+    pull_request_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    total_duration_ms: z.coerce.bigint().gte(BigInt(0)).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    total_tokens: z.coerce.bigint().gte(BigInt(0)).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    total_transcripts: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    total_turns: z.coerce.bigint().gte(BigInt(0)).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' })
+});
+
+export type VillageUserStats = z.infer<typeof zVillageUserStats>;
 
 export const zVillageVisibleGroup = z.object({
     acceptance_mode: zVillageGroupAcceptanceMode,

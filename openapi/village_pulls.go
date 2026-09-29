@@ -9,7 +9,8 @@ import (
 
 // addVillagePullRequestOperations declares the pull request prompt attachment
 // surface: the GitHub webhook receiver, the attachment read, confirm, and
-// detach routes, the caller's waiting requests, and the caller's settings.
+// detach routes, a transcript's pull requests, the caller's totals, the
+// caller's waiting requests, and the caller's settings.
 func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 	pullPath := new(struct {
 		Owner  string `path:"owner" description:"Repository owner login"`
@@ -91,6 +92,34 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method:      http.MethodGet,
+			path:        "/api/v1/transcripts/{id}/pulls",
+			id:          "listTranscriptPullRequests",
+			tag:         "pull-requests",
+			description: "List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists.",
+			requests: []interface{}{new(struct {
+				ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+			})},
+			response: new(schema.VillageTranscriptPullRequestsResponse),
+			errorStatuses: []int{
+				http.StatusBadRequest,
+				http.StatusNotFound,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
+			path:        "/api/v1/users/me/stats",
+			id:          "getMyStats",
+			tag:         "users",
+			description: "Read totals over every transcript the caller published: transcripts, turns, recorded duration, tokens, and the distinct pull requests those transcripts are attached to. The totals cover every transcript, not one page of a list.",
+			response:    new(schema.VillageUserStats),
+			errorStatuses: []int{
+				http.StatusUnauthorized,
+				http.StatusInternalServerError,
+			},
+		},
+		{
+			method:      http.MethodGet,
 			path:        "/api/v1/users/me/prompt-requests",
 			id:          "listMyPromptRequests",
 			tag:         "users",
@@ -106,7 +135,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/users/me/settings",
 			id:          "getMySettings",
 			tag:         "users",
-			description: "Read the caller's settings, including preview_before_attach.",
+			description: "Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them.",
 			response:    new(schema.VillageUserSettings),
 			errorStatuses: []int{
 				http.StatusUnauthorized,

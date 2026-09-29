@@ -1,0 +1,52 @@
+# The local server refuses a state-changing request that did not come from its
+# own pages. Every declared write operation states that 403 with the shared
+# JSON error body. The manifest is the exact set of write operations, so a new
+# write route that does not declare the refusal fails, and so does a route that
+# stops declaring it.
+write_operations:
+  - {method: post, path: /api/v1/annotations, operation_id: createAnnotation}
+  - {method: post, path: /api/v1/shutdown, operation_id: postShutdown}
+  - {method: post, path: /api/v1/sync/push, operation_id: pushSyncSessions}
+  - {method: post, path: /api/v1/sync/login, operation_id: startSyncLogin}
+  - {method: post, path: /api/v1/sync/logout, operation_id: endSyncLogin}
+  - {method: patch, path: /api/v1/settings, operation_id: updateSetting}
+  - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: putAutoPublishBinding}
+  - {method: delete, path: "/api/v1/settings/auto-publish/{id}", operation_id: deleteAutoPublishBinding}
+refusal:
+  status: "403"
+  component: OpenapiLocalErrorResponse
+  required: [error]
+  properties: [error, code]
+  description_anchor: did not come from this local server
+mutations:
+  cases:
+    - name: declared-surface-accepted
+      input: {kind: none}
+      expected: true
+      classification: must-pass
+      provenance: {source: requirement, ref: "every write route declares the cross-origin refusal"}
+      mutation: {description: the generated surface as declared}
+    - name: write-route-without-refusal-rejected
+      input: {kind: drop_refusal, method: post, path: /api/v1/sync/push}
+      expected: false
+      classification: must-fail
+      provenance: {source: requirement, ref: "a write route states its 403"}
+      mutation: {description: removes the 403 from the push route}
+    - name: unaccounted-write-route-rejected
+      input: {kind: add_route, method: post, path: /api/v1/unexpected}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "the manifest is the exact write surface"}
+      mutation: {description: adds a write route the manifest does not name}
+    - name: missing-write-route-rejected
+      input: {kind: remove_route, method: delete, path: "/api/v1/settings/auto-publish/{id}"}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a named write route stays declared"}
+      mutation: {description: removes a named write route}
+    - name: read-route-in-manifest-rejected
+      input: {kind: read_route, method: get, path: /api/v1/settings}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "reads change nothing and are not refused"}
+      mutation: {description: counts a read route as a write route}

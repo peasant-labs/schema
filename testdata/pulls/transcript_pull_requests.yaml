@@ -1,0 +1,175 @@
+# The personal automatic linking setting, the transcript pull request read,
+# pull request titles and head branches on the attachment row, and the pull
+# request summary on list rows.
+required_names:
+  - settings-auto-attach-off-valid
+  - settings-auto-attach-on-valid
+  - settings-missing-auto-attach-rejected
+  - update-auto-attach-only-valid
+  - update-empty-valid
+  - update-auto-attach-string-rejected
+  - transcript-pulls-attached-and-detached-valid
+  - transcript-pulls-empty-valid
+  - transcript-pulls-null-rejected
+  - transcript-pulls-preview-rejected
+  - transcript-pulls-duplicate-rejected
+  - transcript-pulls-missing-title-rejected
+  - summary-with-more-valid
+  - summary-empty-valid
+  - summary-recent-exceeds-count-rejected
+  - summary-negative-count-rejected
+  - summary-duplicate-recent-rejected
+  - summary-null-recent-rejected
+  - summary-zero-number-rejected
+operations:
+  - api: village
+    method: get
+    path: "/api/v1/transcripts/{id}/pulls"
+    response: VillageTranscriptPullRequestsResponse
+    statuses: ["200", "400", "404", "500"]
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: village
+    method: get
+    path: /api/v1/users/me/settings
+    response: VillageUserSettings
+    statuses: ["200", "401", "500"]
+  - api: village
+    method: patch
+    path: /api/v1/users/me/settings
+    request: VillageUpdateUserSettingsRequest
+    response: VillageUserSettings
+    statuses: ["200", "400", "401", "500"]
+cases:
+  - name: settings-auto-attach-off-valid
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "automatic linking is off by default"}
+    mutation: {description: "the default setting"}
+  - name: settings-auto-attach-on-valid
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: false, auto_attach_pull_requests: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "each author decides for their own transcripts"}
+    mutation: {description: "the author turned automatic linking on"}
+  - name: settings-missing-auto-attach-rejected
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the server holds the value, so it always states it"}
+    mutation: {description: "omits auto_attach_pull_requests"}
+  - name: update-auto-attach-only-valid
+    input: {schema: VillageUpdateUserSettingsRequest, payload: {auto_attach_pull_requests: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an omitted field is left unchanged"}
+    mutation: {description: "changes only automatic linking"}
+  - name: update-empty-valid
+    input: {schema: VillageUpdateUserSettingsRequest, payload: {}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "an empty patch changes nothing"}
+    mutation: {description: "sends no field"}
+  - name: update-auto-attach-string-rejected
+    input: {schema: VillageUpdateUserSettingsRequest, payload: {auto_attach_pull_requests: "yes"}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the setting is a boolean"}
+    mutation: {description: "sends a string"}
+  - name: transcript-pulls-attached-and-detached-valid
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: 9001, check_run_id: 9002, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: "2026-09-20T10:00:00Z", detached_at: null}
+          - {id: 55555555-5555-4555-8555-555555555555, owner: acme, name: web, number: 31, title: null, head_ref: null, head_sha: d4e5f6a, is_private_repository: false, state: detached, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-10T09:00:00Z", updated_at: "2026-09-12T10:00:00Z", confirmed_at: "2026-09-10T10:00:00Z", detached_at: "2026-09-12T10:00:00Z"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the read lists attached and detached pull requests with title and head branch"}
+    mutation: {description: "one attached row and one row recorded before titles were kept"}
+  - name: transcript-pulls-empty-valid
+    input: {schema: VillageTranscriptPullRequestsResponse, payload: {pull_requests: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a transcript with no pull request"}
+    mutation: {description: "an empty list"}
+  - name: transcript-pulls-null-rejected
+    input: {schema: VillageTranscriptPullRequestsResponse, payload: {pull_requests: null}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "pull_requests is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: transcript-pulls-preview-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: preview, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+    expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an unconfirmed attachment never reaches a reader"}
+    mutation: {description: "lists a preview attachment"}
+  - name: transcript-pulls-duplicate-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {id: 66666666-6666-4666-8666-666666666666, owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, head_sha: a1b2c3d, is_private_repository: true, state: detached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each pull request is listed once"}
+    mutation: {description: "lists one pull request twice"}
+  - name: transcript-pulls-missing-title-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title is always present and null when unknown"}
+    mutation: {description: "omits title"}
+  - name: summary-with-more-valid
+    input: {schema: VillagePullRequestsSummary, payload: {count: 4, recent: [{owner: acme, name: ingest-api, number: 42}, {owner: acme, name: ingest-api, number: 45}]}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a row reads #42, #45 +2"}
+    mutation: {description: "two recent of four attached pull requests"}
+  - name: summary-empty-valid
+    input: {schema: VillagePullRequestsSummary, payload: {count: 0, recent: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a transcript with no pull request"}
+    mutation: {description: "nothing attached"}
+  - name: summary-recent-exceeds-count-rejected
+    input: {schema: VillagePullRequestsSummary, payload: {count: 1, recent: [{owner: acme, name: ingest-api, number: 42}, {owner: acme, name: ingest-api, number: 45}]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: no longer than}
+    classification: must-fail
+    provenance: {source: boundary, ref: "recent is part of count"}
+    mutation: {description: "lists more recent pull requests than the count"}
+  - name: summary-negative-count-rejected
+    input: {schema: VillagePullRequestsSummary, payload: {count: -1, recent: []}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "count is nonnegative"}
+    mutation: {description: "sends a negative count"}
+  - name: summary-duplicate-recent-rejected
+    input: {schema: VillagePullRequestsSummary, payload: {count: 2, recent: [{owner: acme, name: ingest-api, number: 42}, {owner: acme, name: ingest-api, number: 42}]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each pull request is listed once"}
+    mutation: {description: "repeats one pull request"}
+  - name: summary-null-recent-rejected
+    input: {schema: VillagePullRequestsSummary, payload: {count: 0, recent: null}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "recent is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: summary-zero-number-rejected
+    input: {schema: VillagePullRequestsSummary, payload: {count: 1, recent: [{owner: acme, name: ingest-api, number: 0}]}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a pull request number is positive"}
+    mutation: {description: "sends pull request number zero"}

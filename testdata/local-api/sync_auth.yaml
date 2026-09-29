@@ -1,0 +1,228 @@
+# The Village sign-in routes and the redaction preview. The server served the
+# sign-in status, sign-in, and preview routes before the contract declared
+# them; sign-out is new, and each preview item now names its transcript entry.
+required_names:
+  - auth-signed-out-valid
+  - auth-signed-in-valid
+  - auth-signed-out-with-account-rejected
+  - auth-missing-flag-rejected
+  - login-pending-valid
+  - login-already-authenticated-valid
+  - login-unknown-status-rejected
+  - logout-logged-out-valid
+  - logout-already-logged-out-valid
+  - logout-unknown-status-rejected
+  - redactions-with-entry-index-valid
+  - redactions-outside-entry-valid
+  - redactions-empty-valid
+  - redactions-negative-entry-index-rejected
+  - redactions-null-entry-index-rejected
+  - redactions-items-exceed-count-rejected
+  - redactions-item-in-wrong-group-rejected
+  - redactions-null-categories-rejected
+operations:
+  - api: local
+    method: get
+    path: /api/v1/sync/auth
+    response: SyncAuthResponse
+    statuses: ["200"]
+  - api: local
+    method: post
+    path: /api/v1/sync/login
+    response: SyncLoginResponse
+    statuses: ["200", "403"]
+  - api: local
+    method: post
+    path: /api/v1/sync/logout
+    response: SyncLogoutResponse
+    statuses: ["200", "403"]
+  - api: local
+    method: get
+    path: /api/v1/sync/redactions
+    response: SyncRedactionsResponse
+    statuses: ["200"]
+    parameters:
+      - {name: session_id, in: query, required: true}
+      - {name: level, in: query, required: false}
+cases:
+  - name: auth-signed-out-valid
+    input: {schema: SyncAuthResponse, payload: {authenticated: false}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "sync_handler handleSyncAuth signed-out body"}
+    mutation: {description: "a computer without a credential"}
+  - name: auth-signed-in-valid
+    input: {schema: SyncAuthResponse, payload: {authenticated: true, username: alice-dev, villageUrl: "https://village.example", villageConfigured: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "sync_handler handleSyncAuth signed-in body"}
+    mutation: {description: "a signed-in computer"}
+  - name: auth-signed-out-with-account-rejected
+    input: {schema: SyncAuthResponse, payload: {authenticated: false, username: alice-dev}}
+    expected: {valid: false, rejected_by: semantics, error_contains: names an account}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a signed-out computer names no account"}
+    mutation: {description: "names an account while signed out"}
+  - name: auth-missing-flag-rejected
+    input: {schema: SyncAuthResponse, payload: {username: alice-dev}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "authenticated is required"}
+    mutation: {description: "omits authenticated"}
+  - name: login-pending-valid
+    input: {schema: SyncLoginResponse, payload: {status: pending}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncLoginStatus pending"}
+    mutation: {description: "the browser sign-in started"}
+  - name: login-already-authenticated-valid
+    input: {schema: SyncLoginResponse, payload: {status: already_authenticated}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncLoginStatus already_authenticated"}
+    mutation: {description: "nothing to start"}
+  - name: login-unknown-status-rejected
+    input: {schema: SyncLoginResponse, payload: {status: started}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncLoginStatus is closed"}
+    mutation: {description: "names a status outside the menu"}
+  - name: logout-logged-out-valid
+    input: {schema: SyncLogoutResponse, payload: {status: logged_out}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncLogoutStatus logged_out"}
+    mutation: {description: "the stored credential was removed"}
+  - name: logout-already-logged-out-valid
+    input: {schema: SyncLogoutResponse, payload: {status: already_logged_out}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncLogoutStatus already_logged_out"}
+    mutation: {description: "sign-out is idempotent"}
+  - name: logout-unknown-status-rejected
+    input: {schema: SyncLogoutResponse, payload: {status: revoked}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncLogoutStatus is closed; the route changes local state only"}
+    mutation: {description: "claims a Village-side revocation"}
+  - name: redactions-with-entry-index-valid
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 2
+        categories:
+          - category: CREDENTIAL
+            totalCount: 1
+            rules:
+              - ruleId: aws_access_key
+                displayName: AWS Access Key ID
+                count: 1
+                items:
+                  - {category: CREDENTIAL, ruleId: aws_access_key, ruleDisplayName: AWS Access Key ID, originalText: AKIAIOSFODNN7EXAMPLE, redactedReplacement: "<AWS_ACCESS_KEY>", description: AWS access key ID, lineNumber: 142, entryIndex: 12, contextBefore: [], contextAfter: [next line]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "entryIndex lets the client say turn N"}
+    mutation: {description: "a match inside transcript entry 12"}
+  - name: redactions-outside-entry-valid
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: PATH
+            totalCount: 1
+            rules:
+              - ruleId: unix_home_path
+                displayName: home directory
+                count: 1
+                items:
+                  - {category: PATH, ruleId: unix_home_path, ruleDisplayName: home directory, originalText: /Users/alice/work, redactedReplacement: "/Users/<USER>/work", description: home directory, lineNumber: 3, contextBefore: [], contextAfter: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a match in session metadata has no entry"}
+    mutation: {description: "omits entryIndex for a metadata match"}
+  - name: redactions-empty-valid
+    input: {schema: SyncRedactionsResponse, payload: {total: 0, categories: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "nothing matched"}
+    mutation: {description: "an empty preview"}
+  - name: redactions-negative-entry-index-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: PII
+            totalCount: 1
+            rules:
+              - ruleId: email
+                displayName: Email Address
+                count: 1
+                items:
+                  - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: alice@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 5, entryIndex: -1, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "entryIndex is nonnegative"}
+    mutation: {description: "sends a negative entry index"}
+  - name: redactions-null-entry-index-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: PII
+            totalCount: 1
+            rules:
+              - ruleId: email
+                displayName: Email Address
+                count: 1
+                items:
+                  - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: alice@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 5, entryIndex: null, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an absent entry is omitted, not null"}
+    mutation: {description: "sends null for entryIndex"}
+  - name: redactions-items-exceed-count-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 2
+        categories:
+          - category: PII
+            totalCount: 1
+            rules:
+              - ruleId: email
+                displayName: Email Address
+                count: 1
+                items:
+                  - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: alice@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 5, entryIndex: 3, contextBefore: [], contextAfter: []}
+                  - {category: PII, ruleId: email, ruleDisplayName: Email Address, originalText: bob@example.com, redactedReplacement: "<EMAIL>", description: Email address, lineNumber: 9, entryIndex: 4, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: more items than its count}
+    classification: must-fail
+    provenance: {source: boundary, ref: "items are capped by the rule count"}
+    mutation: {description: "lists more items than the rule counts"}
+  - name: redactions-item-in-wrong-group-rejected
+    input:
+      schema: SyncRedactionsResponse
+      payload:
+        total: 1
+        categories:
+          - category: PII
+            totalCount: 1
+            rules:
+              - ruleId: email
+                displayName: Email Address
+                count: 1
+                items:
+                  - {category: CREDENTIAL, ruleId: aws_access_key, ruleDisplayName: AWS Access Key ID, originalText: AKIAIOSFODNN7EXAMPLE, redactedReplacement: "<AWS_ACCESS_KEY>", description: AWS access key ID, lineNumber: 5, contextBefore: [], contextAfter: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: wrong group}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each match sits under its own category and rule"}
+    mutation: {description: "files a credential match under the email rule"}
+  - name: redactions-null-categories-rejected
+    input: {schema: SyncRedactionsResponse, payload: {total: 0, categories: null}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "categories is an array"}
+    mutation: {description: "sends null instead of an empty list"}

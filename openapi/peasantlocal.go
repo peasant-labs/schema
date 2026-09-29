@@ -122,9 +122,16 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// POST /api/v1/shutdown
-	if err := addRESTOp(r, http.MethodPost, "/api/v1/shutdown",
-		"postShutdown", "Gracefully shutdown the server (localhost only).", []string{"lifecycle"},
-		nil, new(schema.ShutdownResponse)); err != nil {
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodPost, path: "/api/v1/shutdown", id: "postShutdown", tag: "lifecycle",
+		description: "Gracefully shutdown the server (localhost only).",
+		response:    new(schema.ShutdownResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
+	// The publishing, sign-in, and settings surface of the local web.
+	if err := addLocalPublishingOperations(r); err != nil {
 		return nil, err
 	}
 
@@ -196,7 +203,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}
 		oc.AddReqStructure(new(schema.CreateAnnotationRequest))
 		oc.AddRespStructure(new(schema.CreateAnnotationResponse), openapicore.WithHTTPStatus(http.StatusCreated))
-		oc.SetDescription("Create a new annotation.")
+		oc.AddRespStructure(new(LocalErrorResponse), openapicore.WithHTTPStatus(http.StatusForbidden))
+		oc.SetDescription("Create a new annotation. " + localWriteRefusal)
 		oc.SetID("createAnnotation")
 		oc.SetTags("annotations")
 		if err := r.AddOperation(oc); err != nil {

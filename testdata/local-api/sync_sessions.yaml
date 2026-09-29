@@ -1,0 +1,160 @@
+# Typed sync chooser status. Every listed row carries a closed status, a held
+# row names why it waits, and previouslyPushed is durable publication evidence
+# independent of the status. The chooser never reads an absent row as new.
+required_names:
+  - new-row-valid
+  - updated-row-valid
+  - synced-row-valid
+  - held-metrics-missing-valid
+  - held-metadata-missing-previously-pushed-valid
+  - empty-list-valid
+  - held-without-reason-rejected
+  - held-unknown-reason-rejected
+  - reason-on-new-row-rejected
+  - unknown-status-rejected
+  - previously-pushed-missing-rejected
+  - duplicate-session-rejected
+  - null-sessions-rejected
+  - grouped-held-without-reason-rejected
+operations:
+  - api: local
+    method: get
+    path: /api/v1/sync/sessions
+    response: LocalSyncSessionsPayload
+    statuses: ["200"]
+    parameters:
+      - {name: view, in: query, required: false, enum: [grouped]}
+cases:
+  - name: new-row-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncStatus new"}
+    mutation: {description: "a never-published session"}
+  - name: updated-row-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-updated, harness: codex, projectName: web, projectHash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: updated, previouslyPushed: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncStatus updated"}
+    mutation: {description: "a session that changed after its last publication"}
+  - name: synced-row-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-synced, harness: codex, projectName: web, projectHash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: synced, previouslyPushed: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncStatus synced"}
+    mutation: {description: "a session whose publication is current"}
+  - name: held-metrics-missing-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-held, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, holdReason: metrics_missing, previouslyPushed: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "SyncHoldReason metrics_missing"}
+    mutation: {description: "a held session without computed metrics"}
+  - name: held-metadata-missing-previously-pushed-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-held-pushed, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, holdReason: metadata_missing, previouslyPushed: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "previouslyPushed is independent of the status precedence"}
+    mutation: {description: "a held session that was published before"}
+  - name: empty-list-valid
+    input: {schema: LocalSyncSessionsPayload, payload: {sessions: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "an empty chooser"}
+    mutation: {description: "no pushable session"}
+  - name: held-without-reason-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-held, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, previouslyPushed: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: holdReason}
+    classification: must-fail
+    provenance: {source: requirement, ref: "held requires a typed reason"}
+    mutation: {description: "drops the hold reason from a held row"}
+  - name: held-unknown-reason-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-held, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, holdReason: disk_full, previouslyPushed: false}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncHoldReason is closed"}
+    mutation: {description: "names a hold reason outside the menu"}
+  - name: reason-on-new-row-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, holdReason: metrics_missing, previouslyPushed: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: only a held row}
+    classification: must-fail
+    provenance: {source: requirement, ref: "non-held rows reject a hold reason"}
+    mutation: {description: "adds a hold reason to a new row"}
+  - name: unknown-status-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-ready, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: ready, previouslyPushed: false}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncStatus is closed"}
+    mutation: {description: "names a status outside the menu"}
+  - name: previously-pushed-missing-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the chooser never infers publication history"}
+    mutation: {description: "omits previouslyPushed"}
+  - name: duplicate-session-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}
+          - {id: s-new, harness: claude-code, projectName: ingest-api, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: synced, previouslyPushed: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each session is listed once"}
+    mutation: {description: "lists one session twice with different statuses"}
+  - name: null-sessions-rejected
+    input: {schema: LocalSyncSessionsPayload, payload: {sessions: null}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "sessions is an array"}
+    mutation: {description: "sends null instead of an empty list"}
+  - name: grouped-held-without-reason-rejected
+    input:
+      schema: LocalSessionRow
+      payload:
+        session: {id: s-held, harness: opencode, startTime: "2026-09-20T10:00:00Z", durationMins: 1, totalTokens: 10, turnCount: 2, toolCallCount: 0, project: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc}
+        sync: {id: s-held, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: held, previouslyPushed: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: holdReason}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the grouped sync arm carries the same row rules"}
+    mutation: {description: "drops the hold reason inside a grouped row"}

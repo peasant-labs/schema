@@ -78,7 +78,7 @@ export interface paths {
         /** @description List collectives the authenticated caller belongs to, with the caller's role and membership time. */
         get: operations["listGroups"];
         put?: never;
-        /** @description Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted. */
+        /** @description Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted. linked_github_org may be omitted or null for no organization, as on update. */
         post: operations["createGroup"];
         delete?: never;
         options?: never;
@@ -653,6 +653,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcripts/{id}/pulls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. */
+        get: operations["listTranscriptPullRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcripts/{id}/share": {
         parameters: {
             query?: never;
@@ -762,7 +779,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the caller's settings, including preview_before_attach. */
+        /** @description Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. */
         get: operations["getMySettings"];
         put?: never;
         post?: never;
@@ -771,6 +788,23 @@ export interface paths {
         head?: never;
         /** @description Patch the caller's settings. A field that is omitted is left unchanged. */
         patch: operations["updateMySettings"];
+        trace?: never;
+    };
+    "/api/v1/users/me/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read totals over every transcript the caller published: transcripts, turns, recorded duration, tokens, and the distinct pull requests those transcripts are attached to. The totals cover every transcript, not one page of a list. */
+        get: operations["getMyStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
 }
@@ -1394,6 +1428,8 @@ export interface components {
          * @enum {string}
          */
         SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
+        SchemaVillagePullRequestRef: Schema.VillagePullRequestRef;
+        SchemaVillagePullRequestsSummary: Schema.VillagePullRequestsSummary;
         SchemaVillageRemoveGroupMemberResponse: Schema.VillageRemoveGroupMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;
         SchemaVillageRepositoryCommitsResponse: Schema.VillageRepositoryCommitsResponse;
@@ -1450,6 +1486,7 @@ export interface components {
         SchemaVillageTranscriptListResponse: Schema.VillageTranscriptListResponse;
         SchemaVillageTranscriptListRow: Schema.VillageTranscriptListRow;
         SchemaVillageTranscriptMetadataResponse: Schema.VillageTranscriptMetadataResponse;
+        SchemaVillageTranscriptPullRequestsResponse: Schema.VillageTranscriptPullRequestsResponse;
         SchemaVillageTranscriptShare: Schema.VillageTranscriptShare;
         /**
          * Village Transcript Visibility
@@ -1473,6 +1510,7 @@ export interface components {
         SchemaVillageUserGroup: Schema.VillageUserGroup;
         SchemaVillageUserGroupShare: Schema.VillageUserGroupShare;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
+        SchemaVillageUserStats: Schema.VillageUserStats;
         SchemaVillageVisibleGroup: Schema.VillageVisibleGroup;
         /**
          * Visibility
@@ -3853,6 +3891,56 @@ export interface operations {
             };
         };
     };
+    listTranscriptPullRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageTranscriptPullRequestsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     shareTranscriptWithGroups: {
         parameters: {
             query?: never;
@@ -4258,6 +4346,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getMyStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserStats"];
                 };
             };
             /** @description Unauthorized */

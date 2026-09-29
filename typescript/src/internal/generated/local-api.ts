@@ -27,7 +27,7 @@ export interface paths {
         /** @description List annotations for a session. */
         get: operations["listAnnotations"];
         put?: never;
-        /** @description Create a new annotation. */
+        /** @description Create a new annotation. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["createAnnotation"];
         delete?: never;
         options?: never;
@@ -163,6 +163,23 @@ export interface paths {
         };
         /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). */
         get: operations["listProjectSummaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the durable publication state of named local sessions. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with. A client counts the turns recorded after publishedAt to say how many turns are new. */
+        get: operations["listPublications"];
         put?: never;
         post?: never;
         delete?: never;
@@ -324,6 +341,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read every setting the local settings page edits, with each key's kind, value, and metadata, and every auto-publish binding with its hook state. */
+        get: operations["getSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change one setting. The body names one key and its new value, which must match the key's kind; the response is the setting as saved, with its metadata. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        patch: operations["updateSetting"];
+        trace?: never;
+    };
+    "/api/v1/settings/auto-publish/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Create or replace one auto-publish binding and install or update its git hook. The response carries the hook status and, for a blocked hook, the remedy: Peasant never overwrites a hook it does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        put: operations["putAutoPublishBinding"];
+        post?: never;
+        /** @description Remove one auto-publish binding and its git hook. The response carries the hook status after removal and, when a line must be removed from a hook Peasant does not manage, the remedy. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        delete: operations["deleteAutoPublishBinding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shutdown": {
         parameters: {
             query?: never;
@@ -333,8 +386,93 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Gracefully shutdown the server (localhost only). */
+        /** @description Gracefully shutdown the server (localhost only). Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["postShutdown"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Report whether this computer holds a valid Village credential. A signed-out computer returns authenticated false and names no account. */
+        get: operations["getSyncAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Start the Village sign-in in the browser and return at once. pending means the sign-in started; poll getSyncAuth until it reports authenticated. already_authenticated means nothing started. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["startSyncLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description End this computer's Village sign-in by removing its stored Village credential. This route changes local state only. Logging out a computer that holds no credential returns already_logged_out. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["endSyncLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/push": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran; a push stops at a failed step, so later steps are not_attempted and Village keeps what it had. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["pushSyncSessions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/redactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Preview what the redaction engine hides in one session before it leaves the machine, grouped by category and rule. Each item names its line and, when the match lies inside a transcript entry, its entryIndex in the same index space as TurnDetail.index. An omitted level uses the configured default; a level the server does not offer is refused. */
+        get: operations["getSyncRedactions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -350,6 +488,23 @@ export interface paths {
         };
         /** @description List sync candidates with optional owner-nested helper groups. */
         get: operations["listSyncSessionsGrouped"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/village/collectives": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the Village collectives the signed-in user belongs to. The local server reads them from Village with this computer's stored credential. With sessionId, the server suggests collectives by comparing schema.RemoteLabel of the session's git remote with each collective's linked repositories and linked GitHub organization; clients must not normalize remotes themselves. */
+        get: operations["listVillageCollectives"];
         put?: never;
         post?: never;
         delete?: never;
@@ -374,6 +529,10 @@ export interface components {
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
         LocalSyncSessionsPayload: Schema.LocalSyncSessionsPayload;
+        OpenapiLocalErrorResponse: {
+            code?: string;
+            error: string;
+        };
         QualityPayload: Schema.QualityPayload;
         SchemaActivityEdge: Schema.ActivityEdge;
         /**
@@ -447,6 +606,28 @@ export interface components {
          * @example assoc-20260726:session-a:commit-1
          */
         SchemaAssociationID: Schema.AssociationID;
+        SchemaAutoPublishBinding: Schema.AutoPublishBinding;
+        SchemaAutoPublishBindingRequest: Schema.AutoPublishBindingRequest;
+        /**
+         * Auto Publish Event
+         * @description Git hook that publishes an auto-publish binding's sessions
+         * @example pre-push
+         * @example post-commit
+         * @enum {string}
+         */
+        SchemaAutoPublishEvent: Schema.AutoPublishEvent;
+        SchemaAutoPublishHook: Schema.AutoPublishHook;
+        SchemaAutoPublishHookRemedy: Schema.AutoPublishHookRemedy;
+        /**
+         * Auto Publish Hook Status
+         * @description State of an auto-publish binding's git hook
+         * @example active
+         * @example blocked
+         * @example off
+         * @enum {string}
+         */
+        SchemaAutoPublishHookStatus: Schema.AutoPublishHookStatus;
+        SchemaAutoPublishRemovalResponse: Schema.AutoPublishRemovalResponse;
         /**
          * Change Binding
          * @description Strength of the evidence connecting a recorded session to a code change
@@ -474,6 +655,15 @@ export interface components {
          */
         SchemaChannelTopic: Schema.ChannelTopic;
         SchemaChildSessionRef: Schema.ChildSessionRef;
+        SchemaCollectiveSuggestion: Schema.CollectiveSuggestion;
+        /**
+         * Collective Suggestion Reason
+         * @description Why the local server suggests a collective for a session
+         * @example linked_repository
+         * @example linked_github_org
+         * @enum {string}
+         */
+        SchemaCollectiveSuggestionReason: Schema.CollectiveSuggestionReason;
         SchemaCommandInvocation: Schema.CommandInvocation;
         SchemaCommitRef: Schema.CommitRef;
         /**
@@ -624,10 +814,33 @@ export interface components {
         SchemaInsightProvenance: Schema.InsightProvenance;
         SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
+        SchemaLocalPublication: Schema.LocalPublication;
+        SchemaLocalPublicationsResponse: Schema.LocalPublicationsResponse;
         SchemaLocalSessionListItem: Schema.LocalSessionListItem;
         SchemaLocalSessionListPayload: Schema.LocalSessionListPayload;
         SchemaLocalSessionRow: Schema.LocalSessionRow;
+        SchemaLocalSetting: Schema.LocalSetting;
+        /**
+         * Local Setting Kind
+         * @description JSON type of one local setting's value
+         * @example boolean
+         * @example integer
+         * @example string
+         * @example string_list
+         * @example choice
+         * @enum {string}
+         */
+        SchemaLocalSettingKind: Schema.LocalSettingKind;
+        SchemaLocalSettingUpdateRequest: Schema.LocalSettingUpdateRequest;
+        /**
+         * Local Setting Value
+         * @description One setting's value: a boolean, an integer, a string, or an array of strings, as its kind says
+         */
+        SchemaLocalSettingValue: Schema.LocalSettingValue;
+        SchemaLocalSettingsResponse: Schema.LocalSettingsResponse;
         SchemaLocalSyncSummary: Schema.LocalSyncSummary;
+        SchemaLocalVillageCollective: Schema.LocalVillageCollective;
+        SchemaLocalVillageCollectivesResponse: Schema.LocalVillageCollectivesResponse;
         SchemaMapEdge: Schema.MapEdge;
         SchemaMapGraphPayload: Schema.MapGraphPayload;
         SchemaMapNode: Schema.MapNode;
@@ -725,6 +938,16 @@ export interface components {
          * @enum {string}
          */
         SchemaPublicSourceAnchorKind: Schema.PublicSourceAnchorKind;
+        SchemaPublicationAttemptFailure: Schema.PublicationAttemptFailure;
+        SchemaPublicationAudienceMember: Schema.PublicationAudienceMember;
+        /**
+         * Publication State
+         * @description Whether a local session has a publication on Village
+         * @example unpublished
+         * @example published
+         * @enum {string}
+         */
+        SchemaPublicationState: Schema.PublicationState;
         SchemaQualitySession: Schema.QualitySession;
         /**
          * Read Attribution State
@@ -894,6 +1117,82 @@ export interface components {
          * Format: public-ref-utf8-96-bytes
          */
         SchemaSubmissionRef: Schema.SubmissionRef;
+        SchemaSyncAuthResponse: Schema.SyncAuthResponse;
+        /**
+         * Sync Hold Reason
+         * @description Why a held local session cannot be published yet
+         * @example metrics_missing
+         * @example metadata_missing
+         * @enum {string}
+         */
+        SchemaSyncHoldReason: Schema.SyncHoldReason;
+        SchemaSyncLoginResponse: Schema.SyncLoginResponse;
+        /**
+         * Sync Login Status
+         * @description Result of starting the Village sign-in from the local server
+         * @example pending
+         * @example already_authenticated
+         * @enum {string}
+         */
+        SchemaSyncLoginStatus: Schema.SyncLoginStatus;
+        SchemaSyncLogoutResponse: Schema.SyncLogoutResponse;
+        /**
+         * Sync Logout Status
+         * @description Result of ending this computer's Village sign-in
+         * @example logged_out
+         * @example already_logged_out
+         * @enum {string}
+         */
+        SchemaSyncLogoutStatus: Schema.SyncLogoutStatus;
+        SchemaSyncPushCollectives: Schema.SyncPushCollectives;
+        SchemaSyncPushRequest: Schema.SyncPushRequest;
+        SchemaSyncPushResponse: Schema.SyncPushResponse;
+        SchemaSyncPushSessionResult: Schema.SyncPushSessionResult;
+        /**
+         * Sync Push Session Status
+         * @description Outcome of one session in a push
+         * @example new
+         * @example updated
+         * @example skipped
+         * @example error
+         * @example held
+         * @enum {string}
+         */
+        SchemaSyncPushSessionStatus: Schema.SyncPushSessionStatus;
+        /**
+         * Sync Push Step
+         * @description One step a push runs for a session
+         * @example content
+         * @example add_collective
+         * @example remove_collective
+         * @enum {string}
+         */
+        SchemaSyncPushStep: Schema.SyncPushStep;
+        /**
+         * Sync Push Step Outcome
+         * @description Result of one push step
+         * @example succeeded
+         * @example pending_approval
+         * @example failed
+         * @example not_attempted
+         * @enum {string}
+         */
+        SchemaSyncPushStepOutcome: Schema.SyncPushStepOutcome;
+        SchemaSyncPushStepResult: Schema.SyncPushStepResult;
+        SchemaSyncRedactionCategoryGroup: Schema.SyncRedactionCategoryGroup;
+        SchemaSyncRedactionItem: Schema.SyncRedactionItem;
+        SchemaSyncRedactionRuleGroup: Schema.SyncRedactionRuleGroup;
+        SchemaSyncRedactionsResponse: Schema.SyncRedactionsResponse;
+        /**
+         * Sync Status
+         * @description Publication status of one listed local session; held rows always carry a hold reason
+         * @example new
+         * @example updated
+         * @example synced
+         * @example held
+         * @enum {string}
+         */
+        SchemaSyncStatus: Schema.SyncStatus;
         /**
          * Target Kind
          * @description What is being annotated: session-level, entry-level (turn/tool call), meta-annotation, project-level, a specific file version (content-hash keyed read-state receipt), or a durable session-to-commit association
@@ -962,6 +1261,73 @@ export interface components {
          * @enum {string}
          */
         SchemaValueDomainKind: Schema.ValueDomainKind;
+        /**
+         * Village Group Acceptance Mode
+         * @description How a collective accepts new members and contributions
+         * @example open
+         * @example verified_only
+         * @example curated
+         * @enum {string}
+         */
+        SchemaVillageGroupAcceptanceMode: Schema.VillageGroupAcceptanceMode;
+        /**
+         * Village Group Data Access
+         * @description Who may read a collective's pooled transcript data
+         * @example members_only
+         * @example contributors
+         * @example public
+         * @enum {string}
+         */
+        SchemaVillageGroupDataAccess: Schema.VillageGroupDataAccess;
+        /**
+         * Village Group Role
+         * @description A user's role in one collective
+         * @example owner
+         * @example member
+         * @example contributor
+         * @example pending
+         * @enum {string}
+         */
+        SchemaVillageGroupRole: Schema.VillageGroupRole;
+        SchemaVillagePromptRequest: Schema.VillagePromptRequest;
+        /**
+         * Village Pull Request Attachment State
+         * @description Current lifecycle state of a pull request's prompt attachment
+         * @example requested
+         * @example waiting
+         * @example preview
+         * @example attached
+         * @example detached
+         * @enum {string}
+         */
+        SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
+        /**
+         * Village Share Status
+         * @description Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.
+         * @example pending
+         * @example approved
+         * @example rejected
+         * @example retracted
+         * @example revoked
+         * @enum {string}
+         */
+        SchemaVillageShareStatus: Schema.VillageShareStatus;
+        /**
+         * Village Transcript Deletion Policy
+         * @description Whether leaving a collective retracts contributed transcripts by default
+         * @example user_choice
+         * @example mandatory
+         * @enum {string}
+         */
+        SchemaVillageTranscriptDeletionPolicy: Schema.VillageTranscriptDeletionPolicy;
+        /**
+         * Village UUID
+         * Format: uuid
+         * @description Village-side canonical lowercase UUID identifier
+         * @example 123e4567-e89b-12d3-a456-426614174000
+         */
+        SchemaVillageUUID: Schema.VillageUUID;
+        SchemaVillageUserGroup: Schema.VillageUserGroup;
         SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
         SessionDetailPayload: Schema.SessionDetailPayload;
@@ -1045,6 +1411,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaCreateAnnotationResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };
@@ -1226,6 +1601,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaProjectSummariesPayload"];
+                };
+            };
+        };
+    };
+    listPublications: {
+        parameters: {
+            query: {
+                /** @description Comma-separated local session IDs */
+                sessionIds: string;
+                /** @description Set to audience to add each published transcript's collectives */
+                include?: "audience";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalPublicationsResponse"];
                 };
             };
         };
@@ -1453,6 +1853,127 @@ export interface operations {
             };
         };
     };
+    getSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateSetting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaLocalSettingUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalSetting"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    putAutoPublishBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Auto-publish binding identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaAutoPublishBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaAutoPublishBinding"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteAutoPublishBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Auto-publish binding identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaAutoPublishRemovalResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
     postShutdown: {
         parameters: {
             query?: never;
@@ -1469,6 +1990,151 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaShutdownResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getSyncAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSyncAuthResponse"];
+                };
+            };
+        };
+    };
+    startSyncLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSyncLoginResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    endSyncLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSyncLogoutResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    pushSyncSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaSyncPushRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSyncPushResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getSyncRedactions: {
+        parameters: {
+            query: {
+                /** @description Local session to scan */
+                session_id: string;
+                /** @description Requested redaction level; omit to use the configured default */
+                level?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSyncRedactionsResponse"];
                 };
             };
         };
@@ -1492,6 +2158,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocalSyncSessionsPayload"] | components["schemas"]["SchemaLocalSessionListPayload"];
+                };
+            };
+        };
+    };
+    listVillageCollectives: {
+        parameters: {
+            query?: {
+                /** @description Local session to compute suggestions for */
+                sessionId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalVillageCollectivesResponse"];
                 };
             };
         };

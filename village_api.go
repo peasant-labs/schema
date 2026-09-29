@@ -398,12 +398,14 @@ type VillageCollectiveSearchResponse struct {
 	Collectives []VillageCollectiveSearchResult `json:"collectives" nullable:"false"`
 }
 
+// VillageCreateGroupRequest creates a collective. LinkedGithubOrg accepts null
+// as "no organization", exactly as the update request does.
 type VillageCreateGroupRequest struct {
 	Name            string                     `json:"name"`
 	Description     string                     `json:"description,omitempty"`
 	AcceptanceMode  VillageGroupAcceptanceMode `json:"acceptance_mode,omitempty"`
 	DataAccess      VillageGroupDataAccess     `json:"data_access,omitempty"`
-	LinkedGithubOrg string                     `json:"linked_github_org,omitempty"`
+	LinkedGithubOrg *string                    `json:"linked_github_org,omitempty"`
 }
 
 // VillageUpdateGroupRequest mirrors the current update handler. Name and
@@ -454,12 +456,16 @@ type VillageGroupMember struct {
 	GithubOrgs     []string         `json:"github_orgs" nullable:"false"`
 }
 
+// VillageGroupTranscriptStats totals a collective's transcripts.
+// PullRequestCount counts the distinct pull requests attached to any
+// transcript counted in TotalTranscripts.
 type VillageGroupTranscriptStats struct {
 	TotalTranscripts int32 `json:"total_transcripts"`
 	ContributorCount int32 `json:"contributor_count"`
 	TotalTurns       int64 `json:"total_turns"`
 	TotalDurationMs  int64 `json:"total_duration_ms"`
 	TotalTokens      int64 `json:"total_tokens"`
+	PullRequestCount int32 `json:"pull_request_count" minimum:"0"`
 }
 
 type VillageGroupModelBreakdown struct {
@@ -637,6 +643,7 @@ type VillageTranscriptListRow struct {
 	OwnerOrgs    []VillageListUserOrganization      `json:"owner_orgs"`
 	Shares       []VillageEnrichedTranscriptShare   `json:"shares"`
 	Attestations []VillageListTranscriptAttestation `json:"attestations"`
+	PullRequests VillagePullRequestsSummary         `json:"pull_requests"`
 }
 type VillageTranscriptListResponse struct {
 	Transcripts []VillageTranscriptListRow `json:"transcripts" nullable:"false"`
@@ -653,6 +660,9 @@ func (r VillageTranscriptListResponse) Validate() error {
 	for _, row := range r.Transcripts {
 		if row.Tags == nil {
 			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
+		}
+		if err := row.PullRequests.Validate(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -747,6 +757,7 @@ type VillageGroupTranscript struct {
 	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
 	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
+	PullRequests            VillagePullRequestsSummary  `json:"pull_requests"`
 }
 
 type VillageTranscriptShare struct {
@@ -1112,10 +1123,14 @@ type VillageLinkedRepositoriesResponse struct {
 
 // VillageAvailableRepository is one repository the App can offer a collective,
 // used to populate the repository picker before a link is created.
+// PublisherCount counts the distinct members who shared a transcript from this
+// repository with this collective; transcripts not shared with it are not
+// counted.
 type VillageAvailableRepository struct {
-	Owner     string `json:"owner"`
-	Name      string `json:"name"`
-	IsPrivate bool   `json:"is_private"`
+	Owner          string `json:"owner"`
+	Name           string `json:"name"`
+	IsPrivate      bool   `json:"is_private"`
+	PublisherCount int32  `json:"publisher_count" minimum:"0"`
 }
 
 type VillageAvailableRepositoriesResponse struct {

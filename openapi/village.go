@@ -519,7 +519,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:          "/api/v1/groups",
 			id:            "createGroup",
 			tag:           "collectives",
-			description:   "Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted.",
+			description:   "Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted. linked_github_org may be omitted or null for no organization, as on update.",
 			requests:      []interface{}{new(schema.VillageCreateGroupRequest)},
 			response:      new(schema.VillageGroup),
 			successStatus: http.StatusCreated,

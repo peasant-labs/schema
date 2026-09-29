@@ -72,7 +72,12 @@ const (
 	// head remote beside its base, so a push from a clone of a fork matches the
 	// request waiting on that fork's author (additive field = minor bump).
 	// Bumped for retained unknown source evidence and preservation negotiation.
-	VillageAPIVersion = "0.22.0"
+	// Bumped to 0.23.0 for the transcript pull request read, the caller's
+	// totals, the automatic pull request linking setting, pull request titles,
+	// head branches, and list summaries, the collective and repository counts,
+	// and a create request that accepts a null organization (additive = minor
+	// bump).
+	VillageAPIVersion = "0.23.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -101,7 +106,12 @@ const (
 	// Bumped to 0.13.0 for grouped session listings, helper-member reads, and
 	// the flat detail read projection with relationship navigation.
 	// Bumped for retained unknown source evidence and durable diagnostics.
-	PeasantLocalAPIVersion = "0.14.0"
+	// Bumped to 0.15.0 for publishing from the transcript: the publication
+	// read, the typed collectives push, the collectives proxy, the declared
+	// sign-in and redaction preview routes with sign-out, the settings routes,
+	// the typed sync chooser status, and the declared cross-origin refusal on
+	// write routes (additive = minor bump).
+	PeasantLocalAPIVersion = "0.15.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -153,5 +163,8 @@ const (
 	// Bumped to 0.23.0 when the catalog's prompt request gained the pull
 	// request's head remote beside its base (additive = minor bump).
 	// Bumped for retained unknown source evidence and durable diagnostics.
-	TypesVersion = "0.24.0"
+	// Bumped to 0.25.0 when the local publishing, sign-in, and settings types
+	// and the Village pull request read, summary, and totals types entered the
+	// catalog (additive = minor bump).
+	TypesVersion = "0.25.0"
 )

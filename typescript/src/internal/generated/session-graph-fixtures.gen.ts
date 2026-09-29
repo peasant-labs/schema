@@ -5833,7 +5833,8 @@ export const canonicalSessionGraphFixtures = {
                 "contributor_count": 0,
                 "total_turns": 0,
                 "total_duration_ms": 0,
-                "total_tokens": 0
+                "total_tokens": 0,
+                "pull_request_count": 0
               },
               "models": [],
               "contributors": [],
@@ -5879,7 +5880,8 @@ export const canonicalSessionGraphFixtures = {
                 "contributor_count": 0,
                 "total_turns": 0,
                 "total_duration_ms": 0,
-                "total_tokens": 0
+                "total_tokens": 0,
+                "pull_request_count": 0
               },
               "models": [],
               "contributors": [],
@@ -5934,7 +5936,8 @@ export const canonicalSessionGraphFixtures = {
                 "contributor_count": 0,
                 "total_turns": 0,
                 "total_duration_ms": 0,
-                "total_tokens": 0
+                "total_tokens": 0,
+                "pull_request_count": 0
               },
               "models": [],
               "contributors": [],
@@ -5982,7 +5985,8 @@ export const canonicalSessionGraphFixtures = {
                 "contributor_count": 0,
                 "total_turns": 0,
                 "total_duration_ms": 0,
-                "total_tokens": 0
+                "total_tokens": 0,
+                "pull_request_count": 0
               },
               "models": [],
               "contributors": [],
@@ -6784,7 +6788,8 @@ export const canonicalSessionGraphFixtures = {
                       "turnCount": 5,
                       "inputSubmissionCount": 1,
                       "model": "codex",
-                      "syncStatus": "synced"
+                      "syncStatus": "synced",
+                      "previouslyPushed": true
                     }
                   },
                   "helperGroups": [
@@ -6847,7 +6852,8 @@ export const canonicalSessionGraphFixtures = {
                       "turnCount": 5,
                       "inputSubmissionCount": 0,
                       "model": "codex",
-                      "syncStatus": "synced"
+                      "syncStatus": "synced",
+                      "previouslyPushed": true
                     }
                   },
                   "helperGroups": [
@@ -7135,7 +7141,11 @@ export const canonicalSessionGraphFixtures = {
                       "session_origin": "agent",
                       "owner_username": "owner",
                       "owner_avatar_url": null,
-                      "owner_is_discoverable": true
+                      "owner_is_discoverable": true,
+                      "pull_requests": {
+                        "count": 0,
+                        "recent": []
+                      }
                     }
                   },
                   "helperGroups": [
@@ -7310,6 +7320,10 @@ export const canonicalSessionGraphFixtures = {
                       "owner_username": "owner",
                       "owner_avatar_url": null,
                       "owner_is_discoverable": true,
+                      "pull_requests": {
+                        "count": 0,
+                        "recent": []
+                      },
                       "input_submission_count": 0
                     }
                   },

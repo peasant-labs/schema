@@ -600,3 +600,87 @@ enums:
       - {name: Transcript, value: "transcript"}
       - {name: ContextContainer, value: "context_container"}
     all_values: ["transcript", "context_container"]
+  - name: SyncStatus
+    all_name: AllSyncStatuses
+    members:
+      - {name: New, value: "new"}
+      - {name: Updated, value: "updated"}
+      - {name: Synced, value: "synced"}
+      - {name: Held, value: "held"}
+    all_values: ["new", "updated", "synced", "held"]
+  - name: SyncHoldReason
+    all_name: AllSyncHoldReasons
+    members:
+      - {name: MetricsMissing, value: "metrics_missing"}
+      - {name: MetadataMissing, value: "metadata_missing"}
+    all_values: ["metrics_missing", "metadata_missing"]
+  - name: SyncPushSessionStatus
+    all_name: AllSyncPushSessionStatuses
+    members:
+      - {name: New, value: "new"}
+      - {name: Updated, value: "updated"}
+      - {name: Skipped, value: "skipped"}
+      - {name: Error, value: "error"}
+      - {name: Held, value: "held"}
+    all_values: ["new", "updated", "skipped", "error", "held"]
+  - name: SyncPushStep
+    all_name: AllSyncPushSteps
+    members:
+      - {name: Content, value: "content"}
+      - {name: AddCollective, value: "add_collective"}
+      - {name: RemoveCollective, value: "remove_collective"}
+    all_values: ["content", "add_collective", "remove_collective"]
+  - name: SyncPushStepOutcome
+    all_name: AllSyncPushStepOutcomes
+    members:
+      - {name: Succeeded, value: "succeeded"}
+      - {name: PendingApproval, value: "pending_approval"}
+      - {name: Failed, value: "failed"}
+      - {name: NotAttempted, value: "not_attempted"}
+    all_values: ["succeeded", "pending_approval", "failed", "not_attempted"]
+  - name: SyncLoginStatus
+    all_name: AllSyncLoginStatuses
+    members:
+      - {name: Pending, value: "pending"}
+      - {name: AlreadyAuthenticated, value: "already_authenticated"}
+    all_values: ["pending", "already_authenticated"]
+  - name: SyncLogoutStatus
+    all_name: AllSyncLogoutStatuses
+    members:
+      - {name: LoggedOut, value: "logged_out"}
+      - {name: AlreadyLoggedOut, value: "already_logged_out"}
+    all_values: ["logged_out", "already_logged_out"]
+  - name: PublicationState
+    all_name: AllPublicationStates
+    members:
+      - {name: Unpublished, value: "unpublished"}
+      - {name: Published, value: "published"}
+    all_values: ["unpublished", "published"]
+  - name: CollectiveSuggestionReason
+    all_name: AllCollectiveSuggestionReasons
+    members:
+      - {name: LinkedRepository, value: "linked_repository"}
+      - {name: LinkedGithubOrg, value: "linked_github_org"}
+    all_values: ["linked_repository", "linked_github_org"]
+  - name: LocalSettingKind
+    all_name: AllLocalSettingKinds
+    members:
+      - {name: Boolean, value: "boolean"}
+      - {name: Integer, value: "integer"}
+      - {name: String, value: "string"}
+      - {name: StringList, value: "string_list"}
+      - {name: Choice, value: "choice"}
+    all_values: ["boolean", "integer", "string", "string_list", "choice"]
+  - name: AutoPublishEvent
+    all_name: AllAutoPublishEvents
+    members:
+      - {name: PrePush, value: "pre-push"}
+      - {name: PostCommit, value: "post-commit"}
+    all_values: ["pre-push", "post-commit"]
+  - name: AutoPublishHookStatus
+    all_name: AllAutoPublishHookStatuses
+    members:
+      - {name: Active, value: "active"}
+      - {name: Blocked, value: "blocked"}
+      - {name: Off, value: "off"}
+    all_values: ["active", "blocked", "off"]

@@ -1,0 +1,351 @@
+# The typed push. Publishing is collectives only: the request adds and removes
+# collectives and carries no visibility or license. The response keeps the
+# counts the route already returned and adds one result per step.
+required_names:
+  - request-sessions-only-valid
+  - request-add-and-remove-valid
+  - request-with-level-valid
+  - request-empty-sessions-rejected
+  - request-missing-sessions-rejected
+  - request-duplicate-session-rejected
+  - request-collective-in-both-lists-rejected
+  - request-duplicate-add-rejected
+  - request-bad-collective-id-rejected
+  - request-null-add-rejected
+  - response-first-publish-two-collectives-valid
+  - response-stopped-at-audience-valid
+  - response-content-failed-valid
+  - response-counts-only-valid
+  - response-not-attempted-before-failure-rejected
+  - response-step-after-failure-attempted-rejected
+  - response-content-step-with-collective-rejected
+  - response-collective-step-without-collective-rejected
+  - response-pending-on-remove-rejected
+  - response-failed-without-error-rejected
+  - response-error-on-succeeded-rejected
+  - response-content-not-first-rejected
+  - response-duplicate-collective-step-rejected
+  - response-unknown-outcome-rejected
+  - response-negative-count-rejected
+  - response-error-status-without-text-rejected
+operations:
+  - api: local
+    method: post
+    path: /api/v1/sync/push
+    request: SyncPushRequest
+    response: SyncPushResponse
+    statuses: ["200", "403"]
+cases:
+  - name: request-sessions-only-valid
+    input: {schema: SyncPushRequest, payload: {sessionIds: [s-1]}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "omitted collectives keep the current audience"}
+    mutation: {description: "an update that only sends new turns"}
+  - name: request-add-and-remove-valid
+    input:
+      schema: SyncPushRequest
+      payload:
+        sessionIds: [s-1, s-2]
+        collectives: {add: [11111111-1111-4111-8111-111111111111], remove: [22222222-2222-4222-8222-222222222222]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "collectives add and remove"}
+    mutation: {description: "adds one collective and takes the transcript back from another"}
+  - name: request-with-level-valid
+    input: {schema: SyncPushRequest, payload: {sessionIds: [s-1], redactionLevel: standard, collectives: {add: [11111111-1111-4111-8111-111111111111]}}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "redactionLevel is a request the server resolves"}
+    mutation: {description: "names the offered level"}
+  - name: request-empty-sessions-rejected
+    input: {schema: SyncPushRequest, payload: {sessionIds: []}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a push names at least one session"}
+    mutation: {description: "sends an empty session list"}
+  - name: request-missing-sessions-rejected
+    input: {schema: SyncPushRequest, payload: {collectives: {add: [11111111-1111-4111-8111-111111111111]}}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "sessionIds is required"}
+    mutation: {description: "omits the session list"}
+  - name: request-duplicate-session-rejected
+    input: {schema: SyncPushRequest, payload: {sessionIds: [s-1, s-1]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: named twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each session is published once"}
+    mutation: {description: "names one session twice"}
+  - name: request-collective-in-both-lists-rejected
+    input:
+      schema: SyncPushRequest
+      payload:
+        sessionIds: [s-1]
+        collectives: {add: [11111111-1111-4111-8111-111111111111], remove: [11111111-1111-4111-8111-111111111111]}
+    expected: {valid: false, rejected_by: semantics, error_contains: both added and removed}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the resulting audience is unambiguous"}
+    mutation: {description: "adds and removes the same collective"}
+  - name: request-duplicate-add-rejected
+    input:
+      schema: SyncPushRequest
+      payload:
+        sessionIds: [s-1]
+        collectives: {add: [11111111-1111-4111-8111-111111111111, 11111111-1111-4111-8111-111111111111]}
+    expected: {valid: false, rejected_by: semantics, error_contains: twice}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each collective is named once"}
+    mutation: {description: "adds one collective twice"}
+  - name: request-bad-collective-id-rejected
+    input: {schema: SyncPushRequest, payload: {sessionIds: [s-1], collectives: {add: [Acme Platform]}}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "collectives are named by Village UUID"}
+    mutation: {description: "names a collective by its display name"}
+  - name: request-null-add-rejected
+    input: {schema: SyncPushRequest, payload: {sessionIds: [s-1], collectives: {add: null}}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an omitted list is omitted, not null"}
+    mutation: {description: "sends null for the add list"}
+  - name: response-first-publish-two-collectives-valid
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: new
+            title: Fix flaky ingest test
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            steps:
+              - {step: content, outcome: succeeded}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+              - {step: add_collective, collectiveId: 22222222-2222-4222-8222-222222222222, outcome: pending_approval}
+            waitingPullRequests:
+              - {owner: acme, name: ingest-api, number: 42, state: waiting, remote: acme/ingest-api, head_remote: acme/ingest-api, requested_at: "2026-09-20T09:00:00Z"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "one result per step with the transcript URL and waiting pull requests"}
+    mutation: {description: "publishes to one open and one curated collective"}
+  - name: response-stopped-at-audience-valid
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 1
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: updated
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            steps:
+              - {step: content, outcome: succeeded}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: failed, error: village refused the share}
+              - {step: remove_collective, collectiveId: 22222222-2222-4222-8222-222222222222, outcome: not_attempted}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a push stops at a failed step"}
+    mutation: {description: "the audience step fails and the next step does not run"}
+  - name: response-content-failed-valid
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 0
+        errors: 1
+        sessions:
+          - sessionId: s-1
+            status: error
+            error: upload failed
+            steps:
+              - {step: content, outcome: failed, error: upload failed}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: not_attempted}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "nothing after a failed content step runs"}
+    mutation: {description: "the content step fails"}
+  - name: response-counts-only-valid
+    input:
+      schema: SyncPushResponse
+      payload: {new: 0, updated: 0, skipped: 1, errors: 0, sessions: [{sessionId: s-1, status: skipped}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the counts shape the route already returned stays valid"}
+    mutation: {description: "a result without steps"}
+  - name: response-not-attempted-before-failure-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 1
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: updated
+            steps:
+              - {step: content, outcome: not_attempted}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: contradicts the step order}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a step after a failure is not_attempted"}
+    mutation: {description: "marks the first step not attempted"}
+  - name: response-step-after-failure-attempted-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 0
+        errors: 1
+        sessions:
+          - sessionId: s-1
+            status: error
+            error: upload failed
+            steps:
+              - {step: content, outcome: failed, error: upload failed}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: contradicts the step order}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a push stops at a failed step"}
+    mutation: {description: "reports a step that ran after a failure"}
+  - name: response-content-step-with-collective-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: new, steps: [{step: content, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: collectiveId}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the content step names no collective"}
+    mutation: {description: "attaches a collective to the content step"}
+  - name: response-collective-step-without-collective-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: new, steps: [{step: content, outcome: succeeded}, {step: add_collective, outcome: succeeded}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: collectiveId}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a collective step names its collective"}
+    mutation: {description: "drops the collective from an add step"}
+  - name: response-pending-on-remove-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 1
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: updated, steps: [{step: remove_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: pending_approval}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: only adding a collective}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a curated share waits for approval"}
+    mutation: {description: "marks a removal as waiting for approval"}
+  - name: response-failed-without-error-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 0
+        errors: 1
+        sessions:
+          - {sessionId: s-1, status: error, error: upload failed, steps: [{step: content, outcome: failed}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: error presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a failed step says why"}
+    mutation: {description: "drops the reason from a failed step"}
+  - name: response-error-on-succeeded-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: new, steps: [{step: content, outcome: succeeded, error: stale}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: error presence}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a failed step carries an error"}
+    mutation: {description: "adds an error to a succeeded step"}
+  - name: response-content-not-first-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: new
+            steps:
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+              - {step: content, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: content runs once and first}
+    classification: must-fail
+    provenance: {source: requirement, ref: "steps are listed in the order they ran"}
+    mutation: {description: "lists the content step after a collective step"}
+  - name: response-duplicate-collective-step-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: new
+            steps:
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+              - {step: remove_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: two steps}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each collective has one step"}
+    mutation: {description: "adds and removes one collective in one push"}
+  - name: response-unknown-outcome-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: new, steps: [{step: content, outcome: done}]}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncPushStepOutcome is closed"}
+    mutation: {description: "names an outcome outside the menu"}
+  - name: response-negative-count-rejected
+    input: {schema: SyncPushResponse, payload: {new: -1, updated: 0, skipped: 0, errors: 0, sessions: []}}
+    expected: {valid: false, rejected_by: shape}
+    classification: must-fail
+    provenance: {source: boundary, ref: "counts are nonnegative"}
+    mutation: {description: "sends a negative count"}
+  - name: response-error-status-without-text-rejected
+    input:
+      schema: SyncPushResponse
+      payload: {new: 0, updated: 0, skipped: 0, errors: 1, sessions: [{sessionId: s-1, status: error}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: no error text}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a failed session says what failed"}
+    mutation: {description: "reports an error without its reason"}

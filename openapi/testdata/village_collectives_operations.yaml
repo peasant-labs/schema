@@ -243,7 +243,7 @@ operations:
     request_components: []
     response_components: [VillageUserSettings]
     statuses: ["200", "401", "500"]
-    description_anchors: [preview_before_attach]
+    description_anchors: [preview_before_attach, auto_attach_pull_requests is off by default, never changes who can read]
   - path: /api/v1/users/me/settings
     method: patch
     operation_id: updateMySettings
@@ -251,6 +251,20 @@ operations:
     response_components: [VillageUserSettings]
     statuses: ["200", "400", "401", "500"]
     description_anchors: [left unchanged]
+  - path: /api/v1/transcripts/{id}/pulls
+    method: get
+    operation_id: listTranscriptPullRequests
+    request_components: []
+    response_components: [VillageTranscriptPullRequestsResponse]
+    statuses: ["200", "400", "404", "500"]
+    description_anchors: [attached or detached, receives 404, never 403]
+  - path: /api/v1/users/me/stats
+    method: get
+    operation_id: getMyStats
+    request_components: []
+    response_components: [VillageUserStats]
+    statuses: ["200", "401", "500"]
+    description_anchors: [distinct pull requests, not one page]
 component_enums:
   - component: VillageGroupAcceptanceMode
     values: [open, verified_only, curated]
@@ -281,6 +295,21 @@ component_enums:
   - component: VillagePromptsCheckMode
     values: [informational, required]
 component_required:
+  - component: VillageUserSettings
+    contains: [preview_before_attach, auto_attach_pull_requests]
+    excludes: []
+  - component: VillageTranscriptListRow
+    contains: [transcript, tags, pull_requests]
+    excludes: []
+  - component: VillageGroupTranscriptStats
+    contains: [total_transcripts, pull_request_count]
+    excludes: []
+  - component: VillageAvailableRepository
+    contains: [owner, name, is_private, publisher_count]
+    excludes: []
+  - component: VillagePullRequestsSummary
+    contains: [count, recent]
+    excludes: []
   - component: VillageGroupTranscript
     contains:
       - id
@@ -299,6 +328,7 @@ component_required:
       - owner_username
       - owner_avatar_url
       - owner_is_discoverable
+      - pull_requests
     excludes:
       - VillageTranscript
   - component: VillagePullRequestAttachment
@@ -307,12 +337,34 @@ component_required:
       - owner
       - name
       - number
+      - title
+      - head_ref
       - head_sha
       - state
       - created_at
       - updated_at
     excludes: []
 component_properties:
+  - component: VillageCreateGroupRequest
+    property: linked_github_org
+    required: false
+    nullable: true
+  - component: VillageUpdateGroupRequest
+    property: linked_github_org
+    nullable: true
+  - component: VillagePullRequestAttachment
+    property: title
+    required: true
+    nullable: true
+  - component: VillagePullRequestAttachment
+    property: head_ref
+    required: true
+    nullable: true
+  - component: VillageTranscriptPullRequestsResponse
+    property: pull_requests
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillagePullRequestAttachment"
   - component: VillageCollectiveSearchResponse
     property: collectives
     required: true
@@ -413,3 +465,34 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"
+request_bodies:
+  - name: create-group-null-organization
+    path: /api/v1/groups
+    method: post
+    body: {name: Acme Platform, linked_github_org: null}
+    valid: true
+  - name: create-group-omitted-organization
+    path: /api/v1/groups
+    method: post
+    body: {name: Acme Platform}
+    valid: true
+  - name: create-group-named-organization
+    path: /api/v1/groups
+    method: post
+    body: {name: Acme Platform, linked_github_org: acme}
+    valid: true
+  - name: create-group-numeric-organization-rejected
+    path: /api/v1/groups
+    method: post
+    body: {name: Acme Platform, linked_github_org: 7}
+    valid: false
+  - name: create-group-missing-name-rejected
+    path: /api/v1/groups
+    method: post
+    body: {linked_github_org: null}
+    valid: false
+  - name: update-group-null-organization
+    path: /api/v1/groups/{id}
+    method: patch
+    body: {linked_github_org: null}
+    valid: true
