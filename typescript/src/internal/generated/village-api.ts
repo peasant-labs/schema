@@ -660,7 +660,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. */
+        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. */
         get: operations["listTranscriptPullRequests"];
         put?: never;
         post?: never;

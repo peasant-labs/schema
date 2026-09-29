@@ -95,7 +95,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/transcripts/{id}/pulls",
 			id:          "listTranscriptPullRequests",
 			tag:         "pull-requests",
-			description: "List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists.",
+			description: "List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists.",
 			requests: []interface{}{new(struct {
 				ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 			})},
