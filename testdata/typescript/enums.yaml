@@ -687,3 +687,9 @@ enums:
       - {name: Blocked, value: "blocked"}
       - {name: Failed, value: "failed"}
     all_values: ["absent", "installed", "blocked", "failed"]
+  - name: AutoPublishRuleKind
+    all_name: AllAutoPublishRuleKinds
+    members:
+      - {name: Folder, value: "folder"}
+      - {name: Remote, value: "remote"}
+    all_values: ["folder", "remote"]

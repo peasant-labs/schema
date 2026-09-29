@@ -29,7 +29,8 @@ const (
 	LocalSettingChoice LocalSettingKind = "choice"
 	// LocalSettingStructured: the value is the key's configuration value as a
 	// JSON object or array, for example a list of custom redaction patterns.
-	// Peasant owns its shape.
+	// It is only for a list or map of records; Peasant owns its shape. A key
+	// whose value fits another kind uses that kind.
 	LocalSettingStructured LocalSettingKind = "structured"
 )
 
@@ -79,18 +80,18 @@ func (LocalSettingValue) JSONSchema() (jsonschema.Schema, error) {
 	return s, nil
 }
 
-// IsUnset reports whether the value is JSON null.
+// IsUnset reports whether the value is JSON null. A nil value is unset too:
+// it marshals as null.
 func (v LocalSettingValue) IsUnset() bool {
-	return bytes.Equal(bytes.TrimSpace(v), []byte("null"))
+	trimmed := bytes.TrimSpace(v)
+	return len(trimmed) == 0 || bytes.Equal(trimmed, []byte("null"))
 }
 
 // ValidateFor checks that a set value has the JSON type kind names and, for a
-// choice, is one of options. An unset value is valid for every kind. A
-// producer checks an update's value against the key's kind with this method.
+// choice, is one of options. An unset value, nil or JSON null, is valid for
+// every kind. A producer checks an update's value against the key's kind with
+// this method.
 func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) error {
-	if len(bytes.TrimSpace(v)) == 0 {
-		return fmt.Errorf("the value is missing")
-	}
 	if v.IsUnset() {
 		return nil
 	}
@@ -141,9 +142,18 @@ func (v LocalSettingValue) ValidateFor(kind LocalSettingKind, options []string) 
 type LocalSetting struct {
 	// Key is the setting's dotted configuration path, for example
 	// push.concurrency.
-	Key   string            `json:"key" minLength:"1"`
-	Kind  LocalSettingKind  `json:"kind"`
+	Key  string           `json:"key" minLength:"1"`
+	Kind LocalSettingKind `json:"kind"`
+	// Value is what the configuration file names for the key, or null when
+	// the file does not name it.
 	Value LocalSettingValue `json:"value"`
+	// Effective is the value that applies now: normally Value when the key is
+	// set, otherwise the server's default, and it can differ from Value when
+	// something outside the file, such as an environment variable, overrides
+	// it. It is null only when no value applies. A client shows Effective, so
+	// an unset key never reads as off or blank when its default is on or
+	// filled.
+	Effective LocalSettingValue `json:"effective"`
 	// Options is the menu of a choice setting. Other kinds have none.
 	Options []string `json:"options,omitempty" nullable:"false"`
 	// Editable reports that PATCH /api/v1/settings accepts this key. A key
@@ -179,6 +189,9 @@ func (s LocalSetting) Validate() error {
 	if err := s.Value.ValidateFor(s.Kind, s.Options); err != nil {
 		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: %v; emit a value of kind %q or null when the key is unset", s.Key, err, s.Kind)
 	}
+	if err := s.Effective.ValidateFor(s.Kind, s.Options); err != nil {
+		return fmt.Errorf("setting validation failed for %q at schema.LocalSetting.Validate: effective %v; emit the value that applies, of kind %q", s.Key, err, s.Kind)
+	}
 	return nil
 }
 
@@ -204,8 +217,16 @@ func (r LocalSettingUpdateRequest) Validate() error {
 // LocalSettingRefusal is the body of a refused setting update: the key and
 // why it was not changed. A refused update changes nothing.
 type LocalSettingRefusal struct {
-	Key   string `json:"key"`
+	Key   string `json:"key" minLength:"1"`
 	Error string `json:"error" minLength:"1"`
+}
+
+// Validate checks that the refusal names the key and the reason.
+func (r LocalSettingRefusal) Validate() error {
+	if strings.TrimSpace(r.Key) == "" || strings.TrimSpace(r.Error) == "" {
+		return fmt.Errorf("setting refusal validation failed at schema.LocalSettingRefusal.Validate: key or error is empty; the settings page restores the value and shows the reason; emit both")
+	}
+	return nil
 }
 
 // LocalSettingsResponse is the response of GET /api/v1/settings: every
@@ -277,8 +298,8 @@ const (
 	// it did not write is in the way or the hook path is shared outside the
 	// repository. Peasant never overwrites such a file. It carries a remedy.
 	AutoPublishHookBlocked AutoPublishHookStatus = "blocked"
-	// AutoPublishHookFailed: installing or removing the hook failed. It
-	// carries a remedy naming the failure.
+	// AutoPublishHookFailed: installing the hook failed. Only an install
+	// response reports it, and it carries a remedy naming the failure.
 	AutoPublishHookFailed AutoPublishHookStatus = "failed"
 )
 
@@ -294,12 +315,12 @@ func (AutoPublishHookStatus) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // AutoPublishHookRemedy tells the user what to do about a blocked or failed
-// hook. Command, present only for a blocked hook Peasant could otherwise
-// manage, is the exact section to add to the existing hook by hand, or to
-// remove from it after a rule is removed.
+// hook. Snippet, present only for a blocked hook Peasant could otherwise
+// manage, is the exact section of hook script to add to the existing hook by
+// hand.
 type AutoPublishHookRemedy struct {
 	Message string `json:"message" minLength:"1"`
-	Command string `json:"command,omitempty"`
+	Snippet string `json:"snippet,omitempty"`
 }
 
 // AutoPublishHook is the state of one repository's hook for one event. Only a
@@ -328,8 +349,8 @@ func (h AutoPublishHook) Validate() error {
 	if strings.TrimSpace(h.Remedy.Message) == "" {
 		return fmt.Errorf("auto-publish hook validation failed for %s at schema.AutoPublishHook.Validate: the remedy has no message; the user cannot act on the hook; say what to do", h.Event)
 	}
-	if h.Remedy.Command != "" && h.Status != AutoPublishHookBlocked {
-		return fmt.Errorf("auto-publish hook validation failed for %s at schema.AutoPublishHook.Validate: a %s hook carries a command to paste; only a blocked hook has a section to edit by hand", h.Event, h.Status)
+	if h.Remedy.Snippet != "" && h.Status != AutoPublishHookBlocked {
+		return fmt.Errorf("auto-publish hook validation failed for %s at schema.AutoPublishHook.Validate: a %s hook carries a snippet to paste; only a blocked hook has a section to add by hand", h.Event, h.Status)
 	}
 	return nil
 }
@@ -363,18 +384,41 @@ func (r AutoPublishRepository) Validate() error {
 	return nil
 }
 
-// AutoPublishRuleRequest is the body of PUT /api/v1/settings/auto-publish/{id}.
-// Match is a folder pattern or a git remote pattern. An empty Events list
-// keeps the rule and publishes nothing.
-type AutoPublishRuleRequest struct {
-	Match       string             `json:"match" minLength:"1"`
-	Events      []AutoPublishEvent `json:"events" nullable:"false"`
-	Collectives []VillageUUID      `json:"collectives" nullable:"false"`
+// AutoPublishRuleKind says what a rule's match pattern names.
+type AutoPublishRuleKind string
+
+const (
+	// AutoPublishRuleFolder: Match is a folder glob on this computer.
+	AutoPublishRuleFolder AutoPublishRuleKind = "folder"
+	// AutoPublishRuleRemote: Match is a git remote pattern.
+	AutoPublishRuleRemote AutoPublishRuleKind = "remote"
+)
+
+// AllAutoPublishRuleKinds is the canonical rule kind menu.
+var AllAutoPublishRuleKinds = []AutoPublishRuleKind{AutoPublishRuleFolder, AutoPublishRuleRemote}
+
+func (k AutoPublishRuleKind) IsValid() bool  { return inSet(k, AllAutoPublishRuleKinds) }
+func (k AutoPublishRuleKind) String() string { return string(k) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (AutoPublishRuleKind) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Auto Publish Rule Kind", "What an auto-publish rule's match pattern names", AllAutoPublishRuleKinds), nil
 }
 
-// Validate checks the match and that no event or collective repeats.
+// AutoPublishRuleRequest is the body of PUT /api/v1/settings/auto-publish/{id}.
+// Kind says whether Match is a folder glob or a git remote pattern. An empty
+// Events list keeps the rule and publishes nothing.
+type AutoPublishRuleRequest struct {
+	Kind        AutoPublishRuleKind `json:"kind"`
+	Match       string              `json:"match" minLength:"1"`
+	Events      []AutoPublishEvent  `json:"events" nullable:"false"`
+	Collectives []VillageUUID       `json:"collectives" nullable:"false"`
+}
+
+// Validate checks the kind, the match, and that no event or collective
+// repeats.
 func (r AutoPublishRuleRequest) Validate() error {
-	return validateAutoPublishRule(r.Match, r.Events, r.Collectives)
+	return validateAutoPublishRule(r.Kind, r.Match, r.Events, r.Collectives)
 }
 
 // AutoPublishRule is one saved auto-publish rule with the recorded
@@ -383,6 +427,7 @@ func (r AutoPublishRuleRequest) Validate() error {
 // repository.
 type AutoPublishRule struct {
 	ID           string                  `json:"id" minLength:"1"`
+	Kind         AutoPublishRuleKind     `json:"kind"`
 	Match        string                  `json:"match" minLength:"1"`
 	Events       []AutoPublishEvent      `json:"events" nullable:"false"`
 	Collectives  []VillageUUID           `json:"collectives" nullable:"false"`
@@ -395,7 +440,7 @@ func (r AutoPublishRule) Validate() error {
 	if strings.TrimSpace(r.ID) == "" {
 		return fmt.Errorf("auto-publish rule validation failed at schema.AutoPublishRule.Validate: id is empty; the settings page cannot address the rule; emit its identifier")
 	}
-	if err := validateAutoPublishRule(r.Match, r.Events, r.Collectives); err != nil {
+	if err := validateAutoPublishRule(r.Kind, r.Match, r.Events, r.Collectives); err != nil {
 		return err
 	}
 	if r.Repositories == nil {
@@ -422,7 +467,10 @@ func (r AutoPublishRule) Validate() error {
 	return nil
 }
 
-func validateAutoPublishRule(match string, events []AutoPublishEvent, collectives []VillageUUID) error {
+func validateAutoPublishRule(kind AutoPublishRuleKind, match string, events []AutoPublishEvent, collectives []VillageUUID) error {
+	if !kind.IsValid() {
+		return fmt.Errorf("auto-publish rule validation failed for %q: kind %q is outside the closed set; say whether the match names a folder or a remote with a member of schema.AllAutoPublishRuleKinds", match, kind)
+	}
 	if strings.TrimSpace(match) == "" {
 		return fmt.Errorf("auto-publish rule validation failed: match is empty; the rule would cover nothing; name a folder or remote pattern")
 	}
@@ -466,8 +514,9 @@ func (r AutoPublishInstallRequest) Validate() error {
 
 // AutoPublishRemovalResponse is the response of DELETE
 // /api/v1/settings/auto-publish/{id}: the removed rule's identifier and the
-// state of each repository's hooks after removal. A hook another rule still
-// needs stays installed.
+// hooks of the repositories it matched, as they are. Removing a rule changes
+// no hook: a hook installed for the rule, by another rule, or from the
+// terminal keeps publishing until the user removes it explicitly.
 type AutoPublishRemovalResponse struct {
 	ID           string                  `json:"id" minLength:"1"`
 	Repositories []AutoPublishRepository `json:"repositories" nullable:"false"`

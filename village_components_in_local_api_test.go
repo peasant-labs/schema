@@ -29,11 +29,13 @@ type villageComponentInLocal struct {
 	SHA256 string `yaml:"sha256"`
 }
 
-// TestLocalAPIPinsEmbeddedVillageComponents keeps a Village change from
-// rewriting the current Local API document without a Local version bump. The
-// Local API embeds Village catalog rows, and harmonization copies each one
-// from the Types catalog, so a Village-only change would otherwise mutate a
-// released Local spec with every other gate green.
+// TestLocalAPIPinsEmbeddedVillageComponents notices a Village change that
+// rewrites the current Local API document. The Local API embeds Village
+// catalog rows, and harmonization copies each one from the Types catalog, so a
+// Village-only change would otherwise mutate a released Local spec with every
+// other gate green. It cannot tell a released version from an unreleased one;
+// its message says which fix applies. A gate that compares each current spec
+// with its bytes at the last release tag would replace it.
 func TestLocalAPIPinsEmbeddedVillageComponents(t *testing.T) {
 	var fixture villageComponentsInLocal
 	decoder := yaml.NewDecoder(bytes.NewReader(villageComponentsInLocalYAML))
@@ -71,12 +73,21 @@ func TestLocalAPIPinsEmbeddedVillageComponents(t *testing.T) {
 	for _, component := range fixture.Components {
 		pinned[component.Name] = component.SHA256
 	}
-	if len(pinned) != len(fixture.Components) || len(pinned) != len(actual) {
-		t.Fatalf("the Local API embeds %d Village components and the fixture pins %d; a Village row entered or left the Local API, so bump PeasantLocalAPIVersion and re-pin:\n%s", len(actual), len(fixture.Components), repin)
-	}
+	var changed []string
 	for name, sum := range actual {
 		if pinned[name] != sum {
-			t.Fatalf("Village component %s in the Local API changed under Local API %s; a released Local spec must not change in place, so bump PeasantLocalAPIVersion and re-pin:\n%s", name, schema.PeasantLocalAPIVersion, repin)
+			changed = append(changed, name)
 		}
+	}
+	for name := range pinned {
+		if _, ok := actual[name]; !ok {
+			changed = append(changed, name)
+		}
+	}
+	sort.Strings(changed)
+	if len(changed) > 0 || len(pinned) != len(fixture.Components) {
+		// No re-pin block is printed here on purpose: under an unchanged
+		// version, pasting new pins would rewrite a released Local spec in place.
+		t.Fatalf("Village rows embedded in Local API %s changed: %v. If Local API %s is released, bump PeasantLocalAPIVersion first; the test then prints the pins for the new version. Only a version that is not yet released may be re-pinned in place, by editing the listed hashes by hand.", schema.PeasantLocalAPIVersion, changed, schema.PeasantLocalAPIVersion)
 	}
 }

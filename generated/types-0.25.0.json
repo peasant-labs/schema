@@ -2478,11 +2478,11 @@
       },
       "AutoPublishHookRemedy": {
         "properties": {
-          "command": {
-            "type": "string"
-          },
           "message": {
             "minLength": 1,
+            "type": "string"
+          },
+          "snippet": {
             "type": "string"
           }
         },
@@ -2580,6 +2580,9 @@
             "minLength": 1,
             "type": "string"
           },
+          "kind": {
+            "$ref": "#/components/schemas/AutoPublishRuleKind"
+          },
           "match": {
             "minLength": 1,
             "type": "string"
@@ -2593,12 +2596,26 @@
         },
         "required": [
           "id",
+          "kind",
           "match",
           "events",
           "collectives",
           "repositories"
         ],
         "type": "object"
+      },
+      "AutoPublishRuleKind": {
+        "description": "What an auto-publish rule's match pattern names",
+        "enum": [
+          "folder",
+          "remote"
+        ],
+        "examples": [
+          "folder",
+          "remote"
+        ],
+        "title": "Auto Publish Rule Kind",
+        "type": "string"
       },
       "AutoPublishRuleRequest": {
         "additionalProperties": false,
@@ -2615,12 +2632,16 @@
             },
             "type": "array"
           },
+          "kind": {
+            "$ref": "#/components/schemas/AutoPublishRuleKind"
+          },
           "match": {
             "minLength": 1,
             "type": "string"
           }
         },
         "required": [
+          "kind",
           "match",
           "events",
           "collectives"
@@ -4855,6 +4876,9 @@
           "editable": {
             "type": "boolean"
           },
+          "effective": {
+            "$ref": "#/components/schemas/LocalSettingValue"
+          },
           "inPeasantConfig": {
             "type": "boolean"
           },
@@ -4879,6 +4903,7 @@
           "key",
           "kind",
           "value",
+          "effective",
           "editable",
           "inPeasantConfig"
         ],
@@ -4912,6 +4937,7 @@
             "type": "string"
           },
           "key": {
+            "minLength": 1,
             "type": "string"
           }
         },

@@ -1265,3 +1265,4 @@ types:
   - {go_name: AutoPublishRuleRequest, disposition: catalog, component: AutoPublishRuleRequest, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishRule, disposition: catalog, component: AutoPublishRule, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishInstallRequest, disposition: catalog, component: AutoPublishInstallRequest, reason: local publishing sign-in and settings contract}
+  - {go_name: AutoPublishRuleKind, disposition: catalog, component: AutoPublishRuleKind, reason: local publishing sign-in and settings contract}

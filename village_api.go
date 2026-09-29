@@ -458,7 +458,8 @@ type VillageGroupMember struct {
 
 // VillageGroupTranscriptStats totals a collective's transcripts.
 // PullRequestCount counts the distinct pull requests whose attachment is in
-// state attached and includes a transcript counted in TotalTranscripts;
+// state attached, includes a transcript counted in TotalTranscripts, and that
+// the caller may read, under the rule of the transcript pull request read;
 // detached pull requests are not counted.
 type VillageGroupTranscriptStats struct {
 	TotalTranscripts int32 `json:"total_transcripts"`

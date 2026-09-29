@@ -25,7 +25,7 @@ operations:
   - {path: /api/v1/settings, method: get, operation_id: getSettings}
   - {path: /api/v1/settings, method: patch, operation_id: updateSetting}
   - {path: "/api/v1/settings/auto-publish/{id}", method: delete, operation_id: deleteAutoPublishRule}
-  - {path: "/api/v1/settings/auto-publish/{id}", method: put, operation_id: putAutoPublishRule}
+  - {path: "/api/v1/settings/auto-publish/{id}", method: put, operation_id: saveAutoPublishRule}
   - {path: "/api/v1/settings/auto-publish/{id}/install", method: post, operation_id: installAutoPublishHooks}
   - {path: /api/v1/sync/auth, method: get, operation_id: getSyncAuth}
   - {path: /api/v1/sync/login, method: post, operation_id: syncLogin}

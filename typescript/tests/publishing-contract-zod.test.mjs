@@ -10,16 +10,9 @@ import { validateCorpus } from "../dist/testcase.js";
 // schemas and the Go validators. The generated Zod schemas carry the shape
 // layer only, so each case must parse exactly when the shape layer accepts it:
 // a valid case, or one only the Go validator refuses.
-const corpora = [
-  "testdata/local-api/sync_sessions.yaml",
-  "testdata/local-api/publications.yaml",
-  "testdata/local-api/sync_push.yaml",
-  "testdata/local-api/village_collectives.yaml",
-  "testdata/local-api/sync_auth.yaml",
-  "testdata/local-api/settings.yaml",
-  "testdata/pulls/transcript_pull_requests.yaml",
-  "testdata/pulls/personal_stats.yaml",
-];
+const manifest = YAML.parse(await fs.readFile(new URL("../../testdata/publishing_corpora.yaml", import.meta.url), "utf8"));
+const corpora = manifest.corpora;
+assert.ok(Array.isArray(corpora) && corpora.length > 0, "testdata/publishing_corpora.yaml lists no corpus");
 
 for (const path of corpora) {
   const fixture = YAML.parse(await fs.readFile(new URL(`../../${path}`, import.meta.url), "utf8"));

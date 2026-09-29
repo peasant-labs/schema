@@ -2,10 +2,10 @@ package schema_test
 
 import (
 	"bytes"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -28,29 +28,9 @@ import (
 // same files against the generated Zod schemas and must agree with the shape
 // layer.
 
-//go:embed testdata/local-api/sync_sessions.yaml
-var syncSessionsBoundaryYAML []byte
-
-//go:embed testdata/local-api/publications.yaml
-var publicationsBoundaryYAML []byte
-
-//go:embed testdata/local-api/sync_push.yaml
-var syncPushBoundaryYAML []byte
-
-//go:embed testdata/local-api/village_collectives.yaml
-var villageCollectivesBoundaryYAML []byte
-
-//go:embed testdata/local-api/sync_auth.yaml
-var syncAuthBoundaryYAML []byte
-
-//go:embed testdata/local-api/settings.yaml
-var settingsBoundaryYAML []byte
-
-//go:embed testdata/pulls/transcript_pull_requests.yaml
-var transcriptPullRequestsBoundaryYAML []byte
-
-//go:embed testdata/pulls/personal_stats.yaml
-var personalStatsBoundaryYAML []byte
+// publishingCorpora is the one list of corpora both this harness and the
+// TypeScript Zod parity suite read, so a new corpus cannot skip either.
+const publishingCorpora = "testdata/publishing_corpora.yaml"
 
 type boundaryFixture struct {
 	RequiredNames []string                                         `yaml:"required_names"`
@@ -67,8 +47,11 @@ type boundaryOperation struct {
 	Response string `yaml:"response"`
 	// Statuses is the exact status set, when this corpus owns it. An
 	// operation whose statuses another manifest owns omits it.
-	Statuses   []string            `yaml:"statuses,omitempty"`
-	Parameters []boundaryParameter `yaml:"parameters,omitempty"`
+	Statuses []string `yaml:"statuses,omitempty"`
+	// ErrorResponses maps a declared refusal status to the component its body
+	// uses.
+	ErrorResponses map[string]string   `yaml:"error_responses,omitempty"`
+	Parameters     []boundaryParameter `yaml:"parameters,omitempty"`
 }
 
 type boundaryParameter struct {
@@ -115,8 +98,9 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"AutoPublishRule":                       decodeValidated[schema.AutoPublishRule],
 	"AutoPublishInstallRequest":             decodeValidated[schema.AutoPublishInstallRequest],
 	"AutoPublishRepository":                 decodeValidated[schema.AutoPublishRepository],
-	"LocalSettingRefusal":                   decodeOnly[schema.LocalSettingRefusal],
+	"LocalSettingRefusal":                   decodeValidated[schema.LocalSettingRefusal],
 	"VillageSessionRow":                     decodeValidated[schema.VillageSessionRow],
+	"VillageTranscriptListResponse":         decodeValidated[schema.VillageTranscriptListResponse],
 	"AutoPublishRemovalResponse":            decodeValidated[schema.AutoPublishRemovalResponse],
 	"VillageUserSettings":                   decodeOnly[schema.VillageUserSettings],
 	"VillageUpdateUserSettingsRequest":      decodeOnly[schema.VillageUpdateUserSettingsRequest],
@@ -143,19 +127,27 @@ func decodeOnly[T any](raw []byte) (any, error) {
 
 func TestPublishingContractBoundaries(t *testing.T) {
 	harness := newBoundaryHarness(t)
-	for _, corpus := range []struct {
-		name string
-		data []byte
-	}{
-		{"testdata/local-api/sync_sessions.yaml", syncSessionsBoundaryYAML},
-		{"testdata/local-api/publications.yaml", publicationsBoundaryYAML},
-		{"testdata/local-api/sync_push.yaml", syncPushBoundaryYAML},
-		{"testdata/local-api/village_collectives.yaml", villageCollectivesBoundaryYAML},
-		{"testdata/local-api/sync_auth.yaml", syncAuthBoundaryYAML},
-		{"testdata/local-api/settings.yaml", settingsBoundaryYAML},
-		{"testdata/pulls/transcript_pull_requests.yaml", transcriptPullRequestsBoundaryYAML},
-		{"testdata/pulls/personal_stats.yaml", personalStatsBoundaryYAML},
-	} {
+	var manifest struct {
+		Corpora []string `yaml:"corpora"`
+	}
+	raw, err := os.ReadFile(publishingCorpora)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoder := yaml.NewDecoder(bytes.NewReader(raw))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&manifest); err != nil || len(manifest.Corpora) == 0 {
+		t.Fatalf("decode %s: %v", publishingCorpora, err)
+	}
+	for _, path := range manifest.Corpora {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		corpus := struct {
+			name string
+			data []byte
+		}{path, data}
 		t.Run(corpus.name, func(t *testing.T) {
 			fixture := loadBoundaryFixture(t, corpus.data)
 			for _, operation := range fixture.Operations {
@@ -356,6 +348,13 @@ func (h *boundaryHarness) requireOperation(t *testing.T, want boundaryOperation)
 	}
 	if want.Statuses != nil {
 		requireSameSet(t, label+" statuses", want.Statuses, statuses)
+	}
+	for status, component := range want.ErrorResponses {
+		ref, _ := mediaSchema(t, label+" "+status, responses[status])["$ref"].(string)
+		name := strings.TrimPrefix(ref, "#/components/schemas/")
+		if name != component && name != "Schema"+component {
+			t.Fatalf("%s status %s body references %q, want %s", label, status, ref, component)
+		}
 	}
 	if want.Response != "" {
 		requireBinding(t, h, label+" response", want.API, want.Response, mediaSchema(t, label, responses[successStatus(statuses)]))

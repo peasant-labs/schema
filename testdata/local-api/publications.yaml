@@ -13,6 +13,8 @@ required_names:
   - unpublished-with-audience-rejected
   - audience-rejected-share-rejected
   - audience-duplicate-collective-rejected
+  - audience-revoked-share-rejected
+  - audience-retracted-share-rejected
   - attempt-without-message-rejected
   - unknown-state-rejected
   - auto-publish-missing-rejected
@@ -29,7 +31,8 @@ operations:
     method: get
     path: /api/v1/publications
     response: LocalPublicationsResponse
-    statuses: ["200", "502"]
+    statuses: ["200", "400", "502"]
+    error_responses: {"400": OpenapiLocalErrorResponse, "502": OpenapiLocalErrorResponse}
     parameters:
       - {name: sessionIds, in: query, required: true}
       - {name: include, in: query, required: false, enum: [audience]}
@@ -273,3 +276,23 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "an absent time is omitted, not null"}
     mutation: {description: "sends null for publishedAt"}
+  - name: audience-revoked-share-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-09-20T10:00:00Z", autoPublish: false, outsideSelection: false, audience: [{collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: revoked}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: approved and pending}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a collective whose access was taken back is not audience"}
+    mutation: {description: "lists a revoked share as audience"}
+  - name: audience-retracted-share-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-1, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-09-20T10:00:00Z", autoPublish: false, outsideSelection: false, audience: [{collectiveId: 11111111-1111-4111-8111-111111111111, name: Acme Platform, status: retracted}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: approved and pending}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a collective whose access was taken back is not audience"}
+    mutation: {description: "lists a retracted share as audience"}

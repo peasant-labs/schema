@@ -296,8 +296,8 @@ export const zAutoPublishEvent = z.enum(['pre-push', 'post-commit']);
 export type AutoPublishEvent = z.infer<typeof zAutoPublishEvent>;
 
 export const zAutoPublishHookRemedy = z.object({
-    command: z.string().optional(),
-    message: z.string().min(1)
+    message: z.string().min(1),
+    snippet: z.string().optional()
 });
 
 export type AutoPublishHookRemedy = z.infer<typeof zAutoPublishHookRemedy>;
@@ -344,6 +344,15 @@ export const zAutoPublishRemovalResponse = z.object({
 });
 
 export type AutoPublishRemovalResponse = z.infer<typeof zAutoPublishRemovalResponse>;
+
+/**
+ * Auto Publish Rule Kind
+ *
+ * What an auto-publish rule's match pattern names
+ */
+export const zAutoPublishRuleKind = z.enum(['folder', 'remote']);
+
+export type AutoPublishRuleKind = z.infer<typeof zAutoPublishRuleKind>;
 
 export const zBatchCreateAnnotationsErrorResponse = z.object({
     error: z.string(),
@@ -998,7 +1007,7 @@ export type LocalSettingKind = z.infer<typeof zLocalSettingKind>;
 
 export const zLocalSettingRefusal = z.object({
     error: z.string().min(1),
-    key: z.string()
+    key: z.string().min(1)
 });
 
 export type LocalSettingRefusal = z.infer<typeof zLocalSettingRefusal>;
@@ -1021,6 +1030,7 @@ export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
 export const zLocalSetting = z.object({
     description: z.string().optional(),
     editable: z.boolean(),
+    effective: zLocalSettingValue,
     inPeasantConfig: z.boolean(),
     key: z.string().min(1),
     kind: zLocalSettingKind,
@@ -3739,6 +3749,7 @@ export const zAutoPublishRule = z.object({
     collectives: z.array(zVillageUUID),
     events: z.array(zAutoPublishEvent),
     id: z.string().min(1),
+    kind: zAutoPublishRuleKind,
     match: z.string().min(1),
     repositories: z.array(zAutoPublishRepository)
 });
@@ -3748,6 +3759,7 @@ export type AutoPublishRule = z.infer<typeof zAutoPublishRule>;
 export const zAutoPublishRuleRequest = z.object({
     collectives: z.array(zVillageUUID),
     events: z.array(zAutoPublishEvent),
+    kind: zAutoPublishRuleKind,
     match: z.string().min(1)
 }).strict();
 

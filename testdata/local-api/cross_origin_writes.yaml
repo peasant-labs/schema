@@ -11,7 +11,7 @@ write_operations:
   - {method: post, path: /api/v1/sync/login, operation_id: syncLogin}
   - {method: post, path: /api/v1/sync/logout, operation_id: syncLogout}
   - {method: patch, path: /api/v1/settings, operation_id: updateSetting}
-  - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: putAutoPublishRule}
+  - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: saveAutoPublishRule}
   - {method: post, path: "/api/v1/settings/auto-publish/{id}/install", operation_id: installAutoPublishHooks}
   - {method: delete, path: "/api/v1/settings/auto-publish/{id}", operation_id: deleteAutoPublishRule}
 refusal:

@@ -1,7 +1,8 @@
 # The caller's totals, the collective's pull request count, and the
 # repository picker's publisher count. Each is a count the server takes over
-# data a client cannot see or has only one page of. The operations' exact
-# status sets live in openapi/testdata/village_collectives_operations.yaml.
+# data a client cannot see or has only one page of. The stats read's exact
+# status set lives in openapi/testdata/village_collectives_operations.yaml;
+# this corpus owns the available-repositories read's set.
 required_names:
   - stats-valid
   - stats-zero-valid
@@ -24,6 +25,7 @@ operations:
     method: get
     path: "/api/v1/groups/{id}/repositories/available"
     response: VillageAvailableRepositoriesResponse
+    statuses: ["200", "400", "401", "403", "500", "501"]
     parameters:
       - {name: id, in: path, required: true}
 cases:

@@ -59,15 +59,18 @@ type LocalPublication struct {
 	// TranscriptID, TranscriptURL, and PublishedAt are present exactly when
 	// State is published. PublishedAt is when Village last accepted this
 	// session's content, by a first publish or an update; a client counts the
-	// turns recorded after it to say how many turns are new.
+	// turns recorded after it to say about how many turns are new. The count
+	// is approximate: it compares this computer's turn times with Village's
+	// accept time.
 	TranscriptID  *TranscriptID `json:"transcriptId,omitempty" nullable:"false"`
 	TranscriptURL string        `json:"transcriptUrl,omitempty"`
 	PublishedAt   *time.Time    `json:"publishedAt,omitempty" nullable:"false"`
 	// LastAttempt is the most recent failed attempt, absent when none is
 	// recorded.
 	LastAttempt *LocalPublicationAttemptFailure `json:"lastAttempt,omitempty" nullable:"false"`
-	// AutoPublish reports that an auto-publish binding covers this session's
-	// project, so a git hook publishes it without a click.
+	// AutoPublish reports that an auto-publish rule matches this session's
+	// repository and at least one of the rule's hooks is installed there, so a
+	// git hook publishes the session without a click.
 	AutoPublish bool `json:"autoPublish"`
 	// OutsideSelection reports that the saved selection leaves this session
 	// out of the local lists. The read ignores the selection, so such a

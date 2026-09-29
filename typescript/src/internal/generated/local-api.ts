@@ -178,7 +178,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. A client counts the turns recorded after publishedAt to say how many turns are new. */
+        /** @description Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate. */
         get: operations["listPublications"];
         put?: never;
         post?: never;
@@ -348,7 +348,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read every setting the local settings page shows, with each key's kind, value (null when unset), and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. */
+        /** @description Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. */
         get: operations["getSettings"];
         put?: never;
         post?: never;
@@ -367,10 +367,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
-        put: operations["putAutoPublishRule"];
+        /** @description Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        put: operations["saveAutoPublishRule"];
         post?: never;
-        /** @description Remove one auto-publish rule and Peasant's hooks that no other rule needs. The response reports each matched repository's hooks after removal, with the remedy for a section that must be removed by hand from a hook Peasant does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Remove one auto-publish rule. Removing a rule changes no hook: the response reports the hooks of the repositories it matched as they are, and a hook keeps publishing until the user removes it explicitly, for example with peasant village hooks uninstall. 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         delete: operations["deleteAutoPublishRule"];
         options?: never;
         head?: never;
@@ -386,7 +386,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Install the rule's hooks in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["installAutoPublishHooks"];
         delete?: never;
         options?: never;
@@ -471,7 +471,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error, which the errors count counts; a later step the server did not run after a failure is not_attempted. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran, the content step first; its status describes the content, so a push that only changes collectives reports skipped with a skipped content step. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error; a later step the server did not run after a failure is not_attempted. The counts tally sessions by status after every step ran. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["pushSyncSessions"];
         delete?: never;
         options?: never;
@@ -647,6 +647,14 @@ export interface components {
         SchemaAutoPublishRemovalResponse: Schema.AutoPublishRemovalResponse;
         SchemaAutoPublishRepository: Schema.AutoPublishRepository;
         SchemaAutoPublishRule: Schema.AutoPublishRule;
+        /**
+         * Auto Publish Rule Kind
+         * @description What an auto-publish rule's match pattern names
+         * @example folder
+         * @example remote
+         * @enum {string}
+         */
+        SchemaAutoPublishRuleKind: Schema.AutoPublishRuleKind;
         SchemaAutoPublishRuleRequest: Schema.AutoPublishRuleRequest;
         /**
          * Change Binding
@@ -1651,6 +1659,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalPublicationsResponse"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
             /** @description Bad Gateway */
             502: {
                 headers: {
@@ -1956,7 +1973,7 @@ export interface operations {
             };
         };
     };
-    putAutoPublishRule: {
+    saveAutoPublishRule: {
         parameters: {
             query?: never;
             header?: never;
@@ -1979,6 +1996,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaAutoPublishRule"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -2022,6 +2048,15 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
         };
     };
     installAutoPublishHooks: {
@@ -2049,8 +2084,26 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaAutoPublishRepository"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

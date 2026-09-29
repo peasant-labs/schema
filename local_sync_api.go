@@ -271,16 +271,20 @@ func (r SyncPushStepResult) Validate() error {
 // SyncPushSessionResult is the result for one session in a push.
 type SyncPushSessionResult struct {
 	SessionID string `json:"sessionId"`
-	// Status is the session's outcome. A session with a failed step has status
-	// error, and the response's errors count counts sessions with status error.
+	// Status is the session's outcome. It describes the content: new or
+	// updated when Village accepted it, skipped when it was already current
+	// (also when only collectives changed), held when it cannot be published
+	// yet, and error when any step failed or the session failed before a step
+	// ran. The response counts tally sessions by this status.
 	Status SyncPushSessionStatus `json:"status"`
 	Error  string                `json:"error,omitempty"`
 	Title  string                `json:"title,omitempty"`
-	// TranscriptURL is the Village page of the session's transcript, present
-	// once Village holds one.
+	// TranscriptURL is the Village page of the session's transcript. A new or
+	// updated session always carries it.
 	TranscriptURL string `json:"transcriptUrl,omitempty"`
 	// Steps lists every step the push planned for this session, in the order
-	// it ran them.
+	// it ran them. When present, the content step comes first: skipped when
+	// the content was already current or the session is held.
 	Steps []SyncPushStepResult `json:"steps,omitempty" nullable:"false"`
 	// WaitingPullRequests are the caller's Village prompt requests that wait
 	// for a transcript from this session's repository.
@@ -288,11 +292,14 @@ type SyncPushSessionResult struct {
 }
 
 // Validate checks one session result, its steps, and how the status follows
-// from them: a failed step makes the session an error, an error with steps
-// names the step that failed, a held session runs no step, and a step is
-// not_attempted only after an earlier step failed. Whether a later step still
-// runs after a failure is the producer's choice, so taking a collective back
-// is never forced to wait on an unrelated failure.
+// from them. Steps start with the content step. A failed step makes the
+// session an error, and an error with steps names the step that failed. New
+// and updated sessions have a succeeded content step and a transcript URL;
+// skipped and held sessions have a skipped content step, and a held session
+// can only take a transcript back from collectives. A step is not_attempted
+// only after an earlier step failed. Whether a later step still runs after a
+// failure is the producer's choice, so taking a collective back is never
+// forced to wait on an unrelated failure.
 func (r SyncPushSessionResult) Validate() error {
 	if strings.TrimSpace(r.SessionID) == "" {
 		return fmt.Errorf("sync push result validation failed at schema.SyncPushSessionResult.Validate: sessionId is empty; the caller cannot match the result to a session; emit the requested session ID")
@@ -302,9 +309,6 @@ func (r SyncPushSessionResult) Validate() error {
 	}
 	if r.Status == SyncPushSessionError && strings.TrimSpace(r.Error) == "" {
 		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status error has no error text; the caller cannot say what failed; emit the reason", r.SessionID)
-	}
-	if r.Status == SyncPushSessionHeld && len(r.Steps) > 0 {
-		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a held session lists steps; nothing runs for a held session; omit steps", r.SessionID)
 	}
 	collectives := make(map[VillageUUID]struct{}, len(r.Steps))
 	failed := false
@@ -332,11 +336,43 @@ func (r SyncPushSessionResult) Validate() error {
 	if r.Status == SyncPushSessionError && len(r.Steps) > 0 && !failed {
 		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status error lists steps but none failed; name the step that failed, or omit steps when the session failed before any step ran", r.SessionID)
 	}
+	if (r.Status == SyncPushSessionNew || r.Status == SyncPushSessionUpdated) && strings.TrimSpace(r.TranscriptURL) == "" {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q has no transcriptUrl; Village accepted the content, so the caller can open it; emit the transcript URL", r.SessionID, r.Status)
+	}
+	if len(r.Steps) == 0 {
+		if r.Status == SyncPushSessionNew || r.Status == SyncPushSessionUpdated {
+			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q lists no steps; list the content step that Village accepted", r.SessionID, r.Status)
+		}
+		return nil
+	}
+	content := r.Steps[0]
+	if content.Step != SyncPushStepContent {
+		return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: steps start with %q; a session that lists steps lists the content step first, skipped when the content was already current", r.SessionID, content.Step)
+	}
+	switch r.Status {
+	case SyncPushSessionNew, SyncPushSessionUpdated:
+		if content.Outcome != SyncPushStepSucceeded {
+			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q has a %s content step; new and updated mean Village accepted the content", r.SessionID, r.Status, content.Outcome)
+		}
+	case SyncPushSessionSkipped, SyncPushSessionHeld:
+		if content.Outcome != SyncPushStepSkipped {
+			return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: status %q has a %s content step; skipped and held mean the content was not sent", r.SessionID, r.Status, content.Outcome)
+		}
+	}
+	if r.Status == SyncPushSessionHeld {
+		for _, step := range r.Steps[1:] {
+			if step.Step != SyncPushStepRemoveCollective {
+				return fmt.Errorf("sync push result validation failed for %q at schema.SyncPushSessionResult.Validate: a held session has a %s step; a held session can only be taken back from collectives", r.SessionID, step.Step)
+			}
+		}
+	}
 	return nil
 }
 
 // SyncPushResponse is the response of POST /api/v1/sync/push: the counts the
-// push already returned plus one result per session.
+// push already returned plus one result per session. New, Updated, Skipped,
+// and Errors count the sessions with that status; held sessions are not
+// counted.
 type SyncPushResponse struct {
 	New      int                     `json:"new" minimum:"0"`
 	Updated  int                     `json:"updated" minimum:"0"`
@@ -354,6 +390,7 @@ func (r SyncPushResponse) Validate() error {
 		return fmt.Errorf("sync push response validation failed at schema.SyncPushResponse.Validate: sessions is null; emit [] when no session ran")
 	}
 	seen := make(map[string]struct{}, len(r.Sessions))
+	tally := map[SyncPushSessionStatus]int{}
 	for _, session := range r.Sessions {
 		if err := session.Validate(); err != nil {
 			return err
@@ -362,6 +399,10 @@ func (r SyncPushResponse) Validate() error {
 			return fmt.Errorf("sync push response validation failed at schema.SyncPushResponse.Validate: session %q has two results; emit one result per session", session.SessionID)
 		}
 		seen[session.SessionID] = struct{}{}
+		tally[session.Status]++
+	}
+	if r.New != tally[SyncPushSessionNew] || r.Updated != tally[SyncPushSessionUpdated] || r.Skipped != tally[SyncPushSessionSkipped] || r.Errors != tally[SyncPushSessionError] {
+		return fmt.Errorf("sync push response validation failed at schema.SyncPushResponse.Validate: counts new=%d updated=%d skipped=%d errors=%d disagree with the session statuses; a banner built from the counts would misreport the push; count sessions by status after every step ran (held sessions are not counted)", r.New, r.Updated, r.Skipped, r.Errors)
 	}
 	return nil
 }

@@ -36,11 +36,13 @@ operations:
     path: /api/v1/sync/login
     response: SyncLoginResponse
     statuses: ["200", "403"]
+    error_responses: {"403": OpenapiLocalErrorResponse}
   - api: local
     method: post
     path: /api/v1/sync/logout
     response: SyncLogoutResponse
     statuses: ["200", "403"]
+    error_responses: {"403": OpenapiLocalErrorResponse}
   - api: local
     method: get
     path: /api/v1/sync/redactions
@@ -69,8 +71,8 @@ cases:
     provenance: {source: requirement, ref: "a signed-out computer names no account"}
     mutation: {description: "names an account while signed out"}
   - name: auth-missing-flag-rejected
-    input: {schema: SyncAuthResponse, payload: {username: alice-dev}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    input: {schema: SyncAuthResponse, payload: {}}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "authenticated is required"}
     mutation: {description: "omits authenticated"}

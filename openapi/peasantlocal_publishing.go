@@ -17,18 +17,18 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 	operations := []localOperationSpec{
 		{
 			method: http.MethodGet, path: "/api/v1/publications", id: "listPublications", tag: "publications",
-			description: "Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. A client counts the turns recorded after publishedAt to say how many turns are new.",
+			description: "Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate.",
 			requests: []interface{}{new(struct {
 				SessionIDs string `query:"sessionIds" required:"true" minLength:"1" description:"Comma-separated local session IDs"`
 				Include    string `query:"include" enum:"audience" description:"Set to audience to add each published transcript's collectives"`
 			})},
 			response:      new(schema.LocalPublicationsResponse),
-			errorStatuses: []int{http.StatusBadGateway},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusBadGateway},
 			errorResponse: new(LocalErrorResponse),
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/sync/push", id: "pushSyncSessions", tag: "sync",
-			description:  "Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error, which the errors count counts; a later step the server did not run after a failure is not_attempted.",
+			description:  "Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran, the content step first; its status describes the content, so a push that only changes collectives reports skipped with a skipped content step. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error; a later step the server did not run after a failure is not_attempted. The counts tally sessions by status after every step ran.",
 			requests:     []interface{}{new(schema.SyncPushRequest)},
 			response:     new(schema.SyncPushResponse),
 			requiredBody: true,
@@ -69,7 +69,7 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/settings", id: "getSettings", tag: "settings",
-			description: "Read every setting the local settings page shows, with each key's kind, value (null when unset), and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event.",
+			description: "Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event.",
 			response:    new(schema.LocalSettingsResponse),
 		},
 		{
@@ -82,24 +82,30 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 			errorResponse: new(schema.LocalSettingRefusal),
 		},
 		{
-			method: http.MethodPut, path: "/api/v1/settings/auto-publish/{id}", id: "putAutoPublishRule", tag: "settings",
-			description:  "Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time.",
-			requests:     []interface{}{rulePath, new(schema.AutoPublishRuleRequest)},
-			response:     new(schema.AutoPublishRule),
-			requiredBody: true,
+			method: http.MethodPut, path: "/api/v1/settings/auto-publish/{id}", id: "saveAutoPublishRule", tag: "settings",
+			description:   "Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind.",
+			requests:      []interface{}{rulePath, new(schema.AutoPublishRuleRequest)},
+			response:      new(schema.AutoPublishRule),
+			requiredBody:  true,
+			errorStatuses: []int{http.StatusBadRequest},
+			errorResponse: new(LocalErrorResponse),
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/settings/auto-publish/{id}/install", id: "installAutoPublishHooks", tag: "settings",
-			description:  "Install the rule's hooks in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage.",
-			requests:     []interface{}{rulePath, new(schema.AutoPublishInstallRequest)},
-			response:     new(schema.AutoPublishRepository),
-			requiredBody: true,
+			description:   "Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier.",
+			requests:      []interface{}{rulePath, new(schema.AutoPublishInstallRequest)},
+			response:      new(schema.AutoPublishRepository),
+			requiredBody:  true,
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+			errorResponse: new(LocalErrorResponse),
 		},
 		{
 			method: http.MethodDelete, path: "/api/v1/settings/auto-publish/{id}", id: "deleteAutoPublishRule", tag: "settings",
-			description: "Remove one auto-publish rule and Peasant's hooks that no other rule needs. The response reports each matched repository's hooks after removal, with the remedy for a section that must be removed by hand from a hook Peasant does not manage.",
-			requests:    []interface{}{rulePath},
-			response:    new(schema.AutoPublishRemovalResponse),
+			description:   "Remove one auto-publish rule. Removing a rule changes no hook: the response reports the hooks of the repositories it matched as they are, and a hook keeps publishing until the user removes it explicitly, for example with peasant village hooks uninstall. 404 when no rule has this identifier.",
+			requests:      []interface{}{rulePath},
+			response:      new(schema.AutoPublishRemovalResponse),
+			errorStatuses: []int{http.StatusNotFound},
+			errorResponse: new(LocalErrorResponse),
 		},
 	}
 	return addLocalOperations(r, operations)

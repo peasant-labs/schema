@@ -1,8 +1,10 @@
 # The typed push. Publishing is collectives only: the request adds and removes
 # collectives and carries no visibility or license. The response keeps the
-# counts the route already returned and adds one result per step. A failed
-# step makes its session an error; whether later steps still run is the
-# server's choice, and a step it did not run is not_attempted.
+# counts the route already returned, which tally sessions by status after
+# every step ran, and adds one result per step. A session with steps lists the
+# content step first, and its status describes the content. A failed step
+# makes its session an error; whether later steps still run is the server's
+# choice, and a step it did not run is not_attempted.
 required_names:
   - request-sessions-only-valid
   - request-add-and-remove-valid
@@ -20,17 +22,27 @@ required_names:
   - request-visibility-rejected
   - response-first-publish-two-collectives-valid
   - response-skipped-collective-valid
+  - response-access-only-change-valid
+  - response-held-removal-valid
   - response-removal-after-failed-add-valid
   - response-stopped-after-failure-valid
   - response-counts-only-valid
   - response-error-before-steps-valid
+  - response-counts-disagree-rejected
+  - response-held-counted-rejected
   - response-failed-step-under-success-rejected
   - response-error-without-failed-step-rejected
-  - response-held-with-steps-rejected
+  - response-new-without-url-rejected
+  - response-new-without-steps-rejected
+  - response-steps-without-content-rejected
+  - response-new-with-skipped-content-rejected
+  - response-skipped-with-sent-content-rejected
+  - response-held-with-share-rejected
   - response-not-attempted-without-failure-rejected
   - response-content-step-with-collective-rejected
   - response-collective-step-without-collective-rejected
   - response-pending-on-remove-rejected
+  - response-pending-on-content-rejected
   - response-failed-without-reason-rejected
   - response-skipped-without-reason-rejected
   - response-reason-on-succeeded-rejected
@@ -38,10 +50,13 @@ required_names:
   - response-duplicate-collective-step-rejected
   - response-empty-session-id-rejected
   - response-duplicate-session-rejected
+  - response-unknown-step-rejected
   - response-unknown-outcome-rejected
   - response-unknown-status-rejected
   - response-negative-new-rejected
+  - response-negative-updated-rejected
   - response-negative-skipped-rejected
+  - response-negative-errors-rejected
   - response-null-sessions-rejected
   - response-error-status-without-text-rejected
 operations:
@@ -51,6 +66,7 @@ operations:
     request: SyncPushRequest
     response: SyncPushResponse
     statuses: ["200", "403"]
+    error_responses: {"403": OpenapiLocalErrorResponse}
 cases:
   - name: request-sessions-only-valid
     input:
@@ -230,6 +246,43 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "a skipped collective is reported with its reason"}
     mutation: {description: "skips a collective that already holds the transcript"}
+  - name: response-access-only-change-valid
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 1
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: skipped
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            steps:
+              - {step: content, outcome: skipped, reason: the content is already current}
+              - {step: remove_collective, collectiveId: 22222222-2222-4222-8222-222222222222, outcome: succeeded}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a push that only changes collectives lists a skipped content step and reports skipped"}
+    mutation: {description: "takes the transcript back from one collective without new content"}
+  - name: response-held-removal-valid
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: held
+            steps:
+              - {step: content, outcome: skipped, reason: held until ingest completes}
+              - {step: remove_collective, collectiveId: 22222222-2222-4222-8222-222222222222, outcome: succeeded}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a held session can still be taken back from a collective, and held sessions are not counted"}
+    mutation: {description: "removes a collective from a held session"}
   - name: response-removal-after-failed-add-valid
     input:
       schema: SyncPushResponse
@@ -278,7 +331,7 @@ cases:
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "the counts shape the route already returned stays valid"}
-    mutation: {description: "a result without steps"}
+    mutation: {description: "a skipped result without steps"}
   - name: response-error-before-steps-valid
     input:
       schema: SyncPushResponse
@@ -288,6 +341,35 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "a session can fail before any step runs"}
     mutation: {description: "an error with no steps"}
+  - name: response-counts-disagree-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 1
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: error
+            error: village refused the share
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            steps:
+              - {step: content, outcome: succeeded}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: failed, reason: village refused the share}
+    expected: {valid: false, rejected_by: semantics, error_contains: disagree with the session statuses}
+    classification: must-fail
+    provenance: {source: bug, ref: "a banner built from the counts must not report success while a share failed"}
+    mutation: {description: "counts the error session as updated"}
+  - name: response-held-counted-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        {new: 0, updated: 0, skipped: 1, errors: 0, sessions: [{sessionId: s-1, status: held}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: disagree with the session statuses}
+    classification: must-fail
+    provenance: {source: requirement, ref: "held sessions are not counted"}
+    mutation: {description: "counts a held session as skipped"}
   - name: response-failed-step-under-success-rejected
     input:
       schema: SyncPushResponse
@@ -299,12 +381,13 @@ cases:
         sessions:
           - sessionId: s-1
             status: updated
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
             steps:
               - {step: content, outcome: succeeded}
               - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: failed, reason: village refused the share}
     expected: {valid: false, rejected_by: semantics, error_contains: is an error}
     classification: must-fail
-    provenance: {source: requirement, ref: "a failed step makes the session an error so the counts cannot report success"}
+    provenance: {source: requirement, ref: "a failed step makes the session an error"}
     mutation: {description: "reports updated while a share failed"}
   - name: response-error-without-failed-step-rejected
     input:
@@ -324,7 +407,33 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "an error with steps names the step that failed"}
     mutation: {description: "reports an error while every step succeeded"}
-  - name: response-held-with-steps-rejected
+  - name: response-new-without-url-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: new
+            steps:
+              - {step: content, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: no transcriptUrl}
+    classification: must-fail
+    provenance: {source: requirement, ref: "Village accepted the content, so the result links to it"}
+    mutation: {description: "drops the transcript URL from a new session"}
+  - name: response-new-without-steps-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        {new: 1, updated: 0, skipped: 0, errors: 0, sessions: [{sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: lists no steps}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a new session lists the content step Village accepted"}
+    mutation: {description: "omits the steps of a new session"}
+  - name: response-steps-without-content-rejected
     input:
       schema: SyncPushResponse
       payload:
@@ -334,13 +443,66 @@ cases:
         errors: 0
         sessions:
           - sessionId: s-1
-            status: held
+            status: skipped
             steps:
               - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
-    expected: {valid: false, rejected_by: semantics, error_contains: held session lists steps}
+    expected: {valid: false, rejected_by: semantics, error_contains: content step first}
     classification: must-fail
-    provenance: {source: requirement, ref: "nothing runs for a held session"}
-    mutation: {description: "lists a step for a held session"}
+    provenance: {source: requirement, ref: "one encoding: a session with steps lists the content step first"}
+    mutation: {description: "lists a collective step without the content step"}
+  - name: response-new-with-skipped-content-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: new
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
+            steps:
+              - {step: content, outcome: skipped, reason: already current}
+    expected: {valid: false, rejected_by: semantics, error_contains: Village accepted the content}
+    classification: must-fail
+    provenance: {source: requirement, ref: "new and updated mean Village accepted the content"}
+    mutation: {description: "reports new with a skipped content step"}
+  - name: response-skipped-with-sent-content-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 1
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: skipped
+            steps:
+              - {step: content, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: content was not sent}
+    classification: must-fail
+    provenance: {source: requirement, ref: "skipped means the content was not sent"}
+    mutation: {description: "reports skipped with a succeeded content step"}
+  - name: response-held-with-share-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - sessionId: s-1
+            status: held
+            steps:
+              - {step: content, outcome: skipped, reason: held until ingest completes}
+              - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
+    expected: {valid: false, rejected_by: semantics, error_contains: only be taken back}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a held session cannot be shared further"}
+    mutation: {description: "shares a held session with a collective"}
   - name: response-not-attempted-without-failure-rejected
     input:
       schema: SyncPushResponse
@@ -352,6 +514,7 @@ cases:
         sessions:
           - sessionId: s-1
             status: updated
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
             steps:
               - {step: content, outcome: not_attempted}
               - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
@@ -368,7 +531,7 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: new, steps: [{step: content, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}]}
+          - {sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}]}
     expected: {valid: false, rejected_by: semantics, error_contains: collectiveId}
     classification: must-fail
     provenance: {source: requirement, ref: "the content step names no collective"}
@@ -382,7 +545,7 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: new, steps: [{step: content, outcome: succeeded}, {step: add_collective, outcome: succeeded}]}
+          - {sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: succeeded}, {step: add_collective, outcome: succeeded}]}
     expected: {valid: false, rejected_by: semantics, error_contains: collectiveId}
     classification: must-fail
     provenance: {source: requirement, ref: "a collective step names its collective"}
@@ -396,11 +559,25 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: updated, steps: [{step: remove_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: pending_approval}]}
+          - {sessionId: s-1, status: updated, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: succeeded}, {step: remove_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: pending_approval}]}
     expected: {valid: false, rejected_by: semantics, error_contains: only adding a collective}
     classification: must-fail
     provenance: {source: requirement, ref: "only a curated share waits for approval"}
     mutation: {description: "marks a removal as waiting for approval"}
+  - name: response-pending-on-content-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 1
+        updated: 0
+        skipped: 0
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: pending_approval}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: only adding a collective}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a curated share waits for approval"}
+    mutation: {description: "marks the content step as waiting for approval"}
   - name: response-failed-without-reason-rejected
     input:
       schema: SyncPushResponse
@@ -424,7 +601,7 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: updated, steps: [{step: content, outcome: succeeded}, {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: skipped}]}
+          - {sessionId: s-1, status: updated, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: succeeded}, {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: skipped}]}
     expected: {valid: false, rejected_by: semantics, error_contains: reason presence}
     classification: must-fail
     provenance: {source: requirement, ref: "a skipped step says why"}
@@ -438,7 +615,7 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: new, steps: [{step: content, outcome: succeeded, reason: stale}]}
+          - {sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: succeeded, reason: stale}]}
     expected: {valid: false, rejected_by: semantics, error_contains: reason presence}
     classification: must-fail
     provenance: {source: requirement, ref: "only a skipped or failed step carries a reason"}
@@ -454,6 +631,7 @@ cases:
         sessions:
           - sessionId: s-1
             status: new
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
             steps:
               - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
               - {step: content, outcome: succeeded}
@@ -472,7 +650,9 @@ cases:
         sessions:
           - sessionId: s-1
             status: new
+            transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a"
             steps:
+              - {step: content, outcome: succeeded}
               - {step: add_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
               - {step: remove_collective, collectiveId: 11111111-1111-4111-8111-111111111111, outcome: succeeded}
     expected: {valid: false, rejected_by: semantics, error_contains: two steps}
@@ -497,6 +677,20 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "one result per session"}
     mutation: {description: "reports one session twice"}
+  - name: response-unknown-step-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        new: 0
+        updated: 0
+        skipped: 1
+        errors: 0
+        sessions:
+          - {sessionId: s-1, status: skipped, steps: [{step: rename, outcome: succeeded}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: enum, ref: "SyncPushStep is closed"}
+    mutation: {description: "names a step outside the menu"}
   - name: response-unknown-outcome-rejected
     input:
       schema: SyncPushResponse
@@ -506,7 +700,7 @@ cases:
         skipped: 0
         errors: 0
         sessions:
-          - {sessionId: s-1, status: new, steps: [{step: content, outcome: done}]}
+          - {sessionId: s-1, status: new, transcriptUrl: "https://village.example/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", steps: [{step: content, outcome: done}]}
     expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: enum, ref: "SyncPushStepOutcome is closed"}
@@ -529,6 +723,15 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "counts are nonnegative"}
     mutation: {description: "sends a negative new count"}
+  - name: response-negative-updated-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        {new: 0, updated: -1, skipped: 0, errors: 0, sessions: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "counts are nonnegative"}
+    mutation: {description: "sends a negative updated count"}
   - name: response-negative-skipped-rejected
     input:
       schema: SyncPushResponse
@@ -538,6 +741,15 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "counts are nonnegative"}
     mutation: {description: "sends a negative skipped count"}
+  - name: response-negative-errors-rejected
+    input:
+      schema: SyncPushResponse
+      payload:
+        {new: 0, updated: 0, skipped: 0, errors: -1, sessions: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "counts are nonnegative"}
+    mutation: {description: "sends a negative errors count"}
   - name: response-null-sessions-rejected
     input:
       schema: SyncPushResponse

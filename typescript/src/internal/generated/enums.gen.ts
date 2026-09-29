@@ -87,6 +87,7 @@ import { zLocalCollectiveSuggestionReason, type LocalCollectiveSuggestionReason 
 import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } from "./contract/zod.gen.js";
 import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
+import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -1148,4 +1149,14 @@ export const AutoPublishHookStatus = Object.freeze({
 export const AllAutoPublishHookStatuses = Object.freeze([AutoPublishHookStatus.Absent, AutoPublishHookStatus.Installed, AutoPublishHookStatus.Blocked, AutoPublishHookStatus.Failed]) as readonly AutoPublishHookStatus[];
 export function isAutoPublishHookStatus(value: unknown): value is AutoPublishHookStatus {
   return zAutoPublishHookStatus.safeParse(value).success;
+}
+
+export type AutoPublishRuleKind = AutoPublishRuleKindContract;
+export const AutoPublishRuleKind = Object.freeze({
+  Folder: zAutoPublishRuleKind.parse("folder"),
+  Remote: zAutoPublishRuleKind.parse("remote"),
+} as const);
+export const AllAutoPublishRuleKinds = Object.freeze([AutoPublishRuleKind.Folder, AutoPublishRuleKind.Remote]) as readonly AutoPublishRuleKind[];
+export function isAutoPublishRuleKind(value: unknown): value is AutoPublishRuleKind {
+  return zAutoPublishRuleKind.safeParse(value).success;
 }

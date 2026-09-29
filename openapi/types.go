@@ -216,7 +216,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"LocalSettingRefusal", new(schema.LocalSettingRefusal)}, {"LocalSettingsResponse", new(schema.LocalSettingsResponse)},
 		{"AutoPublishEvent", new(schema.AutoPublishEvent)}, {"AutoPublishHookStatus", new(schema.AutoPublishHookStatus)},
 		{"AutoPublishHookRemedy", new(schema.AutoPublishHookRemedy)}, {"AutoPublishHook", new(schema.AutoPublishHook)},
-		{"AutoPublishRepository", new(schema.AutoPublishRepository)}, {"AutoPublishRuleRequest", new(schema.AutoPublishRuleRequest)},
+		{"AutoPublishRepository", new(schema.AutoPublishRepository)}, {"AutoPublishRuleKind", new(schema.AutoPublishRuleKind)}, {"AutoPublishRuleRequest", new(schema.AutoPublishRuleRequest)},
 		{"AutoPublishRule", new(schema.AutoPublishRule)}, {"AutoPublishInstallRequest", new(schema.AutoPublishInstallRequest)},
 		{"AutoPublishRemovalResponse", new(schema.AutoPublishRemovalResponse)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},

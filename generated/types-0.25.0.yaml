@@ -1395,10 +1395,10 @@ components:
       type: object
     AutoPublishHookRemedy:
       properties:
-        command:
-          type: string
         message:
           minLength: 1
+          type: string
+        snippet:
           type: string
       required:
       - message
@@ -1467,6 +1467,8 @@ components:
         id:
           minLength: 1
           type: string
+        kind:
+          $ref: '#/components/schemas/AutoPublishRuleKind'
         match:
           minLength: 1
           type: string
@@ -1476,11 +1478,22 @@ components:
           type: array
       required:
       - id
+      - kind
       - match
       - events
       - collectives
       - repositories
       type: object
+    AutoPublishRuleKind:
+      description: What an auto-publish rule's match pattern names
+      enum:
+      - folder
+      - remote
+      examples:
+      - folder
+      - remote
+      title: Auto Publish Rule Kind
+      type: string
     AutoPublishRuleRequest:
       additionalProperties: false
       properties:
@@ -1492,10 +1505,13 @@ components:
           items:
             $ref: '#/components/schemas/AutoPublishEvent'
           type: array
+        kind:
+          $ref: '#/components/schemas/AutoPublishRuleKind'
         match:
           minLength: 1
           type: string
       required:
+      - kind
       - match
       - events
       - collectives
@@ -3037,6 +3053,8 @@ components:
           type: string
         editable:
           type: boolean
+        effective:
+          $ref: '#/components/schemas/LocalSettingValue'
         inPeasantConfig:
           type: boolean
         key:
@@ -3054,6 +3072,7 @@ components:
       - key
       - kind
       - value
+      - effective
       - editable
       - inPeasantConfig
       type: object
@@ -3081,6 +3100,7 @@ components:
           minLength: 1
           type: string
         key:
+          minLength: 1
           type: string
       required:
       - key

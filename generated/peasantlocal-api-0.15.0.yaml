@@ -264,8 +264,9 @@ paths:
         the lists leave out is still returned, with outsideSelection true. An identifier
         that names no session on this computer is omitted. include=audience adds the
         collectives each published transcript is shared with, as [] when it is shared
-        with none, and returns 502 when Village cannot be read. A client counts the
-        turns recorded after publishedAt to say how many turns are new.'
+        with none, and returns 502 when Village cannot be read. 400 when sessionIds
+        is missing or empty. A client counts the turns recorded after publishedAt
+        to say about how many turns are new; the count is approximate.'
       operationId: listPublications
       parameters:
       - description: Comma-separated local session IDs
@@ -291,6 +292,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalPublicationsResponse'
           description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Bad Request
         "502":
           content:
             application/json:
@@ -605,8 +612,9 @@ paths:
   /api/v1/settings:
     get:
       description: Read every setting the local settings page shows, with each key's
-        kind, value (null when unset), and metadata, and every auto-publish rule with
-        the recorded repositories it matches and their hook state per event.
+        kind, its value in the configuration file (null when unset), the effective
+        value that applies, and metadata, and every auto-publish rule with the recorded
+        repositories it matches and their hook state per event.
       operationId: getSettings
       responses:
         "200":
@@ -663,12 +671,13 @@ paths:
       - settings
   /api/v1/settings/auto-publish/{id}:
     delete:
-      description: 'Remove one auto-publish rule and Peasant''s hooks that no other
-        rule needs. The response reports each matched repository''s hooks after removal,
-        with the remedy for a section that must be removed by hand from a hook Peasant
-        does not manage. Returns 403 with a JSON error, and changes nothing, when
-        the request did not come from this local server: its Host header does not
-        name a loopback address, or a browser sent it from another origin.'
+      description: 'Remove one auto-publish rule. Removing a rule changes no hook:
+        the response reports the hooks of the repositories it matched as they are,
+        and a hook keeps publishing until the user removes it explicitly, for example
+        with peasant village hooks uninstall. 404 when no rule has this identifier.
+        Returns 403 with a JSON error, and changes nothing, when the request did not
+        come from this local server: its Host header does not name a loopback address,
+        or a browser sent it from another origin.'
       operationId: deleteAutoPublishRule
       parameters:
       - description: Auto-publish rule identifier
@@ -692,16 +701,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
           description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Not Found
       tags:
       - settings
     put:
       description: 'Create or replace one auto-publish rule. Saving a rule installs
         nothing: the response lists the recorded repositories the rule matches and
         each one''s hook state per event, and installAutoPublishHooks installs in
-        one repository at a time. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
-      operationId: putAutoPublishRule
+        one repository at a time. 400 when the rule is invalid, for example a match
+        pattern the server cannot read for its kind. Returns 403 with a JSON error,
+        and changes nothing, when the request did not come from this local server:
+        its Host header does not name a loopback address, or a browser sent it from
+        another origin.'
+      operationId: saveAutoPublishRule
       parameters:
       - description: Auto-publish rule identifier
         in: path
@@ -724,6 +741,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaAutoPublishRule'
           description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Bad Request
         "403":
           content:
             application/json:
@@ -734,12 +757,14 @@ paths:
       - settings
   /api/v1/settings/auto-publish/{id}/install:
     post:
-      description: 'Install the rule''s hooks in one recorded repository the rule
-        matches. Events are independent: the response reports each event''s hook,
-        and a blocked hook carries the remedy, because Peasant never overwrites a
-        hook it does not manage. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
+      description: 'Install the rule''s hooks, one per rule event, in one recorded
+        repository the rule matches. Events are independent: the response reports
+        each event''s hook, and a blocked hook carries the remedy, because Peasant
+        never overwrites a hook it does not manage. 400 when the path is not a recorded
+        repository the rule matches, so nothing is installed in an unrecorded repository;
+        404 when no rule has this identifier. Returns 403 with a JSON error, and changes
+        nothing, when the request did not come from this local server: its Host header
+        does not name a loopback address, or a browser sent it from another origin.'
       operationId: installAutoPublishHooks
       parameters:
       - description: Auto-publish rule identifier
@@ -763,12 +788,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaAutoPublishRepository'
           description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Bad Request
         "403":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
           description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Not Found
       tags:
       - settings
   /api/v1/shutdown:
@@ -868,12 +905,14 @@ paths:
         in neither keeps its access. The request carries no visibility and no license,
         unknown fields are refused, and the server applies no default license to a
         publish that names collectives. Each session result lists its steps in the
-        order they ran. A skipped step says why and is not a failure. A failed step
-        keeps what Village had for it and makes the session an error, which the errors
-        count counts; a later step the server did not run after a failure is not_attempted.
-        Returns 403 with a JSON error, and changes nothing, when the request did not
-        come from this local server: its Host header does not name a loopback address,
-        or a browser sent it from another origin.'
+        order they ran, the content step first; its status describes the content,
+        so a push that only changes collectives reports skipped with a skipped content
+        step. A skipped step says why and is not a failure. A failed step keeps what
+        Village had for it and makes the session an error; a later step the server
+        did not run after a failure is not_attempted. The counts tally sessions by
+        status after every step ran. Returns 403 with a JSON error, and changes nothing,
+        when the request did not come from this local server: its Host header does
+        not name a loopback address, or a browser sent it from another origin.'
       operationId: pushSyncSessions
       requestBody:
         content:
@@ -1421,10 +1460,10 @@ components:
       type: object
     SchemaAutoPublishHookRemedy:
       properties:
-        command:
-          type: string
         message:
           minLength: 1
+          type: string
+        snippet:
           type: string
       required:
       - message
@@ -1493,6 +1532,8 @@ components:
         id:
           minLength: 1
           type: string
+        kind:
+          $ref: '#/components/schemas/SchemaAutoPublishRuleKind'
         match:
           minLength: 1
           type: string
@@ -1502,11 +1543,22 @@ components:
           type: array
       required:
       - id
+      - kind
       - match
       - events
       - collectives
       - repositories
       type: object
+    SchemaAutoPublishRuleKind:
+      description: What an auto-publish rule's match pattern names
+      enum:
+      - folder
+      - remote
+      examples:
+      - folder
+      - remote
+      title: Auto Publish Rule Kind
+      type: string
     SchemaAutoPublishRuleRequest:
       additionalProperties: false
       properties:
@@ -1518,10 +1570,13 @@ components:
           items:
             $ref: '#/components/schemas/SchemaAutoPublishEvent'
           type: array
+        kind:
+          $ref: '#/components/schemas/SchemaAutoPublishRuleKind'
         match:
           minLength: 1
           type: string
       required:
+      - kind
       - match
       - events
       - collectives
@@ -2520,6 +2575,8 @@ components:
           type: string
         editable:
           type: boolean
+        effective:
+          $ref: '#/components/schemas/SchemaLocalSettingValue'
         inPeasantConfig:
           type: boolean
         key:
@@ -2537,6 +2594,7 @@ components:
       - key
       - kind
       - value
+      - effective
       - editable
       - inPeasantConfig
       type: object
@@ -2564,6 +2622,7 @@ components:
           minLength: 1
           type: string
         key:
+          minLength: 1
           type: string
       required:
       - key
