@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.25.0] - 2026-09-29
+
 ### Added
 
 - Publishing from the local transcript view. Local API 0.15.0 declares:
