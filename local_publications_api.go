@@ -103,6 +103,9 @@ func (p LocalPublication) Validate() error {
 	if p.LastAttempt != nil && (p.LastAttempt.AttemptedAt.IsZero() || strings.TrimSpace(p.LastAttempt.Message) == "") {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: lastAttempt lacks its time or message; the caller cannot say what failed or when; emit both", p.SessionID)
 	}
+	if p.AutoPublish && p.OutsideSelection {
+		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: autoPublish is true although the saved selection leaves the session out; a hook that does not match publishes nothing; emit autoPublish false", p.SessionID)
+	}
 	if !published && p.Audience != nil {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: an unpublished row carries an audience; nothing is shared before publication; omit audience", p.SessionID)
 	}

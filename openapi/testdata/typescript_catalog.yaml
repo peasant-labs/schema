@@ -1253,6 +1253,7 @@ types:
   - {go_name: AutoPublishRemovalResponse, disposition: catalog, component: AutoPublishRemovalResponse, reason: local publishing sign-in and settings contract}
   - {go_name: VillagePullRequestRef, disposition: catalog, component: VillagePullRequestRef, reason: pull request attachment contract}
   - {go_name: VillagePullRequestsSummary, disposition: catalog, component: VillagePullRequestsSummary, reason: pull request attachment contract}
+  - {go_name: VillageTranscriptPullRequest, disposition: catalog, component: VillageTranscriptPullRequest, reason: transcript pull request row}
   - {go_name: VillageTranscriptPullRequestsResponse, disposition: catalog, component: VillageTranscriptPullRequestsResponse, reason: pull request attachment contract}
   - {go_name: VillageUserStats, disposition: catalog, component: VillageUserStats, reason: pull request attachment contract}
   - {go_name: LocalPublicationState, disposition: catalog, component: LocalPublicationState, reason: local publishing sign-in and settings contract}
