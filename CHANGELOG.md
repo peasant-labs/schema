@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.25.0] - 2026-09-30
+
 ### Added
 
 - Publishing from the local transcript view. Local API 0.15.0 declares:
@@ -56,22 +58,30 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     call per repository, and removing a rule changes no hook.
   - A 403 with a JSON error body on every declared write route, for a request
     that did not come from the local server's own pages.
-- The Village pages' reads. Village API 0.23.0 adds `GET
+- The Village pages' reads. Village API 0.24.0 adds `GET
   /api/v1/transcripts/{id}/pulls` (attached and detached pull requests the
   caller may read; 404, never 403, for a caller who may not read the
   transcript), `GET /api/v1/users/me/stats` (`VillageUserStats`, totals over
   every published transcript including the distinct attached pull request
   count), the personal `auto_attach_pull_requests` setting (off by default),
-  pull request `title` and `head_ref` on the attachment row, a
+  a `VillageTranscriptPullRequest` row per pull request the read lists,
+  carrying the pull request `title` and `head_ref` rather than the
+  attachment's internal identifiers, a
   `pull_requests` summary (`VillagePullRequestsSummary`: `count` and the
   `recent` few) on transcript list rows and collective transcripts,
   `pull_request_count` on collective stats, and `publisher_count` on
   available repositories.
-- Types 0.25.0 catalogs every new type and closed set for both language
+- Types 0.26.0 catalogs every new type and closed set for both language
   bindings.
 
 ### Changed
 
+- `VillageTranscriptPullRequestsResponse.pullRequests` returns
+  `VillageTranscriptPullRequest` rows, not the full attachment row, so a
+  reader of a transcript no longer receives the attachment's `comment_id`,
+  `check_run_id`, `head_sha` or author identifiers. The Go and TypeScript
+  field types change with it, which is why the Village API takes a minor
+  version rather than an edit to 0.23.0.
 - `LocalSyncSummary.syncStatus` is the closed `SyncStatus` (`new`, `updated`,
   `synced`, `held`); a held row names its `holdReason` (`metrics_missing` or
   `metadata_missing`), and every row carries `previouslyPushed`, durable
