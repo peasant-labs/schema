@@ -77,7 +77,7 @@ const (
 	// head branches, and list summaries, the collective and repository counts,
 	// and a create request that accepts a null organization (additive = minor
 	// bump).
-	VillageAPIVersion = "0.23.0"
+	VillageAPIVersion = "0.24.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -171,5 +171,5 @@ const (
 	// Bumped to 0.25.0 when the local publishing, sign-in, and settings types
 	// and the Village pull request read, summary, and totals types entered the
 	// catalog (additive = minor bump).
-	TypesVersion = "0.25.0"
+	TypesVersion = "0.26.0"
 )

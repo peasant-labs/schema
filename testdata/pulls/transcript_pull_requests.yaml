@@ -21,6 +21,11 @@ required_names:
   - transcript-pulls-empty-owner-rejected
   - transcript-pulls-duplicate-rejected
   - transcript-pulls-missing-title-rejected
+  - transcript-pulls-empty-name-rejected
+  - transcript-pulls-zero-number-rejected
+  - transcript-pulls-missing-name-rejected
+  - transcript-pulls-missing-number-rejected
+  - transcript-pulls-missing-state-rejected
   - summary-with-more-valid
   - summary-empty-valid
   - summary-recent-exceeds-count-rejected
@@ -135,6 +140,56 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "title is always present and null when unknown"}
     mutation: {description: "omits title"}
+  - name: transcript-pulls-empty-name-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {owner: acme, name: "", number: 42, title: null, head_ref: null, state: attached}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "each listed pull request names its repository"}
+    mutation: {description: "blanks the repository name"}
+  - name: transcript-pulls-zero-number-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {owner: acme, name: ingest-api, number: 0, title: null, head_ref: null, state: attached}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a pull request number is positive"}
+    mutation: {description: "sends pull request number zero"}
+  - name: transcript-pulls-missing-name-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {owner: acme, number: 42, title: null, head_ref: null, state: attached}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the row always names the repository"}
+    mutation: {description: "omits name"}
+  - name: transcript-pulls-missing-number-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {owner: acme, name: ingest-api, title: null, head_ref: null, state: attached}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the row always names the pull request number"}
+    mutation: {description: "omits number"}
+  - name: transcript-pulls-missing-state-rejected
+    input:
+      schema: VillageTranscriptPullRequestsResponse
+      payload:
+        pull_requests:
+          - {owner: acme, name: ingest-api, number: 42, title: null, head_ref: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the row always states whether the attachment is attached or detached"}
+    mutation: {description: "omits state"}
   - name: summary-with-more-valid
     input: {schema: VillagePullRequestsSummary, payload: {count: 4, recent: [{owner: acme, name: ingest-api, number: 42}, {owner: acme, name: ingest-api, number: 45}]}}
     expected: {valid: true}
