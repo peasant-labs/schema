@@ -1,6 +1,6 @@
 # The personal automatic linking setting, the transcript pull request read,
-# pull request titles and head branches on the attachment row, and the pull
-# request summary on list rows and collective rows. The operations' exact
+# the pull request title and head branch it carries, and the pull request
+# summary on list rows and collective rows. The operations' exact
 # status sets live in openapi/testdata/village_collectives_operations.yaml.
 required_names:
   - settings-auto-attach-off-valid
@@ -86,8 +86,8 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: 9001, check_run_id: 9002, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: "2026-09-20T10:00:00Z", detached_at: null}
-          - {id: 55555555-5555-4555-8555-555555555555, owner: acme, name: web, number: 31, title: null, head_ref: null, head_sha: d4e5f6a, is_private_repository: false, state: detached, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-10T09:00:00Z", updated_at: "2026-09-12T10:00:00Z", confirmed_at: "2026-09-10T10:00:00Z", detached_at: "2026-09-12T10:00:00Z"}
+          - {owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, state: attached}
+          - {owner: acme, name: web, number: 31, title: null, head_ref: null, state: detached}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "the read lists attached and detached pull requests with title and head branch"}
@@ -109,7 +109,7 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: preview, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, state: preview}
     expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
     classification: must-fail
     provenance: {source: requirement, ref: "an unconfirmed attachment never reaches a reader"}
@@ -119,8 +119,8 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
-          - {id: 66666666-6666-4666-8666-666666666666, owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, head_sha: a1b2c3d, is_private_repository: true, state: detached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, state: attached}
+          - {owner: acme, name: ingest-api, number: 42, title: null, head_ref: null, state: detached}
     expected: {valid: false, rejected_by: semantics, error_contains: listed twice}
     classification: must-fail
     provenance: {source: boundary, ref: "each pull request is listed once"}
@@ -130,7 +130,7 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {owner: acme, name: ingest-api, number: 42, head_ref: fix/flaky-ingest, state: attached}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "title is always present and null when unknown"}
@@ -182,7 +182,7 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: requested, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, state: requested}
     expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
     classification: must-fail
     provenance: {source: requirement, ref: "a request that is not attached never reaches a reader"}
@@ -192,7 +192,7 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, head_sha: a1b2c3d, is_private_repository: true, state: waiting, author_user_id: 33333333-3333-4333-8333-333333333333, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
+          - {owner: acme, name: ingest-api, number: 42, title: Fix flaky ingest test, head_ref: fix/flaky-ingest, state: waiting}
     expected: {valid: false, rejected_by: semantics, error_contains: only attached and detached}
     classification: must-fail
     provenance: {source: requirement, ref: "a request that is not attached never reaches a reader"}
@@ -230,8 +230,8 @@ cases:
       schema: VillageTranscriptPullRequestsResponse
       payload:
         pull_requests:
-          - {id: 44444444-4444-4444-8444-444444444444, owner: "", name: ingest-api, number: 42, title: null, head_ref: null, head_sha: a1b2c3d, is_private_repository: false, state: attached, author_user_id: null, requested_by_github_id: null, comment_id: null, check_run_id: null, created_at: "2026-09-20T09:00:00Z", updated_at: "2026-09-20T10:00:00Z", confirmed_at: null, detached_at: null}
-    expected: {valid: false, rejected_by: semantics, error_contains: does not name a pull request}
+          - {owner: "", name: ingest-api, number: 42, title: null, head_ref: null, state: attached}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: boundary, ref: "each listed pull request names its repository"}
     mutation: {description: "blanks the repository owner"}

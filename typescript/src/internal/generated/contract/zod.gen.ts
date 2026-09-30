@@ -3691,6 +3691,23 @@ export const zVillageTranscriptDeletionPolicy = z.enum(['user_choice', 'mandator
 
 export type VillageTranscriptDeletionPolicy = z.infer<typeof zVillageTranscriptDeletionPolicy>;
 
+export const zVillageTranscriptPullRequest = z.object({
+    head_ref: z.string().nullable(),
+    name: z.string().min(1),
+    number: z.int().gte(1),
+    owner: z.string().min(1),
+    state: zVillagePullRequestAttachmentState,
+    title: z.string().nullable()
+});
+
+export type VillageTranscriptPullRequest = z.infer<typeof zVillageTranscriptPullRequest>;
+
+export const zVillageTranscriptPullRequestsResponse = z.object({
+    pull_requests: z.array(zVillageTranscriptPullRequest)
+});
+
+export type VillageTranscriptPullRequestsResponse = z.infer<typeof zVillageTranscriptPullRequestsResponse>;
+
 /**
  * Village Transcript Visibility
  *
@@ -4269,12 +4286,6 @@ export const zVillageTranscriptCollectivesResponse = z.object({
 });
 
 export type VillageTranscriptCollectivesResponse = z.infer<typeof zVillageTranscriptCollectivesResponse>;
-
-export const zVillageTranscriptPullRequestsResponse = z.object({
-    pull_requests: z.array(zVillagePullRequestAttachment)
-});
-
-export type VillageTranscriptPullRequestsResponse = z.infer<typeof zVillageTranscriptPullRequestsResponse>;
 
 export const zVillageTranscriptShare = z.object({
     group_id: zVillageUUID,

@@ -6,6 +6,7 @@ required_names:
   - published-row-valid
   - published-with-audience-valid
   - outside-selection-row-valid
+  - auto-publish-outside-selection-rejected
   - failed-attempt-after-publication-valid
   - empty-response-valid
   - published-without-url-rejected
@@ -190,6 +191,16 @@ cases:
     classification: must-fail
     provenance: {source: enum, ref: "PublicationState is closed; publishing is client state"}
     mutation: {description: "names the transient client state as durable state"}
+  - name: auto-publish-outside-selection-rejected
+    input:
+      schema: LocalPublicationsResponse
+      payload:
+        publications:
+          - {sessionId: s-2, state: unpublished, autoPublish: true, outsideSelection: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: leaves the session out}
+    classification: must-fail
+    provenance: {source: requirement, ref: "autoPublish is false when the saved selection leaves the session out"}
+    mutation: {description: "reports auto-publish on for a session outside the saved selection"}
   - name: auto-publish-missing-rejected
     input:
       schema: LocalPublicationsResponse

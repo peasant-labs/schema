@@ -1486,6 +1486,7 @@ export interface components {
         SchemaVillageTranscriptListResponse: Schema.VillageTranscriptListResponse;
         SchemaVillageTranscriptListRow: Schema.VillageTranscriptListRow;
         SchemaVillageTranscriptMetadataResponse: Schema.VillageTranscriptMetadataResponse;
+        SchemaVillageTranscriptPullRequest: Schema.VillageTranscriptPullRequest;
         SchemaVillageTranscriptPullRequestsResponse: Schema.VillageTranscriptPullRequestsResponse;
         SchemaVillageTranscriptShare: Schema.VillageTranscriptShare;
         /**
