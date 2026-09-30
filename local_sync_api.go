@@ -298,7 +298,8 @@ type SyncPushSessionResult struct {
 // and any session whose content Village accepted carries a transcript URL.
 // Skipped and held sessions have a skipped content step, and a held session
 // can only take a transcript back from collectives or skip a share. A step is not_attempted
-// only after an earlier step failed. Whether a later step still runs after a
+// after an earlier step failed, or in an error session, which is how a failure
+// between steps is reported. Whether a later step still runs after a
 // failure is the producer's choice, so taking a collective back is never
 // forced to wait on an unrelated failure.
 func (r SyncPushSessionResult) Validate() error {

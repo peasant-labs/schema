@@ -364,7 +364,7 @@ component_properties:
     property: pull_requests
     required: true
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillagePullRequestAttachment"
+    items_ref: "#/components/schemas/SchemaVillageTranscriptPullRequest"
   - component: VillageCollectiveSearchResponse
     property: collectives
     required: true

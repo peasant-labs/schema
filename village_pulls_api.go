@@ -157,32 +157,55 @@ type VillageUpdateUserSettingsRequest struct {
 	AutoAttachPullRequests *bool `json:"auto_attach_pull_requests,omitempty"`
 }
 
+// VillageTranscriptPullRequest is one pull request that includes a transcript,
+// for the transcript page's list. It names the pull request and carries its
+// title and head branch when Village knows them. It is narrower than the
+// attachment row on purpose: a reader of a transcript needs to recognize the
+// pull request, not the attachment's internal bookkeeping.
+type VillageTranscriptPullRequest struct {
+	Owner   string                            `json:"owner" minLength:"1"`
+	Name    string                            `json:"name" minLength:"1"`
+	Number  int                               `json:"number" minimum:"1"`
+	Title   *string                           `json:"title"`
+	HeadRef *string                           `json:"head_ref"`
+	State   VillagePullRequestAttachmentState `json:"state"`
+}
+
+// Validate checks the reference and the state. The read lists only attached and
+// detached pull requests, so a pending request never reaches a reader.
+func (p VillageTranscriptPullRequest) Validate() error {
+	ref := VillagePullRequestRef{Owner: p.Owner, Name: p.Name, Number: p.Number}
+	if err := ref.Validate(); err != nil {
+		return err
+	}
+	if p.State != VillagePullRequestAttachmentAttached && p.State != VillagePullRequestAttachmentDetached {
+		return fmt.Errorf("transcript pull request validation failed for %s/%s#%d at schema.VillageTranscriptPullRequest.Validate: state %q; the read lists only attached and detached pull requests, so a pending request never reaches a reader", p.Owner, p.Name, p.Number, p.State)
+	}
+	return nil
+}
+
 // VillageTranscriptPullRequestsResponse is the response of GET
-// /api/v1/transcripts/{id}/pulls: the attachments that include the transcript,
+// /api/v1/transcripts/{id}/pulls: the pull requests that include the transcript,
 // attached or detached, that the caller may read. This is the visibility rule
 // the pull request counts refer to: an attachment on a private repository is
 // listed only to the pull request author, a member of the collective the
 // attachment belongs to, or, for an attached attachment, a reader of the
 // repository, and one whose visibility check cannot complete is omitted.
 type VillageTranscriptPullRequestsResponse struct {
-	PullRequests []VillagePullRequestAttachment `json:"pull_requests" nullable:"false"`
+	PullRequests []VillageTranscriptPullRequest `json:"pull_requests" nullable:"false"`
 }
 
-// Validate checks the attachment states and that each pull request appears
-// once.
+// Validate checks each pull request and that each appears once.
 func (r VillageTranscriptPullRequestsResponse) Validate() error {
 	if r.PullRequests == nil {
 		return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: pull_requests is null; emit [] when no pull request includes the transcript")
 	}
 	seen := make(map[VillagePullRequestRef]struct{}, len(r.PullRequests))
-	for _, attachment := range r.PullRequests {
-		if attachment.State != VillagePullRequestAttachmentAttached && attachment.State != VillagePullRequestAttachmentDetached {
-			return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: %s/%s#%d has state %q; the read lists only attached and detached pull requests, so a pending request never reaches a reader", attachment.Owner, attachment.Name, attachment.Number, attachment.State)
-		}
-		ref := VillagePullRequestRef{Owner: attachment.Owner, Name: attachment.Name, Number: attachment.Number}
-		if err := ref.Validate(); err != nil {
+	for _, pull := range r.PullRequests {
+		if err := pull.Validate(); err != nil {
 			return err
 		}
+		ref := VillagePullRequestRef{Owner: pull.Owner, Name: pull.Name, Number: pull.Number}
 		if _, duplicate := seen[ref]; duplicate {
 			return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: %s/%s#%d is listed twice; list each pull request once", ref.Owner, ref.Name, ref.Number)
 		}
