@@ -8033,44 +8033,11 @@ components:
       - owner_orgs
       - attestations
       type: object
-    SchemaVillageTranscriptPullRequest:
-      properties:
-        head_ref:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        name:
-          minLength: 1
-          type: string
-        number:
-          minimum: 1
-          type: integer
-        owner:
-          minLength: 1
-          type: string
-        state:
-          $ref: '#/components/schemas/SchemaVillagePullRequestAttachmentState'
-        title:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-      required:
-      - owner
-      - name
-      - number
-      - title
-      - head_ref
-      - state
-      type: object
     SchemaVillageTranscriptPullRequestsResponse:
       properties:
         pull_requests:
           items:
-            $ref: '#/components/schemas/SchemaVillageTranscriptPullRequest'
+            $ref: '#/components/schemas/SchemaVillagePullRequestAttachment'
           type: array
       required:
       - pull_requests
