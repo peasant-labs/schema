@@ -538,9 +538,10 @@ func (r AutoPublishInstallRequest) Validate() error {
 
 // AutoPublishRemovalResponse is the response of DELETE
 // /api/v1/settings/auto-publish/{id}: the removed rule's identifier and the
-// hooks of the repositories it matched, as they are. Removing a rule changes
-// no hook: a hook installed for the rule, by another rule, or from the
-// terminal keeps publishing until the user removes it explicitly.
+// hooks of the repositories it matched, as they are. Removing a rule keeps
+// hook files but stops their rule-required uploads unless another active rule
+// covers the repository and event. Paused rules grant no publishing consent.
+// Hooks installed separately from the terminal keep their independent consent.
 type AutoPublishRemovalResponse struct {
 	ID           string                  `json:"id" minLength:"1"`
 	Repositories []AutoPublishRepository `json:"repositories" nullable:"false"`

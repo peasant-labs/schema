@@ -370,7 +370,7 @@ export interface paths {
         /** @description Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         put: operations["saveAutoPublishRule"];
         post?: never;
-        /** @description Remove one auto-publish rule. Removing a rule changes no hook: the response reports the hooks of the repositories it matched as they are, and a hook keeps publishing until the user removes it explicitly, for example with peasant village hooks uninstall. 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Remove one auto-publish rule. The response reports the hooks of the repositories it matched as they are. Hook files are retained, but rule-required hooks stop publishing unless another active rule covers the repository and event. Paused rules grant no publishing consent. Separately installed terminal hooks keep their independent consent. 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         delete: operations["deleteAutoPublishRule"];
         options?: never;
         head?: never;
@@ -386,7 +386,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Installed hooks require an active auto-publish rule for that repository and event each time they run; removing or pausing the last binding stops publication without removing the hook files. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["installAutoPublishHooks"];
         delete?: never;
         options?: never;

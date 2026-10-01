@@ -68,12 +68,12 @@ type LocalPublication struct {
 	// LastAttempt is the most recent failed attempt, absent when none is
 	// recorded.
 	LastAttempt *LocalPublicationAttemptFailure `json:"lastAttempt,omitempty" nullable:"false"`
-	// AutoPublish reports that a Peasant-managed hook is installed in this
-	// session's repository, for a rule or from the terminal, so a commit or
-	// push publishes the session without a click. A hook outlives the rule it
-	// was installed for. It is false when the saved selection leaves the
-	// session out, because the hook's push applies the selection.
-	AutoPublish bool `json:"autoPublish" description:"A Peasant-managed git hook is installed in this session's repository, for an auto-publish rule or from the terminal, so a commit or push publishes the session without a click. False when the saved selection leaves the session out."`
+	// AutoPublish reports that an executable Peasant upload hook can publish
+	// this session on a commit or push. Rule-required hooks need an active rule
+	// for that repository and event; removing or pausing the last binding makes
+	// the retained hook dormant. Separately installed terminal hooks have their
+	// own consent. False outside the saved selection or when rules cannot be read.
+	AutoPublish bool `json:"autoPublish" description:"An executable Peasant upload hook can publish this session on a commit or push. A rule-required hook publishes only while an active rule covers the repository and event; removing or pausing its last binding makes the retained hook dormant. Separately installed terminal hooks keep their independent consent. False when the saved selection leaves the session out or the rules cannot be read."`
 	// OutsideSelection reports that the saved selection leaves this session
 	// out of the local lists. The read ignores the selection, so such a
 	// session is still returned.
