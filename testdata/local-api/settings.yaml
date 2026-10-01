@@ -3,7 +3,7 @@
 # value, the one-key update and its refusal, and the auto-publish rule with the
 # recorded repositories it matches and each one's hook state per event. Saving
 # a rule installs nothing, installing is one call per repository, and removing
-# a rule changes no hook.
+# a rule leaves hook files on disk and stops rule-required publication when no active binding remains.
 required_names:
   - settings-every-kind-valid
   - settings-empty-valid
@@ -86,6 +86,15 @@ required_names:
   - removal-empty-id-rejected
   - settings-null-rules-rejected
   - rule-request-null-collectives-rejected
+  - rule-request-session-target-valid
+  - rule-request-paused-session-target-valid
+  - rule-request-no-target-rejected
+  - rule-request-session-with-kind-rejected
+  - rule-request-session-with-match-rejected
+  - rule-request-session-with-empty-kind-rejected
+  - rule-request-session-with-empty-match-rejected
+  - rule-request-null-session-rejected
+  - rule-request-invalid-session-rejected
 operations:
   - api: local
     method: get
@@ -525,7 +534,7 @@ cases:
       schema: AutoPublishRuleRequest
       payload:
         {kind: folder, match: "~/work/acme/**", events: [pre-push], collectives: [], install: true}
-    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: bug, ref: "saving a rule installs nothing"}
     mutation: {description: "asks the save to install"}
@@ -897,3 +906,75 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "collectives is an array"}
     mutation: {description: "sends null for collectives"}
+  - name: rule-request-session-target-valid
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "session target valid"}
+  - name: rule-request-paused-session-target-valid
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": [], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "paused session target valid"}
+  - name: rule-request-no-target-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "no target rejected"}
+  - name: rule-request-session-with-kind-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001", "kind": "folder"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "session with kind rejected"}
+  - name: rule-request-session-with-match-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001", "match": "/repo"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "session with match rejected"}
+  - name: rule-request-session-with-empty-kind-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001", "kind": ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "session with empty kind rejected"}
+  - name: rule-request-session-with-empty-match-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "aabbccdd-0000-4000-8000-000000000001", "match": ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "session with empty match rejected"}
+  - name: rule-request-null-session-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "null session rejected"}
+  - name: rule-request-invalid-session-rejected
+    input:
+      schema: AutoPublishRuleRequest
+      payload: {"events": ["pre-push"], "collectives": ["11111111-1111-4111-8111-111111111111"], "sessionId": "../repo"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one explicit session or pattern target"}
+    mutation: {description: "invalid session rejected"}

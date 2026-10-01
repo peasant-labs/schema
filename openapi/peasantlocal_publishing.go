@@ -83,7 +83,7 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodPut, path: "/api/v1/settings/auto-publish/{id}", id: "saveAutoPublishRule", tag: "settings",
-			description:   "Create or replace one auto-publish rule. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind.",
+			description:   "Create or replace one auto-publish rule. Supply either kind and match for an explicit pattern, or sessionId alone to resolve a stored session to its current Git repository and save an escaped exact-folder rule. The target modes are mutually exclusive. A session without a resolvable existing directory is refused before saving, without remote or process-directory fallback. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind.",
 			requests:      []interface{}{rulePath, new(schema.AutoPublishRuleRequest)},
 			response:      new(schema.AutoPublishRule),
 			requiredBody:  true,
