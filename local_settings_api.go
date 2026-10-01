@@ -471,6 +471,13 @@ func (r *AutoPublishRuleRequest) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
 	}
+	for key := range fields {
+		for _, canonical := range []string{"sessionId", "kind", "match"} {
+			if key != canonical && strings.EqualFold(key, canonical) {
+				return fmt.Errorf("auto-publish rule request: use the canonical property %q instead of %q", canonical, key)
+			}
+		}
+	}
 	if session, present := fields["sessionId"]; present {
 		if bytes.Equal(bytes.TrimSpace(session), []byte("null")) {
 			return fmt.Errorf("auto-publish rule request: sessionId is null; omit it for a pattern target")
