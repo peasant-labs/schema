@@ -3776,9 +3776,17 @@ export type AutoPublishRule = z.infer<typeof zAutoPublishRule>;
 export const zAutoPublishRuleRequest = z.object({
     collectives: z.array(zVillageUUID),
     events: z.array(zAutoPublishEvent),
-    kind: zAutoPublishRuleKind,
-    match: z.string().min(1)
-}).strict();
+    kind: zAutoPublishRuleKind.optional(),
+    match: z.string().min(1).optional(),
+    sessionId: zSessionID.optional()
+}).strict().superRefine((value, context) => {
+    const sessionTarget = value.sessionId !== undefined;
+    const patternTarget = value.kind !== undefined && value.match !== undefined;
+    const anyPatternField = value.kind !== undefined || value.match !== undefined;
+    if (sessionTarget ? anyPatternField : !patternTarget) {
+        context.addIssue({ code: "custom", message: "name exactly one session or explicit pattern target" });
+    }
+});
 
 export type AutoPublishRuleRequest = z.infer<typeof zAutoPublishRuleRequest>;
 

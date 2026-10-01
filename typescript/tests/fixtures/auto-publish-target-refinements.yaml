@@ -1,0 +1,23 @@
+cases:
+  - name: normalization-preserves-the-real-refined-artifact
+    operation: normalize
+    mutation: none
+  - name: target-refinement-preserves-the-real-refined-artifact
+    operation: refine
+    mutation: none
+  - name: a-missing-target-declaration-aborts-normalization
+    operation: normalize
+    mutation: missing
+    error: expected exactly one
+  - name: a-duplicate-target-declaration-aborts-normalization
+    operation: normalize
+    mutation: duplicate
+    error: expected exactly one
+  - name: an-unrecognized-intersection-aborts-normalization
+    operation: normalize
+    mutation: intersection
+    error: unexpected generated intersection
+  - name: an-unclosed-target-object-aborts-refinement
+    operation: refine
+    mutation: unclosed
+    error: strict object terminator

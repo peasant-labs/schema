@@ -118,7 +118,8 @@ const (
 	// testdata/local-api/village_components.yaml pins them per Local version.
 	// Bumped to 0.16.0 for rule-required hooks that stop publishing when their
 	// last active binding is removed, retaining the existing response fields.
-	PeasantLocalAPIVersion = "0.16.0"
+	// Bumped to 0.17.0 for an optional stored-session target on rule creation.
+	PeasantLocalAPIVersion = "0.17.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -175,5 +176,6 @@ const (
 	// catalog (additive = minor bump).
 	// Bumped to 0.27.0 to describe rule-required hook consent in the local
 	// publication indicator, without changing any field or enum.
-	TypesVersion = "0.27.0"
+	// Bumped to 0.28.0 for the mutually exclusive session-target rule request.
+	TypesVersion = "0.28.0"
 )
