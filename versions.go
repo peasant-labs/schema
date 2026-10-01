@@ -116,7 +116,9 @@ const (
 	// VillageShareStatus in the publication audience, with their closed sets.
 	// A change to any of them also bumps this version;
 	// testdata/local-api/village_components.yaml pins them per Local version.
-	PeasantLocalAPIVersion = "0.15.0"
+	// Bumped to 0.16.0 for rule-required hooks that stop publishing when their
+	// last active binding is removed, retaining the existing response fields.
+	PeasantLocalAPIVersion = "0.16.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -171,5 +173,7 @@ const (
 	// Bumped to 0.25.0 when the local publishing, sign-in, and settings types
 	// and the Village pull request read, summary, and totals types entered the
 	// catalog (additive = minor bump).
-	TypesVersion = "0.26.0"
+	// Bumped to 0.27.0 to describe rule-required hook consent in the local
+	// publication indicator, without changing any field or enum.
+	TypesVersion = "0.27.0"
 )

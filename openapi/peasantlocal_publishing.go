@@ -92,7 +92,7 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodPost, path: "/api/v1/settings/auto-publish/{id}/install", id: "installAutoPublishHooks", tag: "settings",
-			description:   "Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier.",
+			description:   "Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Installed hooks require an active auto-publish rule for that repository and event each time they run; removing or pausing the last binding stops publication without removing the hook files. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier.",
 			requests:      []interface{}{rulePath, new(schema.AutoPublishInstallRequest)},
 			response:      new(schema.AutoPublishRepository),
 			requiredBody:  true,
@@ -101,7 +101,7 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodDelete, path: "/api/v1/settings/auto-publish/{id}", id: "deleteAutoPublishRule", tag: "settings",
-			description:   "Remove one auto-publish rule. Removing a rule changes no hook: the response reports the hooks of the repositories it matched as they are, and a hook keeps publishing until the user removes it explicitly, for example with peasant village hooks uninstall. 404 when no rule has this identifier.",
+			description:   "Remove one auto-publish rule. The response reports the hooks of the repositories it matched as they are. Hook files are retained, but rule-required hooks stop publishing unless another active rule covers the repository and event. Paused rules grant no publishing consent. Separately installed terminal hooks keep their independent consent. 404 when no rule has this identifier.",
 			requests:      []interface{}{rulePath},
 			response:      new(schema.AutoPublishRemovalResponse),
 			errorStatuses: []int{http.StatusNotFound},
