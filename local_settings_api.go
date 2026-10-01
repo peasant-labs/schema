@@ -427,18 +427,88 @@ func (AutoPublishRuleKind) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // AutoPublishRuleRequest is the body of PUT /api/v1/settings/auto-publish/{id}.
-// Kind says whether Match is a folder glob or a git remote pattern. An empty
-// Events list keeps the rule and publishes nothing.
+// An explicit pattern names Kind and Match. A session target instead names
+// SessionID: the server resolves that stored session's directory to its current
+// Git repository and saves an escaped exact-folder rule for that root. The two
+// targets are mutually exclusive. A missing session, missing directory or failed
+// Git resolution is refused before saving, without a remote or cwd fallback.
+// An empty Events list keeps the rule and publishes nothing. Saving installs
+// nothing; installing remains a separate explicit request.
 type AutoPublishRuleRequest struct {
-	Kind        AutoPublishRuleKind `json:"kind"`
-	Match       string              `json:"match" minLength:"1"`
+	Kind        AutoPublishRuleKind `json:"kind,omitempty"`
+	Match       string              `json:"match,omitempty" minLength:"1"`
+	SessionID   *SessionID          `json:"sessionId,omitempty" nullable:"false"`
 	Events      []AutoPublishEvent  `json:"events" nullable:"false"`
 	Collectives []VillageUUID       `json:"collectives" nullable:"false"`
 }
 
-// Validate checks the kind, the match, and that no event or collective
-// repeats.
+// PrepareJSONSchema keeps the existing pattern body and the session-target body
+// distinct in every generated validator, including their property presence.
+func (AutoPublishRuleRequest) PrepareJSONSchema(s *jsonschema.Schema) error {
+	pattern := jsonschema.Schema{}
+	pattern.WithRequired("kind", "match")
+	sessionPresent := jsonschema.Schema{}
+	sessionPresent.WithRequired("sessionId")
+	pattern.WithNot(sessionPresent.ToSchemaOrBool())
+	session := jsonschema.Schema{}
+	session.WithRequired("sessionId")
+	kindPresent := jsonschema.Schema{}
+	kindPresent.WithRequired("kind")
+	matchPresent := jsonschema.Schema{}
+	matchPresent.WithRequired("match")
+	patternPresent := jsonschema.Schema{}
+	patternPresent.WithAnyOf(kindPresent.ToSchemaOrBool(), matchPresent.ToSchemaOrBool())
+	session.WithNot(patternPresent.ToSchemaOrBool())
+	s.WithOneOf(pattern.ToSchemaOrBool(), session.ToSchemaOrBool())
+	return nil
+}
+
+// UnmarshalJSON preserves target exclusivity even when an explicit pattern
+// property is empty. Null is not an omitted session target.
+func (r *AutoPublishRuleRequest) UnmarshalJSON(data []byte) error {
+	type plain AutoPublishRuleRequest
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for key := range fields {
+		for _, canonical := range []string{"sessionId", "kind", "match"} {
+			if key != canonical && strings.EqualFold(key, canonical) {
+				return fmt.Errorf("auto-publish rule request: use the canonical property %q instead of %q", canonical, key)
+			}
+		}
+	}
+	if session, present := fields["sessionId"]; present {
+		if bytes.Equal(bytes.TrimSpace(session), []byte("null")) {
+			return fmt.Errorf("auto-publish rule request: sessionId is null; omit it for a pattern target")
+		}
+		_, hasKind := fields["kind"]
+		_, hasMatch := fields["match"]
+		if hasKind || hasMatch {
+			return fmt.Errorf("auto-publish rule request: sessionId and kind/match are mutually exclusive; name one target")
+		}
+	}
+	var decoded plain
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&decoded); err != nil {
+		return err
+	}
+	*r = AutoPublishRuleRequest(decoded)
+	return nil
+}
+
+// Validate checks the mutually exclusive target and each event and collective.
 func (r AutoPublishRuleRequest) Validate() error {
+	if r.SessionID != nil {
+		if r.Kind != "" || r.Match != "" {
+			return fmt.Errorf("auto-publish rule request: sessionId and kind/match are mutually exclusive; name one target")
+		}
+		if _, err := NewSessionID(string(*r.SessionID)); err != nil {
+			return fmt.Errorf("auto-publish rule request: invalid sessionId: %w", err)
+		}
+		return validateAutoPublishRule(AutoPublishRuleFolder, "session target", r.Events, r.Collectives)
+	}
 	return validateAutoPublishRule(r.Kind, r.Match, r.Events, r.Collectives)
 }
 
