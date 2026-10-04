@@ -1,0 +1,10 @@
+expectedCaseCount: 8
+requiredCaseNames:
+  - empty-rejected
+  - invalid-utf8-rejected
+  - multibyte-128-bytes-accepted
+  - multibyte-129-bytes-rejected
+  - four-byte-64-code-points-rejected
+  - ascii-whitespace-edge-rejected
+  - interior-space-accepted
+  - simple-native-spelling-accepted
