@@ -1,0 +1,89 @@
+# Per-case replay markers for the TypeScript thinking-level parity tests.
+#
+# The Go corpora are the source of truth. Every Go case name is listed exactly
+# once, either under `replay` (the generated zod schema must agree with the Go
+# verdict) or under `goOnly` with the reason the row cannot be replayed in
+# JavaScript. A new Go case fails the TypeScript suite until it is classified
+# here, so a Go-only row can never blanket-accept or weaken the parity checks.
+metadata:
+  # testdata/metadata/thinking_level.yaml, replayed through zUnifiedMetadata by
+  # merging each decode case over the corpus baseMetadata.
+  replay:
+    - v11-sidecar-reads-absent
+    - member-off
+    - member-minimal
+    - member-low
+    - member-medium
+    - member-high
+    - member-xhigh
+    - member-max
+    - member-ultra
+    - raw-with-canonical
+    - raw-without-canonical
+    - multibyte-raw-at-byte-bound
+    - multibyte-raw-over-byte-bound
+    - noncanonical-level-rejected
+    - edge-whitespace-raw-rejected
+  goOnly:
+    raw-null-is-absent: "Go metadata decoding normalizes an explicit null raw to absent; the wire schema keeps the field optional and non-null"
+    invalid-utf8-raw-marshal-rejected: "assembles a Go struct holding a lone 0xFF byte, which a JavaScript string cannot represent"
+    over-bound-raw-marshal-rejected: "exercises the Go MarshalJSON guard on a directly assembled struct; the 129-byte decode row covers the same bound"
+    valid-pair-marshal-round-trips: "exercises the Go MarshalJSON stamp of the current schema version on a directly assembled struct"
+raw:
+  # testdata/metadata/thinking_level_raw.yaml, replayed through zThinkingLevelRaw.
+  replay:
+    - empty-rejected
+    - multibyte-128-bytes-accepted
+    - multibyte-129-bytes-rejected
+    - four-byte-64-code-points-rejected
+    - ascii-whitespace-edge-rejected
+    - interior-space-accepted
+    - simple-native-spelling-accepted
+  goOnly:
+    invalid-utf8-rejected: "a lone 0xFF byte cannot be represented in a JavaScript string; the lone-surrogate row below covers the TypeScript equivalent"
+turn:
+  # testdata/session-detail/transcripts/turn_thinking_levels.yaml, replayed by
+  # merging each turn over baseTurn through zTurnDetail and each session seed
+  # through the zSessionDetailPayload thinking-level fields.
+  baseTurn: {index: 0, role: assistant, content: "I will inspect the failing request.", timestamp: "2026-02-24T09:00:00Z", depth: 0}
+  replay:
+    - absent-accepted
+    - assistant-level-accepted
+    - assistant-ultra-with-raw-accepted
+    - assistant-raw-only-accepted
+    - nested-subagent-accepted
+    - multibyte-raw-at-bound-accepted
+    - explicit-null-raw-refused
+    - explicit-null-level-refused
+    - noncanonical-level-refused
+    - empty-raw-refused
+    - edge-whitespace-raw-refused
+    - over-bound-raw-refused
+    - session-seed-accepted
+    - session-seed-noncanonical-refused
+  goOnly:
+    user-level-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
+    system-raw-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
+    tool-level-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
+# JavaScript-string boundaries the Go regexp cannot express. NewThinkingLevelRaw
+# applies the Unicode White_Space rule, so U+0085 and U+00A0 at an edge are
+# refused while U+FEFF (not White_Space) is permitted. Values are JSON string
+# literals so escapes, including lone surrogates, stay exact.
+typescriptCases:
+  - {name: leading-nel-rejected, valueJSON: '"\u0085high"', accepted: false}
+  - {name: trailing-nel-rejected, valueJSON: '"high\u0085"', accepted: false}
+  - {name: leading-nbsp-rejected, valueJSON: '"\u00a0high"', accepted: false}
+  - {name: leading-bom-accepted, valueJSON: '"\ufeffhigh"', accepted: true}
+  - {name: trailing-bom-accepted, valueJSON: '"high\ufeff"', accepted: true}
+  - {name: interior-nel-accepted, valueJSON: '"deep\u0085think"', accepted: true}
+  - {name: lone-surrogate-rejected, valueJSON: '"high\ud800"', accepted: false}
+  - {name: four-byte-32-code-points-accepted, valueJSON: '"\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00"', accepted: true}
+requiredTypescriptCaseNames:
+  - leading-nel-rejected
+  - trailing-nel-rejected
+  - leading-nbsp-rejected
+  - leading-bom-accepted
+  - trailing-bom-accepted
+  - interior-nel-accepted
+  - lone-surrogate-rejected
+  - four-byte-32-code-points-accepted

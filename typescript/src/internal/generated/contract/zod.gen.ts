@@ -2700,7 +2700,7 @@ export type ThinkingLevel = z.infer<typeof zThinkingLevel>;
  *
  * Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.
  */
-export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^(?:﻿|[^\s])(?:[\s\S]*(?:﻿|[^\s]))?$/);
+export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^(?:﻿|[^\s])(?:[\s\S]*(?:﻿|[^\s]))?$/).refine((value) => !/[\uD800-\uDFFF]/u.test(value) && new TextEncoder().encode(value).length <= 128, { error: "ThinkingLevelRaw is invalid UTF-8 or exceeds 128 bytes" }).refine((value) => { const edge = (text: string) => text === "\uFEFF" || (!/\s/u.test(text) && text !== "\u0085"); return edge(value.charAt(0)) && edge(value.charAt(value.length - 1)); }, { error: "ThinkingLevelRaw must not begin or end with whitespace" });
 
 export type ThinkingLevelRaw = z.infer<typeof zThinkingLevelRaw>;
 
