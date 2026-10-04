@@ -693,3 +693,15 @@ enums:
       - {name: Folder, value: "folder"}
       - {name: Remote, value: "remote"}
     all_values: ["folder", "remote"]
+  - name: ThinkingLevel
+    all_name: AllThinkingLevels
+    members:
+      - {name: Off, value: "off"}
+      - {name: Minimal, value: "minimal"}
+      - {name: Low, value: "low"}
+      - {name: Medium, value: "medium"}
+      - {name: High, value: "high"}
+      - {name: XHigh, value: "xhigh"}
+      - {name: Max, value: "max"}
+      - {name: Ultra, value: "ultra"}
+    all_values: ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]

@@ -23,8 +23,9 @@ known:
     - {name: ObservedModelV1, go_const: ContentCapabilityObservedModelV1, value: "observed_model_v1"}
     - {name: RetainedUnknownV1, go_const: ContentCapabilityRetainedUnknownV1, value: "retained_unknown_v1"}
     - {name: SessionGraphProvenanceV1, go_const: ContentCapabilitySessionGraphProvenanceV1, value: "session_graph_provenance_v1"}
+    - {name: ThinkingLevelV1, go_const: ContentCapabilityThinkingLevelV1, value: "thinking_level_v1"}
     - {name: ToolNamespaceV1, go_const: ContentCapabilityToolNamespaceV1, value: "tool_namespace_v1"}
-  all_values: ["detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "retained_unknown_v1", "session_graph_provenance_v1", "tool_namespace_v1"]
+  all_values: ["detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "retained_unknown_v1", "session_graph_provenance_v1", "thinking_level_v1", "tool_namespace_v1"]
 # Discovery cases prove the open wire and the typed guard simultaneously: every
 # advertised list (including unknown future and duplicate tokens) parses, and
 # guarding/filtering it against the closed inventory yields only known tokens.
@@ -50,3 +51,6 @@ discovery:
   - name: empty
     advertised: []
     knownFiltered: []
+  - name: thinking_level_with_unknown_and_duplicate
+    advertised: ["thinking_level_v1", "future_v2", "thinking_level_v1", "observed_model_v1"]
+    knownFiltered: ["thinking_level_v1", "observed_model_v1"]

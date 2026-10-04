@@ -16,10 +16,11 @@ export const KnownContentCapability = Object.freeze({
   ObservedModelV1: "observed_model_v1",
   RetainedUnknownV1: "retained_unknown_v1",
   SessionGraphProvenanceV1: "session_graph_provenance_v1",
+  ThinkingLevelV1: "thinking_level_v1",
   ToolNamespaceV1: "tool_namespace_v1",
 } as const);
 export type KnownContentCapability = (typeof KnownContentCapability)[keyof typeof KnownContentCapability];
-export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.RetainedUnknownV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
+export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.RetainedUnknownV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ThinkingLevelV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
 export function isContentCapability(value: unknown): value is KnownContentCapability {
   return typeof value === "string" && (AllContentCapabilities as readonly string[]).includes(value);
 }

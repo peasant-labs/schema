@@ -88,6 +88,7 @@ import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } 
 import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
+import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({
@@ -1159,4 +1160,20 @@ export const AutoPublishRuleKind = Object.freeze({
 export const AllAutoPublishRuleKinds = Object.freeze([AutoPublishRuleKind.Folder, AutoPublishRuleKind.Remote]) as readonly AutoPublishRuleKind[];
 export function isAutoPublishRuleKind(value: unknown): value is AutoPublishRuleKind {
   return zAutoPublishRuleKind.safeParse(value).success;
+}
+
+export type ThinkingLevel = ThinkingLevelContract;
+export const ThinkingLevel = Object.freeze({
+  Off: zThinkingLevel.parse("off"),
+  Minimal: zThinkingLevel.parse("minimal"),
+  Low: zThinkingLevel.parse("low"),
+  Medium: zThinkingLevel.parse("medium"),
+  High: zThinkingLevel.parse("high"),
+  XHigh: zThinkingLevel.parse("xhigh"),
+  Max: zThinkingLevel.parse("max"),
+  Ultra: zThinkingLevel.parse("ultra"),
+} as const);
+export const AllThinkingLevels = Object.freeze([ThinkingLevel.Off, ThinkingLevel.Minimal, ThinkingLevel.Low, ThinkingLevel.Medium, ThinkingLevel.High, ThinkingLevel.XHigh, ThinkingLevel.Max, ThinkingLevel.Ultra]) as readonly ThinkingLevel[];
+export function isThinkingLevel(value: unknown): value is ThinkingLevel {
+  return zThinkingLevel.safeParse(value).success;
 }

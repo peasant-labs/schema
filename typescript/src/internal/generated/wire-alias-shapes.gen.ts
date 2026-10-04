@@ -146,6 +146,8 @@ export const wireAliasShapes = {
       "source": {},
       "startTime": {},
       "status": {},
+      "thinkingLevel": "ThinkingLevel",
+      "thinkingLevelRaw": "ThinkingLevelRaw",
       "tokensIn": {},
       "tokensOut": {},
       "toolCallCount": {},
@@ -191,6 +193,8 @@ export const wireAliasShapes = {
   "SourceEntryRef": {},
   "StopReason": {},
   "SubmissionRef": {},
+  "ThinkingLevel": {},
+  "ThinkingLevelRaw": {},
   "TokenUsageDetail": {
     "fields": {
       "cacheRead": {},
@@ -244,6 +248,8 @@ export const wireAliasShapes = {
       "role": "Role",
       "sourceEntryRef": "SourceEntryRef",
       "stopReason": "StopReason",
+      "thinkingLevel": "ThinkingLevel",
+      "thinkingLevelRaw": "ThinkingLevelRaw",
       "timestamp": {},
       "tokensIn": {},
       "tokensOut": {},
