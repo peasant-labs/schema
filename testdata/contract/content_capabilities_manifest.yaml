@@ -31,3 +31,12 @@ requiredCaseNames:
   - user-evidence-invalid
   - tool-evidence-invalid
   - invalid-observed-value-invalid
+  - thinking-level-session-seed-requires-capability
+  - thinking-level-raw-only-requires-capability
+  - thinking-level-nested-turn-requires-capability
+  - thinking-level-accumulates-with-observed-model
+  - thinking-level-missing-advertisement-refused
+  - thinking-level-full-canonical-advertisement
+  - thinking-level-assistant-evidence-valid
+  - thinking-level-user-evidence-invalid
+  - thinking-level-noncanonical-evidence-invalid
