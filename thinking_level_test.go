@@ -52,7 +52,7 @@ type thinkingLevelMetadataManifest struct {
 }
 
 type thinkingLevelMetadataCorpus struct {
-	BaseMetadata string                                                                       `yaml:"baseMetadata"`
+	BaseMetadata string                                                                     `yaml:"baseMetadata"`
 	Cases        []testcase.Case[thinkingLevelMetadataInput, thinkingLevelMetadataExpected] `yaml:"cases"`
 }
 
