@@ -136,20 +136,20 @@ func TestGitContextCommitsField_EmptySliceOmitted(t *testing.T) {
 	}
 }
 
-// --- MetadataSchemaVersion is 11 (session graph provenance) ---
+// --- MetadataSchemaVersion is 12 (optional thinking level) ---
 
-func TestMetadataSchemaVersion_IsV11(t *testing.T) {
-	if schema.MetadataSchemaVersion != 11 {
-		t.Errorf("MetadataSchemaVersion: got %d, want 11", schema.MetadataSchemaVersion)
+func TestMetadataSchemaVersion_IsV12(t *testing.T) {
+	if schema.MetadataSchemaVersion != 12 {
+		t.Errorf("MetadataSchemaVersion: got %d, want 12", schema.MetadataSchemaVersion)
 	}
 }
 
-// --- NewUnifiedMetadata sets v10 schema version ---
+// --- NewUnifiedMetadata sets v12 schema version ---
 
-func TestNewUnifiedMetadata_SchemaVersionV11(t *testing.T) {
+func TestNewUnifiedMetadata_SchemaVersionV12(t *testing.T) {
 	meta := schema.NewUnifiedMetadata()
-	if meta.SchemaVersion != 11 {
-		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 11", meta.SchemaVersion)
+	if meta.SchemaVersion != 12 {
+		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 12", meta.SchemaVersion)
 	}
 }
 
