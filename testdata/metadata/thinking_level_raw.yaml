@@ -1,0 +1,49 @@
+cases:
+  - name: empty-rejected
+    input: {value: ""}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw is non-empty"}
+    mutation: {description: "sends the empty string"}
+  - name: invalid-utf8-rejected
+    input: {base64: /w==}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw is valid UTF-8"}
+    mutation: {description: "sends a lone 0xFF byte"}
+  - name: multibyte-128-bytes-accepted
+    input: {value: "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "128 encoded bytes is the inclusive bound"}
+    mutation: {description: "uses 64 two-byte code points"}
+  - name: multibyte-129-bytes-rejected
+    input: {value: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa"}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "maxLength counts code points, so only the byte format rejects 129 bytes"}
+    mutation: {description: "appends one byte past the bound while staying under 128 code points"}
+  - name: four-byte-64-code-points-rejected
+    input: {value: "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "64 code points of 256 bytes passes maxLength but fails the byte format"}
+    mutation: {description: "uses 64 four-byte code points"}
+  - name: ascii-whitespace-edge-rejected
+    input: {value: "high "}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the compiled edge pattern rejects ASCII whitespace"}
+    mutation: {description: "adds a trailing ASCII space"}
+  - name: interior-space-accepted
+    input: {value: "deep think"}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "interior whitespace is preserved"}
+    mutation: {description: "keeps a single interior space"}
+  - name: simple-native-spelling-accepted
+    input: {value: ultracode}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a native mode name is a valid raw spelling"}
+    mutation: {description: "sends the Claude Code mode name"}

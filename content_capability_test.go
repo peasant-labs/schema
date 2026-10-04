@@ -91,7 +91,7 @@ func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
 }
 
 func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
-	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilityRetainedUnknownV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityToolNamespaceV1}
+	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilityRetainedUnknownV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityThinkingLevelV1, schema.ContentCapabilityToolNamespaceV1}
 	if !slices.Equal(schema.AllContentCapabilities, want) {
 		t.Fatalf("AllContentCapabilities=%v, want exact canonical inventory %v", schema.AllContentCapabilities, want)
 	}
@@ -163,14 +163,19 @@ type contentCapabilityInput struct {
 	Role           schema.Role                `yaml:"role,omitempty"`
 	ObservedModel  string                     `yaml:"observedModel,omitempty"`
 	NativeMetadata bool                       `yaml:"nativeMetadata,omitempty"`
+	// Session-level seed (scan) or evidence pair (thinking-evidence).
+	ThinkingLevel    schema.ThinkingLevel    `yaml:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw schema.ThinkingLevelRaw `yaml:"thinkingLevelRaw,omitempty"`
 }
 
 type contentCapabilityTurn struct {
-	Role          schema.Role             `yaml:"role"`
-	Depth         int                     `yaml:"depth,omitempty"`
-	ObservedModel string                  `yaml:"observedModel,omitempty"`
-	Usage         bool                    `yaml:"usage,omitempty"`
-	Tools         []contentCapabilityTool `yaml:"tools,omitempty"`
+	Role             schema.Role             `yaml:"role"`
+	Depth            int                     `yaml:"depth,omitempty"`
+	ObservedModel    string                  `yaml:"observedModel,omitempty"`
+	Usage            bool                    `yaml:"usage,omitempty"`
+	ThinkingLevel    schema.ThinkingLevel    `yaml:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw schema.ThinkingLevelRaw `yaml:"thinkingLevelRaw,omitempty"`
+	Tools            []contentCapabilityTool `yaml:"tools,omitempty"`
 }
 
 type contentCapabilityTool struct {
@@ -208,7 +213,7 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 			case "scan":
 				turns := make([]schema.TurnDetail, len(fixtureCase.Input.Turns))
 				for i, turn := range fixtureCase.Input.Turns {
-					turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel)}
+					turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel), ThinkingLevel: turn.ThinkingLevel, ThinkingLevelRaw: turn.ThinkingLevelRaw}
 					if turn.Usage {
 						turns[i].Usage = &schema.UsageDetail{}
 					}
@@ -220,13 +225,15 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 						turns[i].ToolCalls = append(turns[i].ToolCalls, value)
 					}
 				}
-				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, Turns: turns}
+				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, ThinkingLevel: fixtureCase.Input.ThinkingLevel, ThinkingLevelRaw: fixtureCase.Input.ThinkingLevelRaw, Turns: turns}
 				if fixtureCase.Input.NativeMetadata {
 					payload.NativeMetadata = []schema.NativeMetadataRecord{{}}
 				}
 				capabilities = schema.RequiredContentCapabilities(payload)
 			case "evidence":
 				err = schema.ValidateObservedModelEvidence(fixtureCase.Input.Role, schema.ObservedModelID(fixtureCase.Input.ObservedModel))
+			case "thinking-evidence":
+				err = schema.ValidateThinkingLevelEvidence(fixtureCase.Input.Role, fixtureCase.Input.ThinkingLevel, fixtureCase.Input.ThinkingLevelRaw)
 			default:
 				t.Fatalf("unknown fixture operation %q", fixtureCase.Input.Operation)
 			}

@@ -1,0 +1,103 @@
+cases:
+  - name: absent-accepted
+    input: {turn: "{\"role\": \"assistant\"}"}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "turns may omit thinking level evidence"}
+    mutation: {description: "omits both fields"}
+  - name: assistant-level-accepted
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": \"medium\"}"}
+    expected: {accepted: true, thinkingLevel: medium}
+    classification: must-pass
+    provenance: {source: requirement, ref: "assistant turns carry their own level"}
+    mutation: {description: "adds a canonical level"}
+  - name: assistant-ultra-with-raw-accepted
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": \"ultra\", \"thinkingLevelRaw\": \"ultracode\"}"}
+    expected: {accepted: true, thinkingLevel: ultra, thinkingLevelRaw: ultracode}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the native mode name rides as raw on ultra"}
+    mutation: {description: "pairs ultra with ultracode"}
+  - name: assistant-raw-only-accepted
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"custom\"}"}
+    expected: {accepted: true, thinkingLevelRaw: custom}
+    classification: must-pass
+    provenance: {source: requirement, ref: "unmapped spellings keep raw without a canonical level"}
+    mutation: {description: "adds raw without a canonical level"}
+  - name: nested-subagent-accepted
+    input: {turn: "{\"role\": \"assistant\", \"depth\": 1, \"parentIndex\": 0, \"thinkingLevel\": \"high\"}"}
+    expected: {accepted: true, thinkingLevel: high}
+    classification: must-pass
+    provenance: {source: requirement, ref: "subagent output uses the assistant role"}
+    mutation: {description: "adds a level on a nested assistant turn"}
+  - name: multibyte-raw-at-bound-accepted
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\"}"}
+    expected: {accepted: true, thinkingLevelRaw: "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"}
+    classification: must-pass
+    provenance: {source: boundary, ref: "128 encoded bytes is the inclusive bound"}
+    mutation: {description: "uses 64 two-byte code points"}
+  - name: user-level-refused
+    input: {turn: "{\"role\": \"user\", \"thinkingLevel\": \"high\"}"}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: "level evidence is assistant-only"}
+    mutation: {description: "moves a level onto a user turn"}
+  - name: system-raw-refused
+    input: {turn: "{\"role\": \"system\", \"thinkingLevelRaw\": \"none\"}"}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: "raw evidence is assistant-only"}
+    mutation: {description: "moves raw onto a system turn"}
+  - name: tool-level-refused
+    input: {turn: "{\"role\": \"tool\", \"thinkingLevel\": \"low\"}"}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: "level evidence is not valid on tool turns"}
+    mutation: {description: "moves a level onto a tool turn"}
+  - name: explicit-null-raw-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": null}"}
+    expected: {accepted: false, errorContains: non-null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the detail wire rejects explicit null for non-pointer strings"}
+    mutation: {description: "sends an explicit null raw"}
+  - name: explicit-null-level-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": null}"}
+    expected: {accepted: false, errorContains: non-null}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the detail wire rejects explicit null for non-pointer strings"}
+    mutation: {description: "sends an explicit null level"}
+  - name: noncanonical-level-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": \"ultracode\"}"}
+    expected: {accepted: false, errorContains: closed set}
+    classification: must-fail
+    provenance: {source: requirement, ref: "native spellings are never canonical values"}
+    mutation: {description: "writes a native spelling as the level"}
+  - name: empty-raw-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"\"}"}
+    expected: {accepted: false, errorContains: empty}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an explicit empty raw is not a native spelling"}
+    mutation: {description: "sends an explicit empty raw"}
+  - name: edge-whitespace-raw-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"high\\n\"}"}
+    expected: {accepted: false, errorContains: whitespace}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw spellings have no edge whitespace"}
+    mutation: {description: "adds a trailing line feed"}
+  - name: over-bound-raw-refused
+    input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa\"}"}
+    expected: {accepted: false, errorContains: 128-byte}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw spellings are at most 128 encoded bytes"}
+    mutation: {description: "appends one byte past the bound"}
+  - name: session-seed-accepted
+    input: {turn: "{\"role\": \"assistant\"}", session: "{\"thinkingLevel\": \"xhigh\"}"}
+    expected: {accepted: true, sessionThinkingLevel: xhigh}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the session detail carries the seed"}
+    mutation: {description: "sets the session-level seed"}
+  - name: session-seed-noncanonical-refused
+    input: {turn: "{\"role\": \"assistant\"}", session: "{\"thinkingLevel\": \"persistent\"}"}
+    expected: {accepted: false, errorContains: thinkingLevel}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the session seed is canonical"}
+    mutation: {description: "sets a native spelling as the session seed"}

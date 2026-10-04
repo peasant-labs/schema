@@ -1,0 +1,21 @@
+expectedCaseCount: 19
+requiredCaseNames:
+  - v11-sidecar-reads-absent
+  - member-off
+  - member-minimal
+  - member-low
+  - member-medium
+  - member-high
+  - member-xhigh
+  - member-max
+  - member-ultra
+  - raw-with-canonical
+  - raw-without-canonical
+  - multibyte-raw-at-byte-bound
+  - multibyte-raw-over-byte-bound
+  - raw-null-is-absent
+  - noncanonical-level-rejected
+  - edge-whitespace-raw-rejected
+  - invalid-utf8-raw-marshal-rejected
+  - over-bound-raw-marshal-rejected
+  - valid-pair-marshal-round-trips

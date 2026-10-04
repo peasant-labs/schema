@@ -1030,6 +1030,14 @@ types:
     disposition: catalog
     component: ObservedModelID
     reason: exact assistant-turn model observation contract
+  - go_name: ThinkingLevel
+    disposition: catalog
+    component: ThinkingLevel
+    reason: canonical assistant thinking-level contract
+  - go_name: ThinkingLevelRaw
+    disposition: catalog
+    component: ThinkingLevelRaw
+    reason: bounded native thinking-level spelling contract
   - go_name: ProjectHash
     disposition: catalog
     component: ProjectHash

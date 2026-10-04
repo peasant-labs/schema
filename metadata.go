@@ -30,7 +30,11 @@ import (
 //	The v9-to-v10 change is local metadata bookkeeping, not a reason to read
 //	native sources again. Consumers can losslessly adopt v9 metadata without
 //	inventing the missing producer revision. Native refresh is a separate decision.
-const MetadataSchemaVersion = 11
+//
+// v11: session graph provenance.
+//
+// v12: optional thinking level and raw native spelling; optional-only, stays refresh-free.
+const MetadataSchemaVersion = 12
 
 // RedactionInfo tracks whether and when redaction was applied to a session's transcript.
 // Level is stored as a string because this schema module is a public contract module that
@@ -61,28 +65,35 @@ func (r RedactionInfo) IsRaw() bool {
 // UnifiedMetadata is the on-disk JSON stored alongside each raw transcript.
 // It drives the adapter layer for downstream consumers and incremental diff logic.
 type UnifiedMetadata struct {
-	SchemaVersion int                   `json:"schemaVersion"`
-	SessionID     SessionID             `json:"sessionId"`
-	ParentUUID    *SessionID            `json:"parentUuid"` // nil for root sessions, pointer for nullable JSON
-	ModelHarness  Harness               `json:"harness"`
-	Model         ModelID               `json:"model"`
-	Version       string                `json:"version"` // provider tool version (e.g. "2.1.47")
-	Timestamp     TimestampInfo         `json:"timestamp"`
-	Source        SourceInfo            `json:"source"`
-	Git           GitContext            `json:"git"`
-	Project       ProjectContext        `json:"project"`
-	HostSlug      HostSlug              `json:"hostSlug"`
-	Stats         SessionStats          `json:"stats"`
-	Subagents     []SubagentRef         `json:"subagents"`
-	RootSessionID *SessionID            `json:"rootSessionId,omitempty"`
-	Purpose       SessionPurpose        `json:"purpose,omitempty"`
-	Relationships []SessionRelationship `json:"relationships,omitempty"`
-	CWD           string                `json:"cwd,omitempty"`       // Real project working directory (v7+)
-	DerivedAt     *int64                `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
-	Diagnostics   DiagnosticsInfo       `json:"diagnostics"`
-	ContentHash   string                `json:"contentHash"`  // SHA3-256 of transcript bytes
-	MetadataHash  string                `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
-	Redaction     RedactionInfo         `json:"redaction"`
+	SchemaVersion int        `json:"schemaVersion"`
+	SessionID     SessionID  `json:"sessionId"`
+	ParentUUID    *SessionID `json:"parentUuid"` // nil for root sessions, pointer for nullable JSON
+	ModelHarness  Harness    `json:"harness"`
+	Model         ModelID    `json:"model"`
+	Version       string     `json:"version"` // provider tool version (e.g. "2.1.47")
+	// ThinkingLevel is the session-level seed: the earliest valid root-assistant
+	// level observation, or the stored seed on replay. Absent means unknown.
+	ThinkingLevel ThinkingLevel `json:"thinkingLevel,omitempty"`
+	// ThinkingLevelRaw is the exact native spelling when it differs from the
+	// emitted canonical value (including when no canonical could be mapped);
+	// absent when nothing was observed or the spelling is canonical.
+	ThinkingLevelRaw ThinkingLevelRaw      `json:"thinkingLevelRaw,omitempty"`
+	Timestamp        TimestampInfo         `json:"timestamp"`
+	Source           SourceInfo            `json:"source"`
+	Git              GitContext            `json:"git"`
+	Project          ProjectContext        `json:"project"`
+	HostSlug         HostSlug              `json:"hostSlug"`
+	Stats            SessionStats          `json:"stats"`
+	Subagents        []SubagentRef         `json:"subagents"`
+	RootSessionID    *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose          SessionPurpose        `json:"purpose,omitempty"`
+	Relationships    []SessionRelationship `json:"relationships,omitempty"`
+	CWD              string                `json:"cwd,omitempty"`       // Real project working directory (v7+)
+	DerivedAt        *int64                `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
+	Diagnostics      DiagnosticsInfo       `json:"diagnostics"`
+	ContentHash      string                `json:"contentHash"`  // SHA3-256 of transcript bytes
+	MetadataHash     string                `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
+	Redaction        RedactionInfo         `json:"redaction"`
 	// AdapterVersion identifies the Peasant adapter/parser that successfully
 	// produced this artifact, not the native harness release in Version.
 	// Omission means unknown historical provenance; a present value must be positive.
@@ -235,6 +246,9 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 	if err := ValidateSessionRelationships(next.Relationships); err != nil {
 		return err
 	}
+	if err := validateThinkingLevelPair(next.ThinkingLevel, next.ThinkingLevelRaw, "schema.UnifiedMetadata.UnmarshalJSON"); err != nil {
+		return err
+	}
 	if next.ModelHarness == "" && aux.LegacyModelHarness != nil {
 		next.ModelHarness = *aux.LegacyModelHarness
 	}
@@ -260,6 +274,9 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.MarshalJSON: purpose %q is outside its closed set; consumers cannot classify the session; use a published purpose or omit it", m.Purpose)
 	}
 	if err := ValidateSessionRelationships(m.Relationships); err != nil {
+		return nil, err
+	}
+	if err := validateThinkingLevelPair(m.ThinkingLevel, m.ThinkingLevelRaw, "schema.UnifiedMetadata.MarshalJSON"); err != nil {
 		return nil, err
 	}
 	type alias UnifiedMetadata
