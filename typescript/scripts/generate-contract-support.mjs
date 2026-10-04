@@ -12,6 +12,7 @@ import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinem
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
+import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 
@@ -62,7 +63,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
   const source = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readFile(zodPath, "utf8")));
-  await writeFile(zodPath, applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))))));
+  await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
 }
 
 function renderVersions(values) {
@@ -249,6 +250,7 @@ export function validateContentCapabilityAdvertisements(values: readonly string[
 function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<${name}>): void {
   for (const turn of turns ?? []) {
     if ((turn.observedModel ?? "") !== "") found.add(${name}.ObservedModelV1);
+    if ((turn.thinkingLevel ?? "") !== "" || (turn.thinkingLevelRaw ?? "") !== "") found.add(${name}.ThinkingLevelV1);
     if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(${name}.ToolNamespaceV1);
     if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(${name}.DetailedUsageV1);
     if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(${name}.SessionGraphProvenanceV1);
@@ -259,6 +261,7 @@ export function requiredContentCapabilities(detail: SessionDetailPayload): ${nam
   const found = new Set<${name}>();
   if (detail.inputSubmissionCount !== undefined || detail.rootSessionId != null || (detail.purpose ?? "") !== "" || (detail.relationships?.length ?? 0) > 0 || (detail.earlierHistory?.length ?? 0) > 0) found.add(${name}.SessionGraphProvenanceV1);
   if ((detail.nativeMetadata?.length ?? 0) > 0) found.add(${name}.NativeMetadataV1);
+  if ((detail.thinkingLevel ?? "") !== "" || (detail.thinkingLevelRaw ?? "") !== "") found.add(${name}.ThinkingLevelV1);
   if ((detail.retainedUnknown?.length ?? 0) > 0 || detail.diagnostics !== undefined) found.add(${name}.RetainedUnknownV1);
   visitTurns(detail.turns, found);
   for (const section of detail.earlierHistory ?? []) {
