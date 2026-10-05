@@ -1,8 +1,9 @@
-expectedCaseCount: 17
+expectedCaseCount: 18
 requiredCaseNames:
   - absent-accepted
   - assistant-level-accepted
-  - assistant-ultra-with-raw-accepted
+  - assistant-ultracode-accepted
+  - assistant-off-with-raw-accepted
   - assistant-raw-only-accepted
   - nested-subagent-accepted
   - multibyte-raw-at-bound-accepted

@@ -55,12 +55,18 @@ cases:
     classification: must-pass
     provenance: {source: enum, ref: "canonical member ultra"}
     mutation: {description: "sets the canonical level ultra"}
+  - name: member-ultracode
+    input: {operation: decode, json: '{"thinkingLevel":"ultracode"}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: ultracode}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member ultracode"}
+    mutation: {description: "sets the canonical level ultracode without raw"}
   - name: raw-with-canonical
-    input: {operation: decode, json: '{"thinkingLevel":"ultra","thinkingLevelRaw":"ultracode"}'}
-    expected: {accepted: true, schemaVersion: 11, thinkingLevel: ultra, thinkingLevelRaw: ultracode}
+    input: {operation: decode, json: '{"thinkingLevel":"off","thinkingLevelRaw":"none"}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "off", thinkingLevelRaw: none}
     classification: must-pass
     provenance: {source: requirement, ref: "raw rides with a canonical level when the native spelling differs"}
-    mutation: {description: "pairs ultra with its native spelling"}
+    mutation: {description: "pairs off with its native spelling none"}
   - name: raw-without-canonical
     input: {operation: decode, json: '{"thinkingLevelRaw":"custom"}'}
     expected: {accepted: true, schemaVersion: 11, thinkingLevelRaw: custom}
@@ -86,11 +92,11 @@ cases:
     provenance: {source: boundary, ref: "metadata null raw decodes as absent"}
     mutation: {description: "sends an explicit null raw"}
   - name: noncanonical-level-rejected
-    input: {operation: decode, json: '{"thinkingLevel":"ultracode"}'}
+    input: {operation: decode, json: '{"thinkingLevel":"custom"}'}
     expected: {accepted: false, errorContains: thinkingLevel}
     classification: must-fail
     provenance: {source: requirement, ref: "native spellings are never canonical values"}
-    mutation: {description: "writes the native mode name as the canonical level"}
+    mutation: {description: "writes an unrecognized native spelling as the canonical level"}
   - name: edge-whitespace-raw-rejected
     input: {operation: decode, json: '{"thinkingLevelRaw":" high"}'}
     expected: {accepted: false, errorContains: thinkingLevelRaw}

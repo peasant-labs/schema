@@ -10,23 +10,24 @@ import (
 
 // ThinkingLevel is the canonical reasoning-effort level recorded for assistant
 // output. The set is closed. Absence means unknown; "off" is the single
-// disabled state; "ultra" is the top tier, above "max". Native harness
+// disabled state; "ultra" is above "max", and "ultracode" is a distinct level. Native harness
 // spellings are mapping inputs, never wire values: a native spelling that
 // differs from the canonical value travels as ThinkingLevelRaw.
 type ThinkingLevel string
 
 const (
-	ThinkingLevelOff     ThinkingLevel = "off"
-	ThinkingLevelMinimal ThinkingLevel = "minimal"
-	ThinkingLevelLow     ThinkingLevel = "low"
-	ThinkingLevelMedium  ThinkingLevel = "medium"
-	ThinkingLevelHigh    ThinkingLevel = "high"
-	ThinkingLevelXHigh   ThinkingLevel = "xhigh"
-	ThinkingLevelMax     ThinkingLevel = "max"
-	ThinkingLevelUltra   ThinkingLevel = "ultra"
+	ThinkingLevelOff       ThinkingLevel = "off"
+	ThinkingLevelMinimal   ThinkingLevel = "minimal"
+	ThinkingLevelLow       ThinkingLevel = "low"
+	ThinkingLevelMedium    ThinkingLevel = "medium"
+	ThinkingLevelHigh      ThinkingLevel = "high"
+	ThinkingLevelXHigh     ThinkingLevel = "xhigh"
+	ThinkingLevelMax       ThinkingLevel = "max"
+	ThinkingLevelUltra     ThinkingLevel = "ultra"
+	ThinkingLevelUltracode ThinkingLevel = "ultracode"
 )
 
-// AllThinkingLevels lists the canonical levels in ascending order, off..ultra.
+// AllThinkingLevels lists the nine levels in canonical order, off..ultracode.
 var AllThinkingLevels = []ThinkingLevel{
 	ThinkingLevelOff,
 	ThinkingLevelMinimal,
@@ -36,6 +37,7 @@ var AllThinkingLevels = []ThinkingLevel{
 	ThinkingLevelXHigh,
 	ThinkingLevelMax,
 	ThinkingLevelUltra,
+	ThinkingLevelUltracode,
 }
 
 // IsValid reports whether v is absent ("") or a member of AllThinkingLevels.
@@ -50,7 +52,7 @@ func (v ThinkingLevel) String() string { return string(v) }
 func (ThinkingLevel) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema(
 		"Thinking Level",
-		"Canonical reasoning-effort level of assistant-generated output, in ascending order off, minimal, low, medium, high, xhigh, max, ultra. off is the single disabled state and ultra is the top tier above max. Omit the field when the level is unknown; never infer it from token budgets.",
+		"Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.",
 		AllThinkingLevels,
 	), nil
 }
@@ -117,7 +119,7 @@ func (ThinkingLevelRaw) JSONSchema() (jsonschema.Schema, error) {
 	s.WithMaxLength(ThinkingLevelRawMaxBytes)
 	s.WithFormat(ThinkingLevelRawUTF8ByteFormat)
 	s.WithPattern(observedModelPattern)
-	s.WithExamples("ultracode", "none", "custom")
+	s.WithExamples("none", "custom")
 	return s, nil
 }
 

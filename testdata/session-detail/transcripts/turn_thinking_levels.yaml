@@ -11,12 +11,18 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "assistant turns carry their own level"}
     mutation: {description: "adds a canonical level"}
-  - name: assistant-ultra-with-raw-accepted
-    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": \"ultra\", \"thinkingLevelRaw\": \"ultracode\"}"}
-    expected: {accepted: true, thinkingLevel: ultra, thinkingLevelRaw: ultracode}
+  - name: assistant-ultracode-accepted
+    input: {turn: '{"role":"assistant","thinkingLevel":"ultracode"}', session: '{"thinkingLevel":"ultracode"}'}
+    expected: {accepted: true, thinkingLevel: ultracode, sessionThinkingLevel: ultracode}
     classification: must-pass
-    provenance: {source: requirement, ref: "the native mode name rides as raw on ultra"}
-    mutation: {description: "pairs ultra with ultracode"}
+    provenance: {source: enum, ref: "canonical member ultracode"}
+    mutation: {description: "sets the turn and session level to ultracode without raw"}
+  - name: assistant-off-with-raw-accepted
+    input: {turn: '{"role":"assistant","thinkingLevel":"off","thinkingLevelRaw":"none"}'}
+    expected: {accepted: true, thinkingLevel: "off", thinkingLevelRaw: none}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the native disabled spelling rides as raw on off"}
+    mutation: {description: "pairs off with none"}
   - name: assistant-raw-only-accepted
     input: {turn: "{\"role\": \"assistant\", \"thinkingLevelRaw\": \"custom\"}"}
     expected: {accepted: true, thinkingLevelRaw: custom}
@@ -66,7 +72,7 @@ cases:
     provenance: {source: boundary, ref: "the detail wire rejects explicit null for non-pointer strings"}
     mutation: {description: "sends an explicit null level"}
   - name: noncanonical-level-refused
-    input: {turn: "{\"role\": \"assistant\", \"thinkingLevel\": \"ultracode\"}"}
+    input: {turn: '{"role":"assistant","thinkingLevel":"custom"}'}
     expected: {accepted: false, errorContains: closed set}
     classification: must-fail
     provenance: {source: requirement, ref: "native spellings are never canonical values"}

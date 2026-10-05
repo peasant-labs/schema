@@ -1244,7 +1244,7 @@ export interface components {
         SchemaTargetKind: Schema.TargetKind;
         /**
          * Thinking Level
-         * @description Canonical reasoning-effort level of assistant-generated output, in ascending order off, minimal, low, medium, high, xhigh, max, ultra. off is the single disabled state and ultra is the top tier above max. Omit the field when the level is unknown; never infer it from token budgets.
+         * @description Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.
          * @example off
          * @example minimal
          * @example low
@@ -1253,6 +1253,7 @@ export interface components {
          * @example xhigh
          * @example max
          * @example ultra
+         * @example ultracode
          * @enum {string}
          */
         SchemaThinkingLevel: Schema.ThinkingLevel;
@@ -1260,7 +1261,6 @@ export interface components {
          * Thinking Level Raw
          * Format: thinking-level-raw-utf8-128-bytes
          * @description Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.
-         * @example ultracode
          * @example none
          * @example custom
          */
