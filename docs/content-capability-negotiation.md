@@ -210,7 +210,7 @@ seed alone requires the token: unlike the legacy `model` seed, the level is new
 evidence an older server could drop during canonical rewrite.
 
 `thinkingLevel` is a closed canonical set (`off`, `minimal`, `low`, `medium`,
-`high`, `xhigh`, `max`, `ultra`); absence means unknown and is distinct from
+`high`, `xhigh`, `max`, `ultra`, `ultracode`); absence means unknown and is distinct from
 `off`. `thinkingLevelRaw` is the exact native spelling when it differs from the
 emitted canonical value, including when no canonical value could be mapped: it
 is non-empty, valid UTF-8, at most 128 encoded bytes, and has no Unicode

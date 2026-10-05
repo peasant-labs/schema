@@ -18,6 +18,7 @@ metadata:
     - member-xhigh
     - member-max
     - member-ultra
+    - member-ultracode
     - raw-with-canonical
     - raw-without-canonical
     - multibyte-raw-at-byte-bound
@@ -49,7 +50,8 @@ turn:
   replay:
     - absent-accepted
     - assistant-level-accepted
-    - assistant-ultra-with-raw-accepted
+    - assistant-ultracode-accepted
+    - assistant-off-with-raw-accepted
     - assistant-raw-only-accepted
     - nested-subagent-accepted
     - multibyte-raw-at-bound-accepted

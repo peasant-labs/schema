@@ -1,4 +1,4 @@
-expectedCaseCount: 19
+expectedCaseCount: 20
 requiredCaseNames:
   - v11-sidecar-reads-absent
   - member-off
@@ -9,6 +9,7 @@ requiredCaseNames:
   - member-xhigh
   - member-max
   - member-ultra
+  - member-ultracode
   - raw-with-canonical
   - raw-without-canonical
   - multibyte-raw-at-byte-bound

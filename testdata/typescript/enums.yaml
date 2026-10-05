@@ -704,4 +704,5 @@ enums:
       - {name: XHigh, value: "xhigh"}
       - {name: Max, value: "max"}
       - {name: Ultra, value: "ultra"}
-    all_values: ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
+      - {name: Ultracode, value: "ultracode"}
+    all_values: ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra", "ultracode"]

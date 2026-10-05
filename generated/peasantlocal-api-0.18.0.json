@@ -6460,7 +6460,7 @@
         "type": "object"
       },
       "SchemaThinkingLevel": {
-        "description": "Canonical reasoning-effort level of assistant-generated output, in ascending order off, minimal, low, medium, high, xhigh, max, ultra. off is the single disabled state and ultra is the top tier above max. Omit the field when the level is unknown; never infer it from token budgets.",
+        "description": "Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.",
         "enum": [
           "off",
           "minimal",
@@ -6469,7 +6469,8 @@
           "high",
           "xhigh",
           "max",
-          "ultra"
+          "ultra",
+          "ultracode"
         ],
         "examples": [
           "off",
@@ -6479,7 +6480,8 @@
           "high",
           "xhigh",
           "max",
-          "ultra"
+          "ultra",
+          "ultracode"
         ],
         "title": "Thinking Level",
         "type": "string"
@@ -6487,7 +6489,6 @@
       "SchemaThinkingLevelRaw": {
         "description": "Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.",
         "examples": [
-          "ultracode",
           "none",
           "custom"
         ],

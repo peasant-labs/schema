@@ -245,7 +245,7 @@ cases:
     provenance: {source: requirement, ref: thinking level evidence is assistant-only}
     mutation: {description: moves a level onto a user turn}
   - name: thinking-level-noncanonical-evidence-invalid
-    input: {operation: thinking-evidence, role: assistant, thinkingLevel: ultracode}
+    input: {operation: thinking-evidence, role: assistant, thinkingLevel: custom}
     expected: {accepted: false, errorContains: outside the canonical set}
     classification: must-fail
     provenance: {source: boundary, ref: native spellings are never canonical values}

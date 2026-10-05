@@ -2680,7 +2680,7 @@ export type ProjectTasksPayload = z.infer<typeof zProjectTasksPayload>;
 /**
  * Thinking Level
  *
- * Canonical reasoning-effort level of assistant-generated output, in ascending order off, minimal, low, medium, high, xhigh, max, ultra. off is the single disabled state and ultra is the top tier above max. Omit the field when the level is unknown; never infer it from token budgets.
+ * Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.
  */
 export const zThinkingLevel = z.enum([
     'off',
@@ -2690,7 +2690,8 @@ export const zThinkingLevel = z.enum([
     'high',
     'xhigh',
     'max',
-    'ultra'
+    'ultra',
+    'ultracode'
 ]);
 
 export type ThinkingLevel = z.infer<typeof zThinkingLevel>;

@@ -1172,8 +1172,9 @@ export const ThinkingLevel = Object.freeze({
   XHigh: zThinkingLevel.parse("xhigh"),
   Max: zThinkingLevel.parse("max"),
   Ultra: zThinkingLevel.parse("ultra"),
+  Ultracode: zThinkingLevel.parse("ultracode"),
 } as const);
-export const AllThinkingLevels = Object.freeze([ThinkingLevel.Off, ThinkingLevel.Minimal, ThinkingLevel.Low, ThinkingLevel.Medium, ThinkingLevel.High, ThinkingLevel.XHigh, ThinkingLevel.Max, ThinkingLevel.Ultra]) as readonly ThinkingLevel[];
+export const AllThinkingLevels = Object.freeze([ThinkingLevel.Off, ThinkingLevel.Minimal, ThinkingLevel.Low, ThinkingLevel.Medium, ThinkingLevel.High, ThinkingLevel.XHigh, ThinkingLevel.Max, ThinkingLevel.Ultra, ThinkingLevel.Ultracode]) as readonly ThinkingLevel[];
 export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return zThinkingLevel.safeParse(value).success;
 }
