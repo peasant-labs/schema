@@ -51,12 +51,6 @@ type thinkingLevelMetadataExpected struct {
 	ErrorContains        string                        `yaml:"errorContains,omitempty"`
 }
 
-type thinkingLevelMetadataManifest struct {
-	BaseMetadata      string   `yaml:"baseMetadata"`
-	ExpectedCaseCount int      `yaml:"expectedCaseCount"`
-	RequiredCaseNames []string `yaml:"requiredCaseNames"`
-}
-
 type thinkingLevelMetadataCorpus struct {
 	BaseMetadata string                                                                     `yaml:"baseMetadata"`
 	Cases        []testcase.Case[thinkingLevelMetadataInput, thinkingLevelMetadataExpected] `yaml:"cases"`
@@ -186,6 +180,15 @@ func TestUnifiedMetadataThinkingLevelFixture(t *testing.T) {
 type thinkingLevelRawInput struct {
 	Value  *string `yaml:"value,omitempty"`
 	Base64 string  `yaml:"base64,omitempty"`
+	// LoadBearing marks a row whose rejection depends on the registered byte
+	// format rather than the code-point maxLength; the load-bearing test
+	// derives its case set from this flag.
+	LoadBearing bool `yaml:"loadBearing,omitempty"`
+	// ConstructorOnly marks a row the published Go regexp cannot express (it is
+	// ASCII-only for edge whitespace), so the compiled-schema agreement test
+	// skips the schema comparison for it while the constructor assertions still
+	// run.
+	ConstructorOnly bool `yaml:"constructorOnly,omitempty"`
 }
 
 type thinkingLevelRawExpected struct {
@@ -246,19 +249,25 @@ func compileThinkingLevelRawSchema(t *testing.T, compiler *jsonschema.Compiler) 
 
 // TestThinkingLevelRawJSONSchemaFormatEnforced compiles the published
 // ThinkingLevelRaw component through the production compiler and proves that
-// it agrees with NewThinkingLevelRaw/IsValid on every corpus row.
+// it agrees with NewThinkingLevelRaw/IsValid on every corpus row. Rows marked
+// constructorOnly are excluded from the compiled-schema comparison because the
+// published Go regexp is ASCII-only for edge whitespace (it accepts U+0085 and
+// U+00A0, which the constructor refuses); their constructor assertions still
+// run, and TestThinkingLevelRawConstructorOnlyUnicodeEdges names that family.
 func TestThinkingLevelRawJSONSchemaFormatEnforced(t *testing.T) {
 	compiled := compileThinkingLevelRawSchema(t, schema.NewJSONSchemaCompiler())
 	for _, c := range loadThinkingLevelRawFixtures(t).Cases {
 		t.Run(c.Name, func(t *testing.T) {
 			value := thinkingLevelRawValue(t, c.Input)
-			schemaErr := compiled.Validate(value)
-			if (schemaErr == nil) != c.Expected.Accepted {
-				t.Fatalf("compiled schema accepted=%v, want %v: %v", schemaErr == nil, c.Expected.Accepted, schemaErr)
+			if !c.Input.ConstructorOnly {
+				schemaErr := compiled.Validate(value)
+				if (schemaErr == nil) != c.Expected.Accepted {
+					t.Fatalf("compiled schema accepted=%v, want %v: %v", schemaErr == nil, c.Expected.Accepted, schemaErr)
+				}
 			}
 			constructed, err := schema.NewThinkingLevelRaw(value)
 			if (err == nil) != c.Expected.Accepted || schema.ThinkingLevelRaw(value).IsValid() != c.Expected.Accepted {
-				t.Fatalf("constructor/IsValid disagree with the compiled schema: err=%v", err)
+				t.Fatalf("constructor/IsValid accepted=%v, want %v: err=%v", err == nil, c.Expected.Accepted, err)
 			}
 			if err == nil && constructed.String() != value {
 				t.Fatalf("constructor changed accepted bytes: %q -> %q", value, constructed)
@@ -270,27 +279,48 @@ func TestThinkingLevelRawJSONSchemaFormatEnforced(t *testing.T) {
 	}
 }
 
+// TestThinkingLevelRawConstructorOnlyUnicodeEdges proves the constructor-only
+// corpus rows exercise the Unicode White_Space edge rule the published Go
+// regexp cannot express: NewThinkingLevelRaw/IsValid reject an edge U+0085 and
+// U+00A0 while accepting an edge U+FEFF.
+func TestThinkingLevelRawConstructorOnlyUnicodeEdges(t *testing.T) {
+	checked := 0
+	for _, c := range loadThinkingLevelRawFixtures(t).Cases {
+		if !c.Input.ConstructorOnly {
+			continue
+		}
+		checked++
+		value := thinkingLevelRawValue(t, c.Input)
+		_, err := schema.NewThinkingLevelRaw(value)
+		if (err == nil) != c.Expected.Accepted || schema.ThinkingLevelRaw(value).IsValid() != c.Expected.Accepted {
+			t.Fatalf("%s: constructor/IsValid accepted=%v, want %v: err=%v", c.Name, err == nil, c.Expected.Accepted, err)
+		}
+	}
+	if checked == 0 {
+		t.Fatal("no constructor-only rows in the raw corpus; the Unicode edge rule would go untested")
+	}
+}
+
 // TestThinkingLevelRawByteFormatIsLoadBearing proves the byte rows fail only
 // because the registered format asserts bytes: a compiler without the
-// registration accepts them, since maxLength counts code points.
+// registration accepts them, since maxLength counts code points. The checked
+// set is derived from the corpus's loadBearing marker, so adding or renaming a
+// byte-boundary row stays a fixture-only change.
 func TestThinkingLevelRawByteFormatIsLoadBearing(t *testing.T) {
 	bare := jsonschema.NewCompiler()
 	bare.AssertFormat = true
 	compiled := compileThinkingLevelRawSchema(t, bare)
-	corpus := loadThinkingLevelRawFixtures(t)
 	checked := 0
-	for _, name := range []string{"multibyte-129-bytes-rejected", "four-byte-64-code-points-rejected"} {
-		for _, c := range corpus.Cases {
-			if c.Name != name {
-				continue
-			}
-			checked++
-			if err := compiled.Validate(thinkingLevelRawValue(t, c.Input)); err != nil {
-				t.Fatalf("%s: rejected without the byte format, so the corpus row does not exercise it: %v", name, err)
-			}
+	for _, c := range loadThinkingLevelRawFixtures(t).Cases {
+		if !c.Input.LoadBearing {
+			continue
+		}
+		checked++
+		if err := compiled.Validate(thinkingLevelRawValue(t, c.Input)); err != nil {
+			t.Fatalf("%s: rejected without the byte format, so the corpus row does not exercise it: %v", c.Name, err)
 		}
 	}
-	if checked != 2 {
-		t.Fatalf("byte-format rows missing from the corpus: checked %d of 2", checked)
+	if checked == 0 {
+		t.Fatal("no loadBearing rows in the raw corpus; the byte format would go untested")
 	}
 }

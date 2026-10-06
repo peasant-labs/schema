@@ -38,7 +38,6 @@ type turnModelFixtureExpected struct {
 }
 
 type turnModelFixtureManifest struct {
-	ExpectedCaseCount int      `yaml:"expectedCaseCount"`
 	RequiredCaseNames []string `yaml:"requiredCaseNames"`
 }
 
@@ -153,11 +152,8 @@ func decodeTurnModelFixtureManifest(data []byte) (turnModelFixtureManifest, erro
 		}
 		return turnModelFixtureManifest{}, fmt.Errorf("decode turn model manifest: multiple YAML documents are not allowed")
 	}
-	if manifest.ExpectedCaseCount <= 0 {
-		return turnModelFixtureManifest{}, fmt.Errorf("turn model manifest expectedCaseCount must be positive, got %d", manifest.ExpectedCaseCount)
-	}
-	if len(manifest.RequiredCaseNames) != manifest.ExpectedCaseCount {
-		return turnModelFixtureManifest{}, fmt.Errorf("turn model manifest has %d required names, want exactly %d", len(manifest.RequiredCaseNames), manifest.ExpectedCaseCount)
+	if len(manifest.RequiredCaseNames) == 0 {
+		return turnModelFixtureManifest{}, fmt.Errorf("turn model manifest requiredCaseNames must be non-empty; the required-name set is the deletion guard")
 	}
 	seen := make(map[string]struct{}, len(manifest.RequiredCaseNames))
 	for index, name := range manifest.RequiredCaseNames {

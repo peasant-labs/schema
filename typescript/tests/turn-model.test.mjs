@@ -83,16 +83,14 @@ function loadTurnModelManifest(source) {
   if (documents.length !== 1 || documents[0] === undefined || documents[0].errors.length !== 0) {
     throw new TypeError("turn model fixture manifest must be exactly one valid YAML document");
   }
-  const manifest = requireExactRecord(documents[0].toJS({ maxAliasCount: 0 }), "turn model fixture manifest", ["expectedCaseCount", "requiredCaseNames"], []);
-  if (!Number.isSafeInteger(manifest.expectedCaseCount) || manifest.expectedCaseCount <= 0) throw new TypeError("turn model fixture manifest expectedCaseCount must be a positive safe integer");
-  if (!Array.isArray(manifest.requiredCaseNames) || manifest.requiredCaseNames.length !== manifest.expectedCaseCount) throw new TypeError("turn model fixture manifest requiredCaseNames must match expectedCaseCount exactly");
+  const manifest = requireExactRecord(documents[0].toJS({ maxAliasCount: 0 }), "turn model fixture manifest", ["requiredCaseNames"], []);
+  if (!Array.isArray(manifest.requiredCaseNames) || manifest.requiredCaseNames.length === 0) throw new TypeError("turn model fixture manifest requiredCaseNames must be a non-empty sequence");
   const names = manifest.requiredCaseNames.map((name, index) => requireName(name, `turn model fixture manifest.requiredCaseNames[${index}]`));
   if (new Set(names).size !== names.length) throw new TypeError("turn model fixture manifest requiredCaseNames must be unique");
-  return { expectedCaseCount: manifest.expectedCaseCount, requiredCaseNames: names };
+  return { requiredCaseNames: names };
 }
 
 function assertTurnModelInventory(corpus, inventory, label) {
-  assert.equal(corpus.cases.length, inventory.expectedCaseCount, `${label}: case count must match the independent manifest exactly`);
   const requiredNames = new Set(inventory.requiredCaseNames);
   const actualNames = new Set();
   for (const fixtureCase of corpus.cases) {

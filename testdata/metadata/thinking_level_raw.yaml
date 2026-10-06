@@ -18,13 +18,13 @@ cases:
     provenance: {source: boundary, ref: "128 encoded bytes is the inclusive bound"}
     mutation: {description: "uses 64 two-byte code points"}
   - name: multibyte-129-bytes-rejected
-    input: {value: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa"}
+    input: {value: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa", loadBearing: true}
     expected: {accepted: false}
     classification: must-fail
     provenance: {source: boundary, ref: "maxLength counts code points, so only the byte format rejects 129 bytes"}
     mutation: {description: "appends one byte past the bound while staying under 128 code points"}
   - name: four-byte-64-code-points-rejected
-    input: {value: "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"}
+    input: {value: "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀", loadBearing: true}
     expected: {accepted: false}
     classification: must-fail
     provenance: {source: boundary, ref: "64 code points of 256 bytes passes maxLength but fails the byte format"}
@@ -35,6 +35,24 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "the compiled edge pattern rejects ASCII whitespace"}
     mutation: {description: "adds a trailing ASCII space"}
+  - name: nel-edge-raw-rejected
+    input: {value: "\u0085high", constructorOnly: true}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the constructor rejects an edge U+0085, which the ASCII-only published regexp cannot express"}
+    mutation: {description: "prefixes the raw spelling with U+0085"}
+  - name: nbsp-edge-raw-rejected
+    input: {value: "\u00a0high", constructorOnly: true}
+    expected: {accepted: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "the constructor rejects an edge U+00A0, which the ASCII-only published regexp cannot express"}
+    mutation: {description: "prefixes the raw spelling with U+00A0"}
+  - name: bom-edge-raw-accepted
+    input: {value: "\ufeffhigh"}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "U+FEFF is not Unicode White_Space, so an edge U+FEFF is permitted"}
+    mutation: {description: "prefixes the raw spelling with U+FEFF"}
   - name: interior-space-accepted
     input: {value: "deep think"}
     expected: {accepted: true}
@@ -42,8 +60,8 @@ cases:
     provenance: {source: requirement, ref: "interior whitespace is preserved"}
     mutation: {description: "keeps a single interior space"}
   - name: simple-native-spelling-accepted
-    input: {value: ultracode}
+    input: {value: none}
     expected: {accepted: true}
     classification: must-pass
-    provenance: {source: requirement, ref: "a native mode name is a valid raw spelling"}
-    mutation: {description: "sends the Claude Code mode name"}
+    provenance: {source: requirement, ref: "a native mode name that differs from every canonical level is a valid raw spelling"}
+    mutation: {description: "sends a native mode name outside the canonical set"}
