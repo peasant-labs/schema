@@ -8,7 +8,7 @@ import (
 	"github.com/peasant-labs/schema"
 )
 
-// --- SLICE-1-L2: CommitInfo JSON round-trip ---
+// --- CommitInfo JSON round-trip ---
 
 func TestCommitInfoMarshalUnmarshal(t *testing.T) {
 	ci := schema.CommitInfo{
@@ -57,7 +57,7 @@ func TestCommitInfoMarshalUnmarshal(t *testing.T) {
 	}
 }
 
-// --- SLICE-1-L2: v3 metadata reads without error under v4 code ---
+// --- v3 metadata reads without error under v4 code ---
 
 // TestMetadataSchemaV3V4Compatibility verifies that a v3 metadata JSON blob
 // (which has no "commits" field) can be unmarshalled by v4 code without error,
@@ -91,7 +91,7 @@ func TestMetadataSchemaV3V4Compatibility(t *testing.T) {
 	}
 }
 
-// --- SLICE-1-L2: GitContext.Commits is present and optional (omitempty) ---
+// --- GitContext.Commits present and optional (omitempty) ---
 
 func TestGitContextCommitsField_OmittedWhenNil(t *testing.T) {
 	gc := schema.GitContext{} // no commits

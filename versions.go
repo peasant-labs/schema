@@ -78,8 +78,9 @@ const (
 	// and a create request that accepts a null organization (additive = minor
 	// bump).
 	// Bumped to 0.25.0 for the optional thinking level and its raw native
-	// spelling on session metadata, session detail, and assistant turns, plus
-	// the thinking_level_v1 content capability (additive = minor bump).
+	// spelling on session metadata, session detail, and assistant turns, the
+	// in-session thinking-level history, plus the thinking_level_v1 content
+	// capability (additive = minor bump).
 	VillageAPIVersion = "0.25.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
@@ -123,7 +124,8 @@ const (
 	// last active binding is removed, retaining the existing response fields.
 	// Bumped to 0.17.0 for an optional stored-session target on rule creation.
 	// Bumped to 0.18.0 for the optional thinking level and raw native spelling
-	// on session detail and assistant turns (additive = minor bump).
+	// on session detail and assistant turns, and the in-session thinking-level
+	// history (additive = minor bump).
 	PeasantLocalAPIVersion = "0.18.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
@@ -182,7 +184,8 @@ const (
 	// Bumped to 0.27.0 to describe rule-required hook consent in the local
 	// publication indicator, without changing any field or enum.
 	// Bumped to 0.28.0 for the mutually exclusive session-target rule request.
-	// Bumped to 0.29.0 for the ThinkingLevel closed set and the bounded
-	// ThinkingLevelRaw native spelling (additive = minor bump).
+	// Bumped to 0.29.0 for the ThinkingLevel closed set, the bounded
+	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
+	// entry (additive = minor bump).
 	TypesVersion = "0.29.0"
 )
