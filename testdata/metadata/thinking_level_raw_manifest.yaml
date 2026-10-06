@@ -1,4 +1,3 @@
-expectedCaseCount: 8
 requiredCaseNames:
   - empty-rejected
   - invalid-utf8-rejected
@@ -6,5 +5,8 @@ requiredCaseNames:
   - multibyte-129-bytes-rejected
   - four-byte-64-code-points-rejected
   - ascii-whitespace-edge-rejected
+  - nel-edge-raw-rejected
+  - nbsp-edge-raw-rejected
+  - bom-edge-raw-accepted
   - interior-space-accepted
   - simple-native-spelling-accepted

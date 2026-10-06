@@ -176,6 +176,19 @@ func (c ThinkingLevelChange) Validate() error {
 // generic raw-shape decoder calls it for each element of thinkingLevelHistory.
 func (c ThinkingLevelChange) IsValid() bool { return c.Validate() == nil }
 
+// PrepareJSONSchema adds the at-least-one-field rule to the generated history
+// entry shape, so the published JSON Schema (and the TypeScript runtime schema
+// derived from it) refuse an empty entry exactly as Validate does. A struct
+// cannot express this cross-field presence rule on its own.
+func (ThinkingLevelChange) PrepareJSONSchema(s *jsonschema.Schema) error {
+	levelPresent := jsonschema.Schema{}
+	levelPresent.WithRequired("level")
+	rawPresent := jsonschema.Schema{}
+	rawPresent.WithRequired("raw")
+	s.WithAnyOf(levelPresent.ToSchemaOrBool(), rawPresent.ToSchemaOrBool())
+	return nil
+}
+
 // validateThinkingLevelChange validates one history entry, naming its fields
 // with the wire-style dotted path for actionable errors.
 func validateThinkingLevelChange(c ThinkingLevelChange, path string) error {

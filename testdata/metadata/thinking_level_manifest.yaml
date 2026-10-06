@@ -1,4 +1,3 @@
-expectedCaseCount: 27
 requiredCaseNames:
   - v11-sidecar-reads-absent
   - member-off

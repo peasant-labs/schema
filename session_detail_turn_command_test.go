@@ -152,11 +152,9 @@ func loadTurnCommandFixtures(t *testing.T) testcase.Corpus[turnCommandFixtureInp
 // validateCorpusInventory is the generic required-name inventory check: the
 // corpus must hold exactly the manifest's cases, no more and no fewer, with no
 // duplicate names. It is shared by every corpus in this package that carries a
-// manifest of the same shape.
+// manifest of the same shape. The required-name set alone protects deletion;
+// no bare count is compared.
 func validateCorpusInventory[I, E any](label string, corpus testcase.Corpus[I, E], manifest turnModelFixtureManifest) error {
-	if len(corpus.Cases) != manifest.ExpectedCaseCount {
-		return fmt.Errorf("%s corpus has %d cases, want exactly %d", label, len(corpus.Cases), manifest.ExpectedCaseCount)
-	}
 	required := make(map[string]struct{}, len(manifest.RequiredCaseNames))
 	for _, name := range manifest.RequiredCaseNames {
 		required[name] = struct{}{}

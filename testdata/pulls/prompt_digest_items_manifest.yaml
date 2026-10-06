@@ -1,4 +1,3 @@
-expectedCaseCount: 24
 requiredCaseNames:
   - prompt-valid
   - skill-valid

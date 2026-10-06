@@ -8126,6 +8126,18 @@
         "type": "string"
       },
       "SchemaThinkingLevelChange": {
+        "anyOf": [
+          {
+            "required": [
+              "level"
+            ]
+          },
+          {
+            "required": [
+              "raw"
+            ]
+          }
+        ],
         "properties": {
           "level": {
             "$ref": "#/components/schemas/SchemaThinkingLevel"

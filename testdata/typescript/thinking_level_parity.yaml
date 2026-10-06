@@ -30,13 +30,13 @@ metadata:
     - history-raw-only
     - history-both-fields
     - history-multiple-order-preserved
+    - history-empty-entry-rejected
     - history-invalid-raw-rejected
   goOnly:
     raw-null-is-absent: "Go metadata decoding normalizes an explicit null raw to absent; the wire schema keeps the field optional and non-null"
     invalid-utf8-raw-marshal-rejected: "assembles a Go struct holding a lone 0xFF byte, which a JavaScript string cannot represent"
     over-bound-raw-marshal-rejected: "exercises the Go MarshalJSON guard on a directly assembled struct; the 129-byte decode row covers the same bound"
     valid-pair-marshal-round-trips: "exercises the Go MarshalJSON stamp of the current schema version on a directly assembled struct"
-    history-empty-entry-rejected: "the at-least-one-field rule for a history entry is a cross-field Go check that the per-field wire shape cannot express"
 raw:
   # testdata/metadata/thinking_level_raw.yaml, replayed through zThinkingLevelRaw.
   replay:
@@ -45,6 +45,9 @@ raw:
     - multibyte-129-bytes-rejected
     - four-byte-64-code-points-rejected
     - ascii-whitespace-edge-rejected
+    - nel-edge-raw-rejected
+    - nbsp-edge-raw-rejected
+    - bom-edge-raw-accepted
     - interior-space-accepted
     - simple-native-spelling-accepted
   goOnly:

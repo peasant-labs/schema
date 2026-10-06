@@ -9830,6 +9830,18 @@
         "type": "string"
       },
       "ThinkingLevelChange": {
+        "anyOf": [
+          {
+            "required": [
+              "level"
+            ]
+          },
+          {
+            "required": [
+              "raw"
+            ]
+          }
+        ],
         "properties": {
           "level": {
             "$ref": "#/components/schemas/ThinkingLevel"

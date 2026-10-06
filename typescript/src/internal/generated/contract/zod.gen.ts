@@ -2705,10 +2705,10 @@ export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^(?:﻿|[^\s]
 
 export type ThinkingLevelRaw = z.infer<typeof zThinkingLevelRaw>;
 
-export const zThinkingLevelChange = z.object({
+export const zThinkingLevelChange = z.intersection(z.unknown(), z.object({
     level: zThinkingLevel.optional(),
     raw: zThinkingLevelRaw.optional()
-});
+})).refine((value) => value.level !== undefined || value.raw !== undefined, { error: "ThinkingLevelChange must carry level or raw" });
 
 export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
 
