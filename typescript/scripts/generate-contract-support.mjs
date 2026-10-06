@@ -62,8 +62,27 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readFile(zodPath, "utf8")));
+  const source = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readGeneratorOutput(zodPath, "the root Zod contract")));
   await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
+}
+
+// readGeneratorOutput reads a file the preceding openapi-ts step must have
+// emitted. The generate script runs `openapi-ts` and this module in one shell
+// pipeline; under load openapi-ts can exit 0 before its output is visible. A
+// short retry absorbs that race, and exhausting it fails closed with an error
+// that names the generator rather than this later reader.
+async function readGeneratorOutput(path, label) {
+  const attempts = 5;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await readFile(path, "utf8");
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
+    }
+  }
+  throw new Error(`TypeScript contract generation could not read ${label} at ${path} after ${attempts} attempts; the openapi-ts step exited successfully but did not emit this file, so the generator is not producing the contract it reports; re-run \`pnpm run generate\` and inspect the openapi-ts output before the contract-support step.`, { cause: lastError });
 }
 
 function renderVersions(values) {
