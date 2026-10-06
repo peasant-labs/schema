@@ -1,4 +1,3 @@
-expectedCaseCount: 13
 requiredCaseNames:
   - chronological-valid
   - out-of-order-invalid

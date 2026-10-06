@@ -311,10 +311,15 @@ type TurnDetail struct {
 	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
 	// bytes are preserved exactly. Producers enforce the assistant-only role condition; generated shape
 	// validators do not infer it from Role.
-	ObservedModel  ObservedModelID    `json:"observedModel,omitempty"`
-	SourceEntryRef SourceEntryRef     `json:"sourceEntryRef,omitempty"`
-	Provenance     *ContentProvenance `json:"provenance,omitempty"`
-	Usage          *UsageDetail       `json:"usage,omitempty"`
+	ObservedModel ObservedModelID `json:"observedModel,omitempty"`
+	// ThinkingLevel/ThinkingLevelRaw are assistant-turn evidence: set only on
+	// assistant-generated output, never user or system turns. Raw follows the
+	// same "differs from canonical, including unmapped" rule as the session field.
+	ThinkingLevel    ThinkingLevel      `json:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw ThinkingLevelRaw   `json:"thinkingLevelRaw,omitempty"`
+	SourceEntryRef   SourceEntryRef     `json:"sourceEntryRef,omitempty"`
+	Provenance       *ContentProvenance `json:"provenance,omitempty"`
+	Usage            *UsageDetail       `json:"usage,omitempty"`
 
 	// Command is present when this turn invoked a skill or a user-defined
 	// slash command. It is optional and safely ignorable; the invocation name
@@ -387,16 +392,27 @@ type SessionDetailPayload struct {
 	// valid turn observation. It is the earliest valid root-assistant model in
 	// canonical order when one is available, otherwise legacy stored metadata. It
 	// is never the latest, most common, or final session model.
-	Model            string                  `json:"model,omitempty"`
-	WorkingDirectory string                  `json:"workingDirectory,omitempty"`
-	GitBranch        string                  `json:"gitBranch,omitempty"`
-	GitRemote        string                  `json:"gitRemote,omitempty"`
-	ChildSessions    []ChildSessionRef       `json:"childSessions,omitempty"`
-	ParentSessionID  *SessionID              `json:"parentSessionId,omitempty"`
-	RootSessionID    *SessionID              `json:"rootSessionId,omitempty"`
-	Purpose          SessionPurpose          `json:"purpose,omitempty"`
-	Relationships    []SessionRelationship   `json:"relationships,omitempty"`
-	EarlierHistory   []EarlierHistorySection `json:"earlierHistory,omitempty"`
+	Model string `json:"model,omitempty"`
+	// ThinkingLevel seeds sticky level resolution for the root assistant before
+	// the first valid turn observation: the earliest valid root-assistant
+	// observation in source order when available, otherwise the stored session
+	// seed; never latest, most common, or final. Raw rides the same rule.
+	ThinkingLevel    ThinkingLevel    `json:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw ThinkingLevelRaw `json:"thinkingLevelRaw,omitempty"`
+	// ThinkingLevelHistory records the in-session level changes observed after
+	// the seed, in source order, with consecutive duplicates collapsed. The
+	// first value stays in ThinkingLevel/ThinkingLevelRaw above; each entry here
+	// carries the later canonical level and/or its exact native spelling.
+	ThinkingLevelHistory []ThinkingLevelChange   `json:"thinkingLevelHistory,omitempty"`
+	WorkingDirectory     string                  `json:"workingDirectory,omitempty"`
+	GitBranch            string                  `json:"gitBranch,omitempty"`
+	GitRemote            string                  `json:"gitRemote,omitempty"`
+	ChildSessions        []ChildSessionRef       `json:"childSessions,omitempty"`
+	ParentSessionID      *SessionID              `json:"parentSessionId,omitempty"`
+	RootSessionID        *SessionID              `json:"rootSessionId,omitempty"`
+	Purpose              SessionPurpose          `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship   `json:"relationships,omitempty"`
+	EarlierHistory       []EarlierHistorySection `json:"earlierHistory,omitempty"`
 	// Outcome is the heuristic resolution status of the session
 	// (resolved/partial/failed), sourced from session_metrics.outcome. Empty
 	// when the session has no computed outcome. The metadata columns expose no

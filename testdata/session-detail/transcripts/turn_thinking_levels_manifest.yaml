@@ -1,0 +1,21 @@
+requiredCaseNames:
+  - absent-accepted
+  - assistant-level-accepted
+  - assistant-ultracode-accepted
+  - assistant-off-with-raw-accepted
+  - assistant-raw-only-accepted
+  - nested-subagent-accepted
+  - multibyte-raw-at-bound-accepted
+  - user-level-refused
+  - system-raw-refused
+  - tool-level-refused
+  - explicit-null-raw-refused
+  - explicit-null-level-refused
+  - noncanonical-level-refused
+  - empty-raw-refused
+  - edge-whitespace-raw-refused
+  - over-bound-raw-refused
+  - session-seed-accepted
+  - session-seed-noncanonical-refused
+  - session-history-accepted
+  - session-history-empty-entry-refused

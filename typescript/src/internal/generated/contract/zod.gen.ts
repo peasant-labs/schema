@@ -517,7 +517,7 @@ export type Confidence = z.infer<typeof zConfidence>;
 /**
  * Content Capability
  *
- * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded.
+ * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.
  */
 export const zContentCapability = z.string();
 
@@ -2677,6 +2677,41 @@ export const zProjectTasksPayload = z.object({
 
 export type ProjectTasksPayload = z.infer<typeof zProjectTasksPayload>;
 
+/**
+ * Thinking Level
+ *
+ * Canonical reasoning-effort level of assistant-generated output: off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the single disabled state, ultra is above max, and ultracode is a distinct level. Omit the field when the level is unknown; never infer it from token budgets.
+ */
+export const zThinkingLevel = z.enum([
+    'off',
+    'minimal',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+    'ultra',
+    'ultracode'
+]);
+
+export type ThinkingLevel = z.infer<typeof zThinkingLevel>;
+
+/**
+ * Thinking Level Raw
+ *
+ * Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.
+ */
+export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^(?:﻿|[^\s])(?:[\s\S]*(?:﻿|[^\s]))?$/).refine((value) => !/[\uD800-\uDFFF]/u.test(value) && new TextEncoder().encode(value).length <= 128, { error: "ThinkingLevelRaw is invalid UTF-8 or exceeds 128 bytes" }).refine((value) => { const edge = (text: string) => text === "\uFEFF" || (!/\s/u.test(text) && text !== "\u0085"); return edge(value.charAt(0)) && edge(value.charAt(value.length - 1)); }, { error: "ThinkingLevelRaw must not begin or end with whitespace" });
+
+export type ThinkingLevelRaw = z.infer<typeof zThinkingLevelRaw>;
+
+export const zThinkingLevelChange = z.intersection(z.unknown(), z.object({
+    level: zThinkingLevel.optional(),
+    raw: zThinkingLevelRaw.optional()
+})).refine((value) => value.level !== undefined || value.raw !== undefined, { error: "ThinkingLevelChange must carry level or raw" });
+
+export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
+
 export const zTimelineSessionRef = z.object({
     harness: zHarness,
     hasCommitBinding: z.boolean(),
@@ -3036,6 +3071,9 @@ export const zUnifiedMetadata = z.object({
     source: zSourceInfo,
     stats: zSessionStats,
     subagents: z.array(zSubagentRef).nullable(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
     timestamp: zTimestampInfo,
     version: z.string()
 });
@@ -3150,6 +3188,8 @@ export const zTurnDetail = z.object({
     role: zRole,
     sourceEntryRef: zSourceEntryRef.optional(),
     stopReason: zStopReason.nullish(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
     timestamp: z.iso.datetime(),
     tokensIn: z.int().nullish(),
     tokensOut: z.int().nullish(),
@@ -3193,6 +3233,9 @@ export const zSessionDetailPayload = z.object({
     source: z.string().optional(),
     startTime: z.iso.datetime(),
     status: z.string().optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
     tokensIn: z.int(),
     tokensOut: z.int(),
     toolCallCount: z.int(),
@@ -3231,6 +3274,9 @@ export const zSessionDetailReadPayload = z.object({
     source: z.string().optional(),
     startTime: z.iso.datetime().optional(),
     status: z.string().optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
     tokensIn: z.int().optional(),
     tokensOut: z.int().optional(),
     toolCallCount: z.int().optional(),

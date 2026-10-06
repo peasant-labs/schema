@@ -21,7 +21,12 @@ export const canonicalSessionGraphCapabilityFixtures = {
       "earlier-only",
       "earlier-nested-tool-native-usage-model",
       "navigation-only-read",
-      "retained-accumulates-all"
+      "retained-accumulates-all",
+      "thinking-level-session-seed",
+      "thinking-level-raw-only-seed",
+      "thinking-level-root-turn",
+      "thinking-level-earlier-nested-turn",
+      "thinking-level-absent-needs-no-token"
     ],
     "reader": [
       "advertisement-omitted",
@@ -38,7 +43,9 @@ export const canonicalSessionGraphCapabilityFixtures = {
       "producer-unknown",
       "producer-canonical-retained",
       "producer-unsorted-retained",
-      "producer-duplicate-retained"
+      "producer-duplicate-retained",
+      "producer-canonical-thinking-level",
+      "producer-unsorted-thinking-level"
     ]
   },
   "derivation": {
@@ -54,7 +61,7 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "description": "Retained evidence accumulates every existing preservation requirement"
         },
         "input": {
-          "detailJSON": "{\"id\":\"fixture-session\",\"harness\":\"pi\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":1,\"purpose\":\"interaction\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"depth\":0,\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00Z\",\"sourceEntryRef\":\"e1\",\"observedModel\":\"provider/model\",\"usage\":{\"ownerId\":\"u1\",\"sourceEntryRef\":\"e1\",\"scope\":\"assistant\",\"completeness\":\"unknown\"},\"toolCalls\":[{\"id\":\"t1\",\"name\":\"tool\",\"namespace\":\"extension\",\"arguments\":\"\",\"result\":\"\"}]}],\"nativeMetadata\":[{\"id\":\"n1\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"custom1\",\"sourceType\":\"pi.custom\"},\"customType\":\"extension\",\"data\":{}}],\"diagnostics\":{\"partial\":true},\"retainedUnknown\":[{\"sourceRef\":\"source-0\",\"recordIndex\":2,\"position\":4,\"pointer\":\"\",\"namespace\":\"record\",\"kind\":\"future\",\"payload\":\"{\\\"type\\\":\\\"future\\\"}\"}]}"
+          "detailJSON": "{\"id\":\"fixture-session\",\"harness\":\"pi\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":1,\"purpose\":\"interaction\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"depth\":0,\"content\":\"\",\"timestamp\":\"2020-01-01T00:00:00Z\",\"sourceEntryRef\":\"e1\",\"observedModel\":\"provider/model\",\"thinkingLevel\":\"ultra\",\"thinkingLevelRaw\":\"custom\",\"usage\":{\"ownerId\":\"u1\",\"sourceEntryRef\":\"e1\",\"scope\":\"assistant\",\"completeness\":\"unknown\"},\"toolCalls\":[{\"id\":\"t1\",\"name\":\"tool\",\"namespace\":\"extension\",\"arguments\":\"\",\"result\":\"\"}]}],\"nativeMetadata\":[{\"id\":\"n1\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"custom1\",\"sourceType\":\"pi.custom\"},\"customType\":\"extension\",\"data\":{}}],\"diagnostics\":{\"partial\":true},\"retainedUnknown\":[{\"sourceRef\":\"source-0\",\"recordIndex\":2,\"position\":4,\"pointer\":\"\",\"namespace\":\"record\",\"kind\":\"future\",\"payload\":\"{\\\"type\\\":\\\"future\\\"}\"}]}"
         },
         "expected": {
           "capabilities": [
@@ -63,6 +70,7 @@ export const canonicalSessionGraphCapabilityFixtures = {
             "observed_model_v1",
             "retained_unknown_v1",
             "session_graph_provenance_v1",
+            "thinking_level_v1",
             "tool_namespace_v1"
           ]
         }
@@ -408,6 +416,98 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "rejectedDurableJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[],\"relationshipNavigation\":[]}"
         },
         "expected": {}
+      },
+      {
+        "name": "thinking-level-session-seed",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation thinking_level_v1"
+        },
+        "mutation": {
+          "description": "adds only the session-level thinking level seed"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"thinkingLevel\":\"high\",\"turns\":[]}"
+        },
+        "expected": {
+          "capabilities": [
+            "thinking_level_v1"
+          ]
+        }
+      },
+      {
+        "name": "thinking-level-raw-only-seed",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation thinking_level_v1"
+        },
+        "mutation": {
+          "description": "adds only an unmapped raw session spelling"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"thinkingLevelRaw\":\"custom\",\"turns\":[]}"
+        },
+        "expected": {
+          "capabilities": [
+            "thinking_level_v1"
+          ]
+        }
+      },
+      {
+        "name": "thinking-level-root-turn",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation thinking_level_v1"
+        },
+        "mutation": {
+          "description": "adds a level on a root assistant turn"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"thinkingLevel\":\"off\",\"thinkingLevelRaw\":\"none\",\"timestamp\":\"2020-01-01T00:00:00Z\"}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "thinking_level_v1"
+          ]
+        }
+      },
+      {
+        "name": "thinking-level-earlier-nested-turn",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation thinking_level_v1"
+        },
+        "mutation": {
+          "description": "adds a level on a nested earlier-history assistant turn"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\"},{\"index\":1,\"role\":\"assistant\",\"content\":\"\",\"depth\":1,\"parentIndex\":0,\"thinkingLevel\":\"medium\",\"timestamp\":\"2020-01-01T00:00:00Z\"}]}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "session_graph_provenance_v1",
+            "thinking_level_v1"
+          ]
+        }
+      },
+      {
+        "name": "thinking-level-absent-needs-no-token",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation thinking_level_v1"
+        },
+        "mutation": {
+          "description": "omits every thinking level field"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\"}]}"
+        },
+        "expected": {}
       }
     ]
   },
@@ -676,6 +776,51 @@ export const canonicalSessionGraphCapabilityFixtures = {
         },
         "expected": {
           "errorContains": "unknown token"
+        }
+      },
+      {
+        "name": "producer-canonical-thinking-level",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Emits the full sorted inventory including thinking_level_v1"
+        },
+        "input": {
+          "tokens": [
+            "detailed_usage_v1",
+            "native_metadata_v1",
+            "observed_model_v1",
+            "retained_unknown_v1",
+            "session_graph_provenance_v1",
+            "thinking_level_v1",
+            "tool_namespace_v1"
+          ]
+        },
+        "expected": {
+          "accepted": true
+        }
+      },
+      {
+        "name": "producer-unsorted-thinking-level",
+        "classification": "must-fail",
+        "provenance": {
+          "source": "boundary",
+          "ref": "content-capability-negotiation"
+        },
+        "mutation": {
+          "description": "Places thinking_level_v1 after tool_namespace_v1"
+        },
+        "input": {
+          "tokens": [
+            "tool_namespace_v1",
+            "thinking_level_v1"
+          ]
+        },
+        "expected": {
+          "errorContains": "canonical lexicographic order"
         }
       }
     ]
