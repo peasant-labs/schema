@@ -156,6 +156,54 @@ func ValidateThinkingLevelEvidence(role Role, level ThinkingLevel, raw ThinkingL
 	return nil
 }
 
+// ThinkingLevelChange is one in-session thinking-level change observed after the
+// session seed. A session keeps its first value in thinkingLevel/thinkingLevelRaw
+// and records each later change here, in source order, with consecutive
+// duplicates collapsed. At least one of level or raw must be present: level may
+// be empty only when raw carries the exact native spelling. Raw follows the same
+// bounded rule as the session seed.
+type ThinkingLevelChange struct {
+	Level ThinkingLevel    `json:"level,omitempty"`
+	Raw   ThinkingLevelRaw `json:"raw,omitempty"`
+}
+
+// Validate enforces the history-entry rule and returns an actionable error.
+func (c ThinkingLevelChange) Validate() error {
+	return validateThinkingLevelChange(c, "thinkingLevelHistory entry")
+}
+
+// IsValid reports whether the change satisfies the history-entry rule. The
+// generic raw-shape decoder calls it for each element of thinkingLevelHistory.
+func (c ThinkingLevelChange) IsValid() bool { return c.Validate() == nil }
+
+// validateThinkingLevelChange validates one history entry, naming its fields
+// with the wire-style dotted path for actionable errors.
+func validateThinkingLevelChange(c ThinkingLevelChange, path string) error {
+	if c.Level == "" && c.Raw == "" {
+		return fmt.Errorf("thinking level change validation failed at schema.validateThinkingLevelChange for %s: the entry carries neither level nor raw, so the change has no evidence; omit the entry, or provide a canonical level and/or the exact native spelling in raw", path)
+	}
+	if !c.Level.IsValid() {
+		return fmt.Errorf("thinking level change validation failed at schema.validateThinkingLevelChange for %s.level: level %q is outside the canonical set %v, so consumers cannot compare it; use a canonical level, or omit level and carry the native spelling in raw", path, c.Level, AllThinkingLevels)
+	}
+	if c.Raw != "" {
+		if err := c.Raw.Validate(); err != nil {
+			return fmt.Errorf("thinking level change validation failed at schema.validateThinkingLevelChange for %s.raw: raw is invalid and must not be emitted; omit it or supply the exact bounded native spelling: %w", path, err)
+		}
+	}
+	return nil
+}
+
+// validateThinkingLevelHistory validates every entry of an in-session level
+// history. where names the calling boundary for actionable errors.
+func validateThinkingLevelHistory(history []ThinkingLevelChange, where string) error {
+	for i, change := range history {
+		if err := validateThinkingLevelChange(change, fmt.Sprintf("thinkingLevelHistory.%d", i)); err != nil {
+			return fmt.Errorf("thinking level history validation failed at %s: %w", where, err)
+		}
+	}
+	return nil
+}
+
 // validateThinkingLevelPair validates a session-level or metadata pair without
 // the role rule. where names the calling boundary for actionable errors.
 func validateThinkingLevelPair(level ThinkingLevel, raw ThinkingLevelRaw, where string) error {

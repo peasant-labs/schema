@@ -2110,11 +2110,12 @@ components:
         before persistence with no invalid DB/blob side effects plus byte-exact accepted
         observedModel strings through storage, typed migration, rewrite, serving,
         and pull; JSON whitespace and key order are excluded. thinking_level_v1 is
-        required iff the session detail or any main or earlier-history turn carries
+        required iff the session detail carries thinkingLevel, thinkingLevelRaw, or
+        a non-empty thinkingLevelHistory, or any main or earlier-history turn carries
         thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and
         assistant-only validation before persistence with no invalid side effects
-        plus byte-exact preservation of both values and their absence through storage,
-        typed migration, rewrite, serving, and pull.
+        plus byte-exact preservation of the values, their history order, and their
+        absence through storage, typed migration, rewrite, serving, and pull.
       title: Content Capability
       type: string
     ContentKind:
@@ -5006,11 +5007,13 @@ components:
               with no invalid DB/blob side effects plus byte-exact accepted observedModel
               strings through storage, typed migration, rewrite, serving, and pull;
               JSON whitespace and key order are excluded. thinking_level_v1 is required
-              iff the session detail or any main or earlier-history turn carries thinkingLevel
-              or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only
-              validation before persistence with no invalid side effects plus byte-exact
-              preservation of both values and their absence through storage, typed
-              migration, rewrite, serving, and pull.
+              iff the session detail carries thinkingLevel, thinkingLevelRaw, or a
+              non-empty thinkingLevelHistory, or any main or earlier-history turn
+              carries thinkingLevel or thinkingLevelRaw, and guarantees canonical,
+              raw-bound, and assistant-only validation before persistence with no
+              invalid side effects plus byte-exact preservation of the values, their
+              history order, and their absence through storage, typed migration, rewrite,
+              serving, and pull.
             title: Content Capability
             type: string
           type: array
@@ -5194,6 +5197,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/ThinkingLevelRaw'
         tokensIn:
@@ -5300,6 +5307,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/ThinkingLevelRaw'
         tokensIn:
@@ -6276,6 +6287,13 @@ components:
       - ultracode
       title: Thinking Level
       type: string
+    ThinkingLevelChange:
+      properties:
+        level:
+          $ref: '#/components/schemas/ThinkingLevel'
+        raw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+      type: object
     ThinkingLevelRaw:
       description: Exact native thinking-level spelling observed when it differs from
         the emitted canonical thinkingLevel, including when no canonical level could
@@ -6693,6 +6711,10 @@ components:
           - "null"
         thinkingLevel:
           $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/ThinkingLevelRaw'
         timestamp:

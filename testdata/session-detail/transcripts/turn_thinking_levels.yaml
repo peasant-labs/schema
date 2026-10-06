@@ -107,3 +107,15 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "the session seed is canonical"}
     mutation: {description: "sets a native spelling as the session seed"}
+  - name: session-history-accepted
+    input: {turn: '{"role":"assistant"}', session: '{"thinkingLevel":"high","thinkingLevelHistory":[{"level":"low"},{"raw":"custom"}]}'}
+    expected: {accepted: true, sessionThinkingLevel: high, sessionThinkingLevelHistory: [{level: low}, {raw: custom}]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the raw-shape decoder accepts an ordered in-session history"}
+    mutation: {description: "records two later changes after a high seed"}
+  - name: session-history-empty-entry-refused
+    input: {turn: '{"role":"assistant"}', session: '{"thinkingLevelHistory":[{}]}'}
+    expected: {accepted: false, errorContains: thinkingLevelHistory}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the raw-shape decoder rejects a history entry with no evidence"}
+    mutation: {description: "records an empty history entry"}

@@ -25,12 +25,18 @@ type turnThinkingLevelInput struct {
 	Session string `yaml:"session,omitempty"`
 }
 
+type turnThinkingLevelChangeExpected struct {
+	Level string `yaml:"level,omitempty"`
+	Raw   string `yaml:"raw,omitempty"`
+}
+
 type turnThinkingLevelExpected struct {
-	Accepted             bool   `yaml:"accepted"`
-	ThinkingLevel        string `yaml:"thinkingLevel,omitempty"`
-	ThinkingLevelRaw     string `yaml:"thinkingLevelRaw,omitempty"`
-	SessionThinkingLevel string `yaml:"sessionThinkingLevel,omitempty"`
-	ErrorContains        string `yaml:"errorContains,omitempty"`
+	Accepted                    bool                              `yaml:"accepted"`
+	ThinkingLevel               string                            `yaml:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw            string                            `yaml:"thinkingLevelRaw,omitempty"`
+	SessionThinkingLevel        string                            `yaml:"sessionThinkingLevel,omitempty"`
+	SessionThinkingLevelHistory []turnThinkingLevelChangeExpected `yaml:"sessionThinkingLevelHistory,omitempty"`
+	ErrorContains               string                            `yaml:"errorContains,omitempty"`
 }
 
 func loadTurnThinkingLevelFixtures(t *testing.T) testcase.Corpus[turnThinkingLevelInput, turnThinkingLevelExpected] {
@@ -105,6 +111,15 @@ func TestTurnDetailThinkingLevelFixture(t *testing.T) {
 			if string(payload.ThinkingLevel) != c.Expected.SessionThinkingLevel {
 				t.Fatalf("session level=%q, want %q", payload.ThinkingLevel, c.Expected.SessionThinkingLevel)
 			}
+			if len(payload.ThinkingLevelHistory) != len(c.Expected.SessionThinkingLevelHistory) {
+				t.Fatalf("session history=%v, want %v", payload.ThinkingLevelHistory, c.Expected.SessionThinkingLevelHistory)
+			}
+			for i, want := range c.Expected.SessionThinkingLevelHistory {
+				got := payload.ThinkingLevelHistory[i]
+				if string(got.Level) != want.Level || string(got.Raw) != want.Raw {
+					t.Fatalf("session history[%d]=%q/%q, want %q/%q", i, got.Level, got.Raw, want.Level, want.Raw)
+				}
+			}
 			if err := schema.ValidateSessionDetailPayload(payload); err != nil {
 				t.Fatalf("accepted payload fails typed validation: %v", err)
 			}
@@ -118,6 +133,14 @@ func TestTurnDetailThinkingLevelFixture(t *testing.T) {
 			}
 			if again.Turns[1].ThinkingLevel != got.ThinkingLevel || again.Turns[1].ThinkingLevelRaw != got.ThinkingLevelRaw || again.ThinkingLevel != payload.ThinkingLevel {
 				t.Fatal("thinking level evidence changed across encode/decode")
+			}
+			if len(again.ThinkingLevelHistory) != len(payload.ThinkingLevelHistory) {
+				t.Fatal("thinking level history changed across encode/decode")
+			}
+			for i := range payload.ThinkingLevelHistory {
+				if again.ThinkingLevelHistory[i] != payload.ThinkingLevelHistory[i] {
+					t.Fatalf("thinking level history[%d] changed across encode/decode", i)
+				}
 			}
 		})
 	}

@@ -33,7 +33,8 @@ import (
 //
 // v11: session graph provenance.
 //
-// v12: optional thinking level and raw native spelling; optional-only, stays refresh-free.
+// v12: optional thinking level, raw native spelling, and in-session level
+// history; optional-only, stays refresh-free.
 const MetadataSchemaVersion = 12
 
 // RedactionInfo tracks whether and when redaction was applied to a session's transcript.
@@ -77,23 +78,29 @@ type UnifiedMetadata struct {
 	// ThinkingLevelRaw is the exact native spelling when it differs from the
 	// emitted canonical value (including when no canonical could be mapped);
 	// absent when nothing was observed or the spelling is canonical.
-	ThinkingLevelRaw ThinkingLevelRaw      `json:"thinkingLevelRaw,omitempty"`
-	Timestamp        TimestampInfo         `json:"timestamp"`
-	Source           SourceInfo            `json:"source"`
-	Git              GitContext            `json:"git"`
-	Project          ProjectContext        `json:"project"`
-	HostSlug         HostSlug              `json:"hostSlug"`
-	Stats            SessionStats          `json:"stats"`
-	Subagents        []SubagentRef         `json:"subagents"`
-	RootSessionID    *SessionID            `json:"rootSessionId,omitempty"`
-	Purpose          SessionPurpose        `json:"purpose,omitempty"`
-	Relationships    []SessionRelationship `json:"relationships,omitempty"`
-	CWD              string                `json:"cwd,omitempty"`       // Real project working directory (v7+)
-	DerivedAt        *int64                `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
-	Diagnostics      DiagnosticsInfo       `json:"diagnostics"`
-	ContentHash      string                `json:"contentHash"`  // SHA3-256 of transcript bytes
-	MetadataHash     string                `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
-	Redaction        RedactionInfo         `json:"redaction"`
+	ThinkingLevelRaw ThinkingLevelRaw `json:"thinkingLevelRaw,omitempty"`
+	// ThinkingLevelHistory records the in-session level changes observed after
+	// the seed, in source order, with consecutive duplicates collapsed. The
+	// session's first value stays in ThinkingLevel/ThinkingLevelRaw above; each
+	// entry here carries the later canonical level and/or its exact native
+	// spelling. Empty when the session never changed level or none was observed.
+	ThinkingLevelHistory []ThinkingLevelChange `json:"thinkingLevelHistory,omitempty"`
+	Timestamp            TimestampInfo         `json:"timestamp"`
+	Source               SourceInfo            `json:"source"`
+	Git                  GitContext            `json:"git"`
+	Project              ProjectContext        `json:"project"`
+	HostSlug             HostSlug              `json:"hostSlug"`
+	Stats                SessionStats          `json:"stats"`
+	Subagents            []SubagentRef         `json:"subagents"`
+	RootSessionID        *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose              SessionPurpose        `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship `json:"relationships,omitempty"`
+	CWD                  string                `json:"cwd,omitempty"`       // Real project working directory (v7+)
+	DerivedAt            *int64                `json:"derivedAt,omitempty"` // Unix ms when metadata.json was derived from DB (v8+); nil if written before DB insert
+	Diagnostics          DiagnosticsInfo       `json:"diagnostics"`
+	ContentHash          string                `json:"contentHash"`  // SHA3-256 of transcript bytes
+	MetadataHash         string                `json:"metadataHash"` // SHA3-256 of metadata (excluding hashes + redaction)
+	Redaction            RedactionInfo         `json:"redaction"`
 	// AdapterVersion identifies the Peasant adapter/parser that successfully
 	// produced this artifact, not the native harness release in Version.
 	// Omission means unknown historical provenance; a present value must be positive.
@@ -249,6 +256,9 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 	if err := validateThinkingLevelPair(next.ThinkingLevel, next.ThinkingLevelRaw, "schema.UnifiedMetadata.UnmarshalJSON"); err != nil {
 		return err
 	}
+	if err := validateThinkingLevelHistory(next.ThinkingLevelHistory, "schema.UnifiedMetadata.UnmarshalJSON for thinkingLevelHistory"); err != nil {
+		return err
+	}
 	if next.ModelHarness == "" && aux.LegacyModelHarness != nil {
 		next.ModelHarness = *aux.LegacyModelHarness
 	}
@@ -277,6 +287,9 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	if err := validateThinkingLevelPair(m.ThinkingLevel, m.ThinkingLevelRaw, "schema.UnifiedMetadata.MarshalJSON"); err != nil {
+		return nil, err
+	}
+	if err := validateThinkingLevelHistory(m.ThinkingLevelHistory, "schema.UnifiedMetadata.MarshalJSON for thinkingLevelHistory"); err != nil {
 		return nil, err
 	}
 	type alias UnifiedMetadata

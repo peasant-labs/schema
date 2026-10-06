@@ -1,4 +1,4 @@
-expectedCaseCount: 18
+expectedCaseCount: 20
 requiredCaseNames:
   - absent-accepted
   - assistant-level-accepted
@@ -18,3 +18,5 @@ requiredCaseNames:
   - over-bound-raw-refused
   - session-seed-accepted
   - session-seed-noncanonical-refused
+  - session-history-accepted
+  - session-history-empty-entry-refused

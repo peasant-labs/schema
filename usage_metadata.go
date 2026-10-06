@@ -310,6 +310,9 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 	if err := validateThinkingLevelPair(value.ThinkingLevel, value.ThinkingLevelRaw, "schema.ValidateSessionDetailPayload for the session-level seed"); err != nil {
 		return err
 	}
+	if err := validateThinkingLevelHistory(value.ThinkingLevelHistory, "schema.ValidateSessionDetailPayload for thinkingLevelHistory"); err != nil {
+		return err
+	}
 	parent, err := durableStartedByTarget(value.Relationships)
 	if err != nil {
 		return err

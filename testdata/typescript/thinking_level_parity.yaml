@@ -25,11 +25,18 @@ metadata:
     - multibyte-raw-over-byte-bound
     - noncanonical-level-rejected
     - edge-whitespace-raw-rejected
+    - history-absent
+    - history-level-only
+    - history-raw-only
+    - history-both-fields
+    - history-multiple-order-preserved
+    - history-invalid-raw-rejected
   goOnly:
     raw-null-is-absent: "Go metadata decoding normalizes an explicit null raw to absent; the wire schema keeps the field optional and non-null"
     invalid-utf8-raw-marshal-rejected: "assembles a Go struct holding a lone 0xFF byte, which a JavaScript string cannot represent"
     over-bound-raw-marshal-rejected: "exercises the Go MarshalJSON guard on a directly assembled struct; the 129-byte decode row covers the same bound"
     valid-pair-marshal-round-trips: "exercises the Go MarshalJSON stamp of the current schema version on a directly assembled struct"
+    history-empty-entry-rejected: "the at-least-one-field rule for a history entry is a cross-field Go check that the per-field wire shape cannot express"
 raw:
   # testdata/metadata/thinking_level_raw.yaml, replayed through zThinkingLevelRaw.
   replay:
@@ -67,6 +74,8 @@ turn:
     user-level-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
     system-raw-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
     tool-level-refused: "the assistant-only rule is a cross-field ValidateSessionDetailPayload check, not a per-field wire shape"
+    session-history-accepted: "the turn replay picks only the session seed fields; the session detail history array is covered by the metadata corpus replay"
+    session-history-empty-entry-refused: "the raw-shape element rule is a cross-field Go check that the per-field wire shape cannot express"
 # JavaScript-string boundaries the Go regexp cannot express. NewThinkingLevelRaw
 # applies the Unicode White_Space rule, so U+0085 and U+00A0 at an edge are
 # refused while U+FEFF (not White_Space) is permitted. Values are JSON string

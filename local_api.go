@@ -397,17 +397,22 @@ type SessionDetailPayload struct {
 	// the first valid turn observation: the earliest valid root-assistant
 	// observation in source order when available, otherwise the stored session
 	// seed; never latest, most common, or final. Raw rides the same rule.
-	ThinkingLevel    ThinkingLevel           `json:"thinkingLevel,omitempty"`
-	ThinkingLevelRaw ThinkingLevelRaw        `json:"thinkingLevelRaw,omitempty"`
-	WorkingDirectory string                  `json:"workingDirectory,omitempty"`
-	GitBranch        string                  `json:"gitBranch,omitempty"`
-	GitRemote        string                  `json:"gitRemote,omitempty"`
-	ChildSessions    []ChildSessionRef       `json:"childSessions,omitempty"`
-	ParentSessionID  *SessionID              `json:"parentSessionId,omitempty"`
-	RootSessionID    *SessionID              `json:"rootSessionId,omitempty"`
-	Purpose          SessionPurpose          `json:"purpose,omitempty"`
-	Relationships    []SessionRelationship   `json:"relationships,omitempty"`
-	EarlierHistory   []EarlierHistorySection `json:"earlierHistory,omitempty"`
+	ThinkingLevel    ThinkingLevel    `json:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw ThinkingLevelRaw `json:"thinkingLevelRaw,omitempty"`
+	// ThinkingLevelHistory records the in-session level changes observed after
+	// the seed, in source order, with consecutive duplicates collapsed. The
+	// first value stays in ThinkingLevel/ThinkingLevelRaw above; each entry here
+	// carries the later canonical level and/or its exact native spelling.
+	ThinkingLevelHistory []ThinkingLevelChange   `json:"thinkingLevelHistory,omitempty"`
+	WorkingDirectory     string                  `json:"workingDirectory,omitempty"`
+	GitBranch            string                  `json:"gitBranch,omitempty"`
+	GitRemote            string                  `json:"gitRemote,omitempty"`
+	ChildSessions        []ChildSessionRef       `json:"childSessions,omitempty"`
+	ParentSessionID      *SessionID              `json:"parentSessionId,omitempty"`
+	RootSessionID        *SessionID              `json:"rootSessionId,omitempty"`
+	Purpose              SessionPurpose          `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship   `json:"relationships,omitempty"`
+	EarlierHistory       []EarlierHistorySection `json:"earlierHistory,omitempty"`
 	// Outcome is the heuristic resolution status of the session
 	// (resolved/partial/failed), sourced from session_metrics.outcome. Empty
 	// when the session has no computed outcome. The metadata columns expose no

@@ -517,7 +517,7 @@ export type Confidence = z.infer<typeof zConfidence>;
 /**
  * Content Capability
  *
- * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of both values and their absence through storage, typed migration, rewrite, serving, and pull.
+ * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.
  */
 export const zContentCapability = z.string();
 
@@ -2705,6 +2705,13 @@ export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^(?:﻿|[^\s]
 
 export type ThinkingLevelRaw = z.infer<typeof zThinkingLevelRaw>;
 
+export const zThinkingLevelChange = z.object({
+    level: zThinkingLevel.optional(),
+    raw: zThinkingLevelRaw.optional()
+});
+
+export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
+
 export const zTimelineSessionRef = z.object({
     harness: zHarness,
     hasCommitBinding: z.boolean(),
@@ -3065,6 +3072,7 @@ export const zUnifiedMetadata = z.object({
     stats: zSessionStats,
     subagents: z.array(zSubagentRef).nullable(),
     thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
     timestamp: zTimestampInfo,
     version: z.string()
@@ -3226,6 +3234,7 @@ export const zSessionDetailPayload = z.object({
     startTime: z.iso.datetime(),
     status: z.string().optional(),
     thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
     tokensIn: z.int(),
     tokensOut: z.int(),
@@ -3266,6 +3275,7 @@ export const zSessionDetailReadPayload = z.object({
     startTime: z.iso.datetime().optional(),
     status: z.string().optional(),
     thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
     tokensIn: z.int().optional(),
     tokensOut: z.int().optional(),

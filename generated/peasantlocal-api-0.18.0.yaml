@@ -3730,6 +3730,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
@@ -4461,6 +4465,13 @@ components:
       - ultracode
       title: Thinking Level
       type: string
+    SchemaThinkingLevelChange:
+      properties:
+        level:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        raw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+      type: object
     SchemaThinkingLevelRaw:
       description: Exact native thinking-level spelling observed when it differs from
         the emitted canonical thinkingLevel, including when no canonical level could
@@ -5085,6 +5096,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
@@ -5191,6 +5206,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:

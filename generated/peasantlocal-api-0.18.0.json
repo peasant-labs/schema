@@ -5421,6 +5421,12 @@
           "thinkingLevel": {
             "$ref": "#/components/schemas/SchemaThinkingLevel"
           },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaThinkingLevelChange"
+            },
+            "type": "array"
+          },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
           },
@@ -6486,6 +6492,17 @@
         "title": "Thinking Level",
         "type": "string"
       },
+      "SchemaThinkingLevelChange": {
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/SchemaThinkingLevel"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
+          }
+        },
+        "type": "object"
+      },
       "SchemaThinkingLevelRaw": {
         "description": "Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.",
         "examples": [
@@ -7447,6 +7464,12 @@
           "thinkingLevel": {
             "$ref": "#/components/schemas/SchemaThinkingLevel"
           },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaThinkingLevelChange"
+            },
+            "type": "array"
+          },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
           },
@@ -7598,6 +7621,12 @@
           },
           "thinkingLevel": {
             "$ref": "#/components/schemas/SchemaThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaThinkingLevelChange"
+            },
+            "type": "array"
           },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
