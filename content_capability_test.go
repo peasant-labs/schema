@@ -164,8 +164,9 @@ type contentCapabilityInput struct {
 	ObservedModel  string                     `yaml:"observedModel,omitempty"`
 	NativeMetadata bool                       `yaml:"nativeMetadata,omitempty"`
 	// Session-level seed (scan) or evidence pair (thinking-evidence).
-	ThinkingLevel    schema.ThinkingLevel    `yaml:"thinkingLevel,omitempty"`
-	ThinkingLevelRaw schema.ThinkingLevelRaw `yaml:"thinkingLevelRaw,omitempty"`
+	ThinkingLevel        schema.ThinkingLevel         `yaml:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw     schema.ThinkingLevelRaw      `yaml:"thinkingLevelRaw,omitempty"`
+	ThinkingLevelHistory []schema.ThinkingLevelChange `yaml:"thinkingLevelHistory,omitempty"`
 }
 
 type contentCapabilityTurn struct {
@@ -225,7 +226,7 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 						turns[i].ToolCalls = append(turns[i].ToolCalls, value)
 					}
 				}
-				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, ThinkingLevel: fixtureCase.Input.ThinkingLevel, ThinkingLevelRaw: fixtureCase.Input.ThinkingLevelRaw, Turns: turns}
+				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, ThinkingLevel: fixtureCase.Input.ThinkingLevel, ThinkingLevelRaw: fixtureCase.Input.ThinkingLevelRaw, ThinkingLevelHistory: fixtureCase.Input.ThinkingLevelHistory, Turns: turns}
 				if fixtureCase.Input.NativeMetadata {
 					payload.NativeMetadata = []schema.NativeMetadataRecord{{}}
 				}

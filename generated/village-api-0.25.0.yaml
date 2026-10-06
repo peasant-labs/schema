@@ -4818,11 +4818,13 @@ components:
               with no invalid DB/blob side effects plus byte-exact accepted observedModel
               strings through storage, typed migration, rewrite, serving, and pull;
               JSON whitespace and key order are excluded. thinking_level_v1 is required
-              iff the session detail or any main or earlier-history turn carries thinkingLevel
-              or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only
-              validation before persistence with no invalid side effects plus byte-exact
-              preservation of both values and their absence through storage, typed
-              migration, rewrite, serving, and pull.
+              iff the session detail carries thinkingLevel, thinkingLevelRaw, or a
+              non-empty thinkingLevelHistory, or any main or earlier-history turn
+              carries thinkingLevel or thinkingLevelRaw, and guarantees canonical,
+              raw-bound, and assistant-only validation before persistence with no
+              invalid side effects plus byte-exact preservation of the values, their
+              history order, and their absence through storage, typed migration, rewrite,
+              serving, and pull.
             title: Content Capability
             type: string
           type: array
@@ -4928,6 +4930,10 @@ components:
           type: string
         thinkingLevel:
           $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
@@ -5226,6 +5232,13 @@ components:
       - ultracode
       title: Thinking Level
       type: string
+    SchemaThinkingLevelChange:
+      properties:
+        level:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        raw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+      type: object
     SchemaThinkingLevelRaw:
       description: Exact native thinking-level spelling observed when it differs from
         the emitted canonical thinkingLevel, including when no canonical level could

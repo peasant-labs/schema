@@ -3513,7 +3513,7 @@
         "type": "string"
       },
       "ContentCapability": {
-        "description": "Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of both values and their absence through storage, typed migration, rewrite, serving, and pull.",
+        "description": "Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.",
         "title": "Content Capability",
         "type": "string"
       },
@@ -7877,7 +7877,7 @@
           },
           "contentCapabilities": {
             "items": {
-              "description": "Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of both values and their absence through storage, typed migration, rewrite, serving, and pull.",
+              "description": "Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.",
               "title": "Content Capability",
               "type": "string"
             },
@@ -8157,6 +8157,12 @@
           "thinkingLevel": {
             "$ref": "#/components/schemas/ThinkingLevel"
           },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/ThinkingLevelChange"
+            },
+            "type": "array"
+          },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/ThinkingLevelRaw"
           },
@@ -8308,6 +8314,12 @@
           },
           "thinkingLevel": {
             "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/ThinkingLevelChange"
+            },
+            "type": "array"
           },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/ThinkingLevelRaw"
@@ -9817,6 +9829,17 @@
         "title": "Thinking Level",
         "type": "string"
       },
+      "ThinkingLevelChange": {
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "raw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          }
+        },
+        "type": "object"
+      },
       "ThinkingLevelRaw": {
         "description": "Exact native thinking-level spelling observed when it differs from the emitted canonical thinkingLevel, including when no canonical level could be mapped. Source evidence, never a canonical value; numeric budgets are never raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode White_Space code point at either edge. Omit when nothing was observed or the native spelling is canonical.",
         "examples": [
@@ -10488,6 +10511,12 @@
           },
           "thinkingLevel": {
             "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/ThinkingLevelChange"
+            },
+            "type": "array"
           },
           "thinkingLevelRaw": {
             "$ref": "#/components/schemas/ThinkingLevelRaw"

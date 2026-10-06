@@ -1250,6 +1250,7 @@ export interface components {
          * @enum {string}
          */
         SchemaThinkingLevel: Schema.ThinkingLevel;
+        SchemaThinkingLevelChange: Schema.ThinkingLevelChange;
         /**
          * Thinking Level Raw
          * Format: thinking-level-raw-utf8-128-bytes

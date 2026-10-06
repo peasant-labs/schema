@@ -37,12 +37,18 @@ type thinkingLevelMetadataInput struct {
 	RawBase64 string `yaml:"rawBase64,omitempty"`
 }
 
+type thinkingLevelChangeExpected struct {
+	Level string `yaml:"level,omitempty"`
+	Raw   string `yaml:"raw,omitempty"`
+}
+
 type thinkingLevelMetadataExpected struct {
-	Accepted         bool   `yaml:"accepted"`
-	SchemaVersion    int    `yaml:"schemaVersion,omitempty"`
-	ThinkingLevel    string `yaml:"thinkingLevel,omitempty"`
-	ThinkingLevelRaw string `yaml:"thinkingLevelRaw,omitempty"`
-	ErrorContains    string `yaml:"errorContains,omitempty"`
+	Accepted             bool                          `yaml:"accepted"`
+	SchemaVersion        int                           `yaml:"schemaVersion,omitempty"`
+	ThinkingLevel        string                        `yaml:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw     string                        `yaml:"thinkingLevelRaw,omitempty"`
+	ThinkingLevelHistory []thinkingLevelChangeExpected `yaml:"thinkingLevelHistory,omitempty"`
+	ErrorContains        string                        `yaml:"errorContains,omitempty"`
 }
 
 type thinkingLevelMetadataManifest struct {
@@ -129,6 +135,15 @@ func TestUnifiedMetadataThinkingLevelFixture(t *testing.T) {
 			if string(meta.ThinkingLevel) != c.Expected.ThinkingLevel || string(meta.ThinkingLevelRaw) != c.Expected.ThinkingLevelRaw {
 				t.Fatalf("level/raw=%q/%q, want %q/%q", meta.ThinkingLevel, meta.ThinkingLevelRaw, c.Expected.ThinkingLevel, c.Expected.ThinkingLevelRaw)
 			}
+			if len(meta.ThinkingLevelHistory) != len(c.Expected.ThinkingLevelHistory) {
+				t.Fatalf("history=%v, want %v", meta.ThinkingLevelHistory, c.Expected.ThinkingLevelHistory)
+			}
+			for i, want := range c.Expected.ThinkingLevelHistory {
+				got := meta.ThinkingLevelHistory[i]
+				if string(got.Level) != want.Level || string(got.Raw) != want.Raw {
+					t.Fatalf("history[%d]=%q/%q, want %q/%q", i, got.Level, got.Raw, want.Level, want.Raw)
+				}
+			}
 			encoded, err := json.Marshal(meta)
 			if err != nil {
 				t.Fatalf("re-encode accepted metadata: %v", err)
@@ -136,6 +151,21 @@ func TestUnifiedMetadataThinkingLevelFixture(t *testing.T) {
 			var object map[string]json.RawMessage
 			if err := json.Unmarshal(encoded, &object); err != nil {
 				t.Fatal(err)
+			}
+			history, present := object["thinkingLevelHistory"]
+			if present != (len(c.Expected.ThinkingLevelHistory) > 0) {
+				t.Fatalf("thinkingLevelHistory present=%v on encode, want %v (absence must stay absent): %s", present, len(c.Expected.ThinkingLevelHistory) > 0, encoded)
+			}
+			if present {
+				var got []thinkingLevelChangeExpected
+				if err := json.Unmarshal(history, &got); err != nil {
+					t.Fatalf("decode encoded history: %v", err)
+				}
+				for i, want := range c.Expected.ThinkingLevelHistory {
+					if got[i].Level != want.Level || got[i].Raw != want.Raw {
+						t.Fatalf("encoded history[%d]=%q/%q, want %q/%q", i, got[i].Level, got[i].Raw, want.Level, want.Raw)
+					}
+				}
 			}
 			for key, want := range map[string]string{"thinkingLevel": c.Expected.ThinkingLevel, "thinkingLevelRaw": c.Expected.ThinkingLevelRaw} {
 				value, present := object[key]

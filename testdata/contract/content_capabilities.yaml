@@ -214,6 +214,12 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: nested assistant level evidence requires preservation}
     mutation: {description: adds a level on a nested turn}
+  - name: thinking-level-history-only-requires-capability
+    input: {operation: scan, turns: [{role: assistant}], thinkingLevelHistory: [{level: low}, {raw: custom}]}
+    expected: {accepted: true, capabilities: [thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: an in-session history alone requires preservation}
+    mutation: {description: records a later change with no session seed or turn level}
   - name: thinking-level-accumulates-with-observed-model
     input: {operation: scan, turns: [{role: assistant, observedModel: provider/model, thinkingLevel: "off", thinkingLevelRaw: none}]}
     expected: {accepted: true, capabilities: [observed_model_v1, thinking_level_v1]}
