@@ -53,8 +53,14 @@ test("thinking level refinement fails closed when the generated declaration drif
   const declaration = generated.split("\n").find((line) => line.startsWith("export const zThinkingLevelRaw = "));
   assert.ok(declaration?.includes("new TextEncoder().encode(value).length <= 128"), "the committed zThinkingLevelRaw must carry the byte refine");
   assert.ok(declaration?.includes('text !== "\\u0085"'), "the committed zThinkingLevelRaw must carry the edge refine");
+  assert.ok(generated.includes("ThinkingLevelChange must carry level or raw"), "the committed zThinkingLevelChange must carry the at-least-one-field refine");
+
   const raw = 'export const zThinkingLevelRaw = z.string().min(1).max(128).regex(/^x$/);\n';
-  assert.match(applyThinkingLevelZodRefinements(raw), /\.regex\(\/\^x\$\/\)\.refine\(.*\.refine\(/);
-  assert.throws(() => applyThinkingLevelZodRefinements(raw.replace(".max(128)", ".max(129)")), /could not apply the UTF-8 byte limit and edge-whitespace rule to zThinkingLevelRaw/);
+  const change = 'export const zThinkingLevelChange = z.intersection(z.unknown(), z.object({\n    level: zThinkingLevel.optional(),\n    raw: zThinkingLevelRaw.optional()\n}));\n';
+  const refined = applyThinkingLevelZodRefinements(raw + change);
+  assert.match(refined, /\.regex\(\/\^x\$\/\)\.refine\(.*\.refine\(/);
+  assert.match(refined, /zThinkingLevelChange = z\.intersection\(z\.unknown\(\), z\.object\(\{[\s\S]*\}\)\)\.refine\(/);
+  assert.throws(() => applyThinkingLevelZodRefinements(raw.replace(".max(128)", ".max(129)") + change), /could not apply the UTF-8 byte limit and edge-whitespace rule to zThinkingLevelRaw/);
+  assert.throws(() => applyThinkingLevelZodRefinements(raw + 'export const zThinkingLevelChange = z.object({});\n'), /could not apply the at-least-one-field rule to zThinkingLevelChange/);
   assert.throws(() => applyThinkingLevelZodRefinements("export const zOther = z.string();\n"), /update scripts\/lib\/thinking-level-zod-refinements\.mjs/);
 });

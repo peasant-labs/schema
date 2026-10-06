@@ -140,11 +140,11 @@ cases:
     provenance: {source: requirement, ref: "a later change may carry only its exact native spelling"}
     mutation: {description: "records a raw-only change after a raw-only seed"}
   - name: history-both-fields
-    input: {operation: decode, json: '{"thinkingLevelHistory":[{"level":"ultra","raw":"ultracode"}]}'}
-    expected: {accepted: true, schemaVersion: 11, thinkingLevelHistory: [{level: ultra, raw: ultracode}]}
+    input: {operation: decode, json: '{"thinkingLevelHistory":[{"level":"ultra","raw":"custom"}]}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelHistory: [{level: ultra, raw: custom}]}
     classification: must-pass
     provenance: {source: requirement, ref: "a change carries both the canonical level and its native spelling"}
-    mutation: {description: "records ultra with its ultracode native spelling"}
+    mutation: {description: "records ultra with a non-canonical native spelling"}
   - name: history-multiple-order-preserved
     input: {operation: decode, json: '{"thinkingLevelHistory":[{"level":"low"},{"level":"high"},{"raw":"custom"}]}'}
     expected: {accepted: true, schemaVersion: 11, thinkingLevelHistory: [{level: low}, {level: high}, {raw: custom}]}
@@ -153,7 +153,7 @@ cases:
     mutation: {description: "records three later changes in order"}
   - name: history-empty-entry-rejected
     input: {operation: decode, json: '{"thinkingLevelHistory":[{}]}'}
-    expected: {accepted: false, errorContains: thinkingLevelHistory}
+    expected: {accepted: false, errorContains: thinkingLevelHistory.0}
     classification: must-fail
     provenance: {source: requirement, ref: "a history entry must carry a level or a raw spelling"}
     mutation: {description: "records an entry with neither field"}
