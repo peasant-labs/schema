@@ -39,16 +39,16 @@ type retainedUnknownInput struct {
 	MetadataMissing   bool    `yaml:"metadata_missing"`
 }
 type retainedUnknownExpected struct {
-	ErrorContains         string   `yaml:"error_contains"`
-	ErrorExcludes         []string `yaml:"error_excludes"`
-	ValueValid            *bool    `yaml:"value_valid"`
-	EnvelopeValid         *bool    `yaml:"envelope_valid"`
-	HTMLEncodingOverLimit bool     `yaml:"html_encoding_over_limit"`
-	Valid                 bool     `yaml:"valid"`
-	ShapeValid            bool     `yaml:"shape_valid"`
-	TypedValid            bool     `yaml:"typed_valid"`
-	Capability            bool     `yaml:"capability"`
-	MirrorInvalid         bool     `yaml:"mirror_invalid"`
+	ErrorContains               string   `yaml:"error_contains"`
+	ErrorExcludes               []string `yaml:"error_excludes"`
+	ValueValid                  *bool    `yaml:"value_valid"`
+	EnvelopeValid               *bool    `yaml:"envelope_valid"`
+	HTMLEncodingOverLegacyLimit bool     `yaml:"html_encoding_over_legacy_limit"`
+	Valid                       bool     `yaml:"valid"`
+	ShapeValid                  bool     `yaml:"shape_valid"`
+	TypedValid                  bool     `yaml:"typed_valid"`
+	Capability                  bool     `yaml:"capability"`
+	MirrorInvalid               bool     `yaml:"mirror_invalid"`
 }
 type retainedUnknownFixtures struct {
 	BaseDetail        string                                                         `yaml:"base_detail"`
@@ -309,12 +309,12 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if row.Expected.HTMLEncodingOverLimit {
+			if row.Expected.HTMLEncodingOverLegacyLimit {
 				if len(encoded) <= 8<<20 {
-					t.Fatal("HTML-escaped serializer did not cross transport boundary")
+					t.Fatal("HTML-escaped serializer did not cross the former 8 MiB boundary")
 				}
-				if _, err := schema.DecodeSessionDetailPayloadRaw(encoded); err == nil {
-					t.Fatal("actual oversized outgoing encoding accepted")
+				if _, err := schema.DecodeSessionDetailPayloadRaw(encoded); err != nil {
+					t.Fatalf("outgoing encoding above the former 8 MiB boundary refused: %v", err)
 				}
 				var buffer bytes.Buffer
 				encoder := json.NewEncoder(&buffer)
@@ -409,6 +409,9 @@ func TestRetainedUnknownBoundaries(t *testing.T) {
 
 func assertRetainedDiagnostic(t *testing.T, err error, expected retainedUnknownExpected) {
 	t.Helper()
+	if err != nil && expected.ErrorContains != "" && !strings.Contains(err.Error(), expected.ErrorContains) {
+		t.Fatalf("diagnostic lacks expected message %q: %v", expected.ErrorContains, err)
+	}
 	if len(expected.ErrorExcludes) == 0 {
 		return
 	}
