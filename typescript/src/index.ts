@@ -101,7 +101,7 @@ function normalizeEmptyOptionalPublicRefs(value: unknown): void {
 }
 
 export function parseSessionDetailPayloadText(text: string): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
-  scanRawJsonText(text, {maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/nativeMetadata/*/data"]});
+  scanRawJsonText(text, {maxDocumentBytes: 128 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/nativeMetadata/*/data"]});
   return parseSessionDetailPayloadValue(JSON.parse(text));
 }
 
@@ -116,7 +116,7 @@ export function parseSchemaVersionAdvertisement(text: string): string[] {
 }
 
 export function parseTranscriptContentText(text: string): import("./internal/generated/contract/zod.gen.js").TranscriptContent {
-  scanRawJsonText(text, { maxDocumentBytes: 8 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
+  scanRawJsonText(text, { maxDocumentBytes: 128 << 20, maxDocumentDepth: 64, opaqueMetadataPointers: ["/sessionDetail/nativeMetadata/*/data"] });
   const raw: unknown = JSON.parse(text);
   if (!isRecord(raw)) return zTranscriptContent.parse(raw);
   rejectWireAliases(raw, "TranscriptContent");

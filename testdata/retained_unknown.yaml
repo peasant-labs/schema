@@ -53,6 +53,8 @@ required_names:
   - escape_heavy_transport
   - unicode_transport
   - exact_transport_limit
+  - exact_envelope_transport_limit
+  - over_envelope_transport_limit
   - over_actual_transport
   - many_sibling_blocks
   - descendant_then_ancestor
@@ -193,7 +195,7 @@ cases:
     input: {payload_bytes: 70000}
   - <<: *semantic_invalid
     name: over_transport
-    mutation: {description: Full document exceeds the existing outer transport limit and refuses without truncation}
+    mutation: {description: Retained payload exceeds its unchanged inner byte limit and refuses without truncation}
     input: {payload_bytes: 8388608}
   - <<: *valid
     name: metadata_mirror_true
@@ -231,18 +233,29 @@ cases:
   - <<: *valid
     name: escape_heavy_transport
     input: {payload_bytes: 500000, payload_unit: '<>&'}
-    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true, html_encoding_over_limit: true}
+    expected: {valid: true, shape_valid: true, typed_valid: true, capability: true, html_encoding_over_legacy_limit: true}
   - <<: *valid
     name: unicode_transport
     input: {payload_bytes: 10000, payload_unit: "\u2028\u2029"}
   - <<: *valid
     name: exact_transport_limit
-    input: {transport_bytes: 8388608}
-    expected: {valid: true, shape_valid: true, typed_valid: true, value_valid: true, envelope_valid: false, capability: true}
+    input: {transport_bytes: 134217728}
+    expected: {valid: true, shape_valid: true, typed_valid: true, value_valid: true, envelope_valid: false, capability: true, error_contains: 'raw JSON validation failed at schema.ScanRawJSONDocument: document exceeds 134217728 bytes; decoding would exceed the caller boundary; reduce the document'}
+  - <<: *valid
+    name: exact_envelope_transport_limit
+    # The serialized envelope adds 68 bytes to the padded standalone detail.
+    mutation: {description: Envelope overhead plus padded detail reaches exactly 128 MiB}
+    input: {transport_bytes: 134217660}
+    expected: {valid: true, shape_valid: true, typed_valid: true, value_valid: true, envelope_valid: true, capability: true}
+  - <<: *valid
+    name: over_envelope_transport_limit
+    mutation: {description: Envelope exceeds 128 MiB by one byte while its detail remains below the limit}
+    input: {transport_bytes: 134217661}
+    expected: {valid: true, shape_valid: true, typed_valid: true, value_valid: true, envelope_valid: false, capability: true, error_contains: 'raw JSON validation failed at schema.ScanRawJSONDocument: document exceeds 134217728 bytes; decoding would exceed the caller boundary; reduce the document'}
   - <<: *semantic_invalid
     name: over_actual_transport
-    input: {transport_bytes: 8388609}
-    expected: {valid: false, shape_valid: true, typed_valid: true, value_valid: true}
+    input: {transport_bytes: 134217729}
+    expected: {valid: false, shape_valid: true, typed_valid: true, value_valid: true, error_contains: 'raw JSON validation failed at schema.ScanRawJSONDocument: document exceeds 134217728 bytes; decoding would exceed the caller boundary; reduce the document'}
   - <<: *valid
     name: many_sibling_blocks
     input: {sibling_blocks: 12000}
