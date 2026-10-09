@@ -719,10 +719,10 @@ type RawJSONPathPolicy struct {
 }
 
 func sessionDetailRawPolicy() RawJSONPathPolicy {
-	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/nativeMetadata/*/data", "/earlierHistory/*/nativeMetadata/*/data"}}
+	return RawJSONPathPolicy{MaxDocumentBytes: 128 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/nativeMetadata/*/data", "/earlierHistory/*/nativeMetadata/*/data"}}
 }
 func transcriptRawPolicy() RawJSONPathPolicy {
-	return RawJSONPathPolicy{MaxDocumentBytes: 8 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data", "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"}}
+	return RawJSONPathPolicy{MaxDocumentBytes: 128 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data", "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"}}
 }
 func ScanRawJSONDocument(raw []byte, p RawJSONPathPolicy) error {
 	return scanRawJSONDocument(raw, p, false)
