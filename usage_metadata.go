@@ -725,7 +725,7 @@ func transcriptRawPolicy() RawJSONPathPolicy {
 	return RawJSONPathPolicy{MaxDocumentBytes: 128 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data", "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"}}
 }
 func authoritativePublishMetadataRawPolicy() RawJSONPathPolicy {
-	return RawJSONPathPolicy{MaxDocumentBytes: 16 << 20, MaxDocumentDepth: 64}
+	return RawJSONPathPolicy{MaxDocumentBytes: 128 << 20, MaxDocumentDepth: 64}
 }
 func ScanRawJSONDocument(raw []byte, p RawJSONPathPolicy) error {
 	return scanRawJSONDocument(raw, p, false)

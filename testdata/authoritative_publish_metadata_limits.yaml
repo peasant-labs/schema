@@ -1,21 +1,21 @@
 cases:
   - name: one byte below metadata cap
-    input: {request_case: root-omits-parent, document_bytes: 16777215}
+    input: {request_case: root-omits-parent, document_bytes: 134217727}
     expected: {accepted: true}
     classification: must-pass
-    provenance: {source: boundary, ref: authoritative publish metadata inclusive 16 MiB boundary}
+    provenance: {source: boundary, ref: authoritative publish metadata inclusive 128 MiB boundary}
     mutation: {description: pads a valid request with JSON whitespace to one byte below the cap}
   - name: exact metadata cap
-    input: {request_case: root-omits-parent, document_bytes: 16777216}
+    input: {request_case: root-omits-parent, document_bytes: 134217728}
     expected: {accepted: true}
     classification: must-pass
-    provenance: {source: boundary, ref: authoritative publish metadata inclusive 16 MiB boundary}
+    provenance: {source: boundary, ref: authoritative publish metadata inclusive 128 MiB boundary}
     mutation: {description: pads a valid request with JSON whitespace to exactly the cap}
   - name: one byte above metadata cap
-    input: {request_case: root-omits-parent, document_bytes: 16777217}
-    expected: {accepted: false, error_contains: 'schema.ScanRawJSONDocument: document exceeds 16777216 bytes'}
+    input: {request_case: root-omits-parent, document_bytes: 134217729}
+    expected: {accepted: false, error_contains: 'schema.ScanRawJSONDocument: document exceeds 134217728 bytes'}
     classification: must-fail
-    provenance: {source: boundary, ref: authoritative publish metadata inclusive 16 MiB boundary}
+    provenance: {source: boundary, ref: authoritative publish metadata inclusive 128 MiB boundary}
     mutation: {description: adds one byte of JSON whitespace beyond the document cap}
   - name: past former metadata cap
     input: {request_case: root-omits-parent, document_bytes: 4194305}
@@ -25,7 +25,7 @@ cases:
     mutation: {description: pads a valid request one byte beyond the former document cap}
   - name: many entry identities survive decoding
     input: {request_case: root-omits-parent, entry_recipe: entries, entry_count: 22619}
-    expected: {accepted: true, minimum_document_bytes: 4194305, maximum_document_bytes: 16777215}
+    expected: {accepted: true, minimum_document_bytes: 4194305, maximum_document_bytes: 134217727}
     classification: must-pass
     provenance: {source: requirement, ref: authoritative publish metadata complete many-entry mirror}
     mutation: {description: expands the publication entry recipe with consecutive unique entry indices}
