@@ -698,7 +698,7 @@ func DecodeTranscriptContentRaw(raw []byte) (TranscriptContent, error) {
 	return v, ValidateTranscriptContent(v)
 }
 func DecodeAuthoritativePublishMetadataRaw(raw []byte) (AuthoritativePublishRequest, error) {
-	if err := ScanRawJSONDocument(raw, RawJSONPathPolicy{MaxDocumentBytes: 4 << 20, MaxDocumentDepth: 64}); err != nil {
+	if err := ScanRawJSONDocument(raw, authoritativePublishMetadataRawPolicy()); err != nil {
 		return AuthoritativePublishRequest{}, err
 	}
 	return DecodeAuthoritativePublishRequest(raw)
@@ -723,6 +723,9 @@ func sessionDetailRawPolicy() RawJSONPathPolicy {
 }
 func transcriptRawPolicy() RawJSONPathPolicy {
 	return RawJSONPathPolicy{MaxDocumentBytes: 128 << 20, MaxDocumentDepth: 64, OpaqueMetadataPointers: []string{"/sessionDetail/nativeMetadata/*/data", "/sessionDetail/earlierHistory/*/nativeMetadata/*/data"}}
+}
+func authoritativePublishMetadataRawPolicy() RawJSONPathPolicy {
+	return RawJSONPathPolicy{MaxDocumentBytes: 16 << 20, MaxDocumentDepth: 64}
 }
 func ScanRawJSONDocument(raw []byte, p RawJSONPathPolicy) error {
 	return scanRawJSONDocument(raw, p, false)
