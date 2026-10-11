@@ -25,6 +25,7 @@ required_names:
   - unresolved-child-row-valid
   - grouped-unresolved-child-row-valid
   - parent-and-unresolved-rejected
+  - grouped-parent-and-unresolved-rejected
 operations:
   - api: local
     method: get
@@ -227,3 +228,13 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "a row names its parent or marks it unresolved, never both"}
     mutation: {description: "sets both parent markers on one row"}
+  - name: grouped-parent-and-unresolved-rejected
+    input:
+      schema: LocalSessionRow
+      payload:
+        session: {id: s-child, harness: opencode, startTime: "2026-09-20T10:00:00Z", durationMins: 1, totalTokens: 10, turnCount: 2, toolCallCount: 0, project: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, parentSessionId: s-parent-unstored, parentUnresolved: true}
+        sync: {id: s-child, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentSessionId: s-parent-unstored, parentUnresolved: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: "is set together with parentUnresolved=true"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the grouped sync arm rejects conflicting parent markers even when both mirrors agree"}
+    mutation: {description: "sets both parent markers to equal values on both grouped arms"}
