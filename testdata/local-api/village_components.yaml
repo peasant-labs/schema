@@ -1,7 +1,7 @@
 # The Village catalog rows the Local API embeds, pinned for one Local API
 # version. A change to any of them changes the Local API document, so it bumps
 # PeasantLocalAPIVersion and re-pins this file; the test prints the new pins.
-local_version: 0.17.0
+local_version: 0.18.0
 components:
   - {name: VillageGroupAcceptanceMode, sha256: 531b0e725ec160560ca104e17b30f55d0123cdaa49d3c65f38503073a2fcdf9e}
   - {name: VillageGroupDataAccess, sha256: 5c464846799d11cb2b11f6860c97ce018f22b973450b964e905ebcf5bb02e517}

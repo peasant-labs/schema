@@ -119,7 +119,10 @@ const (
 	// Bumped to 0.16.0 for rule-required hooks that stop publishing when their
 	// last active binding is removed, retaining the existing response fields.
 	// Bumped to 0.17.0 for an optional stored-session target on rule creation.
-	PeasantLocalAPIVersion = "0.17.0"
+	// Bumped to 0.18.0 when the session summary gained the optional
+	// parentUnresolved marker and the sync row gained the optional
+	// parentSessionId and parentUnresolved fields (additive = minor bump).
+	PeasantLocalAPIVersion = "0.18.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -177,5 +180,8 @@ const (
 	// Bumped to 0.27.0 to describe rule-required hook consent in the local
 	// publication indicator, without changing any field or enum.
 	// Bumped to 0.28.0 for the mutually exclusive session-target rule request.
-	TypesVersion = "0.28.0"
+	// Bumped to 0.29.0 when SessionSummary gained the optional parentUnresolved
+	// marker and LocalSyncSummary gained the optional parentSessionId and
+	// parentUnresolved fields (additive = minor bump).
+	TypesVersion = "0.29.0"
 )

@@ -2051,6 +2051,7 @@ export const zSessionSummary = z.object({
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     outcome: z.string().optional(),
     parentSessionId: z.string().nullish(),
+    parentUnresolved: z.boolean().optional(),
     preview: z.string().optional(),
     project: z.string().optional(),
     projectHash: zProjectHash.optional(),
@@ -2289,6 +2290,8 @@ export const zLocalSyncSummary = z.object({
     id: z.string(),
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     model: z.string(),
+    parentSessionId: z.string().optional(),
+    parentUnresolved: z.boolean().optional(),
     previouslyPushed: z.boolean(),
     projectHash: zProjectHash,
     projectName: z.string(),
@@ -2310,7 +2313,7 @@ export const zLocalSessionRow = z.object({
     if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
     if (value.sync) {
       const s = value.session, v = value.sync;
-      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount) fail("sync identity or count mirrors disagree; derive both from the same row");
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
     }
     if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");
   });
