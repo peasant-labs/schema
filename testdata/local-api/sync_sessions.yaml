@@ -1,6 +1,9 @@
 # Typed sync chooser status. Every listed row carries a closed status, a held
 # row names why it waits, and previouslyPushed is durable publication evidence
 # independent of the status. The chooser never reads an absent row as new.
+# A spawned child names its durable parent in parentSessionId, or marks it
+# parentUnresolved when the parent cannot be named; never both. The grouped
+# sync arm mirrors both fields of its session by value.
 required_names:
   - new-row-valid
   - updated-row-valid
@@ -17,6 +20,11 @@ required_names:
   - duplicate-session-rejected
   - null-sessions-rejected
   - grouped-held-without-reason-rejected
+  - child-row-valid
+  - grouped-child-row-valid
+  - unresolved-child-row-valid
+  - grouped-unresolved-child-row-valid
+  - parent-and-unresolved-rejected
 operations:
   - api: local
     method: get
@@ -169,3 +177,53 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "the chooser selects a row by its session ID"}
     mutation: {description: "blanks the row ID"}
+  - name: child-row-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-child, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentSessionId: s-parent-unstored}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a spawned child names its durable parent, which may be unstored"}
+    mutation: {description: "adds parentSessionId to a flat row"}
+  - name: grouped-child-row-valid
+    input:
+      schema: LocalSessionRow
+      payload:
+        session: {id: s-child, harness: opencode, startTime: "2026-09-20T10:00:00Z", durationMins: 1, totalTokens: 10, turnCount: 2, toolCallCount: 0, project: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, parentSessionId: s-parent-unstored}
+        sync: {id: s-child, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentSessionId: s-parent-unstored}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the grouped sync arm mirrors parentSessionId by value"}
+    mutation: {description: "decodes equal parent identifiers into distinct values on both arms"}
+  - name: unresolved-child-row-valid
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-unresolved, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentUnresolved: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a known child whose parent cannot be named is marked, not given an invented parent"}
+    mutation: {description: "marks a flat row parentUnresolved without a parent identifier"}
+  - name: grouped-unresolved-child-row-valid
+    input:
+      schema: LocalSessionRow
+      payload:
+        session: {id: s-unresolved, harness: opencode, startTime: "2026-09-20T10:00:00Z", durationMins: 1, totalTokens: 10, turnCount: 2, toolCallCount: 0, project: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, parentUnresolved: true}
+        sync: {id: s-unresolved, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentUnresolved: true}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the grouped sync arm mirrors parentUnresolved by value"}
+    mutation: {description: "decodes equal unresolved markers into distinct values on both arms"}
+  - name: parent-and-unresolved-rejected
+    input:
+      schema: LocalSyncSessionsPayload
+      payload:
+        sessions:
+          - {id: s-child, harness: opencode, projectName: worker, projectHash: cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, hostSlug: host, startTime: "2026-09-20T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false, parentSessionId: s-parent-unstored, parentUnresolved: true}
+    expected: {valid: false, rejected_by: semantics, error_contains: "is set together with parentUnresolved=true"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a row names its parent or marks it unresolved, never both"}
+    mutation: {description: "sets both parent markers on one row"}
