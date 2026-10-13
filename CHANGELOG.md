@@ -5,6 +5,22 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Durable child identity on the local session lists. Local API 0.18.0 and
+  Types 0.29.0 declare:
+  - `SessionSummary.parentUnresolved` (optional boolean): marks a known
+    spawned child whose parent cannot be named. `parentSessionId` now names
+    the durable logical parent of a spawned child and may name a session the
+    local store does not hold.
+  - `LocalSyncSummary.parentSessionId` and `LocalSyncSummary.parentUnresolved`
+    (both optional), so the flat sync list carries the same parent identity
+    as the grouped list.
+  - `LocalSyncSummary.Validate` refuses a row that sets `parentSessionId`
+    together with `parentUnresolved=true`.
+  - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
+    the grouped sync arm to mirror both fields of its session by value.
+
 ## [v0.25.0] - 2026-09-30
 
 ### Added

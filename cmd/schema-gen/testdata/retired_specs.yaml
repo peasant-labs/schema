@@ -103,3 +103,5 @@ specs:
   - {name: annotation-push-request-0.20.0.schema, json_sha256: 653335d8bf7f0b3c57251f2ff1d2a158b507138af4289ced9da79842b3ef1fd4, json_only: true}
   - {name: peasantlocal-api-0.16.0, json_sha256: 2ea74ba7d9d997b0b8e487c191ec1590f399db1188effe6d2a51aa33be560ef0, yaml_sha256: fa1a137a75fe9903c2ab3578da8c4e860830931c5cdf89f1e462db3c898ba5e0}
   - {name: types-0.27.0, json_sha256: ccda1ff55255c0334936d45cc20c476cd5d5aeeaba89fb041b5db6c7cbd8e820, yaml_sha256: 29041e8b2f2ba40569125090d1fc941e22ae0975cba3d79e5d32d58823a39d6d}
+  - {name: peasantlocal-api-0.17.0, json_sha256: 89968effbf5609e076e405066fa6a4f9c4b5c1cbb411c0feb1df755894794d9d, yaml_sha256: 20bc6cb4146bc2b20c6e0181370507b8cf95b70b60933b0a60d4aea2d4ad6a90}
+  - {name: types-0.28.0, json_sha256: 1323ee8afd4cafaaff3398b63d3a08995e9c17d688ee98f5bf45ad5050cd2a85, yaml_sha256: 225794423a7fc8bde0c92a2c3fb449b899e8b2bea3a6eb993f0b3e78f9a4e060}
