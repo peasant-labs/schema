@@ -21,6 +21,22 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
     the grouped sync arm to mirror both fields of its session by value.
 
+## [v0.29.0] - 2026-10-14
+
+### Added
+
+- Thinking level in the session contract. Village API 0.25.0, Local API 0.19.0,
+  and Types 0.30.0 declare the `ThinkingLevel` closed set and the raw native
+  spelling on session metadata, session detail, and assistant turns, plus the
+  in-session thinking-level history and the `thinking_level_v1` content
+  capability. The on-disk metadata schema version moves to 12.
+- An optional `collectives` filter on the Village pull list
+  (`GET /api/v1/pull/transcripts`), declared by Village API 0.26.0. The
+  comma-separated parameter narrows the listing to transcripts with an approved
+  share into any listed collective the caller belongs to; an omission lists every
+  pullable transcript, and the pull envelope window moves to [0.1.0, 0.2.0] so a
+  client that sends the parameter refuses a village that predates it.
+
 ## [v0.25.0] - 2026-09-30
 
 ### Added
