@@ -1,0 +1,165 @@
+baseMetadata: >-
+  {"schemaVersion":11,"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","parentUuid":null,"harness":"codex","model":"gpt-5","version":"0.1.0","timestamp":{"start":1708700000000,"end":1708700060000},"source":{"format":"jsonl"},"git":{},"project":{"hash":"0000000000000000000000000000000000000000000000000000000000000000","name":"example"},"hostSlug":"example","stats":{"turnCount":1,"toolCallCount":0,"subagentCount":0,"durationMs":60000,"tokensIn":10,"tokensOut":20},"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"","metadataHash":"","redaction":{"applied":false}}
+cases:
+  - name: v11-sidecar-reads-absent
+    input: {operation: decode, json: '{}'}
+    expected: {accepted: true, schemaVersion: 11}
+    classification: must-pass
+    provenance: {source: requirement, ref: "v11 metadata stays readable without a refresh"}
+    mutation: {description: "reads a v11 sidecar that predates the thinking level fields"}
+  - name: member-off
+    input: {operation: decode, json: "{\"thinkingLevel\": \"off\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "off"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member off"}
+    mutation: {description: "sets the canonical level off"}
+  - name: member-minimal
+    input: {operation: decode, json: "{\"thinkingLevel\": \"minimal\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "minimal"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member minimal"}
+    mutation: {description: "sets the canonical level minimal"}
+  - name: member-low
+    input: {operation: decode, json: "{\"thinkingLevel\": \"low\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "low"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member low"}
+    mutation: {description: "sets the canonical level low"}
+  - name: member-medium
+    input: {operation: decode, json: "{\"thinkingLevel\": \"medium\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "medium"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member medium"}
+    mutation: {description: "sets the canonical level medium"}
+  - name: member-high
+    input: {operation: decode, json: "{\"thinkingLevel\": \"high\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "high"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member high"}
+    mutation: {description: "sets the canonical level high"}
+  - name: member-xhigh
+    input: {operation: decode, json: "{\"thinkingLevel\": \"xhigh\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "xhigh"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member xhigh"}
+    mutation: {description: "sets the canonical level xhigh"}
+  - name: member-max
+    input: {operation: decode, json: "{\"thinkingLevel\": \"max\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "max"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member max"}
+    mutation: {description: "sets the canonical level max"}
+  - name: member-ultra
+    input: {operation: decode, json: "{\"thinkingLevel\": \"ultra\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "ultra"}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member ultra"}
+    mutation: {description: "sets the canonical level ultra"}
+  - name: member-ultracode
+    input: {operation: decode, json: '{"thinkingLevel":"ultracode"}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: ultracode}
+    classification: must-pass
+    provenance: {source: enum, ref: "canonical member ultracode"}
+    mutation: {description: "sets the canonical level ultracode without raw"}
+  - name: raw-with-canonical
+    input: {operation: decode, json: '{"thinkingLevel":"off","thinkingLevelRaw":"none"}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: "off", thinkingLevelRaw: none}
+    classification: must-pass
+    provenance: {source: requirement, ref: "raw rides with a canonical level when the native spelling differs"}
+    mutation: {description: "pairs off with its native spelling none"}
+  - name: raw-without-canonical
+    input: {operation: decode, json: '{"thinkingLevelRaw":"custom"}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelRaw: custom}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an unrecognized native spelling keeps raw with no canonical level"}
+    mutation: {description: "omits the canonical level and keeps the native spelling"}
+  - name: multibyte-raw-at-byte-bound
+    input: {operation: decode, json: "{\"thinkingLevelRaw\": \"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé\"}"}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelRaw: "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"}
+    classification: must-pass
+    provenance: {source: boundary, ref: "128 encoded UTF-8 bytes is the inclusive bound"}
+    mutation: {description: "uses 64 two-byte code points"}
+  - name: multibyte-raw-over-byte-bound
+    input: {operation: decode, json: "{\"thinkingLevelRaw\": \"ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa\"}"}
+    expected: {accepted: false, errorContains: thinkingLevelRaw}
+    classification: must-fail
+    provenance: {source: boundary, ref: "129 encoded UTF-8 bytes exceeds the bound"}
+    mutation: {description: "appends one byte past the bound"}
+  - name: raw-null-is-absent
+    input: {operation: decode, json: '{"thinkingLevelRaw":null}'}
+    expected: {accepted: true, schemaVersion: 11}
+    classification: must-pass
+    provenance: {source: boundary, ref: "metadata null raw decodes as absent"}
+    mutation: {description: "sends an explicit null raw"}
+  - name: noncanonical-level-rejected
+    input: {operation: decode, json: '{"thinkingLevel":"custom"}'}
+    expected: {accepted: false, errorContains: thinkingLevel}
+    classification: must-fail
+    provenance: {source: requirement, ref: "native spellings are never canonical values"}
+    mutation: {description: "writes an unrecognized native spelling as the canonical level"}
+  - name: edge-whitespace-raw-rejected
+    input: {operation: decode, json: '{"thinkingLevelRaw":" high"}'}
+    expected: {accepted: false, errorContains: thinkingLevelRaw}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw spellings have no edge whitespace"}
+    mutation: {description: "pads the raw spelling at the leading edge"}
+  - name: invalid-utf8-raw-marshal-rejected
+    input: {operation: marshal, rawBase64: /w==}
+    expected: {accepted: false, errorContains: thinkingLevelRaw}
+    classification: must-fail
+    provenance: {source: boundary, ref: "raw spellings are valid UTF-8"}
+    mutation: {description: "assembles metadata directly with a lone 0xFF byte"}
+  - name: over-bound-raw-marshal-rejected
+    input: {operation: marshal, raw: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééa"}
+    expected: {accepted: false, errorContains: thinkingLevelRaw}
+    classification: must-fail
+    provenance: {source: boundary, ref: "Marshal refuses a raw spelling over 128 bytes"}
+    mutation: {description: "assembles metadata directly with a 129-byte raw"}
+  - name: valid-pair-marshal-round-trips
+    input: {operation: marshal, level: "off", raw: none}
+    expected: {accepted: true, schemaVersion: 12, thinkingLevel: "off", thinkingLevelRaw: none}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a disabled native spelling travels as off plus raw"}
+    mutation: {description: "assembles metadata with off and the native none"}
+  - name: history-absent
+    input: {operation: decode, json: '{}'}
+    expected: {accepted: true, schemaVersion: 11}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a session that never changed level omits the history"}
+    mutation: {description: "reads a sidecar with no thinkingLevelHistory"}
+  - name: history-level-only
+    input: {operation: decode, json: '{"thinkingLevel":"high","thinkingLevelHistory":[{"level":"low"}]}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevel: high, thinkingLevelHistory: [{level: low}]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a later in-session change records its canonical level"}
+    mutation: {description: "seeds high and records a later low change"}
+  - name: history-raw-only
+    input: {operation: decode, json: '{"thinkingLevelRaw":"custom","thinkingLevelHistory":[{"raw":"other"}]}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelRaw: custom, thinkingLevelHistory: [{raw: other}]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a later change may carry only its exact native spelling"}
+    mutation: {description: "records a raw-only change after a raw-only seed"}
+  - name: history-both-fields
+    input: {operation: decode, json: '{"thinkingLevelHistory":[{"level":"ultra","raw":"custom"}]}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelHistory: [{level: ultra, raw: custom}]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a change carries both the canonical level and its native spelling"}
+    mutation: {description: "records ultra with a non-canonical native spelling"}
+  - name: history-multiple-order-preserved
+    input: {operation: decode, json: '{"thinkingLevelHistory":[{"level":"low"},{"level":"high"},{"raw":"custom"}]}'}
+    expected: {accepted: true, schemaVersion: 11, thinkingLevelHistory: [{level: low}, {level: high}, {raw: custom}]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "changes are recorded in source order"}
+    mutation: {description: "records three later changes in order"}
+  - name: history-empty-entry-rejected
+    input: {operation: decode, json: '{"thinkingLevelHistory":[{}]}'}
+    expected: {accepted: false, errorContains: thinkingLevelHistory.0}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a history entry must carry a level or a raw spelling"}
+    mutation: {description: "records an entry with neither field"}
+  - name: history-invalid-raw-rejected
+    input: {operation: decode, json: '{"thinkingLevelHistory":[{"raw":" high"}]}'}
+    expected: {accepted: false, errorContains: thinkingLevelHistory.0.raw}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a history raw spelling follows the seed bound and edge rule"}
+    mutation: {description: "pads a history raw spelling at the leading edge"}

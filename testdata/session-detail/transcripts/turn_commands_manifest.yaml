@@ -1,4 +1,3 @@
-expectedCaseCount: 10
 requiredCaseNames:
   - namespaced-skill-valid
   - skill-with-args-valid

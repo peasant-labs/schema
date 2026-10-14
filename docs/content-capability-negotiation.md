@@ -201,6 +201,46 @@ upload, and refuse unsupported receivers. Offline scan derives requirements
 without negotiation; standalone local export preserves evidence without a
 receiver. Requirements accumulate with the other content capabilities.
 
+### `thinking_level_v1`
+
+A publication requires `thinking_level_v1` when its durable session detail
+carries `thinkingLevel`, `thinkingLevelRaw`, or a non-empty
+`thinkingLevelHistory`, or carries `thinkingLevel` or `thinkingLevelRaw` on any
+main or earlier-history turn at any depth. The seed alone requires the token:
+unlike the legacy `model` seed, the level is new evidence an older server could
+drop during canonical rewrite.
+
+`thinkingLevel` is a closed canonical set (`off`, `minimal`, `low`, `medium`,
+`high`, `xhigh`, `max`, `ultra`, `ultracode`); absence means unknown and is distinct from
+`off`. `thinkingLevelRaw` is the exact native spelling when it differs from the
+emitted canonical value, including when no canonical value could be mapped: it
+is non-empty, valid UTF-8, at most 128 encoded bytes, and has no Unicode
+White_Space at either edge. Per-turn values belong only to assistant-role turns,
+including nested subagent turns.
+
+`thinkingLevelHistory` records the in-session changes observed after the seed, in
+source order, with consecutive duplicates collapsed. The session's first value
+stays in `thinkingLevel`/`thinkingLevelRaw`; each entry carries the later
+canonical `level` and/or its exact `raw` spelling. A history entry must carry at
+least one of the two, and `level` may be empty only when `raw` is present; `raw`
+follows the same bound and edge rule as the seed.
+
+A server advertising `thinking_level_v1` guarantees that it:
+
+1. validates canonical membership, the raw bound, the history-entry rule, and
+   the assistant-only turn rule before persistence;
+2. creates no database, blob, or other persistence side effects for invalid
+   evidence; and
+3. preserves every accepted `thinkingLevel`, `thinkingLevelRaw`, and
+   `thinkingLevelHistory` value, including entry order, and their absence,
+   byte-exactly on the session detail and on every turn through storage, typed
+   migration, rewrite, serving, and pull.
+
+A deployment MUST withhold the token until its production-path preservation
+proof passes, including a field-loss mutation. Missing advertisement requires
+refusal before upload, never stripping or downgrading the level. Requirements
+accumulate with every other token.
+
 ### Native metadata byte budgets
 
 Selected `nativeMetadata[*].data` subtrees permit decoded strings of at most

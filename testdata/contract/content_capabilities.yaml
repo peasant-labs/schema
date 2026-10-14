@@ -196,3 +196,63 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: observed values retain their validated exact bytes}
     mutation: {description: pads assistant evidence at both edges}
+  - name: thinking-level-session-seed-requires-capability
+    input: {operation: scan, thinkingLevel: high, turns: [{role: assistant}]}
+    expected: {accepted: true, capabilities: [thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: the session-level thinking level seed requires preservation}
+    mutation: {description: sets only the session seed}
+  - name: thinking-level-raw-only-requires-capability
+    input: {operation: scan, turns: [{role: assistant, thinkingLevelRaw: custom}]}
+    expected: {accepted: true, capabilities: [thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: an unmapped raw spelling alone requires preservation}
+    mutation: {description: adds raw without a canonical level}
+  - name: thinking-level-nested-turn-requires-capability
+    input: {operation: scan, turns: [{role: assistant, depth: 2, thinkingLevel: ultra}]}
+    expected: {accepted: true, capabilities: [thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: nested assistant level evidence requires preservation}
+    mutation: {description: adds a level on a nested turn}
+  - name: thinking-level-history-only-requires-capability
+    input: {operation: scan, turns: [{role: assistant}], thinkingLevelHistory: [{level: low}, {raw: custom}]}
+    expected: {accepted: true, capabilities: [thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: an in-session history alone requires preservation}
+    mutation: {description: records a later change with no session seed or turn level}
+  - name: thinking-level-accumulates-with-observed-model
+    input: {operation: scan, turns: [{role: assistant, observedModel: provider/model, thinkingLevel: "off", thinkingLevelRaw: none}]}
+    expected: {accepted: true, capabilities: [observed_model_v1, thinking_level_v1]}
+    classification: must-pass
+    provenance: {source: requirement, ref: content requirements accumulate}
+    mutation: {description: combines thinking level with observed model}
+  - name: thinking-level-missing-advertisement-refused
+    input: {operation: missing, advertised: [detailed_usage_v1, native_metadata_v1, observed_model_v1, retained_unknown_v1, session_graph_provenance_v1, tool_namespace_v1], required: [thinking_level_v1]}
+    expected: {accepted: false, capabilities: [thinking_level_v1]}
+    classification: must-fail
+    provenance: {source: requirement, ref: a receiver without the token refuses before upload}
+    mutation: {description: advertises every prior token but omits thinking_level_v1}
+  - name: thinking-level-full-canonical-advertisement
+    input: {operation: validate, advertised: [detailed_usage_v1, native_metadata_v1, observed_model_v1, retained_unknown_v1, session_graph_provenance_v1, thinking_level_v1, tool_namespace_v1]}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: canonical seven-token producer inventory}
+    mutation: {description: emits every known token in canonical order}
+  - name: thinking-level-assistant-evidence-valid
+    input: {operation: thinking-evidence, role: assistant, thinkingLevel: ultra, thinkingLevelRaw: custom}
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: assistant thinking level evidence is accepted}
+    mutation: {description: supplies a canonical level with a raw native spelling}
+  - name: thinking-level-user-evidence-invalid
+    input: {operation: thinking-evidence, role: user, thinkingLevel: high}
+    expected: {accepted: false, errorContains: is not assistant}
+    classification: must-fail
+    provenance: {source: requirement, ref: thinking level evidence is assistant-only}
+    mutation: {description: moves a level onto a user turn}
+  - name: thinking-level-noncanonical-evidence-invalid
+    input: {operation: thinking-evidence, role: assistant, thinkingLevel: custom}
+    expected: {accepted: false, errorContains: outside the canonical set}
+    classification: must-fail
+    provenance: {source: boundary, ref: native spellings are never canonical values}
+    mutation: {description: emits a native spelling as the canonical level}

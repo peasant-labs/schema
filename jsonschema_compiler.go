@@ -9,5 +9,6 @@ func NewJSONSchemaCompiler() *jsonschema.Compiler {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat = true
 	compiler.Formats[PublicRefUTF8ByteFormat] = ValidatePublicRefJSONSchemaFormat
+	compiler.Formats[ThinkingLevelRawUTF8ByteFormat] = ValidateThinkingLevelRawJSONSchemaFormat
 	return compiler
 }

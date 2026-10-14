@@ -8,7 +8,7 @@ import (
 	"github.com/peasant-labs/schema"
 )
 
-// --- SLICE-1-L2: CommitInfo JSON round-trip ---
+// --- CommitInfo JSON round-trip ---
 
 func TestCommitInfoMarshalUnmarshal(t *testing.T) {
 	ci := schema.CommitInfo{
@@ -57,7 +57,7 @@ func TestCommitInfoMarshalUnmarshal(t *testing.T) {
 	}
 }
 
-// --- SLICE-1-L2: v3 metadata reads without error under v4 code ---
+// --- v3 metadata reads without error under v4 code ---
 
 // TestMetadataSchemaV3V4Compatibility verifies that a v3 metadata JSON blob
 // (which has no "commits" field) can be unmarshalled by v4 code without error,
@@ -91,7 +91,7 @@ func TestMetadataSchemaV3V4Compatibility(t *testing.T) {
 	}
 }
 
-// --- SLICE-1-L2: GitContext.Commits is present and optional (omitempty) ---
+// --- GitContext.Commits present and optional (omitempty) ---
 
 func TestGitContextCommitsField_OmittedWhenNil(t *testing.T) {
 	gc := schema.GitContext{} // no commits
@@ -136,20 +136,20 @@ func TestGitContextCommitsField_EmptySliceOmitted(t *testing.T) {
 	}
 }
 
-// --- MetadataSchemaVersion is 11 (session graph provenance) ---
+// --- MetadataSchemaVersion is 12 (optional thinking level) ---
 
-func TestMetadataSchemaVersion_IsV11(t *testing.T) {
-	if schema.MetadataSchemaVersion != 11 {
-		t.Errorf("MetadataSchemaVersion: got %d, want 11", schema.MetadataSchemaVersion)
+func TestMetadataSchemaVersion_IsV12(t *testing.T) {
+	if schema.MetadataSchemaVersion != 12 {
+		t.Errorf("MetadataSchemaVersion: got %d, want 12", schema.MetadataSchemaVersion)
 	}
 }
 
-// --- NewUnifiedMetadata sets v10 schema version ---
+// --- NewUnifiedMetadata sets v12 schema version ---
 
-func TestNewUnifiedMetadata_SchemaVersionV11(t *testing.T) {
+func TestNewUnifiedMetadata_SchemaVersionV12(t *testing.T) {
 	meta := schema.NewUnifiedMetadata()
-	if meta.SchemaVersion != 11 {
-		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 11", meta.SchemaVersion)
+	if meta.SchemaVersion != 12 {
+		t.Errorf("NewUnifiedMetadata().SchemaVersion: got %d, want 12", meta.SchemaVersion)
 	}
 }
 

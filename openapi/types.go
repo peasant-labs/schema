@@ -68,6 +68,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"UsageScope", new(schema.UsageScope)}, {"UsageCompleteness", new(schema.UsageCompleteness)}, {"UsageOwnerID", new(schema.UsageOwnerID)}, {"RecordedCostAmount", new(schema.RecordedCostAmount)}, {"TokenUsageDetail", new(schema.TokenUsageDetail)}, {"RecordedCostDetail", new(schema.RecordedCostDetail)}, {"UsageDetail", new(schema.UsageDetail)},
 		{"NativeMetadataKind", new(schema.NativeMetadataKind)}, {"NativeMetadataSourceType", new(schema.NativeMetadataSourceType)}, {"NativePiMessageRole", new(schema.NativePiMessageRole)}, {"NativeSourceRef", new(schema.NativeSourceRef)}, {"NativeAttachmentRef", new(schema.NativeAttachmentRef)}, {"NativeMetadataRecord", new(schema.NativeMetadataRecord)},
 		{"ModelID", new(schema.ModelID)}, {"ModelInfo", new(schema.ModelInfo)}, {"ObservedModelID", new(schema.ObservedModelID)},
+		{"ThinkingLevel", new(schema.ThinkingLevel)}, {"ThinkingLevelRaw", new(schema.ThinkingLevelRaw)}, {"ThinkingLevelChange", new(schema.ThinkingLevelChange)},
 		{"ProjectContext", new(schema.ProjectContext)}, {"ProjectHash", new(schema.ProjectHash)},
 		{"CanonicalPublishGitContext", new(schema.CanonicalPublishGitContext)}, {"CanonicalPublishReplacement", new(schema.CanonicalPublishReplacement)},
 		{"AuthoritativeSessionIdentity", new(schema.AuthoritativeSessionIdentity)}, {"AuthoritativeModelInfo", new(schema.AuthoritativeModelInfo)},

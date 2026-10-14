@@ -43,6 +43,12 @@ func validateWireShape(raw json.RawMessage, typ reflect.Type, path string) error
 		}
 	}
 	if enum, ok := decoded.Elem().Interface().(interface{ IsValid() bool }); ok && !enum.IsValid() {
+		// Bounded value types explain their own rule; closed enums do not.
+		if validator, ok := enum.(interface{ Validate() error }); ok {
+			if err := validator.Validate(); err != nil {
+				return fail(err.Error())
+			}
+		}
 		return fail("enum is outside its closed set")
 	}
 	if typ == reflect.TypeFor[ObservedModelID]() {

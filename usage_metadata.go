@@ -307,6 +307,12 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 	if err := ValidateSessionRelationships(value.Relationships); err != nil {
 		return err
 	}
+	if err := validateThinkingLevelPair(value.ThinkingLevel, value.ThinkingLevelRaw, "schema.ValidateSessionDetailPayload for the session-level seed"); err != nil {
+		return err
+	}
+	if err := validateThinkingLevelHistory(value.ThinkingLevelHistory, "schema.ValidateSessionDetailPayload for thinkingLevelHistory"); err != nil {
+		return err
+	}
 	parent, err := durableStartedByTarget(value.Relationships)
 	if err != nil {
 		return err
@@ -385,6 +391,9 @@ func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValida
 		t := &turns[i]
 		if err := ValidateObservedModelEvidence(t.Role, t.ObservedModel); err != nil {
 			return err
+		}
+		if err := ValidateThinkingLevelEvidence(t.Role, t.ThinkingLevel, t.ThinkingLevelRaw); err != nil {
+			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload for %s[%d]: %w", path, i, err)
 		}
 		if !t.Role.IsValid() || (t.EntryType != "" && !t.EntryType.IsValid()) || (t.StopReason != nil && !t.StopReason.IsValid()) {
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: turn role, entryType, or stopReason is outside its closed set; consumers cannot classify the turn; use published enum values")

@@ -77,7 +77,11 @@ const (
 	// head branches, and list summaries, the collective and repository counts,
 	// and a create request that accepts a null organization (additive = minor
 	// bump).
-	VillageAPIVersion = "0.24.0"
+	// Bumped to 0.25.0 for the optional thinking level and its raw native
+	// spelling on session metadata, session detail, and assistant turns, the
+	// in-session thinking-level history, plus the thinking_level_v1 content
+	// capability (additive = minor bump).
+	VillageAPIVersion = "0.25.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -122,7 +126,10 @@ const (
 	// Bumped to 0.18.0 when the session summary gained the optional
 	// parentUnresolved marker and the sync row gained the optional
 	// parentSessionId and parentUnresolved fields (additive = minor bump).
-	PeasantLocalAPIVersion = "0.18.0"
+	// Bumped to 0.19.0 for the optional thinking level and raw native spelling
+	// on session detail and assistant turns, and the in-session thinking-level
+	// history (additive = minor bump).
+	PeasantLocalAPIVersion = "0.19.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -183,5 +190,8 @@ const (
 	// Bumped to 0.29.0 when SessionSummary gained the optional parentUnresolved
 	// marker and LocalSyncSummary gained the optional parentSessionId and
 	// parentUnresolved fields (additive = minor bump).
-	TypesVersion = "0.29.0"
+	// Bumped to 0.30.0 for the ThinkingLevel closed set, the bounded
+	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
+	// entry (additive = minor bump).
+	TypesVersion = "0.30.0"
 )

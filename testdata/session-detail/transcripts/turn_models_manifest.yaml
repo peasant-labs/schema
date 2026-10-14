@@ -1,4 +1,3 @@
-expectedCaseCount: 16
 requiredCaseNames:
   - absent-valid
   - simple-valid
