@@ -81,7 +81,10 @@ const (
 	// spelling on session metadata, session detail, and assistant turns, the
 	// in-session thinking-level history, plus the thinking_level_v1 content
 	// capability (additive = minor bump).
-	VillageAPIVersion = "0.25.0"
+	// Bumped to 0.26.0 when the transcript pull list gained the optional
+	// collectives filter, which narrows the list to the approved shares of the
+	// listed collectives the caller belongs to (additive parameter = minor bump).
+	VillageAPIVersion = "0.26.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git

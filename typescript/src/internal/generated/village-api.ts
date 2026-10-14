@@ -420,7 +420,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List transcripts the authenticated user may pull (own + group-shared; public excluded by the canPullTranscript policy). Offset pagination. */
+        /** @description List transcripts the authenticated user may pull (own + group-shared; public excluded by the canPullTranscript policy). Offset pagination. The optional collectives filter narrows the list to the approved shares of the listed collectives the caller belongs to; a collective the caller is not in contributes nothing. */
         get: operations["listPullableTranscripts"];
         put?: never;
         post?: never;
@@ -3203,6 +3203,8 @@ export interface operations {
             query?: {
                 page?: number;
                 limit?: number;
+                /** @description Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript. */
+                collectives?: string;
             };
             header?: never;
             path?: never;
