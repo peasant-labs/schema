@@ -260,18 +260,23 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	// the village and the relocated client share one contract.
 
 	// GET /api/v1/pull/transcripts — list pullable transcripts (own + group-shared;
-	// public excluded). Offset pagination via page/limit query params.
+	// public excluded). Offset pagination via page/limit query params, plus an
+	// optional collectives filter that narrows the list to the approved shares of
+	// the listed collectives the caller belongs to.
 	pullListOC, err := r.NewOperationContext(http.MethodGet, "/api/v1/pull/transcripts")
 	if err != nil {
 		return nil, fmt.Errorf("new pull list operation: %w", err)
 	}
 	pullListOC.AddReqStructure(new(struct {
-		Page  int `query:"page"`
-		Limit int `query:"limit"`
+		Page        int    `query:"page"`
+		Limit       int    `query:"limit"`
+		Collectives string `query:"collectives" description:"Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript."`
 	}))
 	pullListOC.AddRespStructure(new(schema.PullListResponse))
 	pullListOC.SetDescription("List transcripts the authenticated user may pull (own + group-shared; " +
-		"public excluded by the canPullTranscript policy). Offset pagination.")
+		"public excluded by the canPullTranscript policy). Offset pagination. The optional " +
+		"collectives filter narrows the list to the approved shares of the listed collectives the " +
+		"caller belongs to; a collective the caller is not in contributes nothing.")
 	pullListOC.SetID("listPullableTranscripts")
 	pullListOC.SetTags("pull")
 	if err := r.AddOperation(pullListOC); err != nil {
