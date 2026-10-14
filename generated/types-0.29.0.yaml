@@ -2109,13 +2109,7 @@ components:
         not for session model alone, and guarantees assistant-only value validation
         before persistence with no invalid DB/blob side effects plus byte-exact accepted
         observedModel strings through storage, typed migration, rewrite, serving,
-        and pull; JSON whitespace and key order are excluded. thinking_level_v1 is
-        required iff the session detail carries thinkingLevel, thinkingLevelRaw, or
-        a non-empty thinkingLevelHistory, or any main or earlier-history turn carries
-        thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and
-        assistant-only validation before persistence with no invalid side effects
-        plus byte-exact preservation of the values, their history order, and their
-        absence through storage, typed migration, rewrite, serving, and pull.
+        and pull; JSON whitespace and key order are excluded.
       title: Content Capability
       type: string
     ContentKind:
@@ -3198,6 +3192,10 @@ components:
           type: integer
         model:
           type: string
+        parentSessionId:
+          type: string
+        parentUnresolved:
+          type: boolean
         previouslyPushed:
           type: boolean
         projectHash:
@@ -5006,14 +5004,7 @@ components:
               alone, and guarantees assistant-only value validation before persistence
               with no invalid DB/blob side effects plus byte-exact accepted observedModel
               strings through storage, typed migration, rewrite, serving, and pull;
-              JSON whitespace and key order are excluded. thinking_level_v1 is required
-              iff the session detail carries thinkingLevel, thinkingLevelRaw, or a
-              non-empty thinkingLevelHistory, or any main or earlier-history turn
-              carries thinkingLevel or thinkingLevelRaw, and guarantees canonical,
-              raw-bound, and assistant-only validation before persistence with no
-              invalid side effects plus byte-exact preservation of the values, their
-              history order, and their absence through storage, typed migration, rewrite,
-              serving, and pull.
+              JSON whitespace and key order are excluded.
             title: Content Capability
             type: string
           type: array
@@ -5195,14 +5186,6 @@ components:
           type: string
         status:
           type: string
-        thinkingLevel:
-          $ref: '#/components/schemas/ThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/ThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/ThinkingLevelRaw'
         tokensIn:
           type: integer
         tokensOut:
@@ -5305,14 +5288,6 @@ components:
           type: string
         status:
           type: string
-        thinkingLevel:
-          $ref: '#/components/schemas/ThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/ThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/ThinkingLevelRaw'
         tokensIn:
           type: integer
         tokensOut:
@@ -5760,6 +5735,8 @@ components:
             - "null"
             - string
           - type: "null"
+        parentUnresolved:
+          type: boolean
         preview:
           type: string
         project:
@@ -6260,61 +6237,6 @@ components:
       - class
       - families
       type: object
-    ThinkingLevel:
-      description: 'Canonical reasoning-effort level of assistant-generated output:
-        off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the
-        single disabled state, ultra is above max, and ultracode is a distinct level.
-        Omit the field when the level is unknown; never infer it from token budgets.'
-      enum:
-      - "off"
-      - minimal
-      - low
-      - medium
-      - high
-      - xhigh
-      - max
-      - ultra
-      - ultracode
-      examples:
-      - "off"
-      - minimal
-      - low
-      - medium
-      - high
-      - xhigh
-      - max
-      - ultra
-      - ultracode
-      title: Thinking Level
-      type: string
-    ThinkingLevelChange:
-      anyOf:
-      - required:
-        - level
-      - required:
-        - raw
-      properties:
-        level:
-          $ref: '#/components/schemas/ThinkingLevel'
-        raw:
-          $ref: '#/components/schemas/ThinkingLevelRaw'
-      type: object
-    ThinkingLevelRaw:
-      description: Exact native thinking-level spelling observed when it differs from
-        the emitted canonical thinkingLevel, including when no canonical level could
-        be mapped. Source evidence, never a canonical value; numeric budgets are never
-        raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode
-        White_Space code point at either edge. Omit when nothing was observed or the
-        native spelling is canonical.
-      examples:
-      - none
-      - custom
-      format: thinking-level-raw-utf8-128-bytes
-      maxLength: 128
-      minLength: 1
-      pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
-      title: Thinking Level Raw
-      type: string
     TimelineSessionRef:
       properties:
         harness:
@@ -6593,10 +6515,6 @@ components:
           anyOf:
           - $ref: '#/components/schemas/StopReason'
           - type: "null"
-        thinkingLevel:
-          $ref: '#/components/schemas/ThinkingLevel'
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/ThinkingLevelRaw'
         timestamp:
           format: date-time
           type: string
@@ -6714,14 +6632,6 @@ components:
           type:
           - array
           - "null"
-        thinkingLevel:
-          $ref: '#/components/schemas/ThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/ThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/ThinkingLevelRaw'
         timestamp:
           $ref: '#/components/schemas/TimestampInfo'
         version:

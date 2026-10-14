@@ -208,6 +208,14 @@ func equalOptionalInt64(a, b *int64) bool {
 	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }
 
+func equalOptionalString(a, b *string) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
+func equalOptionalBool(a, b *bool) bool {
+	return a == nil && b == nil || a != nil && b != nil && *a == *b
+}
+
 func equalOptionalSessionID(a, b *SessionID) bool {
 	return a == nil && b == nil || a != nil && b != nil && *a == *b
 }

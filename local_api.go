@@ -96,12 +96,18 @@ type SessionSummary struct {
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
-	ProjectHash     ProjectHash           `json:"projectHash,omitempty"`
-	Outcome         string                `json:"outcome,omitempty"`
-	ParentSessionID *string               `json:"parentSessionId,omitempty"`
-	RootSessionID   *SessionID            `json:"rootSessionId,omitempty"`
-	Purpose         SessionPurpose        `json:"purpose,omitempty"`
-	Relationships   []SessionRelationship `json:"relationships,omitempty"`
+	ProjectHash ProjectHash `json:"projectHash,omitempty"`
+	Outcome     string      `json:"outcome,omitempty"`
+	// ParentSessionID is the durable logical parent of a spawned child. It may
+	// name a session this store does not hold. Absent for a root or a fork.
+	ParentSessionID *string `json:"parentSessionId,omitempty"`
+	// ParentUnresolved marks a known spawned child whose parent cannot be
+	// named. It is never set together with ParentSessionID. A client keeps
+	// such a row out of the top-level list and does not invent a parent.
+	ParentUnresolved *bool                 `json:"parentUnresolved,omitempty" nullable:"false"`
+	RootSessionID    *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose          SessionPurpose        `json:"purpose,omitempty"`
+	Relationships    []SessionRelationship `json:"relationships,omitempty"`
 	// SessionOrigin is the producer's declaration of who drove this session.
 	// Absent when the producer expressed no opinion; see SessionOrigin for the
 	// rule a consumer applies to an absent or "unknown" value.
@@ -142,6 +148,13 @@ type LocalSyncSummary struct {
 	// published before. It is independent of SyncStatus: a held row can have
 	// been published, so a client reads this field instead of inferring it.
 	PreviouslyPushed bool `json:"previouslyPushed"`
+	// ParentSessionID is the durable logical parent of a spawned child, the
+	// same value its SessionSummary carries. It may name a session this store
+	// does not hold. Absent for a root or a fork.
+	ParentSessionID *string `json:"parentSessionId,omitempty" nullable:"false"`
+	// ParentUnresolved marks a known spawned child whose parent cannot be
+	// named. At most one of ParentSessionID and ParentUnresolved=true is set.
+	ParentUnresolved *bool `json:"parentUnresolved,omitempty" nullable:"false"`
 }
 
 // LocalSyncSessionsPayload is the exact omitted-view response produced by the
@@ -205,8 +218,8 @@ func (r LocalSessionRow) Validate() error {
 		if err := s.Validate(); err != nil {
 			return err
 		}
-		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) {
-			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
+		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity, parent, or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
 		}
 	}
 	for i, match := range r.Matches {

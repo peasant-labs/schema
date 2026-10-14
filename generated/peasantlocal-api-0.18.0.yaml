@@ -2713,6 +2713,10 @@ components:
           type: integer
         model:
           type: string
+        parentSessionId:
+          type: string
+        parentUnresolved:
+          type: boolean
         previouslyPushed:
           type: boolean
         projectHash:
@@ -3728,14 +3732,6 @@ components:
           type: string
         status:
           type: string
-        thinkingLevel:
-          $ref: '#/components/schemas/SchemaThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/SchemaThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
           type: integer
         tokensOut:
@@ -3995,6 +3991,8 @@ components:
             - "null"
             - string
           - type: "null"
+        parentUnresolved:
+          type: boolean
         preview:
           type: string
         project:
@@ -4438,61 +4436,6 @@ components:
       - retryLoop
       - labels
       type: object
-    SchemaThinkingLevel:
-      description: 'Canonical reasoning-effort level of assistant-generated output:
-        off, minimal, low, medium, high, xhigh, max, ultra, ultracode. off is the
-        single disabled state, ultra is above max, and ultracode is a distinct level.
-        Omit the field when the level is unknown; never infer it from token budgets.'
-      enum:
-      - "off"
-      - minimal
-      - low
-      - medium
-      - high
-      - xhigh
-      - max
-      - ultra
-      - ultracode
-      examples:
-      - "off"
-      - minimal
-      - low
-      - medium
-      - high
-      - xhigh
-      - max
-      - ultra
-      - ultracode
-      title: Thinking Level
-      type: string
-    SchemaThinkingLevelChange:
-      anyOf:
-      - required:
-        - level
-      - required:
-        - raw
-      properties:
-        level:
-          $ref: '#/components/schemas/SchemaThinkingLevel'
-        raw:
-          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
-      type: object
-    SchemaThinkingLevelRaw:
-      description: Exact native thinking-level spelling observed when it differs from
-        the emitted canonical thinkingLevel, including when no canonical level could
-        be mapped. Source evidence, never a canonical value; numeric budgets are never
-        raw. Non-empty, valid UTF-8, at most 128 encoded UTF-8 bytes, and no Unicode
-        White_Space code point at either edge. Omit when nothing was observed or the
-        native spelling is canonical.
-      examples:
-      - none
-      - custom
-      format: thinking-level-raw-utf8-128-bytes
-      maxLength: 128
-      minLength: 1
-      pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
-      title: Thinking Level Raw
-      type: string
     SchemaTimelineSessionRef:
       properties:
         harness:
@@ -4676,10 +4619,6 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SchemaStopReason'
           - type: "null"
-        thinkingLevel:
-          $ref: '#/components/schemas/SchemaThinkingLevel'
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         timestamp:
           format: date-time
           type: string
@@ -5099,14 +5038,6 @@ components:
           type: string
         status:
           type: string
-        thinkingLevel:
-          $ref: '#/components/schemas/SchemaThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/SchemaThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
           type: integer
         tokensOut:
@@ -5209,14 +5140,6 @@ components:
           type: string
         status:
           type: string
-        thinkingLevel:
-          $ref: '#/components/schemas/SchemaThinkingLevel'
-        thinkingLevelHistory:
-          items:
-            $ref: '#/components/schemas/SchemaThinkingLevelChange'
-          type: array
-        thinkingLevelRaw:
-          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
         tokensIn:
           type: integer
         tokensOut:
