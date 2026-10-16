@@ -18,7 +18,7 @@ invalid_menu_values: [invented, '', OBSERVED]
 required_names:
   organizations: [organization-projection-known-empty, organization-projection-duplicate-refused, organization-projection-query-not-empty]
   validation: [metadata-observed, metadata-stale, metadata-unknown, metadata-invalidated, metadata-no-invented-time, metadata-warning-json, metadata-observed-no-warning, metadata-stale-needs-time, receipt-published, publication-not-share-approval, receipt-submitted, receipt-no-fetch-success, diagnostic-uncertain, diagnostic-not-success, independent-fetch-domain-times, catalog-complete-history-timeout, catalog-committed-before-cancel-reported, persistence-status-precedence, auth-status-precedence, deadline-status-precedence, superseded-status, complete-not-partial, incomplete-domain-no-install, no-incomplete-source-install, association-one-complete-one-timeout, association-partial-effect-not-lost, association-count-mismatch]
-  tokens: [scope-normalized, scope-base-path, scope-html-path, same-host-other-principal, evidence-token-other-kind-409, evidence-recreated-scope-old-token-409, evidence-selected-change-409, evidence-missing-revision-page-two-400, evidence-malformed-token-400, evidence-wrong-kind-400, evidence-token-overflow, evidence-token-version, evidence-empty-beyond-total]
+  tokens: [scope-normalized, scope-base-path, scope-html-path, same-host-other-principal, evidence-token-other-kind-409, evidence-recreated-scope-old-token-409, evidence-selected-change-409, evidence-missing-revision-page-two-400, evidence-malformed-token-400, evidence-wrong-kind-400, evidence-token-overflow, evidence-token-leading-zero-generation, evidence-token-version, evidence-token-byte-bound, evidence-empty-beyond-total]
   history: [evidence-remote-only, evidence-receipts-only, evidence-diagnostics-only, evidence-no-extra-category, evidence-no-null-extra-category, evidence-selected-array-nonnull, evidence-token-kind-mismatch, evidence-page-limit, evidence-count-safe-integer, evidence-total-required, evidence-total-not-null, evidence-no-cache-revision]
 validation:
   cases:
@@ -275,12 +275,24 @@ tokens:
       classification: must-fail
       provenance: *p
       mutation: {description: bounded decimal generation rejects uint64 overflow}
-    - name: evidence-token-version
+    - name: evidence-token-leading-zero-generation
       input: {<<: *token, generation: '01'}
       expected: {valid: false}
       classification: must-fail
       provenance: *p
       mutation: {description: noncanonical numeric fields cannot create alternate tokens}
+    - name: evidence-token-version
+      input: {<<: *token, revision: unsupported-version}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 400}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: a canonical token carrying unsupported protocol version is malformed not conflict}
+    - name: evidence-token-byte-bound
+      input: {<<: *token, revision: oversized}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 400}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: oversized encoded tokens are rejected before decoding}
     - name: evidence-empty-beyond-total
       input: {<<: *token, page: 999, limit: 200}
       expected: {valid: true, normalized: 'https://village.example/base', status: 200}

@@ -38,6 +38,8 @@ for (const c of fixture.tokens.cases) test(`collective contract shared token: ${
   switch (i.revision) {
     case "none": delete query.revision; break;
     case "malformed": query.revision = "not-a-token"; break;
+    case "unsupported-version": { const fields = JSON.parse(atob(current.replaceAll("-", "+").replaceAll("_", "/"))); fields[0] = "2"; query.revision = btoa(JSON.stringify(fields)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, ""); break; }
+    case "oversized": query.revision = "A".repeat(4097); break;
     case "other-kind": other.kind = "receipts"; break;
     case "other-user": other.scope.userId = i.incarnation; break;
     case "other-incarnation": other.incarnation = i.userId; break;

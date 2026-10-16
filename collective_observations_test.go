@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	_ "embed"
+	"encoding/base64"
 	"encoding/json"
 	schema "github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/openapi"
@@ -111,7 +112,7 @@ func loadCollectiveObservationFixtures(t *testing.T) collectiveObservationFixtur
 	assertcase.RequireMin(t, f.History, 1)
 	requireNames(t, "collective history", f.RequiredNames.History, namesOf(f.History))
 	requireNames(t, "required validation behaviors", strings.Fields("metadata-observed metadata-stale metadata-unknown metadata-invalidated metadata-no-invented-time metadata-warning-json metadata-observed-no-warning metadata-stale-needs-time receipt-published publication-not-share-approval receipt-submitted receipt-no-fetch-success diagnostic-uncertain diagnostic-not-success independent-fetch-domain-times catalog-complete-history-timeout catalog-committed-before-cancel-reported persistence-status-precedence auth-status-precedence deadline-status-precedence superseded-status complete-not-partial incomplete-domain-no-install no-incomplete-source-install association-one-complete-one-timeout association-partial-effect-not-lost association-count-mismatch"), namesOf(f.Validation))
-	requireNames(t, "required token behaviors", strings.Fields("scope-normalized scope-base-path scope-html-path same-host-other-principal evidence-token-other-kind-409 evidence-recreated-scope-old-token-409 evidence-selected-change-409 evidence-missing-revision-page-two-400 evidence-malformed-token-400 evidence-wrong-kind-400 evidence-token-overflow evidence-token-version evidence-empty-beyond-total"), namesOf(f.Tokens))
+	requireNames(t, "required token behaviors", strings.Fields("scope-normalized scope-base-path scope-html-path same-host-other-principal evidence-token-other-kind-409 evidence-recreated-scope-old-token-409 evidence-selected-change-409 evidence-missing-revision-page-two-400 evidence-malformed-token-400 evidence-wrong-kind-400 evidence-token-overflow evidence-token-leading-zero-generation evidence-token-version evidence-token-byte-bound evidence-empty-beyond-total"), namesOf(f.Tokens))
 	requireNames(t, "required history behaviors", strings.Fields("evidence-remote-only evidence-receipts-only evidence-diagnostics-only evidence-no-extra-category evidence-no-null-extra-category evidence-selected-array-nonnull evidence-token-kind-mismatch evidence-page-limit evidence-count-safe-integer evidence-total-required evidence-total-not-null evidence-no-cache-revision"), namesOf(f.History))
 	return f
 }
@@ -279,6 +280,16 @@ func TestCollectiveTraversalContract(t *testing.T) {
 				query.Revision = nil
 			case "malformed":
 				v := schema.ContributionTraversalRevision("not-a-token")
+				query.Revision = &v
+			case "unsupported-version":
+				raw, err := base64.RawURLEncoding.DecodeString(string(current))
+				if err != nil {
+					t.Fatal(err)
+				}
+				v := schema.ContributionTraversalRevision(base64.RawURLEncoding.EncodeToString([]byte(strings.Replace(string(raw), `["1",`, `["2",`, 1))))
+				query.Revision = &v
+			case "oversized":
+				v := schema.ContributionTraversalRevision(strings.Repeat("A", schema.MaxContributionTraversalTokenBytes+1))
 				query.Revision = &v
 			case "other-kind":
 				other.Kind = schema.LocalContributionEvidenceReceipts
