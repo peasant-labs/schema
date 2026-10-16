@@ -83,25 +83,25 @@ routes:
       provenance: {source: requirement, ref: village-global-routes}
       mutation: {description: binds all existing list filters to the grouped view}
     - name: collective-browse
-      input: {path: "/api/v1/groups/{id}", operation_id: getGroup, view: true, legacy: SchemaVillageGroupDetailResponse, grouped: SchemaVillageGroupedGroupDetailResponse, parameters: [id, limit, offset, view]}
+      input: {path: "/api/v1/collectives/{id}", operation_id: getGroup, view: true, legacy: SchemaVillageCollectiveDetailResponse, grouped: SchemaVillageGroupedCollectiveDetailResponse, parameters: [id, limit, offset, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-collective-route}
       mutation: {description: adds grouped collective detail without replacing legacy detail}
     - name: contribute
-      input: {path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscripts, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageGroupedContributableResponse, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/contributable", operation_id: listContributableTranscripts, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageGroupedContributableResponse, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-contribute-route}
       mutation: {description: adds grouped contributable output}
     - name: pending-review
-      input: {path: "/api/v1/groups/{id}/pending", operation_id: listPendingShares, view: true, legacy: array, legacy_item: SchemaVillagePendingShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/pending", operation_id: listPendingShares, view: true, legacy: array, legacy_item: SchemaVillagePendingShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-pending-route}
       mutation: {description: adds grouped pending output}
     - name: my-shares
-      input: {path: "/api/v1/groups/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, legacy_item: SchemaVillageUserGroupShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, legacy_item: SchemaVillageUserCollectiveShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-my-shares-route}

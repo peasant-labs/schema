@@ -513,6 +513,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/village/collective-observations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read saved account-scoped relevant metadata without contacting Village. Never-fetched and known-empty remain distinct. Signed-out private reads never use a last-account fallback. */
+        get: operations["listCollectiveObservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/village/collective-observations/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Synchronously fetch metadata only, with no request body. Complete catalog/history install independently; complete association sets install per transcript. Never transfer bodies, publish, join or alter consent. Typed reports on non-2xx preserve every committed effect and prior completion date. Status precedence: persistence > auth > deadline/cancellation > remote/contract > superseded. 200 only complete; initial auth failure commits nothing. No detached job or refresh alias. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["fetchCollectiveObservations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/village/collective-observations/{collectiveId}/tracking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Verify selected collective visibility online before storing explicit tracking. No body; tracking grants no membership or publication consent. Verification failure writes no preference; unavailable resources use privacy-safe 404. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        put: operations["trackCollectiveObservation"];
+        post?: never;
+        /** @description Idempotently remove an explicit tracking preference using saved identity offline. No remote mutation or publication consent change. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        delete: operations["untrackCollectiveObservation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/village/collectives": {
         parameters: {
             query?: never;
@@ -522,6 +574,23 @@ export interface paths {
         };
         /** @description List the Village collectives the signed-in user belongs to. The local server reads them from Village with this computer's stored credential: 401 when this computer is not signed in, 502 when Village cannot be read. With sessionId, the server suggests collectives by comparing schema.RemoteLabel of the session's git remote with each collective's linked repositories and linked GitHub organization; clients must not normalize remotes themselves. */
         get: operations["listVillageCollectives"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/village/contributions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read exactly one bounded evidence category offline. Default remote-attempts, page 1, limit 50; limit 1..200. Page >1 requires revision. Malformed or missing required token is 400; valid selected scope/incarnation/kind/generation mismatch is 409 with currentTraversalRevision and restart guidance. Filter BEFORE total/page. Read token, coverage, filtered total and rows in one storage snapshot. Order remote attempts by collectiveId/transcriptId/event_num ascending, receipts by confirmedAt/receiptId ascending, diagnostics by attemptedAt/operationId ascending. No overall cache revision, joined catalog labels or poll timestamps participate in traversal. */
+        get: operations["listLocalContributionEvidence"];
         put?: never;
         post?: never;
         delete?: never;
@@ -683,6 +752,113 @@ export interface components {
          */
         SchemaChannelTopic: Schema.ChannelTopic;
         SchemaChildSessionRef: Schema.ChildSessionRef;
+        /**
+         * Collective Evidence Coverage
+         * @description Available saved evidence or explicitly unknown source ranges
+         * @example available
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaCollectiveEvidenceCoverage: Schema.CollectiveEvidenceCoverage;
+        SchemaCollectiveFetchAssociationResults: Schema.CollectiveFetchAssociationResults;
+        SchemaCollectiveFetchAssociationScopeResult: Schema.CollectiveFetchAssociationScopeResult;
+        /**
+         * Collective Fetch Commit
+         * @description Committed effect, including earlier commits before cancellation
+         * @example updated
+         * @example unchanged
+         * @example retained
+         * @enum {string}
+         */
+        SchemaCollectiveFetchCommit: Schema.CollectiveFetchCommit;
+        /**
+         * Collective Fetch Domain
+         * @description Independently installed complete metadata dataset
+         * @example catalog
+         * @example history
+         * @example associations
+         * @enum {string}
+         */
+        SchemaCollectiveFetchDomain: Schema.CollectiveFetchDomain;
+        SchemaCollectiveFetchDomainResult: Schema.CollectiveFetchDomainResult;
+        SchemaCollectiveFetchDomainSummary: Schema.CollectiveFetchDomainSummary;
+        /**
+         * Collective Fetch Outcome
+         * @description Complete only when every requested required scope completed
+         * @example complete
+         * @example partial
+         * @example failed
+         * @enum {string}
+         */
+        SchemaCollectiveFetchOutcome: Schema.CollectiveFetchOutcome;
+        SchemaCollectiveFetchReport: Schema.CollectiveFetchReport;
+        SchemaCollectiveFetchSourceResult: Schema.CollectiveFetchSourceResult;
+        /**
+         * Collective Fetch State
+         * @description One invocation result; a failed domain retains prior completed dates
+         * @example complete
+         * @example failed
+         * @example cancelled
+         * @example superseded
+         * @example not_requested
+         * @enum {string}
+         */
+        SchemaCollectiveFetchState: Schema.CollectiveFetchState;
+        SchemaCollectiveFetchSummary: Schema.CollectiveFetchSummary;
+        SchemaCollectiveObservation: Schema.CollectiveObservation;
+        /**
+         * Collective Observation Reason
+         * @description Independent dated relevance reason, not authority
+         * @example membership
+         * @example contribution
+         * @example organization
+         * @example explicit
+         * @enum {string}
+         */
+        SchemaCollectiveObservationReason: Schema.CollectiveObservationReason;
+        SchemaCollectiveObservationResponse: Schema.CollectiveObservationResponse;
+        SchemaCollectiveObservationScope: Schema.CollectiveObservationScope;
+        /**
+         * Collective Observation Source
+         * @description Narrow metadata source, no world directory or transcript content
+         * @example membership
+         * @example contribution-discovery
+         * @example organization
+         * @example explicit
+         * @example submissions
+         * @example attempts
+         * @example associations
+         * @enum {string}
+         */
+        SchemaCollectiveObservationSource: Schema.CollectiveObservationSource;
+        /**
+         * Collective Observation State
+         * @description Dated disclosure state, never current authorization
+         * @example observed
+         * @example unavailable
+         * @example invalidated
+         * @enum {string}
+         */
+        SchemaCollectiveObservationState: Schema.CollectiveObservationState;
+        /**
+         * Collective Operation
+         * @description Operation whose actual outcome is recorded
+         * @example publish
+         * @example share
+         * @example fetch
+         * @example pull
+         * @enum {string}
+         */
+        SchemaCollectiveOperation: Schema.CollectiveOperation;
+        /**
+         * Collective Source Outcome
+         * @description Privacy-safe source outcome without hidden reasons
+         * @example disclosed
+         * @example not_disclosed
+         * @example failed
+         * @enum {string}
+         */
+        SchemaCollectiveSourceOutcome: Schema.CollectiveSourceOutcome;
         SchemaCommandInvocation: Schema.CommandInvocation;
         SchemaCommitRef: Schema.CommitRef;
         /**
@@ -718,6 +894,8 @@ export interface components {
          */
         SchemaContentOwnership: Schema.ContentOwnership;
         SchemaContentProvenance: Schema.ContentProvenance;
+        /** @description Opaque versioned selected-category traversal token; not cacheRevision or authority */
+        SchemaContributionTraversalRevision: Schema.ContributionTraversalRevision;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;
@@ -841,7 +1019,36 @@ export interface components {
          * @enum {string}
          */
         SchemaLocalCollectiveSuggestionReason: Schema.LocalCollectiveSuggestionReason;
+        /**
+         * Confirmed Contribution Outcome
+         * @description Actual request effect, never collective approval
+         * @example published
+         * @example submitted
+         * @enum {string}
+         */
+        SchemaLocalConfirmedContributionOutcome: Schema.LocalConfirmedContributionOutcome;
+        SchemaLocalConfirmedContributionReceipt: Schema.LocalConfirmedContributionReceipt;
+        /**
+         * Local Contribution Evidence Kind
+         * @description One independently bounded evidence category
+         * @example remote-attempts
+         * @example receipts
+         * @example operation-diagnostics
+         * @enum {string}
+         */
+        SchemaLocalContributionEvidenceKind: Schema.LocalContributionEvidenceKind;
+        SchemaLocalContributionHistoryResponse: Schema.LocalContributionHistoryResponse;
+        SchemaLocalContributionTraversalConflict: Schema.LocalContributionTraversalConflict;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
+        SchemaLocalOperationDiagnostic: Schema.LocalOperationDiagnostic;
+        /**
+         * Local Operation Diagnostic Outcome
+         * @description Failure or uncertain remote effect, never successful contribution
+         * @example failed
+         * @example uncertain
+         * @enum {string}
+         */
+        SchemaLocalOperationDiagnosticOutcome: Schema.LocalOperationDiagnosticOutcome;
         SchemaLocalPublication: Schema.LocalPublication;
         SchemaLocalPublicationAttemptFailure: Schema.LocalPublicationAttemptFailure;
         SchemaLocalPublicationAudienceMember: Schema.LocalPublicationAudienceMember;
@@ -854,6 +1061,7 @@ export interface components {
          */
         SchemaLocalPublicationState: Schema.LocalPublicationState;
         SchemaLocalPublicationsResponse: Schema.LocalPublicationsResponse;
+        SchemaLocalRemoteContributionAttempt: Schema.LocalRemoteContributionAttempt;
         SchemaLocalSessionListItem: Schema.LocalSessionListItem;
         SchemaLocalSessionListPayload: Schema.LocalSessionListPayload;
         SchemaLocalSessionRow: Schema.LocalSessionRow;
@@ -952,6 +1160,19 @@ export interface components {
          * @example provider/Model Family
          */
         SchemaObservedModelID: Schema.ObservedModelID;
+        SchemaOperationIssue: Schema.OperationIssue;
+        /**
+         * Operation Issue Code
+         * @description Bounded failure category; retry is corrective text only
+         * @example auth
+         * @example remote
+         * @example contract
+         * @example deadline
+         * @example persistence
+         * @example superseded
+         * @enum {string}
+         */
+        SchemaOperationIssueCode: Schema.OperationIssueCode;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -1324,7 +1545,7 @@ export interface components {
          * @example curated
          * @enum {string}
          */
-        SchemaVillageGroupAcceptanceMode: Schema.VillageGroupAcceptanceMode;
+        SchemaVillageCollectiveAcceptanceMode: Schema.VillageCollectiveAcceptanceMode;
         /**
          * Village Group Data Access
          * @description Who may read a collective's pooled transcript data
@@ -1333,7 +1554,7 @@ export interface components {
          * @example public
          * @enum {string}
          */
-        SchemaVillageGroupDataAccess: Schema.VillageGroupDataAccess;
+        SchemaVillageCollectiveDataAccess: Schema.VillageCollectiveDataAccess;
         /**
          * Village Group Role
          * @description A user's role in one collective
@@ -1343,7 +1564,7 @@ export interface components {
          * @example pending
          * @enum {string}
          */
-        SchemaVillageGroupRole: Schema.VillageGroupRole;
+        SchemaVillageCollectiveRole: Schema.VillageCollectiveRole;
         SchemaVillagePromptRequest: Schema.VillagePromptRequest;
         /**
          * Village Pull Request Attachment State
@@ -1356,6 +1577,17 @@ export interface components {
          * @enum {string}
          */
         SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
+        SchemaVillageShareEvent: Schema.VillageShareEvent;
+        /**
+         * Village Share Event Actor
+         * @description Actor class that decided one collective share event
+         * @example
+         * @example owner
+         * @example collective
+         * @example moderator
+         * @enum {string}
+         */
+        SchemaVillageShareEventActor: Schema.VillageShareEventActor;
         /**
          * Village Share Status
          * @description Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.
@@ -1382,7 +1614,7 @@ export interface components {
          * @example 123e4567-e89b-12d3-a456-426614174000
          */
         SchemaVillageUUID: Schema.VillageUUID;
-        SchemaVillageUserGroup: Schema.VillageUserGroup;
+        SchemaVillageUserCollective: Schema.VillageUserCollective;
         SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
         SessionDetailPayload: Schema.SessionDetailPayload;
@@ -2325,6 +2557,297 @@ export interface operations {
             };
         };
     };
+    listCollectiveObservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveObservationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    fetchCollectiveObservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"] | components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"];
+                };
+            };
+            /** @description Gateway Timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveFetchReport"];
+                };
+            };
+        };
+    };
+    trackCollectiveObservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectiveId: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveObservationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    untrackCollectiveObservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                collectiveId: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaCollectiveObservationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
     listVillageCollectives: {
         parameters: {
             query?: {
@@ -2357,6 +2880,68 @@ export interface operations {
             };
             /** @description Bad Gateway */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    listLocalContributionEvidence: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["SchemaLocalContributionEvidenceKind"];
+                collectiveId?: components["schemas"]["SchemaVillageUUID"];
+                page?: number;
+                limit?: number;
+                revision?: components["schemas"]["SchemaContributionTraversalRevision"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalContributionHistoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalContributionTraversalConflict"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,0 +1,383 @@
+menus:
+  CollectiveObservationReason: [membership, contribution, organization, explicit]
+  CollectiveObservationState: [observed, unavailable, invalidated]
+  CollectiveOperation: [publish, share, fetch, pull]
+  OperationIssueCode: [auth, remote, contract, deadline, persistence, superseded]
+  LocalContributionEvidenceKind: [remote-attempts, receipts, operation-diagnostics]
+  CollectiveEvidenceCoverage: [available, unknown]
+  LocalConfirmedContributionOutcome: [published, submitted]
+  LocalOperationDiagnosticOutcome: [failed, uncertain]
+  PullAssociationMetadataState: [observed, stale, unknown, invalidated]
+  CollectiveFetchDomain: [catalog, history, associations]
+  CollectiveFetchState: [complete, failed, cancelled, superseded, not_requested]
+  CollectiveFetchCommit: [updated, unchanged, retained]
+  CollectiveFetchOutcome: [complete, partial, failed]
+  CollectiveObservationSource: [membership, contribution-discovery, organization, explicit, submissions, attempts, associations]
+  CollectiveSourceOutcome: [disclosed, not_disclosed, failed]
+invalid_menu_values: [invented, '', OBSERVED]
+required_names:
+  organizations: [organization-projection-known-empty, organization-projection-duplicate-refused, organization-projection-query-not-empty]
+  validation: [metadata-observed, metadata-stale, metadata-unknown, metadata-invalidated, metadata-no-invented-time, metadata-warning-json, metadata-observed-no-warning, metadata-stale-needs-time, receipt-published, publication-not-share-approval, receipt-submitted, receipt-no-fetch-success, diagnostic-uncertain, diagnostic-not-success, independent-fetch-domain-times, catalog-complete-history-timeout, catalog-committed-before-cancel-reported, persistence-status-precedence, auth-status-precedence, deadline-status-precedence, superseded-status, complete-not-partial, incomplete-domain-no-install, no-incomplete-source-install, association-one-complete-one-timeout, association-partial-effect-not-lost, association-count-mismatch]
+  tokens: [scope-normalized, scope-base-path, scope-html-path, same-host-other-principal, evidence-token-other-kind-409, evidence-recreated-scope-old-token-409, evidence-selected-change-409, evidence-missing-revision-page-two-400, evidence-malformed-token-400, evidence-wrong-kind-400, evidence-token-overflow, evidence-token-version, evidence-empty-beyond-total]
+  history: [evidence-remote-only, evidence-receipts-only, evidence-diagnostics-only, evidence-no-extra-category, evidence-no-null-extra-category, evidence-selected-array-nonnull, evidence-token-kind-mismatch, evidence-page-limit, evidence-count-safe-integer, evidence-total-required, evidence-total-not-null, evidence-no-cache-revision]
+validation:
+  cases:
+    - name: metadata-observed
+      input: {target: PullAssociationMetadataResult, payload: {state: observed, observedAt: &time '2026-10-16T12:00:00Z'}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: &p {source: requirement, ref: collective-observation-contract}
+      mutation: {description: complete optional metadata has its actual date}
+    - name: metadata-stale
+      input: {target: PullAssociationMetadataResult, payload: {state: stale, observedAt: *time, warning: &pullIssue {code: remote, operation: pull, message: 'Association lookup timed out after content succeeded', retry: 'Retry metadata fetch explicitly'}}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: retained evidence keeps its old date and an optional warning}
+    - name: metadata-unknown
+      input: {target: PullAssociationMetadataResult, payload: {state: unknown, warning: *pullIssue}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: no prior evidence means unknown without a fabricated date}
+    - name: metadata-invalidated
+      input: {target: PullAssociationMetadataResult, payload: {state: invalidated, observedAt: *time}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: known nondisclosure is dated rather than treated as timeout}
+    - name: metadata-no-invented-time
+      input: {target: PullAssociationMetadataResult, payload: {state: unknown, observedAt: *time, warning: *pullIssue}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: unknown cannot invent an observation date}
+    - name: metadata-warning-json
+      input: {target: PullAssociationMetadataResult, payload: {state: stale, observedAt: *time, warning: {<<: *pullIssue, operation: publish}}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: optional pull warning cannot relabel another operation}
+    - name: metadata-observed-no-warning
+      input: {target: PullAssociationMetadataResult, payload: {state: observed, observedAt: *time, warning: *pullIssue}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: failed metadata cannot be reported as freshly observed}
+    - name: metadata-stale-needs-time
+      input: {target: PullAssociationMetadataResult, payload: {state: stale, warning: *pullIssue}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: stale requires a real prior observation date}
+    - name: receipt-published
+      input: {target: LocalConfirmedContributionReceipt, payload: &receipt {receiptId: local-receipt, operation: publish, transcriptId: &transcript '123e4567-e89b-12d3-a456-426614174001', confirmedAt: *time, outcome: published}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: publication confirms actual content effect only}
+    - name: publication-not-share-approval
+      input: {target: LocalConfirmedContributionReceipt, payload: {<<: *receipt, outcome: approved}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: approval belongs to server attempts not local receipts}
+    - name: receipt-submitted
+      input: {target: LocalConfirmedContributionReceipt, payload: {<<: *receipt, operation: share, outcome: submitted, collectiveId: &id '123e4567-e89b-12d3-a456-426614174000'}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: target-specific share receipt records request effect not approval}
+    - name: receipt-no-fetch-success
+      input: {target: LocalConfirmedContributionReceipt, payload: {<<: *receipt, operation: fetch}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: fetch is not a confirmed contribution}
+    - name: diagnostic-uncertain
+      input: {target: LocalOperationDiagnostic, payload: &diagnostic {operationId: *id, operation: share, attemptedAt: *time, outcome: uncertain, issue: {code: remote, operation: share, message: 'Remote result is unknown after timeout', retry: 'Fetch owner history before retrying'}}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: uncertain requests remain diagnostics}
+    - name: diagnostic-not-success
+      input: {target: LocalOperationDiagnostic, payload: {<<: *diagnostic, outcome: submitted}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: successful effects do not enter operation diagnostics}
+    - name: independent-fetch-domain-times
+      input:
+        target: CollectiveFetchReport
+        payload: &partial
+          scope: &scope {villageUrl: 'https://village.example/base', userId: *id}
+          invocationId: *transcript
+          cacheRevision: '18446744073709551615'
+          outcome: partial
+          domains:
+            - &catalog {domain: catalog, requested: true, state: complete, commit: updated, startedAt: *time, lastAttemptAt: *time, completedAt: *time, lastCompletedAt: *time, lastInstalledRevision: '2', coverage: available, sourceOutcomes: []}
+            - &history {domain: history, requested: true, state: failed, commit: retained, startedAt: *time, lastAttemptAt: *time, lastCompletedAt: '2026-10-15T12:00:00Z', lastInstalledRevision: '1', coverage: unknown, sourceOutcomes: [], issue: &remote {code: remote, operation: fetch, message: 'Owner history source failed; catalog committed', retry: 'Retry explicit metadata fetch'}}
+            - &unrequested {domain: associations, requested: false, state: not_requested, commit: retained, coverage: unknown, sourceOutcomes: []}
+          issues: []
+      expected: {valid: true, status: 502}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: catalog and retained history have independent complete dates and revisions}
+    - name: catalog-complete-history-timeout
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, domains: [*catalog, {<<: *history, issue: {<<: *remote, code: deadline}}, *unrequested]}}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: history deadline preserves completed catalog effects in typed error}
+    - name: catalog-committed-before-cancel-reported
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, domains: [*catalog, {<<: *history, state: cancelled, issue: {<<: *remote, code: deadline}}, *unrequested]}}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: cancellation never claims distributed rollback of catalog commit}
+    - name: persistence-status-precedence
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, issues: [{<<: *remote, code: deadline}, {<<: *remote, code: auth}, {<<: *remote, code: persistence}]}}
+      expected: {valid: true, status: 500}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: persistence takes precedence without discarding other issues}
+    - name: auth-status-precedence
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, issues: [{<<: *remote, code: deadline}, {<<: *remote, code: auth}]}}
+      expected: {valid: true, status: 401}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: account change outranks deadline and remote failure}
+    - name: deadline-status-precedence
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, issues: [{<<: *remote, code: deadline}, {<<: *remote, code: superseded}]}}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: deadline outranks remote and superseded conflicts}
+    - name: superseded-status
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, domains: [*catalog, {<<: *history, state: superseded, issue: {<<: *remote, code: superseded}}, *unrequested]}}
+      expected: {valid: true, status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: superseded-only incomplete work reports conflict}
+    - name: complete-not-partial
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, outcome: complete}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: retained failed history cannot produce overall complete}
+    - name: incomplete-domain-no-install
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *history, commit: updated}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: incomplete history cannot install a prefix}
+    - name: no-incomplete-source-install
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *catalog, sourceOutcomes: [{source: membership, outcome: failed, complete: false, issue: *remote}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: failed dependency prevents complete catalog report}
+    - name: association-one-complete-one-timeout
+      input:
+        target: CollectiveFetchDomainResult
+        payload: &partialAssociations
+          <<: *history
+          domain: associations
+          commit: updated
+          associations: &scopes
+            requested: 2
+            completed: 1
+            failed: 1
+            scopes:
+              - {transcriptId: *transcript, state: complete, commit: updated, observedAt: *time, completedAt: *time}
+              - {transcriptId: *id, state: failed, commit: retained, issue: *remote}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: completed transcript set survives another set timeout without claiming global completion}
+    - name: association-partial-effect-not-lost
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *partialAssociations, commit: retained}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: report cannot hide the already committed association set}
+    - name: association-count-mismatch
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *partialAssociations, associations: {<<: *scopes, completed: 0, failed: 2}}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: scoped item completion must agree with bounded aggregate counts}
+tokens:
+  cases:
+    - name: scope-normalized
+      input: &token {url: 'HTTPS://Name:Password@Village.Example:443/base/./?secret=1#fragment', userId: *id, incarnation: *transcript, kind: remote-attempts, generation: '1', page: 1, limit: 50, revision: current}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 200, token: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: strips secrets/query/fragment and normalizes default port and path}
+    - name: scope-base-path
+      input: {<<: *token, url: 'https://village.example/other', revision: other-scope}
+      expected: {valid: true, normalized: 'https://village.example/other', status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: full base path participates in traversal identity}
+    - name: scope-html-path
+      input: {<<: *token, url: 'https://village.example/a&b'}
+      expected: {valid: true, normalized: 'https://village.example/a&b', status: 200, token: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYSZiIiwiMTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDAwIiwiMTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDAxIiwicmVtb3RlLWF0dGVtcHRzIiwiMSJd'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: language codecs agree without HTML JSON escaping}
+    - name: same-host-other-principal
+      input: {<<: *token, revision: other-user}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: another principal token never selects or grants access}
+    - name: evidence-token-other-kind-409
+      input: {<<: *token, revision: other-kind}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: category tokens are independently bound}
+    - name: evidence-recreated-scope-old-token-409
+      input: {<<: *token, revision: other-incarnation}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: reset generation cannot revive a purged scope token}
+    - name: evidence-selected-change-409
+      input: {<<: *token, revision: older-generation}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 409}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: selected category changes invalidate only its traversal}
+    - name: evidence-missing-revision-page-two-400
+      input: {<<: *token, page: 2, revision: none}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 400}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: later pages require the selected traversal token}
+    - name: evidence-malformed-token-400
+      input: {<<: *token, revision: malformed}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 400}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: malformed token differs from a valid identity conflict}
+    - name: evidence-wrong-kind-400
+      input: {<<: *token, queryKind: wrong}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 400}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: unknown category cannot fall back to another category}
+    - name: evidence-token-overflow
+      input: {<<: *token, generation: '18446744073709551616'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: bounded decimal generation rejects uint64 overflow}
+    - name: evidence-token-version
+      input: {<<: *token, generation: '01'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: noncanonical numeric fields cannot create alternate tokens}
+    - name: evidence-empty-beyond-total
+      input: {<<: *token, page: 999, limit: 200}
+      expected: {valid: true, normalized: 'https://village.example/base', status: 200}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: bounded high page does not silently reset traversal}
+history:
+  cases:
+    - name: evidence-remote-only
+      input: {target: LocalContributionHistoryResponse, payload: &remotePage {scope: *scope, kind: remote-attempts, traversalRevision: '$token', page: 1, limit: 1, total: 0, coverage: unknown, remoteAttempts: []}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: empty selected saved evidence does not prove complete remote history}
+    - name: evidence-receipts-only
+      input: {target: LocalContributionHistoryResponse, payload: {scope: *scope, kind: receipts, traversalRevision: '$token', page: 1, limit: 200, total: 0, coverage: available, receipts: []}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: receipt category has exactly one independently bounded array}
+    - name: evidence-diagnostics-only
+      input: {target: LocalContributionHistoryResponse, payload: {scope: *scope, kind: operation-diagnostics, traversalRevision: '$token', page: 1, limit: 50, total: 0, coverage: available, operationDiagnostics: []}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: operation diagnostics are independently browsable}
+    - name: evidence-no-extra-category
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, receipts: []}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: page one cannot smuggle unbounded nonselected previews}
+    - name: evidence-no-null-extra-category
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, receipts: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: a nonselected field is forbidden even when null}
+    - name: evidence-selected-array-nonnull
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, remoteAttempts: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: selected arrays must be present and nonnull even when empty}
+    - name: evidence-token-kind-mismatch
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, traversalRevision: '$other-token'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: evidence payload cannot be paired with another category token}
+    - name: evidence-page-limit
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, limit: 201}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: page limit never exceeds two hundred}
+    - name: evidence-count-safe-integer
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, total: 9007199254740992}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: counts cannot lose precision in JavaScript}
+    - name: evidence-total-required
+      input: {target: LocalContributionHistoryResponse, payload: {scope: *scope, kind: remote-attempts, traversalRevision: '$token', page: 1, limit: 1, coverage: unknown, remoteAttempts: []}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: absent total is not a measured zero}
+    - name: evidence-total-not-null
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, total: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: null count cannot silently become zero in Go}
+    - name: evidence-no-cache-revision
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *remotePage, cacheRevision: '7'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: overall report revisions never join selected evidence traversal}
+organizations:
+  cases:
+    - name: organization-projection-known-empty
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [], org_login: example, members: []}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: existing complete empty projection is accepted without mirroring roster fields}
+    - name: organization-projection-duplicate-refused
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [{id: *id, name: sample, description: null, member_count: 1, transcript_count: 2}, {id: *id, name: sample, description: null, member_count: 1, transcript_count: 2}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: repeated disclosed identities cannot masquerade as a complete source}
+    - name: organization-projection-query-not-empty
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: query failure or missing source is not confirmed empty relevance}

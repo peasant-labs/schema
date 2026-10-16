@@ -110,7 +110,7 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"VillageTranscriptPullRequestsResponse": decodeValidated[schema.VillageTranscriptPullRequestsResponse],
 	"VillagePullRequestsSummary":            decodeValidated[schema.VillagePullRequestsSummary],
 	"VillageUserStats":                      decodeValidated[schema.VillageUserStats],
-	"VillageGroupTranscriptStats":           decodeOnly[schema.VillageGroupTranscriptStats],
+	"VillageCollectiveTranscriptStats":      decodeOnly[schema.VillageCollectiveTranscriptStats],
 	"VillageAvailableRepositoriesResponse":  decodeOnly[schema.VillageAvailableRepositoriesResponse],
 }
 

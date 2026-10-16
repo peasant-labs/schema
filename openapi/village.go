@@ -380,6 +380,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := harmonizeSharedTypeComponents(r.Spec); err != nil {
 		return nil, fmt.Errorf("harmonize Village API shared components: %w", err)
 	}
+	if err := addVillageCollectiveAliases(r.Spec); err != nil {
+		return nil, err
+	}
 
 	return r.Spec, nil
 }
@@ -472,6 +475,11 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	})
 
 	operations := []villageOperationSpec{
+		{method: http.MethodGet, path: "/api/v1/auth/me", id: "getAuthenticatedVillageUser", tag: "auth", description: "Read the stable authenticated user UUID before account-scoped metadata fetching. Usernames and credentials are not scope identity.", response: new(schema.VillageUser), errorStatuses: []int{401, 500}},
+		{method: http.MethodGet, path: "/api/v1/auth/orgs", id: "listAuthenticatedVillageOrganizations", tag: "organizations", description: "Read the authenticated user organizations for scoped metadata discovery. Organization membership alone does not disclose linked collectives; use the viewer-authorized organization collective projection. Query failure is 500, never a successful empty set.", response: new([]schema.VillageMetadataUserOrganization), errorStatuses: []int{401, 500}},
+		{method: http.MethodGet, path: "/api/v1/orgs/{login}", id: "getVillageOrganizationCollectives", tag: "organizations", description: "Read the existing organization response's viewer-permitted collectives projection. Additional organization statistics and members may be present but metadata consumers retain only the disclosed collective projection. Query errors, including linked-collective lookup failure, are 500 rather than fabricated empty success; unavailable organization is privacy-safe 404. Server disclosure remains authoritative.", requests: []interface{}{new(struct {
+			Login string `path:"login" minLength:"1"`
+		})}, response: new(schema.VillageOrganizationCollectivesResponse), errorStatuses: []int{400, 404, 500}},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts", id: "listTranscripts", tag: "transcripts",
 			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
@@ -480,9 +488,9 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}", id: "getTranscriptMetadata", tag: "transcripts",
-			description: "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content.",
+			description: "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.VillageTranscriptMetadataResponse),
-			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError},
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
@@ -854,7 +862,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/users/me/collectives/{groupId}/transcripts/{transcriptId}/events",
 			id:          "listShareEventHistory",
 			tag:         "contributions",
-			description: "List the full owner-only event history for one transcript and collective pair, oldest event first. The decided_by_actor field is an actor class, never a moderator user id.",
+			description: "List the full owner-only event history for one transcript and collective pair, oldest event first. The decided_by_actor field is an actor class, never a moderator user id. event_num identifies an attempt: pending may become approved/rejected/retracted/revoked at the same ordinal with immutable recorded_at and a newly recorded decided_at. An initially auto-approved attempt may have null decided_at. Terminal wire decision fields do not change; withdrawing/removing an approved contribution uses a new ordinal. Validate and reconcile with the canonical schema attempt helper, not a per-poll append log.",
 			requests:    []interface{}{shareEventsPath},
 			response:    new([]schema.VillageShareEvent),
 			errorStatuses: []int{
@@ -957,10 +965,10 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		grouped string
 	}{
 		{"/api/v1/transcripts", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageTranscriptListResponse"}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageGroupDetailResponse"}, "SchemaVillageGroupedGroupDetailResponse"},
+		{"/api/v1/groups/{id}", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageCollectiveDetailResponse"}, "SchemaVillageGroupedCollectiveDetailResponse"},
 		{"/api/v1/groups/{id}/contributable", map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageContributableResponse"}, "SchemaVillageGroupedContributableResponse"},
 		{"/api/v1/groups/{id}/pending", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillagePendingShare"}}, "SchemaVillageSessionListPayload"},
-		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserGroupShare"}}, "SchemaVillageSessionListPayload"},
+		{"/api/v1/groups/{id}/my-shares", map[string]interface{}{"type": "array", "items": map[string]interface{}{"$ref": "#/components/schemas/SchemaVillageUserCollectiveShare"}}, "SchemaVillageSessionListPayload"},
 	} {
 		if err := setVillageGroupedResponse(r.Spec, variant.path, variant.legacy, variant.grouped); err != nil {
 			return err

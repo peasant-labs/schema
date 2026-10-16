@@ -84,7 +84,8 @@ const (
 	// Bumped to 0.26.0 when the transcript pull list gained the optional
 	// collectives filter, which narrows the list to the approved shares of the
 	// listed collectives the caller belongs to (additive parameter = minor bump).
-	VillageAPIVersion = "0.26.0"
+	// Canonical collective routes retain deprecated groups for a full release window.
+	VillageAPIVersion = "0.27.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -132,7 +133,8 @@ const (
 	// Bumped to 0.19.0 for the optional thinking level and raw native spelling
 	// on session detail and assistant turns, and the in-session thinking-level
 	// history (additive = minor bump).
-	PeasantLocalAPIVersion = "0.19.0"
+	// Independent account-scoped observation and bounded evidence operations.
+	PeasantLocalAPIVersion = "0.20.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical

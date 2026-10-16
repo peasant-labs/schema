@@ -134,6 +134,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addLocalPublishingOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addCollectiveObservationOperations(r); err != nil {
+		return nil, err
+	}
 
 	// --- WebSocket channel message schemas (as components, not operations) ---
 	// These are JSON Schema components describing the payload shapes
@@ -407,17 +410,18 @@ const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, w
 // changes state declares the shared 403 refusal. Other refusals are declared
 // per operation with their own body.
 type localOperationSpec struct {
-	method        string
-	path          string
-	id            string
-	tag           string
-	description   string
-	requests      []interface{}
-	response      interface{}
-	successStatus int
-	requiredBody  bool
-	errorStatuses []int
-	errorResponse interface{}
+	method             string
+	path               string
+	id                 string
+	tag                string
+	description        string
+	requests           []interface{}
+	response           interface{}
+	successStatus      int
+	requiredBody       bool
+	errorStatuses      []int
+	errorResponse      interface{}
+	alternateResponses map[int]interface{}
 }
 
 func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec) error {
@@ -438,6 +442,9 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 		}
 		for _, status := range op.errorStatuses {
 			oc.AddRespStructure(op.errorResponse, openapicore.WithHTTPStatus(status))
+		}
+		for status, body := range op.alternateResponses {
+			oc.AddRespStructure(body, openapicore.WithHTTPStatus(status))
 		}
 		description := op.description
 		if op.method != http.MethodGet {

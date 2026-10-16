@@ -14,6 +14,7 @@ import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.m
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
 import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refinements.mjs";
 import { applyContributionAttemptZodRefinements } from "./lib/contribution-attempt-zod-refinements.mjs";
+import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 
@@ -63,7 +64,7 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = applyContributionAttemptZodRefinements(normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readGeneratorOutput(zodPath, "the root Zod contract"))));
+  const source = applyCollectiveZodRefinements(applyContributionAttemptZodRefinements(normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readGeneratorOutput(zodPath, "the root Zod contract")))));
   await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
 }
 

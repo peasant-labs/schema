@@ -3,6 +3,7 @@ export * from "./internal/generated/enums.gen.js";
 export * from "./internal/generated/content-capabilities.gen.js";
 export * from "./internal/generated/versions.gen.js";
 export { reconcileVillageContributionAttempt, villageContributionAttemptActor, type VillageContributionAttemptReconciliation } from "./contribution-attempt.js";
+export { normalizeCollectiveObservationScope, encodeContributionTraversalRevision, parseContributionTraversalRevision, collectiveFetchHTTPStatus, validateContributionHistoryQuery, type ContributionTraversalIdentity, type LocalContributionHistoryQuery } from "./collective-validation.js";
 import { requiredContentCapabilities, KnownContentCapability } from "./internal/generated/content-capabilities.gen.js";
 
 import { zNativeMetadataRecord, zTurnDetail, zProjectHash, zServerMessage, zSessionDetailPayload, zSessionDetailReadPayload, zTranscriptContent, type ProjectHash } from "./internal/generated/contract/zod.gen.js";

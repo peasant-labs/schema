@@ -1,4 +1,9 @@
 operations:
+  - {path: /api/v1/village/collective-observations, method: get, operation_id: listCollectiveObservations}
+  - {path: /api/v1/village/contributions, method: get, operation_id: listLocalContributionEvidence}
+  - {path: /api/v1/village/collective-observations/fetch, method: post, operation_id: fetchCollectiveObservations}
+  - {path: '/api/v1/village/collective-observations/{collectiveId}/tracking', method: put, operation_id: trackCollectiveObservation}
+  - {path: '/api/v1/village/collective-observations/{collectiveId}/tracking', method: delete, operation_id: untrackCollectiveObservation}
   - {path: /api/v1/annotation-types, method: get, operation_id: listAnnotationTypes}
   - {path: /api/v1/annotations, method: get, operation_id: listAnnotations}
   - {path: /api/v1/annotations, method: post, operation_id: createAnnotation}

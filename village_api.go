@@ -34,7 +34,7 @@ type VillageErrorResponse struct {
 
 // VillageGroupAcceptanceMode is the closed acceptance policy menu for a
 // collective.
-type VillageGroupAcceptanceMode string
+type VillageCollectiveAcceptanceMode string
 
 const (
 	VillageGroupAcceptanceOpen         VillageGroupAcceptanceMode = "open"
@@ -54,7 +54,7 @@ func (VillageGroupAcceptanceMode) JSONSchema() (jsonschema.Schema, error) {
 
 // VillageGroupDataAccess is the closed read policy menu for a collective's
 // pooled transcript data.
-type VillageGroupDataAccess string
+type VillageCollectiveDataAccess string
 
 const (
 	VillageGroupDataAccessMembersOnly  VillageGroupDataAccess = "members_only"
@@ -91,7 +91,7 @@ func (VillageTranscriptDeletionPolicy) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // VillageGroupRole is the role stored for a user in one collective.
-type VillageGroupRole string
+type VillageCollectiveRole string
 
 const (
 	VillageGroupRoleOwner       VillageGroupRole = "owner"
@@ -113,7 +113,7 @@ func (VillageGroupRole) JSONSchema() (jsonschema.Schema, error) {
 
 // VillageAssignableGroupRole is the smaller role menu accepted by the member
 // role update endpoint.
-type VillageAssignableGroupRole string
+type VillageAssignableCollectiveRole string
 
 const (
 	VillageAssignableGroupRoleContributor VillageAssignableGroupRole = "contributor"
@@ -132,7 +132,7 @@ func (VillageAssignableGroupRole) JSONSchema() (jsonschema.Schema, error) {
 // VillageGroupViewerRole is the viewer's role in one collective. The empty
 // value is the current wire value for a signed-out or non-member viewer on the
 // group-detail response.
-type VillageGroupViewerRole string
+type VillageCollectiveViewerRole string
 
 const (
 	VillageGroupViewerRoleNone        VillageGroupViewerRole = ""
@@ -287,7 +287,7 @@ func (VillageShareEventActor) JSONSchema() (jsonschema.Schema, error) {
 
 // VillageGroup is the full collective row returned by create, update, and detail
 // routes.
-type VillageGroup struct {
+type VillageCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
@@ -308,7 +308,7 @@ type VillageGroup struct {
 
 // VillageGroupDetailRecord preserves the released collective detail fields.
 // Optional prompts settings are facts supplied by a capable producer, not defaults.
-type VillageGroupDetailRecord struct {
+type VillageCollectiveDetailRecord struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
@@ -332,7 +332,7 @@ func (r VillageGroupDetailRecord) Validate() error {
 }
 
 // VillagePublicGroup is the compact row returned by GET /api/v1/groups/public.
-type VillagePublicGroup struct {
+type VillagePublicCollective struct {
 	ID              VillageUUID                `json:"id"`
 	Name            string                     `json:"name"`
 	Description     *string                    `json:"description"`
@@ -345,7 +345,7 @@ type VillagePublicGroup struct {
 }
 
 // VillageUserGroup is one collective the signed-in caller belongs to.
-type VillageUserGroup struct {
+type VillageUserCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
@@ -366,7 +366,7 @@ type VillageUserGroup struct {
 // VillageVisibleGroup is one collective the signed-in caller may see. Role and
 // member_since are null when the caller can see the collective but is not a
 // member.
-type VillageVisibleGroup struct {
+type VillageVisibleCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
@@ -400,7 +400,7 @@ type VillageCollectiveSearchResponse struct {
 
 // VillageCreateGroupRequest creates a collective. LinkedGithubOrg accepts null
 // as "no organization", exactly as the update request does.
-type VillageCreateGroupRequest struct {
+type VillageCreateCollectiveRequest struct {
 	Name            string                     `json:"name"`
 	Description     string                     `json:"description,omitempty"`
 	AcceptanceMode  VillageGroupAcceptanceMode `json:"acceptance_mode,omitempty"`
@@ -411,7 +411,7 @@ type VillageCreateGroupRequest struct {
 // VillageUpdateGroupRequest mirrors the current update handler. Name and
 // description are decoded as strings and are written even when omitted, so a
 // caller that wants to preserve them must send their current values.
-type VillageUpdateGroupRequest struct {
+type VillageUpdateCollectiveRequest struct {
 	Name                     string                          `json:"name,omitempty"`
 	Description              string                          `json:"description,omitempty"`
 	DataAccess               VillageGroupDataAccess          `json:"data_access,omitempty"`
@@ -427,26 +427,26 @@ type VillageStatusResponse struct {
 	Status string `json:"status"`
 }
 
-type VillageGroupStatusRoleResponse struct {
+type VillageCollectiveStatusRoleResponse struct {
 	Status string           `json:"status"`
 	Role   VillageGroupRole `json:"role"`
 }
 
-type VillageRemoveGroupMemberResponse struct {
+type VillageRemoveCollectiveMemberResponse struct {
 	Status    string `json:"status"`
 	Retracted bool   `json:"retracted"`
 }
 
-type VillageGroupMemberUsernameRequest struct {
+type VillageCollectiveMemberUsernameRequest struct {
 	Username string `json:"username"`
 }
 
-type VillageGroupMemberRoleRequest struct {
+type VillageCollectiveMemberRoleRequest struct {
 	Role VillageAssignableGroupRole `json:"role"`
 }
 
 // VillageGroupMember is one member row in a collective roster.
-type VillageGroupMember struct {
+type VillageCollectiveMember struct {
 	Role           VillageGroupRole `json:"role"`
 	JoinedAt       time.Time        `json:"joined_at"`
 	ID             VillageUUID      `json:"id"`
@@ -462,7 +462,7 @@ type VillageGroupMember struct {
 // the caller may read under the visibility rule of
 // VillageTranscriptPullRequestsResponse, failing closed; detached pull
 // requests are not counted.
-type VillageGroupTranscriptStats struct {
+type VillageCollectiveTranscriptStats struct {
 	TotalTranscripts int32 `json:"total_transcripts"`
 	ContributorCount int32 `json:"contributor_count"`
 	TotalTurns       int64 `json:"total_turns"`
@@ -471,19 +471,19 @@ type VillageGroupTranscriptStats struct {
 	PullRequestCount int32 `json:"pull_request_count" minimum:"0"`
 }
 
-type VillageGroupModelBreakdown struct {
+type VillageCollectiveModelBreakdown struct {
 	ModelProvider   string `json:"model_provider"`
 	TranscriptCount int32  `json:"transcript_count"`
 }
 
-type VillageGroupContributor struct {
+type VillageCollectiveContributor struct {
 	ID              VillageUUID `json:"id"`
 	GithubUsername  string      `json:"github_username"`
 	AvatarURL       *string     `json:"avatar_url"`
 	TranscriptCount int32       `json:"transcript_count"`
 }
 
-type VillageGroupDetailResponse struct {
+type VillageCollectiveDetailResponse struct {
 	Group          VillageGroupDetailRecord     `json:"group"`
 	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
@@ -687,7 +687,7 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 // embedding VillageTranscript. Village flattens its embedded response on the
 // JSON wire, and this shape preserves required fields in OpenAPI and TypeScript
 // generation.
-type VillageGroupTranscript struct {
+type VillageCollectiveTranscript struct {
 	ID                      TranscriptID                `json:"id"`
 	OwnerID                 VillageUUID                 `json:"owner_id"`
 	LocalID                 SessionID                   `json:"local_id"`
@@ -819,7 +819,7 @@ type VillagePendingShare struct {
 	Relationships        []SessionRelationship `json:"relationships,omitempty"`
 }
 
-type VillageUserGroupShare struct {
+type VillageUserCollectiveShare struct {
 	ID              TranscriptID                `json:"id"`
 	Title           *string                     `json:"title"`
 	ModelProvider   string                      `json:"model_provider"`
@@ -1049,7 +1049,7 @@ func (p VillageHelperMembersPayload) Validate() error {
 	return nil
 }
 
-type VillageGroupedGroupDetailResponse struct {
+type VillageGroupedCollectiveDetailResponse struct {
 	Group          VillageGroupDetailRecord     `json:"group"`
 	Members        []VillageGroupMember         `json:"members" nullable:"false"`
 	Stats          VillageGroupTranscriptStats  `json:"stats"`
@@ -1072,7 +1072,7 @@ func (r VillageGroupedGroupDetailResponse) Validate() error {
 }
 
 type VillageGroupedContributableResponse struct {
-	GroupID        VillageUUID               `json:"groupId"`
+	GroupID        VillageUUID               `json:"group_id"`
 	TranscriptList VillageSessionListPayload `json:"transcriptList"`
 }
 

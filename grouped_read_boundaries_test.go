@@ -134,7 +134,7 @@ func TestGroupedReadBoundaries(t *testing.T) {
 				if err := requireJSONSubset(input, output, "$"); err != nil {
 					t.Fatal(err)
 				}
-				if c.Input.Schema == "VillageGroupDetailRecord" {
+				if c.Input.Schema == "VillageCollectiveDetailRecord" {
 					if !reflect.DeepEqual(input, output) {
 						t.Fatalf("read settings fabricated or changed: %s", encoded)
 					}
@@ -151,9 +151,9 @@ func decodeGroupedRead(name string, raw []byte) (any, error) {
 		value = new(schema.LocalHelperMembersPayload)
 	case "VillageHelperMembersPayload":
 		value = new(schema.VillageHelperMembersPayload)
-	case "VillageGroupDetailRecord":
+	case "VillageCollectiveDetailRecord":
 		value = new(schema.VillageGroupDetailRecord)
-	case "VillageGroup":
+	case "VillageCollective":
 		value = new(schema.VillageGroup)
 	case "TranscriptContent":
 		value = new(schema.TranscriptContent)
@@ -161,9 +161,9 @@ func decodeGroupedRead(name string, raw []byte) (any, error) {
 		value = new(schema.LocalSessionListPayload)
 	case "VillageSessionListPayload":
 		value = new(schema.VillageSessionListPayload)
-	case "VillageGroupDetailResponse":
+	case "VillageCollectiveDetailResponse":
 		value = new(schema.VillageGroupDetailResponse)
-	case "VillageGroupedGroupDetailResponse":
+	case "VillageGroupedCollectiveDetailResponse":
 		value = new(schema.VillageGroupedGroupDetailResponse)
 	default:
 		return nil, fmt.Errorf("unknown grouped fixture schema %q", name)

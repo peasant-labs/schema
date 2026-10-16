@@ -15,6 +15,8 @@ files:
   - dist/index.js
   - dist/contribution-attempt.d.ts
   - dist/contribution-attempt.js
+  - dist/collective-validation.d.ts
+  - dist/collective-validation.js
   - dist/internal/generated/local-api.d.ts
   - dist/internal/generated/local-api.js
   - dist/internal/generated/content-capabilities.gen.d.ts
