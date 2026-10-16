@@ -7,6 +7,46 @@ import (
 	"strings"
 )
 
+func (v *VillageShareEvent) UnmarshalJSON(data []byte) error {
+	type plain VillageShareEvent
+	var value plain
+	if err := decodeCollectiveObject(data, &value); err != nil {
+		return err
+	}
+	result := VillageShareEvent(value)
+	if err := result.Validate(); err != nil {
+		return err
+	}
+	*v = result
+	return nil
+}
+func (v *VillageContributedCollective) UnmarshalJSON(data []byte) error {
+	type plain VillageContributedCollective
+	var value plain
+	if err := decodeCollectiveObject(data, &value); err != nil {
+		return err
+	}
+	result := VillageContributedCollective(value)
+	if err := result.Validate(); err != nil {
+		return err
+	}
+	*v = result
+	return nil
+}
+func (v *VillageContributedCollectivesResponse) UnmarshalJSON(data []byte) error {
+	type plain VillageContributedCollectivesResponse
+	var value plain
+	if err := decodeCollectiveObject(data, &value); err != nil {
+		return err
+	}
+	result := VillageContributedCollectivesResponse(value)
+	if err := result.Validate(); err != nil {
+		return err
+	}
+	*v = result
+	return nil
+}
+
 // Preserve required zero/false values without interpreting absence or JSON null
 // as those values. Additive object fields remain open except the history union.
 // Named alias destinations prevent recursion while nested public types still

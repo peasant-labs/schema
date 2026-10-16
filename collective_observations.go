@@ -3,11 +3,13 @@ package schema
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/url"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -31,17 +33,42 @@ type CollectiveObservationScope struct {
 }
 
 func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (CollectiveObservationScope, error) {
+	for _, r := range raw {
+		if r < 33 || r > 126 {
+			return CollectiveObservationScope{}, observationError("scope URL must use printable ASCII with encoded nonidentity fields and explicit ASCII IDNA host spelling")
+		}
+	}
 	if len(raw) > MaxCollectiveObservationURLBytes || !transcriptIDUUID.MatchString(string(userID)) || strings.Contains(raw, "\\") || strings.TrimSpace(raw) != raw {
 		return CollectiveObservationScope{}, observationError("scope URL exceeds its bound or userId is not a canonical UUID")
 	}
-	u, err := url.Parse(raw)
+	parts := scopeURLGrammar.FindStringSubmatch(raw)
+	if parts == nil || strings.ContainsAny(raw, "\t\r\n") || strings.Contains(parts[3], "//") || !scopePathGrammar.MatchString(parts[3]) {
+		return CollectiveObservationScope{}, observationError("scope requires the supported absolute URL grammar with an unescaped base path and no repeated slashes")
+	}
+	authority := parts[2]
+	if i := strings.LastIndex(authority, "@"); i >= 0 {
+		authority = authority[i+1:]
+	}
+	if strings.HasSuffix(authority, ":") {
+		return CollectiveObservationScope{}, observationError("scope explicit port cannot be empty")
+	}
+	u, err := url.Parse(parts[1] + "://" + authority + parts[3])
 	if err != nil || u.Opaque != "" || u.Host == "" || (strings.ToLower(u.Scheme) != "http" && strings.ToLower(u.Scheme) != "https") {
 		return CollectiveObservationScope{}, observationError("scope requires an absolute HTTP(S) Village base URL")
 	}
 	u.Scheme = strings.ToLower(u.Scheme)
 	host := strings.ToLower(u.Hostname())
-	if ip := net.ParseIP(host); ip != nil {
-		host = ip.String()
+	if strings.HasPrefix(authority, "[") && !strings.Contains(host, ":") {
+		return CollectiveObservationScope{}, observationError("bracketed scope host must be IPv6")
+	}
+	if strings.Contains(host, ":") {
+		ip := net.ParseIP(host)
+		if ip == nil {
+			return CollectiveObservationScope{}, observationError("scope IPv6 literal is invalid")
+		}
+		host = scopeIPv6(ip)
+	} else if !scopeDNSHost(host) {
+		return CollectiveObservationScope{}, observationError("scope host requires ASCII DNS or canonical four-component decimal IPv4; ambiguous numeric spellings are not supported")
 	}
 	if strings.Contains(host, "%") {
 		return CollectiveObservationScope{}, observationError("scope host cannot contain a zone or ambiguous escape")
@@ -53,6 +80,9 @@ func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (Collec
 	}
 	port := u.Port()
 	if port != "" {
+		if len(port) > 5 {
+			return CollectiveObservationScope{}, observationError("scope port must use at most five decimal digits")
+		}
 		n, err := strconv.Atoi(port)
 		if err != nil || n < 1 || n > 65535 {
 			return CollectiveObservationScope{}, observationError("scope port is outside 1..65535")
@@ -69,8 +99,8 @@ func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (Collec
 	} else {
 		u.Host = host
 	}
-	if host == "" || strings.Contains(u.EscapedPath(), "%") {
-		return CollectiveObservationScope{}, observationError("scope host is empty or base path contains ambiguous escaped components")
+	if host == "" {
+		return CollectiveObservationScope{}, observationError("scope host is empty")
 	}
 	u.User = nil
 	u.RawQuery = ""
@@ -82,7 +112,68 @@ func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (Collec
 	if u.Path == "." {
 		u.Path = ""
 	}
-	return CollectiveObservationScope{VillageURL: u.String(), UserID: userID}, nil
+	// The raw path has already passed the shared RFC-pchar subset. Assemble it
+	// directly so native parser re-escaping cannot change identity bytes.
+	return CollectiveObservationScope{VillageURL: u.Scheme + "://" + u.Host + u.Path, UserID: userID}, nil
+}
+
+// Validate raw identity components BEFORE native URL parsers can reinterpret
+// numeric IPv4 aliases or erase repeated-slash/dot interactions. Credentials,
+// query and fragment are discarded, not used as identity or transport policy.
+var scopeURLGrammar = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)([^?#]*)(?:\?[^#]*)?(?:#.*)?$`)
+var scopePathGrammar = regexp.MustCompile(`^[A-Za-z0-9/._~!$&'()*+,;=:@-]*$`)
+var scopeDNSLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$`)
+var scopeNumericTail = regexp.MustCompile(`^(?:[0-9]+|0x[0-9a-f]*)$`)
+
+func scopeDNSHost(host string) bool {
+	name := strings.TrimSuffix(host, ".")
+	labels := strings.Split(name, ".")
+	if len(name) > 253 || name == "" {
+		return false
+	}
+	if scopeNumericTail.MatchString(labels[len(labels)-1]) {
+		if len(labels) != 4 || host != name {
+			return false
+		}
+		for _, label := range labels {
+			n, err := strconv.Atoi(label)
+			if err != nil || n < 0 || n > 255 || strconv.Itoa(n) != label {
+				return false
+			}
+		}
+		return true
+	}
+	for _, label := range labels {
+		if len(label) > 63 || !scopeDNSLabel.MatchString(label) {
+			return false
+		}
+	}
+	return true
+}
+func scopeIPv6(ip net.IP) string {
+	ip = ip.To16()
+	groups := make([]string, 8)
+	bestStart, bestLen := -1, 0
+	for i := 0; i < 8; i++ {
+		groups[i] = strconv.FormatUint(uint64(binary.BigEndian.Uint16(ip[i*2:i*2+2])), 16)
+	}
+	for i := 0; i < 8; {
+		if groups[i] != "0" {
+			i++
+			continue
+		}
+		start := i
+		for i < 8 && groups[i] == "0" {
+			i++
+		}
+		if i-start > bestLen {
+			bestStart, bestLen = start, i-start
+		}
+	}
+	if bestLen < 2 {
+		return strings.Join(groups, ":")
+	}
+	return strings.Join(groups[:bestStart], ":") + "::" + strings.Join(groups[bestStart+bestLen:], ":")
 }
 
 func (s CollectiveObservationScope) Validate() error {

@@ -7972,6 +7972,7 @@ components:
       properties:
         approved_count:
           format: int32
+          minimum: 0
           type: integer
         description:
           anyOf:
@@ -7991,12 +7992,15 @@ components:
           type: string
         pending_count:
           format: int32
+          minimum: 0
           type: integer
         rejected_attempt_count:
           format: int32
+          minimum: 0
           type: integer
         withdrawn_attempt_count:
           format: int32
+          minimum: 0
           type: integer
       required:
       - id

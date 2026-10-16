@@ -4,6 +4,7 @@ import type {
   PullAssociationMetadataResult, LocalContributionHistoryResponse, OperationIssue,
   CollectiveObservationResponse, CollectiveObservation, CollectiveFetchDomainSummary,
   VillageOrganizationCollectivesResponse,
+  VillageContributedCollectivesResponse,
 } from "./internal/generated/contract/zod.gen.js";
 
 export interface ContributionTraversalIdentity {
@@ -32,13 +33,34 @@ const utc = (v: string | null | undefined): boolean => v == null || (!/^0001-01-
 function invalid(reason: string): TypeError { return new TypeError(`Collective observation contract validation failed during metadata processing: ${reason}; retain prior evidence and correct the request or fetch validated metadata before retrying.`); }
 
 export function normalizeCollectiveObservationScope(raw: string, userId: string): CollectiveObservationScope {
+  if (/[^\x21-\x7e]/.test(raw)) throw invalid("scope URL requires printable ASCII and explicit ASCII IDNA host spelling");
   if (new TextEncoder().encode(raw).length > 1024 || !uuid.test(userId) || raw.includes("\\") || raw.trim() !== raw) throw invalid("scope URL or account identity is invalid");
-  let url: URL;
-  try { url = new URL(raw); } catch { throw invalid("scope requires an absolute HTTP(S) Village URL"); }
-  if (!["http:", "https:"].includes(url.protocol) || !url.hostname || /[^\x00-\x7f]/.test(raw.split("/")[2] ?? "") || url.pathname.includes("%")) throw invalid("scope has unsupported protocol, host or ambiguous escaped path");
-  url.username = ""; url.password = ""; url.search = ""; url.hash = "";
-  const pathname = url.pathname.split("/").filter(Boolean).join("/");
-  return { villageUrl: url.origin + (pathname === "" ? "" : "/" + pathname), userId };
+  const parts = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?#]*)([^?#]*)(?:\?[^#]*)?(?:#.*)?$/.exec(raw);
+  if (parts === null || /[\t\r\n]/.test(raw)) throw invalid("scope requires the supported absolute URL grammar");
+  const authority = parts[2]!.slice(parts[2]!.lastIndexOf("@") + 1), rawPath = parts[3]!;
+  if (authority.endsWith(":") || rawPath.includes("//") || !/^[A-Za-z0-9/._~!$&'()*+,;=:@-]*$/.test(rawPath)) throw invalid("scope explicit port or unescaped base path is invalid");
+  const hostPort = /^(\[[0-9A-Fa-f:.]+\]|[^:]+)(?::([0-9]+))?$/.exec(authority);
+  if (hostPort === null) throw invalid("scope host/port grammar is invalid");
+  const rawHost = hostPort[1]!.toLowerCase(), port = hostPort[2];
+  if (port !== undefined && (port.length > 5 || Number(port) < 1 || Number(port) > 65535)) throw invalid("scope port is outside 1..65535 or exceeds five digits");
+  if (!rawHost.startsWith("[")) {
+    const name = rawHost.replace(/\.$/, ""), labels = name.split(".");
+    if (name.length === 0 || name.length > 253) throw invalid("scope DNS name is invalid");
+    if (/^(?:[0-9]+|0x[0-9a-f]*)$/.test(labels.at(-1)!)) {
+      if (labels.length !== 4 || rawHost !== name || labels.some(label => !/^(0|[1-9][0-9]*)$/.test(label) || Number(label) > 255)) throw invalid("ambiguous numeric IPv4 spelling is unsupported; use four decimal components");
+    } else if (labels.some(label => label.length > 63 || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label))) throw invalid("scope requires ASCII DNS labels");
+  }
+  const scheme = parts[1]!.toLowerCase();
+  if (scheme !== "http" && scheme !== "https") throw invalid("scope protocol is unsupported");
+  let host = rawHost;
+  if (rawHost.startsWith("[")) {
+    try { host = new URL(scheme + "://" + authority).hostname; } catch { throw invalid("scope IPv6 literal is invalid"); }
+  }
+  let normalizedPort = port === undefined ? "" : String(Number(port));
+  if ((scheme === "https" && normalizedPort === "443") || (scheme === "http" && normalizedPort === "80")) normalizedPort = "";
+  const segments: string[] = [];
+  for (const segment of rawPath.split("/")) { if (segment === "..") segments.pop(); else if (segment !== "" && segment !== ".") segments.push(segment); }
+  return { villageUrl: scheme + "://" + host + (normalizedPort === "" ? "" : ":" + normalizedPort) + (segments.length === 0 ? "" : "/" + segments.join("/")), userId };
 }
 function scopeValid(scope: CollectiveObservationScope): boolean { try { const v = normalizeCollectiveObservationScope(scope.villageUrl, scope.userId); return v.villageUrl === scope.villageUrl && v.userId === scope.userId; } catch { return false; } }
 export function encodeContributionTraversalRevision(value: ContributionTraversalIdentity): string {
@@ -61,6 +83,7 @@ export function parseContributionTraversalRevision(token: string): ContributionT
 // Called only after the generated Zod shape parser succeeds. This function
 // supplies cross-field semantics; it does not replace generated wire parsing.
 export function collectiveContractIssue(name: string, value: unknown): string | undefined {
+  if (name === "VillageContributedCollectivesResponse") { const v=value as VillageContributedCollectivesResponse; if(new Set(v.collectives.map(c=>c.id)).size!==v.collectives.length) return "contribution discovery repeats a collective identity"; return; }
   if (name === "VillageOrganizationCollectivesResponse") { const v=value as VillageOrganizationCollectivesResponse; if(new Set(v.collectives.map(c=>c.id)).size!==v.collectives.length) return "organization projection repeats a collective identity"; return; }
   if (name === "CollectiveObservationScope") return scopeValid(value as CollectiveObservationScope) ? undefined : "scope is not normalized";
   if (name === "ContributionTraversalRevision") { try { parseContributionTraversalRevision(value as string); return; } catch { return "traversal token is malformed"; } }
@@ -123,19 +146,7 @@ function domainIssue(v: CollectiveFetchDomainResult): string | undefined {
     }
     if (n !== a.completed || (v.state === "complete" && a.failed !== 0)) return "association completion count disagrees";
     const commit = a.scopes.some(s => s.commit === "updated") ? "updated" : n > 0 ? "unchanged" : "retained";
+    if (commit === "updated" && v.commit !== "updated") return "updated association scope requires updated aggregate effect";
     if (v.state !== "complete" && v.commit !== commit) return "partial association domain lost actual committed effects";
   }
-}
-
-export function collectiveFetchHTTPStatus(report: CollectiveFetchReport): number {
-  try {
-  if (!scopeValid(report.scope) || !uuid.test(report.invocationId)) return 500;
-  if (collectiveContractIssue("CollectiveFetchReport", report) || report.domains.some(d => domainIssue(d))) return 500;
-  if (report.outcome === "complete") return 200;
-  const issues = [...report.issues];
-  for (const d of report.domains) { if (d.issue != null) issues.push(d.issue); for (const s of d.sourceOutcomes) if (s.issue != null) issues.push(s.issue); for (const s of d.associations?.scopes ?? []) if (s.issue != null) issues.push(s.issue); }
-  const ranks = { persistence: 5, auth: 4, deadline: 3, remote: 2, contract: 2, superseded: 1 };
-  const rank = issues.reduce((n, i) => Math.max(n, ranks[i.code]), 0);
-  return [500, 409, 502, 504, 401, 500][rank] ?? 500;
-  } catch { return 500; }
 }

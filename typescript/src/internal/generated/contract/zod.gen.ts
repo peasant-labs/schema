@@ -4528,21 +4528,21 @@ export const zVillageContributableResponse = z.object({
 export type VillageContributableResponse = z.infer<typeof zVillageContributableResponse>;
 
 export const zVillageContributedCollective = z.object({
-    approved_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    approved_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     description: z.string().nullable(),
     id: zVillageUUID,
     linked_github_org: z.string().nullable(),
     name: z.string(),
-    pending_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    rejected_attempt_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    withdrawn_attempt_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    pending_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    rejected_attempt_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    withdrawn_attempt_count: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
 });
 
 export type VillageContributedCollective = z.infer<typeof zVillageContributedCollective>;
 
 export const zVillageContributedCollectivesResponse = z.object({
     collectives: z.array(zVillageContributedCollective)
-});
+}).superRefine((value, ctx) => { const issue = collectiveContractIssue("VillageContributedCollectivesResponse", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
 export type VillageContributedCollectivesResponse = z.infer<typeof zVillageContributedCollectivesResponse>;
 

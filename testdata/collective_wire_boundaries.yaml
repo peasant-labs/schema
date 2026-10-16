@@ -1,0 +1,467 @@
+identity: {userId: '123e4567-e89b-12d3-a456-426614174000', incarnation: '123e4567-e89b-12d3-a456-426614174001', kind: remote-attempts, generation: '1'}
+required_names:
+  scopes: [scope-port-zero, scope-slash-dot-ambiguity, scope-abbreviated-ipv4, scope-integer-ipv4, scope-hex-ipv4, scope-octal-ipv4, scope-mixed-hex-ipv4, scope-three-part-ipv4, scope-ipv4-out-of-range, scope-ordinary-ipv4, scope-decimal-ipv4-port, scope-ipv6-compressed, scope-ipv6-mapped, scope-ascii-idna, scope-unicode-host, scope-escaped-path, scope-dot-escaped-path, scope-repeated-slash, scope-canonical-path, scope-reserved-path]
+  payloads: [pending-explicit-null-decision, auto-approved-explicit-null-decision, pending-missing-actor, pending-null-actor, pending-missing-decision, attempt-missing-ordinal, attempt-null-ordinal, attempt-missing-status, attempt-null-status, attempt-missing-recorded-time, attempt-null-recorded-time, history-valid-populated-attempt, history-missing-actor, history-null-actor, history-missing-decision, discovery-zero-counters, discovery-positive-counters, discovery-approved-missing, discovery-approved-null, discovery-approved-negative, discovery-pending-missing, discovery-pending-null, discovery-pending-negative, discovery-rejected-missing, discovery-rejected-null, discovery-rejected-negative, discovery-withdrawn-missing, discovery-withdrawn-null, discovery-withdrawn-negative, discovery-empty-response, discovery-null-response, discovery-missing-response, discovery-nested-missing-counter, discovery-counter-overflow, discovery-invalid-identity, organization-zero-counters, organization-missing-member-count, organization-null-member-count, organization-missing-transcript-count, organization-null-transcript-count, organization-negative-member-count, organization-negative-transcript-count, associations-complete-updated, associations-complete-unchanged, associations-complete-contradictory-commit, associations-complete-empty]
+  statuses: [status-valid-complete, status-valid-partial, status-invalid-domain, status-invalid-coverage-complete, status-empty-issue-message, status-empty-issue-retry, status-missing-domains, status-null-domains, status-unsafe-count, status-contradictory-complete-association]
+scopes:
+  cases:
+    - name: scope-port-zero
+      input: {url: 'https://village.example:0/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: &p {source: requirement, ref: shared-scope-wire-identity}
+      mutation: {description: port zero is rejected before either parser can silently accept it}
+    - name: scope-slash-dot-ambiguity
+      input: {url: 'https://village.example/a//../b'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: reject raw repeated-slash and dot interaction before normalization erases it}
+    - name: scope-abbreviated-ipv4
+      input: {url: 'https://127.1/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: abbreviated numeric host cannot become a different cross-language identity}
+    - name: scope-integer-ipv4
+      input: {url: 'https://2130706433/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: reject integer IPv4 rather than let WHATWG expand it}
+    - name: scope-hex-ipv4
+      input: {url: 'https://0x7f000001/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: hexadecimal IPv4 spelling is outside the supported grammar}
+    - name: scope-octal-ipv4
+      input: {url: 'https://0177.0.0.1/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: leading-zero numeric components cannot be interpreted as octal}
+    - name: scope-mixed-hex-ipv4
+      input: {url: 'https://0x7f.0.0.1/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: mixed-radix numeric components are rejected consistently}
+    - name: scope-three-part-ipv4
+      input: {url: 'https://127.0.1/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: IPv4 requires exactly four canonical decimal components}
+    - name: scope-ipv4-out-of-range
+      input: {url: 'https://256.0.0.1/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: decimal IPv4 components are bounded to one byte}
+    - name: scope-ordinary-ipv4
+      input: {url: 'https://127.0.0.1/base'}
+      expected: {valid: true, normalized: 'https://127.0.0.1/base', token: 'WyIxIiwiaHR0cHM6Ly8xMjcuMC4wLjEvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: canonical decimal IPv4 remains supported without transport authorization policy}
+    - name: scope-decimal-ipv4-port
+      input: {url: 'http://192.168.0.1:8080/base'}
+      expected: {valid: true, normalized: 'http://192.168.0.1:8080/base', token: 'WyIxIiwiaHR0cDovLzE5Mi4xNjguMC4xOjgwODAvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: preserve effective nondefault port and full base path}
+    - name: scope-ipv6-compressed
+      input: {url: 'https://[2001:0DB8:0:0:0:0:0:1]:443/base'}
+      expected: {valid: true, normalized: 'https://[2001:db8::1]/base', token: 'WyIxIiwiaHR0cHM6Ly9bMjAwMTpkYjg6OjFdL2Jhc2UiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDEiLCJyZW1vdGUtYXR0ZW1wdHMiLCIxIl0'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: IPv6 groups compress identically with first longest zero run}
+    - name: scope-ipv6-mapped
+      input: {url: 'https://[::ffff:127.0.0.1]/base'}
+      expected: {valid: true, normalized: 'https://[::ffff:7f00:1]/base', token: 'WyIxIiwiaHR0cHM6Ly9bOjpmZmZmOjdmMDA6MV0vYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: mapped IPv6 stays bracketed IPv6 with canonical hexadecimal groups}
+    - name: scope-ascii-idna
+      input: {url: 'https://xn--fsqu00a.example/base'}
+      expected: {valid: true, normalized: 'https://xn--fsqu00a.example/base', token: 'WyIxIiwiaHR0cHM6Ly94bi0tZnNxdTAwYS5leGFtcGxlL2Jhc2UiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDEiLCJyZW1vdGUtYXR0ZW1wdHMiLCIxIl0'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: explicit ASCII IDNA spelling is accepted without language-specific Unicode conversion}
+    - name: scope-unicode-host
+      input: {url: 'https://例子.example/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: callers must use explicit ASCII IDNA rather than native parser inference}
+    - name: scope-escaped-path
+      input: {url: 'https://village.example/a%2Fb'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: escaped slash segments are outside the shared identity grammar}
+    - name: scope-dot-escaped-path
+      input: {url: 'https://village.example/a/%2e%2e/b'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: reject encoded dot segments before WHATWG can erase them}
+    - name: scope-repeated-slash
+      input: {url: 'https://village.example/a//b'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: the bounded supported grammar excludes repeated path slashes}
+    - name: scope-canonical-path
+      input: {url: 'HTTPS://name:secret@Village.Example:443/a/../base/./?ignored=1#fragment'}
+      expected: {valid: true, normalized: 'https://village.example/base', token: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: strip nonidentity fields and normalize supported ordinary dot segments}
+    - name: scope-reserved-path
+      input: {url: "https://village.example/a!$&'()*+,;=:@b"}
+      expected: {valid: true, normalized: "https://village.example/a!$&'()*+,;=:@b", token: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYSEkJicoKSorLDs9OkBiIiwiMTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDAwIiwiMTIzZTQ1NjctZTg5Yi0xMmQzLWE0NTYtNDI2NjE0MTc0MDAxIiwicmVtb3RlLWF0dGVtcHRzIiwiMSJd'}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: supported RFC path characters are not re-escaped differently by native URL parsers}
+payloads:
+  cases:
+    - name: pending-explicit-null-decision
+      input: {target: VillageShareEvent, payload: &pending {event_num: 1, status: pending, recorded_at: &time '2026-10-16T12:00:00.123456789Z', decided_at: null, decided_by_actor: ''}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: &wire {source: requirement, ref: collective-wire-requiredness}
+      mutation: {description: explicit empty actor capacity and explicit null decision are valid pending evidence}
+    - name: auto-approved-explicit-null-decision
+      input: {target: VillageShareEvent, payload: {<<: *pending, status: approved, decided_by_actor: moderator}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: initial automatic approval retains its explicit nullable decision without fabricated time}
+    - name: pending-missing-actor
+      input: {target: VillageShareEvent, payload: *pending, omit: [decided_by_actor]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: absent actor is not the legitimate empty pending actor capacity}
+    - name: pending-null-actor
+      input: {target: VillageShareEvent, payload: {<<: *pending, decided_by_actor: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null actor cannot be coerced to an empty string}
+    - name: pending-missing-decision
+      input: {target: VillageShareEvent, payload: *pending, omit: [decided_at]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: nullable decision presence remains required}
+    - name: attempt-missing-ordinal
+      input: {target: VillageShareEvent, payload: *pending, omit: [event_num]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: ordinal must be present}
+    - name: attempt-null-ordinal
+      input: {target: VillageShareEvent, payload: {<<: *pending, event_num: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: ordinal cannot be null}
+    - name: attempt-missing-status
+      input: {target: VillageShareEvent, payload: *pending, omit: [status]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: status must be present}
+    - name: attempt-null-status
+      input: {target: VillageShareEvent, payload: {<<: *pending, status: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: status cannot be null}
+    - name: attempt-missing-recorded-time
+      input: {target: VillageShareEvent, payload: *pending, omit: [recorded_at]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: immutable recorded timestamp must be present}
+    - name: attempt-null-recorded-time
+      input: {target: VillageShareEvent, payload: {<<: *pending, recorded_at: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: immutable timestamp cannot be null}
+    - name: history-valid-populated-attempt
+      input: {target: LocalContributionHistoryResponse, payload: &history {scope: &scope {villageUrl: 'https://village.example/base', userId: &id '123e4567-e89b-12d3-a456-426614174000'}, kind: remote-attempts, traversalRevision: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ', page: 1, limit: 1, total: 1, coverage: available, remoteAttempts: [{collectiveId: *id, transcriptId: &transcript '123e4567-e89b-12d3-a456-426614174001', firstSeenAt: *time, attempt: *pending}]}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: populated typed history preserves nanosecond attempt evidence}
+    - name: history-missing-actor
+      input: {target: LocalContributionHistoryResponse, payload: *history, omit: [remoteAttempts.0.attempt.decided_by_actor]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: nested malformed attempt cannot enter a valid history arm}
+    - name: history-null-actor
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *history, remoteAttempts: [{collectiveId: *id, transcriptId: *transcript, firstSeenAt: *time, attempt: {<<: *pending, decided_by_actor: null}}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: nested null actor is rejected recursively}
+    - name: history-missing-decision
+      input: {target: LocalContributionHistoryResponse, payload: *history, omit: [remoteAttempts.0.attempt.decided_at]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: nested missing nullable decision is not explicit null}
+    - name: discovery-zero-counters
+      input: {target: VillageContributedCollective, payload: &row {id: *id, name: sample, description: null, linked_github_org: null, approved_count: 0, pending_count: 0, rejected_attempt_count: 0, withdrawn_attempt_count: 0}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: explicit zero counters remain measured evidence}
+    - name: discovery-positive-counters
+      input: {target: VillageContributedCollectivesResponse, payload: {collectives: [{<<: *row, approved_count: 1, pending_count: 2, rejected_attempt_count: 3, withdrawn_attempt_count: 4}]}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: complete nonempty discovery retains each distinct counter}
+    - name: discovery-approved-missing
+      input: {target: VillageContributedCollective, payload: *row, omit: [approved_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: missing approved counter cannot prune relevance as zero}
+    - name: discovery-approved-null
+      input: {target: VillageContributedCollective, payload: {<<: *row, approved_count: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null approved counter cannot become zero}
+    - name: discovery-approved-negative
+      input: {target: VillageContributedCollective, payload: {<<: *row, approved_count: -1}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: approved count cannot be negative}
+    - name: discovery-pending-missing
+      input: {target: VillageContributedCollective, payload: *row, omit: [pending_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: missing pending count cannot remove relevance}
+    - name: discovery-pending-null
+      input: {target: VillageContributedCollective, payload: {<<: *row, pending_count: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null pending count is not measured zero}
+    - name: discovery-pending-negative
+      input: {target: VillageContributedCollective, payload: {<<: *row, pending_count: -1}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: pending count cannot be negative}
+    - name: discovery-rejected-missing
+      input: {target: VillageContributedCollective, payload: *row, omit: [rejected_attempt_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: rejected history counter is required}
+    - name: discovery-rejected-null
+      input: {target: VillageContributedCollective, payload: {<<: *row, rejected_attempt_count: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null rejected history is unknown not zero}
+    - name: discovery-rejected-negative
+      input: {target: VillageContributedCollective, payload: {<<: *row, rejected_attempt_count: -1}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: rejected history count cannot be negative}
+    - name: discovery-withdrawn-missing
+      input: {target: VillageContributedCollective, payload: *row, omit: [withdrawn_attempt_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: withdrawal history counter is required}
+    - name: discovery-withdrawn-null
+      input: {target: VillageContributedCollective, payload: {<<: *row, withdrawn_attempt_count: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null withdrawal history cannot be treated as empty}
+    - name: discovery-withdrawn-negative
+      input: {target: VillageContributedCollective, payload: {<<: *row, withdrawn_attempt_count: -1}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: withdrawal history count cannot be negative}
+    - name: discovery-empty-response
+      input: {target: VillageContributedCollectivesResponse, payload: {collectives: []}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: complete known empty discovery is valid}
+    - name: discovery-null-response
+      input: {target: VillageContributedCollectivesResponse, payload: {collectives: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null discovery array is not a complete empty source}
+    - name: discovery-missing-response
+      input: {target: VillageContributedCollectivesResponse, payload: {}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: absent discovery array cannot replace relevance}
+    - name: discovery-nested-missing-counter
+      input: {target: VillageContributedCollectivesResponse, payload: {collectives: [*row]}, omit: [collectives.0.approved_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: row requiredness applies recursively inside discovery responses}
+    - name: discovery-counter-overflow
+      input: {target: VillageContributedCollective, payload: {<<: *row, approved_count: 2147483648}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: counters retain the existing int32 bound}
+    - name: discovery-invalid-identity
+      input: {target: VillageContributedCollective, payload: {<<: *row, id: not-a-uuid}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: discovery rows require canonical collective UUIDs}
+    - name: organization-zero-counters
+      input: {target: VillageOrganizationCollectivesResponse, payload: &org {collectives: [&orgRow {id: *id, name: sample, description: null, member_count: 0, transcript_count: 0}], members: [], org_login: example, member_count: 99}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: nonempty measured-zero projection remains open to unrelated roster and stats fields}
+    - name: organization-missing-member-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: *org, omit: [collectives.0.member_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: missing projected member count is not measured zero}
+    - name: organization-null-member-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [{<<: *orgRow, member_count: null}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null projected member count is rejected}
+    - name: organization-missing-transcript-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: *org, omit: [collectives.0.transcript_count]}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: missing projected transcript count is not measured zero}
+    - name: organization-null-transcript-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [{<<: *orgRow, transcript_count: null}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null projected transcript count is rejected}
+    - name: organization-negative-member-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [{<<: *orgRow, member_count: -1}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: projected member counts cannot be negative}
+    - name: organization-negative-transcript-count
+      input: {target: VillageOrganizationCollectivesResponse, payload: {collectives: [{<<: *orgRow, transcript_count: -1}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: projected transcript counts cannot be negative}
+    - name: associations-complete-updated
+      input: {target: CollectiveFetchDomainResult, payload: &association {domain: associations, requested: true, state: complete, commit: updated, completedAt: *time, lastCompletedAt: *time, lastInstalledRevision: '1', coverage: available, sourceOutcomes: [], associations: &scopeResults {requested: 1, completed: 1, failed: 0, scopes: [&updatedScope {transcriptId: *transcript, state: complete, commit: updated, observedAt: *time, completedAt: *time}]}}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: complete aggregate preserves an actual updated scoped set}
+    - name: associations-complete-unchanged
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *association, commit: unchanged, associations: {<<: *scopeResults, scopes: [{<<: *updatedScope, commit: unchanged}]}}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: complete equivalent scoped sets can report unchanged}
+    - name: associations-complete-contradictory-commit
+      input: {target: CollectiveFetchDomainResult, payload: &contradictory {<<: *association, commit: unchanged}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: complete aggregate cannot hide an updated scope}
+    - name: associations-complete-empty
+      input: {target: CollectiveFetchDomainResult, payload: {<<: *association, commit: unchanged, associations: {requested: 0, completed: 0, failed: 0, scopes: []}}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: zero requested transcript sets may complete unchanged}
+statuses:
+  cases:
+    - name: status-valid-complete
+      input: {target: CollectiveFetchReport, payload: &complete {scope: *scope, invocationId: *transcript, cacheRevision: '1', outcome: complete, domains: [*association, &noCatalog {domain: catalog, requested: false, state: not_requested, commit: retained, coverage: unknown, sourceOutcomes: []}, &noHistory {domain: history, requested: false, state: not_requested, commit: retained, coverage: unknown, sourceOutcomes: []}], issues: []}}
+      expected: {valid: true, status: 200}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: public helper validates the complete report before choosing success}
+    - name: status-valid-partial
+      input: {target: CollectiveFetchReport, payload: &partial {<<: *complete, outcome: partial, domains: [*association, {<<: *noCatalog, requested: true, state: failed, issue: &issue {code: deadline, operation: fetch, message: source-timed-out, retry: retry-fetch}}, *noHistory]}}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: valid deadline failure retains earlier complete association effects}
+    - name: status-invalid-domain
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, domains: [*association, {<<: *noCatalog, domain: invented}, *noHistory]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: public helper cannot treat an unknown domain as a remote failure}
+    - name: status-invalid-coverage-complete
+      input: {target: CollectiveFetchReport, payload: {<<: *complete, domains: [{<<: *association, coverage: BOGUS}, *noCatalog, *noHistory]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: complete reports with unknown coverage must fail closed}
+    - name: status-empty-issue-message
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, issues: [{<<: *issue, message: ''}]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: raw status helper must execute nested issue validation}
+    - name: status-empty-issue-retry
+      input: {target: CollectiveFetchReport, payload: {<<: *partial, issues: [{<<: *issue, retry: ''}]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: missing corrective action is invalid even when deadline code is recognized}
+    - name: status-missing-domains
+      input: {target: CollectiveFetchReport, payload: *complete, omit: [domains]}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: helper validates required report fields on raw input}
+    - name: status-null-domains
+      input: {target: CollectiveFetchReport, payload: {<<: *complete, domains: null}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: null domain collection cannot be coerced to success}
+    - name: status-unsafe-count
+      input: {target: CollectiveFetchReport, payload: {<<: *complete, domains: [{<<: *association, associations: {<<: *scopeResults, requested: 10001}}, *noCatalog, *noHistory]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: public helper enforces bounded scoped-result counts}
+    - name: status-contradictory-complete-association
+      input: {target: CollectiveFetchReport, payload: {<<: *complete, domains: [*contradictory, *noCatalog, *noHistory]}}
+      expected: {valid: false, status: 500}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: malformed complete aggregate is not a successful report}

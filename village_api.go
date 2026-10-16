@@ -778,14 +778,37 @@ type VillageContributedCollective struct {
 	Name                  string      `json:"name"`
 	Description           *string     `json:"description"`
 	LinkedGithubOrg       *string     `json:"linked_github_org"`
-	ApprovedCount         int32       `json:"approved_count"`
-	PendingCount          int32       `json:"pending_count"`
-	RejectedAttemptCount  int32       `json:"rejected_attempt_count"`
-	WithdrawnAttemptCount int32       `json:"withdrawn_attempt_count"`
+	ApprovedCount         int32       `json:"approved_count" minimum:"0"`
+	PendingCount          int32       `json:"pending_count" minimum:"0"`
+	RejectedAttemptCount  int32       `json:"rejected_attempt_count" minimum:"0"`
+	WithdrawnAttemptCount int32       `json:"withdrawn_attempt_count" minimum:"0"`
 }
 
 type VillageContributedCollectivesResponse struct {
 	Collectives []VillageContributedCollective `json:"collectives" nullable:"false"`
+}
+
+func (v VillageContributedCollective) Validate() error {
+	if !transcriptIDUUID.MatchString(string(v.ID)) || v.ApprovedCount < 0 || v.PendingCount < 0 || v.RejectedAttemptCount < 0 || v.WithdrawnAttemptCount < 0 {
+		return observationError("contribution discovery requires canonical collective identity and nonnegative int32 counters")
+	}
+	return nil
+}
+func (v VillageContributedCollectivesResponse) Validate() error {
+	if v.Collectives == nil {
+		return observationError("contribution discovery requires a complete nonnull collective array")
+	}
+	seen := map[VillageUUID]bool{}
+	for _, row := range v.Collectives {
+		if err := row.Validate(); err != nil {
+			return err
+		}
+		if seen[row.ID] {
+			return observationError("contribution discovery repeats a collective identity")
+		}
+		seen[row.ID] = true
+	}
+	return nil
 }
 
 type VillageTranscriptCollective struct {

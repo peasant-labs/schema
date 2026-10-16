@@ -13563,6 +13563,7 @@
         "properties": {
           "approved_count": {
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           },
           "description": {
@@ -13599,14 +13600,17 @@
           },
           "pending_count": {
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           },
           "rejected_attempt_count": {
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           },
           "withdrawn_attempt_count": {
             "format": "int32",
+            "minimum": 0,
             "type": "integer"
           }
         },

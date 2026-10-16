@@ -1,6 +1,6 @@
 export function applyCollectiveZodRefinements(source) {
   let output = source;
-  const names = ["CollectiveObservationScope", "ContributionTraversalRevision", "OperationIssue", "PullAssociationMetadataResult", "LocalConfirmedContributionReceipt", "LocalOperationDiagnostic", "CollectiveObservation", "CollectiveFetchDomainSummary", "CollectiveFetchDomainResult", "CollectiveFetchReport", "CollectiveObservationResponse", "CollectiveFetchSummary", "LocalContributionHistoryResponse", "VillageOrganizationCollectivesResponse"];
+  const names = ["CollectiveObservationScope", "ContributionTraversalRevision", "OperationIssue", "PullAssociationMetadataResult", "LocalConfirmedContributionReceipt", "LocalOperationDiagnostic", "CollectiveObservation", "CollectiveFetchDomainSummary", "CollectiveFetchDomainResult", "CollectiveFetchReport", "CollectiveObservationResponse", "CollectiveFetchSummary", "LocalContributionHistoryResponse", "VillageOrganizationCollectivesResponse", "VillageContributedCollectivesResponse"];
   for (const name of names) {
     const start = output.indexOf(`export const z${name} = `), end = output.indexOf(`\n\nexport type ${name} =`, start);
     if (start < 0 || end < start) throw new Error(`Collective contract generation lost ${name}; no runtime validator was produced; update the pinned generator postprocessor before publishing.`);

@@ -119,6 +119,12 @@ func loadCollectiveObservationFixtures(t *testing.T) collectiveObservationFixtur
 func validateCollectiveFixture(target string, data []byte) (int, error) {
 	var v interface{ Validate() error }
 	switch target {
+	case "VillageShareEvent":
+		v = new(schema.VillageShareEvent)
+	case "VillageContributedCollective":
+		v = new(schema.VillageContributedCollective)
+	case "VillageContributedCollectivesResponse":
+		v = new(schema.VillageContributedCollectivesResponse)
 	case "PullAssociationMetadataResult":
 		v = new(schema.PullAssociationMetadataResult)
 	case "LocalConfirmedContributionReceipt":

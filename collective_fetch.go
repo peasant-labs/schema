@@ -353,6 +353,9 @@ func (d CollectiveFetchDomainResult) Validate() error {
 		if n != a.Completed || (d.State == CollectiveFetchStateComplete && a.Failed != 0) {
 			return observationError("association completion counts disagree with scoped effects")
 		}
+		if updated && d.Commit != CollectiveFetchCommitUpdated {
+			return observationError("an updated association scope requires an updated aggregate committed effect")
+		}
 		if d.State != CollectiveFetchStateComplete {
 			want := CollectiveFetchCommitRetained
 			if updated {

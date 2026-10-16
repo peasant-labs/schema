@@ -7,6 +7,7 @@ import ts from "typescript";
 import { parse } from "yaml";
 
 import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
+import { renderCollectiveCompatibility } from "./lib/collective-compatibility.mjs";
 import { applyAssociationZodRefinements } from "./lib/association-zod-refinements.mjs";
 import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinements.mjs";
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
@@ -50,6 +51,7 @@ await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
+await writeFile(join(generatedRoot, "collective-compatibility.gen.ts"), renderCollectiveCompatibility(await readFile(join(moduleRoot, "collective_compatibility.go"), "utf8"), enumCatalog));
 const capabilities = renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog);
 await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), capabilities);
 await writeFile(join(generatedRoot, "wire-alias-shapes.gen.ts"), renderWireAliasShapes(spec));

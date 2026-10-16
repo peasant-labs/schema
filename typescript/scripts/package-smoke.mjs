@@ -27,6 +27,7 @@ assert.equal(new Set(villageCollectiveOperationIDs).size, villageCollectiveOpera
 const enumName = enumCatalog.enums[0].name;
 assert.match(enumName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "enums.yaml representative enum name must be a JavaScript identifier");
 const enumNames = new Set(enumCatalog.enums.map((enumCase) => enumCase.name));
+const retainedCollectiveAliases = parse(await readFile(new URL("../../testdata/typescript/collective_compatibility.yaml", import.meta.url), "utf8"));
 const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !enumNames.has(name));
 assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
 assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
@@ -72,6 +73,8 @@ try {
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
+    ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,
     ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
     `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
@@ -103,7 +106,11 @@ try {
     .map((operationID) => `type __VillageCollectivesOperation_${operationID} = VillageOperations[${JSON.stringify(operationID)}];`)
     .join("\n");
   await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
-  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n`);
+  const legacyTypeChecks = [
+    `type Same<A,B> = (<T>()=>T extends A ? 1 : 2) extends (<T>()=>T extends B ? 1 : 2) ? true : false; type MustBeTrue<T extends true> = T;`,
+    ...retainedCollectiveAliases.aliases.map(row => `import type { ${row.name} as Old${row.name}, ${row.canonical} as New${row.name} } from ${JSON.stringify(packageManifest.name)}; type Check${row.name} = MustBeTrue<Same<Old${row.name},New${row.name}>>;`),
+  ].join("\n");
+  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n${legacyTypeChecks}\n`);
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 
