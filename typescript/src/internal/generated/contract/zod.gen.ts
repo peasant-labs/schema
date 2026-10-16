@@ -3721,6 +3721,16 @@ export const zVillageShareEvent = z.object({
     event_num: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     recorded_at: z.iso.datetime(),
     status: zVillageShareStatus
+}).superRefine((value, ctx) => {
+  const fail = (message: string) => ctx.addIssue({ code: "custom", message: "Collective contribution attempt validation failed: " + message + "; retain prior evidence and fetch validated owner history before retrying" });
+
+    const actors = { pending: "", approved: "moderator", rejected: "moderator", retracted: "owner", revoked: "collective" } as const;
+    if (value.event_num < 1) fail("event_num must be a positive int32 ordinal");
+    if (value.recorded_at === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\.0+Z$/.test(value.recorded_at)) fail("recorded_at must be a nonzero UTC timestamp");
+    if (value.decided_by_actor !== actors[value.status]) fail("decided_by_actor does not match the status's actor capacity");
+    if (value.status === "pending" && value.decided_at !== null) fail("pending attempts must have null decided_at");
+    if (value.status !== "pending" && value.status !== "approved" && value.decided_at === null) fail("this terminal status requires decided_at");
+    if (value.decided_at !== null && (value.decided_at === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\.0+Z$/.test(value.decided_at))) fail("decided_at must be a nonzero UTC timestamp when present");
 });
 
 export type VillageShareEvent = z.infer<typeof zVillageShareEvent>;
@@ -3866,6 +3876,19 @@ export const zLocalPublicationsResponse = z.object({
 });
 
 export type LocalPublicationsResponse = z.infer<typeof zLocalPublicationsResponse>;
+
+export const zLocalRemoteContributionAttempt = z.object({
+    attempt: zVillageShareEvent,
+    collectiveId: zVillageUUID,
+    firstSeenAt: z.iso.datetime(),
+    transcriptId: zTranscriptID
+}).superRefine((value, ctx) => {
+  const fail = (message: string) => ctx.addIssue({ code: "custom", message: "Collective contribution attempt validation failed: " + message + "; retain prior evidence and fetch validated owner history before retrying" });
+
+    if (value.firstSeenAt === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\.0+Z$/.test(value.firstSeenAt)) fail("firstSeenAt must be a nonzero UTC timestamp");
+});
+
+export type LocalRemoteContributionAttempt = z.infer<typeof zLocalRemoteContributionAttempt>;
 
 export const zLocalSettingsResponse = z.object({
     autoPublish: z.array(zAutoPublishRule),

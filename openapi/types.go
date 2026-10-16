@@ -23,6 +23,7 @@ type TypeCatalogEntry struct {
 // this language-neutral contract surface.
 func TypeCatalogEntries() []TypeCatalogEntry {
 	return []TypeCatalogEntry{
+		{"LocalRemoteContributionAttempt", new(schema.LocalRemoteContributionAttempt)},
 		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
 		{"AnnotationDatatype", new(schema.AnnotationDatatype)}, {"AnnotationEntryTarget", new(schema.AnnotationEntryTarget)},
 		{"AnnotationManifestResponse", new(schema.AnnotationManifestResponse)}, {"AnnotationPushItem", new(schema.AnnotationPushItem)},

@@ -196,5 +196,6 @@ const (
 	// Bumped to 0.30.0 for the ThinkingLevel closed set, the bounded
 	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
 	// entry (additive = minor bump).
-	TypesVersion = "0.30.0"
+	// Bumped for retained owner contribution attempt evidence.
+	TypesVersion = "0.31.0"
 )

@@ -3,6 +3,8 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: LocalRemoteContributionAttempt, disposition: catalog, component: LocalRemoteContributionAttempt, reason: retained owner contribution attempt evidence}
+  - {go_name: VillageContributionAttemptReconciliation, disposition: runtime-only, reason: result classification for the Go reconciliation helper rather than a serialized response field}
   - {go_name: AuthoritativeCommitInfo, disposition: catalog, component: AuthoritativeCommitInfo, reason: successor recursive strictness}
   - {go_name: AuthoritativeDiagnosticEntry, disposition: catalog, component: AuthoritativeDiagnosticEntry, reason: successor recursive strictness}
   - {go_name: AuthoritativeDiagnosticsInfo, disposition: catalog, component: AuthoritativeDiagnosticsInfo, reason: successor recursive strictness}
