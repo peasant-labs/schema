@@ -1,0 +1,65 @@
+runtime_exports: [RedactionCategory, RedactionCategoryLabel, AllRedactionCategories, AllRedactionCategoryLabels, isRedactionCategory, parseRedactionCategory, parseRedactionCategoryLabel, redactionCategoryFromLabel, redactionCategoryLabel]
+required_pairs: [secrets-credential, pii-pii, paths-path, project-internal]
+pairs:
+  cases:
+    - name: secrets-credential
+      classification: must-pass
+      provenance: {source: enum, ref: redact.CategorySecrets}
+      mutation: {description: Preserve credential identity in both directions}
+      input: {category: secrets, label: CREDENTIAL, member: Secrets, label_member: Credential}
+      expected: true
+    - name: pii-pii
+      classification: must-pass
+      provenance: {source: enum, ref: redact.CategoryPII}
+      mutation: {description: Preserve PII identity in both directions}
+      input: {category: pii, label: PII, member: PII, label_member: PII}
+      expected: true
+    - name: paths-path
+      classification: must-pass
+      provenance: {source: enum, ref: redact.CategoryPaths}
+      mutation: {description: Preserve path identity in both directions}
+      input: {category: paths, label: PATH, member: Paths, label_member: Path}
+      expected: true
+    - name: project-internal
+      classification: must-pass
+      provenance: {source: enum, ref: redact.CategoryProject}
+      mutation: {description: Preserve project identity in both directions}
+      input: {category: project, label: INTERNAL, member: Project, label_member: Internal}
+      expected: true
+required_invalid: [unknown, empty, wrong-case, whitespace, prototype, constructor, 'null', number, boolean, array, object, cross-key-label]
+invalid:
+  cases:
+    - &invalid
+      name: unknown
+      classification: must-fail
+      provenance: {source: boundary, ref: redaction-category-input}
+      mutation: {description: Reject values outside the exact closed set}
+      input: {key: unknown, label: UNKNOWN}
+      expected: false
+    - {<<: *invalid, name: empty, input: {key: '', label: ''}}
+    - {<<: *invalid, name: wrong-case, input: {key: Secrets, label: credential}}
+    - {<<: *invalid, name: whitespace, input: {key: ' secrets ', label: ' CREDENTIAL '}}
+    - {<<: *invalid, name: prototype, input: {key: __proto__, label: __proto__}}
+    - {<<: *invalid, name: constructor, input: {key: constructor, label: constructor}}
+    - {<<: *invalid, name: 'null', input: {key: null, label: null}}
+    - {<<: *invalid, name: number, input: {key: 1, label: 1}}
+    - {<<: *invalid, name: boolean, input: {key: false, label: false}}
+    - {<<: *invalid, name: array, input: {key: [], label: []}}
+    - {<<: *invalid, name: object, input: {key: {}, label: {}}}
+    - {<<: *invalid, name: cross-key-label, input: {key: CREDENTIAL, label: secrets}}
+required_projection: [missing-key, duplicate-label, empty-label, missing-pair, duplicate-pair, wrong-pin, replaced-module]
+projection:
+  cases:
+    - &projection
+      name: missing-key
+      classification: must-fail
+      provenance: {source: boundary, ref: engine-projection}
+      mutation: {description: Reject incomplete or ambiguous engine projection}
+      input: {operation: missing-key}
+      expected: false
+    - {<<: *projection, name: duplicate-label, input: {operation: duplicate-label}}
+    - {<<: *projection, name: empty-label, input: {operation: empty-label}}
+    - {<<: *projection, name: missing-pair, input: {operation: missing-pair}}
+    - {<<: *projection, name: duplicate-pair, input: {operation: duplicate-pair}}
+    - {<<: *projection, name: wrong-pin, input: {operation: wrong-pin}}
+    - {<<: *projection, name: replaced-module, input: {operation: replaced-module}}

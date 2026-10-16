@@ -1,4 +1,6 @@
 files:
+  - dist/internal/generated/redaction-categories.gen.d.ts
+  - dist/internal/generated/redaction-categories.gen.js
   - LICENSE
   - README.md
   - dist/fixtures.d.ts

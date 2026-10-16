@@ -37,6 +37,14 @@ both; duplicating it per-repo would let the two renderings drift. Any further
 presentation logic added to this module needs its own recorded exception
 here, not a silent precedent from this one.
 
+**Recorded exception:** the TypeScript redaction category bindings project the
+released redaction engine's presentation labels for shared browser consumers.
+`tools/redaction-categories/` is an isolated, checksum-pinned generation module;
+it calls the engine's public inventory, validation and label APIs. The root Go
+module remains a dependency leaf. This adds no wire enum, OpenAPI surface or
+standalone Go validator policy. Regenerate through `make schema`; never copy a
+category-to-label mapping into a consumer.
+
 ## Branches and landing
 
 - `develop` is the default and integration branch; `main` is **reserved for
