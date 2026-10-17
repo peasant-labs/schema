@@ -1,6 +1,5 @@
 operations:
   - {path: /api/v1/home/sessions, method: get, operation_id: listHomeSessions}
-  - {path: /api/v1/home/stats, method: get, operation_id: getHomeStats}
   - {path: /api/v1/annotation-types, method: get, operation_id: listAnnotationTypes}
   - {path: /api/v1/annotations, method: get, operation_id: listAnnotations}
   - {path: /api/v1/annotations, method: post, operation_id: createAnnotation}

@@ -132,7 +132,7 @@ const (
 	// Bumped to 0.19.0 for the optional thinking level and raw native spelling
 	// on session detail and assistant turns, and the in-session thinking-level
 	// history (additive = minor bump).
-	// Bumped to 0.20.0 for bounded Home session pages and independent statistics.
+	// Bumped to 0.20.0 for bounded Home root and child session pages.
 	PeasantLocalAPIVersion = "0.20.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
@@ -197,6 +197,6 @@ const (
 	// Bumped to 0.30.0 for the ThinkingLevel closed set, the bounded
 	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
 	// entry (additive = minor bump).
-	// Bumped to 0.31.0 for Home page, publication filter, and aggregate DTOs.
+	// Bumped to 0.31.0 for Home page and publication filter DTOs.
 	TypesVersion = "0.31.0"
 )

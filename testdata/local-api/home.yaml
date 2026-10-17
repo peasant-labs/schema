@@ -5,7 +5,6 @@ required_names:
   - null-rows
   - excessive-limit
   - negative-offset
-  - empty-revision
   - wrong-next-offset
   - empty-next-page
   - duplicate-row
@@ -13,16 +12,6 @@ required_names:
   - hidden-row
   - audience-on-page
   - negative-child-count
-  - empty-stats
-  - zero-median
-  - invalid-root-tally
-  - excessive-facets
-  - null-projects
-  - malformed-project
-  - short-weeks
-  - non-monday
-  - nonconsecutive-weeks
-  - negative-median
   - filter-all
   - filter-published
   - filter-not-published
@@ -41,17 +30,9 @@ operations:
       - {name: parentSessionId, in: query, required: false}
       - {name: projectHash, in: query, required: false}
       - {name: publication, in: query, required: false, enum: [all, not-published, published, auto]}
-  - api: local
-    method: get
-    path: /api/v1/home/stats
-    response: LocalHomeStats
-    statuses: ["200", "400", "500", "503"]
-    error_responses: {"400": OpenapiLocalErrorResponse, "500": OpenapiLocalErrorResponse, "503": OpenapiLocalErrorResponse}
-    parameters:
-      - {name: projectHash, in: query, required: false}
 cases:
   - name: empty-page
-    input: {schema: LocalHomeSessionsPage, payload: &empty {rows: [], offset: 0, limit: 25, scopeRevision: scope-a}}
+    input: {schema: LocalHomeSessionsPage, payload: &empty {rows: [], offset: 0, limit: 25}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: boundary, ref: "Home empty page"}
@@ -70,7 +51,6 @@ cases:
         offset: 0
         limit: 1
         nextOffset: 1
-        scopeRevision: scope-a
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "Home shared row projections"}
@@ -99,12 +79,6 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "Home offset"}
     mutation: {description: "use a negative offset"}
-  - name: empty-revision
-    input: {schema: LocalHomeSessionsPage, payload: {<<: *empty, scopeRevision: ""}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: boundary, ref: "Home scope revision"}
-    mutation: {description: "remove the opaque scope identity"}
   - name: wrong-next-offset
     input: {schema: LocalHomeSessionsPage, payload: {<<: *full, nextOffset: 2}}
     expected: {valid: false, rejected_by: semantics, error_contains: nextOffset}
@@ -118,7 +92,7 @@ cases:
     provenance: {source: requirement, ref: "Home terminal empty page"}
     mutation: {description: "claim another page after an empty one"}
   - name: duplicate-row
-    input: {schema: LocalHomeSessionsPage, payload: {rows: [*row, *row], offset: 0, limit: 25, scopeRevision: scope-a}}
+    input: {schema: LocalHomeSessionsPage, payload: {rows: [*row, *row], offset: 0, limit: 25}}
     expected: {valid: false, rejected_by: semantics, error_contains: repeat}
     classification: must-fail
     provenance: {source: boundary, ref: "Home page identity"}
@@ -147,85 +121,6 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "Home child count"}
     mutation: {description: "use a negative immediate-child count"}
-  - name: empty-stats
-    input:
-      schema: LocalHomeStats
-      payload: &stats
-        scopeRevision: scope-a
-        roots: &counts {all: 0, published: 0, notPublished: 0}
-        rootFacets: *counts
-        projects: []
-        activity: &activity
-          thisWeek: 0
-          longestStreakWeeks: 0
-          medianDurationMinutes: null
-          weeks: &weeks
-            - {startDate: "2026-08-24", sessions: 0}
-            - {startDate: "2026-08-31", sessions: 0}
-            - {startDate: "2026-09-07", sessions: 0}
-            - {startDate: "2026-09-14", sessions: 0}
-            - {startDate: "2026-09-21", sessions: 0}
-            - {startDate: "2026-09-28", sessions: 0}
-            - {startDate: "2026-10-05", sessions: 0}
-            - {startDate: "2026-10-12", sessions: 0}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: boundary, ref: "Home empty aggregates"}
-    mutation: {description: "empty cohort has null median and complete week buckets"}
-  - name: zero-median
-    input: {schema: LocalHomeActivity, payload: {<<: *activity, thisWeek: 3, medianDurationMinutes: 0}}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "Home real zero duration"}
-    mutation: {description: "a zero median is not missing"}
-  - name: invalid-root-tally
-    input: {schema: LocalHomeRootCounts, payload: {all: 2, published: 1, notPublished: 0}}
-    expected: {valid: false, rejected_by: semantics, error_contains: counts}
-    classification: must-fail
-    provenance: {source: requirement, ref: "Home root partition"}
-    mutation: {description: "drop one root from the publication partition"}
-  - name: excessive-facets
-    input: {schema: LocalHomeStats, payload: {<<: *stats, rootFacets: {all: 1, published: 1, notPublished: 0}}}
-    expected: {valid: false, rejected_by: semantics, error_contains: rootFacets}
-    classification: must-fail
-    provenance: {source: requirement, ref: "Home project facets"}
-    mutation: {description: "project filter adds a root absent from global counts"}
-  - name: null-projects
-    input: {schema: LocalHomeStats, payload: {<<: *stats, projects: null}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: boundary, ref: "Home project array"}
-    mutation: {description: "replace picker array with null"}
-  - name: malformed-project
-    input: {schema: LocalHomeStats, payload: {<<: *stats, projects: [{projectHash: bad, projectName: project}]}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: boundary, ref: "ProjectHash"}
-    mutation: {description: "use a noncanonical project identity"}
-  - name: short-weeks
-    input: {schema: LocalHomeActivity, payload: {<<: *activity, weeks: []}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: boundary, ref: "Home eight-week window"}
-    mutation: {description: "omit all week buckets"}
-  - name: non-monday
-    input: {schema: LocalHomeActivity, payload: {<<: *activity, weeks: [{startDate: "2026-08-25", sessions: 0}, {startDate: "2026-08-31", sessions: 0}, {startDate: "2026-09-07", sessions: 0}, {startDate: "2026-09-14", sessions: 0}, {startDate: "2026-09-21", sessions: 0}, {startDate: "2026-09-28", sessions: 0}, {startDate: "2026-10-05", sessions: 0}, {startDate: "2026-10-12", sessions: 0}]}}
-    expected: {valid: false, rejected_by: semantics, error_contains: Mondays}
-    classification: must-fail
-    provenance: {source: requirement, ref: "Home UTC weeks"}
-    mutation: {description: "start the first week on Tuesday"}
-  - name: nonconsecutive-weeks
-    input: {schema: LocalHomeActivity, payload: {<<: *activity, weeks: [{startDate: "2026-08-17", sessions: 0}, {startDate: "2026-08-31", sessions: 0}, {startDate: "2026-09-07", sessions: 0}, {startDate: "2026-09-14", sessions: 0}, {startDate: "2026-09-21", sessions: 0}, {startDate: "2026-09-28", sessions: 0}, {startDate: "2026-10-05", sessions: 0}, {startDate: "2026-10-12", sessions: 0}]}}
-    expected: {valid: false, rejected_by: semantics, error_contains: consecutive}
-    classification: must-fail
-    provenance: {source: requirement, ref: "Home complete week buckets"}
-    mutation: {description: "leave a missing week in the window"}
-  - name: negative-median
-    input: {schema: LocalHomeActivity, payload: {<<: *activity, medianDurationMinutes: -1}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: boundary, ref: "Home duration median"}
-    mutation: {description: "use a negative persisted duration median"}
   - name: filter-all
     input: {schema: LocalHomePublicationFilter, payload: all}
     expected: {valid: true}

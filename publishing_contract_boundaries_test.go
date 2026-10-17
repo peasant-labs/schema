@@ -86,9 +86,6 @@ type boundaryExpected struct {
 var boundaryDecoders = map[string]func([]byte) (any, error){
 	"LocalHomeSessionRow":                   decodeValidated[schema.LocalHomeSessionRow],
 	"LocalHomeSessionsPage":                 decodeValidated[schema.LocalHomeSessionsPage],
-	"LocalHomeStats":                        decodeValidated[schema.LocalHomeStats],
-	"LocalHomeActivity":                     decodeValidated[schema.LocalHomeActivity],
-	"LocalHomeRootCounts":                   decodeValidated[schema.LocalHomeRootCounts],
 	"LocalHomePublicationFilter":            decodeOnly[schema.LocalHomePublicationFilter],
 	"LocalSyncSessionsPayload":              decodeValidated[schema.LocalSyncSessionsPayload],
 	"LocalSessionRow":                       decodeValidated[schema.LocalSessionRow],

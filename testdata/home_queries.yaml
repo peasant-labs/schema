@@ -1,4 +1,4 @@
-required_names: [defaults, page-bounds, children, child-project-refused, child-all-refused, empty-parent, zero-limit, excessive-limit, negative-offset, unknown-filter, malformed-project, stats-global, stats-project, stats-malformed-project]
+required_names: [defaults, page-bounds, children, child-project-refused, child-all-refused, empty-parent, zero-limit, excessive-limit, negative-offset, unknown-filter, malformed-project]
 cases:
   - name: defaults
     input: {kind: sessions, json: '{}'}
@@ -66,21 +66,3 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: ProjectHash}
     mutation: {description: "supply a short root hash"}
-  - name: stats-global
-    input: {kind: stats, json: '{}'}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "Home global stats"}
-    mutation: {description: "omit the facet project"}
-  - name: stats-project
-    input: {kind: stats, json: '{"projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "Home project facets"}
-    mutation: {description: "narrow facets by a canonical hash"}
-  - name: stats-malformed-project
-    input: {kind: stats, json: '{"projectHash":""}'}
-    expected: {valid: false, error_contains: projectHash}
-    classification: must-fail
-    provenance: {source: boundary, ref: ProjectHash}
-    mutation: {description: "an explicit empty hash is not omitted"}

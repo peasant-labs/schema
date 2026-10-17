@@ -2928,43 +2928,6 @@ components:
       - limit
       - total
       type: object
-    LocalHomeActivity:
-      properties:
-        longestStreakWeeks:
-          minimum: 0
-          type: integer
-        medianDurationMinutes:
-          anyOf:
-          - minimum: 0
-            type:
-            - "null"
-            - number
-          - type: "null"
-        thisWeek:
-          minimum: 0
-          type: integer
-        weeks:
-          items:
-            $ref: '#/components/schemas/LocalHomeWeek'
-          maxItems: 8
-          minItems: 8
-          type: array
-      required:
-      - thisWeek
-      - longestStreakWeeks
-      - medianDurationMinutes
-      - weeks
-      type: object
-    LocalHomeProject:
-      properties:
-        projectHash:
-          $ref: '#/components/schemas/ProjectHash'
-        projectName:
-          type: string
-      required:
-      - projectHash
-      - projectName
-      type: object
     LocalHomePublicationFilter:
       description: Root publication filter; auto uses the canonical live hook decision
       enum:
@@ -2979,22 +2942,6 @@ components:
       - auto
       title: Local Home Publication Filter
       type: string
-    LocalHomeRootCounts:
-      properties:
-        all:
-          minimum: 0
-          type: integer
-        notPublished:
-          minimum: 0
-          type: integer
-        published:
-          minimum: 0
-          type: integer
-      required:
-      - all
-      - published
-      - notPublished
-      type: object
     LocalHomeSessionRow:
       properties:
         childCount:
@@ -3031,48 +2978,10 @@ components:
           items:
             $ref: '#/components/schemas/LocalHomeSessionRow'
           type: array
-        scopeRevision:
-          minLength: 1
-          type: string
       required:
       - rows
       - offset
       - limit
-      - scopeRevision
-      type: object
-    LocalHomeStats:
-      properties:
-        activity:
-          $ref: '#/components/schemas/LocalHomeActivity'
-        projects:
-          items:
-            $ref: '#/components/schemas/LocalHomeProject'
-          type: array
-        rootFacets:
-          $ref: '#/components/schemas/LocalHomeRootCounts'
-        roots:
-          $ref: '#/components/schemas/LocalHomeRootCounts'
-        scopeRevision:
-          minLength: 1
-          type: string
-      required:
-      - scopeRevision
-      - roots
-      - rootFacets
-      - projects
-      - activity
-      type: object
-    LocalHomeWeek:
-      properties:
-        sessions:
-          minimum: 0
-          type: integer
-        startDate:
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}$
-          type: string
-      required:
-      - startDate
-      - sessions
       type: object
     LocalPublication:
       properties:

@@ -219,7 +219,7 @@
         "tags": [
           "home"
         ],
-        "description": "Read a bounded page of selection-visible roots, or immediate children of parentSessionId. Roots and children are ordered by startTime descending then local session ID ascending. Apply root project/publication filters before paging. Child requests reject projectHash and publication (400), and unknown or unselected parents return 404 without child identities. limit defaults to 25 (1..100), offset to 0, publication to all. Only page IDs receive title, redaction-safe preview, sync readiness and canonical publication/hook hydration; audience is absent. Auto filtering may inspect candidate repositories before paging; ordinary filters inspect hooks only for returned rows. nextOffset exists exactly when more matching metadata exists and equals offset+limit. Empty rows is []. scopeRevision hashes effective selection and signed-in origin/owner, not a data snapshot; offset pages may shift after inserts/deletes. Invalid bounds, enum, parent or hash return 400. Selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never empty success.",
+        "description": "Read a bounded page of selection-visible roots, or immediate children of parentSessionId. Roots and children are ordered by startTime descending then local session ID ascending. Apply root project/publication filters before paging. Child requests reject projectHash and publication (400), and unknown or unselected parents return 404 without child identities. limit defaults to 25 (1..100), offset to 0, publication to all. Only page IDs receive title, redaction-safe preview, sync readiness and canonical publication/hook hydration; audience is absent. Auto filtering may inspect candidate repositories before paging; ordinary filters inspect hooks only for returned rows. nextOffset exists exactly when more matching metadata exists and equals offset+limit. Empty rows is []. Offset pages are live, not a data snapshot, and may shift after inserts/deletes. Invalid bounds, enum, parent or hash return 400. Selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never empty success.",
         "operationId": "listHomeSessions",
         "parameters": [
           {
@@ -288,68 +288,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/home/stats": {
-      "get": {
-        "tags": [
-          "home"
-        ],
-        "description": "Read independent metadata-only Home aggregates after the first page renders. roots counts the global selected root cohort using current signed-in origin/owner receipts across historical project hashes; rootFacets alone is narrowed by projectHash. all = published + notPublished. projects is the complete selected root picker sorted by projectName then projectHash. Activity uses the existing selection-only activity cohort, including children and nonpushable sessions, UTC Monday weeks, the existing streak and rounded nonnegative-duration median; an empty median is null and zero is real. weeks contains eight consecutive weeks in ascending order. No transcript, entries, quality serialization, annotations, Git, hook checks or Village HTTP are read. There is no auto count. scopeRevision hashes effective selection and signed-in origin/owner, not a snapshot. Invalid projectHash returns 400; selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never partial zero success.",
-        "operationId": "getHomeStats",
-        "parameters": [
-          {
-            "name": "projectHash",
-            "in": "query",
-            "description": "Narrow rootFacets only, not global roots, projects, or activity",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaProjectHash",
-              "description": "Narrow rootFacets only, not global roots, projects, or activity"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaLocalHomeStats"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
             "content": {
               "application/json": {
                 "schema": {
@@ -3767,62 +3705,6 @@
         ],
         "type": "object"
       },
-      "SchemaLocalHomeActivity": {
-        "properties": {
-          "longestStreakWeeks": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "medianDurationMinutes": {
-            "anyOf": [
-              {
-                "minimum": 0,
-                "type": [
-                  "null",
-                  "number"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "thisWeek": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "weeks": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaLocalHomeWeek"
-            },
-            "maxItems": 8,
-            "minItems": 8,
-            "type": "array"
-          }
-        },
-        "required": [
-          "thisWeek",
-          "longestStreakWeeks",
-          "medianDurationMinutes",
-          "weeks"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalHomeProject": {
-        "properties": {
-          "projectHash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
-          },
-          "projectName": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "projectHash",
-          "projectName"
-        ],
-        "type": "object"
-      },
       "SchemaLocalHomePublicationFilter": {
         "description": "Root publication filter; auto uses the canonical live hook decision",
         "enum": [
@@ -3839,28 +3721,6 @@
         ],
         "title": "Local Home Publication Filter",
         "type": "string"
-      },
-      "SchemaLocalHomeRootCounts": {
-        "properties": {
-          "all": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "notPublished": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "published": {
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "all",
-          "published",
-          "notPublished"
-        ],
-        "type": "object"
       },
       "SchemaLocalHomeSessionRow": {
         "properties": {
@@ -3910,65 +3770,12 @@
               "$ref": "#/components/schemas/SchemaLocalHomeSessionRow"
             },
             "type": "array"
-          },
-          "scopeRevision": {
-            "minLength": 1,
-            "type": "string"
           }
         },
         "required": [
           "rows",
           "offset",
-          "limit",
-          "scopeRevision"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalHomeStats": {
-        "properties": {
-          "activity": {
-            "$ref": "#/components/schemas/SchemaLocalHomeActivity"
-          },
-          "projects": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaLocalHomeProject"
-            },
-            "type": "array"
-          },
-          "rootFacets": {
-            "$ref": "#/components/schemas/SchemaLocalHomeRootCounts"
-          },
-          "roots": {
-            "$ref": "#/components/schemas/SchemaLocalHomeRootCounts"
-          },
-          "scopeRevision": {
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "scopeRevision",
-          "roots",
-          "rootFacets",
-          "projects",
-          "activity"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalHomeWeek": {
-        "properties": {
-          "sessions": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "startDate": {
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-            "type": "string"
-          }
-        },
-        "required": [
-          "startDate",
-          "sessions"
+          "limit"
         ],
         "type": "object"
       },

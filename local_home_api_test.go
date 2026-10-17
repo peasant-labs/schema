@@ -59,12 +59,6 @@ func TestLocalHomeQueries(t *testing.T) {
 				if err == nil {
 					err = q.Validate()
 				}
-			case "stats":
-				var q schema.LocalHomeStatsQuery
-				err = json.Unmarshal([]byte(c.Input.JSON), &q)
-				if err == nil {
-					err = q.Validate()
-				}
 			default:
 				t.Fatalf("unknown query kind %q", c.Input.Kind)
 			}

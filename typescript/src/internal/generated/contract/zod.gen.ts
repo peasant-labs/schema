@@ -987,39 +987,6 @@ export const zLocalHomePublicationFilter = z.enum([
 
 export type LocalHomePublicationFilter = z.infer<typeof zLocalHomePublicationFilter>;
 
-export const zLocalHomeRootCounts = z.object({
-    all: z.int().gte(0),
-    notPublished: z.int().gte(0),
-    published: z.int().gte(0)
-});
-
-export type LocalHomeRootCounts = z.infer<typeof zLocalHomeRootCounts>;
-
-export const zLocalHomeWeek = z.object({
-    sessions: z.int().gte(0),
-    startDate: z.string().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)
-});
-
-export type LocalHomeWeek = z.infer<typeof zLocalHomeWeek>;
-
-export const zLocalHomeActivity = z.object({
-    longestStreakWeeks: z.int().gte(0),
-    medianDurationMinutes: z.number().gte(0).nullable(),
-    thisWeek: z.int().gte(0),
-    weeks: z.tuple([
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek,
-        zLocalHomeWeek
-    ])
-});
-
-export type LocalHomeActivity = z.infer<typeof zLocalHomeActivity>;
-
 export const zLocalPublicationAttemptFailure = z.object({
     attemptedAt: z.iso.datetime(),
     message: z.string()
@@ -1261,23 +1228,6 @@ export const zAuthoritativeProjectContext = z.object({
 }).strict();
 
 export type AuthoritativeProjectContext = z.infer<typeof zAuthoritativeProjectContext>;
-
-export const zLocalHomeProject = z.object({
-    projectHash: zProjectHash,
-    projectName: z.string()
-});
-
-export type LocalHomeProject = z.infer<typeof zLocalHomeProject>;
-
-export const zLocalHomeStats = z.object({
-    activity: zLocalHomeActivity,
-    projects: z.array(zLocalHomeProject),
-    rootFacets: zLocalHomeRootCounts,
-    roots: zLocalHomeRootCounts,
-    scopeRevision: z.string().min(1)
-});
-
-export type LocalHomeStats = z.infer<typeof zLocalHomeStats>;
 
 export const zProjectContext = z.object({
     filePath: z.string().optional(),
@@ -3939,8 +3889,7 @@ export const zLocalHomeSessionsPage = z.object({
     limit: z.int().gte(1).lte(100),
     nextOffset: z.int().gte(0).optional(),
     offset: z.int().gte(0),
-    rows: z.array(zLocalHomeSessionRow),
-    scopeRevision: z.string().min(1)
+    rows: z.array(zLocalHomeSessionRow)
 });
 
 export type LocalHomeSessionsPage = z.infer<typeof zLocalHomeSessionsPage>;
