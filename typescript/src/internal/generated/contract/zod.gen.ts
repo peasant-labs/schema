@@ -5007,6 +5007,18 @@ export const zVillageSessionListPayload = z.object({
 
 export type VillageSessionListPayload = z.infer<typeof zVillageSessionListPayload>;
 
+/**
+ * Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.
+ *
+ * @deprecated
+ */
+export const zVillageDeprecatedGroupedContributableResponse = z.object({
+    groupId: zVillageUUID,
+    transcriptList: zVillageSessionListPayload
+});
+
+export type VillageDeprecatedGroupedContributableResponse = z.infer<typeof zVillageDeprecatedGroupedContributableResponse>;
+
 export const zVillageGroupedCollectiveDetailResponse = z.object({
     can_read: z.boolean(),
     contributors: z.array(zVillageCollectiveContributor),

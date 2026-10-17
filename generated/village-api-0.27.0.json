@@ -2742,7 +2742,7 @@
                       "$ref": "#/components/schemas/SchemaVillageContributableResponse"
                     },
                     {
-                      "$ref": "#/components/schemas/SchemaVillageGroupedContributableResponse"
+                      "$ref": "#/components/schemas/SchemaVillageDeprecatedGroupedContributableResponse"
                     }
                   ]
                 }
@@ -12649,6 +12649,23 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "SchemaVillageDeprecatedGroupedContributableResponse": {
+        "deprecated": true,
+        "description": "Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.",
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/SchemaVillageUUID"
+          },
+          "transcriptList": {
+            "$ref": "#/components/schemas/SchemaVillageSessionListPayload"
+          }
+        },
+        "required": [
+          "groupId",
+          "transcriptList"
         ],
         "type": "object"
       },

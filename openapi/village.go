@@ -683,7 +683,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			description:          "List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.",
 			requests:             []interface{}{groupPath, groupedViewQuery},
 			response:             new(schema.VillageContributableResponse),
-			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse)},
+			responseAlternatives: []interface{}{new(schema.VillageContributableResponse), new(schema.VillageGroupedContributableResponse), new(schema.VillageDeprecatedGroupedContributableResponse)},
 			errorStatuses: []int{
 				http.StatusBadRequest,
 				http.StatusUnauthorized,

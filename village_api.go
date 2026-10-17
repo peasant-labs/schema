@@ -1099,6 +1099,19 @@ type VillageGroupedContributableResponse struct {
 	TranscriptList VillageSessionListPayload `json:"transcriptList"`
 }
 
+// VillageDeprecatedGroupedContributableResponse preserves the released grouped
+// envelope on GET /api/v1/groups/{id}/contributable during the alias window.
+//
+// Deprecated: use VillageGroupedContributableResponse on the collectives route.
+type VillageDeprecatedGroupedContributableResponse struct {
+	GroupID        VillageUUID               `json:"groupId"`
+	TranscriptList VillageSessionListPayload `json:"transcriptList"`
+}
+
+func (r VillageDeprecatedGroupedContributableResponse) Validate() error {
+	return (VillageGroupedContributableResponse{GroupID: r.GroupID, TranscriptList: r.TranscriptList}).Validate()
+}
+
 func (r VillageGroupedContributableResponse) Validate() error {
 	if r.GroupID == "" {
 		return fmt.Errorf("Village grouped contribution validation failed at schema.VillageGroupedContributableResponse.Validate: groupId is empty; the selected collective cannot be identified; emit the requested collective ID")

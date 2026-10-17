@@ -151,6 +151,17 @@ func TestCollectiveAliasesPreserveErrorAndQueryParity(t *testing.T) {
 			}
 			delete(old, "operationId")
 			delete(old, "deprecated")
+			if id == "listContributableTranscripts" {
+				// Only the grouped response spelling differs during the alias window.
+				grouped := func(operation map[string]interface{}) map[string]interface{} {
+					return operation["responses"].(map[string]interface{})["200"].(map[string]interface{})["content"].(map[string]interface{})["application/json"].(map[string]interface{})["schema"].(map[string]interface{})["oneOf"].([]interface{})[1].(map[string]interface{})
+				}
+				legacyGrouped, canonicalGrouped := grouped(old), grouped(op)
+				if legacyGrouped["$ref"] != "#/components/schemas/SchemaVillageDeprecatedGroupedContributableResponse" || canonicalGrouped["$ref"] != "#/components/schemas/SchemaVillageGroupedContributableResponse" {
+					t.Fatal("grouped contribution route families lost their distinct declared envelopes")
+				}
+				legacyGrouped["$ref"] = canonicalGrouped["$ref"]
+			}
 			copy := map[string]interface{}{}
 			for k, v := range op {
 				if k != "operationId" {

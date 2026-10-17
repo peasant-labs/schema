@@ -3,6 +3,7 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: VillageDeprecatedGroupedContributableResponse, disposition: catalog, component: VillageDeprecatedGroupedContributableResponse, reason: released grouped envelope during deprecated resource route window}
   - {go_name: VillageOrganizationCollective, disposition: catalog, component: VillageOrganizationCollective, reason: existing viewer-permitted organization collective projection}
   - {go_name: VillageOrganizationCollectivesResponse, disposition: catalog, component: VillageOrganizationCollectivesResponse, reason: narrow complete disclosed organization collective set}
   - {go_name: CollectiveObservationScope, disposition: catalog, component: CollectiveObservationScope, reason: private observation scope}

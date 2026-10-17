@@ -13750,6 +13750,23 @@
         ],
         "type": "object"
       },
+      "VillageDeprecatedGroupedContributableResponse": {
+        "deprecated": true,
+        "description": "Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.",
+        "properties": {
+          "groupId": {
+            "$ref": "#/components/schemas/VillageUUID"
+          },
+          "transcriptList": {
+            "$ref": "#/components/schemas/VillageSessionListPayload"
+          }
+        },
+        "required": [
+          "groupId",
+          "transcriptList"
+        ],
+        "type": "object"
+      },
       "VillageEnrichedTranscriptShare": {
         "properties": {
           "acceptance_mode": {

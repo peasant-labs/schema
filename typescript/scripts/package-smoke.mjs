@@ -70,6 +70,8 @@ try {
   });
 
   const probe = [
+    `const envelopeAPI = await import(${JSON.stringify(packageManifest.name)});`,
+    ...parse(await readFile(new URL("../../testdata/deprecated_grouped_contributable.yaml", import.meta.url), "utf8")).envelopes.cases.map(row => `if (envelopeAPI[${JSON.stringify(`z${row.input.schema}`)}].safeParse(${JSON.stringify(row.input.payload)}).success !== ${row.expected.valid}) throw new Error(${JSON.stringify(`packed grouped contribution envelope differs for ${row.name}`)});`),
     `const redaction = await import(${JSON.stringify(packageManifest.name)});`,
     `for (const [category, label] of ${JSON.stringify(parse(await readFile(new URL("../../testdata/typescript/redaction_categories.yaml", import.meta.url), "utf8")).pairs.cases.map(row => [row.input.category, row.input.label]))}) { if (redaction.redactionCategoryLabel(category) !== label || redaction.redactionCategoryFromLabel(label) !== category) throw new Error("packed redaction conversion differs"); }`,
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,

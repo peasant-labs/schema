@@ -198,6 +198,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageSessionRow", new(schema.VillageSessionRow)}, {"VillageSessionListItem", new(schema.VillageSessionListItem)},
 		{"VillageSessionListPayload", new(schema.VillageSessionListPayload)}, {"VillageHelperMembersPayload", new(schema.VillageHelperMembersPayload)},
 		{"VillageGroupedCollectiveDetailResponse", new(schema.VillageGroupedCollectiveDetailResponse)}, {"VillageGroupedContributableResponse", new(schema.VillageGroupedContributableResponse)},
+		{"VillageDeprecatedGroupedContributableResponse", new(schema.VillageDeprecatedGroupedContributableResponse)},
 		{"VillageTranscriptCollective", new(schema.VillageTranscriptCollective)}, {"VillageTranscriptCollectivesResponse", new(schema.VillageTranscriptCollectivesResponse)},
 		{"VillageTranscriptDeletionPolicy", new(schema.VillageTranscriptDeletionPolicy)}, {"VillageTranscriptShare", new(schema.VillageTranscriptShare)},
 		{"VillageTranscriptVisibility", new(schema.VillageTranscriptVisibility)}, {"VillageUpdateCollectiveRequest", new(schema.VillageUpdateCollectiveRequest)},
@@ -288,6 +289,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	for name, schemaMap := range directSchemas {
 		r.SpecEns().ComponentsEns().WithSchemasItem(name, schemaMap)
 	}
+	deprecatedGrouped := r.SpecEns().ComponentsEns().Schemas["VillageDeprecatedGroupedContributableResponse"]
+	deprecatedGrouped["deprecated"] = true
+	deprecatedGrouped["description"] = "Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable."
 	if err := closeStrictComponents(r.SpecEns().ComponentsEns().Schemas); err != nil {
 		return nil, err
 	}

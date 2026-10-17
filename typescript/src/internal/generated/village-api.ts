@@ -1850,6 +1850,11 @@ export interface components {
          */
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
         SchemaVillageCreateCollectiveRequest: Schema.VillageCreateCollectiveRequest;
+        /**
+         * @deprecated
+         * @description Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.
+         */
+        SchemaVillageDeprecatedGroupedContributableResponse: Schema.VillageDeprecatedGroupedContributableResponse;
         SchemaVillageEnrichedTranscriptShare: Schema.VillageEnrichedTranscriptShare;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
         /**
@@ -4055,7 +4060,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageGroupedContributableResponse"];
+                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageDeprecatedGroupedContributableResponse"];
                 };
             };
             /** @description Bad Request */

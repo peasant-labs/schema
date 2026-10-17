@@ -100,6 +100,12 @@ routes:
       classification: must-pass
       provenance: {source: requirement, ref: village-pending-route}
       mutation: {description: adds grouped pending output}
+    - name: deprecated-contribute
+      input: {path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscriptsDeprecated, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageDeprecatedGroupedContributableResponse, parameters: [id, view]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: released-grouped-alias-window}
+      mutation: {description: preserves the released groupId envelope only on the deprecated route}
     - name: my-shares
       input: {path: "/api/v1/collectives/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, legacy_item: SchemaVillageUserCollectiveShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
       expected: {valid: true}
@@ -136,5 +142,5 @@ collections:
 required_names:
   rows: [global-count-zero, collective-same-row, pending-count-mismatch, my-share-identity-mismatch, contributable-same-row, pending-same-row, my-share-same-row, collective-turn-mismatch, input-count-above-safe-max]
   items: [transcript-arm, context-arm, both-arms]
-  routes: [global-profile-project-search, collective-browse, contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
+  routes: [global-profile-project-search, collective-browse, contribute, deprecated-contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
   collections: [list-empty-array-valid, list-null-invalid, list-zero-page-invalid, members-empty-array-valid, members-null-invalid, members-zero-limit-invalid, legacy-list-null-related-valid]
