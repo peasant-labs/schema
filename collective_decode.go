@@ -129,11 +129,75 @@ func decodeCollectiveObject(data []byte, target interface{}) error {
 	if err := requireCollectiveFields(data, target); err != nil {
 		return err
 	}
-	if json.Unmarshal(data, target) != nil {
+	canonical, err := projectCollectiveJSON(data, reflect.TypeOf(target).Elem(), false)
+	if err != nil {
+		return err
+	}
+	if json.Unmarshal(canonical, target) != nil {
 		return observationError("metadata payload has an invalid field type or timestamp")
 	}
 	return nil
 }
+
+// encoding/json matches struct fields case-insensitively, unlike the wire's
+// canonical keys. Decode only the exact fields inspected above, recursively,
+// so an additive case variant cannot override validated evidence. OPEN objects
+// accept and discard unknown properties as generated Zod does. The history
+// union alone rejects undeclared keys. All evidence structs use explicit JSON
+// tags (no embedded fields); scalar custom decoders and time.Time remain intact.
+func projectCollectiveJSON(data []byte, typ reflect.Type, strict bool) ([]byte, error) {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return data, nil
+	}
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ == reflect.TypeOf(time.Time{}) {
+		return data, nil
+	}
+	switch typ.Kind() {
+	case reflect.Struct:
+		var fields map[string]json.RawMessage
+		if json.Unmarshal(data, &fields) != nil || fields == nil {
+			return nil, observationError("metadata field requires a JSON object; correct the source payload before retrying")
+		}
+		canonical := make(map[string]json.RawMessage)
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
+			name := strings.Split(field.Tag.Get("json"), ",")[0]
+			if !field.IsExported() || name == "-" {
+				continue
+			}
+			if value, exists := fields[name]; exists {
+				projected, err := projectCollectiveJSON(value, field.Type, field.Type == reflect.TypeOf(LocalContributionHistoryResponse{}))
+				if err != nil {
+					return nil, err
+				}
+				canonical[name] = projected
+			}
+		}
+		if strict && len(canonical) != len(fields) {
+			return nil, observationError("history contains an undeclared field; use exact canonical JSON keys and only the selected evidence array before retrying")
+		}
+		return json.Marshal(canonical)
+	case reflect.Slice, reflect.Array:
+		var rows []json.RawMessage
+		if json.Unmarshal(data, &rows) != nil {
+			return nil, observationError("metadata field requires a JSON array; correct the source payload before retrying")
+		}
+		for i, row := range rows {
+			projected, err := projectCollectiveJSON(row, typ.Elem(), typ.Elem() == reflect.TypeOf(LocalContributionHistoryResponse{}))
+			if err != nil {
+				return nil, err
+			}
+			rows[i] = projected
+		}
+		return json.Marshal(rows)
+	default:
+		return data, nil
+	}
+}
+
 func requireCollectiveFields(data []byte, target interface{}) error {
 	if err := validateCollectiveRawTimes(data, reflect.TypeOf(target).Elem(), "metadata"); err != nil {
 		return err

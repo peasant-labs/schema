@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	jsonschema "github.com/swaggest/jsonschema-go"
+	"reflect"
 	"time"
 )
 
@@ -568,7 +569,11 @@ func (r *LocalContributionHistoryResponse) UnmarshalJSON(data []byte) error {
 	}
 	type plain LocalContributionHistoryResponse
 	var v plain
-	dec := json.NewDecoder(bytes.NewReader(data))
+	canonical, err := projectCollectiveJSON(data, reflect.TypeOf(required), true)
+	if err != nil {
+		return err
+	}
+	dec := json.NewDecoder(bytes.NewReader(canonical))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&v); err != nil {
 		return observationError("history contains invalid fields or framing")
