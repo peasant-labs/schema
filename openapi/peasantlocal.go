@@ -131,6 +131,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// The publishing, sign-in, and settings surface of the local web.
+	if err := addLocalHomeOperations(r); err != nil {
+		return nil, err
+	}
 	if err := addLocalPublishingOperations(r); err != nil {
 		return nil, err
 	}

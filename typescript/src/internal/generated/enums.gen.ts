@@ -1,4 +1,5 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zLocalHomePublicationFilter, type LocalHomePublicationFilter as LocalHomePublicationFilterContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
@@ -89,6 +90,18 @@ import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } 
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
+
+export type LocalHomePublicationFilter = LocalHomePublicationFilterContract;
+export const LocalHomePublicationFilter = Object.freeze({
+  All: zLocalHomePublicationFilter.parse("all"),
+  NotPublished: zLocalHomePublicationFilter.parse("not-published"),
+  Published: zLocalHomePublicationFilter.parse("published"),
+  Auto: zLocalHomePublicationFilter.parse("auto"),
+} as const);
+export const AllLocalHomePublicationFilters = Object.freeze([LocalHomePublicationFilter.All, LocalHomePublicationFilter.NotPublished, LocalHomePublicationFilter.Published, LocalHomePublicationFilter.Auto]) as readonly LocalHomePublicationFilter[];
+export function isLocalHomePublicationFilter(value: unknown): value is LocalHomePublicationFilter {
+  return zLocalHomePublicationFilter.safeParse(value).success;
+}
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({

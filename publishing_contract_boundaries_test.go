@@ -84,6 +84,12 @@ type boundaryExpected struct {
 // boundaryDecoders is the exact set of components the publishing corpora may
 // name. Each decodes the payload into its Go type and applies its validator.
 var boundaryDecoders = map[string]func([]byte) (any, error){
+	"LocalHomeSessionRow":                   decodeValidated[schema.LocalHomeSessionRow],
+	"LocalHomeSessionsPage":                 decodeValidated[schema.LocalHomeSessionsPage],
+	"LocalHomeStats":                        decodeValidated[schema.LocalHomeStats],
+	"LocalHomeActivity":                     decodeValidated[schema.LocalHomeActivity],
+	"LocalHomeRootCounts":                   decodeValidated[schema.LocalHomeRootCounts],
+	"LocalHomePublicationFilter":            decodeOnly[schema.LocalHomePublicationFilter],
 	"LocalSyncSessionsPayload":              decodeValidated[schema.LocalSyncSessionsPayload],
 	"LocalSessionRow":                       decodeValidated[schema.LocalSessionRow],
 	"LocalPublicationsResponse":             decodeValidated[schema.LocalPublicationsResponse],
@@ -410,6 +416,10 @@ func (h *boundaryHarness) requireOperation(t *testing.T, want boundaryOperation)
 		}
 		if len(parameter.Enum) > 0 {
 			schemaMap, _ := got["schema"].(map[string]any)
+			if ref, _ := schemaMap["$ref"].(string); strings.HasPrefix(ref, "#/components/schemas/") {
+				components := h.documents[want.API]["components"].(map[string]any)["schemas"].(map[string]any)
+				schemaMap, _ = components[strings.TrimPrefix(ref, "#/components/schemas/")].(map[string]any)
+			}
 			rawEnum, _ := schemaMap["enum"].([]any)
 			values := make([]string, 0, len(rawEnum))
 			for _, value := range rawEnum {

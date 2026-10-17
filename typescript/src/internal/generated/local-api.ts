@@ -86,6 +86,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/home/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read a bounded page of selection-visible roots, or immediate children of parentSessionId. Roots and children are ordered by startTime descending then local session ID ascending. Apply root project/publication filters before paging. Child requests reject projectHash and publication (400), and unknown or unselected parents return 404 without child identities. limit defaults to 25 (1..100), offset to 0, publication to all. Only page IDs receive title, redaction-safe preview, sync readiness and canonical publication/hook hydration; audience is absent. Auto filtering may inspect candidate repositories before paging; ordinary filters inspect hooks only for returned rows. nextOffset exists exactly when more matching metadata exists and equals offset+limit. Empty rows is []. scopeRevision hashes effective selection and signed-in origin/owner, not a data snapshot; offset pages may shift after inserts/deletes. Invalid bounds, enum, parent or hash return 400. Selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never empty success. */
+        get: operations["listHomeSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/home/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read independent metadata-only Home aggregates after the first page renders. roots counts the global selected root cohort using current signed-in origin/owner receipts across historical project hashes; rootFacets alone is narrowed by projectHash. all = published + notPublished. projects is the complete selected root picker sorted by projectName then projectHash. Activity uses the existing selection-only activity cohort, including children and nonpushable sessions, UTC Monday weeks, the existing streak and rounded nonnegative-duration median; an empty median is null and zero is real. weeks contains eight consecutive weeks in ascending order. No transcript, entries, quality serialization, annotations, Git, hook checks or Village HTTP are read. There is no auto count. scopeRevision hashes effective selection and signed-in origin/owner, not a snapshot. Invalid projectHash returns 400; selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never partial zero success. */
+        get: operations["getHomeStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/map/{projectHash}": {
         parameters: {
             query?: never;
@@ -842,6 +876,23 @@ export interface components {
          */
         SchemaLocalCollectiveSuggestionReason: Schema.LocalCollectiveSuggestionReason;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
+        SchemaLocalHomeActivity: Schema.LocalHomeActivity;
+        SchemaLocalHomeProject: Schema.LocalHomeProject;
+        /**
+         * Local Home Publication Filter
+         * @description Root publication filter; auto uses the canonical live hook decision
+         * @example all
+         * @example not-published
+         * @example published
+         * @example auto
+         * @enum {string}
+         */
+        SchemaLocalHomePublicationFilter: Schema.LocalHomePublicationFilter;
+        SchemaLocalHomeRootCounts: Schema.LocalHomeRootCounts;
+        SchemaLocalHomeSessionRow: Schema.LocalHomeSessionRow;
+        SchemaLocalHomeSessionsPage: Schema.LocalHomeSessionsPage;
+        SchemaLocalHomeStats: Schema.LocalHomeStats;
+        SchemaLocalHomeWeek: Schema.LocalHomeWeek;
         SchemaLocalPublication: Schema.LocalPublication;
         SchemaLocalPublicationAttemptFailure: Schema.LocalPublicationAttemptFailure;
         SchemaLocalPublicationAudienceMember: Schema.LocalPublicationAudienceMember;
@@ -1535,6 +1586,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaHealthResponse"];
+                };
+            };
+        };
+    };
+    listHomeSessions: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                parentSessionId?: string;
+                projectHash?: components["schemas"]["SchemaProjectHash"];
+                publication?: components["schemas"]["SchemaLocalHomePublicationFilter"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalHomeSessionsPage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getHomeStats: {
+        parameters: {
+            query?: {
+                /** @description Narrow rootFacets only, not global roots, projects, or activity */
+                projectHash?: components["schemas"]["SchemaProjectHash"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalHomeStats"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };
