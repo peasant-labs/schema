@@ -51,6 +51,7 @@ const villageApiSource = await readFile(new URL("../src/village-api.ts", import.
 
 const canonicalTypeEntries = toEntries(catalogNames.filter((name) => !enumNames.includes(name)));
 const canonicalRuntimeEntries = [
+  ...toEntries(parse(await readFile(new URL("../../testdata/typescript/redaction_categories.yaml", import.meta.url), "utf8")).runtime_exports),
   ...toEntries(catalogNames.map((name) => `z${name}`)),
   ...toEntries(enumCatalog.enums.flatMap((enumCase) => [enumCase.name, enumCase.all_name, `is${enumCase.name}`])),
   ...toEntries(contentCapabilityRuntimeNames),

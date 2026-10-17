@@ -97,6 +97,15 @@ script) behind it.
 
 ### Codegen freshness
 
+The isolated `tools/redaction-categories/` module calls the checksum-pinned,
+released engine to generate the browser category bindings. It has no root Go
+dependency. `make check` runs its vet and race tests. The TypeScript redaction
+corpus checks exact inventories, both conversion directions, invalid JavaScript
+inputs and invalid projection mutations. Its freshness test runs the real tool
+twice and compares the result with the committed browser output. Packed-package
+smoke checks runtime conversion and positive and negative declaration use from
+the package root. No scan wire or standalone Go validator policy changes.
+
 `TestCodegenFreshness_SpecsMatchSource` regenerates the OpenAPI specs from the Go
 source via the **same** generator `cmd/schema-gen`'s `main()` uses
 (`openapi.GenerateSpecArtifacts()`, not a mock) and asserts every committed

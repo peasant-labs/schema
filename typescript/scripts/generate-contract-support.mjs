@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import { renderRedactionCategories } from "./lib/redaction-categories.mjs";
 
 import openapiTS, { astToString } from "openapi-typescript";
 import ts from "typescript";
@@ -47,6 +49,11 @@ const sessionGraphCapabilitySource = parse(await readFile(join(moduleRoot, "test
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
+const redactionProjection = JSON.parse(execFileSync("go", ["run", "-mod=readonly", "."], {
+  cwd: join(moduleRoot, "tools", "redaction-categories"),
+  env: { ...process.env, GOWORK: "off" }, timeout: 120000, encoding: "utf8",
+}));
+await writeFile(join(generatedRoot, "redaction-categories.gen.ts"), renderRedactionCategories(redactionProjection));
 await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
