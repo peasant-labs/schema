@@ -4,8 +4,82 @@ import (
 	"bytes"
 	"encoding/json"
 	"reflect"
+	"regexp"
 	"strings"
+	"time"
 )
+
+// CollectiveTimestampPattern is the lossless UTC RFC3339 wire grammar for
+// collective evidence: seconds are required, precision is at most nanoseconds.
+const CollectiveTimestampPattern = `^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$`
+
+var collectiveTimestampGrammar = regexp.MustCompile(CollectiveTimestampPattern)
+
+// Inspect raw values before time.Time can silently discard excess precision.
+// Traverse only declared fields on this metadata boundary, not additive extras
+// or unrelated legacy payloads. Nullable timestamps retain explicit null.
+func validateCollectiveRawTimes(data []byte, typ reflect.Type, field string) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return nil
+	}
+	for typ.Kind() == reflect.Pointer {
+		typ = typ.Elem()
+	}
+	if typ == reflect.TypeOf(time.Time{}) {
+		var text string
+		if json.Unmarshal(data, &text) != nil || !collectiveTimestampGrammar.MatchString(text) {
+			return observationError("timestamp " + field + " requires UTC RFC3339 with explicit seconds and zero to nine fractional digits; unsupported precision would lose evidence, so supply a lossless nanosecond timestamp ending in Z before retrying")
+		}
+		value, err := time.Parse(time.RFC3339Nano, text)
+		if err != nil || value.IsZero() {
+			return observationError("timestamp " + field + " must be a real nonzero UTC calendar instant; correct the source timestamp before retrying")
+		}
+		return nil
+	}
+	switch typ.Kind() {
+	case reflect.Struct:
+		var fields map[string]json.RawMessage
+		if json.Unmarshal(data, &fields) != nil {
+			return nil
+		}
+		for i := 0; i < typ.NumField(); i++ {
+			f := typ.Field(i)
+			name := strings.Split(f.Tag.Get("json"), ",")[0]
+			if f.IsExported() && name != "-" {
+				if raw, ok := fields[name]; ok {
+					if err := validateCollectiveRawTimes(raw, f.Type, field+"."+name); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		var rows []json.RawMessage
+		if json.Unmarshal(data, &rows) != nil {
+			return nil
+		}
+		for _, row := range rows {
+			if err := validateCollectiveRawTimes(row, typ.Elem(), field+"[]"); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (v *LocalRemoteContributionAttempt) UnmarshalJSON(data []byte) error {
+	type plain LocalRemoteContributionAttempt
+	var value plain
+	if err := decodeCollectiveObject(data, &value); err != nil {
+		return err
+	}
+	result := LocalRemoteContributionAttempt(value)
+	if err := result.Validate(); err != nil {
+		return err
+	}
+	*v = result
+	return nil
+}
 
 func (v *VillageShareEvent) UnmarshalJSON(data []byte) error {
 	type plain VillageShareEvent
@@ -61,6 +135,9 @@ func decodeCollectiveObject(data []byte, target interface{}) error {
 	return nil
 }
 func requireCollectiveFields(data []byte, target interface{}) error {
+	if err := validateCollectiveRawTimes(data, reflect.TypeOf(target).Elem(), "metadata"); err != nil {
+		return err
+	}
 	var fields map[string]json.RawMessage
 	if json.Unmarshal(data, &fields) != nil || fields == nil {
 		return observationError("metadata payload must be a JSON object")

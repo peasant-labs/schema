@@ -66,7 +66,10 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = applyCollectiveZodRefinements(applyContributionAttemptZodRefinements(normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readGeneratorOutput(zodPath, "the root Zod contract")))));
+  const generatedSource = await readGeneratorOutput(zodPath, "the root Zod contract");
+  const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
+  const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
+  const source = applyCollectiveZodRefinements(attemptSource, spec);
   await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
 }
 

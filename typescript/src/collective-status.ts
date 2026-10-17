@@ -10,13 +10,15 @@ export function collectiveFetchHTTPStatus(value: unknown): number {
     const report = parsed.data;
     if (report.outcome === "complete") return 200;
     const issues = [...report.issues];
+    let cancelled = false;
     for (const domain of report.domains) {
+      cancelled ||= domain.state === "cancelled";
       if (domain.issue != null) issues.push(domain.issue);
       for (const source of domain.sourceOutcomes) if (source.issue != null) issues.push(source.issue);
-      for (const scope of domain.associations?.scopes ?? []) if (scope.issue != null) issues.push(scope.issue);
+      for (const scope of domain.associations?.scopes ?? []) { cancelled ||= scope.state === "cancelled"; if (scope.issue != null) issues.push(scope.issue); }
     }
     const ranks = { persistence: 5, auth: 4, deadline: 3, remote: 2, contract: 2, superseded: 1 };
-    const rank = issues.reduce((highest, issue) => Math.max(highest, ranks[issue.code]), 0);
+    const rank = issues.reduce((highest, issue) => Math.max(highest, ranks[issue.code]), cancelled ? 3 : 0);
     return [500, 409, 502, 504, 401, 500][rank] ?? 500;
   } catch { return 500; }
 }

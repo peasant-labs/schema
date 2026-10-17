@@ -403,6 +403,9 @@ func CollectiveFetchHTTPStatus(report CollectiveFetchReport) int {
 		visit(i)
 	}
 	for _, d := range report.Domains {
+		if d.State == CollectiveFetchStateCancelled && rank < 3 {
+			rank = 3
+		}
 		if d.Issue != nil {
 			visit(*d.Issue)
 		}
@@ -413,6 +416,9 @@ func CollectiveFetchHTTPStatus(report CollectiveFetchReport) int {
 		}
 		if d.Associations != nil {
 			for _, s := range d.Associations.Scopes {
+				if s.State == CollectiveFetchStateCancelled && rank < 3 {
+					rank = 3
+				}
 				if s.Issue != nil {
 					visit(*s.Issue)
 				}

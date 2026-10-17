@@ -1388,8 +1388,8 @@ export type OperationIssue = z.infer<typeof zOperationIssue>;
 export const zCollectiveFetchDomainSummary = z.object({
     coverage: zCollectiveEvidenceCoverage,
     issue: zOperationIssue.nullish(),
-    lastAttemptAt: z.iso.datetime().nullish(),
-    lastCompletedAt: z.iso.datetime().nullish(),
+    lastAttemptAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
+    lastCompletedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     lastInstalledRevision: z.string().nullish(),
     state: zCollectiveFetchState
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("CollectiveFetchDomainSummary", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
@@ -1399,7 +1399,7 @@ export type CollectiveFetchDomainSummary = z.infer<typeof zCollectiveFetchDomain
 export const zCollectiveFetchSourceResult = z.object({
     complete: z.boolean(),
     issue: zOperationIssue.nullish(),
-    observedAt: z.iso.datetime().nullish(),
+    observedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     outcome: zCollectiveSourceOutcome,
     source: zCollectiveObservationSource
 });
@@ -1646,7 +1646,7 @@ export const zPullAssociationMetadataState = z.enum([
 export type PullAssociationMetadataState = z.infer<typeof zPullAssociationMetadataState>;
 
 export const zPullAssociationMetadataResult = z.object({
-    observedAt: z.iso.datetime().nullish(),
+    observedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     state: zPullAssociationMetadataState,
     warning: zOperationIssue.nullish()
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("PullAssociationMetadataResult", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
@@ -3150,9 +3150,9 @@ export type TranscriptID = z.infer<typeof zTranscriptID>;
 
 export const zCollectiveFetchAssociationScopeResult = z.object({
     commit: zCollectiveFetchCommit,
-    completedAt: z.iso.datetime().nullish(),
+    completedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     issue: zOperationIssue.nullish(),
-    observedAt: z.iso.datetime().nullish(),
+    observedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     state: zCollectiveFetchState,
     transcriptId: zTranscriptID
 });
@@ -3171,16 +3171,16 @@ export type CollectiveFetchAssociationResults = z.infer<typeof zCollectiveFetchA
 export const zCollectiveFetchDomainResult = z.object({
     associations: zCollectiveFetchAssociationResults.nullish(),
     commit: zCollectiveFetchCommit,
-    completedAt: z.iso.datetime().nullish(),
+    completedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     coverage: zCollectiveEvidenceCoverage,
     domain: zCollectiveFetchDomain,
     issue: zOperationIssue.nullish(),
-    lastAttemptAt: z.iso.datetime().nullish(),
-    lastCompletedAt: z.iso.datetime().nullish(),
+    lastAttemptAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
+    lastCompletedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     lastInstalledRevision: z.string().nullish(),
     requested: z.boolean(),
     sourceOutcomes: z.array(zCollectiveFetchSourceResult).max(10000),
-    startedAt: z.iso.datetime().nullish(),
+    startedAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     state: zCollectiveFetchState
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("CollectiveFetchDomainResult", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
@@ -4002,10 +4002,10 @@ export const zVillageShareStatus = z.enum([
 export type VillageShareStatus = z.infer<typeof zVillageShareStatus>;
 
 export const zVillageShareEvent = z.object({
-    decided_at: z.iso.datetime().nullable(),
+    decided_at: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullable(),
     decided_by_actor: zVillageShareEventActor,
     event_num: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    recorded_at: z.iso.datetime(),
+    recorded_at: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
     status: zVillageShareStatus
 }).superRefine((value, ctx) => {
   const fail = (message: string) => ctx.addIssue({ code: "custom", message: "Collective contribution attempt validation failed: " + message + "; retain prior evidence and fetch validated owner history before retrying" });
@@ -4141,7 +4141,7 @@ export const zCollectiveObservation = z.object({
     description: z.string().nullish(),
     id: zVillageUUID,
     name: z.string(),
-    observedAt: z.iso.datetime(),
+    observedAt: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
     reasons: z.array(zCollectiveObservationReason).max(4),
     state: zCollectiveObservationState
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("CollectiveObservation", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
@@ -4174,8 +4174,8 @@ export const zCollectiveFetchSummary = z.object({
     associations: zCollectiveFetchDomainSummary,
     catalog: zCollectiveFetchDomainSummary,
     history: zCollectiveFetchDomainSummary,
-    lastAttemptAt: z.iso.datetime().nullish(),
-    lastCompletedFetchAt: z.iso.datetime().nullish(),
+    lastAttemptAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
+    lastCompletedFetchAt: z.iso.datetime().regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/).nullish(),
     latestReport: zCollectiveFetchReport.nullish()
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("CollectiveFetchSummary", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
@@ -4192,7 +4192,7 @@ export type CollectiveObservationResponse = z.infer<typeof zCollectiveObservatio
 
 export const zLocalConfirmedContributionReceipt = z.object({
     collectiveId: zVillageUUID.nullish(),
-    confirmedAt: z.iso.datetime(),
+    confirmedAt: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
     operation: zCollectiveOperation,
     outcome: zLocalConfirmedContributionOutcome,
     receiptId: z.string().min(1).max(256),
@@ -4203,7 +4203,7 @@ export const zLocalConfirmedContributionReceipt = z.object({
 export type LocalConfirmedContributionReceipt = z.infer<typeof zLocalConfirmedContributionReceipt>;
 
 export const zLocalOperationDiagnostic = z.object({
-    attemptedAt: z.iso.datetime(),
+    attemptedAt: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
     collectiveId: zVillageUUID.nullish(),
     issue: zOperationIssue,
     operation: zCollectiveOperation,
@@ -4245,7 +4245,7 @@ export type LocalPublicationsResponse = z.infer<typeof zLocalPublicationsRespons
 export const zLocalRemoteContributionAttempt = z.object({
     attempt: zVillageShareEvent,
     collectiveId: zVillageUUID,
-    firstSeenAt: z.iso.datetime(),
+    firstSeenAt: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
     transcriptId: zTranscriptID
 }).superRefine((value, ctx) => {
   const fail = (message: string) => ctx.addIssue({ code: "custom", message: "Collective contribution attempt validation failed: " + message + "; retain prior evidence and fetch validated owner history before retrying" });

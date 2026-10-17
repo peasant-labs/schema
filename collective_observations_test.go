@@ -22,10 +22,12 @@ type collectiveValidationInput struct {
 	Payload map[string]interface{} `yaml:"payload"`
 }
 type collectiveExpected struct {
-	Valid      bool   `yaml:"valid"`
-	Status     int    `yaml:"status"`
-	Normalized string `yaml:"normalized"`
-	Token      string `yaml:"token"`
+	Disposition string `yaml:"disposition"`
+	Conflict    bool   `yaml:"conflict"`
+	Valid       bool   `yaml:"valid"`
+	Status      int    `yaml:"status"`
+	Normalized  string `yaml:"normalized"`
+	Token       string `yaml:"token"`
 }
 type collectiveTokenInput struct {
 	URL         string                               `yaml:"url"`
@@ -119,6 +121,10 @@ func loadCollectiveObservationFixtures(t *testing.T) collectiveObservationFixtur
 func validateCollectiveFixture(target string, data []byte) (int, error) {
 	var v interface{ Validate() error }
 	switch target {
+	case "CollectiveObservation":
+		v = new(schema.CollectiveObservation)
+	case "LocalRemoteContributionAttempt":
+		v = new(schema.LocalRemoteContributionAttempt)
 	case "VillageShareEvent":
 		v = new(schema.VillageShareEvent)
 	case "VillageContributedCollective":

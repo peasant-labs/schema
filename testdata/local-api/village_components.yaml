@@ -9,7 +9,7 @@ components:
   - {name: VillagePromptRequest, sha256: ee153c624297a1afc37bb6ce2405dfc5774a60dbd8b6bcd23e88d2e1d9105d7f}
   - {name: VillagePullRequestAttachmentState, sha256: 59089a7dbd5ee091a8af5429116abc419218f66f4757ee33ffade11356efc29c}
   - {name: VillageShareStatus, sha256: c0f41e9beb4d17c6bc4fa7b05977e161dbf49fc46e1b5739ff31a92d62cad1fc}
-  - {name: VillageShareEvent, sha256: e749cd66956d44f4f897a58485239132a19ae259cdc217ca57de1c408776d21b}
+  - {name: VillageShareEvent, sha256: 59a7656b1bef3849288cc3f0fdfc6825c32124e6d91e21ba45087006ca77f442}
   - {name: VillageShareEventActor, sha256: f3c977aeb6a9ffdad1a14253ffceede3a6f501d7adfcfffce91500ecb2d230f5}
   - {name: VillageTranscriptDeletionPolicy, sha256: 8e1e5bf3704f90ac463a3a8d5bbe8f4a2425d176b68ed91c57bd586a3cb9c735}
   - {name: VillageUUID, sha256: 9873da81c6689ab13d5e647132ca65dbcab9f47780ff14c97fe696c6e93bc027}

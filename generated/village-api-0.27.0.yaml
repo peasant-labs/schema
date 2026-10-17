@@ -8877,6 +8877,9 @@ components:
         decided_at:
           anyOf:
           - format: date-time
+            not:
+              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
+            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
             type:
             - "null"
             - string
@@ -8888,6 +8891,9 @@ components:
           type: integer
         recorded_at:
           format: date-time
+          not:
+            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
+          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
           type: string
         status:
           $ref: '#/components/schemas/SchemaVillageShareStatus'

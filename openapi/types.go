@@ -312,6 +312,7 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	if err := constrainContributionHistory(r.SpecEns().ComponentsEns().Schemas); err != nil {
 		return nil, err
 	}
+	constrainCollectiveTimestamps(r.SpecEns().ComponentsEns().Schemas)
 
 	return r.Spec, nil
 }

@@ -9,6 +9,7 @@ import (
 	assertcase "github.com/peasant-labs/schema/testcase/assert"
 	"gopkg.in/yaml.v3"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -17,9 +18,11 @@ import (
 var collectiveWireYAML []byte
 
 type collectiveRawInput struct {
-	Target  string                 `yaml:"target"`
-	Payload map[string]interface{} `yaml:"payload"`
-	Omit    []string               `yaml:"omit"`
+	Set         map[string]interface{} `yaml:"set"`
+	IncomingSet map[string]interface{} `yaml:"incomingSet"`
+	Target      string                 `yaml:"target"`
+	Payload     map[string]interface{} `yaml:"payload"`
+	Omit        []string               `yaml:"omit"`
 }
 type collectiveWireFixtures struct {
 	Identity      collectiveTokenInput `yaml:"identity"`
@@ -81,6 +84,25 @@ func collectiveRawBytes(t *testing.T, input collectiveRawInput) []byte {
 			}
 		}
 		delete(node.(map[string]interface{}), parts[len(parts)-1])
+	}
+	for path, value := range input.Set {
+		parts := strings.Split(path, ".")
+		node := object
+		for _, part := range parts[:len(parts)-1] {
+			switch v := node.(type) {
+			case map[string]interface{}:
+				node = v[part]
+			case []interface{}:
+				i, err := strconv.Atoi(part)
+				if err != nil || i < 0 || i >= len(v) {
+					t.Fatal("invalid fixture index")
+				}
+				node = v[i]
+			default:
+				t.Fatal("absent fixture set path")
+			}
+		}
+		node.(map[string]interface{})[parts[len(parts)-1]] = value
 	}
 	data, err = json.Marshal(object)
 	if err != nil {

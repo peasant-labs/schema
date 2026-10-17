@@ -49,6 +49,9 @@ func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (Collec
 	if i := strings.LastIndex(authority, "@"); i >= 0 {
 		authority = authority[i+1:]
 	}
+	if !scopeAuthorityGrammar.MatchString(authority) {
+		return CollectiveObservationScope{}, observationError("scope authority requires a DNS/IPv4 host or bracketed IPv6 literal followed only by an optional decimal port; add IPv6 brackets before retrying")
+	}
 	if strings.HasSuffix(authority, ":") {
 		return CollectiveObservationScope{}, observationError("scope explicit port cannot be empty")
 	}
@@ -121,6 +124,7 @@ func NormalizeCollectiveObservationScope(raw string, userID VillageUUID) (Collec
 // numeric IPv4 aliases or erase repeated-slash/dot interactions. Credentials,
 // query and fragment are discarded, not used as identity or transport policy.
 var scopeURLGrammar = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)([^?#]*)(?:\?[^#]*)?(?:#.*)?$`)
+var scopeAuthorityGrammar = regexp.MustCompile(`^(\[[0-9A-Fa-f:.]+\]|[^:]+)(:[0-9]+)?$`)
 var scopePathGrammar = regexp.MustCompile(`^[A-Za-z0-9/._~!$&'()*+,;=:@-]*$`)
 var scopeDNSLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$`)
 var scopeNumericTail = regexp.MustCompile(`^(?:[0-9]+|0x[0-9a-f]*)$`)
