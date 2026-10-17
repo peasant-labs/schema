@@ -69,6 +69,8 @@ try {
   });
 
   const probe = [
+    `const redaction = await import(${JSON.stringify(packageManifest.name)});`,
+    `for (const [category, label] of ${JSON.stringify(parse(await readFile(new URL("../../testdata/typescript/redaction_categories.yaml", import.meta.url), "utf8")).pairs.cases.map(row => [row.input.category, row.input.label]))}) { if (redaction.redactionCategoryLabel(category) !== label || redaction.redactionCategoryFromLabel(label) !== category) throw new Error("packed redaction conversion differs"); }`,
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
@@ -103,7 +105,7 @@ try {
     .map((operationID) => `type __VillageCollectivesOperation_${operationID} = VillageOperations[${JSON.stringify(operationID)}];`)
     .join("\n");
   await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
-  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n`);
+  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n${await readFile(new URL("../tests/redaction-categories.ts", import.meta.url), "utf8")}\n`);
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 
