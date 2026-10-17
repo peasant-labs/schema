@@ -17,6 +17,7 @@ import (
 func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
+	registerSyncPageName(r)
 	r.Spec.Info.
 		WithTitle("Peasant Local Dashboard API").
 		// Derived from PeasantLocalAPIVersion (single source — see package doc).
@@ -63,13 +64,15 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}), new(schema.SessionDetailReadPayload)); err != nil {
 		return nil, err
 	}
-	// GET /api/v1/sync/sessions?view=grouped retains sync-specific row data.
-	if err := addRESTOp(r, http.MethodGet, "/api/v1/sync/sessions",
-		"listSyncSessionsGrouped", "List sync candidates with optional owner-nested helper groups.", []string{"sync"},
-		new(struct {
-			View string `query:"view" description:"Set to grouped for grouped rows" enum:"grouped"`
-		}),
-		new(schema.LocalSessionListPayload)); err != nil {
+	// Explicit views share the sync resource without changing legacy responses.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: "/api/v1/sync/sessions", id: "listSyncSessionsGrouped", tag: "sync",
+		description:   "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success.",
+		requests:      []interface{}{new(schema.LocalSyncSessionsQuery)},
+		response:      new(schema.LocalSyncSessionPage),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
 		return nil, err
 	}
 	// GET /api/v1/session-groups/{groupId}/members requires the opaque scope
@@ -131,9 +134,6 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// The publishing, sign-in, and settings surface of the local web.
-	if err := addLocalHomeOperations(r); err != nil {
-		return nil, err
-	}
 	if err := addLocalPublishingOperations(r); err != nil {
 		return nil, err
 	}
@@ -330,6 +330,15 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addComponentSchema(r, "LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)); err != nil {
 		return nil, err
 	}
+	if err := addComponentSchema(r, "LocalSyncSessionPage", new(schema.LocalSyncSessionPage)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "LocalSyncProjectOptions", new(schema.LocalSyncProjectOptions)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "LocalSyncProjectOption", new(schema.LocalSyncProjectOption)); err != nil {
+		return nil, err
+	}
 
 	// Fix annotation component $ref values (same rewrite as above).
 	if comps := r.SpecEns().Components; comps != nil {
@@ -345,7 +354,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// Express that wire-compatible conditional as a response union.
 	setResponseOneOf(r.Spec, "/api/v1/sessions", "get", "#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	setResponseOneOf(r.Spec, "/api/v1/search", "get", "#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload")
-	setResponseOneOf(r.Spec, "/api/v1/sync/sessions", "get", "#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
+	setResponseOneOf(r.Spec, "/api/v1/sync/sessions", "get", "#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload", "#/components/schemas/LocalSyncSessionPage", "#/components/schemas/LocalSyncProjectOptions")
 	// Keep the public response component name identical across the Local API and
 	// Types catalogs instead of exposing the reflector's package-prefixed alias.
 	components := r.SpecEns().ComponentsEns().Schemas

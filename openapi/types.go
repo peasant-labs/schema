@@ -23,9 +23,12 @@ type TypeCatalogEntry struct {
 // this language-neutral contract surface.
 func TypeCatalogEntries() []TypeCatalogEntry {
 	return []TypeCatalogEntry{
-		{"LocalHomePublicationFilter", new(schema.LocalHomePublicationFilter)},
-		{"LocalHomeSessionRow", new(schema.LocalHomeSessionRow)},
-		{"LocalHomeSessionsPage", new(schema.LocalHomeSessionsPage)},
+		{"PageToken", new(schema.PageToken)},
+		{"LocalSyncPublicationFilter", new(schema.LocalSyncPublicationFilter)},
+		{"LocalSyncSessionRow", new(schema.LocalSyncSessionRow)},
+		{"LocalSyncSessionPage", new(schema.LocalSyncSessionPage)},
+		{"LocalSyncProjectOption", new(schema.LocalSyncProjectOption)},
+		{"LocalSyncProjectOptions", new(schema.LocalSyncProjectOptions)},
 		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
 		{"AnnotationDatatype", new(schema.AnnotationDatatype)}, {"AnnotationEntryTarget", new(schema.AnnotationEntryTarget)},
 		{"AnnotationManifestResponse", new(schema.AnnotationManifestResponse)}, {"AnnotationPushItem", new(schema.AnnotationPushItem)},
@@ -238,6 +241,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 func BuildTypesSpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
+	registerSyncPageName(r)
 	r.Spec.Info.
 		WithTitle("Peasant Types").
 		// Derived from TypesVersion (single source; see package doc).

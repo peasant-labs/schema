@@ -1,6 +1,6 @@
 enums:
-  - name: LocalHomePublicationFilter
-    all_name: AllLocalHomePublicationFilters
+  - name: LocalSyncPublicationFilter
+    all_name: AllLocalSyncPublicationFilters
     members:
       - {name: All, value: "all"}
       - {name: NotPublished, value: "not-published"}

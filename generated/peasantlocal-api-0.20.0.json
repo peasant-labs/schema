@@ -214,111 +214,6 @@
         }
       }
     },
-    "/api/v1/home/sessions": {
-      "get": {
-        "tags": [
-          "home"
-        ],
-        "description": "Read a bounded page of selection-visible roots, or immediate children of parentSessionId. Roots and children are ordered by startTime descending then local session ID ascending. Apply root project/publication filters before paging. Child requests reject projectHash and publication (400), and unknown or unselected parents return 404 without child identities. limit defaults to 25 (1..100), offset to 0, publication to all. Only page IDs receive title, redaction-safe preview, sync readiness and canonical publication/hook hydration; audience is absent. Auto filtering may inspect candidate repositories before paging; ordinary filters inspect hooks only for returned rows. nextOffset exists exactly when more matching metadata exists and equals offset+limit. Empty rows is []. Offset pages are live, not a data snapshot, and may shift after inserts/deletes. Invalid bounds, enum, parent or hash return 400. Selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never empty success.",
-        "operationId": "listHomeSessions",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "default": 25,
-              "maximum": 100,
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "parentSessionId",
-            "in": "query",
-            "schema": {
-              "minLength": 1,
-              "type": "string"
-            }
-          },
-          {
-            "name": "projectHash",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaProjectHash"
-            }
-          },
-          {
-            "name": "publication",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaLocalHomePublicationFilter",
-              "default": "all"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaLocalHomeSessionsPage"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/map/{projectHash}": {
       "get": {
         "tags": [
@@ -1505,19 +1400,66 @@
         "tags": [
           "sync"
         ],
-        "description": "List sync candidates with optional owner-nested helper groups.",
+        "description": "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success.",
         "operationId": "listSyncSessionsGrouped",
         "parameters": [
           {
             "name": "view",
             "in": "query",
-            "description": "Set to grouped for grouped rows",
+            "description": "Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects",
             "schema": {
-              "description": "Set to grouped for grouped rows",
+              "description": "Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects",
               "enum": [
-                "grouped"
+                "grouped",
+                "home",
+                "project-options"
               ],
               "type": "string"
+            }
+          },
+          {
+            "name": "maxItems",
+            "in": "query",
+            "description": "Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected",
+            "schema": {
+              "default": 25,
+              "description": "Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "description": "Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected",
+            "schema": {
+              "description": "Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected",
+              "maxLength": 4096,
+              "title": "Page Token",
+              "type": "string"
+            }
+          },
+          {
+            "name": "parentSessionId",
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectHash",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaProjectHash"
+            }
+          },
+          {
+            "name": "publication",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaLocalSyncPublicationFilter",
+              "default": "all"
             }
           }
         ],
@@ -1533,8 +1475,54 @@
                     },
                     {
                       "$ref": "#/components/schemas/SchemaLocalSessionListPayload"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalSyncSessionPage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalSyncProjectOptions"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
                 }
               }
             }
@@ -1695,6 +1683,55 @@
           "harnessBreakdown",
           "avgTurnsPerSession",
           "acceptanceRate"
+        ],
+        "type": "object"
+      },
+      "LocalSyncProjectOption": {
+        "properties": {
+          "projectHash": {
+            "$ref": "#/components/schemas/SchemaProjectHash"
+          },
+          "projectName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectHash",
+          "projectName"
+        ],
+        "type": "object"
+      },
+      "LocalSyncProjectOptions": {
+        "properties": {
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSyncProjectOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "projects"
+        ],
+        "type": "object"
+      },
+      "LocalSyncSessionPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaLocalSyncSessionRow"
+            },
+            "type": "array"
+          },
+          "next": {
+            "description": "Opaque continuation; empty starts traversal or marks its end. Not a credential or snapshot token.",
+            "title": "Page Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "next"
         ],
         "type": "object"
       },
@@ -3705,80 +3742,6 @@
         ],
         "type": "object"
       },
-      "SchemaLocalHomePublicationFilter": {
-        "description": "Root publication filter; auto uses the canonical live hook decision",
-        "enum": [
-          "all",
-          "not-published",
-          "published",
-          "auto"
-        ],
-        "examples": [
-          "all",
-          "not-published",
-          "published",
-          "auto"
-        ],
-        "title": "Local Home Publication Filter",
-        "type": "string"
-      },
-      "SchemaLocalHomeSessionRow": {
-        "properties": {
-          "childCount": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "preview": {
-            "type": "string"
-          },
-          "publication": {
-            "$ref": "#/components/schemas/SchemaLocalPublication"
-          },
-          "sync": {
-            "$ref": "#/components/schemas/SchemaLocalSyncSummary"
-          },
-          "title": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "sync",
-          "publication",
-          "title",
-          "preview",
-          "childCount"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalHomeSessionsPage": {
-        "properties": {
-          "limit": {
-            "maximum": 100,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "nextOffset": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "offset": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaLocalHomeSessionRow"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "rows",
-          "offset",
-          "limit"
-        ],
-        "type": "object"
-      },
       "SchemaLocalPublication": {
         "properties": {
           "audience": {
@@ -4130,6 +4093,51 @@
         "required": [
           "settings",
           "autoPublish"
+        ],
+        "type": "object"
+      },
+      "SchemaLocalSyncPublicationFilter": {
+        "description": "Root publication filter; auto uses the canonical live hook decision",
+        "enum": [
+          "all",
+          "not-published",
+          "published",
+          "auto"
+        ],
+        "examples": [
+          "all",
+          "not-published",
+          "published",
+          "auto"
+        ],
+        "title": "Local Sync Publication Filter",
+        "type": "string"
+      },
+      "SchemaLocalSyncSessionRow": {
+        "properties": {
+          "childCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "preview": {
+            "type": "string"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/SchemaLocalPublication"
+          },
+          "sync": {
+            "$ref": "#/components/schemas/SchemaLocalSyncSummary"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sync",
+          "publication",
+          "title",
+          "preview",
+          "childCount"
         ],
         "type": "object"
       },

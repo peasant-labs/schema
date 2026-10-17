@@ -2928,61 +2928,6 @@ components:
       - limit
       - total
       type: object
-    LocalHomePublicationFilter:
-      description: Root publication filter; auto uses the canonical live hook decision
-      enum:
-      - all
-      - not-published
-      - published
-      - auto
-      examples:
-      - all
-      - not-published
-      - published
-      - auto
-      title: Local Home Publication Filter
-      type: string
-    LocalHomeSessionRow:
-      properties:
-        childCount:
-          minimum: 0
-          type: integer
-        preview:
-          type: string
-        publication:
-          $ref: '#/components/schemas/LocalPublication'
-        sync:
-          $ref: '#/components/schemas/LocalSyncSummary'
-        title:
-          type: string
-      required:
-      - sync
-      - publication
-      - title
-      - preview
-      - childCount
-      type: object
-    LocalHomeSessionsPage:
-      properties:
-        limit:
-          maximum: 100
-          minimum: 1
-          type: integer
-        nextOffset:
-          minimum: 0
-          type: integer
-        offset:
-          minimum: 0
-          type: integer
-        rows:
-          items:
-            $ref: '#/components/schemas/LocalHomeSessionRow'
-          type: array
-      required:
-      - rows
-      - offset
-      - limit
-      type: object
     LocalPublication:
       properties:
         audience:
@@ -3224,6 +3169,74 @@ components:
       required:
       - settings
       - autoPublish
+      type: object
+    LocalSyncProjectOption:
+      properties:
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        projectName:
+          type: string
+      required:
+      - projectHash
+      - projectName
+      type: object
+    LocalSyncProjectOptions:
+      properties:
+        projects:
+          items:
+            $ref: '#/components/schemas/LocalSyncProjectOption'
+          type: array
+      required:
+      - projects
+      type: object
+    LocalSyncPublicationFilter:
+      description: Root publication filter; auto uses the canonical live hook decision
+      enum:
+      - all
+      - not-published
+      - published
+      - auto
+      examples:
+      - all
+      - not-published
+      - published
+      - auto
+      title: Local Sync Publication Filter
+      type: string
+    LocalSyncSessionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LocalSyncSessionRow'
+          type: array
+        next:
+          description: Opaque continuation; empty starts traversal or marks its end.
+            Not a credential or snapshot token.
+          title: Page Token
+          type: string
+      required:
+      - items
+      - next
+      type: object
+    LocalSyncSessionRow:
+      properties:
+        childCount:
+          minimum: 0
+          type: integer
+        preview:
+          type: string
+        publication:
+          $ref: '#/components/schemas/LocalPublication'
+        sync:
+          $ref: '#/components/schemas/LocalSyncSummary'
+        title:
+          type: string
+      required:
+      - sync
+      - publication
+      - title
+      - preview
+      - childCount
       type: object
     LocalSyncSessionsPayload:
       properties:
@@ -3791,6 +3804,11 @@ components:
       - type: "null"
       description: Omitted preserves, null requests clear, and a canonical license
         replaces
+    PageToken:
+      description: Opaque continuation; empty starts traversal or marks its end. Not
+        a credential or snapshot token.
+      title: Page Token
+      type: string
     ProjectContext:
       properties:
         filePath:

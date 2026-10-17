@@ -84,9 +84,11 @@ type boundaryExpected struct {
 // boundaryDecoders is the exact set of components the publishing corpora may
 // name. Each decodes the payload into its Go type and applies its validator.
 var boundaryDecoders = map[string]func([]byte) (any, error){
-	"LocalHomeSessionRow":                   decodeValidated[schema.LocalHomeSessionRow],
-	"LocalHomeSessionsPage":                 decodeValidated[schema.LocalHomeSessionsPage],
-	"LocalHomePublicationFilter":            decodeOnly[schema.LocalHomePublicationFilter],
+	"LocalSyncSessionRow":                   decodeValidated[schema.LocalSyncSessionRow],
+	"LocalSyncSessionPage":                  decodeValidated[schema.LocalSyncSessionPage],
+	"LocalSyncPublicationFilter":            decodeOnly[schema.LocalSyncPublicationFilter],
+	"LocalSyncProjectOptions":               decodeValidated[schema.LocalSyncProjectOptions],
+	"PageToken":                             decodeOnly[schema.PageToken],
 	"LocalSyncSessionsPayload":              decodeValidated[schema.LocalSyncSessionsPayload],
 	"LocalSessionRow":                       decodeValidated[schema.LocalSessionRow],
 	"LocalPublicationsResponse":             decodeValidated[schema.LocalPublicationsResponse],

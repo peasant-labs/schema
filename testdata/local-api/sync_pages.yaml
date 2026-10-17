@@ -1,0 +1,177 @@
+required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next, child-row, mismatched-row-id, hidden-row, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, empty-token]
+operations:
+  - api: local
+    method: get
+    path: /api/v1/sync/sessions
+    response: LocalSyncSessionPage
+    statuses: ["200", "400", "404", "500", "503"]
+    error_responses: {"400": OpenapiLocalErrorResponse, "404": OpenapiLocalErrorResponse, "500": OpenapiLocalErrorResponse, "503": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
+      - {name: maxItems, in: query, required: false}
+      - {name: pageToken, in: query, required: false}
+      - {name: parentSessionId, in: query, required: false}
+      - {name: projectHash, in: query, required: false}
+      - {name: publication, in: query, required: false, enum: [all, not-published, published, auto]}
+  - api: local
+    method: get
+    path: /api/v1/sync/sessions
+    response: LocalSyncProjectOptions
+    parameters:
+      - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
+      - {name: maxItems, in: query, required: false}
+      - {name: pageToken, in: query, required: false}
+      - {name: parentSessionId, in: query, required: false}
+      - {name: projectHash, in: query, required: false}
+      - {name: publication, in: query, required: false, enum: [all, not-published, published, auto]}
+cases:
+  - name: empty-end
+    input: {schema: LocalSyncSessionPage, payload: {items: [], next: ""}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "only empty Next ends traversal"}
+    mutation: {description: "a completed empty page"}
+  - name: empty-continuing
+    input: {schema: LocalSyncSessionPage, payload: {items: [], next: opaque-next}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "filtered windows can continue without items"}
+    mutation: {description: "an empty page still has unscanned candidates"}
+  - name: short-continuing
+    input:
+      schema: LocalSyncSessionPage
+      payload: &page
+        items:
+          - &row
+            sync: &sync {id: local-a, harness: claude-code, projectName: project, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-10-12T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}
+            publication: &publication {sessionId: local-a, state: unpublished, autoPublish: true, outsideSelection: false}
+            title: stored title
+            preview: redacted preview
+            childCount: 2
+        next: opaque-next
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "short pages can continue"}
+    mutation: {description: "one item need not exhaust the traversal"}
+  - name: full-continuing
+    input: {schema: LocalSyncSessionPage, payload: {items: [*row, {<<: *row, sync: {<<: *sync, id: local-b}, publication: {<<: *publication, sessionId: local-b}}], next: opaque-next}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "MaxItems is request-owned"}
+    mutation: {description: "two valid nested items can fill a maximum of two and still continue"}
+  - name: null-items
+    input: {schema: LocalSyncSessionPage, payload: {items: null, next: ""}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "Page.Items"}
+    mutation: {description: "replace array with null"}
+  - name: missing-next
+    input: {schema: LocalSyncSessionPage, payload: {items: []}}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "Page.Next presence"}
+    mutation: {description: "omit the required end marker"}
+  - name: child-row
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, sync: {<<: *sync, parentSessionId: parent-a}}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "general immediate children"}
+    mutation: {description: "the same row projection names an immediate parent"}
+  - name: mismatched-row-id
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {<<: *publication, sessionId: other}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: identity}
+    classification: must-fail
+    provenance: {source: requirement, ref: "shared publication identity"}
+    mutation: {description: "pair sync with another session publication"}
+  - name: hidden-row
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {<<: *publication, outsideSelection: true}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: selection}
+    classification: must-fail
+    provenance: {source: requirement, ref: "selection-scoped reads"}
+    mutation: {description: "leak an out-of-selection row"}
+  - name: audience-on-page
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {sessionId: local-a, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://example.test/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-10-12T10:00:00Z", autoPublish: false, outsideSelection: false, audience: []}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: audience}
+    classification: must-fail
+    provenance: {source: requirement, ref: "deferred audience"}
+    mutation: {description: "include a remote audience on the critical page"}
+  - name: negative-child-count
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, childCount: -1}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "child count"}
+    mutation: {description: "use a negative immediate-child count"}
+  - name: filter-all
+    input: {schema: LocalSyncPublicationFilter, payload: all}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: LocalSyncPublicationFilter}
+    mutation: {description: "all roots"}
+  - name: filter-published
+    input: {schema: LocalSyncPublicationFilter, payload: published}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: LocalSyncPublicationFilter}
+    mutation: {description: "roots with an account receipt"}
+  - name: filter-not-published
+    input: {schema: LocalSyncPublicationFilter, payload: not-published}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: LocalSyncPublicationFilter}
+    mutation: {description: "roots without an account receipt"}
+  - name: filter-auto
+    input: {schema: LocalSyncPublicationFilter, payload: auto}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: LocalSyncPublicationFilter}
+    mutation: {description: "explicit live auto filter"}
+  - name: filter-unknown
+    input: {schema: LocalSyncPublicationFilter, payload: automatic}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: LocalSyncPublicationFilter}
+    mutation: {description: "use an off-menu filter spelling"}
+  - name: empty-projects
+    input: {schema: LocalSyncProjectOptions, payload: {projects: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "project-options"}
+    mutation: {description: "no selected root projects"}
+  - name: sorted-projects
+    input:
+      schema: LocalSyncProjectOptions
+      payload: {projects: [&projectA {projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, projectName: a}, &projectB {projectHash: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, projectName: a}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "project-options order"}
+    mutation: {description: "tied names sort by canonical hash"}
+  - name: null-projects
+    input: {schema: LocalSyncProjectOptions, payload: {projects: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "project-options array"}
+    mutation: {description: "null is not an empty picker"}
+  - name: duplicate-projects
+    input: {schema: LocalSyncProjectOptions, payload: {projects: [*projectA, *projectA]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: duplicate}
+    classification: must-fail
+    provenance: {source: requirement, ref: "project-options uniqueness"}
+    mutation: {description: "repeat a root project hash"}
+  - name: unsorted-projects
+    input: {schema: LocalSyncProjectOptions, payload: {projects: [*projectB, *projectA]}}
+    expected: {valid: false, rejected_by: semantics, error_contains: unsorted}
+    classification: must-fail
+    provenance: {source: requirement, ref: "project-options order"}
+    mutation: {description: "reverse tied-name hash order"}
+  - name: malformed-project
+    input: {schema: LocalSyncProjectOptions, payload: {projects: [{projectHash: bad, projectName: a}]}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash}
+    mutation: {description: "short project hash"}
+  - name: empty-token
+    input: {schema: PageToken, payload: ""}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: PageToken}
+    mutation: {description: "empty is the start or end marker"}

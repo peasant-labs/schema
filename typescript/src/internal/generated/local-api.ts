@@ -86,23 +86,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/home/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read a bounded page of selection-visible roots, or immediate children of parentSessionId. Roots and children are ordered by startTime descending then local session ID ascending. Apply root project/publication filters before paging. Child requests reject projectHash and publication (400), and unknown or unselected parents return 404 without child identities. limit defaults to 25 (1..100), offset to 0, publication to all. Only page IDs receive title, redaction-safe preview, sync readiness and canonical publication/hook hydration; audience is absent. Auto filtering may inspect candidate repositories before paging; ordinary filters inspect hooks only for returned rows. nextOffset exists exactly when more matching metadata exists and equals offset+limit. Empty rows is []. Offset pages are live, not a data snapshot, and may shift after inserts/deletes. Invalid bounds, enum, parent or hash return 400. Selection discovery failure returns 500 with code selection_visibility and recovery guidance; unavailable readers return 503 and store failures 500, never empty success. */
-        get: operations["listHomeSessions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/map/{projectHash}": {
         parameters: {
             query?: never;
@@ -520,7 +503,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List sync candidates with optional owner-nested helper groups. */
+        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success. */
         get: operations["listSyncSessionsGrouped"];
         put?: never;
         post?: never;
@@ -562,6 +545,9 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
+        LocalSyncProjectOption: Schema.LocalSyncProjectOption;
+        LocalSyncProjectOptions: Schema.LocalSyncProjectOptions;
+        LocalSyncSessionPage: Schema.LocalSyncSessionPage;
         LocalSyncSessionsPayload: Schema.LocalSyncSessionsPayload;
         OpenapiLocalErrorResponse: {
             code?: string;
@@ -859,18 +845,6 @@ export interface components {
          */
         SchemaLocalCollectiveSuggestionReason: Schema.LocalCollectiveSuggestionReason;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
-        /**
-         * Local Home Publication Filter
-         * @description Root publication filter; auto uses the canonical live hook decision
-         * @example all
-         * @example not-published
-         * @example published
-         * @example auto
-         * @enum {string}
-         */
-        SchemaLocalHomePublicationFilter: Schema.LocalHomePublicationFilter;
-        SchemaLocalHomeSessionRow: Schema.LocalHomeSessionRow;
-        SchemaLocalHomeSessionsPage: Schema.LocalHomeSessionsPage;
         SchemaLocalPublication: Schema.LocalPublication;
         SchemaLocalPublicationAttemptFailure: Schema.LocalPublicationAttemptFailure;
         SchemaLocalPublicationAudienceMember: Schema.LocalPublicationAudienceMember;
@@ -907,6 +881,17 @@ export interface components {
          */
         SchemaLocalSettingValue: Schema.LocalSettingValue;
         SchemaLocalSettingsResponse: Schema.LocalSettingsResponse;
+        /**
+         * Local Sync Publication Filter
+         * @description Root publication filter; auto uses the canonical live hook decision
+         * @example all
+         * @example not-published
+         * @example published
+         * @example auto
+         * @enum {string}
+         */
+        SchemaLocalSyncPublicationFilter: Schema.LocalSyncPublicationFilter;
+        SchemaLocalSyncSessionRow: Schema.LocalSyncSessionRow;
         SchemaLocalSyncSummary: Schema.LocalSyncSummary;
         SchemaLocalVillageCollective: Schema.LocalVillageCollective;
         SchemaLocalVillageCollectivesResponse: Schema.LocalVillageCollectivesResponse;
@@ -1564,68 +1549,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaHealthResponse"];
-                };
-            };
-        };
-    };
-    listHomeSessions: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-                parentSessionId?: string;
-                projectHash?: components["schemas"]["SchemaProjectHash"];
-                publication?: components["schemas"]["SchemaLocalHomePublicationFilter"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaLocalHomeSessionsPage"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };
@@ -2396,8 +2319,15 @@ export interface operations {
     listSyncSessionsGrouped: {
         parameters: {
             query?: {
-                /** @description Set to grouped for grouped rows */
-                view?: "grouped";
+                /** @description Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects */
+                view?: "grouped" | "home" | "project-options";
+                /** @description Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected */
+                maxItems?: number;
+                /** @description Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected */
+                pageToken?: string;
+                parentSessionId?: string;
+                projectHash?: components["schemas"]["SchemaProjectHash"];
+                publication?: components["schemas"]["SchemaLocalSyncPublicationFilter"];
             };
             header?: never;
             path?: never;
@@ -2411,7 +2341,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LocalSyncSessionsPayload"] | components["schemas"]["SchemaLocalSessionListPayload"];
+                    "application/json": components["schemas"]["LocalSyncSessionsPayload"] | components["schemas"]["SchemaLocalSessionListPayload"] | components["schemas"]["LocalSyncSessionPage"] | components["schemas"]["LocalSyncProjectOptions"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };
