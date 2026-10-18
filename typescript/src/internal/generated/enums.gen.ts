@@ -1,4 +1,5 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zLocalSyncPublicationFilter, type LocalSyncPublicationFilter as LocalSyncPublicationFilterContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
@@ -89,6 +90,18 @@ import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } 
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
+
+export type LocalSyncPublicationFilter = LocalSyncPublicationFilterContract;
+export const LocalSyncPublicationFilter = Object.freeze({
+  All: zLocalSyncPublicationFilter.parse("all"),
+  NotPublished: zLocalSyncPublicationFilter.parse("not-published"),
+  Published: zLocalSyncPublicationFilter.parse("published"),
+  Auto: zLocalSyncPublicationFilter.parse("auto"),
+} as const);
+export const AllLocalSyncPublicationFilters = Object.freeze([LocalSyncPublicationFilter.All, LocalSyncPublicationFilter.NotPublished, LocalSyncPublicationFilter.Published, LocalSyncPublicationFilter.Auto]) as readonly LocalSyncPublicationFilter[];
+export function isLocalSyncPublicationFilter(value: unknown): value is LocalSyncPublicationFilter {
+  return zLocalSyncPublicationFilter.safeParse(value).success;
+}
 
 export type PublishOperationKind = PublishOperationKindContract;
 export const PublishOperationKind = Object.freeze({

@@ -1,0 +1,146 @@
+required_names: [legacy, grouped, project-options, defaults, zero-default, positive-cap, clamp-oversized, children, child-project-refused, child-all-refused, empty-parent, negative-max, malformed-max, repeated-max, repeated-token, token-at-cap, oversized-token, legacy-max-refused, grouped-token-refused, options-filter-refused, unknown-view, unknown-filter, malformed-project, continuation]
+cases:
+  - name: legacy
+    input: {query: ""}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "legacy sync compatibility"}
+    mutation: {description: "omitted view retains flat behavior"}
+  - name: grouped
+    input: {query: "view=grouped"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "grouped sync compatibility"}
+    mutation: {description: "retain shipped grouped view"}
+  - name: project-options
+    input: {query: "view=project-options"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "metadata-only project options"}
+    mutation: {description: "explicit complete root project projection"}
+  - name: defaults
+    input: {query: "view=home"}
+    expected: {valid: true, max_items: 25}
+    classification: must-pass
+    provenance: {source: requirement, ref: "default page maximum"}
+    mutation: {description: "omit maximum and token"}
+  - name: zero-default
+    input: {query: "view=home&maxItems=0&pageToken="}
+    expected: {valid: true, max_items: 25}
+    classification: must-pass
+    provenance: {source: boundary, ref: "explicit zero default"}
+    mutation: {description: "zero and empty token mean the first default page"}
+  - name: positive-cap
+    input: {query: "view=home&maxItems=100"}
+    expected: {valid: true, max_items: 100}
+    classification: must-pass
+    provenance: {source: boundary, ref: "page maximum"}
+    mutation: {description: "use exact cap"}
+  - name: clamp-oversized
+    input: {query: "view=home&maxItems=101"}
+    expected: {valid: true, max_items: 100}
+    classification: must-pass
+    provenance: {source: requirement, ref: "positive maxima clamp"}
+    mutation: {description: "oversized positive is capped rather than rejected"}
+  - name: children
+    input: {query: "view=home&parentSessionId=parent&maxItems=1"}
+    expected: {valid: true, max_items: 1}
+    classification: must-pass
+    provenance: {source: requirement, ref: "general child pages"}
+    mutation: {description: "request immediate children without root filters"}
+  - name: child-project-refused
+    input: {query: "view=home&parentSessionId=parent&projectHash=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+    expected: {valid: false, error_contains: "omit projectHash and publication"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "child filter isolation"}
+    mutation: {description: "apply root project filter to children"}
+  - name: child-all-refused
+    input: {query: "view=home&parentSessionId=parent&publication=all"}
+    expected: {valid: false, error_contains: "omit projectHash and publication"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "child filter isolation"}
+    mutation: {description: "explicit all is still a root filter"}
+  - name: empty-parent
+    input: {query: "view=home&parentSessionId="}
+    expected: {valid: false, error_contains: parentSessionId}
+    classification: must-fail
+    provenance: {source: boundary, ref: "parent ID"}
+    mutation: {description: "explicit empty parent"}
+  - name: negative-max
+    input: {query: "view=home&maxItems=-1"}
+    expected: {valid: false, error_contains: negative}
+    classification: must-fail
+    provenance: {source: boundary, ref: "page maximum"}
+    mutation: {description: "negative maximum"}
+  - name: malformed-max
+    input: {query: "view=home&maxItems=1.5"}
+    expected: {valid: false, error_contains: malformed}
+    classification: must-fail
+    provenance: {source: boundary, ref: "integer maximum"}
+    mutation: {description: "noninteger maximum"}
+  - name: repeated-max
+    input: {query: "view=home&maxItems=1&maxItems=2"}
+    expected: {valid: false, error_contains: repeated}
+    classification: must-fail
+    provenance: {source: boundary, ref: "unambiguous query"}
+    mutation: {description: "repeat page maximum"}
+  - name: repeated-token
+    input: {query: "view=home&pageToken=a&pageToken=b"}
+    expected: {valid: false, error_contains: repeated}
+    classification: must-fail
+    provenance: {source: boundary, ref: "unambiguous query"}
+    mutation: {description: "repeat continuation"}
+  - name: token-at-cap
+    input: {query: "view=home", token_bytes: 4096}
+    expected: {valid: true, max_items: 25}
+    classification: must-pass
+    provenance: {source: boundary, ref: "4096-byte token cap"}
+    mutation: {description: "exact maximum input length"}
+  - name: oversized-token
+    input: {query: "view=home", token_bytes: 4097}
+    expected: {valid: false, error_contains: "discard continuation and restart"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "4096-byte token cap"}
+    mutation: {description: "exceed token input cap by one byte"}
+  - name: legacy-max-refused
+    input: {query: "maxItems=25"}
+    expected: {valid: false, error_contains: "require view=home"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "opt-in paging"}
+    mutation: {description: "do not silently serve a legacy envelope as a page"}
+  - name: grouped-token-refused
+    input: {query: "view=grouped&pageToken="}
+    expected: {valid: false, error_contains: "require view=home"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "opt-in paging"}
+    mutation: {description: "even empty explicit token requires home"}
+  - name: options-filter-refused
+    input: {query: "view=project-options&publication=published"}
+    expected: {valid: false, error_contains: "require view=home"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "complete project picker"}
+    mutation: {description: "do not narrow metadata-only options with root filters"}
+  - name: unknown-view
+    input: {query: "view=unknown"}
+    expected: {valid: false, error_contains: "view is unknown"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "sync views"}
+    mutation: {description: "unrecognized view"}
+  - name: unknown-filter
+    input: {query: "view=home&publication=automatic"}
+    expected: {valid: false, error_contains: "all, not-published, published, or auto"}
+    classification: must-fail
+    provenance: {source: boundary, ref: LocalSyncPublicationFilter}
+    mutation: {description: "unrecognized publication filter"}
+  - name: malformed-project
+    input: {query: "view=home&projectHash=bad"}
+    expected: {valid: false, error_contains: projectHash}
+    classification: must-fail
+    provenance: {source: boundary, ref: ProjectHash}
+    mutation: {description: "short project hash"}
+  - name: continuation
+    input: {query: "view=home&pageToken=opaque-next&maxItems=5&publication=auto&projectHash=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+    expected: {valid: true, max_items: 5, token: opaque-next}
+    classification: must-pass
+    provenance: {source: requirement, ref: "domain reader continuation"}
+    mutation: {description: "pass opaque token without interpreting domain syntax"}

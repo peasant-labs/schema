@@ -15,7 +15,8 @@ const corpora = manifest.corpora;
 assert.ok(Array.isArray(corpora) && corpora.length > 0, "testdata/publishing_corpora.yaml lists no corpus");
 
 for (const path of corpora) {
-  const fixture = YAML.parse(await fs.readFile(new URL(`../../${path}`, import.meta.url), "utf8"));
+  // Match yaml.v3's merge-key semantics so mutations can inherit a valid baseline.
+  const fixture = YAML.parse(await fs.readFile(new URL(`../../${path}`, import.meta.url), "utf8"), { merge: true });
   test(`${path} is a valid corpus`, () => {
     assert.equal(validateCorpus({ cases: fixture.cases }), undefined);
     assert.deepEqual(new Set(fixture.cases.map((row) => row.name)), new Set(fixture.required_names));

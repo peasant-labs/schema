@@ -1,4 +1,12 @@
 enums:
+  - name: LocalSyncPublicationFilter
+    all_name: AllLocalSyncPublicationFilters
+    members:
+      - {name: All, value: "all"}
+      - {name: NotPublished, value: "not-published"}
+      - {name: Published, value: "published"}
+      - {name: Auto, value: "auto"}
+    all_values: ["all", "not-published", "published", "auto"]
   - name: PublishOperationKind
     all_name: AllPublishOperationKinds
     members:

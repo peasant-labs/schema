@@ -132,7 +132,8 @@ const (
 	// Bumped to 0.19.0 for the optional thinking level and raw native spelling
 	// on session detail and assistant turns, and the in-session thinking-level
 	// history (additive = minor bump).
-	PeasantLocalAPIVersion = "0.19.0"
+	// Bumped to 0.20.0 for forward sync pages and metadata-only project options.
+	PeasantLocalAPIVersion = "0.20.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -196,5 +197,6 @@ const (
 	// Bumped to 0.30.0 for the ThinkingLevel closed set, the bounded
 	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
 	// entry (additive = minor bump).
-	TypesVersion = "0.30.0"
+	// Bumped to 0.31.0 for concrete sync pages, tokens, and project options.
+	TypesVersion = "0.31.0"
 )

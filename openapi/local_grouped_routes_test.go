@@ -90,6 +90,9 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 					t.Fatalf("parameter %q required=%v", expected.Name, p["required"])
 				}
 				shape := p["schema"].(map[string]any)
+				if ref, ok := shape["$ref"].(string); ok {
+					shape = components[strings.TrimPrefix(ref, "#/components/schemas/")].(map[string]any)
+				}
 				if shape["type"] != expected.Type {
 					t.Fatalf("parameter %q type=%v, want %q", expected.Name, shape["type"], expected.Type)
 				}

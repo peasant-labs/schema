@@ -1047,6 +1047,20 @@ export const zLocalSettingUpdateRequest = z.object({
 
 export type LocalSettingUpdateRequest = z.infer<typeof zLocalSettingUpdateRequest>;
 
+/**
+ * Local Sync Publication Filter
+ *
+ * Root publication filter; auto uses the canonical live hook decision
+ */
+export const zLocalSyncPublicationFilter = z.enum([
+    'all',
+    'not-published',
+    'published',
+    'auto'
+]);
+
+export type LocalSyncPublicationFilter = z.infer<typeof zLocalSyncPublicationFilter>;
+
 export const zMapEdge = z.object({
     count: z.int(),
     from: z.string(),
@@ -1199,6 +1213,15 @@ export const zOwnerUpdateLicenseIntent = z.enum([
 export type OwnerUpdateLicenseIntent = z.infer<typeof zOwnerUpdateLicenseIntent>;
 
 /**
+ * Page Token
+ *
+ * Opaque continuation; empty starts traversal or marks its end. Not a credential or snapshot token.
+ */
+export const zPageToken = z.string();
+
+export type PageToken = z.infer<typeof zPageToken>;
+
+/**
  * Project Hash
  *
  * SHA-256 hex digest of the project's origin URL or local path
@@ -1214,6 +1237,19 @@ export const zAuthoritativeProjectContext = z.object({
 }).strict();
 
 export type AuthoritativeProjectContext = z.infer<typeof zAuthoritativeProjectContext>;
+
+export const zLocalSyncProjectOption = z.object({
+    projectHash: zProjectHash,
+    projectName: z.string()
+});
+
+export type LocalSyncProjectOption = z.infer<typeof zLocalSyncProjectOption>;
+
+export const zLocalSyncProjectOptions = z.object({
+    projects: z.array(zLocalSyncProjectOption)
+});
+
+export type LocalSyncProjectOptions = z.infer<typeof zLocalSyncProjectOptions>;
 
 export const zProjectContext = z.object({
     filePath: z.string().optional(),
@@ -3873,6 +3909,23 @@ export const zLocalSettingsResponse = z.object({
 });
 
 export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
+
+export const zLocalSyncSessionRow = z.object({
+    childCount: z.int().gte(0),
+    preview: z.string(),
+    publication: zLocalPublication,
+    sync: zLocalSyncSummary,
+    title: z.string()
+});
+
+export type LocalSyncSessionRow = z.infer<typeof zLocalSyncSessionRow>;
+
+export const zLocalSyncSessionPage = z.object({
+    items: z.array(zLocalSyncSessionRow),
+    next: z.string()
+});
+
+export type LocalSyncSessionPage = z.infer<typeof zLocalSyncSessionPage>;
 
 export const zSyncPushCollectives = z.object({
     add: z.array(zVillageUUID).optional(),
