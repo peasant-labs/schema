@@ -14,6 +14,7 @@ import { zCollectiveFetchCommit, type CollectiveFetchCommit as CollectiveFetchCo
 import { zCollectiveFetchOutcome, type CollectiveFetchOutcome as CollectiveFetchOutcomeContract } from "./contract/zod.gen.js";
 import { zCollectiveObservationSource, type CollectiveObservationSource as CollectiveObservationSourceContract } from "./contract/zod.gen.js";
 import { zCollectiveSourceOutcome, type CollectiveSourceOutcome as CollectiveSourceOutcomeContract } from "./contract/zod.gen.js";
+import { zLocalSyncPublicationFilter, type LocalSyncPublicationFilter as LocalSyncPublicationFilterContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
@@ -277,6 +278,18 @@ export const CollectiveSourceOutcome = Object.freeze({
 export const AllCollectiveSourceOutcomes = Object.freeze([CollectiveSourceOutcome.Disclosed, CollectiveSourceOutcome.NotDisclosed, CollectiveSourceOutcome.Failed]) as readonly CollectiveSourceOutcome[];
 export function isCollectiveSourceOutcome(value: unknown): value is CollectiveSourceOutcome {
   return zCollectiveSourceOutcome.safeParse(value).success;
+}
+
+export type LocalSyncPublicationFilter = LocalSyncPublicationFilterContract;
+export const LocalSyncPublicationFilter = Object.freeze({
+  All: zLocalSyncPublicationFilter.parse("all"),
+  NotPublished: zLocalSyncPublicationFilter.parse("not-published"),
+  Published: zLocalSyncPublicationFilter.parse("published"),
+  Auto: zLocalSyncPublicationFilter.parse("auto"),
+} as const);
+export const AllLocalSyncPublicationFilters = Object.freeze([LocalSyncPublicationFilter.All, LocalSyncPublicationFilter.NotPublished, LocalSyncPublicationFilter.Published, LocalSyncPublicationFilter.Auto]) as readonly LocalSyncPublicationFilter[];
+export function isLocalSyncPublicationFilter(value: unknown): value is LocalSyncPublicationFilter {
+  return zLocalSyncPublicationFilter.safeParse(value).success;
 }
 
 export type PublishOperationKind = PublishOperationKindContract;

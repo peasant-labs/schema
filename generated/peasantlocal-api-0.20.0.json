@@ -1400,19 +1400,66 @@
         "tags": [
           "sync"
         ],
-        "description": "List sync candidates with optional owner-nested helper groups.",
+        "description": "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success.",
         "operationId": "listSyncSessionsGrouped",
         "parameters": [
           {
             "name": "view",
             "in": "query",
-            "description": "Set to grouped for grouped rows",
+            "description": "Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects",
             "schema": {
-              "description": "Set to grouped for grouped rows",
+              "description": "Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects",
               "enum": [
-                "grouped"
+                "grouped",
+                "home",
+                "project-options"
               ],
               "type": "string"
+            }
+          },
+          {
+            "name": "maxItems",
+            "in": "query",
+            "description": "Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected",
+            "schema": {
+              "default": 25,
+              "description": "Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pageToken",
+            "in": "query",
+            "description": "Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected",
+            "schema": {
+              "description": "Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected",
+              "maxLength": 4096,
+              "title": "Page Token",
+              "type": "string"
+            }
+          },
+          {
+            "name": "parentSessionId",
+            "in": "query",
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "name": "projectHash",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaProjectHash"
+            }
+          },
+          {
+            "name": "publication",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SchemaLocalSyncPublicationFilter",
+              "default": "all"
             }
           }
         ],
@@ -1428,204 +1475,20 @@
                     },
                     {
                       "$ref": "#/components/schemas/SchemaLocalSessionListPayload"
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/village/collective-observations": {
-      "get": {
-        "tags": [
-          "village"
-        ],
-        "description": "Read saved account-scoped relevant metadata without contacting Village. Never-fetched and known-empty remain distinct. Signed-out private reads never use a last-account fallback.",
-        "operationId": "listCollectiveObservations",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveObservationResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/village/collective-observations/fetch": {
-      "post": {
-        "tags": [
-          "village"
-        ],
-        "description": "Synchronously fetch metadata only, with no request body. Complete catalog/history install independently; complete association sets install per transcript. Never transfer bodies, publish, join or alter consent. Typed reports on non-2xx preserve every committed effect and prior completion date. Status precedence: persistence \u003e auth \u003e deadline/cancellation \u003e remote/contract \u003e superseded. 200 only complete; initial auth failure commits nothing. No detached job or refresh alias. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "fetchCollectiveObservations",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
                     },
                     {
-                      "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                      "$ref": "#/components/schemas/LocalSyncSessionPage"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LocalSyncProjectOptions"
                     }
                   ]
                 }
               }
             }
           },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Bad Gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "Gateway Timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/village/collective-observations/{collectiveId}/tracking": {
-      "put": {
-        "tags": [
-          "village"
-        ],
-        "description": "Verify selected collective visibility online before storing explicit tracking. No body; tracking grants no membership or publication consent. Verification failure writes no preference; unavailable resources use privacy-safe 404. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "trackCollectiveObservation",
-        "parameters": [
-          {
-            "name": "collectiveId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/SchemaVillageUUID"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveObservationResponse"
-                }
-              }
-            }
-          },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -1654,117 +1517,8 @@
               }
             }
           },
-          "502": {
-            "description": "Bad Gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "Gateway Timeout",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "village"
-        ],
-        "description": "Idempotently remove an explicit tracking preference using saved identity offline. No remote mutation or publication consent change. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin.",
-        "operationId": "untrackCollectiveObservation",
-        "parameters": [
-          {
-            "name": "collectiveId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/SchemaVillageUUID"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaCollectiveObservationResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Bad Gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "Gateway Timeout",
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1817,111 +1571,6 @@
           },
           "502": {
             "description": "Bad Gateway",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/village/contributions": {
-      "get": {
-        "tags": [
-          "village"
-        ],
-        "description": "Read exactly one bounded evidence category offline. Default remote-attempts, page 1, limit 50; limit 1..200. Page \u003e1 requires revision. Malformed or missing required token is 400; valid selected scope/incarnation/kind/generation mismatch is 409 with currentTraversalRevision and restart guidance. Filter BEFORE total/page. Read token, coverage, filtered total and rows in one storage snapshot. Order remote attempts by collectiveId/transcriptId/event_num ascending, receipts by confirmedAt/receiptId ascending, diagnostics by attemptedAt/operationId ascending. No overall cache revision, joined catalog labels or poll timestamps participate in traversal.",
-        "operationId": "listLocalContributionEvidence",
-        "parameters": [
-          {
-            "name": "kind",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaLocalContributionEvidenceKind",
-              "default": "remote-attempts"
-            }
-          },
-          {
-            "name": "collectiveId",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaVillageUUID"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "default": 1,
-              "maximum": 9007199254740991,
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "default": 50,
-              "maximum": 200,
-              "minimum": 1,
-              "type": "integer"
-            }
-          },
-          {
-            "name": "revision",
-            "in": "query",
-            "schema": {
-              "$ref": "#/components/schemas/SchemaContributionTraversalRevision"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaLocalContributionHistoryResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SchemaLocalContributionTraversalConflict"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -2034,6 +1683,55 @@
           "harnessBreakdown",
           "avgTurnsPerSession",
           "acceptanceRate"
+        ],
+        "type": "object"
+      },
+      "LocalSyncProjectOption": {
+        "properties": {
+          "projectHash": {
+            "$ref": "#/components/schemas/SchemaProjectHash"
+          },
+          "projectName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectHash",
+          "projectName"
+        ],
+        "type": "object"
+      },
+      "LocalSyncProjectOptions": {
+        "properties": {
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/LocalSyncProjectOption"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "projects"
+        ],
+        "type": "object"
+      },
+      "LocalSyncSessionPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaLocalSyncSessionRow"
+            },
+            "type": "array"
+          },
+          "next": {
+            "description": "Opaque continuation; empty starts traversal or marks its end. Not a credential or snapshot token.",
+            "title": "Page Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "next"
         ],
         "type": "object"
       },
@@ -3234,748 +2932,6 @@
         ],
         "type": "object"
       },
-      "SchemaCollectiveEvidenceCoverage": {
-        "description": "Available saved evidence or explicitly unknown source ranges",
-        "enum": [
-          "available",
-          "unknown"
-        ],
-        "examples": [
-          "available",
-          "unknown"
-        ],
-        "title": "Collective Evidence Coverage",
-        "type": "string"
-      },
-      "SchemaCollectiveFetchAssociationResults": {
-        "properties": {
-          "completed": {
-            "maximum": 10000,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "failed": {
-            "maximum": 10000,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "requested": {
-            "maximum": 10000,
-            "minimum": 0,
-            "type": "integer"
-          },
-          "scopes": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaCollectiveFetchAssociationScopeResult"
-            },
-            "maxItems": 10000,
-            "type": "array"
-          }
-        },
-        "required": [
-          "requested",
-          "completed",
-          "failed",
-          "scopes"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchAssociationScopeResult": {
-        "properties": {
-          "commit": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchCommit"
-          },
-          "completedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "issue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaOperationIssue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "observedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchState"
-          },
-          "transcriptId": {
-            "$ref": "#/components/schemas/SchemaTranscriptID"
-          }
-        },
-        "required": [
-          "transcriptId",
-          "state",
-          "commit"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchCommit": {
-        "description": "Committed effect, including earlier commits before cancellation",
-        "enum": [
-          "updated",
-          "unchanged",
-          "retained"
-        ],
-        "examples": [
-          "updated",
-          "unchanged",
-          "retained"
-        ],
-        "title": "Collective Fetch Commit",
-        "type": "string"
-      },
-      "SchemaCollectiveFetchDomain": {
-        "description": "Independently installed complete metadata dataset",
-        "enum": [
-          "catalog",
-          "history",
-          "associations"
-        ],
-        "examples": [
-          "catalog",
-          "history",
-          "associations"
-        ],
-        "title": "Collective Fetch Domain",
-        "type": "string"
-      },
-      "SchemaCollectiveFetchDomainResult": {
-        "properties": {
-          "associations": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaCollectiveFetchAssociationResults"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "commit": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchCommit"
-          },
-          "completedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "coverage": {
-            "$ref": "#/components/schemas/SchemaCollectiveEvidenceCoverage"
-          },
-          "domain": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchDomain"
-          },
-          "issue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaOperationIssue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastAttemptAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastCompletedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastInstalledRevision": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "requested": {
-            "type": "boolean"
-          },
-          "sourceOutcomes": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaCollectiveFetchSourceResult"
-            },
-            "maxItems": 10000,
-            "type": "array"
-          },
-          "startedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchState"
-          }
-        },
-        "required": [
-          "domain",
-          "requested",
-          "state",
-          "commit",
-          "coverage",
-          "sourceOutcomes"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchDomainSummary": {
-        "properties": {
-          "coverage": {
-            "$ref": "#/components/schemas/SchemaCollectiveEvidenceCoverage"
-          },
-          "issue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaOperationIssue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastAttemptAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastCompletedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastInstalledRevision": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchState"
-          }
-        },
-        "required": [
-          "state",
-          "coverage"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchOutcome": {
-        "description": "Complete only when every requested required scope completed",
-        "enum": [
-          "complete",
-          "partial",
-          "failed"
-        ],
-        "examples": [
-          "complete",
-          "partial",
-          "failed"
-        ],
-        "title": "Collective Fetch Outcome",
-        "type": "string"
-      },
-      "SchemaCollectiveFetchReport": {
-        "properties": {
-          "cacheRevision": {
-            "pattern": "^(0|[1-9][0-9]{0,19})$",
-            "type": "string"
-          },
-          "domains": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaCollectiveFetchDomainResult"
-            },
-            "maxItems": 3,
-            "minItems": 3,
-            "type": "array"
-          },
-          "invocationId": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "issues": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaOperationIssue"
-            },
-            "maxItems": 10000,
-            "type": "array"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchOutcome"
-          },
-          "scope": {
-            "$ref": "#/components/schemas/SchemaCollectiveObservationScope"
-          }
-        },
-        "required": [
-          "scope",
-          "invocationId",
-          "cacheRevision",
-          "outcome",
-          "domains",
-          "issues"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchSourceResult": {
-        "properties": {
-          "complete": {
-            "type": "boolean"
-          },
-          "issue": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaOperationIssue"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "observedAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/SchemaCollectiveSourceOutcome"
-          },
-          "source": {
-            "$ref": "#/components/schemas/SchemaCollectiveObservationSource"
-          }
-        },
-        "required": [
-          "source",
-          "outcome",
-          "complete"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveFetchState": {
-        "description": "One invocation result; a failed domain retains prior completed dates",
-        "enum": [
-          "complete",
-          "failed",
-          "cancelled",
-          "superseded",
-          "not_requested"
-        ],
-        "examples": [
-          "complete",
-          "failed",
-          "cancelled",
-          "superseded",
-          "not_requested"
-        ],
-        "title": "Collective Fetch State",
-        "type": "string"
-      },
-      "SchemaCollectiveFetchSummary": {
-        "properties": {
-          "associations": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchDomainSummary"
-          },
-          "catalog": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchDomainSummary"
-          },
-          "history": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchDomainSummary"
-          },
-          "lastAttemptAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "lastCompletedFetchAt": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "latestReport": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaCollectiveFetchReport"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "catalog",
-          "history",
-          "associations"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveObservation": {
-        "properties": {
-          "acceptanceMode": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageCollectiveAcceptanceMode"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "dataAccess": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "id": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "name": {
-            "type": "string"
-          },
-          "observedAt": {
-            "format": "date-time",
-            "not": {
-              "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-            },
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-            "type": "string"
-          },
-          "reasons": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaCollectiveObservationReason"
-            },
-            "maxItems": 4,
-            "type": "array"
-          },
-          "state": {
-            "$ref": "#/components/schemas/SchemaCollectiveObservationState"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "reasons",
-          "observedAt",
-          "state"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveObservationReason": {
-        "description": "Independent dated relevance reason, not authority",
-        "enum": [
-          "membership",
-          "contribution",
-          "organization",
-          "explicit"
-        ],
-        "examples": [
-          "membership",
-          "contribution",
-          "organization",
-          "explicit"
-        ],
-        "title": "Collective Observation Reason",
-        "type": "string"
-      },
-      "SchemaCollectiveObservationResponse": {
-        "properties": {
-          "cacheRevision": {
-            "pattern": "^(0|[1-9][0-9]{0,19})$",
-            "type": "string"
-          },
-          "collectives": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaCollectiveObservation"
-            },
-            "maxItems": 10000,
-            "type": "array"
-          },
-          "fetch": {
-            "$ref": "#/components/schemas/SchemaCollectiveFetchSummary"
-          },
-          "scope": {
-            "$ref": "#/components/schemas/SchemaCollectiveObservationScope"
-          }
-        },
-        "required": [
-          "scope",
-          "cacheRevision",
-          "collectives",
-          "fetch"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveObservationScope": {
-        "properties": {
-          "userId": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "villageUrl": {
-            "maxLength": 1024,
-            "type": "string"
-          }
-        },
-        "required": [
-          "villageUrl",
-          "userId"
-        ],
-        "type": "object"
-      },
-      "SchemaCollectiveObservationSource": {
-        "description": "Narrow metadata source, no world directory or transcript content",
-        "enum": [
-          "membership",
-          "contribution-discovery",
-          "organization",
-          "explicit",
-          "submissions",
-          "attempts",
-          "associations"
-        ],
-        "examples": [
-          "membership",
-          "contribution-discovery",
-          "organization",
-          "explicit",
-          "submissions",
-          "attempts",
-          "associations"
-        ],
-        "title": "Collective Observation Source",
-        "type": "string"
-      },
-      "SchemaCollectiveObservationState": {
-        "description": "Dated disclosure state, never current authorization",
-        "enum": [
-          "observed",
-          "unavailable",
-          "invalidated"
-        ],
-        "examples": [
-          "observed",
-          "unavailable",
-          "invalidated"
-        ],
-        "title": "Collective Observation State",
-        "type": "string"
-      },
-      "SchemaCollectiveOperation": {
-        "description": "Operation whose actual outcome is recorded",
-        "enum": [
-          "publish",
-          "share",
-          "fetch",
-          "pull"
-        ],
-        "examples": [
-          "publish",
-          "share",
-          "fetch",
-          "pull"
-        ],
-        "title": "Collective Operation",
-        "type": "string"
-      },
-      "SchemaCollectiveSourceOutcome": {
-        "description": "Privacy-safe source outcome without hidden reasons",
-        "enum": [
-          "disclosed",
-          "not_disclosed",
-          "failed"
-        ],
-        "examples": [
-          "disclosed",
-          "not_disclosed",
-          "failed"
-        ],
-        "title": "Collective Source Outcome",
-        "type": "string"
-      },
       "SchemaCommandInvocation": {
         "properties": {
           "args": {
@@ -4125,11 +3081,6 @@
           "inputModality"
         ],
         "type": "object"
-      },
-      "SchemaContributionTraversalRevision": {
-        "description": "Opaque versioned selected-category traversal token; not cacheRevision or authority",
-        "maxLength": 4096,
-        "type": "string"
       },
       "SchemaCreateAnnotationRequest": {
         "properties": {
@@ -4735,264 +3686,6 @@
         "title": "Local Collective Suggestion Reason",
         "type": "string"
       },
-      "SchemaLocalConfirmedContributionOutcome": {
-        "description": "Actual request effect, never collective approval",
-        "enum": [
-          "published",
-          "submitted"
-        ],
-        "examples": [
-          "published",
-          "submitted"
-        ],
-        "title": "Confirmed Contribution Outcome",
-        "type": "string"
-      },
-      "SchemaLocalConfirmedContributionReceipt": {
-        "properties": {
-          "collectiveId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageUUID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "confirmedAt": {
-            "format": "date-time",
-            "not": {
-              "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-            },
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-            "type": "string"
-          },
-          "operation": {
-            "$ref": "#/components/schemas/SchemaCollectiveOperation"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/SchemaLocalConfirmedContributionOutcome"
-          },
-          "receiptId": {
-            "maxLength": 256,
-            "minLength": 1,
-            "type": "string"
-          },
-          "sourceReceiptId": {
-            "anyOf": [
-              {
-                "maxLength": 256,
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "transcriptId": {
-            "$ref": "#/components/schemas/SchemaTranscriptID"
-          }
-        },
-        "required": [
-          "receiptId",
-          "operation",
-          "transcriptId",
-          "confirmedAt",
-          "outcome"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalContributionEvidenceKind": {
-        "description": "One independently bounded evidence category",
-        "enum": [
-          "remote-attempts",
-          "receipts",
-          "operation-diagnostics"
-        ],
-        "examples": [
-          "remote-attempts",
-          "receipts",
-          "operation-diagnostics"
-        ],
-        "title": "Local Contribution Evidence Kind",
-        "type": "string"
-      },
-      "SchemaLocalContributionHistoryResponse": {
-        "oneOf": [
-          {
-            "additionalProperties": false,
-            "properties": {
-              "coverage": {
-                "$ref": "#/components/schemas/SchemaCollectiveEvidenceCoverage"
-              },
-              "kind": {
-                "const": "remote-attempts",
-                "type": "string"
-              },
-              "limit": {
-                "maximum": 200,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "page": {
-                "maximum": 9007199254740991,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "remoteAttempts": {
-                "items": {
-                  "$ref": "#/components/schemas/SchemaLocalRemoteContributionAttempt"
-                },
-                "maxItems": 200,
-                "type": "array"
-              },
-              "scope": {
-                "$ref": "#/components/schemas/SchemaCollectiveObservationScope"
-              },
-              "total": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer"
-              },
-              "traversalRevision": {
-                "$ref": "#/components/schemas/SchemaContributionTraversalRevision"
-              }
-            },
-            "required": [
-              "scope",
-              "kind",
-              "traversalRevision",
-              "page",
-              "limit",
-              "total",
-              "coverage",
-              "remoteAttempts"
-            ],
-            "type": "object"
-          },
-          {
-            "additionalProperties": false,
-            "properties": {
-              "coverage": {
-                "$ref": "#/components/schemas/SchemaCollectiveEvidenceCoverage"
-              },
-              "kind": {
-                "const": "receipts",
-                "type": "string"
-              },
-              "limit": {
-                "maximum": 200,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "page": {
-                "maximum": 9007199254740991,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "receipts": {
-                "items": {
-                  "$ref": "#/components/schemas/SchemaLocalConfirmedContributionReceipt"
-                },
-                "maxItems": 200,
-                "type": "array"
-              },
-              "scope": {
-                "$ref": "#/components/schemas/SchemaCollectiveObservationScope"
-              },
-              "total": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer"
-              },
-              "traversalRevision": {
-                "$ref": "#/components/schemas/SchemaContributionTraversalRevision"
-              }
-            },
-            "required": [
-              "scope",
-              "kind",
-              "traversalRevision",
-              "page",
-              "limit",
-              "total",
-              "coverage",
-              "receipts"
-            ],
-            "type": "object"
-          },
-          {
-            "additionalProperties": false,
-            "properties": {
-              "coverage": {
-                "$ref": "#/components/schemas/SchemaCollectiveEvidenceCoverage"
-              },
-              "kind": {
-                "const": "operation-diagnostics",
-                "type": "string"
-              },
-              "limit": {
-                "maximum": 200,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "operationDiagnostics": {
-                "items": {
-                  "$ref": "#/components/schemas/SchemaLocalOperationDiagnostic"
-                },
-                "maxItems": 200,
-                "type": "array"
-              },
-              "page": {
-                "maximum": 9007199254740991,
-                "minimum": 1,
-                "type": "integer"
-              },
-              "scope": {
-                "$ref": "#/components/schemas/SchemaCollectiveObservationScope"
-              },
-              "total": {
-                "maximum": 9007199254740991,
-                "minimum": 0,
-                "type": "integer"
-              },
-              "traversalRevision": {
-                "$ref": "#/components/schemas/SchemaContributionTraversalRevision"
-              }
-            },
-            "required": [
-              "scope",
-              "kind",
-              "traversalRevision",
-              "page",
-              "limit",
-              "total",
-              "coverage",
-              "operationDiagnostics"
-            ],
-            "type": "object"
-          }
-        ]
-      },
-      "SchemaLocalContributionTraversalConflict": {
-        "properties": {
-          "currentTraversalRevision": {
-            "$ref": "#/components/schemas/SchemaContributionTraversalRevision"
-          },
-          "issue": {
-            "$ref": "#/components/schemas/SchemaOperationIssue"
-          }
-        },
-        "required": [
-          "currentTraversalRevision",
-          "issue"
-        ],
-        "type": "object"
-      },
       "SchemaLocalHelperMembersPayload": {
         "properties": {
           "limit": {
@@ -5048,71 +3741,6 @@
           "total"
         ],
         "type": "object"
-      },
-      "SchemaLocalOperationDiagnostic": {
-        "properties": {
-          "attemptedAt": {
-            "format": "date-time",
-            "not": {
-              "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-            },
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-            "type": "string"
-          },
-          "collectiveId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageUUID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "issue": {
-            "$ref": "#/components/schemas/SchemaOperationIssue"
-          },
-          "operation": {
-            "$ref": "#/components/schemas/SchemaCollectiveOperation"
-          },
-          "operationId": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "outcome": {
-            "$ref": "#/components/schemas/SchemaLocalOperationDiagnosticOutcome"
-          },
-          "transcriptId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaTranscriptID"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "operationId",
-          "operation",
-          "attemptedAt",
-          "outcome",
-          "issue"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalOperationDiagnosticOutcome": {
-        "description": "Failure or uncertain remote effect, never successful contribution",
-        "enum": [
-          "failed",
-          "uncertain"
-        ],
-        "examples": [
-          "failed",
-          "uncertain"
-        ],
-        "title": "Local Operation Diagnostic Outcome",
-        "type": "string"
       },
       "SchemaLocalPublication": {
         "properties": {
@@ -5216,34 +3844,6 @@
         },
         "required": [
           "publications"
-        ],
-        "type": "object"
-      },
-      "SchemaLocalRemoteContributionAttempt": {
-        "properties": {
-          "attempt": {
-            "$ref": "#/components/schemas/SchemaVillageShareEvent"
-          },
-          "collectiveId": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
-          },
-          "firstSeenAt": {
-            "format": "date-time",
-            "not": {
-              "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-            },
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-            "type": "string"
-          },
-          "transcriptId": {
-            "$ref": "#/components/schemas/SchemaTranscriptID"
-          }
-        },
-        "required": [
-          "collectiveId",
-          "transcriptId",
-          "attempt",
-          "firstSeenAt"
         ],
         "type": "object"
       },
@@ -5496,6 +4096,51 @@
         ],
         "type": "object"
       },
+      "SchemaLocalSyncPublicationFilter": {
+        "description": "Root publication filter; auto uses the canonical live hook decision",
+        "enum": [
+          "all",
+          "not-published",
+          "published",
+          "auto"
+        ],
+        "examples": [
+          "all",
+          "not-published",
+          "published",
+          "auto"
+        ],
+        "title": "Local Sync Publication Filter",
+        "type": "string"
+      },
+      "SchemaLocalSyncSessionRow": {
+        "properties": {
+          "childCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "preview": {
+            "type": "string"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/SchemaLocalPublication"
+          },
+          "sync": {
+            "$ref": "#/components/schemas/SchemaLocalSyncSummary"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sync",
+          "publication",
+          "title",
+          "preview",
+          "childCount"
+        ],
+        "type": "object"
+      },
       "SchemaLocalSyncSummary": {
         "properties": {
           "durationMs": {
@@ -5569,7 +4214,7 @@
       "SchemaLocalVillageCollective": {
         "properties": {
           "group": {
-            "$ref": "#/components/schemas/SchemaVillageUserCollective"
+            "$ref": "#/components/schemas/SchemaVillageUserGroup"
           },
           "suggestion": {
             "$ref": "#/components/schemas/SchemaLocalCollectiveSuggestion"
@@ -6144,54 +4789,6 @@
         "minLength": 1,
         "pattern": "^(?:﻿|[^\\s])(?:[\\s\\S]*(?:﻿|[^\\s]))?$",
         "title": "Observed Model ID",
-        "type": "string"
-      },
-      "SchemaOperationIssue": {
-        "properties": {
-          "code": {
-            "$ref": "#/components/schemas/SchemaOperationIssueCode"
-          },
-          "message": {
-            "maxLength": 2048,
-            "minLength": 1,
-            "type": "string"
-          },
-          "operation": {
-            "$ref": "#/components/schemas/SchemaCollectiveOperation"
-          },
-          "retry": {
-            "maxLength": 2048,
-            "minLength": 1,
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "operation",
-          "message",
-          "retry"
-        ],
-        "type": "object"
-      },
-      "SchemaOperationIssueCode": {
-        "description": "Bounded failure category; retry is corrective text only",
-        "enum": [
-          "auth",
-          "remote",
-          "contract",
-          "deadline",
-          "persistence",
-          "superseded"
-        ],
-        "examples": [
-          "auth",
-          "remote",
-          "contract",
-          "deadline",
-          "persistence",
-          "superseded"
-        ],
-        "title": "Operation Issue Code",
         "type": "string"
       },
       "SchemaProjectHash": {
@@ -8670,7 +7267,7 @@
         "title": "Value Domain Kind",
         "type": "string"
       },
-      "SchemaVillageCollectiveAcceptanceMode": {
+      "SchemaVillageGroupAcceptanceMode": {
         "description": "How a collective accepts new members and contributions",
         "enum": [
           "open",
@@ -8685,7 +7282,7 @@
         "title": "Village Group Acceptance Mode",
         "type": "string"
       },
-      "SchemaVillageCollectiveDataAccess": {
+      "SchemaVillageGroupDataAccess": {
         "description": "Who may read a collective's pooled transcript data",
         "enum": [
           "members_only",
@@ -8700,7 +7297,7 @@
         "title": "Village Group Data Access",
         "type": "string"
       },
-      "SchemaVillageCollectiveRole": {
+      "SchemaVillageGroupRole": {
         "description": "A user's role in one collective",
         "enum": [
           "owner",
@@ -8772,71 +7369,6 @@
         "title": "Village Pull Request Attachment State",
         "type": "string"
       },
-      "SchemaVillageShareEvent": {
-        "properties": {
-          "decided_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "not": {
-                  "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-                },
-                "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "decided_by_actor": {
-            "$ref": "#/components/schemas/SchemaVillageShareEventActor"
-          },
-          "event_num": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "recorded_at": {
-            "format": "date-time",
-            "not": {
-              "pattern": "^0001-01-01T00:00:00(\\.0+)?Z$"
-            },
-            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$",
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/SchemaVillageShareStatus"
-          }
-        },
-        "required": [
-          "event_num",
-          "status",
-          "recorded_at",
-          "decided_at",
-          "decided_by_actor"
-        ],
-        "type": "object"
-      },
-      "SchemaVillageShareEventActor": {
-        "description": "Actor class that decided one collective share event",
-        "enum": [
-          "",
-          "owner",
-          "collective",
-          "moderator"
-        ],
-        "examples": [
-          "",
-          "owner",
-          "collective",
-          "moderator"
-        ],
-        "title": "Village Share Event Actor",
-        "type": "string"
-      },
       "SchemaVillageShareStatus": {
         "description": "Status of one collective share-attempt event. Pending, approved, and rejected can appear in current projections; retracted and revoked are terminal ledger states.",
         "enum": [
@@ -8879,10 +7411,10 @@
         "title": "Village UUID",
         "type": "string"
       },
-      "SchemaVillageUserCollective": {
+      "SchemaVillageUserGroup": {
         "properties": {
           "acceptance_mode": {
-            "$ref": "#/components/schemas/SchemaVillageCollectiveAcceptanceMode"
+            "$ref": "#/components/schemas/SchemaVillageGroupAcceptanceMode"
           },
           "created_at": {
             "format": "date-time",
@@ -8892,7 +7424,7 @@
             "$ref": "#/components/schemas/SchemaVillageUUID"
           },
           "data_access": {
-            "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
+            "$ref": "#/components/schemas/SchemaVillageGroupDataAccess"
           },
           "description": {
             "anyOf": [
@@ -8938,7 +7470,7 @@
             "type": "string"
           },
           "role": {
-            "$ref": "#/components/schemas/SchemaVillageCollectiveRole"
+            "$ref": "#/components/schemas/SchemaVillageGroupRole"
           },
           "transcript_count": {
             "format": "int32",

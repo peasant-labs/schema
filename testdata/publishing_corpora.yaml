@@ -3,6 +3,7 @@
 # typescript/tests/publishing-contract-zod.test.mjs replays each against the
 # generated Zod schemas. Both read this list.
 corpora:
+  - testdata/local-api/sync_pages.yaml
   - testdata/local-api/sync_sessions.yaml
   - testdata/local-api/publications.yaml
   - testdata/local-api/sync_push.yaml

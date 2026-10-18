@@ -50,7 +50,7 @@ try {
     });
   const tsconfig = {
     compilerOptions: { strict: true, noEmit: true, target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext" },
-    include: ["consumer.ts"],
+    include: ["consumer.ts", "sync-pages.ts"],
   };
 
   const storeDir = join(temp, "store");
@@ -110,6 +110,7 @@ try {
     .map((operationID) => `type __VillageCollectivesOperation_${operationID} = VillageOperations[${JSON.stringify(operationID)}];`)
     .join("\n");
   await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
+  await writeFile(join(consumerDir, "sync-pages.ts"), await readFile(new URL("../tests/sync-pages.ts", import.meta.url), "utf8"));
   const legacyTypeChecks = [
     `type Same<A,B> = (<T>()=>T extends A ? 1 : 2) extends (<T>()=>T extends B ? 1 : 2) ? true : false; type MustBeTrue<T extends true> = T;`,
     ...retainedCollectiveAliases.aliases.map(row => `import type { ${row.name} as Old${row.name}, ${row.canonical} as New${row.name} } from ${JSON.stringify(packageManifest.name)}; type Check${row.name} = MustBeTrue<Same<Old${row.name},New${row.name}>>;`),

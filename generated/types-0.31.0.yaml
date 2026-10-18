@@ -2024,487 +2024,6 @@ components:
       required:
       - type
       type: object
-    CollectiveEvidenceCoverage:
-      description: Available saved evidence or explicitly unknown source ranges
-      enum:
-      - available
-      - unknown
-      examples:
-      - available
-      - unknown
-      title: Collective Evidence Coverage
-      type: string
-    CollectiveFetchAssociationResults:
-      properties:
-        completed:
-          maximum: 10000
-          minimum: 0
-          type: integer
-        failed:
-          maximum: 10000
-          minimum: 0
-          type: integer
-        requested:
-          maximum: 10000
-          minimum: 0
-          type: integer
-        scopes:
-          items:
-            $ref: '#/components/schemas/CollectiveFetchAssociationScopeResult'
-          maxItems: 10000
-          type: array
-      required:
-      - requested
-      - completed
-      - failed
-      - scopes
-      type: object
-    CollectiveFetchAssociationScopeResult:
-      properties:
-        commit:
-          $ref: '#/components/schemas/CollectiveFetchCommit'
-        completedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        issue:
-          anyOf:
-          - $ref: '#/components/schemas/OperationIssue'
-          - type: "null"
-        observedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        state:
-          $ref: '#/components/schemas/CollectiveFetchState'
-        transcriptId:
-          $ref: '#/components/schemas/TranscriptID'
-      required:
-      - transcriptId
-      - state
-      - commit
-      type: object
-    CollectiveFetchCommit:
-      description: Committed effect, including earlier commits before cancellation
-      enum:
-      - updated
-      - unchanged
-      - retained
-      examples:
-      - updated
-      - unchanged
-      - retained
-      title: Collective Fetch Commit
-      type: string
-    CollectiveFetchDomain:
-      description: Independently installed complete metadata dataset
-      enum:
-      - catalog
-      - history
-      - associations
-      examples:
-      - catalog
-      - history
-      - associations
-      title: Collective Fetch Domain
-      type: string
-    CollectiveFetchDomainResult:
-      properties:
-        associations:
-          anyOf:
-          - $ref: '#/components/schemas/CollectiveFetchAssociationResults'
-          - type: "null"
-        commit:
-          $ref: '#/components/schemas/CollectiveFetchCommit'
-        completedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        coverage:
-          $ref: '#/components/schemas/CollectiveEvidenceCoverage'
-        domain:
-          $ref: '#/components/schemas/CollectiveFetchDomain'
-        issue:
-          anyOf:
-          - $ref: '#/components/schemas/OperationIssue'
-          - type: "null"
-        lastAttemptAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        lastCompletedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        lastInstalledRevision:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        requested:
-          type: boolean
-        sourceOutcomes:
-          items:
-            $ref: '#/components/schemas/CollectiveFetchSourceResult'
-          maxItems: 10000
-          type: array
-        startedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        state:
-          $ref: '#/components/schemas/CollectiveFetchState'
-      required:
-      - domain
-      - requested
-      - state
-      - commit
-      - coverage
-      - sourceOutcomes
-      type: object
-    CollectiveFetchDomainSummary:
-      properties:
-        coverage:
-          $ref: '#/components/schemas/CollectiveEvidenceCoverage'
-        issue:
-          anyOf:
-          - $ref: '#/components/schemas/OperationIssue'
-          - type: "null"
-        lastAttemptAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        lastCompletedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        lastInstalledRevision:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        state:
-          $ref: '#/components/schemas/CollectiveFetchState'
-      required:
-      - state
-      - coverage
-      type: object
-    CollectiveFetchOutcome:
-      description: Complete only when every requested required scope completed
-      enum:
-      - complete
-      - partial
-      - failed
-      examples:
-      - complete
-      - partial
-      - failed
-      title: Collective Fetch Outcome
-      type: string
-    CollectiveFetchReport:
-      properties:
-        cacheRevision:
-          pattern: ^(0|[1-9][0-9]{0,19})$
-          type: string
-        domains:
-          items:
-            $ref: '#/components/schemas/CollectiveFetchDomainResult'
-          maxItems: 3
-          minItems: 3
-          type: array
-        invocationId:
-          $ref: '#/components/schemas/VillageUUID'
-        issues:
-          items:
-            $ref: '#/components/schemas/OperationIssue'
-          maxItems: 10000
-          type: array
-        outcome:
-          $ref: '#/components/schemas/CollectiveFetchOutcome'
-        scope:
-          $ref: '#/components/schemas/CollectiveObservationScope'
-      required:
-      - scope
-      - invocationId
-      - cacheRevision
-      - outcome
-      - domains
-      - issues
-      type: object
-    CollectiveFetchSourceResult:
-      properties:
-        complete:
-          type: boolean
-        issue:
-          anyOf:
-          - $ref: '#/components/schemas/OperationIssue'
-          - type: "null"
-        observedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        outcome:
-          $ref: '#/components/schemas/CollectiveSourceOutcome'
-        source:
-          $ref: '#/components/schemas/CollectiveObservationSource'
-      required:
-      - source
-      - outcome
-      - complete
-      type: object
-    CollectiveFetchState:
-      description: One invocation result; a failed domain retains prior completed
-        dates
-      enum:
-      - complete
-      - failed
-      - cancelled
-      - superseded
-      - not_requested
-      examples:
-      - complete
-      - failed
-      - cancelled
-      - superseded
-      - not_requested
-      title: Collective Fetch State
-      type: string
-    CollectiveFetchSummary:
-      properties:
-        associations:
-          $ref: '#/components/schemas/CollectiveFetchDomainSummary'
-        catalog:
-          $ref: '#/components/schemas/CollectiveFetchDomainSummary'
-        history:
-          $ref: '#/components/schemas/CollectiveFetchDomainSummary'
-        lastAttemptAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        lastCompletedFetchAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        latestReport:
-          anyOf:
-          - $ref: '#/components/schemas/CollectiveFetchReport'
-          - type: "null"
-      required:
-      - catalog
-      - history
-      - associations
-      type: object
-    CollectiveObservation:
-      properties:
-        acceptanceMode:
-          anyOf:
-          - $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
-          - type: "null"
-        dataAccess:
-          anyOf:
-          - $ref: '#/components/schemas/VillageCollectiveDataAccess'
-          - type: "null"
-        description:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        id:
-          $ref: '#/components/schemas/VillageUUID'
-        name:
-          type: string
-        observedAt:
-          format: date-time
-          not:
-            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-          type: string
-        reasons:
-          items:
-            $ref: '#/components/schemas/CollectiveObservationReason'
-          maxItems: 4
-          type: array
-        state:
-          $ref: '#/components/schemas/CollectiveObservationState'
-      required:
-      - id
-      - name
-      - reasons
-      - observedAt
-      - state
-      type: object
-    CollectiveObservationReason:
-      description: Independent dated relevance reason, not authority
-      enum:
-      - membership
-      - contribution
-      - organization
-      - explicit
-      examples:
-      - membership
-      - contribution
-      - organization
-      - explicit
-      title: Collective Observation Reason
-      type: string
-    CollectiveObservationResponse:
-      properties:
-        cacheRevision:
-          pattern: ^(0|[1-9][0-9]{0,19})$
-          type: string
-        collectives:
-          items:
-            $ref: '#/components/schemas/CollectiveObservation'
-          maxItems: 10000
-          type: array
-        fetch:
-          $ref: '#/components/schemas/CollectiveFetchSummary'
-        scope:
-          $ref: '#/components/schemas/CollectiveObservationScope'
-      required:
-      - scope
-      - cacheRevision
-      - collectives
-      - fetch
-      type: object
-    CollectiveObservationScope:
-      properties:
-        userId:
-          $ref: '#/components/schemas/VillageUUID'
-        villageUrl:
-          maxLength: 1024
-          type: string
-      required:
-      - villageUrl
-      - userId
-      type: object
-    CollectiveObservationSource:
-      description: Narrow metadata source, no world directory or transcript content
-      enum:
-      - membership
-      - contribution-discovery
-      - organization
-      - explicit
-      - submissions
-      - attempts
-      - associations
-      examples:
-      - membership
-      - contribution-discovery
-      - organization
-      - explicit
-      - submissions
-      - attempts
-      - associations
-      title: Collective Observation Source
-      type: string
-    CollectiveObservationState:
-      description: Dated disclosure state, never current authorization
-      enum:
-      - observed
-      - unavailable
-      - invalidated
-      examples:
-      - observed
-      - unavailable
-      - invalidated
-      title: Collective Observation State
-      type: string
-    CollectiveOperation:
-      description: Operation whose actual outcome is recorded
-      enum:
-      - publish
-      - share
-      - fetch
-      - pull
-      examples:
-      - publish
-      - share
-      - fetch
-      - pull
-      title: Collective Operation
-      type: string
-    CollectiveSourceOutcome:
-      description: Privacy-safe source outcome without hidden reasons
-      enum:
-      - disclosed
-      - not_disclosed
-      - failed
-      examples:
-      - disclosed
-      - not_disclosed
-      - failed
-      title: Collective Source Outcome
-      type: string
     CommandInvocation:
       properties:
         args:
@@ -2670,11 +2189,6 @@ components:
       type:
       - "null"
       - string
-    ContributionTraversalRevision:
-      description: Opaque versioned selected-category traversal token; not cacheRevision
-        or authority
-      maxLength: 4096
-      type: string
     CreateAnnotationRequest:
       properties:
         annotatorName:
@@ -3377,190 +2891,6 @@ components:
       - linked_github_org
       title: Local Collective Suggestion Reason
       type: string
-    LocalConfirmedContributionOutcome:
-      description: Actual request effect, never collective approval
-      enum:
-      - published
-      - submitted
-      examples:
-      - published
-      - submitted
-      title: Confirmed Contribution Outcome
-      type: string
-    LocalConfirmedContributionReceipt:
-      properties:
-        collectiveId:
-          anyOf:
-          - $ref: '#/components/schemas/VillageUUID'
-          - type: "null"
-        confirmedAt:
-          format: date-time
-          not:
-            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-          type: string
-        operation:
-          $ref: '#/components/schemas/CollectiveOperation'
-        outcome:
-          $ref: '#/components/schemas/LocalConfirmedContributionOutcome'
-        receiptId:
-          maxLength: 256
-          minLength: 1
-          type: string
-        sourceReceiptId:
-          anyOf:
-          - maxLength: 256
-            type:
-            - "null"
-            - string
-          - type: "null"
-        transcriptId:
-          $ref: '#/components/schemas/TranscriptID'
-      required:
-      - receiptId
-      - operation
-      - transcriptId
-      - confirmedAt
-      - outcome
-      type: object
-    LocalContributionEvidenceKind:
-      description: One independently bounded evidence category
-      enum:
-      - remote-attempts
-      - receipts
-      - operation-diagnostics
-      examples:
-      - remote-attempts
-      - receipts
-      - operation-diagnostics
-      title: Local Contribution Evidence Kind
-      type: string
-    LocalContributionHistoryResponse:
-      oneOf:
-      - additionalProperties: false
-        properties:
-          coverage:
-            $ref: '#/components/schemas/CollectiveEvidenceCoverage'
-          kind:
-            const: remote-attempts
-            type: string
-          limit:
-            maximum: 200
-            minimum: 1
-            type: integer
-          page:
-            maximum: 9.007199254740991e+15
-            minimum: 1
-            type: integer
-          remoteAttempts:
-            items:
-              $ref: '#/components/schemas/LocalRemoteContributionAttempt'
-            maxItems: 200
-            type: array
-          scope:
-            $ref: '#/components/schemas/CollectiveObservationScope'
-          total:
-            maximum: 9.007199254740991e+15
-            minimum: 0
-            type: integer
-          traversalRevision:
-            $ref: '#/components/schemas/ContributionTraversalRevision'
-        required:
-        - scope
-        - kind
-        - traversalRevision
-        - page
-        - limit
-        - total
-        - coverage
-        - remoteAttempts
-        type: object
-      - additionalProperties: false
-        properties:
-          coverage:
-            $ref: '#/components/schemas/CollectiveEvidenceCoverage'
-          kind:
-            const: receipts
-            type: string
-          limit:
-            maximum: 200
-            minimum: 1
-            type: integer
-          page:
-            maximum: 9.007199254740991e+15
-            minimum: 1
-            type: integer
-          receipts:
-            items:
-              $ref: '#/components/schemas/LocalConfirmedContributionReceipt'
-            maxItems: 200
-            type: array
-          scope:
-            $ref: '#/components/schemas/CollectiveObservationScope'
-          total:
-            maximum: 9.007199254740991e+15
-            minimum: 0
-            type: integer
-          traversalRevision:
-            $ref: '#/components/schemas/ContributionTraversalRevision'
-        required:
-        - scope
-        - kind
-        - traversalRevision
-        - page
-        - limit
-        - total
-        - coverage
-        - receipts
-        type: object
-      - additionalProperties: false
-        properties:
-          coverage:
-            $ref: '#/components/schemas/CollectiveEvidenceCoverage'
-          kind:
-            const: operation-diagnostics
-            type: string
-          limit:
-            maximum: 200
-            minimum: 1
-            type: integer
-          operationDiagnostics:
-            items:
-              $ref: '#/components/schemas/LocalOperationDiagnostic'
-            maxItems: 200
-            type: array
-          page:
-            maximum: 9.007199254740991e+15
-            minimum: 1
-            type: integer
-          scope:
-            $ref: '#/components/schemas/CollectiveObservationScope'
-          total:
-            maximum: 9.007199254740991e+15
-            minimum: 0
-            type: integer
-          traversalRevision:
-            $ref: '#/components/schemas/ContributionTraversalRevision'
-        required:
-        - scope
-        - kind
-        - traversalRevision
-        - page
-        - limit
-        - total
-        - coverage
-        - operationDiagnostics
-        type: object
-    LocalContributionTraversalConflict:
-      properties:
-        currentTraversalRevision:
-          $ref: '#/components/schemas/ContributionTraversalRevision'
-        issue:
-          $ref: '#/components/schemas/OperationIssue'
-      required:
-      - currentTraversalRevision
-      - issue
-      type: object
     LocalHelperMembersPayload:
       properties:
         limit:
@@ -3598,47 +2928,6 @@ components:
       - limit
       - total
       type: object
-    LocalOperationDiagnostic:
-      properties:
-        attemptedAt:
-          format: date-time
-          not:
-            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-          type: string
-        collectiveId:
-          anyOf:
-          - $ref: '#/components/schemas/VillageUUID'
-          - type: "null"
-        issue:
-          $ref: '#/components/schemas/OperationIssue'
-        operation:
-          $ref: '#/components/schemas/CollectiveOperation'
-        operationId:
-          $ref: '#/components/schemas/VillageUUID'
-        outcome:
-          $ref: '#/components/schemas/LocalOperationDiagnosticOutcome'
-        transcriptId:
-          anyOf:
-          - $ref: '#/components/schemas/TranscriptID'
-          - type: "null"
-      required:
-      - operationId
-      - operation
-      - attemptedAt
-      - outcome
-      - issue
-      type: object
-    LocalOperationDiagnosticOutcome:
-      description: Failure or uncertain remote effect, never successful contribution
-      enum:
-      - failed
-      - uncertain
-      examples:
-      - failed
-      - uncertain
-      title: Local Operation Diagnostic Outcome
-      type: string
     LocalPublication:
       properties:
         audience:
@@ -3716,26 +3005,6 @@ components:
           type: array
       required:
       - publications
-      type: object
-    LocalRemoteContributionAttempt:
-      properties:
-        attempt:
-          $ref: '#/components/schemas/VillageShareEvent'
-        collectiveId:
-          $ref: '#/components/schemas/VillageUUID'
-        firstSeenAt:
-          format: date-time
-          not:
-            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-          type: string
-        transcriptId:
-          $ref: '#/components/schemas/TranscriptID'
-      required:
-      - collectiveId
-      - transcriptId
-      - attempt
-      - firstSeenAt
       type: object
     LocalSessionListItem:
       properties:
@@ -3901,6 +3170,74 @@ components:
       - settings
       - autoPublish
       type: object
+    LocalSyncProjectOption:
+      properties:
+        projectHash:
+          $ref: '#/components/schemas/ProjectHash'
+        projectName:
+          type: string
+      required:
+      - projectHash
+      - projectName
+      type: object
+    LocalSyncProjectOptions:
+      properties:
+        projects:
+          items:
+            $ref: '#/components/schemas/LocalSyncProjectOption'
+          type: array
+      required:
+      - projects
+      type: object
+    LocalSyncPublicationFilter:
+      description: Root publication filter; auto uses the canonical live hook decision
+      enum:
+      - all
+      - not-published
+      - published
+      - auto
+      examples:
+      - all
+      - not-published
+      - published
+      - auto
+      title: Local Sync Publication Filter
+      type: string
+    LocalSyncSessionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LocalSyncSessionRow'
+          type: array
+        next:
+          description: Opaque continuation; empty starts traversal or marks its end.
+            Not a credential or snapshot token.
+          title: Page Token
+          type: string
+      required:
+      - items
+      - next
+      type: object
+    LocalSyncSessionRow:
+      properties:
+        childCount:
+          minimum: 0
+          type: integer
+        preview:
+          type: string
+        publication:
+          $ref: '#/components/schemas/LocalPublication'
+        sync:
+          $ref: '#/components/schemas/LocalSyncSummary'
+        title:
+          type: string
+      required:
+      - sync
+      - publication
+      - title
+      - preview
+      - childCount
+      type: object
     LocalSyncSessionsPayload:
       properties:
         sessions:
@@ -3964,7 +3301,7 @@ components:
     LocalVillageCollective:
       properties:
         group:
-          $ref: '#/components/schemas/VillageUserCollective'
+          $ref: '#/components/schemas/VillageUserGroup'
         suggestion:
           $ref: '#/components/schemas/LocalCollectiveSuggestion'
       required:
@@ -4394,44 +3731,6 @@ components:
       pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
       title: Observed Model ID
       type: string
-    OperationIssue:
-      properties:
-        code:
-          $ref: '#/components/schemas/OperationIssueCode'
-        message:
-          maxLength: 2048
-          minLength: 1
-          type: string
-        operation:
-          $ref: '#/components/schemas/CollectiveOperation'
-        retry:
-          maxLength: 2048
-          minLength: 1
-          type: string
-      required:
-      - code
-      - operation
-      - message
-      - retry
-      type: object
-    OperationIssueCode:
-      description: Bounded failure category; retry is corrective text only
-      enum:
-      - auth
-      - remote
-      - contract
-      - deadline
-      - persistence
-      - superseded
-      examples:
-      - auth
-      - remote
-      - contract
-      - deadline
-      - persistence
-      - superseded
-      title: Operation Issue Code
-      type: string
     OwnerTranscriptUpdateRequest:
       additionalProperties: false
       properties:
@@ -4505,6 +3804,11 @@ components:
       - type: "null"
       description: Omitted preserves, null requests clear, and a canonical license
         replaces
+    PageToken:
+      description: Opaque continuation; empty starts traversal or marks its end. Not
+        a credential or snapshot token.
+      title: Page Token
+      type: string
     ProjectContext:
       properties:
         filePath:
@@ -4994,41 +4298,6 @@ components:
       - authorUserId
       - authorUsername
       type: object
-    PullAssociationMetadataResult:
-      properties:
-        observedAt:
-          anyOf:
-          - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
-            type:
-            - "null"
-            - string
-          - type: "null"
-        state:
-          $ref: '#/components/schemas/PullAssociationMetadataState'
-        warning:
-          anyOf:
-          - $ref: '#/components/schemas/OperationIssue'
-          - type: "null"
-      required:
-      - state
-      type: object
-    PullAssociationMetadataState:
-      description: Optional metadata result, independent of required content success
-      enum:
-      - observed
-      - stale
-      - unknown
-      - invalidated
-      examples:
-      - observed
-      - stale
-      - unknown
-      - invalidated
-      title: Pull Association Metadata State
-      type: string
     PullListResponse:
       properties:
         limit:
@@ -7652,7 +6921,7 @@ components:
       - described
       title: Value Domain Kind
       type: string
-    VillageAssignableCollectiveRole:
+    VillageAssignableGroupRole:
       description: Collective roles an owner may assign through the member role endpoint
       enum:
       - contributor
@@ -7756,17 +7025,280 @@ components:
       - shared
       - already_shared
       type: object
-    VillageCollective:
+    VillageCollectiveSearchResponse:
+      properties:
+        collectives:
+          items:
+            $ref: '#/components/schemas/VillageCollectiveSearchResult'
+          type: array
+      required:
+      - collectives
+      type: object
+    VillageCollectiveSearchResult:
+      properties:
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        id:
+          $ref: '#/components/schemas/VillageUUID'
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        member_count:
+          format: int32
+          type: integer
+        name:
+          type: string
+        transcript_count:
+          format: int32
+          type: integer
+      required:
+      - id
+      - name
+      - description
+      - linked_github_org
+      - member_count
+      - transcript_count
+      type: object
+    VillageCollectiveSubmission:
+      properties:
+        event_num:
+          format: int32
+          type: integer
+        group_id:
+          $ref: '#/components/schemas/VillageUUID'
+        recorded_at:
+          format: date-time
+          type: string
+        status:
+          $ref: '#/components/schemas/VillageShareStatus'
+        title:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        transcript_id:
+          $ref: '#/components/schemas/TranscriptID'
+      required:
+      - transcript_id
+      - group_id
+      - title
+      - event_num
+      - status
+      - recorded_at
+      type: object
+    VillageContributableResponse:
+      properties:
+        group_id:
+          $ref: '#/components/schemas/VillageUUID'
+        transcripts:
+          items:
+            $ref: '#/components/schemas/VillageContributableTranscript'
+          type: array
+      required:
+      - group_id
+      - transcripts
+      type: object
+    VillageContributableTranscript:
+      properties:
+        already_shared:
+          type: boolean
+        git_branch:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        id:
+          $ref: '#/components/schemas/TranscriptID'
+        input_submission_count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        local_id:
+          $ref: '#/components/schemas/SessionID'
+        model_provider:
+          type: string
+        parent_session_id:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        project_display_name:
+          type: string
+        project_hash:
+          $ref: '#/components/schemas/ProjectHash'
+        project_name_source:
+          $ref: '#/components/schemas/VillageProjectNameSource'
+        published_at:
+          format: date-time
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SessionPurpose'
+        relationships:
+          items:
+            $ref: '#/components/schemas/SessionRelationship'
+          type: array
+        root_session_id:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        session_origin:
+          $ref: '#/components/schemas/SessionOrigin'
+        title:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        visibility:
+          $ref: '#/components/schemas/VillageTranscriptVisibility'
+      required:
+      - id
+      - local_id
+      - title
+      - visibility
+      - project_hash
+      - project_display_name
+      - project_name_source
+      - git_branch
+      - parent_session_id
+      - session_origin
+      - model_provider
+      - published_at
+      - already_shared
+      type: object
+    VillageContributedCollective:
+      properties:
+        approved_count:
+          format: int32
+          type: integer
+        description:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        id:
+          $ref: '#/components/schemas/VillageUUID'
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+        pending_count:
+          format: int32
+          type: integer
+        rejected_attempt_count:
+          format: int32
+          type: integer
+        withdrawn_attempt_count:
+          format: int32
+          type: integer
+      required:
+      - id
+      - name
+      - description
+      - linked_github_org
+      - approved_count
+      - pending_count
+      - rejected_attempt_count
+      - withdrawn_attempt_count
+      type: object
+    VillageContributedCollectivesResponse:
+      properties:
+        collectives:
+          items:
+            $ref: '#/components/schemas/VillageContributedCollective'
+          type: array
+      required:
+      - collectives
+      type: object
+    VillageContributionStatus:
+      description: Status assigned when a new collective contribution is opened
+      enum:
+      - approved
+      - pending
+      examples:
+      - approved
+      - pending
+      title: Village Contribution Status
+      type: string
+    VillageCreateGroupRequest:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
+        data_access:
+          $ref: '#/components/schemas/VillageGroupDataAccess'
+        description:
+          type: string
+        linked_github_org:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        name:
+          type: string
+      required:
+      - name
+      type: object
+    VillageEnrichedTranscriptShare:
+      properties:
+        acceptance_mode:
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
+        group_id:
+          $ref: '#/components/schemas/VillageUUID'
+        group_name:
+          type: string
+        shared_at:
+          format: date-time
+          type: string
+        status:
+          $ref: '#/components/schemas/VillageShareStatus'
+        transcript_id:
+          $ref: '#/components/schemas/TranscriptID'
+      required:
+      - transcript_id
+      - group_id
+      - group_name
+      - acceptance_mode
+      - status
+      - shared_at
+      type: object
+    VillageErrorResponse:
+      properties:
+        error:
+          type: string
+      required:
+      - error
+      type: object
+    VillageGitHubWebhookPayload:
+      additionalProperties: true
+      description: GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256
+        HMAC over the raw body, never by shape
+      title: GitHub Webhook Payload
+      type: object
+    VillageGroup:
+      properties:
+        acceptance_mode:
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         created_at:
           format: date-time
           type: string
         created_by:
           $ref: '#/components/schemas/VillageUUID'
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           anyOf:
           - type:
@@ -7809,7 +7341,7 @@ components:
       - post_prompts_check
       - prompts_check_mode
       type: object
-    VillageCollectiveAcceptanceMode:
+    VillageGroupAcceptanceMode:
       description: How a collective accepts new members and contributions
       enum:
       - open
@@ -7821,7 +7353,7 @@ components:
       - curated
       title: Village Group Acceptance Mode
       type: string
-    VillageCollectiveContributor:
+    VillageGroupContributor:
       properties:
         avatar_url:
           anyOf:
@@ -7842,7 +7374,7 @@ components:
       - avatar_url
       - transcript_count
       type: object
-    VillageCollectiveDataAccess:
+    VillageGroupDataAccess:
       description: Who may read a collective's pooled transcript data
       enum:
       - members_only
@@ -7854,17 +7386,17 @@ components:
       - public
       title: Village Group Data Access
       type: string
-    VillageCollectiveDetailRecord:
+    VillageGroupDetailRecord:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         created_at:
           format: date-time
           type: string
         created_by:
           $ref: '#/components/schemas/VillageUUID'
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           anyOf:
           - type:
@@ -7911,36 +7443,36 @@ components:
       - display_members
       - transcript_deletion_policy
       type: object
-    VillageCollectiveDetailResponse:
+    VillageGroupDetailResponse:
       properties:
         can_read:
           type: boolean
         contributors:
           items:
-            $ref: '#/components/schemas/VillageCollectiveContributor'
+            $ref: '#/components/schemas/VillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/VillageCollectiveDetailRecord'
+          $ref: '#/components/schemas/VillageGroupDetailRecord'
         members:
           items:
-            $ref: '#/components/schemas/VillageCollectiveMember'
+            $ref: '#/components/schemas/VillageGroupMember'
           type: array
         models:
           items:
-            $ref: '#/components/schemas/VillageCollectiveModelBreakdown'
+            $ref: '#/components/schemas/VillageGroupModelBreakdown'
           type: array
         pending_members:
           items:
-            $ref: '#/components/schemas/VillageCollectiveMember'
+            $ref: '#/components/schemas/VillageGroupMember'
           type: array
         stats:
-          $ref: '#/components/schemas/VillageCollectiveTranscriptStats'
+          $ref: '#/components/schemas/VillageGroupTranscriptStats'
         transcripts:
           items:
-            $ref: '#/components/schemas/VillageCollectiveTranscript'
+            $ref: '#/components/schemas/VillageGroupTranscript'
           type: array
         your_role:
-          $ref: '#/components/schemas/VillageCollectiveViewerRole'
+          $ref: '#/components/schemas/VillageGroupViewerRole'
       required:
       - group
       - members
@@ -7951,7 +7483,7 @@ components:
       - your_role
       - transcripts
       type: object
-    VillageCollectiveMember:
+    VillageGroupMember:
       properties:
         avatar_url:
           anyOf:
@@ -7977,7 +7509,7 @@ components:
           format: date-time
           type: string
         role:
-          $ref: '#/components/schemas/VillageCollectiveRole'
+          $ref: '#/components/schemas/VillageGroupRole'
       required:
       - role
       - joined_at
@@ -7987,21 +7519,21 @@ components:
       - avatar_url
       - github_orgs
       type: object
-    VillageCollectiveMemberRoleRequest:
+    VillageGroupMemberRoleRequest:
       properties:
         role:
-          $ref: '#/components/schemas/VillageAssignableCollectiveRole'
+          $ref: '#/components/schemas/VillageAssignableGroupRole'
       required:
       - role
       type: object
-    VillageCollectiveMemberUsernameRequest:
+    VillageGroupMemberUsernameRequest:
       properties:
         username:
           type: string
       required:
       - username
       type: object
-    VillageCollectiveModelBreakdown:
+    VillageGroupModelBreakdown:
       properties:
         model_provider:
           type: string
@@ -8012,7 +7544,7 @@ components:
       - model_provider
       - transcript_count
       type: object
-    VillageCollectiveRole:
+    VillageGroupRole:
       description: A user's role in one collective
       enum:
       - owner
@@ -8026,86 +7558,17 @@ components:
       - pending
       title: Village Group Role
       type: string
-    VillageCollectiveSearchResponse:
-      properties:
-        collectives:
-          items:
-            $ref: '#/components/schemas/VillageCollectiveSearchResult'
-          type: array
-      required:
-      - collectives
-      type: object
-    VillageCollectiveSearchResult:
-      properties:
-        description:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        id:
-          $ref: '#/components/schemas/VillageUUID'
-        linked_github_org:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        member_count:
-          format: int32
-          type: integer
-        name:
-          type: string
-        transcript_count:
-          format: int32
-          type: integer
-      required:
-      - id
-      - name
-      - description
-      - linked_github_org
-      - member_count
-      - transcript_count
-      type: object
-    VillageCollectiveStatusRoleResponse:
+    VillageGroupStatusRoleResponse:
       properties:
         role:
-          $ref: '#/components/schemas/VillageCollectiveRole'
+          $ref: '#/components/schemas/VillageGroupRole'
         status:
           type: string
       required:
       - status
       - role
       type: object
-    VillageCollectiveSubmission:
-      properties:
-        event_num:
-          format: int32
-          type: integer
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        recorded_at:
-          format: date-time
-          type: string
-        status:
-          $ref: '#/components/schemas/VillageShareStatus'
-        title:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        transcript_id:
-          $ref: '#/components/schemas/TranscriptID'
-      required:
-      - transcript_id
-      - group_id
-      - title
-      - event_num
-      - status
-      - recorded_at
-      type: object
-    VillageCollectiveTranscript:
+    VillageGroupTranscript:
       properties:
         blob_size_bytes:
           anyOf:
@@ -8543,7 +8006,7 @@ components:
       - owner_is_discoverable
       - pull_requests
       type: object
-    VillageCollectiveTranscriptStats:
+    VillageGroupTranscriptStats:
       properties:
         contributor_count:
           format: int32
@@ -8572,7 +8035,7 @@ components:
       - total_tokens
       - pull_request_count
       type: object
-    VillageCollectiveViewerRole:
+    VillageGroupViewerRole:
       description: The caller's role in a collective, or an empty string when the
         caller has none
       enum:
@@ -8589,172 +8052,7 @@ components:
       - pending
       title: Village Group Viewer Role
       type: string
-    VillageContributableResponse:
-      properties:
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        transcripts:
-          items:
-            $ref: '#/components/schemas/VillageContributableTranscript'
-          type: array
-      required:
-      - group_id
-      - transcripts
-      type: object
-    VillageContributableTranscript:
-      properties:
-        already_shared:
-          type: boolean
-        git_branch:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        id:
-          $ref: '#/components/schemas/TranscriptID'
-        input_submission_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
-        local_id:
-          $ref: '#/components/schemas/SessionID'
-        model_provider:
-          type: string
-        parent_session_id:
-          anyOf:
-          - $ref: '#/components/schemas/SessionID'
-          - type: "null"
-        project_display_name:
-          type: string
-        project_hash:
-          $ref: '#/components/schemas/ProjectHash'
-        project_name_source:
-          $ref: '#/components/schemas/VillageProjectNameSource'
-        published_at:
-          format: date-time
-          type: string
-        purpose:
-          $ref: '#/components/schemas/SessionPurpose'
-        relationships:
-          items:
-            $ref: '#/components/schemas/SessionRelationship'
-          type: array
-        root_session_id:
-          anyOf:
-          - $ref: '#/components/schemas/SessionID'
-          - type: "null"
-        session_origin:
-          $ref: '#/components/schemas/SessionOrigin'
-        title:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        visibility:
-          $ref: '#/components/schemas/VillageTranscriptVisibility'
-      required:
-      - id
-      - local_id
-      - title
-      - visibility
-      - project_hash
-      - project_display_name
-      - project_name_source
-      - git_branch
-      - parent_session_id
-      - session_origin
-      - model_provider
-      - published_at
-      - already_shared
-      type: object
-    VillageContributedCollective:
-      properties:
-        approved_count:
-          format: int32
-          minimum: 0
-          type: integer
-        description:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        id:
-          $ref: '#/components/schemas/VillageUUID'
-        linked_github_org:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        name:
-          type: string
-        pending_count:
-          format: int32
-          minimum: 0
-          type: integer
-        rejected_attempt_count:
-          format: int32
-          minimum: 0
-          type: integer
-        withdrawn_attempt_count:
-          format: int32
-          minimum: 0
-          type: integer
-      required:
-      - id
-      - name
-      - description
-      - linked_github_org
-      - approved_count
-      - pending_count
-      - rejected_attempt_count
-      - withdrawn_attempt_count
-      type: object
-    VillageContributedCollectivesResponse:
-      properties:
-        collectives:
-          items:
-            $ref: '#/components/schemas/VillageContributedCollective'
-          type: array
-      required:
-      - collectives
-      type: object
-    VillageContributionStatus:
-      description: Status assigned when a new collective contribution is opened
-      enum:
-      - approved
-      - pending
-      examples:
-      - approved
-      - pending
-      title: Village Contribution Status
-      type: string
-    VillageCreateCollectiveRequest:
-      properties:
-        acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
-        data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
-        description:
-          type: string
-        linked_github_org:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        name:
-          type: string
-      required:
-      - name
-      type: object
-    VillageDeprecatedGroupedContributableResponse:
-      deprecated: true
-      description: Released groupId envelope for GET /api/v1/groups/{id}/contributable
-        during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.
+    VillageGroupedContributableResponse:
       properties:
         groupId:
           $ref: '#/components/schemas/VillageUUID'
@@ -8764,70 +8062,34 @@ components:
       - groupId
       - transcriptList
       type: object
-    VillageEnrichedTranscriptShare:
-      properties:
-        acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        group_name:
-          type: string
-        shared_at:
-          format: date-time
-          type: string
-        status:
-          $ref: '#/components/schemas/VillageShareStatus'
-        transcript_id:
-          $ref: '#/components/schemas/TranscriptID'
-      required:
-      - transcript_id
-      - group_id
-      - group_name
-      - acceptance_mode
-      - status
-      - shared_at
-      type: object
-    VillageErrorResponse:
-      properties:
-        error:
-          type: string
-      required:
-      - error
-      type: object
-    VillageGitHubWebhookPayload:
-      additionalProperties: true
-      description: GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256
-        HMAC over the raw body, never by shape
-      title: GitHub Webhook Payload
-      type: object
-    VillageGroupedCollectiveDetailResponse:
+    VillageGroupedGroupDetailResponse:
       properties:
         can_read:
           type: boolean
         contributors:
           items:
-            $ref: '#/components/schemas/VillageCollectiveContributor'
+            $ref: '#/components/schemas/VillageGroupContributor'
           type: array
         group:
-          $ref: '#/components/schemas/VillageCollectiveDetailRecord'
+          $ref: '#/components/schemas/VillageGroupDetailRecord'
         members:
           items:
-            $ref: '#/components/schemas/VillageCollectiveMember'
+            $ref: '#/components/schemas/VillageGroupMember'
           type: array
         models:
           items:
-            $ref: '#/components/schemas/VillageCollectiveModelBreakdown'
+            $ref: '#/components/schemas/VillageGroupModelBreakdown'
           type: array
         pending_members:
           items:
-            $ref: '#/components/schemas/VillageCollectiveMember'
+            $ref: '#/components/schemas/VillageGroupMember'
           type: array
         stats:
-          $ref: '#/components/schemas/VillageCollectiveTranscriptStats'
+          $ref: '#/components/schemas/VillageGroupTranscriptStats'
         transcriptList:
           $ref: '#/components/schemas/VillageSessionListPayload'
         your_role:
-          $ref: '#/components/schemas/VillageCollectiveViewerRole'
+          $ref: '#/components/schemas/VillageGroupViewerRole'
       required:
       - group
       - members
@@ -8836,16 +8098,6 @@ components:
       - contributors
       - can_read
       - your_role
-      - transcriptList
-      type: object
-    VillageGroupedContributableResponse:
-      properties:
-        group_id:
-          $ref: '#/components/schemas/VillageUUID'
-        transcriptList:
-          $ref: '#/components/schemas/VillageSessionListPayload'
-      required:
-      - group_id
       - transcriptList
       type: object
     VillageHelperMembersPayload:
@@ -9011,42 +8263,6 @@ components:
       - visible
       - fetched_at
       type: object
-    VillageOrganizationCollective:
-      properties:
-        description:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        id:
-          $ref: '#/components/schemas/VillageUUID'
-        member_count:
-          format: int32
-          minimum: 0
-          type: integer
-        name:
-          type: string
-        transcript_count:
-          format: int32
-          minimum: 0
-          type: integer
-      required:
-      - id
-      - name
-      - description
-      - member_count
-      - transcript_count
-      type: object
-    VillageOrganizationCollectivesResponse:
-      properties:
-        collectives:
-          items:
-            $ref: '#/components/schemas/VillageOrganizationCollective'
-          type: array
-      required:
-      - collectives
-      type: object
     VillagePendingShare:
       properties:
         branch:
@@ -9178,15 +8394,15 @@ components:
       - required
       title: Village Prompts Check Mode
       type: string
-    VillagePublicCollective:
+    VillagePublicGroup:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         created_at:
           format: date-time
           type: string
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           anyOf:
           - type:
@@ -9403,7 +8619,7 @@ components:
       - count
       - recent
       type: object
-    VillageRemoveCollectiveMemberResponse:
+    VillageRemoveGroupMemberResponse:
       properties:
         retracted:
           type: boolean
@@ -9567,7 +8783,7 @@ components:
       properties:
         collective:
           anyOf:
-          - $ref: '#/components/schemas/VillageCollectiveTranscript'
+          - $ref: '#/components/schemas/VillageGroupTranscript'
           - type: "null"
         contributable:
           anyOf:
@@ -9575,7 +8791,7 @@ components:
           - type: "null"
         myShare:
           anyOf:
-          - $ref: '#/components/schemas/VillageUserCollectiveShare'
+          - $ref: '#/components/schemas/VillageUserGroupShare'
           - type: "null"
         pending:
           anyOf:
@@ -9591,9 +8807,6 @@ components:
         decided_at:
           anyOf:
           - format: date-time
-            not:
-              pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-            pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
             type:
             - "null"
             - string
@@ -9605,9 +8818,6 @@ components:
           type: integer
         recorded_at:
           format: date-time
-          not:
-            pattern: ^0001-01-01T00:00:00(\.0+)?Z$
-          pattern: ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$
           type: string
         status:
           $ref: '#/components/schemas/VillageShareStatus'
@@ -10358,12 +9568,12 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Village UUID
       type: string
-    VillageUpdateCollectiveRequest:
+    VillageUpdateGroupRequest:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           type: string
         display_members:
@@ -10461,17 +9671,17 @@ components:
       - username_chosen
       - provider_username
       type: object
-    VillageUserCollective:
+    VillageUserGroup:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         created_at:
           format: date-time
           type: string
         created_by:
           $ref: '#/components/schemas/VillageUUID'
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           anyOf:
           - type:
@@ -10497,7 +9707,7 @@ components:
         name:
           type: string
         role:
-          $ref: '#/components/schemas/VillageCollectiveRole'
+          $ref: '#/components/schemas/VillageGroupRole'
         transcript_count:
           format: int32
           type: integer
@@ -10523,7 +9733,7 @@ components:
       - member_count
       - transcript_count
       type: object
-    VillageUserCollectiveShare:
+    VillageUserGroupShare:
       properties:
         id:
           $ref: '#/components/schemas/TranscriptID'
@@ -10646,17 +9856,17 @@ components:
       - total_tokens
       - pull_request_count
       type: object
-    VillageVisibleCollective:
+    VillageVisibleGroup:
       properties:
         acceptance_mode:
-          $ref: '#/components/schemas/VillageCollectiveAcceptanceMode'
+          $ref: '#/components/schemas/VillageGroupAcceptanceMode'
         created_at:
           format: date-time
           type: string
         created_by:
           $ref: '#/components/schemas/VillageUUID'
         data_access:
-          $ref: '#/components/schemas/VillageCollectiveDataAccess'
+          $ref: '#/components/schemas/VillageGroupDataAccess'
         description:
           anyOf:
           - type:
@@ -10687,7 +9897,7 @@ components:
           type: string
         role:
           anyOf:
-          - $ref: '#/components/schemas/VillageCollectiveRole'
+          - $ref: '#/components/schemas/VillageGroupRole'
           - type: "null"
         transcript_count:
           format: int32

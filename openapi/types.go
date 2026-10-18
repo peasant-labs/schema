@@ -33,6 +33,12 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"CollectiveFetchSourceResult", new(schema.CollectiveFetchSourceResult)}, {"CollectiveFetchAssociationScopeResult", new(schema.CollectiveFetchAssociationScopeResult)}, {"CollectiveFetchAssociationResults", new(schema.CollectiveFetchAssociationResults)}, {"CollectiveFetchDomainResult", new(schema.CollectiveFetchDomainResult)}, {"CollectiveFetchReport", new(schema.CollectiveFetchReport)},
 		{"CollectiveFetchDomainSummary", new(schema.CollectiveFetchDomainSummary)}, {"CollectiveFetchSummary", new(schema.CollectiveFetchSummary)}, {"CollectiveObservationResponse", new(schema.CollectiveObservationResponse)}, {"LocalContributionHistoryResponse", new(schema.LocalContributionHistoryResponse)}, {"LocalContributionTraversalConflict", new(schema.LocalContributionTraversalConflict)},
 		{"LocalRemoteContributionAttempt", new(schema.LocalRemoteContributionAttempt)},
+		{"PageToken", new(schema.PageToken)},
+		{"LocalSyncPublicationFilter", new(schema.LocalSyncPublicationFilter)},
+		{"LocalSyncSessionRow", new(schema.LocalSyncSessionRow)},
+		{"LocalSyncSessionPage", new(schema.LocalSyncSessionPage)},
+		{"LocalSyncProjectOption", new(schema.LocalSyncProjectOption)},
+		{"LocalSyncProjectOptions", new(schema.LocalSyncProjectOptions)},
 		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
 		{"AnnotationDatatype", new(schema.AnnotationDatatype)}, {"AnnotationEntryTarget", new(schema.AnnotationEntryTarget)},
 		{"AnnotationManifestResponse", new(schema.AnnotationManifestResponse)}, {"AnnotationPushItem", new(schema.AnnotationPushItem)},
@@ -246,6 +252,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 func BuildTypesSpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
+	registerSyncPageName(r)
 	r.Spec.Info.
 		WithTitle("Peasant Types").
 		// Derived from TypesVersion (single source; see package doc).

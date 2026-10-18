@@ -31,9 +31,13 @@ operations:
     method: get
     path: /api/v1/sync/sessions
     response: LocalSyncSessionsPayload
-    statuses: ["200"]
     parameters:
-      - {name: view, in: query, required: false, enum: [grouped]}
+      - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
+      - {name: maxItems, in: query, required: false}
+      - {name: pageToken, in: query, required: false}
+      - {name: parentSessionId, in: query, required: false}
+      - {name: projectHash, in: query, required: false}
+      - {name: publication, in: query, required: false, enum: [all, not-published, published, auto]}
 cases:
   - name: new-row-valid
     input:

@@ -14,6 +14,14 @@ enums:
   - {name: CollectiveFetchOutcome, all_name: AllCollectiveFetchOutcomes, members: [{name: Complete, value: complete}, {name: Partial, value: partial}, {name: Failed, value: failed}], all_values: [complete, partial, failed]}
   - {name: CollectiveObservationSource, all_name: AllCollectiveObservationSources, members: [{name: Membership, value: membership}, {name: ContributionDiscovery, value: contribution-discovery}, {name: Organization, value: organization}, {name: Explicit, value: explicit}, {name: Submissions, value: submissions}, {name: Attempts, value: attempts}, {name: Associations, value: associations}], all_values: [membership, contribution-discovery, organization, explicit, submissions, attempts, associations]}
   - {name: CollectiveSourceOutcome, all_name: AllCollectiveSourceOutcomes, members: [{name: Disclosed, value: disclosed}, {name: NotDisclosed, value: not_disclosed}, {name: Failed, value: failed}], all_values: [disclosed, not_disclosed, failed]}
+  - name: LocalSyncPublicationFilter
+    all_name: AllLocalSyncPublicationFilters
+    members:
+      - {name: All, value: "all"}
+      - {name: NotPublished, value: "not-published"}
+      - {name: Published, value: "published"}
+      - {name: Auto, value: "auto"}
+    all_values: ["all", "not-published", "published", "auto"]
   - name: PublishOperationKind
     all_name: AllPublishOperationKinds
     members:

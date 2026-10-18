@@ -133,8 +133,10 @@ const (
 	// Bumped to 0.19.0 for the optional thinking level and raw native spelling
 	// on session detail and assistant turns, and the in-session thinking-level
 	// history (additive = minor bump).
-	// Independent account-scoped observation and bounded evidence operations.
-	PeasantLocalAPIVersion = "0.20.0"
+	// Bumped to 0.20.0 for forward sync pages and metadata-only project options.
+	// Bumped to 0.21.0 for independent account-scoped collective observations
+	// and bounded contribution evidence, retaining the forward sync views.
+	PeasantLocalAPIVersion = "0.21.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -198,6 +200,8 @@ const (
 	// Bumped to 0.30.0 for the ThinkingLevel closed set, the bounded
 	// ThinkingLevelRaw native spelling, and the ThinkingLevelChange history
 	// entry (additive = minor bump).
-	// Bumped for retained owner contribution attempt evidence.
-	TypesVersion = "0.31.0"
+	// Bumped to 0.31.0 for concrete sync pages, tokens, and project options.
+	// Bumped to 0.32.0 for scoped collective observations, retained contribution
+	// evidence and deprecated collective envelopes alongside shared sync pages.
+	TypesVersion = "0.32.0"
 )
