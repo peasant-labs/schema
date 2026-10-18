@@ -354,38 +354,38 @@ cases:
       provenance: *requirement
       mutation: {description: 'eleven released base fields do not fabricate unavailable prompts settings'}
       input:
-        schema: VillageGroupDetailRecord
+        schema: VillageCollectiveDetailRecord
         payload: &group {id: '123e4567-e89b-12d3-a456-426614174001', name: collective, description: null, created_by: '123e4567-e89b-12d3-a456-426614174001', created_at: '2026-09-08T00:00:00Z', updated_at: '2026-09-08T00:00:00Z', acceptance_mode: open, data_access: public, linked_github_org: null, display_members: false, transcript_deletion_policy: user_choice}
       expected: {valid: true}
     - name: group-present-false-prompts
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'explicit false is a supplied fact and must remain present'}
-      input: {schema: VillageGroupDetailRecord, payload: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}
+      input: {schema: VillageCollectiveDetailRecord, payload: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}
       expected: {valid: true}
     - name: group-present-true-prompts
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'source-backed true setting remains present'}
-      input: {schema: VillageGroupDetailRecord, payload: {<<: *group, post_prompts_check: true, prompts_check_mode: required}}
+      input: {schema: VillageCollectiveDetailRecord, payload: {<<: *group, post_prompts_check: true, prompts_check_mode: required}}
       expected: {valid: true}
     - name: group-invalid-present-mode
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'optional present mode still uses the closed menu'}
-      input: {schema: VillageGroupDetailRecord, payload: {<<: *group, prompts_check_mode: invented}}
+      input: {schema: VillageCollectiveDetailRecord, payload: {<<: *group, prompts_check_mode: invented}}
       expected: {valid: false}
     - name: canonical-group-required-prompts-control
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'independent canonical prompts contract remains required, not weakened by read compatibility'}
-      input: {schema: VillageGroup, payload: *group}
+      input: {schema: VillageCollective, payload: *group}
       expected: {valid: false}
     - name: canonical-group-present-prompts-control
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'canonical group still accepts its supplied prompts configuration'}
-      input: {schema: VillageGroup, payload: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}
+      input: {schema: VillageCollective, payload: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}
       expected: {valid: true}
     - name: content-resolved-envelope
       classification: must-pass
@@ -431,8 +431,8 @@ cases:
       provenance: *requirement
       mutation: {description: 'omitted-view GET detail preserves the eleven group fields without invented prompts settings'}
       input:
-        schema: VillageGroupDetailResponse
-        route: /api/v1/groups/{id}
+        schema: VillageCollectiveDetailResponse
+        route: /api/v1/collectives/{id}
         payload: &flatDetail
           group: *group
           members: []
@@ -448,8 +448,8 @@ cases:
       provenance: *requirement
       mutation: {description: 'grouped GET detail preserves identical base group values and omitted settings'}
       input:
-        schema: VillageGroupedGroupDetailResponse
-        route: /api/v1/groups/{id}
+        schema: VillageGroupedCollectiveDetailResponse
+        route: /api/v1/collectives/{id}
         payload: &groupedDetail
           group: *group
           members: []
@@ -464,13 +464,13 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'flat GET detail retains source-backed false and informational mode'}
-      input: {schema: VillageGroupDetailResponse, route: '/api/v1/groups/{id}', payload: {<<: *flatDetail, group: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}}
+      input: {schema: VillageCollectiveDetailResponse, route: '/api/v1/collectives/{id}', payload: {<<: *flatDetail, group: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}}
       expected: {valid: true}
     - name: grouped-detail-present-prompts
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'grouped GET detail retains the same explicit false settings as flat reads'}
-      input: {schema: VillageGroupedGroupDetailResponse, route: '/api/v1/groups/{id}', payload: {<<: *groupedDetail, group: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}}
+      input: {schema: VillageGroupedCollectiveDetailResponse, route: '/api/v1/collectives/{id}', payload: {<<: *groupedDetail, group: {<<: *group, post_prompts_check: false, prompts_check_mode: informational}}}
       expected: {valid: true}
     - name: local-null-nested-groups
       classification: must-fail

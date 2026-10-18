@@ -1,0 +1,270 @@
+required_names:
+  - attempt-new-pending
+  - attempt-pending-approved
+  - attempt-pending-rejected
+  - attempt-pending-retracted
+  - attempt-pending-revoked
+  - attempt-late-pending-after-terminal
+  - attempt-terminal-exact-replay
+  - attempt-recorded-at-conflict
+  - attempt-terminal-conflict
+  - attempt-terminal-decision-conflict
+  - attempt-approved-withdrawal-new-ordinal
+  - attempt-initial-auto-approved-null-decision
+  - attempt-moderator-deletion-wire-unchanged
+  - attempt-identity-conflict
+  - attempt-transcript-identity-conflict
+  - attempt-ordinal-identity-conflict
+  - attempt-pending-decision-missing
+  - attempt-malformed-stale-pending
+  - attempt-invalid-actor
+  - attempt-invalid-status
+  - attempt-invalid-ordinal
+  - attempt-invalid-recorded-time
+  - attempt-invalid-first-seen-time
+  - attempt-invalid-collective-id
+  - attempt-terminal-decision-required
+  - attempt-invalid-saved-evidence
+  - attempt-equivalent-poll-retains-first-seen
+  - attempt-terminal-null-decision-conflict
+  - attempt-pending-exact-replay
+  - attempt-terminal-submillisecond-conflict
+  - attempt-terminal-fraction-equivalent-replay
+corpus:
+  cases:
+    - name: attempt-new-pending
+      input:
+        incoming: &pending
+          collective_id: 123e4567-e89b-12d3-a456-426614174000
+          transcript_id: 123e4567-e89b-12d3-a456-426614174001
+          event_num: 1
+          status: pending
+          recorded_at: 2026-10-01T10:00:00Z
+          decided_at: null
+          decided_by_actor: ''
+          first_seen_at: 2026-10-02T10:00:00Z
+      expected: {disposition: inserted, status: pending}
+      classification: must-pass
+      provenance: &provenance {source: requirement, ref: collective-attempt-reconciliation}
+      mutation: {description: accepts first observed pending evidence}
+    - name: attempt-pending-approved
+      input:
+        saved: *pending
+        incoming: &approved
+          <<: *pending
+          status: approved
+          decided_at: 2026-10-01T11:00:00Z
+          decided_by_actor: moderator
+      expected: {disposition: updated, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: accepts approval on the same pending ordinal}
+    - name: attempt-pending-rejected
+      input:
+        saved: *pending
+        incoming: {<<: *approved, status: rejected}
+      expected: {disposition: updated, status: rejected}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: accepts rejection on the same pending ordinal}
+    - name: attempt-pending-retracted
+      input:
+        saved: *pending
+        incoming: &retracted {<<: *approved, status: retracted, decided_by_actor: owner}
+      expected: {disposition: updated, status: retracted}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: accepts owner withdrawal on the same pending ordinal}
+    - name: attempt-pending-revoked
+      input:
+        saved: *pending
+        incoming: {<<: *approved, status: revoked, decided_by_actor: collective}
+      expected: {disposition: updated, status: revoked}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: accepts collective removal on the same pending ordinal}
+    - name: attempt-late-pending-after-terminal
+      input: {saved: *approved, incoming: *pending}
+      expected: {disposition: superseded, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: delayed pending cannot erase terminal decision evidence}
+    - name: attempt-terminal-exact-replay
+      input: {saved: *retracted, incoming: *retracted}
+      expected: {disposition: unchanged, status: retracted}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: exact replay of a terminal attempt is idempotent}
+    - name: attempt-recorded-at-conflict
+      input:
+        saved: *pending
+        incoming: {<<: *approved, recorded_at: 2026-10-01T10:01:00Z}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects a rewritten attempt creation time}
+    - name: attempt-terminal-conflict
+      input: {saved: *approved, incoming: *retracted}
+      expected: {status: approved}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: withdrawal of approved evidence requires a new ordinal}
+    - name: attempt-terminal-decision-conflict
+      input:
+        saved: *approved
+        incoming: {<<: *approved, decided_at: 2026-10-01T12:00:00Z}
+      expected: {status: approved}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects terminal decision timestamp rewriting}
+    - name: attempt-approved-withdrawal-new-ordinal
+      input:
+        incoming: {<<: *retracted, event_num: 2}
+      expected: {disposition: inserted, status: retracted}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: a new terminal ordinal can first appear without pending}
+    - name: attempt-initial-auto-approved-null-decision
+      input:
+        incoming: &automatic {<<: *approved, decided_at: null}
+      expected: {disposition: inserted, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: initial automatic approval has actor capacity without a decision date}
+    - name: attempt-moderator-deletion-wire-unchanged
+      input: {saved: *automatic, incoming: *automatic}
+      expected: {disposition: unchanged, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: moderator FK anonymization does not change wire actor capacity}
+    - name: attempt-identity-conflict
+      input:
+        saved: *pending
+        incoming: {<<: *approved, collective_id: 123e4567-e89b-12d3-a456-426614174002}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects a different collective identity in a same-identity reconciliation}
+    - name: attempt-transcript-identity-conflict
+      input:
+        saved: *pending
+        incoming: {<<: *approved, transcript_id: 123e4567-e89b-12d3-a456-426614174002}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects a different transcript identity}
+    - name: attempt-ordinal-identity-conflict
+      input:
+        saved: *pending
+        incoming: {<<: *approved, event_num: 2}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects an ordinal change instead of overwriting another attempt}
+    - name: attempt-pending-decision-missing
+      input: {saved: *pending, incoming: *automatic}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: null initial approval cannot decide an already recorded pending attempt}
+    - name: attempt-malformed-stale-pending
+      input:
+        saved: *approved
+        incoming: {<<: *pending, decided_at: 2026-10-01T11:00:00Z}
+      expected: {status: approved}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: malformed pending must not be classified as safely superseded}
+    - name: attempt-invalid-actor
+      input:
+        incoming: {<<: *approved, decided_by_actor: owner}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: approval requires moderator actor capacity}
+    - name: attempt-invalid-status
+      input:
+        incoming: {<<: *pending, status: accepted}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: unknown status cannot become accepted evidence}
+    - name: attempt-invalid-ordinal
+      input:
+        incoming: {<<: *pending, event_num: 0}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: server attempt ordinals start at one}
+    - name: attempt-invalid-recorded-time
+      input:
+        incoming: {<<: *pending, recorded_at: 2026-10-01T10:00:00+02:00}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: rejects a non-UTC observation timestamp}
+    - name: attempt-invalid-first-seen-time
+      input:
+        incoming: {<<: *pending, first_seen_at: 0001-01-01T00:00:00Z}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: local evidence must have an actual first observation date}
+    - name: attempt-invalid-collective-id
+      input:
+        incoming: {<<: *pending, collective_id: not-a-uuid}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: names and malformed identifiers are not canonical collective identities}
+    - name: attempt-terminal-decision-required
+      input:
+        incoming: {<<: *retracted, decided_at: null}
+      expected: {}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: nonapproved terminal evidence requires its decision date}
+    - name: attempt-invalid-saved-evidence
+      input:
+        saved: {<<: *pending, decided_by_actor: moderator}
+        incoming: *approved
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: malformed stored evidence is not silently repaired by a new observation}
+    - name: attempt-equivalent-poll-retains-first-seen
+      input:
+        saved: *approved
+        incoming: {<<: *approved, first_seen_at: 2026-10-03T10:00:00Z}
+      expected: {disposition: unchanged, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: equivalent polls cannot rewrite stable firstSeenAt evidence}
+    - name: attempt-terminal-null-decision-conflict
+      input: {saved: *automatic, incoming: *approved}
+      expected: {status: approved}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: a terminal null decision date is immutable too}
+    - name: attempt-pending-exact-replay
+      input: {saved: *pending, incoming: *pending}
+      expected: {disposition: unchanged, status: pending}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: equivalent pending observations do not change evidence}
+    - name: attempt-terminal-submillisecond-conflict
+      input:
+        saved: {<<: *approved, decided_at: 2026-10-01T11:00:00.000000001Z}
+        incoming: {<<: *approved, decided_at: 2026-10-01T11:00:00.000000002Z}
+      expected: {status: approved}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: nanosecond decision conflicts cannot disappear through millisecond rounding}
+    - name: attempt-terminal-fraction-equivalent-replay
+      input:
+        saved: {<<: *approved, decided_at: 2026-10-01T11:00:00.000Z}
+        incoming: *approved
+      expected: {disposition: unchanged, status: approved}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: equivalent fractional UTC spellings do not rewrite decision evidence}

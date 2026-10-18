@@ -23,6 +23,16 @@ type TypeCatalogEntry struct {
 // this language-neutral contract surface.
 func TypeCatalogEntries() []TypeCatalogEntry {
 	return []TypeCatalogEntry{
+		{"VillageOrganizationCollective", new(schema.VillageOrganizationCollective)}, {"VillageOrganizationCollectivesResponse", new(schema.VillageOrganizationCollectivesResponse)},
+		{"CollectiveObservationScope", new(schema.CollectiveObservationScope)}, {"CollectiveObservationReason", new(schema.CollectiveObservationReason)}, {"CollectiveObservationState", new(schema.CollectiveObservationState)}, {"CollectiveObservation", new(schema.CollectiveObservation)},
+		{"CollectiveOperation", new(schema.CollectiveOperation)}, {"OperationIssueCode", new(schema.OperationIssueCode)}, {"OperationIssue", new(schema.OperationIssue)},
+		{"LocalContributionEvidenceKind", new(schema.LocalContributionEvidenceKind)}, {"ContributionTraversalRevision", new(schema.ContributionTraversalRevision)}, {"CollectiveEvidenceCoverage", new(schema.CollectiveEvidenceCoverage)},
+		{"LocalConfirmedContributionOutcome", new(schema.LocalConfirmedContributionOutcome)}, {"LocalConfirmedContributionReceipt", new(schema.LocalConfirmedContributionReceipt)}, {"LocalOperationDiagnosticOutcome", new(schema.LocalOperationDiagnosticOutcome)}, {"LocalOperationDiagnostic", new(schema.LocalOperationDiagnostic)},
+		{"PullAssociationMetadataState", new(schema.PullAssociationMetadataState)}, {"PullAssociationMetadataResult", new(schema.PullAssociationMetadataResult)},
+		{"CollectiveFetchDomain", new(schema.CollectiveFetchDomain)}, {"CollectiveFetchState", new(schema.CollectiveFetchState)}, {"CollectiveFetchCommit", new(schema.CollectiveFetchCommit)}, {"CollectiveFetchOutcome", new(schema.CollectiveFetchOutcome)}, {"CollectiveObservationSource", new(schema.CollectiveObservationSource)}, {"CollectiveSourceOutcome", new(schema.CollectiveSourceOutcome)},
+		{"CollectiveFetchSourceResult", new(schema.CollectiveFetchSourceResult)}, {"CollectiveFetchAssociationScopeResult", new(schema.CollectiveFetchAssociationScopeResult)}, {"CollectiveFetchAssociationResults", new(schema.CollectiveFetchAssociationResults)}, {"CollectiveFetchDomainResult", new(schema.CollectiveFetchDomainResult)}, {"CollectiveFetchReport", new(schema.CollectiveFetchReport)},
+		{"CollectiveFetchDomainSummary", new(schema.CollectiveFetchDomainSummary)}, {"CollectiveFetchSummary", new(schema.CollectiveFetchSummary)}, {"CollectiveObservationResponse", new(schema.CollectiveObservationResponse)}, {"LocalContributionHistoryResponse", new(schema.LocalContributionHistoryResponse)}, {"LocalContributionTraversalConflict", new(schema.LocalContributionTraversalConflict)},
+		{"LocalRemoteContributionAttempt", new(schema.LocalRemoteContributionAttempt)},
 		{"PageToken", new(schema.PageToken)},
 		{"LocalSyncPublicationFilter", new(schema.LocalSyncPublicationFilter)},
 		{"LocalSyncSessionRow", new(schema.LocalSyncSessionRow)},
@@ -152,7 +162,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"OwnerTranscriptUpdateResponse", new(schema.OwnerTranscriptUpdateResponse)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"UICapabilitiesResponse", new(schema.UICapabilitiesResponse)},
-		{"VillageAssignableGroupRole", new(schema.VillageAssignableGroupRole)},
+		{"VillageAssignableCollectiveRole", new(schema.VillageAssignableCollectiveRole)},
 		{"VillageAvailableRepositoriesResponse", new(schema.VillageAvailableRepositoriesResponse)}, {"VillageAvailableRepository", new(schema.VillageAvailableRepository)},
 		{"VillageBatchReviewRequest", new(schema.VillageBatchReviewRequest)}, {"VillageBatchReviewResponse", new(schema.VillageBatchReviewResponse)},
 		{"VillageBatchShareEntry", new(schema.VillageBatchShareEntry)}, {"VillageBatchShareRequest", new(schema.VillageBatchShareRequest)},
@@ -160,26 +170,26 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageCollectiveSearchResult", new(schema.VillageCollectiveSearchResult)}, {"VillageCollectiveSubmission", new(schema.VillageCollectiveSubmission)},
 		{"VillageContributableResponse", new(schema.VillageContributableResponse)}, {"VillageContributableTranscript", new(schema.VillageContributableTranscript)},
 		{"VillageContributedCollective", new(schema.VillageContributedCollective)}, {"VillageContributedCollectivesResponse", new(schema.VillageContributedCollectivesResponse)},
-		{"VillageContributionStatus", new(schema.VillageContributionStatus)}, {"VillageCreateGroupRequest", new(schema.VillageCreateGroupRequest)},
+		{"VillageContributionStatus", new(schema.VillageContributionStatus)}, {"VillageCreateCollectiveRequest", new(schema.VillageCreateCollectiveRequest)},
 		{"VillageErrorResponse", new(schema.VillageErrorResponse)},
 		{"VillageGitHubWebhookPayload", new(schema.VillageGitHubWebhookPayload)},
-		{"VillageGroup", new(schema.VillageGroup)},
-		{"VillageGroupAcceptanceMode", new(schema.VillageGroupAcceptanceMode)}, {"VillageGroupContributor", new(schema.VillageGroupContributor)},
-		{"VillageGroupDataAccess", new(schema.VillageGroupDataAccess)}, {"VillageGroupDetailResponse", new(schema.VillageGroupDetailResponse)},
-		{"VillageGroupDetailRecord", new(schema.VillageGroupDetailRecord)},
-		{"VillageGroupMember", new(schema.VillageGroupMember)}, {"VillageGroupMemberRoleRequest", new(schema.VillageGroupMemberRoleRequest)},
-		{"VillageGroupMemberUsernameRequest", new(schema.VillageGroupMemberUsernameRequest)}, {"VillageGroupModelBreakdown", new(schema.VillageGroupModelBreakdown)},
-		{"VillageGroupRole", new(schema.VillageGroupRole)}, {"VillageGroupStatusRoleResponse", new(schema.VillageGroupStatusRoleResponse)},
-		{"VillageGroupTranscript", new(schema.VillageGroupTranscript)}, {"VillageGroupTranscriptStats", new(schema.VillageGroupTranscriptStats)},
-		{"VillageGroupViewerRole", new(schema.VillageGroupViewerRole)}, {"VillageLinkRepositoryRequest", new(schema.VillageLinkRepositoryRequest)},
+		{"VillageCollective", new(schema.VillageCollective)},
+		{"VillageCollectiveAcceptanceMode", new(schema.VillageCollectiveAcceptanceMode)}, {"VillageCollectiveContributor", new(schema.VillageCollectiveContributor)},
+		{"VillageCollectiveDataAccess", new(schema.VillageCollectiveDataAccess)}, {"VillageCollectiveDetailResponse", new(schema.VillageCollectiveDetailResponse)},
+		{"VillageCollectiveDetailRecord", new(schema.VillageCollectiveDetailRecord)},
+		{"VillageCollectiveMember", new(schema.VillageCollectiveMember)}, {"VillageCollectiveMemberRoleRequest", new(schema.VillageCollectiveMemberRoleRequest)},
+		{"VillageCollectiveMemberUsernameRequest", new(schema.VillageCollectiveMemberUsernameRequest)}, {"VillageCollectiveModelBreakdown", new(schema.VillageCollectiveModelBreakdown)},
+		{"VillageCollectiveRole", new(schema.VillageCollectiveRole)}, {"VillageCollectiveStatusRoleResponse", new(schema.VillageCollectiveStatusRoleResponse)},
+		{"VillageCollectiveTranscript", new(schema.VillageCollectiveTranscript)}, {"VillageCollectiveTranscriptStats", new(schema.VillageCollectiveTranscriptStats)},
+		{"VillageCollectiveViewerRole", new(schema.VillageCollectiveViewerRole)}, {"VillageLinkRepositoryRequest", new(schema.VillageLinkRepositoryRequest)},
 		{"VillageLinkedRepositoriesResponse", new(schema.VillageLinkedRepositoriesResponse)}, {"VillageLinkedRepository", new(schema.VillageLinkedRepository)},
 		{"VillagePendingShare", new(schema.VillagePendingShare)}, {"VillageProjectNameSource", new(schema.VillageProjectNameSource)},
 		{"VillagePromptRequest", new(schema.VillagePromptRequest)}, {"VillagePromptRequestsResponse", new(schema.VillagePromptRequestsResponse)},
 		{"VillagePromptsCheckMode", new(schema.VillagePromptsCheckMode)},
-		{"VillagePublicGroup", new(schema.VillagePublicGroup)},
+		{"VillagePublicCollective", new(schema.VillagePublicCollective)},
 		{"VillagePullRequestAttachedTranscript", new(schema.VillagePullRequestAttachedTranscript)}, {"VillagePullRequestAttachment", new(schema.VillagePullRequestAttachment)},
 		{"VillagePullRequestAttachmentResponse", new(schema.VillagePullRequestAttachmentResponse)}, {"VillagePullRequestAttachmentState", new(schema.VillagePullRequestAttachmentState)},
-		{"VillageRemoveGroupMemberResponse", new(schema.VillageRemoveGroupMemberResponse)},
+		{"VillageRemoveCollectiveMemberResponse", new(schema.VillageRemoveCollectiveMemberResponse)},
 		{"VillageRepositoryCommit", new(schema.VillageRepositoryCommit)}, {"VillageRepositoryCommitsResponse", new(schema.VillageRepositoryCommitsResponse)},
 		{"VillageReviewDecision", new(schema.VillageReviewDecision)}, {"VillageReviewShareRequest", new(schema.VillageReviewShareRequest)},
 		{"VillageReviewShareResponse", new(schema.VillageReviewShareResponse)},
@@ -193,14 +203,15 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageTranscriptListRow", new(schema.VillageTranscriptListRow)}, {"VillageTranscriptListResponse", new(schema.VillageTranscriptListResponse)},
 		{"VillageSessionRow", new(schema.VillageSessionRow)}, {"VillageSessionListItem", new(schema.VillageSessionListItem)},
 		{"VillageSessionListPayload", new(schema.VillageSessionListPayload)}, {"VillageHelperMembersPayload", new(schema.VillageHelperMembersPayload)},
-		{"VillageGroupedGroupDetailResponse", new(schema.VillageGroupedGroupDetailResponse)}, {"VillageGroupedContributableResponse", new(schema.VillageGroupedContributableResponse)},
+		{"VillageGroupedCollectiveDetailResponse", new(schema.VillageGroupedCollectiveDetailResponse)}, {"VillageGroupedContributableResponse", new(schema.VillageGroupedContributableResponse)},
+		{"VillageDeprecatedGroupedContributableResponse", new(schema.VillageDeprecatedGroupedContributableResponse)},
 		{"VillageTranscriptCollective", new(schema.VillageTranscriptCollective)}, {"VillageTranscriptCollectivesResponse", new(schema.VillageTranscriptCollectivesResponse)},
 		{"VillageTranscriptDeletionPolicy", new(schema.VillageTranscriptDeletionPolicy)}, {"VillageTranscriptShare", new(schema.VillageTranscriptShare)},
-		{"VillageTranscriptVisibility", new(schema.VillageTranscriptVisibility)}, {"VillageUpdateGroupRequest", new(schema.VillageUpdateGroupRequest)},
+		{"VillageTranscriptVisibility", new(schema.VillageTranscriptVisibility)}, {"VillageUpdateCollectiveRequest", new(schema.VillageUpdateCollectiveRequest)},
 		{"VillageUpdateUserSettingsRequest", new(schema.VillageUpdateUserSettingsRequest)},
-		{"VillageUserGroup", new(schema.VillageUserGroup)}, {"VillageUserGroupShare", new(schema.VillageUserGroupShare)},
+		{"VillageUserCollective", new(schema.VillageUserCollective)}, {"VillageUserCollectiveShare", new(schema.VillageUserCollectiveShare)},
 		{"VillageUserSettings", new(schema.VillageUserSettings)},
-		{"VillageUUID", new(schema.VillageUUID)}, {"VillageVisibleGroup", new(schema.VillageVisibleGroup)},
+		{"VillageUUID", new(schema.VillageUUID)}, {"VillageVisibleCollective", new(schema.VillageVisibleCollective)},
 		{"VillagePullRequestRef", new(schema.VillagePullRequestRef)}, {"VillagePullRequestsSummary", new(schema.VillagePullRequestsSummary)},
 		{"VillageTranscriptPullRequest", new(schema.VillageTranscriptPullRequest)}, {"VillageTranscriptPullRequestsResponse", new(schema.VillageTranscriptPullRequestsResponse)},
 		{"VillageUserStats", new(schema.VillageUserStats)},
@@ -285,6 +296,9 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	for name, schemaMap := range directSchemas {
 		r.SpecEns().ComponentsEns().WithSchemasItem(name, schemaMap)
 	}
+	deprecatedGrouped := r.SpecEns().ComponentsEns().Schemas["VillageDeprecatedGroupedContributableResponse"]
+	deprecatedGrouped["deprecated"] = true
+	deprecatedGrouped["description"] = "Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable."
 	if err := closeStrictComponents(r.SpecEns().ComponentsEns().Schemas); err != nil {
 		return nil, err
 	}
@@ -306,6 +320,10 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 	if err := constrainHelperMemberItems(r.SpecEns().ComponentsEns().Schemas); err != nil {
 		return nil, err
 	}
+	if err := constrainContributionHistory(r.SpecEns().ComponentsEns().Schemas); err != nil {
+		return nil, err
+	}
+	constrainCollectiveTimestamps(r.SpecEns().ComponentsEns().Schemas)
 
 	return r.Spec, nil
 }

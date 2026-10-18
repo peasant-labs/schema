@@ -83,25 +83,31 @@ routes:
       provenance: {source: requirement, ref: village-global-routes}
       mutation: {description: binds all existing list filters to the grouped view}
     - name: collective-browse
-      input: {path: "/api/v1/groups/{id}", operation_id: getGroup, view: true, legacy: SchemaVillageGroupDetailResponse, grouped: SchemaVillageGroupedGroupDetailResponse, parameters: [id, limit, offset, view]}
+      input: {path: "/api/v1/collectives/{id}", operation_id: getGroup, view: true, legacy: SchemaVillageCollectiveDetailResponse, grouped: SchemaVillageGroupedCollectiveDetailResponse, parameters: [id, limit, offset, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-collective-route}
       mutation: {description: adds grouped collective detail without replacing legacy detail}
     - name: contribute
-      input: {path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscripts, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageGroupedContributableResponse, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/contributable", operation_id: listContributableTranscripts, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageGroupedContributableResponse, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-contribute-route}
       mutation: {description: adds grouped contributable output}
     - name: pending-review
-      input: {path: "/api/v1/groups/{id}/pending", operation_id: listPendingShares, view: true, legacy: array, legacy_item: SchemaVillagePendingShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/pending", operation_id: listPendingShares, view: true, legacy: array, legacy_item: SchemaVillagePendingShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-pending-route}
       mutation: {description: adds grouped pending output}
+    - name: deprecated-contribute
+      input: {path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscriptsDeprecated, view: true, legacy: SchemaVillageContributableResponse, grouped: SchemaVillageDeprecatedGroupedContributableResponse, parameters: [id, view]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: released-grouped-alias-window}
+      mutation: {description: preserves the released groupId envelope only on the deprecated route}
     - name: my-shares
-      input: {path: "/api/v1/groups/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, legacy_item: SchemaVillageUserGroupShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
+      input: {path: "/api/v1/collectives/{id}/my-shares", operation_id: listMyGroupShares, view: true, legacy: array, legacy_item: SchemaVillageUserCollectiveShare, grouped: SchemaVillageSessionListPayload, parameters: [id, view]}
       expected: {valid: true}
       classification: must-pass
       provenance: {source: requirement, ref: village-my-shares-route}
@@ -136,5 +142,5 @@ collections:
 required_names:
   rows: [global-count-zero, collective-same-row, pending-count-mismatch, my-share-identity-mismatch, contributable-same-row, pending-same-row, my-share-same-row, collective-turn-mismatch, input-count-above-safe-max]
   items: [transcript-arm, context-arm, both-arms]
-  routes: [global-profile-project-search, collective-browse, contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
+  routes: [global-profile-project-search, collective-browse, contribute, deprecated-contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
   collections: [list-empty-array-valid, list-null-invalid, list-zero-page-invalid, members-empty-array-valid, members-null-invalid, members-zero-limit-invalid, legacy-list-null-related-valid]

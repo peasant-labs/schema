@@ -1,0 +1,27 @@
+baseline: a5997e3c5f81da393640972aa00e0ba5d035f82b
+provenance: public-contract.gen.ts and enums.gen.ts exported names before the collective rename
+aliases:
+  - {name: VillageGroup, canonical: VillageCollective}
+  - {name: VillageGroupDetailRecord, canonical: VillageCollectiveDetailRecord}
+  - {name: VillagePublicGroup, canonical: VillagePublicCollective}
+  - {name: VillageUserGroup, canonical: VillageUserCollective}
+  - {name: VillageVisibleGroup, canonical: VillageVisibleCollective}
+  - {name: VillageCreateGroupRequest, canonical: VillageCreateCollectiveRequest}
+  - {name: VillageUpdateGroupRequest, canonical: VillageUpdateCollectiveRequest}
+  - {name: VillageGroupStatusRoleResponse, canonical: VillageCollectiveStatusRoleResponse}
+  - {name: VillageRemoveGroupMemberResponse, canonical: VillageRemoveCollectiveMemberResponse}
+  - {name: VillageGroupMemberUsernameRequest, canonical: VillageCollectiveMemberUsernameRequest}
+  - {name: VillageGroupMemberRoleRequest, canonical: VillageCollectiveMemberRoleRequest}
+  - {name: VillageGroupMember, canonical: VillageCollectiveMember}
+  - {name: VillageGroupTranscriptStats, canonical: VillageCollectiveTranscriptStats}
+  - {name: VillageGroupModelBreakdown, canonical: VillageCollectiveModelBreakdown}
+  - {name: VillageGroupContributor, canonical: VillageCollectiveContributor}
+  - {name: VillageGroupDetailResponse, canonical: VillageCollectiveDetailResponse}
+  - {name: VillageGroupTranscript, canonical: VillageCollectiveTranscript}
+  - {name: VillageUserGroupShare, canonical: VillageUserCollectiveShare}
+  - {name: VillageGroupedGroupDetailResponse, canonical: VillageGroupedCollectiveDetailResponse}
+  - {name: VillageGroupAcceptanceMode, canonical: VillageCollectiveAcceptanceMode, all_name: AllVillageGroupAcceptanceModes, canonical_all_name: AllVillageCollectiveAcceptanceModes}
+  - {name: VillageGroupDataAccess, canonical: VillageCollectiveDataAccess, all_name: AllVillageGroupDataAccessPolicies, canonical_all_name: AllVillageCollectiveDataAccessPolicies}
+  - {name: VillageGroupRole, canonical: VillageCollectiveRole, all_name: AllVillageGroupRoles, canonical_all_name: AllVillageCollectiveRoles}
+  - {name: VillageAssignableGroupRole, canonical: VillageAssignableCollectiveRole, all_name: AllVillageAssignableGroupRoles, canonical_all_name: AllVillageAssignableCollectiveRoles}
+  - {name: VillageGroupViewerRole, canonical: VillageCollectiveViewerRole, all_name: AllVillageGroupViewerRoles, canonical_all_name: AllVillageCollectiveViewerRoles}

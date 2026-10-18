@@ -15,6 +15,12 @@ files:
   - dist/fixtures/timeline.js
   - dist/index.d.ts
   - dist/index.js
+  - dist/contribution-attempt.d.ts
+  - dist/contribution-attempt.js
+  - dist/collective-validation.d.ts
+  - dist/collective-validation.js
+  - dist/collective-status.d.ts
+  - dist/collective-status.js
   - dist/internal/generated/local-api.d.ts
   - dist/internal/generated/local-api.js
   - dist/internal/generated/content-capabilities.gen.d.ts
@@ -23,6 +29,8 @@ files:
   - dist/internal/generated/contract/zod.gen.js
   - dist/internal/generated/enums.gen.d.ts
   - dist/internal/generated/enums.gen.js
+  - dist/internal/generated/collective-compatibility.gen.d.ts
+  - dist/internal/generated/collective-compatibility.gen.js
   - dist/internal/generated/metadata-limits.gen.d.ts
   - dist/internal/generated/metadata-limits.gen.js
   - dist/internal/generated/public-contract.gen.d.ts

@@ -1,7 +1,7 @@
 cases:
   - name: collective detail compatible group record
     input:
-      component: VillageGroupDetailRecord
+      component: VillageCollectiveDetailRecord
       required: [id, name, description, created_by, created_at, updated_at, acceptance_mode, data_access, linked_github_org, display_members, transcript_deletion_policy]
       optional: [post_prompts_check, prompts_check_mode]
       nullable: [description, linked_github_org, post_prompts_check, prompts_check_mode]

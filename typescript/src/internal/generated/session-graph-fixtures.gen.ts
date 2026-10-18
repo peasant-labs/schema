@@ -2353,10 +2353,10 @@ export const canonicalSessionGraphFixtures = {
       "SessionDetailPayload",
       "SessionDetailReadPayload",
       "VillageContributableTranscript",
-      "VillageGroupTranscript",
+      "VillageCollectiveTranscript",
       "VillagePendingShare",
       "VillageTranscript",
-      "VillageUserGroupShare"
+      "VillageUserCollectiveShare"
     ],
     "strictObjects": {
       "PublicSourceAnchor": {
@@ -5252,7 +5252,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "eleven released base fields do not fabricate unavailable prompts settings"
           },
           "input": {
-            "schema": "VillageGroupDetailRecord",
+            "schema": "VillageCollectiveDetailRecord",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5282,7 +5282,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "explicit false is a supplied fact and must remain present"
           },
           "input": {
-            "schema": "VillageGroupDetailRecord",
+            "schema": "VillageCollectiveDetailRecord",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5314,7 +5314,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "source-backed true setting remains present"
           },
           "input": {
-            "schema": "VillageGroupDetailRecord",
+            "schema": "VillageCollectiveDetailRecord",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5346,7 +5346,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "optional present mode still uses the closed menu"
           },
           "input": {
-            "schema": "VillageGroupDetailRecord",
+            "schema": "VillageCollectiveDetailRecord",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5377,7 +5377,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "independent canonical prompts contract remains required, not weakened by read compatibility"
           },
           "input": {
-            "schema": "VillageGroup",
+            "schema": "VillageCollective",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5407,7 +5407,7 @@ export const canonicalSessionGraphFixtures = {
             "description": "canonical group still accepts its supplied prompts configuration"
           },
           "input": {
-            "schema": "VillageGroup",
+            "schema": "VillageCollective",
             "payload": {
               "id": "123e4567-e89b-12d3-a456-426614174001",
               "name": "collective",
@@ -5811,8 +5811,8 @@ export const canonicalSessionGraphFixtures = {
             "description": "omitted-view GET detail preserves the eleven group fields without invented prompts settings"
           },
           "input": {
-            "schema": "VillageGroupDetailResponse",
-            "route": "/api/v1/groups/{id}",
+            "schema": "VillageCollectiveDetailResponse",
+            "route": "/api/v1/collectives/{id}",
             "payload": {
               "group": {
                 "id": "123e4567-e89b-12d3-a456-426614174001",
@@ -5858,8 +5858,8 @@ export const canonicalSessionGraphFixtures = {
             "description": "grouped GET detail preserves identical base group values and omitted settings"
           },
           "input": {
-            "schema": "VillageGroupedGroupDetailResponse",
-            "route": "/api/v1/groups/{id}",
+            "schema": "VillageGroupedCollectiveDetailResponse",
+            "route": "/api/v1/collectives/{id}",
             "payload": {
               "group": {
                 "id": "123e4567-e89b-12d3-a456-426614174001",
@@ -5912,8 +5912,8 @@ export const canonicalSessionGraphFixtures = {
             "description": "flat GET detail retains source-backed false and informational mode"
           },
           "input": {
-            "schema": "VillageGroupDetailResponse",
-            "route": "/api/v1/groups/{id}",
+            "schema": "VillageCollectiveDetailResponse",
+            "route": "/api/v1/collectives/{id}",
             "payload": {
               "group": {
                 "id": "123e4567-e89b-12d3-a456-426614174001",
@@ -5961,8 +5961,8 @@ export const canonicalSessionGraphFixtures = {
             "description": "grouped GET detail retains the same explicit false settings as flat reads"
           },
           "input": {
-            "schema": "VillageGroupedGroupDetailResponse",
-            "route": "/api/v1/groups/{id}",
+            "schema": "VillageGroupedCollectiveDetailResponse",
+            "route": "/api/v1/collectives/{id}",
             "payload": {
               "group": {
                 "id": "123e4567-e89b-12d3-a456-426614174001",

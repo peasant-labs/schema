@@ -10,18 +10,29 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.26.0
+    value: 0.27.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.20.0
+    value: 0.21.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.31.0
+    value: 0.32.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"
     surfaces: [root]
 functions:
+  - {name: normalizeCollectiveObservationScope, target: runtime-scope-normalizer, surfaces: [root]}
+  - {name: encodeContributionTraversalRevision, target: runtime-selected-category-token-encoder, surfaces: [root]}
+  - {name: parseContributionTraversalRevision, target: runtime-selected-category-token-parser, surfaces: [root]}
+  - {name: collectiveFetchHTTPStatus, target: runtime-fetch-status-precedence, surfaces: [root]}
+  - {name: validateContributionHistoryQuery, target: runtime-selected-category-page-validator, surfaces: [root]}
+  - name: reconcileVillageContributionAttempt
+    target: runtime-reconciler:LocalRemoteContributionAttempt
+    surfaces: [root]
+  - name: villageContributionAttemptActor
+    target: runtime-actor-capacity:VillageShareStatus
+    surfaces: [root]
   - name: parseSchemaVersionAdvertisement
     target: runtime-capability-advertisement-parser
     surfaces: [root]

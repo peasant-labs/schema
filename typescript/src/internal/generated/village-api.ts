@@ -68,7 +68,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/groups": {
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the stable authenticated user UUID before account-scoped metadata fetching. Usernames and credentials are not scope identity. */
+        get: operations["getAuthenticatedVillageUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the authenticated user organizations for scoped metadata discovery. Organization membership alone does not disclose linked collectives; use the viewer-authorized organization collective projection. Query failure is 500, never a successful empty set. */
+        get: operations["listAuthenticatedVillageOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives": {
         parameters: {
             query?: never;
             header?: never;
@@ -86,7 +120,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/groups/public": {
+    "/api/v1/collectives/public": {
         parameters: {
             query?: never;
             header?: never;
@@ -103,7 +137,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/groups/search": {
+    "/api/v1/collectives/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -120,7 +154,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/groups/visible": {
+    "/api/v1/collectives/visible": {
         parameters: {
             query?: never;
             header?: never;
@@ -137,7 +171,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/groups/{id}": {
+    "/api/v1/collectives/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -156,7 +190,7 @@ export interface paths {
         patch: operations["updateGroup"];
         trace?: never;
     };
-    "/api/v1/groups/{id}/contributable": {
+    "/api/v1/collectives/{id}/contributable": {
         parameters: {
             query?: never;
             header?: never;
@@ -165,6 +199,361 @@ export interface paths {
         };
         /** @description List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit. */
         get: operations["listContributableTranscripts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route. */
+        post: operations["joinGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Add a platform user to an owned collective by username. */
+        post: operations["addGroupMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/members/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove a member from a collective. The member may remove themselves; removing somebody else requires owner access. retract=true or a mandatory deletion policy retracts that member's live submissions. */
+        delete: operations["removeGroupMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/members/{userID}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Change a collective member's role to contributor or member. Owner and pending are not accepted by this operation. */
+        patch: operations["updateGroupMemberRole"];
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/my-shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the authenticated caller's own live submissions to one collective, including pending and approved rows. */
+        get: operations["listMyGroupShares"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List pending transcript submissions for an owned collective, oldest first. */
+        get: operations["listPendingShares"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List GitHub repositories linked to a collective. The caller must be an authenticated collective member. */
+        get: operations["listGroupRepositories"];
+        put?: never;
+        /** @description Link a GitHub repository to an owned collective after validating that the configured GitHub App installation can access it. */
+        post: operations["linkGroupRepository"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/repositories/available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the repositories the GitHub App can offer this collective, from the installation for the collective's linked organization. The caller must be the collective owner; a collective with no linked organization returns an empty list. */
+        get: operations["listAvailableGroupRepositories"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/repositories/{owner}/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Unlink a GitHub repository from an owned collective. */
+        delete: operations["unlinkGroupRepository"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/repositories/{owner}/{name}/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List cached commits for a linked repository. refresh=true fetches from GitHub and requires collective owner access; otherwise any collective member may read the cache. */
+        get: operations["listGroupRepositoryCommits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Offer selected transcripts from one owned project to one collective in one transaction. Omitted or empty transcript_ids means every owned transcript in the project. visibility_confirmed must be true when any selected private transcript would become visible to the collective. */
+        post: operations["batchShareProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Approve or reject many pending submissions in one owner-only action. The response separates ids that were decided by this action from ids that were already decided, never submitted to this collective, or stale. */
+        patch: operations["batchReviewShares"];
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/shares/{transcriptID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Approve or reject one pending submission to an owned collective. The decision changes the share-attempt status and does not mutate transcript visibility. */
+        patch: operations["reviewShare"];
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/transcripts/{transcriptID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Remove or revoke a transcript contribution from an owned collective without deleting the transcript from its owner's library. */
+        delete: operations["removeGroupTranscript"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List collectives the authenticated caller belongs to, with the caller's role and membership time.
+         */
+        get: operations["listGroupsDeprecated"];
+        put?: never;
+        /**
+         * @deprecated
+         * @description Create a collective. Name is required; acceptance_mode defaults to open and data_access defaults to members_only when omitted. linked_github_org may be omitted or null for no organization, as on update.
+         */
+        post: operations["createGroupDeprecated"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List collectives for the public directory as compact rows with member and approved-transcript counts.
+         */
+        get: operations["listPublicGroupsDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description Search visible collectives. An empty q returns an empty collectives array; limit defaults to 10 and is capped at 50.
+         */
+        get: operations["searchCollectivesDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/visible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List collectives the authenticated caller may see. Role and member_since are null when the caller sees the collective through public or open visibility but is not a member.
+         */
+        get: operations["listVisibleGroupsDeprecated"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description Get a collective with roster, stats, model breakdown, contributors, the caller's role, and a transcript page. pending_members is present only for owners. transcripts is an empty array when the caller may see the collective but may not read its data.
+         */
+        get: operations["getGroupDeprecated"];
+        put?: never;
+        post?: never;
+        /**
+         * @deprecated
+         * @description Delete an owned collective and return a status receipt.
+         */
+        delete: operations["deleteGroupDeprecated"];
+        options?: never;
+        head?: never;
+        /**
+         * @deprecated
+         * @description Update an owned collective. Name and description are written from the request body's string values, so a caller that wants to preserve them must send their current values. linked_github_org omitted means preserve, empty string clears, and non-empty sets after visible-org validation.
+         */
+        patch: operations["updateGroupDeprecated"];
+        trace?: never;
+    };
+    "/api/v1/groups/{id}/contributable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List every transcript the authenticated caller may offer to one collective, plus whether each transcript is already live in that collective. The response is deliberately unpaginated and bounded by the server row limit.
+         */
+        get: operations["listContributableTranscriptsDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -182,8 +571,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route. */
-        post: operations["joinGroup"];
+        /**
+         * @deprecated
+         * @description Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route.
+         */
+        post: operations["joinGroupDeprecated"];
         delete?: never;
         options?: never;
         head?: never;
@@ -199,8 +591,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Add a platform user to an owned collective by username. */
-        post: operations["addGroupMember"];
+        /**
+         * @deprecated
+         * @description Add a platform user to an owned collective by username.
+         */
+        post: operations["addGroupMemberDeprecated"];
         delete?: never;
         options?: never;
         head?: never;
@@ -217,8 +612,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove a member from a collective. The member may remove themselves; removing somebody else requires owner access. retract=true or a mandatory deletion policy retracts that member's live submissions. */
-        delete: operations["removeGroupMember"];
+        /**
+         * @deprecated
+         * @description Remove a member from a collective. The member may remove themselves; removing somebody else requires owner access. retract=true or a mandatory deletion policy retracts that member's live submissions.
+         */
+        delete: operations["removeGroupMemberDeprecated"];
         options?: never;
         head?: never;
         patch?: never;
@@ -237,8 +635,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Change a collective member's role to contributor or member. Owner and pending are not accepted by this operation. */
-        patch: operations["updateGroupMemberRole"];
+        /**
+         * @deprecated
+         * @description Change a collective member's role to contributor or member. Owner and pending are not accepted by this operation.
+         */
+        patch: operations["updateGroupMemberRoleDeprecated"];
         trace?: never;
     };
     "/api/v1/groups/{id}/my-shares": {
@@ -248,8 +649,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the authenticated caller's own live submissions to one collective, including pending and approved rows. */
-        get: operations["listMyGroupShares"];
+        /**
+         * @deprecated
+         * @description List the authenticated caller's own live submissions to one collective, including pending and approved rows.
+         */
+        get: operations["listMyGroupSharesDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -265,8 +669,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List pending transcript submissions for an owned collective, oldest first. */
-        get: operations["listPendingShares"];
+        /**
+         * @deprecated
+         * @description List pending transcript submissions for an owned collective, oldest first.
+         */
+        get: operations["listPendingSharesDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -282,11 +689,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List GitHub repositories linked to a collective. The caller must be an authenticated collective member. */
-        get: operations["listGroupRepositories"];
+        /**
+         * @deprecated
+         * @description List GitHub repositories linked to a collective. The caller must be an authenticated collective member.
+         */
+        get: operations["listGroupRepositoriesDeprecated"];
         put?: never;
-        /** @description Link a GitHub repository to an owned collective after validating that the configured GitHub App installation can access it. */
-        post: operations["linkGroupRepository"];
+        /**
+         * @deprecated
+         * @description Link a GitHub repository to an owned collective after validating that the configured GitHub App installation can access it.
+         */
+        post: operations["linkGroupRepositoryDeprecated"];
         delete?: never;
         options?: never;
         head?: never;
@@ -300,8 +713,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the repositories the GitHub App can offer this collective, from the installation for the collective's linked organization. The caller must be the collective owner; a collective with no linked organization returns an empty list. */
-        get: operations["listAvailableGroupRepositories"];
+        /**
+         * @deprecated
+         * @description List the repositories the GitHub App can offer this collective, from the installation for the collective's linked organization. The caller must be the collective owner; a collective with no linked organization returns an empty list.
+         */
+        get: operations["listAvailableGroupRepositoriesDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -320,8 +736,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Unlink a GitHub repository from an owned collective. */
-        delete: operations["unlinkGroupRepository"];
+        /**
+         * @deprecated
+         * @description Unlink a GitHub repository from an owned collective.
+         */
+        delete: operations["unlinkGroupRepositoryDeprecated"];
         options?: never;
         head?: never;
         patch?: never;
@@ -334,8 +753,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List cached commits for a linked repository. refresh=true fetches from GitHub and requires collective owner access; otherwise any collective member may read the cache. */
-        get: operations["listGroupRepositoryCommits"];
+        /**
+         * @deprecated
+         * @description List cached commits for a linked repository. refresh=true fetches from GitHub and requires collective owner access; otherwise any collective member may read the cache.
+         */
+        get: operations["listGroupRepositoryCommitsDeprecated"];
         put?: never;
         post?: never;
         delete?: never;
@@ -353,13 +775,19 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Offer selected transcripts from one owned project to one collective in one transaction. Omitted or empty transcript_ids means every owned transcript in the project. visibility_confirmed must be true when any selected private transcript would become visible to the collective. */
-        post: operations["batchShareProject"];
+        /**
+         * @deprecated
+         * @description Offer selected transcripts from one owned project to one collective in one transaction. Omitted or empty transcript_ids means every owned transcript in the project. visibility_confirmed must be true when any selected private transcript would become visible to the collective.
+         */
+        post: operations["batchShareProjectDeprecated"];
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Approve or reject many pending submissions in one owner-only action. The response separates ids that were decided by this action from ids that were already decided, never submitted to this collective, or stale. */
-        patch: operations["batchReviewShares"];
+        /**
+         * @deprecated
+         * @description Approve or reject many pending submissions in one owner-only action. The response separates ids that were decided by this action from ids that were already decided, never submitted to this collective, or stale.
+         */
+        patch: operations["batchReviewSharesDeprecated"];
         trace?: never;
     };
     "/api/v1/groups/{id}/shares/{transcriptID}": {
@@ -375,8 +803,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Approve or reject one pending submission to an owned collective. The decision changes the share-attempt status and does not mutate transcript visibility. */
-        patch: operations["reviewShare"];
+        /**
+         * @deprecated
+         * @description Approve or reject one pending submission to an owned collective. The decision changes the share-attempt status and does not mutate transcript visibility.
+         */
+        patch: operations["reviewShareDeprecated"];
         trace?: never;
     };
     "/api/v1/groups/{id}/transcripts/{transcriptID}": {
@@ -389,8 +820,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** @description Remove or revoke a transcript contribution from an owned collective without deleting the transcript from its owner's library. */
-        delete: operations["removeGroupTranscript"];
+        /**
+         * @deprecated
+         * @description Remove or revoke a transcript contribution from an owned collective without deleting the transcript from its owner's library.
+         */
+        delete: operations["removeGroupTranscriptDeprecated"];
         options?: never;
         head?: never;
         patch?: never;
@@ -407,6 +841,23 @@ export interface paths {
         put?: never;
         /** @description Receive a GitHub App webhook delivery. The body is GitHub's payload, authenticated by the X-Hub-Signature-256 HMAC over the raw body; X-GitHub-Delivery makes redelivery idempotent. Handles installation, pull_request, check_run, and issue_comment events and acknowledges every other event without acting. Returns 501 when the App or its webhook secret is not configured. */
         post: operations["receiveGitHubWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orgs/{login}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the existing organization response's viewer-permitted collectives projection. Additional organization statistics and members may be present but metadata consumers retain only the disclosed collective projection. Query errors, including linked-collective lookup failure, are 500 rather than fabricated empty success; unavailable organization is privacy-safe 404. Server disclosure remains authoritative. */
+        get: operations["getVillageOrganizationCollectives"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -608,7 +1059,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. */
+        /** @description Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. */
         get: operations["getTranscriptMetadata"];
         put?: never;
         post?: never;
@@ -745,7 +1196,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the full owner-only event history for one transcript and collective pair, oldest event first. The decided_by_actor field is an actor class, never a moderator user id. */
+        /** @description List the full owner-only event history for one transcript and collective pair, oldest event first. The decided_by_actor field is an actor class, never a moderator user id. event_num identifies an attempt: pending may become approved/rejected/retracted/revoked at the same ordinal with immutable recorded_at and a newly recorded decided_at. An initially auto-approved attempt may have null decided_at. Terminal wire decision fields do not change; withdrawing/removing an approved contribution uses a new ordinal. Validate and reconcile with the canonical schema attempt helper, not a per-poll append log. */
         get: operations["listShareEventHistory"];
         put?: never;
         post?: never;
@@ -1325,7 +1776,7 @@ export interface components {
          * @example member
          * @enum {string}
          */
-        SchemaVillageAssignableGroupRole: Schema.VillageAssignableGroupRole;
+        SchemaVillageAssignableCollectiveRole: Schema.VillageAssignableCollectiveRole;
         SchemaVillageAvailableRepositoriesResponse: Schema.VillageAvailableRepositoriesResponse;
         SchemaVillageAvailableRepository: Schema.VillageAvailableRepository;
         SchemaVillageBatchReviewRequest: Schema.VillageBatchReviewRequest;
@@ -1333,9 +1784,59 @@ export interface components {
         SchemaVillageBatchShareEntry: Schema.VillageBatchShareEntry;
         SchemaVillageBatchShareRequest: Schema.VillageBatchShareRequest;
         SchemaVillageBatchShareResponse: Schema.VillageBatchShareResponse;
+        SchemaVillageCollective: Schema.VillageCollective;
+        /**
+         * Village Group Acceptance Mode
+         * @description How a collective accepts new members and contributions
+         * @example open
+         * @example verified_only
+         * @example curated
+         * @enum {string}
+         */
+        SchemaVillageCollectiveAcceptanceMode: Schema.VillageCollectiveAcceptanceMode;
+        SchemaVillageCollectiveContributor: Schema.VillageCollectiveContributor;
+        /**
+         * Village Group Data Access
+         * @description Who may read a collective's pooled transcript data
+         * @example members_only
+         * @example contributors
+         * @example public
+         * @enum {string}
+         */
+        SchemaVillageCollectiveDataAccess: Schema.VillageCollectiveDataAccess;
+        SchemaVillageCollectiveDetailRecord: Schema.VillageCollectiveDetailRecord;
+        SchemaVillageCollectiveDetailResponse: Schema.VillageCollectiveDetailResponse;
+        SchemaVillageCollectiveMember: Schema.VillageCollectiveMember;
+        SchemaVillageCollectiveMemberRoleRequest: Schema.VillageCollectiveMemberRoleRequest;
+        SchemaVillageCollectiveMemberUsernameRequest: Schema.VillageCollectiveMemberUsernameRequest;
+        SchemaVillageCollectiveModelBreakdown: Schema.VillageCollectiveModelBreakdown;
+        /**
+         * Village Group Role
+         * @description A user's role in one collective
+         * @example owner
+         * @example member
+         * @example contributor
+         * @example pending
+         * @enum {string}
+         */
+        SchemaVillageCollectiveRole: Schema.VillageCollectiveRole;
         SchemaVillageCollectiveSearchResponse: Schema.VillageCollectiveSearchResponse;
         SchemaVillageCollectiveSearchResult: Schema.VillageCollectiveSearchResult;
+        SchemaVillageCollectiveStatusRoleResponse: Schema.VillageCollectiveStatusRoleResponse;
         SchemaVillageCollectiveSubmission: Schema.VillageCollectiveSubmission;
+        SchemaVillageCollectiveTranscript: Schema.VillageCollectiveTranscript;
+        SchemaVillageCollectiveTranscriptStats: Schema.VillageCollectiveTranscriptStats;
+        /**
+         * Village Group Viewer Role
+         * @description The caller's role in a collective, or an empty string when the caller has none
+         * @example
+         * @example owner
+         * @example member
+         * @example contributor
+         * @example pending
+         * @enum {string}
+         */
+        SchemaVillageCollectiveViewerRole: Schema.VillageCollectiveViewerRole;
         SchemaVillageContributableResponse: Schema.VillageContributableResponse;
         SchemaVillageContributableTranscript: Schema.VillageContributableTranscript;
         SchemaVillageContributedCollective: Schema.VillageContributedCollective;
@@ -1348,7 +1849,12 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageContributionStatus: Schema.VillageContributionStatus;
-        SchemaVillageCreateGroupRequest: Schema.VillageCreateGroupRequest;
+        SchemaVillageCreateCollectiveRequest: Schema.VillageCreateCollectiveRequest;
+        /**
+         * @deprecated
+         * @description Released groupId envelope for GET /api/v1/groups/{id}/contributable during the alias window. Use VillageGroupedContributableResponse on /api/v1/collectives/{id}/contributable.
+         */
+        SchemaVillageDeprecatedGroupedContributableResponse: Schema.VillageDeprecatedGroupedContributableResponse;
         SchemaVillageEnrichedTranscriptShare: Schema.VillageEnrichedTranscriptShare;
         SchemaVillageErrorResponse: Schema.VillageErrorResponse;
         /**
@@ -1356,58 +1862,8 @@ export interface components {
          * @description GitHub event payload forwarded verbatim; validated by the X-Hub-Signature-256 HMAC over the raw body, never by shape
          */
         SchemaVillageGitHubWebhookPayload: Schema.VillageGitHubWebhookPayload;
-        SchemaVillageGroup: Schema.VillageGroup;
-        /**
-         * Village Group Acceptance Mode
-         * @description How a collective accepts new members and contributions
-         * @example open
-         * @example verified_only
-         * @example curated
-         * @enum {string}
-         */
-        SchemaVillageGroupAcceptanceMode: Schema.VillageGroupAcceptanceMode;
-        SchemaVillageGroupContributor: Schema.VillageGroupContributor;
-        /**
-         * Village Group Data Access
-         * @description Who may read a collective's pooled transcript data
-         * @example members_only
-         * @example contributors
-         * @example public
-         * @enum {string}
-         */
-        SchemaVillageGroupDataAccess: Schema.VillageGroupDataAccess;
-        SchemaVillageGroupDetailRecord: Schema.VillageGroupDetailRecord;
-        SchemaVillageGroupDetailResponse: Schema.VillageGroupDetailResponse;
-        SchemaVillageGroupMember: Schema.VillageGroupMember;
-        SchemaVillageGroupMemberRoleRequest: Schema.VillageGroupMemberRoleRequest;
-        SchemaVillageGroupMemberUsernameRequest: Schema.VillageGroupMemberUsernameRequest;
-        SchemaVillageGroupModelBreakdown: Schema.VillageGroupModelBreakdown;
-        /**
-         * Village Group Role
-         * @description A user's role in one collective
-         * @example owner
-         * @example member
-         * @example contributor
-         * @example pending
-         * @enum {string}
-         */
-        SchemaVillageGroupRole: Schema.VillageGroupRole;
-        SchemaVillageGroupStatusRoleResponse: Schema.VillageGroupStatusRoleResponse;
-        SchemaVillageGroupTranscript: Schema.VillageGroupTranscript;
-        SchemaVillageGroupTranscriptStats: Schema.VillageGroupTranscriptStats;
-        /**
-         * Village Group Viewer Role
-         * @description The caller's role in a collective, or an empty string when the caller has none
-         * @example
-         * @example owner
-         * @example member
-         * @example contributor
-         * @example pending
-         * @enum {string}
-         */
-        SchemaVillageGroupViewerRole: Schema.VillageGroupViewerRole;
+        SchemaVillageGroupedCollectiveDetailResponse: Schema.VillageGroupedCollectiveDetailResponse;
         SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
-        SchemaVillageGroupedGroupDetailResponse: Schema.VillageGroupedGroupDetailResponse;
         SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
         SchemaVillageLinkedRepositoriesResponse: Schema.VillageLinkedRepositoriesResponse;
@@ -1415,6 +1871,8 @@ export interface components {
         SchemaVillageListTranscriptAttestation: Schema.VillageListTranscriptAttestation;
         SchemaVillageListUserOrganization: Schema.VillageListUserOrganization;
         SchemaVillageMetadataUserOrganization: Schema.VillageMetadataUserOrganization;
+        SchemaVillageOrganizationCollective: Schema.VillageOrganizationCollective;
+        SchemaVillageOrganizationCollectivesResponse: Schema.VillageOrganizationCollectivesResponse;
         SchemaVillagePendingShare: Schema.VillagePendingShare;
         /**
          * Village Project Name Source
@@ -1437,7 +1895,7 @@ export interface components {
          * @enum {string}
          */
         SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
-        SchemaVillagePublicGroup: Schema.VillagePublicGroup;
+        SchemaVillagePublicCollective: Schema.VillagePublicCollective;
         SchemaVillagePullRequestAttachedTranscript: Schema.VillagePullRequestAttachedTranscript;
         SchemaVillagePullRequestAttachment: Schema.VillagePullRequestAttachment;
         SchemaVillagePullRequestAttachmentResponse: Schema.VillagePullRequestAttachmentResponse;
@@ -1454,7 +1912,7 @@ export interface components {
         SchemaVillagePullRequestAttachmentState: Schema.VillagePullRequestAttachmentState;
         SchemaVillagePullRequestRef: Schema.VillagePullRequestRef;
         SchemaVillagePullRequestsSummary: Schema.VillagePullRequestsSummary;
-        SchemaVillageRemoveGroupMemberResponse: Schema.VillageRemoveGroupMemberResponse;
+        SchemaVillageRemoveCollectiveMemberResponse: Schema.VillageRemoveCollectiveMemberResponse;
         SchemaVillageRepositoryCommit: Schema.VillageRepositoryCommit;
         SchemaVillageRepositoryCommitsResponse: Schema.VillageRepositoryCommitsResponse;
         /**
@@ -1529,14 +1987,14 @@ export interface components {
          * @example 123e4567-e89b-12d3-a456-426614174000
          */
         SchemaVillageUUID: Schema.VillageUUID;
-        SchemaVillageUpdateGroupRequest: Schema.VillageUpdateGroupRequest;
+        SchemaVillageUpdateCollectiveRequest: Schema.VillageUpdateCollectiveRequest;
         SchemaVillageUpdateUserSettingsRequest: Schema.VillageUpdateUserSettingsRequest;
         SchemaVillageUser: Schema.VillageUser;
-        SchemaVillageUserGroup: Schema.VillageUserGroup;
-        SchemaVillageUserGroupShare: Schema.VillageUserGroupShare;
+        SchemaVillageUserCollective: Schema.VillageUserCollective;
+        SchemaVillageUserCollectiveShare: Schema.VillageUserCollectiveShare;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
         SchemaVillageUserStats: Schema.VillageUserStats;
-        SchemaVillageVisibleGroup: Schema.VillageVisibleGroup;
+        SchemaVillageVisibleCollective: Schema.VillageVisibleCollective;
         /**
          * Visibility
          * @description Access control level for a published transcript
@@ -1661,6 +2119,82 @@ export interface operations {
             };
         };
     };
+    getAuthenticatedVillageUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUser"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listAuthenticatedVillageOrganizations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageMetadataUserOrganization"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listGroups: {
         parameters: {
             query?: never;
@@ -1676,7 +2210,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageUserGroup"][];
+                    "application/json": null | components["schemas"]["SchemaVillageUserCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -1708,7 +2242,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SchemaVillageCreateGroupRequest"];
+                "application/json": components["schemas"]["SchemaVillageCreateCollectiveRequest"];
             };
         };
         responses: {
@@ -1718,7 +2252,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroup"];
+                    "application/json": components["schemas"]["SchemaVillageCollective"];
                 };
             };
             /** @description Bad Request */
@@ -1765,7 +2299,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillagePublicGroup"][];
+                    "application/json": null | components["schemas"]["SchemaVillagePublicCollective"][];
                 };
             };
             /** @description Internal Server Error */
@@ -1826,7 +2360,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaVillageVisibleGroup"][];
+                    "application/json": null | components["schemas"]["SchemaVillageVisibleCollective"][];
                 };
             };
             /** @description Unauthorized */
@@ -1872,7 +2406,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroupDetailResponse"] | components["schemas"]["SchemaVillageGroupedGroupDetailResponse"];
+                    "application/json": components["schemas"]["SchemaVillageCollectiveDetailResponse"] | components["schemas"]["SchemaVillageGroupedCollectiveDetailResponse"];
                 };
             };
             /** @description Bad Request */
@@ -1966,7 +2500,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SchemaVillageUpdateGroupRequest"];
+                "application/json": components["schemas"]["SchemaVillageUpdateCollectiveRequest"];
             };
         };
         responses: {
@@ -1976,7 +2510,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroup"];
+                    "application/json": components["schemas"]["SchemaVillageCollective"];
                 };
             };
             /** @description Bad Request */
@@ -2115,7 +2649,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroupStatusRoleResponse"];
+                    "application/json": components["schemas"]["SchemaVillageCollectiveStatusRoleResponse"];
                 };
             };
             /** @description Bad Request */
@@ -2186,7 +2720,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SchemaVillageGroupMemberUsernameRequest"];
+                "application/json": components["schemas"]["SchemaVillageCollectiveMemberUsernameRequest"];
             };
         };
         responses: {
@@ -2268,7 +2802,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageRemoveGroupMemberResponse"];
+                    "application/json": components["schemas"]["SchemaVillageRemoveCollectiveMemberResponse"];
                 };
             };
             /** @description Bad Request */
@@ -2323,7 +2857,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SchemaVillageGroupMemberRoleRequest"];
+                "application/json": components["schemas"]["SchemaVillageCollectiveMemberRoleRequest"];
             };
         };
         responses: {
@@ -2333,7 +2867,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageGroupStatusRoleResponse"];
+                    "application/json": components["schemas"]["SchemaVillageCollectiveStatusRoleResponse"];
                 };
             };
             /** @description Bad Request */
@@ -2404,7 +2938,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaVillageUserGroupShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
+                    "application/json": components["schemas"]["SchemaVillageUserCollectiveShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
                 };
             };
             /** @description Bad Request */
@@ -3140,6 +3674,1485 @@ export interface operations {
             };
         };
     };
+    listGroupsDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageUserCollective"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createGroupDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCreateCollectiveRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollective"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listPublicGroupsDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillagePublicCollective"][];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    searchCollectivesDeprecated: {
+        parameters: {
+            query?: {
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveSearchResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listVisibleGroupsDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": null | components["schemas"]["SchemaVillageVisibleCollective"][];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getGroupDeprecated: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveDetailResponse"] | components["schemas"]["SchemaVillageGroupedCollectiveDetailResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteGroupDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGroupDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageUpdateCollectiveRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollective"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listContributableTranscriptsDeprecated: {
+        parameters: {
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageContributableResponse"] | components["schemas"]["SchemaVillageDeprecatedGroupedContributableResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Request Entity Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    joinGroupDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveStatusRoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    addGroupMemberDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCollectiveMemberUsernameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    removeGroupMemberDeprecated: {
+        parameters: {
+            query?: {
+                retract?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Member user identifier */
+                userID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageRemoveCollectiveMemberResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    updateGroupMemberRoleDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Member user identifier */
+                userID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCollectiveMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveStatusRoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyGroupSharesDeprecated: {
+        parameters: {
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserCollectiveShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listPendingSharesDeprecated: {
+        parameters: {
+            query?: {
+                /** @description Set to grouped to request helper-group list items; omission preserves the legacy response. */
+                view?: components["schemas"]["OpenapiVillageGroupedView"];
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillagePendingShare"][] | components["schemas"]["SchemaVillageSessionListPayload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listGroupRepositoriesDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageLinkedRepositoriesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    linkGroupRepositoryDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageLinkRepositoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageLinkedRepository"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listAvailableGroupRepositoriesDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageAvailableRepositoriesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    unlinkGroupRepositoryDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Repository owner login */
+                owner: string;
+                /** @description Repository name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listGroupRepositoryCommitsDeprecated: {
+        parameters: {
+            query?: {
+                refresh?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Repository owner login */
+                owner: string;
+                /** @description Repository name */
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageRepositoryCommitsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    batchShareProjectDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageBatchShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageBatchShareResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    batchReviewSharesDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageBatchReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageBatchReviewResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    reviewShareDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Transcript identifier */
+                transcriptID: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageReviewShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageReviewShareResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    removeGroupTranscriptDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Transcript identifier */
+                transcriptID: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     receiveGitHubWebhook: {
         parameters: {
             query?: never;
@@ -3189,6 +5202,55 @@ export interface operations {
             };
             /** @description Not Implemented */
             501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getVillageOrganizationCollectives: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                login: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageOrganizationCollectivesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3746,6 +5808,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
