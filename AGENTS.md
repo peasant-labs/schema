@@ -100,6 +100,17 @@ product release version, the schema module's own release tag, and an internal
 codename that merely looks version-like. Only a real tag on this module gates a
 release here.
 
+**Explicit human delegation:** a maintainer may authorize an agent to merge a
+specific release PR. The instruction must unambiguously identify the release PR;
+generic implementation or ordinary PR-merge approval is insufficient. The agent
+records the authorization in a PR comment before merging.
+
+Delegation does not waive required reviews, CI, contract gates, or dependency
+ordering, UNLESS stated by the maintainer.
+CI must mint the tag through the existing release workflow; agents
+must not create or push public release tags directly.
+
+
 ## Spec versioning: bump, do not mutate
 
 A released spec version is immutable. To change a surface, bump its version stamp
