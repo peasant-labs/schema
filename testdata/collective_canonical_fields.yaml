@@ -1,0 +1,162 @@
+required_names: [decision-uppercase-after, decision-uppercase-before, recorded-uppercase-after, actor-uppercase-after, status-case-variant, counter-uppercase-after, counter-uppercase-before, counter-missing-canonical, decision-missing-canonical, attempt-uppercase-object, first-seen-case-variant, populated-history-nested-alias, strict-history-aliased-selected, strict-history-aliased-other-arm, strict-history-aliased-scope, scope-case-variant, organization-aliased-array, discovery-aliased-array, report-aliased-array, source-aliased-date, scoped-aliased-array, open-unrelated-bad-time, exact-duplicate-counter-last, exact-duplicate-decision-last, exact-duplicate-object-last, exact-duplicate-invalid-time-last]
+cases:
+  - name: decision-uppercase-after
+    input:
+      target: VillageShareEvent
+      raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","DECIDED_AT":"2026-10-16T01:00:00.1234567891Z"}'
+    expected: {valid: true, decoded: &event '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}'}
+    classification: must-pass
+    provenance: &p {source: requirement, ref: canonical-collective-json-fields}
+    mutation: &m {description: case variants must not override inspected canonical fields during decoding}
+  - name: decision-uppercase-before
+    input:
+      target: VillageShareEvent
+      raw: '{"DECIDED_AT":"2026-10-16T01:00:00.1234567892Z","event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}'
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: recorded-uppercase-after
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","RECORDED_AT":"2026-10-16T00:00:00.1234567891Z"}'}
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: actor-uppercase-after
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","DECIDED_BY_ACTOR":"owner"}'}
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: status-case-variant
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","Status":"approved","EVENT_NUM":2}'}
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: counter-uppercase-after
+    input: {target: VillageContributedCollective, raw: '{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4,"APPROVED_COUNT":0,"PENDING_COUNT":0,"REJECTED_ATTEMPT_COUNT":0,"WITHDRAWN_ATTEMPT_COUNT":0}'}
+    expected: {valid: true, decoded: &row '{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: counter-uppercase-before
+    input: {target: VillageContributedCollective, raw: '{"APPROVED_COUNT":0,"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4}'}
+    expected: {valid: true, decoded: *row}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: counter-missing-canonical
+    input: {target: VillageContributedCollective, raw: '{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"APPROVED_COUNT":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: decision-missing-canonical
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","DECIDED_AT":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: attempt-uppercase-object
+    input: {target: LocalRemoteContributionAttempt, raw: '{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"},"ATTEMPT":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00.1234567891Z","decided_by_actor":"moderator"}}'}
+    expected: {valid: true, decoded: &attempt '{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}}', disposition: unchanged}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: first-seen-case-variant
+    input: {target: LocalRemoteContributionAttempt, raw: '{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","FIRSTSEENAT":"2026-10-16T02:00:00.9876543212Z","attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}}'}
+    expected: {valid: true, decoded: *attempt, disposition: unchanged}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: populated-history-nested-alias
+    input: {target: LocalContributionHistoryResponse, raw: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","USERID":"123e4567-e89b-12d3-a456-426614174002"},"kind":"remote-attempts","traversalRevision":"WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ","page":1,"limit":1,"total":1,"coverage":"available","remoteAttempts":[{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","FIRSTSEENAT":"2026-10-16T02:00:00.1234567892Z","attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","DECIDED_AT":"2026-10-16T01:00:00.1234567891Z"}}]}'}
+    expected: {valid: true, decoded: &history '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"kind":"remote-attempts","traversalRevision":"WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ","page":1,"limit":1,"total":1,"coverage":"available","remoteAttempts":[{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}}]}', disposition: unchanged}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: strict-history-aliased-selected
+    input: {target: LocalContributionHistoryResponse, raw: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"kind":"remote-attempts","traversalRevision":"WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ","page":1,"limit":1,"total":0,"coverage":"available","remoteAttempts":[],"REMOTEATTEMPTS":[]}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: strict-history-aliased-other-arm
+    input: {target: LocalContributionHistoryResponse, raw: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"kind":"remote-attempts","traversalRevision":"WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ","page":1,"limit":1,"total":0,"coverage":"available","remoteAttempts":[],"RECEIPTS":[]}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: strict-history-aliased-scope
+    input: {target: LocalContributionHistoryResponse, raw: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"SCOPE":{},"kind":"remote-attempts","traversalRevision":"WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ","page":1,"limit":1,"total":0,"coverage":"available","remoteAttempts":[]}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m
+  - name: scope-case-variant
+    input: {target: CollectiveObservationScope, raw: '{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000","VillageURL":"https://other.example","USERID":"123e4567-e89b-12d3-a456-426614174002"}'}
+    expected: {valid: true, decoded: '{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: organization-aliased-array
+    input: {target: VillageOrganizationCollectivesResponse, raw: '{"collectives":[{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"member_count":1,"transcript_count":2,"MEMBER_COUNT":0,"TRANSCRIPT_COUNT":0}],"COLLECTIVES":[],"members":[{"observedAt":"unsupported-but-additive"}]}'}
+    expected: {valid: true, decoded: '{"collectives":[{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"member_count":1,"transcript_count":2}]}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: discovery-aliased-array
+    input: {target: VillageContributedCollectivesResponse, raw: '{"collectives":[{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4,"APPROVED_COUNT":0}],"COLLECTIVES":[]}'}
+    expected: {valid: true, decoded: '{"collectives":[{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":1,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4}]}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: report-aliased-array
+    input: {target: CollectiveFetchReport, raw: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"invocationId":"123e4567-e89b-12d3-a456-426614174001","cacheRevision":"1","outcome":"failed","domains":[{"domain":"catalog","requested":true,"state":"failed","commit":"retained","coverage":"unknown","sourceOutcomes":[],"issue":{"code":"remote","operation":"fetch","message":"source-failed","retry":"retry-fetch","CODE":"auth"}},{"domain":"history","requested":false,"state":"not_requested","commit":"retained","coverage":"unknown","sourceOutcomes":[]},{"domain":"associations","requested":false,"state":"not_requested","commit":"retained","coverage":"unknown","sourceOutcomes":[]}],"issues":[],"DOMAINS":[],"ISSUES":[]}'}
+    expected: {valid: true, status: 502, decoded: '{"scope":{"villageUrl":"https://village.example/base","userId":"123e4567-e89b-12d3-a456-426614174000"},"invocationId":"123e4567-e89b-12d3-a456-426614174001","cacheRevision":"1","outcome":"failed","domains":[{"domain":"catalog","requested":true,"state":"failed","commit":"retained","coverage":"unknown","sourceOutcomes":[],"issue":{"code":"remote","operation":"fetch","message":"source-failed","retry":"retry-fetch"}},{"domain":"history","requested":false,"state":"not_requested","commit":"retained","coverage":"unknown","sourceOutcomes":[]},{"domain":"associations","requested":false,"state":"not_requested","commit":"retained","coverage":"unknown","sourceOutcomes":[]}],"issues":[]}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: source-aliased-date
+    input: {target: CollectiveFetchSourceResult, raw: '{"source":"associations","outcome":"disclosed","complete":true,"observedAt":"2026-10-16T02:00:00.123456789Z","OBSERVEDAT":"2026-10-16T02:00:00.9876543211Z"}'}
+    expected: {valid: true, decoded: '{"source":"associations","outcome":"disclosed","complete":true,"observedAt":"2026-10-16T02:00:00.123456789Z"}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: scoped-aliased-array
+    input: {target: CollectiveFetchAssociationResults, raw: '{"requested":1,"completed":1,"failed":0,"scopes":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174001","state":"complete","commit":"updated","observedAt":"2026-10-16T02:00:00.123456789Z","completedAt":"2026-10-16T02:00:00.123456789Z","COMPLETEDAT":"2026-10-16T02:00:00.1234567891Z"}],"SCOPES":[]}'}
+    expected: {valid: true, decoded: '{"requested":1,"completed":1,"failed":0,"scopes":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174001","state":"complete","commit":"updated","observedAt":"2026-10-16T02:00:00.123456789Z","completedAt":"2026-10-16T02:00:00.123456789Z"}]}'}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: open-unrelated-bad-time
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","future_metadata":{"recorded_at":"not-a-time","decided_at":"2026-10-16T01:00:00.1234567891Z"}}'}
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: exact-duplicate-counter-last
+    input: {target: VillageContributedCollective, raw: '{"id":"123e4567-e89b-12d3-a456-426614174000","name":"sample","description":null,"linked_github_org":null,"approved_count":0,"pending_count":2,"rejected_attempt_count":3,"withdrawn_attempt_count":4,"approved_count":1}'}
+    expected: {valid: true, decoded: *row}
+    classification: must-pass
+    provenance: *p
+    mutation: {description: exact duplicate keys use JSON last-value semantics shared with JSON.parse}
+  - name: exact-duplicate-decision-last
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00.1234567891Z","decided_by_actor":"moderator","decided_at":"2026-10-16T01:00:00Z"}'}
+    expected: {valid: true, decoded: *event}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: exact-duplicate-object-last
+    input: {target: LocalRemoteContributionAttempt, raw: '{"collectiveId":"123e4567-e89b-12d3-a456-426614174000","transcriptId":"123e4567-e89b-12d3-a456-426614174001","firstSeenAt":"2026-10-16T02:00:00.123456789Z","attempt":{"ignored":"not-part-of-final-object","decided_at":"2026-10-16T01:00:00.1234567891Z"},"attempt":{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator"}}'}
+    expected: {valid: true, decoded: *attempt, disposition: unchanged}
+    classification: must-pass
+    provenance: *p
+    mutation: *m
+  - name: exact-duplicate-invalid-time-last
+    input: {target: VillageShareEvent, raw: '{"event_num":1,"status":"rejected","recorded_at":"2026-10-16T00:00:00Z","decided_at":"2026-10-16T01:00:00Z","decided_by_actor":"moderator","decided_at":"2026-10-16T01:00:00.1234567891Z"}'}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: *p
+    mutation: *m

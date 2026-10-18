@@ -9,12 +9,15 @@ import ts from "typescript";
 import { parse } from "yaml";
 
 import { canonicalOperationAliases } from "./lib/operation-aliases.mjs";
+import { renderCollectiveCompatibility } from "./lib/collective-compatibility.mjs";
 import { applyAssociationZodRefinements } from "./lib/association-zod-refinements.mjs";
 import { applyStrictObjectZodRefinements } from "./lib/strict-object-zod-refinements.mjs";
 import { applyPublicationZodRefinements } from "./lib/publication-zod-refinements.mjs";
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
 import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refinements.mjs";
+import { applyContributionAttemptZodRefinements } from "./lib/contribution-attempt-zod-refinements.mjs";
+import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 
@@ -55,6 +58,7 @@ await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
+await writeFile(join(generatedRoot, "collective-compatibility.gen.ts"), renderCollectiveCompatibility(await readFile(join(moduleRoot, "collective_compatibility.go"), "utf8"), enumCatalog));
 const capabilities = renderContentCapabilities(contentCapabilitySource, contentCapabilityCatalog);
 await writeFile(join(generatedRoot, "content-capabilities.gen.ts"), capabilities);
 await writeFile(join(generatedRoot, "wire-alias-shapes.gen.ts"), renderWireAliasShapes(spec));
@@ -69,7 +73,10 @@ await generateOperationContracts("village", `village-api-${versions.VillageAPIVe
 
 async function refineRootZodContract() {
   const zodPath = join(generatedRoot, "contract", "zod.gen.ts");
-  const source = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(await readGeneratorOutput(zodPath, "the root Zod contract")));
+  const generatedSource = await readGeneratorOutput(zodPath, "the root Zod contract");
+  const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
+  const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
+  const source = applyCollectiveZodRefinements(attemptSource, spec);
   await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
 }
 

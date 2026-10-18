@@ -1,0 +1,185 @@
+required_names:
+  timestamps: [recorded-overprecision, decision-overprecision, first-seen-overprecision, recorded-minute-only, decision-minute-only, first-seen-minute-only, recorded-nine-zero, decision-nine-digits, recorded-zero-fraction, decision-zero-fraction, first-seen-zero-offset, decision-equivalent-trailing-zero, recorded-equivalent-trailing-zero, decision-distinct-nanosecond, original-overprecision-replay, original-minute-replay, populated-history-overprecision, fetch-time-overprecision, fetch-source-minute-only, observation-overprecision]
+  scopes: [unbracketed-ipv6-default-port, unbracketed-ipv6-eight-groups, bracketed-ipv6-default-port, bracketed-ipv6-eight-groups]
+  statuses: [domain-cancel-remote, scope-cancel-remote, cancel-auth, cancel-persistence, cancel-multiple-codes]
+identity: {userId: &id '123e4567-e89b-12d3-a456-426614174000', incarnation: &transcript '123e4567-e89b-12d3-a456-426614174001', kind: remote-attempts, generation: '1'}
+timestamps:
+  cases:
+    - name: recorded-overprecision
+      input: {target: LocalRemoteContributionAttempt, payload: &attempt {collectiveId: *id, transcriptId: *transcript, firstSeenAt: &time '2026-10-16T12:00:00.123456789Z', attempt: {event_num: 1, status: approved, recorded_at: *time, decided_at: '2026-10-16T13:00:00.123456789Z', decided_by_actor: moderator}}, set: {attempt.recorded_at: '2026-10-16T12:00:00.1234567891Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: &p {source: requirement, ref: lossless-collective-evidence}
+      mutation: &m {description: validate raw timestamp grammar before native decoding can lose precision or invent seconds}
+    - name: decision-overprecision
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '2026-10-16T13:00:00.1234567891Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: first-seen-overprecision
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {firstSeenAt: '2026-10-16T12:00:00.1234567891Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: recorded-minute-only
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.recorded_at: '2026-10-16T12:00Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: decision-minute-only
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '2026-10-16T13:00Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: first-seen-minute-only
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {firstSeenAt: '2026-10-16T12:00Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: recorded-nine-zero
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.recorded_at: '2026-10-16T12:00:00.000000000Z'}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: *m
+    - name: decision-nine-digits
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *p
+      mutation: *m
+    - name: recorded-zero-fraction
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.recorded_at: '0001-01-01T00:00:00.000000000Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: decision-zero-fraction
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '0001-01-01T00:00:00.000000000Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: first-seen-zero-offset
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {firstSeenAt: '0001-01-01T00:00:00+00:00'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: decision-equivalent-trailing-zero
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '2026-10-16T13:00:00.123400000Z'}, incomingSet: {attempt.decided_at: '2026-10-16T13:00:00.1234Z'}}
+      expected: {valid: true, disposition: unchanged}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: equivalent fractional spellings replay without millisecond rounding}
+    - name: recorded-equivalent-trailing-zero
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.recorded_at: '2026-10-16T12:00:00.000000000Z'}, incomingSet: {attempt.recorded_at: '2026-10-16T12:00:00Z'}}
+      expected: {valid: true, disposition: unchanged}
+      classification: must-pass
+      provenance: *p
+      mutation: *m
+    - name: decision-distinct-nanosecond
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, incomingSet: {attempt.decided_at: '2026-10-16T13:00:00.123456788Z'}}
+      expected: {valid: true, conflict: true}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: distinct terminal nanoseconds remain conflicts instead of rounded replays}
+    - name: original-overprecision-replay
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '2026-10-16T13:00:00.1234567891Z'}, incomingSet: {attempt.decided_at: '2026-10-16T13:00:00.1234567892Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: original-minute-replay
+      input: {target: LocalRemoteContributionAttempt, payload: *attempt, set: {attempt.decided_at: '2026-10-16T01:00Z'}, incomingSet: {attempt.decided_at: '2026-10-16T01:00:00Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: populated-history-overprecision
+      input: {target: LocalContributionHistoryResponse, payload: {scope: &scope {villageUrl: 'https://village.example/base', userId: *id}, kind: remote-attempts, traversalRevision: 'WyIxIiwiaHR0cHM6Ly92aWxsYWdlLmV4YW1wbGUvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ', page: 1, limit: 1, total: 1, coverage: available, remoteAttempts: [*attempt]}, set: {remoteAttempts.0.attempt.decided_at: '2026-10-16T13:00:00.1234567891Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: fetch-time-overprecision
+      input: {target: CollectiveFetchReport, payload: &report {scope: *scope, invocationId: *transcript, cacheRevision: '1', outcome: partial, domains: [&complete {domain: associations, requested: true, state: complete, commit: updated, completedAt: *time, lastCompletedAt: *time, lastInstalledRevision: '1', coverage: available, sourceOutcomes: [], associations: {requested: 0, completed: 0, failed: 0, scopes: []}}, &cancel {domain: catalog, requested: true, state: cancelled, commit: retained, coverage: unknown, sourceOutcomes: [], issue: &remote {code: remote, operation: fetch, message: upstream-failure-before-cancellation, retry: retry-fetch}}, &unrequested {domain: history, requested: false, state: not_requested, commit: retained, coverage: unknown, sourceOutcomes: []}], issues: []}, set: {domains.0.completedAt: '2026-10-16T12:00:00.1234567891Z'}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: fetch-source-minute-only
+      input: {target: CollectiveFetchReport, payload: *report, set: {domains.0.sourceOutcomes: [{source: associations, outcome: disclosed, complete: true, observedAt: '2026-10-16T12:00Z'}]}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: observation-overprecision
+      input: {target: CollectiveObservation, payload: {id: *id, name: sample, reasons: [explicit], observedAt: '2026-10-16T12:00:00.1234567891Z', state: observed}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+scopes:
+  cases:
+    - name: unbracketed-ipv6-default-port
+      input: {url: 'https://2001:db8::1:443/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: {description: bracket raw IPv6 before native URL parsing can reinterpret a final group as a port}
+    - name: unbracketed-ipv6-eight-groups
+      input: {url: 'http://1:2:3:4:5:6:7:8:80/base'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *p
+      mutation: *m
+    - name: bracketed-ipv6-default-port
+      input: {url: 'https://[2001:db8::1]:443/base'}
+      expected: {valid: true, normalized: 'https://[2001:db8::1]/base', token: 'WyIxIiwiaHR0cHM6Ly9bMjAwMTpkYjg6OjFdL2Jhc2UiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDAiLCIxMjNlNDU2Ny1lODliLTEyZDMtYTQ1Ni00MjY2MTQxNzQwMDEiLCJyZW1vdGUtYXR0ZW1wdHMiLCIxIl0'}
+      classification: must-pass
+      provenance: *p
+      mutation: *m
+    - name: bracketed-ipv6-eight-groups
+      input: {url: 'http://[1:2:3:4:5:6:7:8]:8080/base'}
+      expected: {valid: true, normalized: 'http://[1:2:3:4:5:6:7:8]:8080/base', token: 'WyIxIiwiaHR0cDovL1sxOjI6Mzo0OjU6Njo3OjhdOjgwODAvYmFzZSIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsIjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMSIsInJlbW90ZS1hdHRlbXB0cyIsIjEiXQ'}
+      classification: must-pass
+      provenance: *p
+      mutation: *m
+statuses:
+  cases:
+    - name: domain-cancel-remote
+      input: {target: CollectiveFetchReport, payload: *report}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: cancelled domain states participate in deadline precedence without discarding committed effects or prior remote issues}
+    - name: scope-cancel-remote
+      input: {target: CollectiveFetchReport, payload: {<<: *report, domains: [{<<: *complete, state: failed, issue: *remote, associations: {requested: 2, completed: 1, failed: 1, scopes: [{transcriptId: *transcript, state: complete, commit: updated, observedAt: *time, completedAt: *time}, {transcriptId: *id, state: cancelled, commit: retained, issue: *remote}]}}, {<<: *cancel, state: failed}, *unrequested]}, omit: [domains.0.completedAt]}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: cancelled transcript scopes rank as deadline even when aggregate domain state is failed}
+    - name: cancel-auth
+      input: {target: CollectiveFetchReport, payload: *report, set: {issues: [{<<: *remote, code: auth}]}}
+      expected: {valid: true, status: 401}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: authentication outranks cancellation while committed effects remain reported}
+    - name: cancel-persistence
+      input: {target: CollectiveFetchReport, payload: *report, set: {issues: [{<<: *remote, code: persistence}, {<<: *remote, code: auth}]}}
+      expected: {valid: true, status: 500}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: persistence outranks authentication and cancellation}
+    - name: cancel-multiple-codes
+      input: {target: CollectiveFetchReport, payload: *report, set: {issues: [{<<: *remote, code: superseded}, {<<: *remote, code: contract}, {<<: *remote, code: deadline}]}}
+      expected: {valid: true, status: 504}
+      classification: must-pass
+      provenance: *p
+      mutation: {description: deadline/cancellation outranks contract/remote/superseded with every issue retained}

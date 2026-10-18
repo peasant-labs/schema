@@ -3,6 +3,69 @@ forbidden_components:
   - BestiaryHarness
   - VersionResponse
 types:
+  - {go_name: VillageDeprecatedGroupedContributableResponse, disposition: catalog, component: VillageDeprecatedGroupedContributableResponse, reason: released grouped envelope during deprecated resource route window}
+  - {go_name: VillageOrganizationCollective, disposition: catalog, component: VillageOrganizationCollective, reason: existing viewer-permitted organization collective projection}
+  - {go_name: VillageOrganizationCollectivesResponse, disposition: catalog, component: VillageOrganizationCollectivesResponse, reason: narrow complete disclosed organization collective set}
+  - {go_name: CollectiveObservationScope, disposition: catalog, component: CollectiveObservationScope, reason: private observation scope}
+  - {go_name: CollectiveObservationReason, disposition: catalog, component: CollectiveObservationReason, reason: closed relevance reasons}
+  - {go_name: CollectiveObservationState, disposition: catalog, component: CollectiveObservationState, reason: dated observation state}
+  - {go_name: CollectiveObservation, disposition: catalog, component: CollectiveObservation, reason: saved metadata projection}
+  - {go_name: CollectiveOperation, disposition: catalog, component: CollectiveOperation, reason: closed actual operation menu}
+  - {go_name: OperationIssueCode, disposition: catalog, component: OperationIssueCode, reason: closed actionable issue menu}
+  - {go_name: OperationIssue, disposition: catalog, component: OperationIssue, reason: bounded corrective issue}
+  - {go_name: LocalContributionEvidenceKind, disposition: catalog, component: LocalContributionEvidenceKind, reason: independently pageable categories}
+  - {go_name: ContributionTraversalIdentity, disposition: runtime-only, reason: codec input not serialized evidence}
+  - {go_name: ContributionTraversalRevision, disposition: catalog, component: ContributionTraversalRevision, reason: opaque selected category token}
+  - {go_name: CollectiveEvidenceCoverage, disposition: catalog, component: CollectiveEvidenceCoverage, reason: honest saved evidence coverage}
+  - {go_name: LocalConfirmedContributionOutcome, disposition: catalog, component: LocalConfirmedContributionOutcome, reason: actual confirmed effects}
+  - {go_name: LocalConfirmedContributionReceipt, disposition: catalog, component: LocalConfirmedContributionReceipt, reason: confirmed local effect not approval}
+  - {go_name: LocalOperationDiagnosticOutcome, disposition: catalog, component: LocalOperationDiagnosticOutcome, reason: failed or uncertain operation}
+  - {go_name: LocalOperationDiagnostic, disposition: catalog, component: LocalOperationDiagnostic, reason: diagnostic not contribution evidence}
+  - {go_name: PullAssociationMetadataState, disposition: catalog, component: PullAssociationMetadataState, reason: optional metadata result}
+  - {go_name: PullAssociationMetadataResult, disposition: catalog, component: PullAssociationMetadataResult, reason: content independent warning pairing}
+  - {go_name: CollectiveFetchDomain, disposition: catalog, component: CollectiveFetchDomain, reason: independent complete domains}
+  - {go_name: CollectiveFetchState, disposition: catalog, component: CollectiveFetchState, reason: domain attempt state}
+  - {go_name: CollectiveFetchCommit, disposition: catalog, component: CollectiveFetchCommit, reason: actual committed effect}
+  - {go_name: CollectiveFetchOutcome, disposition: catalog, component: CollectiveFetchOutcome, reason: overall required completeness}
+  - {go_name: CollectiveObservationSource, disposition: catalog, component: CollectiveObservationSource, reason: narrow required sources}
+  - {go_name: CollectiveSourceOutcome, disposition: catalog, component: CollectiveSourceOutcome, reason: privacy safe source results}
+  - {go_name: CollectiveFetchSourceResult, disposition: catalog, component: CollectiveFetchSourceResult, reason: source completeness and date}
+  - {go_name: CollectiveFetchAssociationScopeResult, disposition: catalog, component: CollectiveFetchAssociationScopeResult, reason: per transcript independent install}
+  - {go_name: CollectiveFetchAssociationResults, disposition: catalog, component: CollectiveFetchAssociationResults, reason: bounded scope counts}
+  - {go_name: CollectiveFetchDomainResult, disposition: catalog, component: CollectiveFetchDomainResult, reason: retained and completed domain outcomes}
+  - {go_name: CollectiveFetchReport, disposition: catalog, component: CollectiveFetchReport, reason: typed partial failure response}
+  - {go_name: CollectiveFetchDomainSummary, disposition: catalog, component: CollectiveFetchDomainSummary, reason: independent saved dates}
+  - {go_name: CollectiveFetchSummary, disposition: catalog, component: CollectiveFetchSummary, reason: no false shared success timestamp}
+  - {go_name: CollectiveObservationResponse, disposition: catalog, component: CollectiveObservationResponse, reason: offline catalog envelope}
+  - {go_name: LocalContributionHistoryResponse, disposition: catalog, component: LocalContributionHistoryResponse, reason: closed three category evidence union}
+  - {go_name: LocalContributionHistoryQuery, disposition: runtime-only, reason: shared paging validator input}
+  - {go_name: LocalContributionTraversalConflict, disposition: catalog, component: LocalContributionTraversalConflict, reason: selected category restart without rows}
+  - {go_name: VillageGroup, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupDetailRecord, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillagePublicGroup, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageUserGroup, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageVisibleGroup, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageCreateGroupRequest, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageUpdateGroupRequest, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupStatusRoleResponse, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageRemoveGroupMemberResponse, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupMemberUsernameRequest, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupMemberRoleRequest, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupMember, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupTranscriptStats, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupModelBreakdown, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupContributor, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupDetailResponse, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupTranscript, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageUserGroupShare, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupedGroupDetailResponse, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupAcceptanceMode, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupDataAccess, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupRole, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageAssignableGroupRole, disposition: alias, reason: full release compatibility window}
+  - {go_name: VillageGroupViewerRole, disposition: alias, reason: full release compatibility window}
+  - {go_name: LocalRemoteContributionAttempt, disposition: catalog, component: LocalRemoteContributionAttempt, reason: retained owner contribution attempt evidence}
+  - {go_name: VillageContributionAttemptReconciliation, disposition: runtime-only, reason: result classification for the Go reconciliation helper rather than a serialized response field}
   - {go_name: PageToken, disposition: catalog, component: PageToken, reason: opaque forward continuation}
   - {go_name: Page, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
   - {go_name: PageRequest, disposition: runtime-only, reason: Go-only domain reader input}
@@ -523,9 +586,9 @@ types:
     disposition: catalog
     component: UICapabilitiesResponse
     reason: public wire or domain contract type
-  - go_name: VillageAssignableGroupRole
+  - go_name: VillageAssignableCollectiveRole
     disposition: catalog
-    component: VillageAssignableGroupRole
+    component: VillageAssignableCollectiveRole
     reason: schema-owned Village collectives wire contract
   - go_name: VillageBatchReviewRequest
     disposition: catalog
@@ -579,74 +642,74 @@ types:
     disposition: catalog
     component: VillageContributionStatus
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageCreateGroupRequest
+  - go_name: VillageCreateCollectiveRequest
     disposition: catalog
-    component: VillageCreateGroupRequest
+    component: VillageCreateCollectiveRequest
     reason: schema-owned Village collectives wire contract
   - go_name: VillageErrorResponse
     disposition: catalog
     component: VillageErrorResponse
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageGitHubWebhookPayload, disposition: catalog, component: VillageGitHubWebhookPayload, reason: pull request attachment contract}
-  - go_name: VillageGroupDetailRecord
+  - go_name: VillageCollectiveDetailRecord
     disposition: catalog
-    component: VillageGroupDetailRecord
+    component: VillageCollectiveDetailRecord
     reason: Compatible collective detail read projection with optional source-backed prompts settings.
-  - go_name: VillageGroup
+  - go_name: VillageCollective
     disposition: catalog
-    component: VillageGroup
+    component: VillageCollective
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupAcceptanceMode
+  - go_name: VillageCollectiveAcceptanceMode
     disposition: catalog
-    component: VillageGroupAcceptanceMode
+    component: VillageCollectiveAcceptanceMode
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupContributor
+  - go_name: VillageCollectiveContributor
     disposition: catalog
-    component: VillageGroupContributor
+    component: VillageCollectiveContributor
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupDataAccess
+  - go_name: VillageCollectiveDataAccess
     disposition: catalog
-    component: VillageGroupDataAccess
+    component: VillageCollectiveDataAccess
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupDetailResponse
+  - go_name: VillageCollectiveDetailResponse
     disposition: catalog
-    component: VillageGroupDetailResponse
+    component: VillageCollectiveDetailResponse
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupMember
+  - go_name: VillageCollectiveMember
     disposition: catalog
-    component: VillageGroupMember
+    component: VillageCollectiveMember
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupMemberRoleRequest
+  - go_name: VillageCollectiveMemberRoleRequest
     disposition: catalog
-    component: VillageGroupMemberRoleRequest
+    component: VillageCollectiveMemberRoleRequest
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupMemberUsernameRequest
+  - go_name: VillageCollectiveMemberUsernameRequest
     disposition: catalog
-    component: VillageGroupMemberUsernameRequest
+    component: VillageCollectiveMemberUsernameRequest
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupModelBreakdown
+  - go_name: VillageCollectiveModelBreakdown
     disposition: catalog
-    component: VillageGroupModelBreakdown
+    component: VillageCollectiveModelBreakdown
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupRole
+  - go_name: VillageCollectiveRole
     disposition: catalog
-    component: VillageGroupRole
+    component: VillageCollectiveRole
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupStatusRoleResponse
+  - go_name: VillageCollectiveStatusRoleResponse
     disposition: catalog
-    component: VillageGroupStatusRoleResponse
+    component: VillageCollectiveStatusRoleResponse
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupTranscript
+  - go_name: VillageCollectiveTranscript
     disposition: catalog
-    component: VillageGroupTranscript
+    component: VillageCollectiveTranscript
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupTranscriptStats
+  - go_name: VillageCollectiveTranscriptStats
     disposition: catalog
-    component: VillageGroupTranscriptStats
+    component: VillageCollectiveTranscriptStats
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageGroupViewerRole
+  - go_name: VillageCollectiveViewerRole
     disposition: catalog
-    component: VillageGroupViewerRole
+    component: VillageCollectiveViewerRole
     reason: schema-owned Village collectives wire contract
   - go_name: VillageLinkRepositoryRequest
     disposition: catalog
@@ -679,17 +742,17 @@ types:
   - {go_name: VillagePromptRequest, disposition: catalog, component: VillagePromptRequest, reason: pull request attachment contract}
   - {go_name: VillagePromptRequestsResponse, disposition: catalog, component: VillagePromptRequestsResponse, reason: pull request attachment contract}
   - {go_name: VillagePromptsCheckMode, disposition: catalog, component: VillagePromptsCheckMode, reason: pull request attachment contract}
-  - go_name: VillagePublicGroup
+  - go_name: VillagePublicCollective
     disposition: catalog
-    component: VillagePublicGroup
+    component: VillagePublicCollective
     reason: schema-owned Village collectives wire contract
   - {go_name: VillagePullRequestAttachedTranscript, disposition: catalog, component: VillagePullRequestAttachedTranscript, reason: pull request attachment contract}
   - {go_name: VillagePullRequestAttachment, disposition: catalog, component: VillagePullRequestAttachment, reason: pull request attachment contract}
   - {go_name: VillagePullRequestAttachmentResponse, disposition: catalog, component: VillagePullRequestAttachmentResponse, reason: pull request attachment contract}
   - {go_name: VillagePullRequestAttachmentState, disposition: catalog, component: VillagePullRequestAttachmentState, reason: pull request attachment contract}
-  - go_name: VillageRemoveGroupMemberResponse
+  - go_name: VillageRemoveCollectiveMemberResponse
     disposition: catalog
-    component: VillageRemoveGroupMemberResponse
+    component: VillageRemoveCollectiveMemberResponse
     reason: schema-owned Village collectives wire contract
   - go_name: VillageRepositoryCommit
     disposition: catalog
@@ -755,27 +818,27 @@ types:
     disposition: catalog
     component: VillageTranscriptVisibility
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageUpdateGroupRequest
+  - go_name: VillageUpdateCollectiveRequest
     disposition: catalog
-    component: VillageUpdateGroupRequest
+    component: VillageUpdateCollectiveRequest
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageUpdateUserSettingsRequest, disposition: catalog, component: VillageUpdateUserSettingsRequest, reason: pull request attachment contract}
-  - go_name: VillageUserGroup
+  - go_name: VillageUserCollective
     disposition: catalog
-    component: VillageUserGroup
+    component: VillageUserCollective
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageUserGroupShare
+  - go_name: VillageUserCollectiveShare
     disposition: catalog
-    component: VillageUserGroupShare
+    component: VillageUserCollectiveShare
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageUserSettings, disposition: catalog, component: VillageUserSettings, reason: pull request attachment contract}
   - go_name: VillageUUID
     disposition: catalog
     component: VillageUUID
     reason: schema-owned Village collectives wire contract
-  - go_name: VillageVisibleGroup
+  - go_name: VillageVisibleCollective
     disposition: catalog
-    component: VillageVisibleGroup
+    component: VillageVisibleCollective
     reason: schema-owned Village collectives wire contract
   - go_name: ModelInfo
     disposition: catalog
@@ -1221,7 +1284,7 @@ types:
   - {go_name: VillageSessionListItem, disposition: catalog, component: VillageSessionListItem, reason: public session graph and grouped read contract}
   - {go_name: VillageSessionListPayload, disposition: catalog, component: VillageSessionListPayload, reason: public session graph and grouped read contract}
   - {go_name: VillageHelperMembersPayload, disposition: catalog, component: VillageHelperMembersPayload, reason: public session graph and grouped read contract}
-  - {go_name: VillageGroupedGroupDetailResponse, disposition: catalog, component: VillageGroupedGroupDetailResponse, reason: public session graph and grouped read contract}
+  - {go_name: VillageGroupedCollectiveDetailResponse, disposition: catalog, component: VillageGroupedCollectiveDetailResponse, reason: public session graph and grouped read contract}
   - {go_name: VillageGroupedContributableResponse, disposition: catalog, component: VillageGroupedContributableResponse, reason: public session graph and grouped read contract}
   - {go_name: SessionGraphFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: SessionRelationshipsInput, disposition: fixture-only, reason: canonical shared fixture contract}

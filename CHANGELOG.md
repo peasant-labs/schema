@@ -21,6 +21,34 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
     the grouped sync arm to mirror both fields of its session by value.
 
+## [v0.31.0] - 2026-10-18
+
+### Added
+
+- Account-scoped collective observation and contribution-evidence contracts in
+  Local API 0.21.0, Types 0.32.0, and Village API 0.27.0. Saved reads, explicit
+  metadata fetches, and tracking declarations keep catalog, history, and
+  per-transcript association results independent. Partial reports retain
+  committed effects and prior completion dates.
+- Validated contribution attempts and reconciliation, confirmed receipts,
+  failure diagnostics, and optional pull-metadata results. A receipt records a
+  confirmed effect, not approval; metadata does not grant content access or
+  publication consent. Final server authorization remains required.
+- Bounded account/category traversal revisions for numbered evidence history,
+  canonical URL scope identities, lossless UTC timestamp validation, exact
+  declared JSON-key decoding, and fetch-status precedence helpers. Open
+  additive objects remain open; history responses select exactly one category.
+  Evidence revisions do not become forward-page credentials or snapshot claims.
+- Canonical `/api/v1/collectives` declarations and collective Go/TypeScript
+  names, with deprecated `/api/v1/groups` operations and old public aliases
+  retained for one complete release window. The canonical grouped contributable
+  response uses `group_id`; an explicit deprecated envelope preserves `groupId`
+  on the old route. Both keep `transcriptList` and the unchanged flat response.
+- Generated types, runtime schemas, and operation contracts preserve the 0.30.0
+  standard paging and sync views, plus canonical engine-derived redaction
+  bindings. All 198 predecessor artifacts, including Local 0.20.0 and Types
+  0.31.0, remain byte-identical under the retired-spec registry.
+
 ## [v0.30.0] - 2026-10-17
 
 ### Added

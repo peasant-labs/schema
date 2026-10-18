@@ -1,0 +1,95 @@
+required_names: [canonical-grouped, deprecated-grouped, canonical-wrong-key, deprecated-wrong-key, canonical-missing-id, deprecated-missing-id, canonical-null-list, deprecated-null-list, canonical-missing-list, deprecated-missing-list, canonical-empty-id, deprecated-empty-id, canonical-invalid-page, deprecated-invalid-page]
+list: &list {items: [], page: 1, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}
+required_routes: [canonical-grouped-view, deprecated-grouped-view, canonical-omitted-view, deprecated-omitted-view]
+routes:
+  - {name: canonical-grouped-view, path: "/api/v1/collectives/{id}/contributable", operation_id: listContributableTranscripts, view: grouped, selected: VillageGroupedContributableResponse, rejected: VillageDeprecatedGroupedContributableResponse, deprecated: false}
+  - {name: deprecated-grouped-view, path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscriptsDeprecated, view: grouped, selected: VillageDeprecatedGroupedContributableResponse, rejected: VillageGroupedContributableResponse, deprecated: true}
+  - {name: canonical-omitted-view, path: "/api/v1/collectives/{id}/contributable", operation_id: listContributableTranscripts, selected: VillageContributableResponse, deprecated: false}
+  - {name: deprecated-omitted-view, path: "/api/v1/groups/{id}/contributable", operation_id: listContributableTranscriptsDeprecated, selected: VillageContributableResponse, deprecated: true}
+ungrouped: {group_id: "123e4567-e89b-12d3-a456-426614174000", transcripts: []}
+envelopes:
+  cases:
+    - name: canonical-grouped
+      input: {schema: VillageGroupedContributableResponse, payload: {group_id: "123e4567-e89b-12d3-a456-426614174000", transcriptList: *list}, keys: [group_id, transcriptList]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: &source {source: requirement, ref: released-grouped-route-compatibility}
+      mutation: {description: Emit only the corrected canonical identifier with the unchanged grouped list}
+    - name: deprecated-grouped
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {groupId: "123e4567-e89b-12d3-a456-426614174000", transcriptList: *list}, keys: [groupId, transcriptList]}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *source
+      mutation: {description: Retain only the released deprecated identifier with the unchanged grouped list}
+    - name: canonical-wrong-key
+      input: {schema: VillageGroupedContributableResponse, payload: {groupId: "123e4567-e89b-12d3-a456-426614174000", transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Replace the canonical identifier key with the deprecated spelling}
+    - name: deprecated-wrong-key
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {group_id: "123e4567-e89b-12d3-a456-426614174000", transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Replace the released identifier key with the canonical spelling}
+    - name: canonical-missing-id
+      input: {schema: VillageGroupedContributableResponse, payload: {transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Omit the canonical identifier}
+    - name: deprecated-missing-id
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Omit the released identifier}
+    - name: canonical-null-list
+      input: {schema: VillageGroupedContributableResponse, payload: {group_id: "123e4567-e89b-12d3-a456-426614174000", transcriptList: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Replace the canonical list with null}
+    - name: deprecated-null-list
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {groupId: "123e4567-e89b-12d3-a456-426614174000", transcriptList: null}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Replace the deprecated list with null}
+    - name: canonical-missing-list
+      input: {schema: VillageGroupedContributableResponse, payload: {group_id: "123e4567-e89b-12d3-a456-426614174000"}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Omit the canonical list}
+    - name: deprecated-missing-list
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {groupId: "123e4567-e89b-12d3-a456-426614174000"}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Omit the deprecated list}
+    - name: canonical-empty-id
+      input: {schema: VillageGroupedContributableResponse, payload: {group_id: "", transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Empty the canonical identifier}
+    - name: deprecated-empty-id
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {groupId: "", transcriptList: *list}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Empty the deprecated identifier}
+    - name: canonical-invalid-page
+      input: {schema: VillageGroupedContributableResponse, payload: {group_id: "123e4567-e89b-12d3-a456-426614174000", transcriptList: {items: [], page: 0, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Change the canonical list page to zero}
+    - name: deprecated-invalid-page
+      input: {schema: VillageDeprecatedGroupedContributableResponse, payload: {groupId: "123e4567-e89b-12d3-a456-426614174000", transcriptList: {items: [], page: 0, limit: 2, totalItems: 0, ordinarySessionTotal: 0, helperThreadTotal: 0}}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *source
+      mutation: {description: Change the deprecated list page to zero}

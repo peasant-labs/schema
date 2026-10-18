@@ -58,6 +58,8 @@ const canonicalRuntimeEntries = [
   ...toEntries(fixture.functions.map((fn) => fn.name)),
   ...fixture.constants.map((constant) => ({ name: constant.name, target: String(constant.value) })),
 ];
+const retainedCollectiveAliases = parse(await readFile(new URL("../../testdata/typescript/collective_compatibility.yaml", import.meta.url), "utf8"));
+canonicalRuntimeEntries.push(...toEntries(retainedCollectiveAliases.aliases.flatMap(row => [`z${row.name}`, ...(row.all_name === undefined ? [] : [row.name, row.all_name, `is${row.name}`])])));
 const canonicalRuntimeNames = canonicalRuntimeEntries.map((entry) => entry.name).sort();
 
 test("root, local-api, and village-api runtime exports match the strict shared fixture", async (t) => {

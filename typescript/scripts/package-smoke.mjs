@@ -27,6 +27,7 @@ assert.equal(new Set(villageCollectiveOperationIDs).size, villageCollectiveOpera
 const enumName = enumCatalog.enums[0].name;
 assert.match(enumName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "enums.yaml representative enum name must be a JavaScript identifier");
 const enumNames = new Set(enumCatalog.enums.map((enumCase) => enumCase.name));
+const retainedCollectiveAliases = parse(await readFile(new URL("../../testdata/typescript/collective_compatibility.yaml", import.meta.url), "utf8"));
 const schemaName = Object.keys(spec.components?.schemas ?? {}).find((name) => !enumNames.has(name));
 assert.notEqual(schemaName, undefined, "the Types OpenAPI catalog must provide a non-enum component for the packed-package Zod runtime probe");
 assert.match(schemaName, /^[A-Za-z_$][A-Za-z0-9_$]*$/, "Types OpenAPI representative component name must be a JavaScript identifier");
@@ -49,7 +50,7 @@ try {
     });
   const tsconfig = {
     compilerOptions: { strict: true, noEmit: true, target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext" },
-    include: ["consumer.ts"],
+    include: ["consumer.ts", "sync-pages.ts"],
   };
 
   const storeDir = join(temp, "store");
@@ -69,11 +70,15 @@ try {
   });
 
   const probe = [
+    `const envelopeAPI = await import(${JSON.stringify(packageManifest.name)});`,
+    ...parse(await readFile(new URL("../../testdata/deprecated_grouped_contributable.yaml", import.meta.url), "utf8")).envelopes.cases.map(row => `if (envelopeAPI[${JSON.stringify(`z${row.input.schema}`)}].safeParse(${JSON.stringify(row.input.payload)}).success !== ${row.expected.valid}) throw new Error(${JSON.stringify(`packed grouped contribution envelope differs for ${row.name}`)});`),
     `const redaction = await import(${JSON.stringify(packageManifest.name)});`,
     `for (const [category, label] of ${JSON.stringify(parse(await readFile(new URL("../../testdata/typescript/redaction_categories.yaml", import.meta.url), "utf8")).pairs.cases.map(row => [row.input.category, row.input.label]))}) { if (redaction.redactionCategoryLabel(category) !== label || redaction.redactionCategoryFromLabel(label) !== category) throw new Error("packed redaction conversion differs"); }`,
     `import { ${enumName}, ${schemaExportName}, parseSessionDetailPayloadText, requiredContentCapabilities, zPublicRevisionRef, zSourceEntryRef, zSubmissionRef } from ${JSON.stringify(packageManifest.name)};`,
     `import { sessionGraphCapabilityFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph-capability")};`,
     `import * as publicSchema from ${JSON.stringify(packageManifest.name)};`,
+    ...retainedCollectiveAliases.aliases.map(row => `if (publicSchema.z${row.name} !== publicSchema.z${row.canonical}) throw new Error("packed legacy validator ${row.name} lost canonical identity");`),
+    ...retainedCollectiveAliases.aliases.filter(row => row.all_name !== undefined).map(row => `if (publicSchema.${row.name} !== publicSchema.${row.canonical} || publicSchema.${row.all_name} !== publicSchema.${row.canonical_all_name} || publicSchema.is${row.name} !== publicSchema.is${row.canonical}) throw new Error("packed legacy enum ${row.name} changed");`),
     `import { sessionGraphFixtures } from ${JSON.stringify(packageManifest.name + "/fixtures/session-graph")};`,
     ...fixture.subpaths.map((subpath) => `await import(${JSON.stringify(subpath)});`),
     `if (typeof ${enumName} !== "object" || ${enumName} === null) throw new TypeError(${JSON.stringify(`packed ${packageManifest.name} export ${enumName} is not a runtime enum facade`)});`,
@@ -105,7 +110,12 @@ try {
     .map((operationID) => `type __VillageCollectivesOperation_${operationID} = VillageOperations[${JSON.stringify(operationID)}];`)
     .join("\n");
   await writeFile(join(consumerDir, "tsconfig.json"), JSON.stringify(tsconfig));
-  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n${await readFile(new URL("../tests/redaction-categories.ts", import.meta.url), "utf8")}\n`);
+  await writeFile(join(consumerDir, "sync-pages.ts"), await readFile(new URL("../tests/sync-pages.ts", import.meta.url), "utf8"));
+  const legacyTypeChecks = [
+    `type Same<A,B> = (<T>()=>T extends A ? 1 : 2) extends (<T>()=>T extends B ? 1 : 2) ? true : false; type MustBeTrue<T extends true> = T;`,
+    ...retainedCollectiveAliases.aliases.map(row => `import type { ${row.name} as Old${row.name}, ${row.canonical} as New${row.name} } from ${JSON.stringify(packageManifest.name)}; type Check${row.name} = MustBeTrue<Same<Old${row.name},New${row.name}>>;`),
+  ].join("\n");
+  await writeFile(join(consumerDir, "consumer.ts"), `${await readFile(new URL("../tests/fixtures/tarball-consumer.ts", import.meta.url), "utf8")}\n${operationTypeChecks}\n${legacyTypeChecks}\n${await readFile(new URL("../tests/redaction-categories.ts", import.meta.url), "utf8")}\n`);
   const tsc = join(consumerDir, "node_modules", ".bin", "tsc");
   execFileSync(tsc, ["--project", join(consumerDir, "tsconfig.json")], { cwd: consumerDir, stdio: "inherit" });
 

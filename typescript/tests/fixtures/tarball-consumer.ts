@@ -1,4 +1,7 @@
 import {
+  zVillageDeprecatedGroupedContributableResponse,
+  type VillageDeprecatedGroupedContributableResponse,
+  type VillageGroupedContributableResponse,
   MetadataSchemaVersion,
   newProjectHash,
   DiffLineKind,
@@ -15,6 +18,15 @@ import {
   type SessionDetailPayload,
   type ProjectHash,
 } from "@peasant-labs/schema";
+declare const deprecatedGroupedContribution: VillageDeprecatedGroupedContributableResponse;
+declare const canonicalGroupedContribution: VillageGroupedContributableResponse;
+zVillageDeprecatedGroupedContributableResponse.parse(deprecatedGroupedContribution);
+const retainedGroupID: string = deprecatedGroupedContribution.groupId;
+const canonicalGroupID: string = canonicalGroupedContribution.group_id;
+// @ts-expect-error The deprecated route retains only the released key spelling.
+deprecatedGroupedContribution.group_id;
+// @ts-expect-error The canonical route retains only the corrected key spelling.
+canonicalGroupedContribution.groupId;
 import { PeasantLocalAPIVersion, type operations as LocalOperations } from "@peasant-labs/schema/local-api";
 import { VillageAPIVersion, type operations as VillageOperations } from "@peasant-labs/schema/village-api";
 import type { UnifiedMetadata } from "@peasant-labs/schema/types";

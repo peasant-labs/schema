@@ -1,131 +1,131 @@
 operations:
-  - path: /api/v1/groups/public
+  - path: /api/v1/collectives/public
     method: get
     operation_id: listPublicGroups
     request_components: []
-    response_components: [VillagePublicGroup]
+    response_components: [VillagePublicCollective]
     statuses: ["200", "500"]
     description_anchors: [public directory, approved-transcript counts]
-  - path: /api/v1/groups/search
+  - path: /api/v1/collectives/search
     method: get
     operation_id: searchCollectives
     request_components: []
     response_components: [VillageCollectiveSearchResponse]
     statuses: ["200", "500"]
     description_anchors: [empty q, capped at 50]
-  - path: /api/v1/groups
+  - path: /api/v1/collectives
     method: post
     operation_id: createGroup
-    request_components: [VillageCreateGroupRequest]
-    response_components: [VillageGroup]
+    request_components: [VillageCreateCollectiveRequest]
+    response_components: [VillageCollective]
     statuses: ["201", "400", "401", "500"]
     description_anchors: [Name is required, defaults to open]
-  - path: /api/v1/groups
+  - path: /api/v1/collectives
     method: get
     operation_id: listGroups
     request_components: []
-    response_components: [VillageUserGroup]
+    response_components: [VillageUserCollective]
     statuses: ["200", "401", "500"]
     description_anchors: [caller belongs to, membership time]
-  - path: /api/v1/groups/visible
+  - path: /api/v1/collectives/visible
     method: get
     operation_id: listVisibleGroups
     request_components: []
-    response_components: [VillageVisibleGroup]
+    response_components: [VillageVisibleCollective]
     statuses: ["200", "401", "500"]
     description_anchors: [may see, not a member]
-  - path: /api/v1/groups/{id}
+  - path: /api/v1/collectives/{id}
     method: get
     operation_id: getGroup
     request_components: []
-    response_components: [VillageGroupDetailResponse]
+    response_components: [VillageCollectiveDetailResponse]
     statuses: ["200", "400", "404"]
     description_anchors: [pending_members is present only for owners, transcripts is an empty array]
-  - path: /api/v1/groups/{id}
+  - path: /api/v1/collectives/{id}
     method: patch
     operation_id: updateGroup
-    request_components: [VillageUpdateGroupRequest]
-    response_components: [VillageGroup]
+    request_components: [VillageUpdateCollectiveRequest]
+    response_components: [VillageCollective]
     statuses: ["200", "400", "401", "403", "404", "500"]
     description_anchors: [preserve them must send, empty string clears]
-  - path: /api/v1/groups/{id}
+  - path: /api/v1/collectives/{id}
     method: delete
     operation_id: deleteGroup
     request_components: []
     response_components: [VillageStatusResponse]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [Delete an owned collective]
-  - path: /api/v1/groups/{id}/join
+  - path: /api/v1/collectives/{id}/join
     method: post
     operation_id: joinGroup
     request_components: []
-    response_components: [VillageGroupStatusRoleResponse]
+    response_components: [VillageCollectiveStatusRoleResponse]
     statuses: ["200", "400", "401", "403", "404", "409", "500"]
     description_anchors: [Join an open or verified collective, Curated collectives]
-  - path: /api/v1/groups/{id}/members
+  - path: /api/v1/collectives/{id}/members
     method: post
     operation_id: addGroupMember
-    request_components: [VillageGroupMemberUsernameRequest]
+    request_components: [VillageCollectiveMemberUsernameRequest]
     response_components: [VillageStatusResponse]
     statuses: ["200", "400", "401", "403", "404", "500"]
     description_anchors: [by username]
-  - path: /api/v1/groups/{id}/members/{userID}/role
+  - path: /api/v1/collectives/{id}/members/{userID}/role
     method: patch
     operation_id: updateGroupMemberRole
-    request_components: [VillageGroupMemberRoleRequest]
-    response_components: [VillageGroupStatusRoleResponse]
+    request_components: [VillageCollectiveMemberRoleRequest]
+    response_components: [VillageCollectiveStatusRoleResponse]
     statuses: ["200", "400", "401", "403", "404", "500"]
     description_anchors: [contributor or member, Owner and pending are not accepted]
-  - path: /api/v1/groups/{id}/members/{userID}
+  - path: /api/v1/collectives/{id}/members/{userID}
     method: delete
     operation_id: removeGroupMember
     request_components: []
-    response_components: [VillageRemoveGroupMemberResponse]
+    response_components: [VillageRemoveCollectiveMemberResponse]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [retract=true, mandatory deletion policy]
-  - path: /api/v1/groups/{id}/contributable
+  - path: /api/v1/collectives/{id}/contributable
     method: get
     operation_id: listContributableTranscripts
     request_components: []
     response_components: [VillageContributableResponse]
     statuses: ["200", "400", "401", "403", "413", "500"]
     description_anchors: [already live, unpaginated]
-  - path: /api/v1/groups/{id}/shares
+  - path: /api/v1/collectives/{id}/shares
     method: post
     operation_id: batchShareProject
     request_components: [VillageBatchShareRequest]
     response_components: [VillageBatchShareResponse]
     statuses: ["200", "400", "401", "403", "404", "409", "422", "500"]
     description_anchors: [one transaction, visibility_confirmed]
-  - path: /api/v1/groups/{id}/pending
+  - path: /api/v1/collectives/{id}/pending
     method: get
     operation_id: listPendingShares
     request_components: []
     response_components: [VillagePendingShare]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [pending transcript submissions, oldest first]
-  - path: /api/v1/groups/{id}/my-shares
+  - path: /api/v1/collectives/{id}/my-shares
     method: get
     operation_id: listMyGroupShares
     request_components: []
-    response_components: [VillageUserGroupShare]
+    response_components: [VillageUserCollectiveShare]
     statuses: ["200", "400", "401", "500"]
     description_anchors: [own live submissions, pending and approved]
-  - path: /api/v1/groups/{id}/shares
+  - path: /api/v1/collectives/{id}/shares
     method: patch
     operation_id: batchReviewShares
     request_components: [VillageBatchReviewRequest]
     response_components: [VillageBatchReviewResponse]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [Approve or reject many, already decided]
-  - path: /api/v1/groups/{id}/shares/{transcriptID}
+  - path: /api/v1/collectives/{id}/shares/{transcriptID}
     method: patch
     operation_id: reviewShare
     request_components: [VillageReviewShareRequest]
     response_components: [VillageReviewShareResponse]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [one pending submission, does not mutate transcript visibility]
-  - path: /api/v1/groups/{id}/transcripts/{transcriptID}
+  - path: /api/v1/collectives/{id}/transcripts/{transcriptID}
     method: delete
     operation_id: removeGroupTranscript
     request_components: []
@@ -174,28 +174,28 @@ operations:
     response_components: [VillageShareEvent]
     statuses: ["200", "400", "401", "404", "500"]
     description_anchors: [oldest event first, never a moderator user id]
-  - path: /api/v1/groups/{id}/repositories
+  - path: /api/v1/collectives/{id}/repositories
     method: get
     operation_id: listGroupRepositories
     request_components: []
     response_components: [VillageLinkedRepositoriesResponse]
     statuses: ["200", "400", "401", "403", "500"]
     description_anchors: [authenticated collective member]
-  - path: /api/v1/groups/{id}/repositories
+  - path: /api/v1/collectives/{id}/repositories
     method: post
     operation_id: linkGroupRepository
     request_components: [VillageLinkRepositoryRequest]
     response_components: [VillageLinkedRepository]
     statuses: ["201", "400", "401", "403", "501", "500"]
     description_anchors: [GitHub App installation]
-  - path: /api/v1/groups/{id}/repositories/{owner}/{name}
+  - path: /api/v1/collectives/{id}/repositories/{owner}/{name}
     method: delete
     operation_id: unlinkGroupRepository
     request_components: []
     response_components: [VillageStatusResponse]
     statuses: ["200", "400", "401", "403", "404", "500"]
     description_anchors: [Unlink a GitHub repository]
-  - path: /api/v1/groups/{id}/repositories/{owner}/{name}/commits
+  - path: /api/v1/collectives/{id}/repositories/{owner}/{name}/commits
     method: get
     operation_id: listGroupRepositoryCommits
     request_components: []
@@ -266,17 +266,17 @@ operations:
     statuses: ["200", "401", "500"]
     description_anchors: [distinct pull requests, not one page, may read under the visibility rule]
 component_enums:
-  - component: VillageGroupAcceptanceMode
+  - component: VillageCollectiveAcceptanceMode
     values: [open, verified_only, curated]
-  - component: VillageGroupDataAccess
+  - component: VillageCollectiveDataAccess
     values: [members_only, contributors, public]
   - component: VillageTranscriptDeletionPolicy
     values: [user_choice, mandatory]
-  - component: VillageGroupRole
+  - component: VillageCollectiveRole
     values: [owner, member, contributor, pending]
-  - component: VillageAssignableGroupRole
+  - component: VillageAssignableCollectiveRole
     values: [contributor, member]
-  - component: VillageGroupViewerRole
+  - component: VillageCollectiveViewerRole
     values: ["", owner, member, contributor, pending]
   - component: VillageProjectNameSource
     values: [override, consented, remote, path, privacy]
@@ -301,7 +301,7 @@ component_required:
   - component: VillageTranscriptListRow
     contains: [transcript, tags, pull_requests]
     excludes: []
-  - component: VillageGroupTranscriptStats
+  - component: VillageCollectiveTranscriptStats
     contains: [total_transcripts, pull_request_count]
     excludes: []
   - component: VillageAvailableRepository
@@ -310,7 +310,7 @@ component_required:
   - component: VillagePullRequestsSummary
     contains: [count, recent]
     excludes: []
-  - component: VillageGroupTranscript
+  - component: VillageCollectiveTranscript
     contains:
       - id
       - owner_id
@@ -345,11 +345,11 @@ component_required:
       - updated_at
     excludes: []
 component_properties:
-  - component: VillageCreateGroupRequest
+  - component: VillageCreateCollectiveRequest
     property: linked_github_org
     required: false
     nullable: true
-  - component: VillageUpdateGroupRequest
+  - component: VillageUpdateCollectiveRequest
     property: linked_github_org
     nullable: true
   - component: VillagePullRequestAttachment
@@ -370,32 +370,32 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillageCollectiveSearchResult"
-  - component: VillageGroupDetailResponse
+  - component: VillageCollectiveDetailResponse
     property: members
     required: true
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillageGroupMember"
-  - component: VillageGroupDetailResponse
+    items_ref: "#/components/schemas/SchemaVillageCollectiveMember"
+  - component: VillageCollectiveDetailResponse
     property: models
     required: true
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillageGroupModelBreakdown"
-  - component: VillageGroupDetailResponse
+    items_ref: "#/components/schemas/SchemaVillageCollectiveModelBreakdown"
+  - component: VillageCollectiveDetailResponse
     property: contributors
     required: true
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillageGroupContributor"
-  - component: VillageGroupDetailResponse
+    items_ref: "#/components/schemas/SchemaVillageCollectiveContributor"
+  - component: VillageCollectiveDetailResponse
     property: transcripts
     required: true
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillageGroupTranscript"
-  - component: VillageGroupDetailResponse
+    items_ref: "#/components/schemas/SchemaVillageCollectiveTranscript"
+  - component: VillageCollectiveDetailResponse
     property: pending_members
     required: false
     nullable: false
-    items_ref: "#/components/schemas/SchemaVillageGroupMember"
-  - component: VillageGroupMember
+    items_ref: "#/components/schemas/SchemaVillageCollectiveMember"
+  - component: VillageCollectiveMember
     property: github_orgs
     required: true
     nullable: false

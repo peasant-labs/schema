@@ -367,8 +367,8 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 			}
 		})
 	}
-	requireExactProperties(t, components["SchemaVillageGroupedGroupDetailResponse"].(map[string]any), []string{"group", "members", "stats", "models", "contributors", "can_read", "your_role", "transcriptList", "pending_members"})
-	requireExactProperties(t, components["SchemaVillageGroupedContributableResponse"].(map[string]any), []string{"groupId", "transcriptList"})
+	requireExactProperties(t, components["SchemaVillageGroupedCollectiveDetailResponse"].(map[string]any), []string{"group", "members", "stats", "models", "contributors", "can_read", "your_role", "transcriptList", "pending_members"})
+	requireExactProperties(t, components["SchemaVillageGroupedContributableResponse"].(map[string]any), []string{"group_id", "transcriptList"})
 	requireExactProperties(t, components["SchemaVillageMetadataUserOrganization"].(map[string]any), []string{"org_login", "org_id", "avatar_url", "visible", "fetched_at"})
 	requireExactProperties(t, components["SchemaVillageListUserOrganization"].(map[string]any), []string{"user_id", "org_login", "avatar_url"})
 	legacyRow := schemaProperties(components["SchemaVillageTranscriptListRow"].(map[string]any))

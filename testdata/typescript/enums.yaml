@@ -1,4 +1,19 @@
 enums:
+  - {name: CollectiveObservationReason, all_name: AllCollectiveObservationReasons, members: [{name: Membership, value: membership}, {name: Contribution, value: contribution}, {name: Organization, value: organization}, {name: Explicit, value: explicit}], all_values: [membership, contribution, organization, explicit]}
+  - {name: CollectiveObservationState, all_name: AllCollectiveObservationStates, members: [{name: Observed, value: observed}, {name: Unavailable, value: unavailable}, {name: Invalidated, value: invalidated}], all_values: [observed, unavailable, invalidated]}
+  - {name: CollectiveOperation, all_name: AllCollectiveOperations, members: [{name: Publish, value: publish}, {name: Share, value: share}, {name: Fetch, value: fetch}, {name: Pull, value: pull}], all_values: [publish, share, fetch, pull]}
+  - {name: OperationIssueCode, all_name: AllOperationIssueCodes, members: [{name: Auth, value: auth}, {name: Remote, value: remote}, {name: Contract, value: contract}, {name: Deadline, value: deadline}, {name: Persistence, value: persistence}, {name: Superseded, value: superseded}], all_values: [auth, remote, contract, deadline, persistence, superseded]}
+  - {name: LocalContributionEvidenceKind, all_name: AllLocalContributionEvidenceKinds, members: [{name: RemoteAttempts, value: remote-attempts}, {name: Receipts, value: receipts}, {name: OperationDiagnostics, value: operation-diagnostics}], all_values: [remote-attempts, receipts, operation-diagnostics]}
+  - {name: CollectiveEvidenceCoverage, all_name: AllCollectiveEvidenceCoverages, members: [{name: Available, value: available}, {name: Unknown, value: unknown}], all_values: [available, unknown]}
+  - {name: LocalConfirmedContributionOutcome, all_name: AllLocalConfirmedContributionOutcomes, members: [{name: Published, value: published}, {name: Submitted, value: submitted}], all_values: [published, submitted]}
+  - {name: LocalOperationDiagnosticOutcome, all_name: AllLocalOperationDiagnosticOutcomes, members: [{name: Failed, value: failed}, {name: Uncertain, value: uncertain}], all_values: [failed, uncertain]}
+  - {name: PullAssociationMetadataState, all_name: AllPullAssociationMetadataStates, members: [{name: Observed, value: observed}, {name: Stale, value: stale}, {name: Unknown, value: unknown}, {name: Invalidated, value: invalidated}], all_values: [observed, stale, unknown, invalidated]}
+  - {name: CollectiveFetchDomain, all_name: AllCollectiveFetchDomains, members: [{name: Catalog, value: catalog}, {name: History, value: history}, {name: Associations, value: associations}], all_values: [catalog, history, associations]}
+  - {name: CollectiveFetchState, all_name: AllCollectiveFetchStates, members: [{name: Complete, value: complete}, {name: Failed, value: failed}, {name: Cancelled, value: cancelled}, {name: Superseded, value: superseded}, {name: NotRequested, value: not_requested}], all_values: [complete, failed, cancelled, superseded, not_requested]}
+  - {name: CollectiveFetchCommit, all_name: AllCollectiveFetchCommits, members: [{name: Updated, value: updated}, {name: Unchanged, value: unchanged}, {name: Retained, value: retained}], all_values: [updated, unchanged, retained]}
+  - {name: CollectiveFetchOutcome, all_name: AllCollectiveFetchOutcomes, members: [{name: Complete, value: complete}, {name: Partial, value: partial}, {name: Failed, value: failed}], all_values: [complete, partial, failed]}
+  - {name: CollectiveObservationSource, all_name: AllCollectiveObservationSources, members: [{name: Membership, value: membership}, {name: ContributionDiscovery, value: contribution-discovery}, {name: Organization, value: organization}, {name: Explicit, value: explicit}, {name: Submissions, value: submissions}, {name: Attempts, value: attempts}, {name: Associations, value: associations}], all_values: [membership, contribution-discovery, organization, explicit, submissions, attempts, associations]}
+  - {name: CollectiveSourceOutcome, all_name: AllCollectiveSourceOutcomes, members: [{name: Disclosed, value: disclosed}, {name: NotDisclosed, value: not_disclosed}, {name: Failed, value: failed}], all_values: [disclosed, not_disclosed, failed]}
   - name: LocalSyncPublicationFilter
     all_name: AllLocalSyncPublicationFilters
     members:
@@ -360,8 +375,8 @@ enums:
       - {name: Private, value: "private"}
       - {name: Public, value: "public"}
     all_values: ["private", "public"]
-  - name: VillageAssignableGroupRole
-    all_name: AllVillageAssignableGroupRoles
+  - name: VillageAssignableCollectiveRole
+    all_name: AllVillageAssignableCollectiveRoles
     members:
       - {name: Contributor, value: "contributor"}
       - {name: Member, value: "member"}
@@ -372,30 +387,30 @@ enums:
       - {name: Approved, value: "approved"}
       - {name: Pending, value: "pending"}
     all_values: ["approved", "pending"]
-  - name: VillageGroupAcceptanceMode
-    all_name: AllVillageGroupAcceptanceModes
+  - name: VillageCollectiveAcceptanceMode
+    all_name: AllVillageCollectiveAcceptanceModes
     members:
       - {name: Open, value: "open"}
       - {name: VerifiedOnly, value: "verified_only"}
       - {name: Curated, value: "curated"}
     all_values: ["open", "verified_only", "curated"]
-  - name: VillageGroupDataAccess
-    all_name: AllVillageGroupDataAccessPolicies
+  - name: VillageCollectiveDataAccess
+    all_name: AllVillageCollectiveDataAccessPolicies
     members:
       - {name: MembersOnly, value: "members_only"}
       - {name: Contributors, value: "contributors"}
       - {name: Public, value: "public"}
     all_values: ["members_only", "contributors", "public"]
-  - name: VillageGroupRole
-    all_name: AllVillageGroupRoles
+  - name: VillageCollectiveRole
+    all_name: AllVillageCollectiveRoles
     members:
       - {name: Owner, value: "owner"}
       - {name: Member, value: "member"}
       - {name: Contributor, value: "contributor"}
       - {name: Pending, value: "pending"}
     all_values: ["owner", "member", "contributor", "pending"]
-  - name: VillageGroupViewerRole
-    all_name: AllVillageGroupViewerRoles
+  - name: VillageCollectiveViewerRole
+    all_name: AllVillageCollectiveViewerRoles
     members:
       - {name: None, value: ""}
       - {name: Owner, value: "owner"}

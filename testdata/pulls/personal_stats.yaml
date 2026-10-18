@@ -23,7 +23,7 @@ operations:
     response: VillageUserStats
   - api: village
     method: get
-    path: "/api/v1/groups/{id}/repositories/available"
+    path: "/api/v1/collectives/{id}/repositories/available"
     response: VillageAvailableRepositoriesResponse
     statuses: ["200", "400", "401", "403", "500", "501"]
     error_responses: {"400": VillageErrorResponse, "401": VillageErrorResponse, "403": VillageErrorResponse, "500": VillageErrorResponse, "501": VillageErrorResponse}
@@ -55,19 +55,19 @@ cases:
     provenance: {source: requirement, ref: "the pull request count is part of the totals"}
     mutation: {description: "omits pull_request_count"}
   - name: group-stats-with-pull-request-count-valid
-    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000, pull_request_count: 31}}
+    input: {schema: VillageCollectiveTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000, pull_request_count: 31}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "a collective shows its pull requests linked"}
     mutation: {description: "a collective with linked pull requests"}
   - name: group-stats-missing-pull-request-count-rejected
-    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000}}
+    input: {schema: VillageCollectiveTranscriptStats, payload: {total_transcripts: 248, contributor_count: 12, total_turns: 9000, total_duration_ms: 1000, total_tokens: 124000000}}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the client sees only the rows it loaded, so the server states the count"}
     mutation: {description: "omits pull_request_count"}
   - name: group-stats-negative-pull-request-count-rejected
-    input: {schema: VillageGroupTranscriptStats, payload: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: -1}}
+    input: {schema: VillageCollectiveTranscriptStats, payload: {total_transcripts: 0, contributor_count: 0, total_turns: 0, total_duration_ms: 0, total_tokens: 0, pull_request_count: -1}}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: boundary, ref: "the count is nonnegative"}

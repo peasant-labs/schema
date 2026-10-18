@@ -1,4 +1,19 @@
 // Code generated from the canonical Go/OpenAPI contract. DO NOT EDIT.
+import { zCollectiveObservationReason, type CollectiveObservationReason as CollectiveObservationReasonContract } from "./contract/zod.gen.js";
+import { zCollectiveObservationState, type CollectiveObservationState as CollectiveObservationStateContract } from "./contract/zod.gen.js";
+import { zCollectiveOperation, type CollectiveOperation as CollectiveOperationContract } from "./contract/zod.gen.js";
+import { zOperationIssueCode, type OperationIssueCode as OperationIssueCodeContract } from "./contract/zod.gen.js";
+import { zLocalContributionEvidenceKind, type LocalContributionEvidenceKind as LocalContributionEvidenceKindContract } from "./contract/zod.gen.js";
+import { zCollectiveEvidenceCoverage, type CollectiveEvidenceCoverage as CollectiveEvidenceCoverageContract } from "./contract/zod.gen.js";
+import { zLocalConfirmedContributionOutcome, type LocalConfirmedContributionOutcome as LocalConfirmedContributionOutcomeContract } from "./contract/zod.gen.js";
+import { zLocalOperationDiagnosticOutcome, type LocalOperationDiagnosticOutcome as LocalOperationDiagnosticOutcomeContract } from "./contract/zod.gen.js";
+import { zPullAssociationMetadataState, type PullAssociationMetadataState as PullAssociationMetadataStateContract } from "./contract/zod.gen.js";
+import { zCollectiveFetchDomain, type CollectiveFetchDomain as CollectiveFetchDomainContract } from "./contract/zod.gen.js";
+import { zCollectiveFetchState, type CollectiveFetchState as CollectiveFetchStateContract } from "./contract/zod.gen.js";
+import { zCollectiveFetchCommit, type CollectiveFetchCommit as CollectiveFetchCommitContract } from "./contract/zod.gen.js";
+import { zCollectiveFetchOutcome, type CollectiveFetchOutcome as CollectiveFetchOutcomeContract } from "./contract/zod.gen.js";
+import { zCollectiveObservationSource, type CollectiveObservationSource as CollectiveObservationSourceContract } from "./contract/zod.gen.js";
+import { zCollectiveSourceOutcome, type CollectiveSourceOutcome as CollectiveSourceOutcomeContract } from "./contract/zod.gen.js";
 import { zLocalSyncPublicationFilter, type LocalSyncPublicationFilter as LocalSyncPublicationFilterContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
@@ -42,12 +57,12 @@ import { zTypeOrigin, type TypeOrigin as TypeOriginContract } from "./contract/z
 import { zValueDomainKind, type ValueDomainKind as ValueDomainKindContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateLicense, type TranscriptUpdateLicense as TranscriptUpdateLicenseContract } from "./contract/zod.gen.js";
 import { zTranscriptUpdateVisibility, type TranscriptUpdateVisibility as TranscriptUpdateVisibilityContract } from "./contract/zod.gen.js";
-import { zVillageAssignableGroupRole, type VillageAssignableGroupRole as VillageAssignableGroupRoleContract } from "./contract/zod.gen.js";
+import { zVillageAssignableCollectiveRole, type VillageAssignableCollectiveRole as VillageAssignableCollectiveRoleContract } from "./contract/zod.gen.js";
 import { zVillageContributionStatus, type VillageContributionStatus as VillageContributionStatusContract } from "./contract/zod.gen.js";
-import { zVillageGroupAcceptanceMode, type VillageGroupAcceptanceMode as VillageGroupAcceptanceModeContract } from "./contract/zod.gen.js";
-import { zVillageGroupDataAccess, type VillageGroupDataAccess as VillageGroupDataAccessContract } from "./contract/zod.gen.js";
-import { zVillageGroupRole, type VillageGroupRole as VillageGroupRoleContract } from "./contract/zod.gen.js";
-import { zVillageGroupViewerRole, type VillageGroupViewerRole as VillageGroupViewerRoleContract } from "./contract/zod.gen.js";
+import { zVillageCollectiveAcceptanceMode, type VillageCollectiveAcceptanceMode as VillageCollectiveAcceptanceModeContract } from "./contract/zod.gen.js";
+import { zVillageCollectiveDataAccess, type VillageCollectiveDataAccess as VillageCollectiveDataAccessContract } from "./contract/zod.gen.js";
+import { zVillageCollectiveRole, type VillageCollectiveRole as VillageCollectiveRoleContract } from "./contract/zod.gen.js";
+import { zVillageCollectiveViewerRole, type VillageCollectiveViewerRole as VillageCollectiveViewerRoleContract } from "./contract/zod.gen.js";
 import { zVillageProjectNameSource, type VillageProjectNameSource as VillageProjectNameSourceContract } from "./contract/zod.gen.js";
 import { zVillageReviewDecision, type VillageReviewDecision as VillageReviewDecisionContract } from "./contract/zod.gen.js";
 import { zVillageShareEventActor, type VillageShareEventActor as VillageShareEventActorContract } from "./contract/zod.gen.js";
@@ -90,6 +105,180 @@ import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } 
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
+
+export type CollectiveObservationReason = CollectiveObservationReasonContract;
+export const CollectiveObservationReason = Object.freeze({
+  Membership: zCollectiveObservationReason.parse("membership"),
+  Contribution: zCollectiveObservationReason.parse("contribution"),
+  Organization: zCollectiveObservationReason.parse("organization"),
+  Explicit: zCollectiveObservationReason.parse("explicit"),
+} as const);
+export const AllCollectiveObservationReasons = Object.freeze([CollectiveObservationReason.Membership, CollectiveObservationReason.Contribution, CollectiveObservationReason.Organization, CollectiveObservationReason.Explicit]) as readonly CollectiveObservationReason[];
+export function isCollectiveObservationReason(value: unknown): value is CollectiveObservationReason {
+  return zCollectiveObservationReason.safeParse(value).success;
+}
+
+export type CollectiveObservationState = CollectiveObservationStateContract;
+export const CollectiveObservationState = Object.freeze({
+  Observed: zCollectiveObservationState.parse("observed"),
+  Unavailable: zCollectiveObservationState.parse("unavailable"),
+  Invalidated: zCollectiveObservationState.parse("invalidated"),
+} as const);
+export const AllCollectiveObservationStates = Object.freeze([CollectiveObservationState.Observed, CollectiveObservationState.Unavailable, CollectiveObservationState.Invalidated]) as readonly CollectiveObservationState[];
+export function isCollectiveObservationState(value: unknown): value is CollectiveObservationState {
+  return zCollectiveObservationState.safeParse(value).success;
+}
+
+export type CollectiveOperation = CollectiveOperationContract;
+export const CollectiveOperation = Object.freeze({
+  Publish: zCollectiveOperation.parse("publish"),
+  Share: zCollectiveOperation.parse("share"),
+  Fetch: zCollectiveOperation.parse("fetch"),
+  Pull: zCollectiveOperation.parse("pull"),
+} as const);
+export const AllCollectiveOperations = Object.freeze([CollectiveOperation.Publish, CollectiveOperation.Share, CollectiveOperation.Fetch, CollectiveOperation.Pull]) as readonly CollectiveOperation[];
+export function isCollectiveOperation(value: unknown): value is CollectiveOperation {
+  return zCollectiveOperation.safeParse(value).success;
+}
+
+export type OperationIssueCode = OperationIssueCodeContract;
+export const OperationIssueCode = Object.freeze({
+  Auth: zOperationIssueCode.parse("auth"),
+  Remote: zOperationIssueCode.parse("remote"),
+  Contract: zOperationIssueCode.parse("contract"),
+  Deadline: zOperationIssueCode.parse("deadline"),
+  Persistence: zOperationIssueCode.parse("persistence"),
+  Superseded: zOperationIssueCode.parse("superseded"),
+} as const);
+export const AllOperationIssueCodes = Object.freeze([OperationIssueCode.Auth, OperationIssueCode.Remote, OperationIssueCode.Contract, OperationIssueCode.Deadline, OperationIssueCode.Persistence, OperationIssueCode.Superseded]) as readonly OperationIssueCode[];
+export function isOperationIssueCode(value: unknown): value is OperationIssueCode {
+  return zOperationIssueCode.safeParse(value).success;
+}
+
+export type LocalContributionEvidenceKind = LocalContributionEvidenceKindContract;
+export const LocalContributionEvidenceKind = Object.freeze({
+  RemoteAttempts: zLocalContributionEvidenceKind.parse("remote-attempts"),
+  Receipts: zLocalContributionEvidenceKind.parse("receipts"),
+  OperationDiagnostics: zLocalContributionEvidenceKind.parse("operation-diagnostics"),
+} as const);
+export const AllLocalContributionEvidenceKinds = Object.freeze([LocalContributionEvidenceKind.RemoteAttempts, LocalContributionEvidenceKind.Receipts, LocalContributionEvidenceKind.OperationDiagnostics]) as readonly LocalContributionEvidenceKind[];
+export function isLocalContributionEvidenceKind(value: unknown): value is LocalContributionEvidenceKind {
+  return zLocalContributionEvidenceKind.safeParse(value).success;
+}
+
+export type CollectiveEvidenceCoverage = CollectiveEvidenceCoverageContract;
+export const CollectiveEvidenceCoverage = Object.freeze({
+  Available: zCollectiveEvidenceCoverage.parse("available"),
+  Unknown: zCollectiveEvidenceCoverage.parse("unknown"),
+} as const);
+export const AllCollectiveEvidenceCoverages = Object.freeze([CollectiveEvidenceCoverage.Available, CollectiveEvidenceCoverage.Unknown]) as readonly CollectiveEvidenceCoverage[];
+export function isCollectiveEvidenceCoverage(value: unknown): value is CollectiveEvidenceCoverage {
+  return zCollectiveEvidenceCoverage.safeParse(value).success;
+}
+
+export type LocalConfirmedContributionOutcome = LocalConfirmedContributionOutcomeContract;
+export const LocalConfirmedContributionOutcome = Object.freeze({
+  Published: zLocalConfirmedContributionOutcome.parse("published"),
+  Submitted: zLocalConfirmedContributionOutcome.parse("submitted"),
+} as const);
+export const AllLocalConfirmedContributionOutcomes = Object.freeze([LocalConfirmedContributionOutcome.Published, LocalConfirmedContributionOutcome.Submitted]) as readonly LocalConfirmedContributionOutcome[];
+export function isLocalConfirmedContributionOutcome(value: unknown): value is LocalConfirmedContributionOutcome {
+  return zLocalConfirmedContributionOutcome.safeParse(value).success;
+}
+
+export type LocalOperationDiagnosticOutcome = LocalOperationDiagnosticOutcomeContract;
+export const LocalOperationDiagnosticOutcome = Object.freeze({
+  Failed: zLocalOperationDiagnosticOutcome.parse("failed"),
+  Uncertain: zLocalOperationDiagnosticOutcome.parse("uncertain"),
+} as const);
+export const AllLocalOperationDiagnosticOutcomes = Object.freeze([LocalOperationDiagnosticOutcome.Failed, LocalOperationDiagnosticOutcome.Uncertain]) as readonly LocalOperationDiagnosticOutcome[];
+export function isLocalOperationDiagnosticOutcome(value: unknown): value is LocalOperationDiagnosticOutcome {
+  return zLocalOperationDiagnosticOutcome.safeParse(value).success;
+}
+
+export type PullAssociationMetadataState = PullAssociationMetadataStateContract;
+export const PullAssociationMetadataState = Object.freeze({
+  Observed: zPullAssociationMetadataState.parse("observed"),
+  Stale: zPullAssociationMetadataState.parse("stale"),
+  Unknown: zPullAssociationMetadataState.parse("unknown"),
+  Invalidated: zPullAssociationMetadataState.parse("invalidated"),
+} as const);
+export const AllPullAssociationMetadataStates = Object.freeze([PullAssociationMetadataState.Observed, PullAssociationMetadataState.Stale, PullAssociationMetadataState.Unknown, PullAssociationMetadataState.Invalidated]) as readonly PullAssociationMetadataState[];
+export function isPullAssociationMetadataState(value: unknown): value is PullAssociationMetadataState {
+  return zPullAssociationMetadataState.safeParse(value).success;
+}
+
+export type CollectiveFetchDomain = CollectiveFetchDomainContract;
+export const CollectiveFetchDomain = Object.freeze({
+  Catalog: zCollectiveFetchDomain.parse("catalog"),
+  History: zCollectiveFetchDomain.parse("history"),
+  Associations: zCollectiveFetchDomain.parse("associations"),
+} as const);
+export const AllCollectiveFetchDomains = Object.freeze([CollectiveFetchDomain.Catalog, CollectiveFetchDomain.History, CollectiveFetchDomain.Associations]) as readonly CollectiveFetchDomain[];
+export function isCollectiveFetchDomain(value: unknown): value is CollectiveFetchDomain {
+  return zCollectiveFetchDomain.safeParse(value).success;
+}
+
+export type CollectiveFetchState = CollectiveFetchStateContract;
+export const CollectiveFetchState = Object.freeze({
+  Complete: zCollectiveFetchState.parse("complete"),
+  Failed: zCollectiveFetchState.parse("failed"),
+  Cancelled: zCollectiveFetchState.parse("cancelled"),
+  Superseded: zCollectiveFetchState.parse("superseded"),
+  NotRequested: zCollectiveFetchState.parse("not_requested"),
+} as const);
+export const AllCollectiveFetchStates = Object.freeze([CollectiveFetchState.Complete, CollectiveFetchState.Failed, CollectiveFetchState.Cancelled, CollectiveFetchState.Superseded, CollectiveFetchState.NotRequested]) as readonly CollectiveFetchState[];
+export function isCollectiveFetchState(value: unknown): value is CollectiveFetchState {
+  return zCollectiveFetchState.safeParse(value).success;
+}
+
+export type CollectiveFetchCommit = CollectiveFetchCommitContract;
+export const CollectiveFetchCommit = Object.freeze({
+  Updated: zCollectiveFetchCommit.parse("updated"),
+  Unchanged: zCollectiveFetchCommit.parse("unchanged"),
+  Retained: zCollectiveFetchCommit.parse("retained"),
+} as const);
+export const AllCollectiveFetchCommits = Object.freeze([CollectiveFetchCommit.Updated, CollectiveFetchCommit.Unchanged, CollectiveFetchCommit.Retained]) as readonly CollectiveFetchCommit[];
+export function isCollectiveFetchCommit(value: unknown): value is CollectiveFetchCommit {
+  return zCollectiveFetchCommit.safeParse(value).success;
+}
+
+export type CollectiveFetchOutcome = CollectiveFetchOutcomeContract;
+export const CollectiveFetchOutcome = Object.freeze({
+  Complete: zCollectiveFetchOutcome.parse("complete"),
+  Partial: zCollectiveFetchOutcome.parse("partial"),
+  Failed: zCollectiveFetchOutcome.parse("failed"),
+} as const);
+export const AllCollectiveFetchOutcomes = Object.freeze([CollectiveFetchOutcome.Complete, CollectiveFetchOutcome.Partial, CollectiveFetchOutcome.Failed]) as readonly CollectiveFetchOutcome[];
+export function isCollectiveFetchOutcome(value: unknown): value is CollectiveFetchOutcome {
+  return zCollectiveFetchOutcome.safeParse(value).success;
+}
+
+export type CollectiveObservationSource = CollectiveObservationSourceContract;
+export const CollectiveObservationSource = Object.freeze({
+  Membership: zCollectiveObservationSource.parse("membership"),
+  ContributionDiscovery: zCollectiveObservationSource.parse("contribution-discovery"),
+  Organization: zCollectiveObservationSource.parse("organization"),
+  Explicit: zCollectiveObservationSource.parse("explicit"),
+  Submissions: zCollectiveObservationSource.parse("submissions"),
+  Attempts: zCollectiveObservationSource.parse("attempts"),
+  Associations: zCollectiveObservationSource.parse("associations"),
+} as const);
+export const AllCollectiveObservationSources = Object.freeze([CollectiveObservationSource.Membership, CollectiveObservationSource.ContributionDiscovery, CollectiveObservationSource.Organization, CollectiveObservationSource.Explicit, CollectiveObservationSource.Submissions, CollectiveObservationSource.Attempts, CollectiveObservationSource.Associations]) as readonly CollectiveObservationSource[];
+export function isCollectiveObservationSource(value: unknown): value is CollectiveObservationSource {
+  return zCollectiveObservationSource.safeParse(value).success;
+}
+
+export type CollectiveSourceOutcome = CollectiveSourceOutcomeContract;
+export const CollectiveSourceOutcome = Object.freeze({
+  Disclosed: zCollectiveSourceOutcome.parse("disclosed"),
+  NotDisclosed: zCollectiveSourceOutcome.parse("not_disclosed"),
+  Failed: zCollectiveSourceOutcome.parse("failed"),
+} as const);
+export const AllCollectiveSourceOutcomes = Object.freeze([CollectiveSourceOutcome.Disclosed, CollectiveSourceOutcome.NotDisclosed, CollectiveSourceOutcome.Failed]) as readonly CollectiveSourceOutcome[];
+export function isCollectiveSourceOutcome(value: unknown): value is CollectiveSourceOutcome {
+  return zCollectiveSourceOutcome.safeParse(value).success;
+}
 
 export type LocalSyncPublicationFilter = LocalSyncPublicationFilterContract;
 export const LocalSyncPublicationFilter = Object.freeze({
@@ -629,14 +818,14 @@ export function isTranscriptUpdateVisibility(value: unknown): value is Transcrip
   return zTranscriptUpdateVisibility.safeParse(value).success;
 }
 
-export type VillageAssignableGroupRole = VillageAssignableGroupRoleContract;
-export const VillageAssignableGroupRole = Object.freeze({
-  Contributor: zVillageAssignableGroupRole.parse("contributor"),
-  Member: zVillageAssignableGroupRole.parse("member"),
+export type VillageAssignableCollectiveRole = VillageAssignableCollectiveRoleContract;
+export const VillageAssignableCollectiveRole = Object.freeze({
+  Contributor: zVillageAssignableCollectiveRole.parse("contributor"),
+  Member: zVillageAssignableCollectiveRole.parse("member"),
 } as const);
-export const AllVillageAssignableGroupRoles = Object.freeze([VillageAssignableGroupRole.Contributor, VillageAssignableGroupRole.Member]) as readonly VillageAssignableGroupRole[];
-export function isVillageAssignableGroupRole(value: unknown): value is VillageAssignableGroupRole {
-  return zVillageAssignableGroupRole.safeParse(value).success;
+export const AllVillageAssignableCollectiveRoles = Object.freeze([VillageAssignableCollectiveRole.Contributor, VillageAssignableCollectiveRole.Member]) as readonly VillageAssignableCollectiveRole[];
+export function isVillageAssignableCollectiveRole(value: unknown): value is VillageAssignableCollectiveRole {
+  return zVillageAssignableCollectiveRole.safeParse(value).success;
 }
 
 export type VillageContributionStatus = VillageContributionStatusContract;
@@ -649,51 +838,51 @@ export function isVillageContributionStatus(value: unknown): value is VillageCon
   return zVillageContributionStatus.safeParse(value).success;
 }
 
-export type VillageGroupAcceptanceMode = VillageGroupAcceptanceModeContract;
-export const VillageGroupAcceptanceMode = Object.freeze({
-  Open: zVillageGroupAcceptanceMode.parse("open"),
-  VerifiedOnly: zVillageGroupAcceptanceMode.parse("verified_only"),
-  Curated: zVillageGroupAcceptanceMode.parse("curated"),
+export type VillageCollectiveAcceptanceMode = VillageCollectiveAcceptanceModeContract;
+export const VillageCollectiveAcceptanceMode = Object.freeze({
+  Open: zVillageCollectiveAcceptanceMode.parse("open"),
+  VerifiedOnly: zVillageCollectiveAcceptanceMode.parse("verified_only"),
+  Curated: zVillageCollectiveAcceptanceMode.parse("curated"),
 } as const);
-export const AllVillageGroupAcceptanceModes = Object.freeze([VillageGroupAcceptanceMode.Open, VillageGroupAcceptanceMode.VerifiedOnly, VillageGroupAcceptanceMode.Curated]) as readonly VillageGroupAcceptanceMode[];
-export function isVillageGroupAcceptanceMode(value: unknown): value is VillageGroupAcceptanceMode {
-  return zVillageGroupAcceptanceMode.safeParse(value).success;
+export const AllVillageCollectiveAcceptanceModes = Object.freeze([VillageCollectiveAcceptanceMode.Open, VillageCollectiveAcceptanceMode.VerifiedOnly, VillageCollectiveAcceptanceMode.Curated]) as readonly VillageCollectiveAcceptanceMode[];
+export function isVillageCollectiveAcceptanceMode(value: unknown): value is VillageCollectiveAcceptanceMode {
+  return zVillageCollectiveAcceptanceMode.safeParse(value).success;
 }
 
-export type VillageGroupDataAccess = VillageGroupDataAccessContract;
-export const VillageGroupDataAccess = Object.freeze({
-  MembersOnly: zVillageGroupDataAccess.parse("members_only"),
-  Contributors: zVillageGroupDataAccess.parse("contributors"),
-  Public: zVillageGroupDataAccess.parse("public"),
+export type VillageCollectiveDataAccess = VillageCollectiveDataAccessContract;
+export const VillageCollectiveDataAccess = Object.freeze({
+  MembersOnly: zVillageCollectiveDataAccess.parse("members_only"),
+  Contributors: zVillageCollectiveDataAccess.parse("contributors"),
+  Public: zVillageCollectiveDataAccess.parse("public"),
 } as const);
-export const AllVillageGroupDataAccessPolicies = Object.freeze([VillageGroupDataAccess.MembersOnly, VillageGroupDataAccess.Contributors, VillageGroupDataAccess.Public]) as readonly VillageGroupDataAccess[];
-export function isVillageGroupDataAccess(value: unknown): value is VillageGroupDataAccess {
-  return zVillageGroupDataAccess.safeParse(value).success;
+export const AllVillageCollectiveDataAccessPolicies = Object.freeze([VillageCollectiveDataAccess.MembersOnly, VillageCollectiveDataAccess.Contributors, VillageCollectiveDataAccess.Public]) as readonly VillageCollectiveDataAccess[];
+export function isVillageCollectiveDataAccess(value: unknown): value is VillageCollectiveDataAccess {
+  return zVillageCollectiveDataAccess.safeParse(value).success;
 }
 
-export type VillageGroupRole = VillageGroupRoleContract;
-export const VillageGroupRole = Object.freeze({
-  Owner: zVillageGroupRole.parse("owner"),
-  Member: zVillageGroupRole.parse("member"),
-  Contributor: zVillageGroupRole.parse("contributor"),
-  Pending: zVillageGroupRole.parse("pending"),
+export type VillageCollectiveRole = VillageCollectiveRoleContract;
+export const VillageCollectiveRole = Object.freeze({
+  Owner: zVillageCollectiveRole.parse("owner"),
+  Member: zVillageCollectiveRole.parse("member"),
+  Contributor: zVillageCollectiveRole.parse("contributor"),
+  Pending: zVillageCollectiveRole.parse("pending"),
 } as const);
-export const AllVillageGroupRoles = Object.freeze([VillageGroupRole.Owner, VillageGroupRole.Member, VillageGroupRole.Contributor, VillageGroupRole.Pending]) as readonly VillageGroupRole[];
-export function isVillageGroupRole(value: unknown): value is VillageGroupRole {
-  return zVillageGroupRole.safeParse(value).success;
+export const AllVillageCollectiveRoles = Object.freeze([VillageCollectiveRole.Owner, VillageCollectiveRole.Member, VillageCollectiveRole.Contributor, VillageCollectiveRole.Pending]) as readonly VillageCollectiveRole[];
+export function isVillageCollectiveRole(value: unknown): value is VillageCollectiveRole {
+  return zVillageCollectiveRole.safeParse(value).success;
 }
 
-export type VillageGroupViewerRole = VillageGroupViewerRoleContract;
-export const VillageGroupViewerRole = Object.freeze({
-  None: zVillageGroupViewerRole.parse(""),
-  Owner: zVillageGroupViewerRole.parse("owner"),
-  Member: zVillageGroupViewerRole.parse("member"),
-  Contributor: zVillageGroupViewerRole.parse("contributor"),
-  Pending: zVillageGroupViewerRole.parse("pending"),
+export type VillageCollectiveViewerRole = VillageCollectiveViewerRoleContract;
+export const VillageCollectiveViewerRole = Object.freeze({
+  None: zVillageCollectiveViewerRole.parse(""),
+  Owner: zVillageCollectiveViewerRole.parse("owner"),
+  Member: zVillageCollectiveViewerRole.parse("member"),
+  Contributor: zVillageCollectiveViewerRole.parse("contributor"),
+  Pending: zVillageCollectiveViewerRole.parse("pending"),
 } as const);
-export const AllVillageGroupViewerRoles = Object.freeze([VillageGroupViewerRole.None, VillageGroupViewerRole.Owner, VillageGroupViewerRole.Member, VillageGroupViewerRole.Contributor, VillageGroupViewerRole.Pending]) as readonly VillageGroupViewerRole[];
-export function isVillageGroupViewerRole(value: unknown): value is VillageGroupViewerRole {
-  return zVillageGroupViewerRole.safeParse(value).success;
+export const AllVillageCollectiveViewerRoles = Object.freeze([VillageCollectiveViewerRole.None, VillageCollectiveViewerRole.Owner, VillageCollectiveViewerRole.Member, VillageCollectiveViewerRole.Contributor, VillageCollectiveViewerRole.Pending]) as readonly VillageCollectiveViewerRole[];
+export function isVillageCollectiveViewerRole(value: unknown): value is VillageCollectiveViewerRole {
+  return zVillageCollectiveViewerRole.safeParse(value).success;
 }
 
 export type VillageProjectNameSource = VillageProjectNameSourceContract;
