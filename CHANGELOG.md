@@ -21,6 +21,28 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
     the grouped sync arm to mirror both fields of its session by value.
 
+## [v0.30.0] - 2026-10-17
+
+### Added
+
+- Shared forward-paging contracts: `PageReader[T]`, `PageRequest`,
+  `Page[T]`, and opaque `PageToken`. Only an empty `next` ends traversal;
+  short or empty pages may still carry a continuation. Tokens are neither
+  credentials nor snapshots.
+- Local API 0.20.0 and Types 0.31.0 declare opt-in views on
+  `GET /api/v1/sync/sessions`, preserving the existing flat and grouped reads:
+  - `view=home` returns `LocalSyncSessionPage` with bounded sync/publication
+    rows, titles, redaction-safe previews, and immediate-child counts. Root
+    project and publication filters apply before paging; child reads use
+    `parentSessionId` and reject root filters.
+  - `maxItems` defaults to 25 and caps at 100. The canonical query parser
+    validates parameter presence, repeated values, and continuation bounds.
+  - `view=project-options` returns the complete metadata-only selected root
+    project picker, independent of the current project/publication filters.
+- Regenerated OpenAPI and TypeScript types, runtime schemas, and operation
+  contracts for the new paging and sync projections. Earlier released specs
+  remain unchanged.
+
 ## [v0.29.0] - 2026-10-14
 
 ### Added
