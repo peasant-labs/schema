@@ -144,7 +144,7 @@ corpus:
       provenance: *provenance
       mutation: {description: legacy rejection recorded before its decision time stays honest unknown evidence}
     - name: attempt-legacy-rejected-null-replay
-      input: {saved: *legacy-rejected, incoming: *legacy-rejected}
+      input: {saved: *legacy-rejected, incoming: {<<: *legacy-rejected, first_seen_at: 2026-10-03T10:00:00Z}}
       expected: {disposition: unchanged, status: rejected}
       classification: must-pass
       provenance: *provenance
@@ -156,7 +156,7 @@ corpus:
       provenance: *provenance
       mutation: {description: a delayed pending poll cannot erase legacy rejection evidence}
     - name: attempt-legacy-rejected-null-decision-added-conflict
-      input: {saved: *legacy-rejected, incoming: *approved}
+      input: {saved: *legacy-rejected, incoming: {<<: *legacy-rejected, decided_at: 2026-10-01T12:00:00Z}}
       expected: {status: rejected}
       classification: must-fail
       provenance: *provenance
