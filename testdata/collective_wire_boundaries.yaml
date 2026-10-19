@@ -1,7 +1,7 @@
 identity: {userId: '123e4567-e89b-12d3-a456-426614174000', incarnation: '123e4567-e89b-12d3-a456-426614174001', kind: remote-attempts, generation: '1'}
 required_names:
   scopes: [scope-port-zero, scope-slash-dot-ambiguity, scope-abbreviated-ipv4, scope-integer-ipv4, scope-hex-ipv4, scope-octal-ipv4, scope-mixed-hex-ipv4, scope-three-part-ipv4, scope-ipv4-out-of-range, scope-ordinary-ipv4, scope-decimal-ipv4-port, scope-ipv6-compressed, scope-ipv6-mapped, scope-ascii-idna, scope-unicode-host, scope-escaped-path, scope-dot-escaped-path, scope-repeated-slash, scope-canonical-path, scope-reserved-path]
-  payloads: [pending-explicit-null-decision, auto-approved-explicit-null-decision, approved-decision-nanoseconds, pending-missing-actor, pending-null-actor, pending-missing-decision, attempt-missing-ordinal, attempt-null-ordinal, attempt-missing-status, attempt-null-status, attempt-missing-recorded-time, attempt-null-recorded-time, history-valid-populated-attempt, history-missing-actor, history-null-actor, history-missing-decision, discovery-zero-counters, discovery-positive-counters, discovery-approved-missing, discovery-approved-null, discovery-approved-negative, discovery-pending-missing, discovery-pending-null, discovery-pending-negative, discovery-rejected-missing, discovery-rejected-null, discovery-rejected-negative, discovery-withdrawn-missing, discovery-withdrawn-null, discovery-withdrawn-negative, discovery-empty-response, discovery-null-response, discovery-missing-response, discovery-nested-missing-counter, discovery-counter-overflow, discovery-invalid-identity, organization-zero-counters, organization-missing-member-count, organization-null-member-count, organization-missing-transcript-count, organization-null-transcript-count, organization-negative-member-count, organization-negative-transcript-count, associations-complete-updated, associations-complete-unchanged, associations-complete-contradictory-commit, associations-complete-empty]
+  payloads: [pending-explicit-null-decision, auto-approved-explicit-null-decision, approved-decision-nanoseconds, legacy-rejected-explicit-null-decision, retracted-explicit-null-decision, revoked-explicit-null-decision, pending-missing-actor, pending-null-actor, pending-missing-decision, attempt-missing-ordinal, attempt-null-ordinal, attempt-missing-status, attempt-null-status, attempt-missing-recorded-time, attempt-null-recorded-time, history-valid-populated-attempt, history-valid-legacy-rejected-null-then-newer, history-missing-actor, history-null-actor, history-missing-decision, discovery-zero-counters, discovery-positive-counters, discovery-approved-missing, discovery-approved-null, discovery-approved-negative, discovery-pending-missing, discovery-pending-null, discovery-pending-negative, discovery-rejected-missing, discovery-rejected-null, discovery-rejected-negative, discovery-withdrawn-missing, discovery-withdrawn-null, discovery-withdrawn-negative, discovery-empty-response, discovery-null-response, discovery-missing-response, discovery-nested-missing-counter, discovery-counter-overflow, discovery-invalid-identity, organization-zero-counters, organization-missing-member-count, organization-null-member-count, organization-missing-transcript-count, organization-null-transcript-count, organization-negative-member-count, organization-negative-transcript-count, associations-complete-updated, associations-complete-unchanged, associations-complete-contradictory-commit, associations-complete-empty]
   statuses: [status-valid-complete, status-valid-partial, status-invalid-domain, status-invalid-coverage-complete, status-empty-issue-message, status-empty-issue-retry, status-missing-domains, status-null-domains, status-unsafe-count, status-contradictory-complete-association]
 scopes:
   cases:
@@ -145,6 +145,24 @@ payloads:
       classification: must-pass
       provenance: *wire
       mutation: {description: raw decision pointer and immutable creation time retain exact nanosecond precision}
+    - name: legacy-rejected-explicit-null-decision
+      input: {target: VillageShareEvent, payload: {<<: *pending, status: rejected, decided_by_actor: moderator}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: rejected history recorded before its decision time stays honest unknown evidence with an explicit null}
+    - name: retracted-explicit-null-decision
+      input: {target: VillageShareEvent, payload: {<<: *pending, status: retracted, decided_by_actor: owner}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: an owner withdrawal always records its decision time}
+    - name: revoked-explicit-null-decision
+      input: {target: VillageShareEvent, payload: {<<: *pending, status: revoked, decided_by_actor: collective}}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: *wire
+      mutation: {description: a collective removal always records its decision time}
     - name: pending-missing-actor
       input: {target: VillageShareEvent, payload: *pending, omit: [decided_by_actor]}
       expected: {valid: false}
@@ -205,6 +223,12 @@ payloads:
       classification: must-pass
       provenance: *wire
       mutation: {description: populated typed history preserves nanosecond attempt evidence}
+    - name: history-valid-legacy-rejected-null-then-newer
+      input: {target: LocalContributionHistoryResponse, payload: {<<: *history, limit: 2, total: 2, remoteAttempts: [{collectiveId: *id, transcriptId: *transcript, firstSeenAt: *time, attempt: {<<: *pending, status: rejected, decided_by_actor: moderator}}, {collectiveId: *id, transcriptId: *transcript, firstSeenAt: *time, attempt: {<<: *pending, event_num: 2, status: rejected, decided_at: '2026-10-16T14:00:00Z', decided_by_actor: moderator}}]}}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: *wire
+      mutation: {description: legacy unknown rejection evidence decodes beside a newer recorded decision in one ordered history}
     - name: history-missing-actor
       input: {target: LocalContributionHistoryResponse, payload: *history, omit: [remoteAttempts.0.attempt.decided_by_actor]}
       expected: {valid: false}
