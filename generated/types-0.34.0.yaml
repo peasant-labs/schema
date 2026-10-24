@@ -7830,8 +7830,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/VillageUUID'
+        creator:
+          $ref: '#/components/schemas/VillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/VillageCollectiveDataAccess'
         description:
@@ -7865,7 +7865,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -7918,8 +7918,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/VillageUUID'
+        creator:
+          $ref: '#/components/schemas/VillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/VillageCollectiveDataAccess'
         description:
@@ -7959,7 +7959,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -8353,6 +8353,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/TranscriptID'
+          - type: "null"
         project_display_name:
           type: string
         project_hash:
@@ -8520,6 +8524,7 @@ components:
       - published_at
       - updated_at
       - parent_session_id
+      - parent_transcript_id
       - ingested_at
       - source_format
       - git_branch
@@ -8963,7 +8968,7 @@ components:
             - string
           - type: "null"
         linked_by:
-          $ref: '#/components/schemas/VillageUUID'
+          $ref: '#/components/schemas/VillagePublicOwner'
         name:
           type: string
         owner:
@@ -9093,6 +9098,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/TranscriptID'
+          - type: "null"
         project_hash:
           $ref: '#/components/schemas/ProjectHash'
         project_name:
@@ -9129,6 +9138,7 @@ components:
       - owner
       - local_id
       - parent_session_id
+      - parent_transcript_id
       - project_hash
       - project_name
       - branch
@@ -9330,10 +9340,8 @@ components:
       type: object
     VillagePullRequestAttachment:
       properties:
-        author_user_id:
-          anyOf:
-          - $ref: '#/components/schemas/VillageUUID'
-          - type: "null"
+        author:
+          $ref: '#/components/schemas/VillagePublicOwner'
         check_run_id:
           anyOf:
           - type:
@@ -9381,11 +9389,9 @@ components:
           type: integer
         owner:
           type: string
-        requested_by_github_id:
+        requested_by:
           anyOf:
-          - type:
-            - "null"
-            - integer
+          - $ref: '#/components/schemas/VillagePublicOwner'
           - type: "null"
         state:
           $ref: '#/components/schemas/VillagePullRequestAttachmentState'
@@ -9408,8 +9414,8 @@ components:
       - head_sha
       - is_private_repository
       - state
-      - author_user_id
-      - requested_by_github_id
+      - author
+      - requested_by
       - comment_id
       - check_run_id
       - created_at
@@ -9965,6 +9971,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/TranscriptID'
+          - type: "null"
         project_display_name:
           type: string
         project_hash:
@@ -10130,6 +10140,7 @@ components:
       - published_at
       - updated_at
       - parent_session_id
+      - parent_transcript_id
       - ingested_at
       - source_format
       - git_branch
@@ -10182,14 +10193,8 @@ components:
       properties:
         attestation_type:
           type: string
-        attester_avatar:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        attester_username:
-          type: string
+        attester:
+          $ref: '#/components/schemas/VillagePublicOwner'
         created_at:
           format: date-time
           type: string
@@ -10212,8 +10217,7 @@ components:
       - attestation_type
       - note
       - created_at
-      - attester_username
-      - attester_avatar
+      - attester
       type: object
     VillageTranscriptCollective:
       properties:
@@ -10548,8 +10552,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/VillageUUID'
+        creator:
+          $ref: '#/components/schemas/VillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/VillageCollectiveDataAccess'
         description:
@@ -10590,7 +10594,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -10626,6 +10630,10 @@ components:
         parent_session_id:
           anyOf:
           - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/TranscriptID'
           - type: "null"
         published_at:
           format: date-time
@@ -10684,6 +10692,7 @@ components:
       - owner
       - local_id
       - parent_session_id
+      - parent_transcript_id
       - status
       - shared_at
       type: object
@@ -10733,8 +10742,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/VillageUUID'
+        creator:
+          $ref: '#/components/schemas/VillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/VillageCollectiveDataAccess'
         description:
@@ -10781,7 +10790,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode

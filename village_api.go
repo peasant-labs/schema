@@ -286,12 +286,14 @@ func (VillageShareEventActor) JSONSchema() (jsonschema.Schema, error) {
 }
 
 // VillageGroup is the full collective row returned by create, update, and detail
-// routes.
+// routes. Creator is the person who created the collective as this viewer may
+// see them, resolved by the server per viewer; the same holds on every
+// collective row.
 type VillageCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
-	CreatedBy                VillageUUID                     `json:"created_by"`
+	Creator                  VillagePublicOwner              `json:"creator"`
 	CreatedAt                time.Time                       `json:"created_at"`
 	UpdatedAt                time.Time                       `json:"updated_at"`
 	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
@@ -312,7 +314,7 @@ type VillageCollectiveDetailRecord struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
-	CreatedBy                VillageUUID                     `json:"created_by"`
+	Creator                  VillagePublicOwner              `json:"creator"`
 	CreatedAt                time.Time                       `json:"created_at"`
 	UpdatedAt                time.Time                       `json:"updated_at"`
 	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
@@ -349,7 +351,7 @@ type VillageUserCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
-	CreatedBy                VillageUUID                     `json:"created_by"`
+	Creator                  VillagePublicOwner              `json:"creator"`
 	CreatedAt                time.Time                       `json:"created_at"`
 	UpdatedAt                time.Time                       `json:"updated_at"`
 	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
@@ -370,7 +372,7 @@ type VillageVisibleCollective struct {
 	ID                       VillageUUID                     `json:"id"`
 	Name                     string                          `json:"name"`
 	Description              *string                         `json:"description"`
-	CreatedBy                VillageUUID                     `json:"created_by"`
+	Creator                  VillagePublicOwner              `json:"creator"`
 	CreatedAt                time.Time                       `json:"created_at"`
 	UpdatedAt                time.Time                       `json:"updated_at"`
 	AcceptanceMode           VillageGroupAcceptanceMode      `json:"acceptance_mode"`
@@ -502,74 +504,82 @@ type VillageCollectiveDetailResponse struct {
 // that carries a transcript carries its owner beside it as a
 // VillagePublicOwner, resolved for the viewer.
 type VillageTranscript struct {
-	ID                      TranscriptID                `json:"id"`
-	LocalID                 SessionID                   `json:"local_id"`
-	Title                   *string                     `json:"title"`
-	Description             *string                     `json:"description"`
-	Visibility              VillageTranscriptVisibility `json:"visibility"`
-	ModelProvider           string                      `json:"model_provider"`
-	ModelName               *string                     `json:"model_name"`
-	HarnessVersion          *string                     `json:"harness_version"`
-	SessionStart            *time.Time                  `json:"session_start"`
-	SessionEnd              *time.Time                  `json:"session_end"`
-	TurnCount               *int32                      `json:"turn_count"`
-	TokenCount              *int32                      `json:"token_count"`
-	BlobSizeBytes           *int64                      `json:"blob_size_bytes"`
-	SchemaVersion           string                      `json:"schema_version"`
-	PublishedAt             time.Time                   `json:"published_at"`
-	UpdatedAt               time.Time                   `json:"updated_at"`
-	ParentSessionID         *SessionID                  `json:"parent_session_id"`
-	IngestedAt              *time.Time                  `json:"ingested_at"`
-	SourceFormat            *SourceFormat               `json:"source_format"`
-	GitBranch               *string                     `json:"git_branch"`
-	GitRemote               *string                     `json:"git_remote"`
-	ProjectHash             ProjectHash                 `json:"project_hash"`
-	ProjectName             *string                     `json:"project_name"`
-	ProjectDisplayName      string                      `json:"project_display_name"`
-	ProjectNameSource       VillageProjectNameSource    `json:"project_name_source"`
-	ProjectRemoteLabel      string                      `json:"project_remote_label"`
-	ToolCallCount           *int32                      `json:"tool_call_count"`
-	SubagentCount           *int32                      `json:"subagent_count"`
-	DurationMs              *int64                      `json:"duration_ms"`
-	Subagents               *[]map[string]interface{}   `json:"subagents"`
-	DiagnosticsWarnings     *[]DiagnosticEntry          `json:"diagnostics_warnings"`
-	DiagnosticsPartial      *bool                       `json:"diagnostics_partial"`
-	TokensIn                *int64                      `json:"tokens_in"`
-	TokensOut               *int64                      `json:"tokens_out"`
-	TitleGenerated          *string                     `json:"title_generated"`
-	Outcome                 *SessionOutcome             `json:"outcome"`
-	FilesTouched            *int32                      `json:"files_touched"`
-	LinesChanged            *int32                      `json:"lines_changed"`
-	RetryLoops              *int32                      `json:"retry_loops"`
-	RetryTokensWasted       *int32                      `json:"retry_tokens_wasted"`
-	WithinSessionReverts    *int32                      `json:"within_session_reverts"`
-	SignalDensity           *float32                    `json:"signal_density"`
-	SpecQualityScore        *float32                    `json:"spec_quality_score"`
-	ExplorationRatio        *float32                    `json:"exploration_ratio"`
-	ScopeBreadth            *int32                      `json:"scope_breadth"`
-	DiscoveryTurns          *int32                      `json:"discovery_turns"`
-	M2TokenOutcomeRatio     *float32                    `json:"m2_token_outcome_ratio"`
-	M3UniqueToolCount       *int32                      `json:"m3_unique_tool_count"`
-	M4ErrorRecoveryCount    *int32                      `json:"m4_error_recovery_count"`
-	M4ConsecutiveErrorMax   *int32                      `json:"m4_consecutive_error_max"`
-	M5ContextUtilizationPct *float32                    `json:"m5_context_utilization_pct"`
-	M5PeakContextTokens     *int32                      `json:"m5_peak_context_tokens"`
-	M5AvgMessageTokens      *int32                      `json:"m5_avg_message_tokens"`
-	M6OutputSurvivalPct     *float32                    `json:"m6_output_survival_pct"`
-	M6LinesSurvived         *int32                      `json:"m6_lines_survived"`
-	M6LinesTotal            *int32                      `json:"m6_lines_total"`
-	M7SpecWordCount         *int32                      `json:"m7_spec_word_count"`
-	M7SpecHasExamples       *bool                       `json:"m7_spec_has_examples"`
-	M7SpecHasConstraints    *bool                       `json:"m7_spec_has_constraints"`
-	ComputedAt              *time.Time                  `json:"computed_at"`
-	ComputeVersion          *int32                      `json:"compute_version"`
-	ContentHash             *TranscriptContentHash      `json:"content_hash"`
-	LicenseID               *License                    `json:"license_id"`
-	SessionOrigin           SessionOrigin               `json:"session_origin"`
-	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
-	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
-	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
+	ID              TranscriptID                `json:"id"`
+	LocalID         SessionID                   `json:"local_id"`
+	Title           *string                     `json:"title"`
+	Description     *string                     `json:"description"`
+	Visibility      VillageTranscriptVisibility `json:"visibility"`
+	ModelProvider   string                      `json:"model_provider"`
+	ModelName       *string                     `json:"model_name"`
+	HarnessVersion  *string                     `json:"harness_version"`
+	SessionStart    *time.Time                  `json:"session_start"`
+	SessionEnd      *time.Time                  `json:"session_end"`
+	TurnCount       *int32                      `json:"turn_count"`
+	TokenCount      *int32                      `json:"token_count"`
+	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
+	SchemaVersion   string                      `json:"schema_version"`
+	PublishedAt     time.Time                   `json:"published_at"`
+	UpdatedAt       time.Time                   `json:"updated_at"`
+	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	// ParentTranscriptID is the transcript published from the session named by
+	// ParentSessionID, resolved by the server at read time within the same
+	// owner, because a session id is unique only per owner and the owner's id
+	// is not on the wire. It is null when nothing started this session, when
+	// that session is not published, or when this viewer may not read it, so
+	// it never discloses a transcript the viewer cannot open. Readers group
+	// children under parents by this id, never by matching session ids.
+	ParentTranscriptID      *TranscriptID             `json:"parent_transcript_id"`
+	IngestedAt              *time.Time                `json:"ingested_at"`
+	SourceFormat            *SourceFormat             `json:"source_format"`
+	GitBranch               *string                   `json:"git_branch"`
+	GitRemote               *string                   `json:"git_remote"`
+	ProjectHash             ProjectHash               `json:"project_hash"`
+	ProjectName             *string                   `json:"project_name"`
+	ProjectDisplayName      string                    `json:"project_display_name"`
+	ProjectNameSource       VillageProjectNameSource  `json:"project_name_source"`
+	ProjectRemoteLabel      string                    `json:"project_remote_label"`
+	ToolCallCount           *int32                    `json:"tool_call_count"`
+	SubagentCount           *int32                    `json:"subagent_count"`
+	DurationMs              *int64                    `json:"duration_ms"`
+	Subagents               *[]map[string]interface{} `json:"subagents"`
+	DiagnosticsWarnings     *[]DiagnosticEntry        `json:"diagnostics_warnings"`
+	DiagnosticsPartial      *bool                     `json:"diagnostics_partial"`
+	TokensIn                *int64                    `json:"tokens_in"`
+	TokensOut               *int64                    `json:"tokens_out"`
+	TitleGenerated          *string                   `json:"title_generated"`
+	Outcome                 *SessionOutcome           `json:"outcome"`
+	FilesTouched            *int32                    `json:"files_touched"`
+	LinesChanged            *int32                    `json:"lines_changed"`
+	RetryLoops              *int32                    `json:"retry_loops"`
+	RetryTokensWasted       *int32                    `json:"retry_tokens_wasted"`
+	WithinSessionReverts    *int32                    `json:"within_session_reverts"`
+	SignalDensity           *float32                  `json:"signal_density"`
+	SpecQualityScore        *float32                  `json:"spec_quality_score"`
+	ExplorationRatio        *float32                  `json:"exploration_ratio"`
+	ScopeBreadth            *int32                    `json:"scope_breadth"`
+	DiscoveryTurns          *int32                    `json:"discovery_turns"`
+	M2TokenOutcomeRatio     *float32                  `json:"m2_token_outcome_ratio"`
+	M3UniqueToolCount       *int32                    `json:"m3_unique_tool_count"`
+	M4ErrorRecoveryCount    *int32                    `json:"m4_error_recovery_count"`
+	M4ConsecutiveErrorMax   *int32                    `json:"m4_consecutive_error_max"`
+	M5ContextUtilizationPct *float32                  `json:"m5_context_utilization_pct"`
+	M5PeakContextTokens     *int32                    `json:"m5_peak_context_tokens"`
+	M5AvgMessageTokens      *int32                    `json:"m5_avg_message_tokens"`
+	M6OutputSurvivalPct     *float32                  `json:"m6_output_survival_pct"`
+	M6LinesSurvived         *int32                    `json:"m6_lines_survived"`
+	M6LinesTotal            *int32                    `json:"m6_lines_total"`
+	M7SpecWordCount         *int32                    `json:"m7_spec_word_count"`
+	M7SpecHasExamples       *bool                     `json:"m7_spec_has_examples"`
+	M7SpecHasConstraints    *bool                     `json:"m7_spec_has_constraints"`
+	ComputedAt              *time.Time                `json:"computed_at"`
+	ComputeVersion          *int32                    `json:"compute_version"`
+	ContentHash             *TranscriptContentHash    `json:"content_hash"`
+	LicenseID               *License                  `json:"license_id"`
+	SessionOrigin           SessionOrigin             `json:"session_origin"`
+	InputSubmissionCount    *int64                    `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID           *SessionID                `json:"root_session_id,omitempty"`
+	Purpose                 SessionPurpose            `json:"purpose,omitempty"`
+	Relationships           []SessionRelationship     `json:"relationships,omitempty"`
 }
 
 // VillageTranscriptMetadataResponse is the existing flat transcript metadata
@@ -633,15 +643,19 @@ type VillageEnrichedTranscriptShare struct {
 	Status         VillageShareStatus         `json:"status"`
 	SharedAt       time.Time                  `json:"shared_at"`
 }
+
+// VillageTranscriptAttestation is one organization's attestation on a
+// transcript. Attester is the person who made it as this viewer may see them,
+// resolved by the server per viewer, so an anonymous owner attesting their own
+// transcript stays anonymous here too.
 type VillageTranscriptAttestation struct {
-	ID               VillageUUID  `json:"id"`
-	TranscriptID     TranscriptID `json:"transcript_id"`
-	OrgLogin         string       `json:"org_login"`
-	AttestationType  string       `json:"attestation_type"`
-	Note             *string      `json:"note"`
-	CreatedAt        time.Time    `json:"created_at"`
-	AttesterUsername string       `json:"attester_username"`
-	AttesterAvatar   *string      `json:"attester_avatar"`
+	ID              VillageUUID        `json:"id"`
+	TranscriptID    TranscriptID       `json:"transcript_id"`
+	OrgLogin        string             `json:"org_login"`
+	AttestationType string             `json:"attestation_type"`
+	Note            *string            `json:"note"`
+	CreatedAt       time.Time          `json:"created_at"`
+	Attester        VillagePublicOwner `json:"attester"`
 }
 type VillageListTranscriptAttestation struct {
 	TranscriptID    TranscriptID `json:"transcript_id"`
@@ -695,6 +709,11 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 	if err := validateVillageOwnerOrganizations(r.Owner, len(r.OwnerOrgs), "schema.VillageTranscriptMetadataResponse.Validate"); err != nil {
 		return err
 	}
+	for _, attestation := range r.Attestations {
+		if err := attestation.Attester.Validate(); err != nil {
+			return err
+		}
+	}
 	for _, navigation := range r.RelationshipNavigation {
 		if err := navigation.Validate(); err != nil {
 			return err
@@ -708,76 +727,84 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 // JSON wire, and this shape preserves required fields in OpenAPI and TypeScript
 // generation. Owner is the transcript's owner as this viewer may see them.
 type VillageCollectiveTranscript struct {
-	ID                      TranscriptID                `json:"id"`
-	LocalID                 SessionID                   `json:"local_id"`
-	Title                   *string                     `json:"title"`
-	Description             *string                     `json:"description"`
-	Visibility              VillageTranscriptVisibility `json:"visibility"`
-	ModelProvider           string                      `json:"model_provider"`
-	ModelName               *string                     `json:"model_name"`
-	HarnessVersion          *string                     `json:"harness_version"`
-	SessionStart            *time.Time                  `json:"session_start"`
-	SessionEnd              *time.Time                  `json:"session_end"`
-	TurnCount               *int32                      `json:"turn_count"`
-	TokenCount              *int32                      `json:"token_count"`
-	BlobSizeBytes           *int64                      `json:"blob_size_bytes"`
-	SchemaVersion           string                      `json:"schema_version"`
-	PublishedAt             time.Time                   `json:"published_at"`
-	UpdatedAt               time.Time                   `json:"updated_at"`
-	ParentSessionID         *SessionID                  `json:"parent_session_id"`
-	IngestedAt              *time.Time                  `json:"ingested_at"`
-	SourceFormat            *SourceFormat               `json:"source_format"`
-	GitBranch               *string                     `json:"git_branch"`
-	GitRemote               *string                     `json:"git_remote"`
-	ProjectHash             ProjectHash                 `json:"project_hash"`
-	ProjectName             *string                     `json:"project_name"`
-	ProjectDisplayName      string                      `json:"project_display_name"`
-	ProjectNameSource       VillageProjectNameSource    `json:"project_name_source"`
-	ProjectRemoteLabel      string                      `json:"project_remote_label"`
-	ToolCallCount           *int32                      `json:"tool_call_count"`
-	SubagentCount           *int32                      `json:"subagent_count"`
-	DurationMs              *int64                      `json:"duration_ms"`
-	Subagents               *[]map[string]interface{}   `json:"subagents"`
-	DiagnosticsWarnings     *[]DiagnosticEntry          `json:"diagnostics_warnings"`
-	DiagnosticsPartial      *bool                       `json:"diagnostics_partial"`
-	TokensIn                *int64                      `json:"tokens_in"`
-	TokensOut               *int64                      `json:"tokens_out"`
-	TitleGenerated          *string                     `json:"title_generated"`
-	Outcome                 *SessionOutcome             `json:"outcome"`
-	FilesTouched            *int32                      `json:"files_touched"`
-	LinesChanged            *int32                      `json:"lines_changed"`
-	RetryLoops              *int32                      `json:"retry_loops"`
-	RetryTokensWasted       *int32                      `json:"retry_tokens_wasted"`
-	WithinSessionReverts    *int32                      `json:"within_session_reverts"`
-	SignalDensity           *float32                    `json:"signal_density"`
-	SpecQualityScore        *float32                    `json:"spec_quality_score"`
-	ExplorationRatio        *float32                    `json:"exploration_ratio"`
-	ScopeBreadth            *int32                      `json:"scope_breadth"`
-	DiscoveryTurns          *int32                      `json:"discovery_turns"`
-	M2TokenOutcomeRatio     *float32                    `json:"m2_token_outcome_ratio"`
-	M3UniqueToolCount       *int32                      `json:"m3_unique_tool_count"`
-	M4ErrorRecoveryCount    *int32                      `json:"m4_error_recovery_count"`
-	M4ConsecutiveErrorMax   *int32                      `json:"m4_consecutive_error_max"`
-	M5ContextUtilizationPct *float32                    `json:"m5_context_utilization_pct"`
-	M5PeakContextTokens     *int32                      `json:"m5_peak_context_tokens"`
-	M5AvgMessageTokens      *int32                      `json:"m5_avg_message_tokens"`
-	M6OutputSurvivalPct     *float32                    `json:"m6_output_survival_pct"`
-	M6LinesSurvived         *int32                      `json:"m6_lines_survived"`
-	M6LinesTotal            *int32                      `json:"m6_lines_total"`
-	M7SpecWordCount         *int32                      `json:"m7_spec_word_count"`
-	M7SpecHasExamples       *bool                       `json:"m7_spec_has_examples"`
-	M7SpecHasConstraints    *bool                       `json:"m7_spec_has_constraints"`
-	ComputedAt              *time.Time                  `json:"computed_at"`
-	ComputeVersion          *int32                      `json:"compute_version"`
-	ContentHash             *TranscriptContentHash      `json:"content_hash"`
-	LicenseID               *License                    `json:"license_id"`
-	SessionOrigin           SessionOrigin               `json:"session_origin"`
-	Owner                   VillagePublicOwner          `json:"owner"`
-	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
-	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
-	Relationships           []SessionRelationship       `json:"relationships,omitempty"`
-	PullRequests            VillagePullRequestsSummary  `json:"pull_requests"`
+	ID              TranscriptID                `json:"id"`
+	LocalID         SessionID                   `json:"local_id"`
+	Title           *string                     `json:"title"`
+	Description     *string                     `json:"description"`
+	Visibility      VillageTranscriptVisibility `json:"visibility"`
+	ModelProvider   string                      `json:"model_provider"`
+	ModelName       *string                     `json:"model_name"`
+	HarnessVersion  *string                     `json:"harness_version"`
+	SessionStart    *time.Time                  `json:"session_start"`
+	SessionEnd      *time.Time                  `json:"session_end"`
+	TurnCount       *int32                      `json:"turn_count"`
+	TokenCount      *int32                      `json:"token_count"`
+	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
+	SchemaVersion   string                      `json:"schema_version"`
+	PublishedAt     time.Time                   `json:"published_at"`
+	UpdatedAt       time.Time                   `json:"updated_at"`
+	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	// ParentTranscriptID is the transcript published from the session named by
+	// ParentSessionID, resolved by the server at read time within the same
+	// owner, because a session id is unique only per owner and the owner's id
+	// is not on the wire. It is null when nothing started this session, when
+	// that session is not published, or when this viewer may not read it, so
+	// it never discloses a transcript the viewer cannot open. Readers group
+	// children under parents by this id, never by matching session ids.
+	ParentTranscriptID      *TranscriptID              `json:"parent_transcript_id"`
+	IngestedAt              *time.Time                 `json:"ingested_at"`
+	SourceFormat            *SourceFormat              `json:"source_format"`
+	GitBranch               *string                    `json:"git_branch"`
+	GitRemote               *string                    `json:"git_remote"`
+	ProjectHash             ProjectHash                `json:"project_hash"`
+	ProjectName             *string                    `json:"project_name"`
+	ProjectDisplayName      string                     `json:"project_display_name"`
+	ProjectNameSource       VillageProjectNameSource   `json:"project_name_source"`
+	ProjectRemoteLabel      string                     `json:"project_remote_label"`
+	ToolCallCount           *int32                     `json:"tool_call_count"`
+	SubagentCount           *int32                     `json:"subagent_count"`
+	DurationMs              *int64                     `json:"duration_ms"`
+	Subagents               *[]map[string]interface{}  `json:"subagents"`
+	DiagnosticsWarnings     *[]DiagnosticEntry         `json:"diagnostics_warnings"`
+	DiagnosticsPartial      *bool                      `json:"diagnostics_partial"`
+	TokensIn                *int64                     `json:"tokens_in"`
+	TokensOut               *int64                     `json:"tokens_out"`
+	TitleGenerated          *string                    `json:"title_generated"`
+	Outcome                 *SessionOutcome            `json:"outcome"`
+	FilesTouched            *int32                     `json:"files_touched"`
+	LinesChanged            *int32                     `json:"lines_changed"`
+	RetryLoops              *int32                     `json:"retry_loops"`
+	RetryTokensWasted       *int32                     `json:"retry_tokens_wasted"`
+	WithinSessionReverts    *int32                     `json:"within_session_reverts"`
+	SignalDensity           *float32                   `json:"signal_density"`
+	SpecQualityScore        *float32                   `json:"spec_quality_score"`
+	ExplorationRatio        *float32                   `json:"exploration_ratio"`
+	ScopeBreadth            *int32                     `json:"scope_breadth"`
+	DiscoveryTurns          *int32                     `json:"discovery_turns"`
+	M2TokenOutcomeRatio     *float32                   `json:"m2_token_outcome_ratio"`
+	M3UniqueToolCount       *int32                     `json:"m3_unique_tool_count"`
+	M4ErrorRecoveryCount    *int32                     `json:"m4_error_recovery_count"`
+	M4ConsecutiveErrorMax   *int32                     `json:"m4_consecutive_error_max"`
+	M5ContextUtilizationPct *float32                   `json:"m5_context_utilization_pct"`
+	M5PeakContextTokens     *int32                     `json:"m5_peak_context_tokens"`
+	M5AvgMessageTokens      *int32                     `json:"m5_avg_message_tokens"`
+	M6OutputSurvivalPct     *float32                   `json:"m6_output_survival_pct"`
+	M6LinesSurvived         *int32                     `json:"m6_lines_survived"`
+	M6LinesTotal            *int32                     `json:"m6_lines_total"`
+	M7SpecWordCount         *int32                     `json:"m7_spec_word_count"`
+	M7SpecHasExamples       *bool                      `json:"m7_spec_has_examples"`
+	M7SpecHasConstraints    *bool                      `json:"m7_spec_has_constraints"`
+	ComputedAt              *time.Time                 `json:"computed_at"`
+	ComputeVersion          *int32                     `json:"compute_version"`
+	ContentHash             *TranscriptContentHash     `json:"content_hash"`
+	LicenseID               *License                   `json:"license_id"`
+	SessionOrigin           SessionOrigin              `json:"session_origin"`
+	Owner                   VillagePublicOwner         `json:"owner"`
+	InputSubmissionCount    *int64                     `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID           *SessionID                 `json:"root_session_id,omitempty"`
+	Purpose                 SessionPurpose             `json:"purpose,omitempty"`
+	Relationships           []SessionRelationship      `json:"relationships,omitempty"`
+	PullRequests            VillagePullRequestsSummary `json:"pull_requests"`
 }
 
 type VillageTranscriptShare struct {
@@ -843,12 +870,14 @@ type VillageTranscriptCollectivesResponse struct {
 // VillagePendingShare is one submission awaiting a collective owner's review.
 // Owner is the submitter as this viewer may see them.
 type VillagePendingShare struct {
-	TranscriptID         TranscriptID          `json:"transcript_id"`
-	Title                *string               `json:"title"`
-	ModelProvider        string                `json:"model_provider"`
-	Owner                VillagePublicOwner    `json:"owner"`
-	LocalID              SessionID             `json:"local_id"`
-	ParentSessionID      *SessionID            `json:"parent_session_id"`
+	TranscriptID    TranscriptID       `json:"transcript_id"`
+	Title           *string            `json:"title"`
+	ModelProvider   string             `json:"model_provider"`
+	Owner           VillagePublicOwner `json:"owner"`
+	LocalID         SessionID          `json:"local_id"`
+	ParentSessionID *SessionID         `json:"parent_session_id"`
+	// ParentTranscriptID follows VillageTranscript.ParentTranscriptID.
+	ParentTranscriptID   *TranscriptID         `json:"parent_transcript_id"`
 	ProjectHash          ProjectHash           `json:"project_hash"`
 	ProjectName          *string               `json:"project_name"`
 	Branch               *string               `json:"branch"`
@@ -874,6 +903,8 @@ type VillageUserCollectiveShare struct {
 	Owner           VillagePublicOwner          `json:"owner"`
 	LocalID         SessionID                   `json:"local_id"`
 	ParentSessionID *SessionID                  `json:"parent_session_id"`
+	// ParentTranscriptID follows VillageTranscript.ParentTranscriptID.
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id"`
 	// Status uses the shared lifecycle enum. Current my-shares responses emit the
 	// live subset today; terminal values are reserved for ledger history.
 	Status               VillageShareStatus    `json:"status"`
@@ -961,6 +992,9 @@ func (r VillageSessionRow) Validate() error {
 	if err := r.Owner.Validate(); err != nil {
 		return err
 	}
+	if r.Session.ParentTranscriptID != nil && (r.Session.ParentSessionID == nil || *r.Session.ParentTranscriptID == r.Session.ID) {
+		return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: parent_transcript_id is set without a parent_session_id or names the row itself; readers would fold the session under the wrong parent; resolve the parent from parent_session_id within the same owner, or emit null")
+	}
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "VillageSessionRow.session.input_submission_count"); err != nil {
 		return err
 	}
@@ -973,7 +1007,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -982,7 +1016,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Pending.InputSubmissionCount, "VillageSessionRow.pending.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Pending.TranscriptID != r.Session.ID || !reflect.DeepEqual(r.Pending.Owner, r.Owner) || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
+		if r.Pending.TranscriptID != r.Session.ID || !reflect.DeepEqual(r.Pending.Owner, r.Owner) || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: pending identity or inputSubmissionCount differs from session; the review route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -991,7 +1025,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.MyShare.InputSubmissionCount, "VillageSessionRow.myShare.input_submission_count"); err != nil {
 			return err
 		}
-		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1220,16 +1254,19 @@ type VillageLinkRepositoryRequest struct {
 	InstallationID *int64 `json:"installation_id,omitempty"`
 }
 
+// VillageLinkedRepository is one repository linked to a collective. LinkedBy
+// is the person who linked it as this viewer may see them, resolved by the
+// server per viewer.
 type VillageLinkedRepository struct {
-	ID             VillageUUID `json:"id"`
-	GroupID        VillageUUID `json:"group_id"`
-	Owner          string      `json:"owner"`
-	Name           string      `json:"name"`
-	InstallationID int64       `json:"installation_id"`
-	IsPrivate      bool        `json:"is_private"`
-	LinkedBy       VillageUUID `json:"linked_by"`
-	LastSyncedAt   *time.Time  `json:"last_synced_at"`
-	CreatedAt      *time.Time  `json:"created_at"`
+	ID             VillageUUID        `json:"id"`
+	GroupID        VillageUUID        `json:"group_id"`
+	Owner          string             `json:"owner"`
+	Name           string             `json:"name"`
+	InstallationID int64              `json:"installation_id"`
+	IsPrivate      bool               `json:"is_private"`
+	LinkedBy       VillagePublicOwner `json:"linked_by"`
+	LastSyncedAt   *time.Time         `json:"last_synced_at"`
+	CreatedAt      *time.Time         `json:"created_at"`
 }
 
 type VillageLinkedRepositoriesResponse struct {

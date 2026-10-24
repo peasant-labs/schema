@@ -3243,9 +3243,12 @@ paths:
       - transcripts
   /api/v1/transcripts:
     get:
-      description: List authorized transcripts using the existing global, recent,
+      description: 'List authorized transcripts using the existing global, recent,
         explore, profile, project, and search filters. view=grouped returns grouped
-        list items; omitting view preserves the flat transcript array.
+        list items; omitting view preserves the flat transcript array. The owner and
+        org filters match only transcripts whose owner this viewer may see as a profile:
+        a person shown to this viewer as anonymous never matches a username or an
+        organization filter, so a filter cannot reveal who an anonymous owner is.'
       operationId: listTranscripts
       parameters:
       - description: Set to grouped to request helper-group list items; omission preserves
@@ -3272,9 +3275,13 @@ paths:
         name: provider
         schema:
           type: string
-      - in: query
+      - description: Username filter. Matches only owners this viewer may see as a
+          profile; an owner shown as anonymous never matches.
+        in: query
         name: owner
         schema:
+          description: Username filter. Matches only owners this viewer may see as
+            a profile; an owner shown as anonymous never matches.
           type: string
       - in: query
         name: project
@@ -3284,9 +3291,13 @@ paths:
         name: repo
         schema:
           type: string
-      - in: query
+      - description: Organization filter. Matches only owners this viewer may see
+          as a profile; an owner shown as anonymous never matches.
+        in: query
         name: org
         schema:
+          description: Organization filter. Matches only owners this viewer may see
+            as a profile; an owner shown as anonymous never matches.
           type: string
       - in: query
         name: tags
@@ -7076,8 +7087,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/SchemaVillageUUID'
+        creator:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/SchemaVillageCollectiveDataAccess'
         description:
@@ -7111,7 +7122,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -7164,8 +7175,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/SchemaVillageUUID'
+        creator:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/SchemaVillageCollectiveDataAccess'
         description:
@@ -7205,7 +7216,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -7599,6 +7610,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SchemaSessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaTranscriptID'
+          - type: "null"
         project_display_name:
           type: string
         project_hash:
@@ -7766,6 +7781,7 @@ components:
       - published_at
       - updated_at
       - parent_session_id
+      - parent_transcript_id
       - ingested_at
       - source_format
       - git_branch
@@ -8209,7 +8225,7 @@ components:
             - string
           - type: "null"
         linked_by:
-          $ref: '#/components/schemas/SchemaVillageUUID'
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         name:
           type: string
         owner:
@@ -8339,6 +8355,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SchemaSessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaTranscriptID'
+          - type: "null"
         project_hash:
           $ref: '#/components/schemas/SchemaProjectHash'
         project_name:
@@ -8375,6 +8395,7 @@ components:
       - owner
       - local_id
       - parent_session_id
+      - parent_transcript_id
       - project_hash
       - project_name
       - branch
@@ -8565,10 +8586,8 @@ components:
       type: object
     SchemaVillagePullRequestAttachment:
       properties:
-        author_user_id:
-          anyOf:
-          - $ref: '#/components/schemas/SchemaVillageUUID'
-          - type: "null"
+        author:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         check_run_id:
           anyOf:
           - type:
@@ -8616,11 +8635,9 @@ components:
           type: integer
         owner:
           type: string
-        requested_by_github_id:
+        requested_by:
           anyOf:
-          - type:
-            - "null"
-            - integer
+          - $ref: '#/components/schemas/SchemaVillagePublicOwner'
           - type: "null"
         state:
           $ref: '#/components/schemas/SchemaVillagePullRequestAttachmentState'
@@ -8643,8 +8660,8 @@ components:
       - head_sha
       - is_private_repository
       - state
-      - author_user_id
-      - requested_by_github_id
+      - author
+      - requested_by
       - comment_id
       - check_run_id
       - created_at
@@ -9200,6 +9217,10 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SchemaSessionID'
           - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaTranscriptID'
+          - type: "null"
         project_display_name:
           type: string
         project_hash:
@@ -9365,6 +9386,7 @@ components:
       - published_at
       - updated_at
       - parent_session_id
+      - parent_transcript_id
       - ingested_at
       - source_format
       - git_branch
@@ -9417,14 +9439,8 @@ components:
       properties:
         attestation_type:
           type: string
-        attester_avatar:
-          anyOf:
-          - type:
-            - "null"
-            - string
-          - type: "null"
-        attester_username:
-          type: string
+        attester:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         created_at:
           format: date-time
           type: string
@@ -9447,8 +9463,7 @@ components:
       - attestation_type
       - note
       - created_at
-      - attester_username
-      - attester_avatar
+      - attester
       type: object
     SchemaVillageTranscriptCollective:
       properties:
@@ -9783,8 +9798,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/SchemaVillageUUID'
+        creator:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/SchemaVillageCollectiveDataAccess'
         description:
@@ -9825,7 +9840,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode
@@ -9861,6 +9876,10 @@ components:
         parent_session_id:
           anyOf:
           - $ref: '#/components/schemas/SchemaSessionID'
+          - type: "null"
+        parent_transcript_id:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaTranscriptID'
           - type: "null"
         published_at:
           format: date-time
@@ -9919,6 +9938,7 @@ components:
       - owner
       - local_id
       - parent_session_id
+      - parent_transcript_id
       - status
       - shared_at
       type: object
@@ -9968,8 +9988,8 @@ components:
         created_at:
           format: date-time
           type: string
-        created_by:
-          $ref: '#/components/schemas/SchemaVillageUUID'
+        creator:
+          $ref: '#/components/schemas/SchemaVillagePublicOwner'
         data_access:
           $ref: '#/components/schemas/SchemaVillageCollectiveDataAccess'
         description:
@@ -10016,7 +10036,7 @@ components:
       - id
       - name
       - description
-      - created_by
+      - creator
       - created_at
       - updated_at
       - acceptance_mode

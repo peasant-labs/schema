@@ -3955,6 +3955,7 @@ export const zVillagePendingShare = z.object({
     model_provider: z.string(),
     owner: zVillagePublicOwner,
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.nullable(),
     project_hash: zProjectHash,
     project_name: z.string().nullable(),
     purpose: zSessionPurpose.optional(),
@@ -4214,6 +4215,7 @@ export const zVillageCollectiveTranscript = z.object({
     outcome: zSessionOutcome.nullable(),
     owner: zVillagePublicOwner,
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.nullable(),
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name: z.string().nullable(),
@@ -4320,6 +4322,7 @@ export const zVillageTranscript = z.object({
     model_provider: z.string(),
     outcome: zSessionOutcome.nullable(),
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.nullable(),
     project_display_name: z.string(),
     project_hash: zProjectHash,
     project_name: z.string().nullable(),
@@ -4620,7 +4623,7 @@ export type SyncPushResponse = z.infer<typeof zSyncPushResponse>;
 export const zVillageCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime(),
-    created_by: zVillageUUID,
+    creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
     display_members: z.boolean(),
@@ -4638,7 +4641,7 @@ export type VillageCollective = z.infer<typeof zVillageCollective>;
 export const zVillageCollectiveDetailRecord = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime(),
-    created_by: zVillageUUID,
+    creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
     display_members: z.boolean(),
@@ -4739,7 +4742,7 @@ export const zVillageLinkedRepository = z.object({
     installation_id: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     is_private: z.boolean(),
     last_synced_at: z.iso.datetime().nullable(),
-    linked_by: zVillageUUID,
+    linked_by: zVillagePublicOwner,
     name: z.string(),
     owner: z.string()
 });
@@ -4783,7 +4786,7 @@ export const zVillagePublicCollective = z.object({
 export type VillagePublicCollective = z.infer<typeof zVillagePublicCollective>;
 
 export const zVillagePullRequestAttachment = z.object({
-    author_user_id: zVillageUUID.nullable(),
+    author: zVillagePublicOwner,
     check_run_id: z.int().nullable(),
     comment_id: z.int().nullable(),
     confirmed_at: z.iso.datetime().nullable(),
@@ -4796,7 +4799,7 @@ export const zVillagePullRequestAttachment = z.object({
     name: z.string(),
     number: z.int(),
     owner: z.string(),
-    requested_by_github_id: z.int().nullable(),
+    requested_by: zVillagePublicOwner.nullable(),
     state: zVillagePullRequestAttachmentState,
     title: z.string().nullable(),
     updated_at: z.iso.datetime()
@@ -4828,8 +4831,7 @@ export type VillageTag = z.infer<typeof zVillageTag>;
 
 export const zVillageTranscriptAttestation = z.object({
     attestation_type: z.string(),
-    attester_avatar: z.string().nullable(),
-    attester_username: z.string(),
+    attester: zVillagePublicOwner,
     created_at: z.iso.datetime(),
     id: zVillageUUID,
     note: z.string().nullable(),
@@ -4939,7 +4941,7 @@ export type VillageUser = z.infer<typeof zVillageUser>;
 export const zVillageUserCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime(),
-    created_by: zVillageUUID,
+    creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
     display_members: z.boolean(),
@@ -4977,6 +4979,7 @@ export const zVillageUserCollectiveShare = z.object({
     model_provider: z.string(),
     owner: zVillagePublicOwner,
     parent_session_id: zSessionID.nullable(),
+    parent_transcript_id: zTranscriptID.nullable(),
     published_at: z.iso.datetime(),
     purpose: zSessionPurpose.optional(),
     relationships: z.array(zSessionRelationship).optional(),
@@ -5002,6 +5005,7 @@ export const zVillageSessionRow = z.object({
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionRow during grouped read validation: " + reason });
     const s = value.session;
+    if (s.parent_transcript_id != null && (s.parent_session_id == null || s.parent_transcript_id === s.id)) fail("parent_transcript_id is set without a parent_session_id or names the row itself; resolve the parent within the same owner, or emit null");
     const arms = [value.collective, value.pending, value.myShare, value.contributable].filter(v => v != null);
     if (arms.length > 1) fail("multiple route arms supplied; retain the originating route only");
     const equal = (a: unknown, b: unknown): boolean => {
@@ -5017,9 +5021,9 @@ export const zVillageSessionRow = z.object({
     };
     for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
-    check(value.pending, [...graph, "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.collective, [...graph, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    check(value.pending, [...graph, "parent_transcript_id", "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
+    check(value.myShare, [...graph, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
   });
 
@@ -5134,7 +5138,7 @@ export type VillageUserStats = z.infer<typeof zVillageUserStats>;
 export const zVillageVisibleCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime(),
-    created_by: zVillageUUID,
+    creator: zVillagePublicOwner,
     data_access: zVillageCollectiveDataAccess,
     description: z.string().nullable(),
     display_members: z.boolean(),

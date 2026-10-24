@@ -1581,6 +1581,11 @@ export interface components {
         SchemaVillageCollectiveRole: Schema.VillageCollectiveRole;
         SchemaVillagePromptRequest: Schema.VillagePromptRequest;
         /**
+         * Village Public Owner
+         * @description A person as another viewer sees them. The server resolves anonymity per viewer; consumers render what they receive and never re-derive the rule. profile carries id, username, display_name, and avatar_url; anonymous carries only its kind, with no id. Readers treat an unknown kind as anonymous.
+         */
+        SchemaVillagePublicOwner: Schema.VillagePublicOwner;
+        /**
          * Village Pull Request Attachment State
          * @description Current lifecycle state of a pull request's prompt attachment
          * @example requested

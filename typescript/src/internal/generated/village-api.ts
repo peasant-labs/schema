@@ -1025,7 +1025,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. */
+        /** @description List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. The owner and org filters match only transcripts whose owner this viewer may see as a profile: a person shown to this viewer as anonymous never matches a username or an organization filter, so a filter cannot reveal who an anonymous owner is. */
         get: operations["listTranscripts"];
         put?: never;
         post?: never;
@@ -5706,9 +5706,11 @@ export interface operations {
                 limit?: number;
                 q?: string;
                 provider?: string;
+                /** @description Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 owner?: string;
                 project?: string;
                 repo?: string;
+                /** @description Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 org?: string;
                 tags?: string;
                 origin?: components["schemas"]["SchemaSessionOrigin"];

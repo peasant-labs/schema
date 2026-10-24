@@ -143,11 +143,72 @@ decode:
       provenance: {source: boundary, ref: public-owner-kinds}
       mutation: {description: sends an empty kind}
 
+# responses: whole responses that show a person, checked by their Validate.
+# target names the response; anonymous shows the person as anonymous; orgs is
+# how many organizations sit beside them (owner_orgs or github_orgs).
+responses:
+  cases:
+    - name: list-row-anonymous-owner-with-orgs-refused
+      input: {target: list_row, anonymous: true, orgs: 1}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: lists the anonymous owner's organization beside them on a list row}
+    - name: list-row-anonymous-owner-without-orgs
+      input: {target: list_row, anonymous: true, orgs: 0}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: shows an anonymous owner with no organizations on a list row}
+    - name: list-row-profile-owner-with-orgs
+      input: {target: list_row, anonymous: false, orgs: 1}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: lists a shown owner's organization}
+    - name: metadata-anonymous-owner-with-orgs-refused
+      input: {target: metadata, anonymous: true, orgs: 1}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: lists the anonymous owner's organization beside them on the metadata response}
+    - name: metadata-anonymous-owner-without-orgs
+      input: {target: metadata, anonymous: true, orgs: 0}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: shows an anonymous owner with no organizations on the metadata response}
+    - name: grouped-detail-anonymous-member-with-orgs-refused
+      input: {target: grouped_detail, anonymous: true, orgs: 1}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: lists an anonymous member's organization in the grouped collective roster}
+    - name: flat-detail-anonymous-member-with-orgs-refused
+      input: {target: flat_detail, anonymous: true, orgs: 1}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: lists an anonymous member's organization in the flat collective roster}
+    - name: flat-detail-anonymous-member-without-orgs
+      input: {target: flat_detail, anonymous: true, orgs: 0}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-organizations}
+      mutation: {description: shows an anonymous member with no organizations in the flat collective roster}
+    - name: flat-detail-unresolved-transcript-owner-refused
+      input: {target: flat_detail_transcript, anonymous: false, orgs: 0}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: leaves a collective transcript's owner unresolved in the flat collective detail}
+
 # surfaces pins where the served Village API carries a person.
 #
 # public_owner_properties is the exact set of component properties that hold a
-# VillagePublicOwner. self_operations may return the caller's own complete
-# VillageUser; no other operation may reach it. forbidden_properties may not
+# VillagePublicOwner. self_operations return only the caller's own record
+# (/auth/me, and the CLI sign-in exchange that hands the caller its own user
+# id); no other operation may reach VillageUser. forbidden_properties may not
 # appear on any component another viewer's response reaches.
 surfaces:
   public_owner_properties:
@@ -161,8 +222,17 @@ surfaces:
     - SchemaVillageCollectiveContributor.contributor
     - SchemaPullTranscriptInfo.owner
     - SchemaPullAnnotation.author
+    - SchemaVillageTranscriptAttestation.attester
+    - SchemaVillagePullRequestAttachment.author
+    - SchemaVillagePullRequestAttachment.requested_by
+    - SchemaVillageCollective.creator
+    - SchemaVillageCollectiveDetailRecord.creator
+    - SchemaVillageUserCollective.creator
+    - SchemaVillageVisibleCollective.creator
+    - SchemaVillageLinkedRepository.linked_by
   self_operations:
     - getAuthenticatedVillageUser
+    - cliExchangeCode
   forbidden_properties:
     - owner_id
     - owner_username
@@ -176,7 +246,14 @@ surfaces:
     - is_discoverable
     - provider_user_id
     - provider_username
+    - attester_username
+    - attester_avatar
+    - author_user_id
+    - requested_by_github_id
+    - created_by
+    - user_id
 
 required_names:
+  responses: [list-row-anonymous-owner-with-orgs-refused, list-row-anonymous-owner-without-orgs, list-row-profile-owner-with-orgs, metadata-anonymous-owner-with-orgs-refused, metadata-anonymous-owner-without-orgs, grouped-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-without-orgs, flat-detail-unresolved-transcript-owner-refused]
   encode: [profile-exact-fields, profile-null-display-name-and-avatar, anonymous-exact-fields, anonymous-with-id-refused, anonymous-with-username-refused, anonymous-with-avatar-refused, profile-without-username-refused, profile-noncanonical-id-refused, undefined-kind-refused-for-producers, zero-value-refused]
   decode: [profile-reads-profile, own-profile-is-the-viewer, anonymous-is-never-the-viewer, unknown-kind-reads-as-anonymous, anonymous-extra-fields-are-not-kept, profile-later-field-ignored, profile-missing-display-name-refused, profile-missing-id-refused, profile-empty-username-refused, null-refused, missing-kind-refused, empty-kind-refused]

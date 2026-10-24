@@ -437,10 +437,10 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		Limit    int                  `query:"limit"`
 		Query    string               `query:"q"`
 		Provider string               `query:"provider"`
-		Owner    string               `query:"owner"`
+		Owner    string               `query:"owner" description:"Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
 		Project  string               `query:"project"`
 		Repo     string               `query:"repo"`
-		Org      string               `query:"org"`
+		Org      string               `query:"org" description:"Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
 		Tags     string               `query:"tags"`
 		Origin   schema.SessionOrigin `query:"origin"`
 		Sort     string               `query:"sort"`
@@ -485,7 +485,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		})}, response: new(schema.VillageOrganizationCollectivesResponse), errorStatuses: []int{400, 404, 500}},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts", id: "listTranscripts", tag: "transcripts",
-			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
+			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. The owner and org filters match only transcripts whose owner this viewer may see as a profile: a person shown to this viewer as anonymous never matches a username or an organization filter, so a filter cannot reveal who an anonymous owner is.",
 			requests:    []interface{}{transcriptListQuery}, responseAlternatives: []interface{}{new(schema.VillageTranscriptListResponse), new(schema.VillageSessionListPayload)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
 		},

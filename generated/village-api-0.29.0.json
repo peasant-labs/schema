@@ -4997,7 +4997,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
+        "description": "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. The owner and org filters match only transcripts whose owner this viewer may see as a profile: a person shown to this viewer as anonymous never matches a username or an organization filter, so a filter cannot reveal who an anonymous owner is.",
         "operationId": "listTranscripts",
         "parameters": [
           {
@@ -5040,7 +5040,9 @@
           {
             "name": "owner",
             "in": "query",
+            "description": "Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches.",
             "schema": {
+              "description": "Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches.",
               "type": "string"
             }
           },
@@ -5061,7 +5063,9 @@
           {
             "name": "org",
             "in": "query",
+            "description": "Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches.",
             "schema": {
+              "description": "Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches.",
               "type": "string"
             }
           },
@@ -10991,8 +10995,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "created_by": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
+          "creator": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "data_access": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
@@ -11050,7 +11054,7 @@
           "id",
           "name",
           "description",
-          "created_by",
+          "creator",
           "created_at",
           "updated_at",
           "acceptance_mode",
@@ -11118,8 +11122,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "created_by": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
+          "creator": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "data_access": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
@@ -11194,7 +11198,7 @@
           "id",
           "name",
           "description",
-          "created_by",
+          "creator",
           "created_at",
           "updated_at",
           "acceptance_mode",
@@ -11910,6 +11914,16 @@
               }
             ]
           },
+          "parent_transcript_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaTranscriptID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project_display_name": {
             "type": "string"
           },
@@ -12230,6 +12244,7 @@
           "published_at",
           "updated_at",
           "parent_session_id",
+          "parent_transcript_id",
           "ingested_at",
           "source_format",
           "git_branch",
@@ -12872,7 +12887,7 @@
             ]
           },
           "linked_by": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "name": {
             "type": "string"
@@ -13076,6 +13091,16 @@
               }
             ]
           },
+          "parent_transcript_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaTranscriptID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project_hash": {
             "$ref": "#/components/schemas/SchemaProjectHash"
           },
@@ -13139,6 +13164,7 @@
           "owner",
           "local_id",
           "parent_session_id",
+          "parent_transcript_id",
           "project_hash",
           "project_name",
           "branch",
@@ -13411,15 +13437,8 @@
       },
       "SchemaVillagePullRequestAttachment": {
         "properties": {
-          "author_user_id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SchemaVillageUUID"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "author": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "check_run_id": {
             "anyOf": [
@@ -13510,13 +13529,10 @@
           "owner": {
             "type": "string"
           },
-          "requested_by_github_id": {
+          "requested_by": {
             "anyOf": [
               {
-                "type": [
-                  "null",
-                  "integer"
-                ]
+                "$ref": "#/components/schemas/SchemaVillagePublicOwner"
               },
               {
                 "type": "null"
@@ -13554,8 +13570,8 @@
           "head_sha",
           "is_private_repository",
           "state",
-          "author_user_id",
-          "requested_by_github_id",
+          "author",
+          "requested_by",
           "comment_id",
           "check_run_id",
           "created_at",
@@ -14535,6 +14551,16 @@
               }
             ]
           },
+          "parent_transcript_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaTranscriptID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "project_display_name": {
             "type": "string"
           },
@@ -14852,6 +14878,7 @@
           "published_at",
           "updated_at",
           "parent_session_id",
+          "parent_transcript_id",
           "ingested_at",
           "source_format",
           "git_branch",
@@ -14907,21 +14934,8 @@
           "attestation_type": {
             "type": "string"
           },
-          "attester_avatar": {
-            "anyOf": [
-              {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "attester_username": {
-            "type": "string"
+          "attester": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "created_at": {
             "format": "date-time",
@@ -14957,8 +14971,7 @@
           "attestation_type",
           "note",
           "created_at",
-          "attester_username",
-          "attester_avatar"
+          "attester"
         ],
         "type": "object"
       },
@@ -15482,8 +15495,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "created_by": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
+          "creator": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "data_access": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
@@ -15550,7 +15563,7 @@
           "id",
           "name",
           "description",
-          "created_by",
+          "creator",
           "created_at",
           "updated_at",
           "acceptance_mode",
@@ -15601,6 +15614,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/SchemaSessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parent_transcript_id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaTranscriptID"
               },
               {
                 "type": "null"
@@ -15706,6 +15729,7 @@
           "owner",
           "local_id",
           "parent_session_id",
+          "parent_transcript_id",
           "status",
           "shared_at"
         ],
@@ -15772,8 +15796,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "created_by": {
-            "$ref": "#/components/schemas/SchemaVillageUUID"
+          "creator": {
+            "$ref": "#/components/schemas/SchemaVillagePublicOwner"
           },
           "data_access": {
             "$ref": "#/components/schemas/SchemaVillageCollectiveDataAccess"
@@ -15857,7 +15881,7 @@
           "id",
           "name",
           "description",
-          "created_by",
+          "creator",
           "created_at",
           "updated_at",
           "acceptance_mode",

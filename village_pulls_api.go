@@ -80,6 +80,12 @@ func (VillagePromptsCheckMode) JSONSchema() (jsonschema.Schema, error) {
 // VillagePullRequestAttachment is one pull request's attachment row. Title and
 // HeadRef are the pull request's title and head branch; they are null when
 // Village does not know them.
+//
+// Author is the pull request's author and RequestedBy the person who asked
+// for prompts, each as this viewer may see them, resolved by the server per
+// viewer. RequestedBy is null when no request was recorded. A requester
+// without a Village account is anonymous, exactly like a hidden one, so the
+// shape never reveals whether a GitHub user has a Village account.
 type VillagePullRequestAttachment struct {
 	ID                  VillageUUID                       `json:"id"`
 	Owner               string                            `json:"owner"`
@@ -90,8 +96,8 @@ type VillagePullRequestAttachment struct {
 	HeadSHA             string                            `json:"head_sha"`
 	IsPrivateRepository bool                              `json:"is_private_repository"`
 	State               VillagePullRequestAttachmentState `json:"state"`
-	AuthorUserID        *VillageUUID                      `json:"author_user_id"`
-	RequestedByGithubID *int64                            `json:"requested_by_github_id"`
+	Author              VillagePublicOwner                `json:"author"`
+	RequestedBy         *VillagePublicOwner               `json:"requested_by"`
 	CommentID           *int64                            `json:"comment_id"`
 	CheckRunID          *int64                            `json:"check_run_id"`
 	CreatedAt           time.Time                         `json:"created_at"`

@@ -64,6 +64,11 @@ required_names:
   - village-collective-member-count-mismatch
   - village-collective-owner-mismatch
   - village-anonymous-owner-mirrored
+  - pending-owner-mismatch
+  - my-share-owner-mismatch
+  - parent-transcript-id-mismatch
+  - parent-transcript-id-without-parent-session
+  - parent-transcript-id-resolved
   - village-pending-member-mirrors
   - village-pending-member-identity-mismatch
   - village-my-share-member-mirrors
@@ -121,6 +126,7 @@ cases:
                   published_at: '2026-09-08T00:00:00Z'
                   updated_at: '2026-09-08T00:00:00Z'
                   parent_session_id: null
+                  parent_transcript_id: null
                   ingested_at: null
                   source_format: null
                   git_branch: null
@@ -359,7 +365,7 @@ cases:
       mutation: {description: 'eleven released base fields do not fabricate unavailable prompts settings'}
       input:
         schema: VillageCollectiveDetailRecord
-        payload: &group {id: '123e4567-e89b-12d3-a456-426614174001', name: collective, description: null, created_by: '123e4567-e89b-12d3-a456-426614174001', created_at: '2026-09-08T00:00:00Z', updated_at: '2026-09-08T00:00:00Z', acceptance_mode: open, data_access: public, linked_github_org: null, display_members: false, transcript_deletion_policy: user_choice}
+        payload: &group {id: '123e4567-e89b-12d3-a456-426614174001', name: collective, description: null, creator: *villageOwnerProfile, created_at: '2026-09-08T00:00:00Z', updated_at: '2026-09-08T00:00:00Z', acceptance_mode: open, data_access: public, linked_github_org: null, display_members: false, transcript_deletion_policy: user_choice}
       expected: {valid: true}
     - name: group-present-false-prompts
       classification: must-pass
@@ -636,8 +642,14 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'pending route uses transcript_id and branch aliases without losing member context'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: &pending {transcript_id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_name: null, branch: null, owner: *villageOwnerProfile, shared_at: '2026-09-08T00:00:00Z'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: &pending {transcript_id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, parent_transcript_id: null, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_name: null, branch: null, owner: *villageOwnerProfile, shared_at: '2026-09-08T00:00:00Z'}}}]}}
       expected: {valid: true}
+    - name: pending-owner-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'pending arm shows the submitter anonymous while the row shows the profile'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: {<<: *pending, owner: {kind: anonymous}}}}]}}
+      expected: {valid: false}
     - name: village-pending-member-identity-mismatch
       classification: must-fail
       provenance: *requirement
@@ -648,7 +660,31 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'my-shares helper keeps individual review status and usage mirrors'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: &myShare {id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, model_name: null, visibility: public, published_at: '2026-09-08T00:00:00Z', turn_count: 5, tokens_in: null, tokens_out: null, owner: *villageOwnerProfile, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, status: approved, shared_at: '2026-09-08T00:00:00Z'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: &myShare {id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, model_name: null, visibility: public, published_at: '2026-09-08T00:00:00Z', turn_count: 5, tokens_in: null, tokens_out: null, owner: *villageOwnerProfile, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, parent_transcript_id: null, status: approved, shared_at: '2026-09-08T00:00:00Z'}}}]}}
+      expected: {valid: true}
+    - name: my-share-owner-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'own-share arm shows the owner anonymous while the row shows the profile'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: {<<: *myShare, owner: {kind: anonymous}}}}]}}
+      expected: {valid: false}
+    - name: parent-transcript-id-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the parent transcript is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'own-share arm names a parent transcript the session row does not'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: {<<: *myShare, parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}}}]}}
+      expected: {valid: false}
+    - name: parent-transcript-id-without-parent-session
+      classification: must-fail
+      provenance: {source: requirement, ref: 'a parent transcript is resolved from the named parent session'}
+      mutation: {description: 'names a parent transcript on a session that names no parent session'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}}}]}}
+      expected: {valid: false}
+    - name: parent-transcript-id-resolved
+      classification: must-pass
+      provenance: {source: requirement, ref: 'a parent transcript is resolved from the named parent session'}
+      mutation: {description: 'names the resolved parent transcript beside its parent session on the row and the own-share arm'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, parent_session_id: '123e4567-e89b-12d3-a456-426614174008', parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}, myShare: {<<: *myShare, parent_session_id: '123e4567-e89b-12d3-a456-426614174008', parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}}}]}}
       expected: {valid: true}
     - name: village-my-share-member-count-mismatch
       classification: must-fail

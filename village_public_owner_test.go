@@ -41,17 +41,25 @@ type publicOwnerDecodeExpected struct {
 	IsAccount bool `yaml:"is_account"`
 }
 
+type publicOwnerResponseInput struct {
+	Target    string `yaml:"target"`
+	Anonymous bool   `yaml:"anonymous"`
+	Orgs      int    `yaml:"orgs"`
+}
+
 type publicOwnerFixtures struct {
-	Encode   testcase.Corpus[publicOwnerEncodeInput, publicOwnerEncodeExpected] `yaml:"encode"`
-	Decode   testcase.Corpus[publicOwnerDecodeInput, publicOwnerDecodeExpected] `yaml:"decode"`
-	Surfaces struct {
+	Encode    testcase.Corpus[publicOwnerEncodeInput, publicOwnerEncodeExpected] `yaml:"encode"`
+	Decode    testcase.Corpus[publicOwnerDecodeInput, publicOwnerDecodeExpected] `yaml:"decode"`
+	Responses testcase.Corpus[publicOwnerResponseInput, villageExpected]         `yaml:"responses"`
+	Surfaces  struct {
 		PublicOwnerProperties []string `yaml:"public_owner_properties"`
 		SelfOperations        []string `yaml:"self_operations"`
 		ForbiddenProperties   []string `yaml:"forbidden_properties"`
 	} `yaml:"surfaces"`
 	RequiredNames struct {
-		Encode []string `yaml:"encode"`
-		Decode []string `yaml:"decode"`
+		Encode    []string `yaml:"encode"`
+		Decode    []string `yaml:"decode"`
+		Responses []string `yaml:"responses"`
 	} `yaml:"required_names"`
 }
 
@@ -67,6 +75,9 @@ func loadPublicOwnerFixtures(t *testing.T) publicOwnerFixtures {
 	assertcase.RequireValid(t, f.Decode)
 	requirePublicOwnerNames(t, "encode", f.RequiredNames.Encode, namesOf(f.Encode))
 	requirePublicOwnerNames(t, "decode", f.RequiredNames.Decode, namesOf(f.Decode))
+	assertcase.RequireMin(t, f.Responses, 9)
+	assertcase.RequireValid(t, f.Responses)
+	requirePublicOwnerNames(t, "responses", f.RequiredNames.Responses, namesOf(f.Responses))
 	if len(f.Surfaces.PublicOwnerProperties) == 0 || len(f.Surfaces.SelfOperations) == 0 || len(f.Surfaces.ForbiddenProperties) == 0 {
 		t.Fatal("public owner surfaces fixture is empty; the surface checks would assert nothing")
 	}
@@ -128,6 +139,51 @@ func TestVillagePublicOwnerReadsEveryKindFailClosed(t *testing.T) {
 			}
 			if _, err := json.Marshal(owner); err != nil {
 				t.Fatalf("re-encoding a decoded value failed: %v", err)
+			}
+		})
+	}
+}
+
+// TestVillagePublicOwnerResponsesKeepAnonymousPeopleAnonymous checks the
+// whole-response rules: no organization beside an anonymous person, and no
+// unresolved person in a collective detail.
+func TestVillagePublicOwnerResponsesKeepAnonymousPeopleAnonymous(t *testing.T) {
+	f := loadPublicOwnerFixtures(t)
+	for _, c := range f.Responses.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			person := schema.NewVillagePublicProfile("123e4567-e89b-12d3-a456-426614174001", "alice", nil, nil)
+			if c.Input.Anonymous {
+				person = schema.AnonymousVillageOwner()
+			}
+			orgs := make([]string, c.Input.Orgs)
+			for i := range orgs {
+				orgs[i] = "acme"
+			}
+			var err error
+			switch c.Input.Target {
+			case "list_row":
+				listOrgs := make([]schema.VillageListUserOrganization, len(orgs))
+				for i := range orgs {
+					listOrgs[i] = schema.VillageListUserOrganization{OrgLogin: orgs[i]}
+				}
+				err = schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, Owner: person, OwnerOrgs: listOrgs, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}, Page: 1, Limit: 1, Total: 1}.Validate()
+			case "metadata":
+				metadataOrgs := make([]schema.VillageMetadataUserOrganization, len(orgs))
+				for i := range orgs {
+					metadataOrgs[i] = schema.VillageMetadataUserOrganization{OrgLogin: orgs[i]}
+				}
+				err = schema.VillageTranscriptMetadataResponse{Tags: []schema.VillageTag{}, Shares: []schema.VillageTranscriptShare{}, EnrichedShares: []schema.VillageEnrichedTranscriptShare{}, Owner: person, OwnerOrgs: metadataOrgs, Attestations: []schema.VillageTranscriptAttestation{}}.Validate()
+			case "grouped_detail":
+				err = schema.VillageGroupedCollectiveDetailResponse{Group: schema.VillageCollectiveDetailRecord{Creator: schema.AnonymousVillageOwner()}, Members: []schema.VillageCollectiveMember{{Member: person, GithubOrgs: orgs}}, Models: []schema.VillageCollectiveModelBreakdown{}, Contributors: []schema.VillageCollectiveContributor{}, TranscriptList: schema.VillageSessionListPayload{Items: []schema.VillageSessionListItem{}, Page: 1, Limit: 1}}.Validate()
+			case "flat_detail":
+				err = schema.VillageCollectiveDetailResponse{Members: []schema.VillageCollectiveMember{{Member: person, GithubOrgs: orgs}}}.Validate()
+			case "flat_detail_transcript":
+				err = schema.VillageCollectiveDetailResponse{Members: []schema.VillageCollectiveMember{{Member: person, GithubOrgs: orgs}}, Transcripts: []schema.VillageCollectiveTranscript{{}}}.Validate()
+			default:
+				t.Fatalf("unknown response target %q", c.Input.Target)
+			}
+			if (err == nil) != c.Expected.Valid {
+				t.Fatalf("valid=%v error=%v", err == nil, err)
 			}
 		})
 	}
