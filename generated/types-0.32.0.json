@@ -12783,7 +12783,7 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/DiagnosticEntry"
                 },
                 "type": [
                   "null",
@@ -15374,7 +15374,7 @@
             "anyOf": [
               {
                 "items": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/DiagnosticEntry"
                 },
                 "type": [
                   "null",

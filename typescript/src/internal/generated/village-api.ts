@@ -1400,6 +1400,7 @@ export interface components {
          * @enum {string}
          */
         SchemaDeliveryOrigin: Schema.DeliveryOrigin;
+        SchemaDiagnosticEntry: Schema.DiagnosticEntry;
         /**
          * Digest Item Kind
          * @description Kind of one item in the prompt digest chain: a session boundary, a human prompt, a skill invocation marker, or a commit anchor

@@ -68,6 +68,8 @@ required_names:
   - village-my-share-member-count-mismatch
   - village-contributable-member-mirrors
   - village-contributable-member-identity-mismatch
+  - village-structured-diagnostics-warnings
+  - village-string-diagnostics-warning-rejected
 cases:
   cases:
     - name: nested-local-owner
@@ -414,6 +416,50 @@ cases:
       mutation: {description: 'public P root retains ordinary one, helpers two, top items one and direct group one'}
       input: {schema: VillageSessionListPayload, payload: {items: [{kind: transcript, transcript: {session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174005'}}, helperGroups: [{groupId: hg_p, purpose: helper_review, helperThreadCount: 1, memberScope: scope_p}]}], page: 1, limit: 1, totalItems: 1, ordinarySessionTotal: 1, helperThreadTotal: 2}}
       expected: {valid: true}
+    - name: village-structured-diagnostics-warnings
+      classification: must-pass
+      provenance: &storedDiagnostic {source: bug, ref: 'village grouped reads refused stored diagnostic warning entries'}
+      mutation: {description: 'a stored diagnostic warning object satisfies the canonical transcript metadata shape'}
+      input:
+        schema: VillageSessionListPayload
+        payload:
+          items:
+            - kind: transcript
+              transcript:
+                session:
+                  <<: *villageSession
+                  id: '123e4567-e89b-12d3-a456-426614174006'
+                  diagnostics_warnings:
+                    - errorType: unknown_data_retained
+                      location: selected session entry
+                      message: 24 control message rows are outside the interpreted vocabulary
+                      remediation: No action is required
+          page: 1
+          limit: 1
+          totalItems: 1
+          ordinarySessionTotal: 1
+          helperThreadTotal: 0
+      expected: {valid: true}
+    - name: village-string-diagnostics-warning-rejected
+      classification: must-fail
+      provenance: *storedDiagnostic
+      mutation: {description: 'a bare string cannot stand in for a stored diagnostic entry'}
+      input:
+        schema: VillageSessionListPayload
+        payload:
+          items:
+            - kind: transcript
+              transcript:
+                session:
+                  <<: *villageSession
+                  id: '123e4567-e89b-12d3-a456-426614174007'
+                  diagnostics_warnings: [retained uncertainty]
+          page: 1
+          limit: 1
+          totalItems: 1
+          ordinarySessionTotal: 1
+          helperThreadTotal: 0
+      expected: {valid: false}
     - name: local-second-member-page
       classification: must-pass
       provenance: *requirement

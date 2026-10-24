@@ -8218,7 +8218,7 @@ components:
         diagnostics_warnings:
           anyOf:
           - items:
-              type: string
+              $ref: '#/components/schemas/DiagnosticEntry'
             type:
             - "null"
             - array
@@ -9789,7 +9789,7 @@ components:
         diagnostics_warnings:
           anyOf:
           - items:
-              type: string
+              $ref: '#/components/schemas/DiagnosticEntry'
             type:
             - "null"
             - array

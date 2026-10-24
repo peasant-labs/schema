@@ -3135,7 +3135,9 @@ export const canonicalSessionGraphFixtures = {
       "village-my-share-member-mirrors",
       "village-my-share-member-count-mismatch",
       "village-contributable-member-mirrors",
-      "village-contributable-member-identity-mismatch"
+      "village-contributable-member-identity-mismatch",
+      "village-structured-diagnostics-warnings",
+      "village-string-diagnostics-warning-rejected"
     ],
     "cases": {
       "cases": [
@@ -5647,6 +5649,211 @@ export const canonicalSessionGraphFixtures = {
           },
           "expected": {
             "valid": true
+          }
+        },
+        {
+          "name": "village-structured-diagnostics-warnings",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "bug",
+            "ref": "village grouped reads refused stored diagnostic warning entries"
+          },
+          "mutation": {
+            "description": "a stored diagnostic warning object satisfies the canonical transcript metadata shape"
+          },
+          "input": {
+            "schema": "VillageSessionListPayload",
+            "payload": {
+              "items": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174006",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": [
+                        {
+                          "errorType": "unknown_data_retained",
+                          "location": "selected session entry",
+                          "message": "24 control message rows are outside the interpreted vocabulary",
+                          "remediation": "No action is required"
+                        }
+                      ],
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "totalItems": 1,
+              "ordinarySessionTotal": 1,
+              "helperThreadTotal": 0
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "village-string-diagnostics-warning-rejected",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "bug",
+            "ref": "village grouped reads refused stored diagnostic warning entries"
+          },
+          "mutation": {
+            "description": "a bare string cannot stand in for a stored diagnostic entry"
+          },
+          "input": {
+            "schema": "VillageSessionListPayload",
+            "payload": {
+              "items": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174007",
+                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": [
+                        "retained uncertainty"
+                      ],
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    }
+                  }
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "totalItems": 1,
+              "ordinarySessionTotal": 1,
+              "helperThreadTotal": 0
+            }
+          },
+          "expected": {
+            "valid": false
           }
         },
         {
