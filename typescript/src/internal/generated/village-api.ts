@@ -905,7 +905,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get a pullable transcript's metadata (owner, visibility, server-computed content_hash, push contract version). 404 (not 403) when not pullable. */
+        /** @description Get a pullable transcript's metadata (the owner as the caller may see them, visibility, server-computed content_hash, push contract version). The server resolves the owner per viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable. */
         get: operations["getPullTranscript"];
         put?: never;
         post?: never;
@@ -922,7 +922,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List a transcript's annotations as PullAnnotation rows (AnnotationSummary plus author identity), so pulled annotations can be foreign-marked and own-authored rows excluded. */
+        /** @description List a transcript's annotations as PullAnnotation rows (AnnotationSummary plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id with the caller's account; an anonymous author is never the caller and is foreign-marked. */
         get: operations["getPullTranscriptAnnotations"];
         put?: never;
         post?: never;
@@ -1897,6 +1897,11 @@ export interface components {
          */
         SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
         SchemaVillagePublicCollective: Schema.VillagePublicCollective;
+        /**
+         * Village Public Owner
+         * @description A person as another viewer sees them. The server resolves anonymity per viewer; consumers render what they receive and never re-derive the rule. profile carries id, username, display_name, and avatar_url; anonymous carries only its kind, with no id. Readers treat an unknown kind as anonymous.
+         */
+        SchemaVillagePublicOwner: Schema.VillagePublicOwner;
         SchemaVillagePullRequestAttachedTranscript: Schema.VillagePullRequestAttachedTranscript;
         SchemaVillagePullRequestAttachment: Schema.VillagePullRequestAttachment;
         SchemaVillagePullRequestAttachmentResponse: Schema.VillagePullRequestAttachmentResponse;

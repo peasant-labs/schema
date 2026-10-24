@@ -58,21 +58,26 @@ func (TranscriptID) JSONSchema() (jsonschema.Schema, error) {
 // ingest-time, pre-push-redaction hash). ContractVersion records the push
 // content contract the blob was published under (the blob carries its own
 // publish-time version; the pull envelope does not version the blob).
+//
+// Owner is the transcript's owner as the caller may see them, resolved by the
+// server per viewer. A caller pulling its own transcript always receives its
+// own profile, so Owner.IsAccount(callerID) is exactly "this is mine"; an
+// anonymous owner is never the caller. This envelope shape is pull contract
+// 0.3.0, which replaced the ownerUserId and ownerUsername strings.
 type PullTranscriptInfo struct {
-	TranscriptID    TranscriptID    `json:"transcriptId"`
-	LocalID         string          `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
-	OwnerUserID     string          `json:"ownerUserId"`
-	OwnerUsername   string          `json:"ownerUsername"`
-	Title           string          `json:"title,omitempty"`
-	Harness         Harness         `json:"harness,omitempty"` // existing typed form
-	ProjectName     string          `json:"projectName,omitempty"`
-	Visibility      Visibility      `json:"visibility"`                // existing typed form
-	License         License         `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
-	ContentHash     string          `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
-	ContractVersion ContractVersion `json:"contractVersion,omitempty"` // push contract the blob was published under
-	PublishedAt     int64           `json:"publishedAt"`
-	UpdatedAt       int64           `json:"updatedAt"`
-	AnnotationCount int             `json:"annotationCount"`
+	TranscriptID    TranscriptID       `json:"transcriptId"`
+	LocalID         string             `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
+	Owner           VillagePublicOwner `json:"owner"`
+	Title           string             `json:"title,omitempty"`
+	Harness         Harness            `json:"harness,omitempty"` // existing typed form
+	ProjectName     string             `json:"projectName,omitempty"`
+	Visibility      Visibility         `json:"visibility"`                // existing typed form
+	License         License            `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
+	ContentHash     string             `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
+	ContractVersion ContractVersion    `json:"contractVersion,omitempty"` // push contract the blob was published under
+	PublishedAt     int64              `json:"publishedAt"`
+	UpdatedAt       int64              `json:"updatedAt"`
+	AnnotationCount int                `json:"annotationCount"`
 }
 
 // PullListResponse is the village's paginated listing of pullable transcripts
@@ -87,12 +92,13 @@ type PullListResponse struct {
 
 // PullAnnotation is the authored-annotation row for the pull surface
 // (GET /api/v1/pull/transcripts/{id}/annotations). It embeds the existing
-// AnnotationSummary and adds the village account identity (AuthorUserID /
-// AuthorUsername) the summary does not carry — required to foreign-mark pulled
-// annotations and to exclude the requester's own authored rows during the
-// annotation-refresh path (creds.UserID == AuthorUserID).
+// AnnotationSummary and adds the author as the caller may see them, resolved
+// by the server per viewer. The caller's own rows always carry the caller's
+// profile, so Author.IsAccount(callerID) identifies them for the
+// annotation-refresh exclusion; an anonymous author is never the caller and is
+// marked foreign. Pull contract 0.3.0 replaced the authorUserId and
+// authorUsername strings with Author.
 type PullAnnotation struct {
-	AnnotationSummary        // embedded existing summary (annotator entity, content hash, etc.)
-	AuthorUserID      string `json:"authorUserId"`
-	AuthorUsername    string `json:"authorUsername"`
+	AnnotationSummary                    // embedded existing summary (annotator entity, content hash, etc.)
+	Author            VillagePublicOwner `json:"author"`
 }

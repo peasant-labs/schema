@@ -54,6 +54,24 @@ rows:
       classification: must-fail
       provenance: {source: boundary, ref: input-count-safe-range}
       mutation: {description: increases the count one above the JS-safe maximum}
+    - name: collective-owner-mismatch
+      input: {variant: collective, session_count: 7, variant_count: 7, mismatch_owner: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-mirror}
+      mutation: {description: shows the collective arm's owner as anonymous while the row shows the profile}
+    - name: pending-anonymous-owner-mirrored
+      input: {variant: pending, session_count: 4, variant_count: 4, anonymous_owner: true}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-mirror}
+      mutation: {description: resolves the owner to anonymous once and mirrors it into the pending arm}
+    - name: my-share-owner-mismatch
+      input: {variant: myShare, session_count: 5, variant_count: 5, anonymous_owner: true, mismatch_owner: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-mirror}
+      mutation: {description: shows the own-share arm's owner as a profile while the row is anonymous}
 items:
   cases:
     - name: transcript-arm
@@ -140,7 +158,7 @@ collections:
     - {name: members-zero-limit-invalid, input: {target: members, initialized: true, page: 1, limit: 0}, expected: {valid: false}, classification: must-fail, provenance: {source: boundary, ref: grouped-member-page}, mutation: {description: changes the positive member limit to zero}}
     - {name: legacy-list-null-related-valid, input: {target: legacy-list, initialized: true, page: 1, limit: 20}, expected: {valid: true}, classification: must-pass, provenance: {source: requirement, ref: existing-list-null-related}, mutation: {description: preserves null map-backed owner org share and attestation collections}}
 required_names:
-  rows: [global-count-zero, collective-same-row, pending-count-mismatch, my-share-identity-mismatch, contributable-same-row, pending-same-row, my-share-same-row, collective-turn-mismatch, input-count-above-safe-max]
+  rows: [global-count-zero, collective-same-row, pending-count-mismatch, my-share-identity-mismatch, contributable-same-row, pending-same-row, my-share-same-row, collective-turn-mismatch, input-count-above-safe-max, collective-owner-mismatch, pending-anonymous-owner-mirrored, my-share-owner-mismatch]
   items: [transcript-arm, context-arm, both-arms]
   routes: [global-profile-project-search, collective-browse, contribute, deprecated-contribute, pending-review, my-shares, member-expansion, metadata-navigation, durable-content]
   collections: [list-empty-array-valid, list-null-invalid, list-zero-page-invalid, members-empty-array-valid, members-null-invalid, members-zero-limit-invalid, legacy-list-null-related-valid]

@@ -23,6 +23,8 @@ type villageRowInput struct {
 	VariantCount   *int64 `yaml:"variant_count"`
 	MismatchID     bool   `yaml:"mismatch_id"`
 	MismatchMetric bool   `yaml:"mismatch_metric"`
+	AnonymousOwner bool   `yaml:"anonymous_owner"`
+	MismatchOwner  bool   `yaml:"mismatch_owner"`
 }
 type villageItemInput struct {
 	Kind       schema.SessionListItemKind `yaml:"kind"`
@@ -106,7 +108,7 @@ func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 			} else {
 				p := schema.VillageTranscriptListResponse{Page: c.Input.Page, Limit: c.Input.Limit}
 				if c.Input.Initialized {
-					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, OwnerOrgs: nil, Shares: nil, Attestations: nil, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}
+					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, Owner: schema.AnonymousVillageOwner(), OwnerOrgs: nil, Shares: nil, Attestations: nil, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}
 				}
 				err = p.Validate()
 			}
@@ -121,7 +123,7 @@ func TestVillageGroupedWrappersRoundTripCompleteValues(t *testing.T) {
 	now := time.Date(2026, 9, 8, 1, 2, 3, 0, time.UTC)
 	id := schema.VillageUUID("123e4567-e89b-12d3-a456-426614174001")
 	list := schema.VillageSessionListPayload{Items: []schema.VillageSessionListItem{}, Page: 1, Limit: 20, TotalItems: 3, OrdinarySessionTotal: 2, HelperThreadTotal: 1}
-	group := schema.VillageGroupedGroupDetailResponse{Group: schema.VillageGroupDetailRecord{ID: id, Name: "collective", CreatedBy: id, CreatedAt: now, UpdatedAt: now, AcceptanceMode: schema.VillageGroupAcceptanceOpen, DataAccess: schema.VillageGroupDataAccessPublic, TranscriptDeletionPolicy: schema.VillageTranscriptDeletionUserChoice}, Members: []schema.VillageGroupMember{{ID: id, GithubUsername: "owner", GithubOrgs: []string{"org"}, JoinedAt: now, Role: schema.VillageGroupRoleOwner}}, Stats: schema.VillageGroupTranscriptStats{TotalTranscripts: 3, ContributorCount: 1, TotalTurns: 5, TotalDurationMs: 8, TotalTokens: 13}, Models: []schema.VillageGroupModelBreakdown{{ModelProvider: "provider", TranscriptCount: 3}}, Contributors: []schema.VillageGroupContributor{{ID: id, GithubUsername: "owner", TranscriptCount: 3}}, CanRead: true, YourRole: schema.VillageGroupViewerRoleOwner, TranscriptList: list, PendingMembers: []schema.VillageGroupMember{{ID: id, GithubUsername: "pending", GithubOrgs: []string{}, JoinedAt: now, Role: schema.VillageGroupRolePending}}}
+	group := schema.VillageGroupedGroupDetailResponse{Group: schema.VillageGroupDetailRecord{ID: id, Name: "collective", CreatedBy: id, CreatedAt: now, UpdatedAt: now, AcceptanceMode: schema.VillageGroupAcceptanceOpen, DataAccess: schema.VillageGroupDataAccessPublic, TranscriptDeletionPolicy: schema.VillageTranscriptDeletionUserChoice}, Members: []schema.VillageGroupMember{{Member: schema.NewVillagePublicProfile(id, "owner", nil, nil), GithubOrgs: []string{"org"}, JoinedAt: now, Role: schema.VillageGroupRoleOwner}, {Member: schema.AnonymousVillageOwner(), GithubOrgs: []string{}, JoinedAt: now, Role: schema.VillageGroupRoleMember}}, Stats: schema.VillageGroupTranscriptStats{TotalTranscripts: 3, ContributorCount: 1, TotalTurns: 5, TotalDurationMs: 8, TotalTokens: 13}, Models: []schema.VillageGroupModelBreakdown{{ModelProvider: "provider", TranscriptCount: 3}}, Contributors: []schema.VillageGroupContributor{{Contributor: schema.NewVillagePublicProfile(id, "owner", nil, nil), TranscriptCount: 2}, {Contributor: schema.AnonymousVillageOwner(), TranscriptCount: 1}}, CanRead: true, YourRole: schema.VillageGroupViewerRoleOwner, TranscriptList: list, PendingMembers: []schema.VillageGroupMember{{Member: schema.NewVillagePublicProfile(id, "pending", nil, nil), GithubOrgs: []string{}, JoinedAt: now, Role: schema.VillageGroupRolePending}}}
 	contribution := schema.VillageGroupedContributableResponse{GroupID: id, TranscriptList: list}
 	encoded, err := json.Marshal(group)
 	if err != nil {
@@ -162,10 +164,10 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	display := "display"
 	avatar := "avatar"
 	note := "note"
-	transcript := schema.VillageTranscript{ID: transcriptID, OwnerID: ownerID, LocalID: localID, Title: &title, Visibility: schema.VillageTranscriptVisibilityPublic, ModelProvider: "provider", SchemaVersion: "1", PublishedAt: now, UpdatedAt: now, ProjectHash: schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ProjectDisplayName: "project", ProjectNameSource: schema.VillageProjectNameSourceOverride, ProjectRemoteLabel: "owner/repo", SessionOrigin: schema.SessionOriginUser}
+	transcript := schema.VillageTranscript{ID: transcriptID, LocalID: localID, Title: &title, Visibility: schema.VillageTranscriptVisibilityPublic, ModelProvider: "provider", SchemaVersion: "1", PublishedAt: now, UpdatedAt: now, ProjectHash: schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ProjectDisplayName: "project", ProjectNameSource: schema.VillageProjectNameSourceOverride, ProjectRemoteLabel: "owner/repo", SessionOrigin: schema.SessionOriginUser}
 	tags := []schema.VillageTag{{ID: ownerID, Name: "tag"}}
-	owner := schema.VillageUser{ID: ownerID, GithubID: 42, GithubUsername: "owner", DisplayName: &display, AvatarURL: &avatar, CreatedAt: now, UpdatedAt: now, IsDiscoverable: true, Provider: "github", ProviderUserID: "42", UsernameChosen: true}
-	listOrgs := []schema.VillageListUserOrganization{{UserID: ownerID, OrgLogin: "org", AvatarURL: &avatar}}
+	owner := schema.NewVillagePublicProfile(ownerID, "owner", &display, &avatar)
+	listOrgs := []schema.VillageListUserOrganization{{OrgLogin: "org", AvatarURL: &avatar}}
 	metadataOrgs := []schema.VillageMetadataUserOrganization{{OrgLogin: "org", OrgID: 7, AvatarURL: &avatar, Visible: true, FetchedAt: now}}
 	shares := []schema.VillageEnrichedTranscriptShare{{TranscriptID: transcriptID, GroupID: ownerID, GroupName: "group", AcceptanceMode: schema.VillageGroupAcceptanceOpen, Status: schema.VillageShareStatusApproved, SharedAt: now}}
 	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}, PullRequests: schema.VillagePullRequestsSummary{Count: 3, Recent: []schema.VillagePullRequestRef{{Owner: "owner", Name: "repo", Number: 42}, {Owner: "owner", Name: "repo", Number: 45}}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
@@ -235,7 +237,18 @@ func TestVillageSessionRowsPreserveRouteIdentityAndCounts(t *testing.T) {
 func villageRow(in villageRowInput) schema.VillageSessionRow {
 	id := schema.TranscriptID("123e4567-e89b-12d3-a456-426614174000")
 	other := schema.TranscriptID("223e4567-e89b-12d3-a456-426614174000")
-	owner := schema.VillageUUID("123e4567-e89b-12d3-a456-426614174001")
+	owner := schema.NewVillagePublicProfile("123e4567-e89b-12d3-a456-426614174001", "owner", nil, nil)
+	if in.AnonymousOwner {
+		owner = schema.AnonymousVillageOwner()
+	}
+	armOwner := owner
+	if in.MismatchOwner {
+		if armOwner.IsProfile() {
+			armOwner = schema.AnonymousVillageOwner()
+		} else {
+			armOwner = schema.NewVillagePublicProfile("123e4567-e89b-12d3-a456-426614174001", "owner", nil, nil)
+		}
+	}
 	local := schema.SessionID("123e4567-e89b-12d3-a456-426614174002")
 	parent := schema.SessionID("123e4567-e89b-12d3-a456-426614174003")
 	model := "model"
@@ -244,7 +257,7 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 	tokensIn := int64(3)
 	tokensOut := int64(5)
 	project := schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	r := schema.VillageSessionRow{Session: schema.VillageTranscript{ID: id, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.SessionCount}}
+	r := schema.VillageSessionRow{Owner: owner, Session: schema.VillageTranscript{ID: id, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.SessionCount}}
 	variantID := id
 	if in.MismatchID {
 		variantID = other
@@ -255,11 +268,11 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 		if in.MismatchMetric {
 			variantTurns++
 		}
-		r.Collective = &schema.VillageGroupTranscript{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
+		r.Collective = &schema.VillageGroupTranscript{ID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
 	case "pending":
-		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
+		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "myShare":
-		r.MyShare = &schema.VillageUserGroupShare{ID: variantID, OwnerID: owner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokensIn: &tokensIn, TokensOut: &tokensOut, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
+		r.MyShare = &schema.VillageUserGroupShare{ID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokensIn: &tokensIn, TokensOut: &tokensOut, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "contributable":
 		r.Contributable = &schema.VillageContributableTranscript{ID: variantID, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
 	}
@@ -370,7 +383,7 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 	requireExactProperties(t, components["SchemaVillageGroupedCollectiveDetailResponse"].(map[string]any), []string{"group", "members", "stats", "models", "contributors", "can_read", "your_role", "transcriptList", "pending_members"})
 	requireExactProperties(t, components["SchemaVillageGroupedContributableResponse"].(map[string]any), []string{"group_id", "transcriptList"})
 	requireExactProperties(t, components["SchemaVillageMetadataUserOrganization"].(map[string]any), []string{"org_login", "org_id", "avatar_url", "visible", "fetched_at"})
-	requireExactProperties(t, components["SchemaVillageListUserOrganization"].(map[string]any), []string{"user_id", "org_login", "avatar_url"})
+	requireExactProperties(t, components["SchemaVillageListUserOrganization"].(map[string]any), []string{"org_login", "avatar_url"})
 	legacyRow := schemaProperties(components["SchemaVillageTranscriptListRow"].(map[string]any))
 	for _, name := range []string{"owner_orgs", "shares", "attestations"} {
 		field := legacyRow[name].(map[string]any)

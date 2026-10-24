@@ -445,15 +445,15 @@ type VillageCollectiveMemberRoleRequest struct {
 	Role VillageAssignableGroupRole `json:"role"`
 }
 
-// VillageGroupMember is one member row in a collective roster.
+// VillageGroupMember is one member row in a collective roster. Member is the
+// person as the viewer may see them: the server resolves anonymity per viewer
+// (collective owners see every member's profile). GithubOrgs is empty when
+// Member is anonymous, because an organization login can identify a person.
 type VillageCollectiveMember struct {
-	Role           VillageGroupRole `json:"role"`
-	JoinedAt       time.Time        `json:"joined_at"`
-	ID             VillageUUID      `json:"id"`
-	GithubUsername string           `json:"github_username"`
-	DisplayName    *string          `json:"display_name"`
-	AvatarURL      *string          `json:"avatar_url"`
-	GithubOrgs     []string         `json:"github_orgs" nullable:"false"`
+	Role       VillageGroupRole   `json:"role"`
+	JoinedAt   time.Time          `json:"joined_at"`
+	Member     VillagePublicOwner `json:"member"`
+	GithubOrgs []string           `json:"github_orgs" nullable:"false"`
 }
 
 // VillageGroupTranscriptStats totals a collective's transcripts.
@@ -476,11 +476,12 @@ type VillageCollectiveModelBreakdown struct {
 	TranscriptCount int32  `json:"transcript_count"`
 }
 
+// VillageCollectiveContributor is one contributor row with its transcript
+// count. Contributor is the person as the viewer may see them; the server
+// resolves anonymity per viewer.
 type VillageCollectiveContributor struct {
-	ID              VillageUUID `json:"id"`
-	GithubUsername  string      `json:"github_username"`
-	AvatarURL       *string     `json:"avatar_url"`
-	TranscriptCount int32       `json:"transcript_count"`
+	Contributor     VillagePublicOwner `json:"contributor"`
+	TranscriptCount int32              `json:"transcript_count"`
 }
 
 type VillageCollectiveDetailResponse struct {
@@ -497,10 +498,11 @@ type VillageCollectiveDetailResponse struct {
 
 // VillageTranscript is the current transcript row projection used by Village web
 // list and collective routes. Storage object keys and source-machine paths are
-// not part of this public projection.
+// not part of this public projection, and neither is the owner: every envelope
+// that carries a transcript carries its owner beside it as a
+// VillagePublicOwner, resolved for the viewer.
 type VillageTranscript struct {
 	ID                      TranscriptID                `json:"id"`
-	OwnerID                 VillageUUID                 `json:"owner_id"`
 	LocalID                 SessionID                   `json:"local_id"`
 	Title                   *string                     `json:"title"`
 	Description             *string                     `json:"description"`
@@ -572,13 +574,15 @@ type VillageTranscript struct {
 
 // VillageTranscriptMetadataResponse is the existing flat transcript metadata
 // response plus viewer-authorized relationship navigation. Durable content
-// remains separate on the content endpoint.
+// remains separate on the content endpoint. Owner is the transcript's owner as
+// this viewer may see them; OwnerOrgs is empty when Owner is anonymous,
+// because an organization login can identify a person.
 type VillageTranscriptMetadataResponse struct {
 	Transcript             VillageTranscript                 `json:"transcript"`
 	Tags                   []VillageTag                      `json:"tags" nullable:"false"`
 	Shares                 []VillageTranscriptShare          `json:"shares" nullable:"false"`
 	EnrichedShares         []VillageEnrichedTranscriptShare  `json:"enriched_shares" nullable:"false"`
-	Owner                  VillageUser                       `json:"owner"`
+	Owner                  VillagePublicOwner                `json:"owner"`
 	OwnerOrgs              []VillageMetadataUserOrganization `json:"owner_orgs" nullable:"false"`
 	Attestations           []VillageTranscriptAttestation    `json:"attestations" nullable:"false"`
 	RelationshipNavigation []SessionRelationshipNavigation   `json:"relationshipNavigation,omitempty"`
@@ -588,6 +592,10 @@ type VillageTag struct {
 	ID   VillageUUID `json:"id"`
 	Name string      `json:"name"`
 }
+
+// VillageUser is the caller's own complete account record, returned only to
+// that account (GET /api/v1/auth/me). A response that shows a person to
+// anyone else carries a VillagePublicOwner instead.
 type VillageUser struct {
 	ID               VillageUUID `json:"id"`
 	GithubID         int64       `json:"github_id"`
@@ -610,10 +618,12 @@ type VillageMetadataUserOrganization struct {
 	FetchedAt time.Time `json:"fetched_at"`
 }
 
+// VillageListUserOrganization is one visible organization of a listed
+// transcript's owner. It carries no user id: the row it sits in already names
+// its owner as the viewer may see them.
 type VillageListUserOrganization struct {
-	UserID    VillageUUID `json:"user_id"`
-	OrgLogin  string      `json:"org_login"`
-	AvatarURL *string     `json:"avatar_url"`
+	OrgLogin  string  `json:"org_login"`
+	AvatarURL *string `json:"avatar_url"`
 }
 type VillageEnrichedTranscriptShare struct {
 	TranscriptID   TranscriptID               `json:"transcript_id"`
@@ -639,10 +649,14 @@ type VillageListTranscriptAttestation struct {
 	AttestationType string       `json:"attestation_type"`
 	CreatedAt       time.Time    `json:"created_at"`
 }
+
+// VillageTranscriptListRow is one flat transcript list row. Owner is the
+// transcript's owner as this viewer may see them; OwnerOrgs is empty when
+// Owner is anonymous, because an organization login can identify a person.
 type VillageTranscriptListRow struct {
 	Transcript   VillageTranscript                  `json:"transcript"`
 	Tags         []VillageTag                       `json:"tags" nullable:"false"`
-	Owner        VillageUser                        `json:"owner"`
+	Owner        VillagePublicOwner                 `json:"owner"`
 	OwnerOrgs    []VillageListUserOrganization      `json:"owner_orgs"`
 	Shares       []VillageEnrichedTranscriptShare   `json:"shares"`
 	Attestations []VillageListTranscriptAttestation `json:"attestations"`
@@ -661,6 +675,9 @@ func (r VillageTranscriptListResponse) Validate() error {
 		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: transcripts must be initialized, page and limit must be positive, and totals must be nonnegative; clients cannot preserve the existing list envelope; emit [] for an empty page and one-based pagination")
 	}
 	for _, row := range r.Transcripts {
+		if err := validateVillageOwnerOrganizations(row.Owner, len(row.OwnerOrgs), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+			return err
+		}
 		if row.Tags == nil {
 			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
 		}
@@ -675,6 +692,9 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 	if r.Tags == nil || r.Shares == nil || r.EnrichedShares == nil || r.OwnerOrgs == nil || r.Attestations == nil {
 		return fmt.Errorf("Village transcript metadata validation failed at schema.VillageTranscriptMetadataResponse.Validate: tags, shares, enriched_shares, owner_orgs, or attestations is null; the existing metadata envelope requires concrete arrays; initialize every empty collection")
 	}
+	if err := validateVillageOwnerOrganizations(r.Owner, len(r.OwnerOrgs), "schema.VillageTranscriptMetadataResponse.Validate"); err != nil {
+		return err
+	}
 	for _, navigation := range r.RelationshipNavigation {
 		if err := navigation.Validate(); err != nil {
 			return err
@@ -686,10 +706,9 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 // VillageGroupTranscript deliberately lists the transcript fields instead of
 // embedding VillageTranscript. Village flattens its embedded response on the
 // JSON wire, and this shape preserves required fields in OpenAPI and TypeScript
-// generation.
+// generation. Owner is the transcript's owner as this viewer may see them.
 type VillageCollectiveTranscript struct {
 	ID                      TranscriptID                `json:"id"`
-	OwnerID                 VillageUUID                 `json:"owner_id"`
 	LocalID                 SessionID                   `json:"local_id"`
 	Title                   *string                     `json:"title"`
 	Description             *string                     `json:"description"`
@@ -753,9 +772,7 @@ type VillageCollectiveTranscript struct {
 	ContentHash             *TranscriptContentHash      `json:"content_hash"`
 	LicenseID               *License                    `json:"license_id"`
 	SessionOrigin           SessionOrigin               `json:"session_origin"`
-	OwnerUsername           string                      `json:"owner_username"`
-	OwnerAvatarURL          *string                     `json:"owner_avatar_url"`
-	OwnerIsDiscoverable     bool                        `json:"owner_is_discoverable"`
+	Owner                   VillagePublicOwner          `json:"owner"`
 	InputSubmissionCount    *int64                      `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID           *SessionID                  `json:"root_session_id,omitempty"`
 	Purpose                 SessionPurpose              `json:"purpose,omitempty"`
@@ -823,18 +840,18 @@ type VillageTranscriptCollectivesResponse struct {
 	Collectives []VillageTranscriptCollective `json:"collectives" nullable:"false"`
 }
 
+// VillagePendingShare is one submission awaiting a collective owner's review.
+// Owner is the submitter as this viewer may see them.
 type VillagePendingShare struct {
 	TranscriptID         TranscriptID          `json:"transcript_id"`
 	Title                *string               `json:"title"`
 	ModelProvider        string                `json:"model_provider"`
-	OwnerID              VillageUUID           `json:"owner_id"`
+	Owner                VillagePublicOwner    `json:"owner"`
 	LocalID              SessionID             `json:"local_id"`
 	ParentSessionID      *SessionID            `json:"parent_session_id"`
 	ProjectHash          ProjectHash           `json:"project_hash"`
 	ProjectName          *string               `json:"project_name"`
 	Branch               *string               `json:"branch"`
-	OwnerUsername        string                `json:"owner_username"`
-	OwnerIsDiscoverable  bool                  `json:"owner_is_discoverable"`
 	SharedAt             time.Time             `json:"shared_at"`
 	InputSubmissionCount *int64                `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	RootSessionID        *SessionID            `json:"root_session_id,omitempty"`
@@ -842,6 +859,8 @@ type VillagePendingShare struct {
 	Relationships        []SessionRelationship `json:"relationships,omitempty"`
 }
 
+// VillageUserCollectiveShare is one of the caller's own live submissions.
+// Owner is the caller's own profile.
 type VillageUserCollectiveShare struct {
 	ID              TranscriptID                `json:"id"`
 	Title           *string                     `json:"title"`
@@ -852,7 +871,7 @@ type VillageUserCollectiveShare struct {
 	TurnCount       *int32                      `json:"turn_count"`
 	TokensIn        *int64                      `json:"tokens_in"`
 	TokensOut       *int64                      `json:"tokens_out"`
-	OwnerID         VillageUUID                 `json:"owner_id"`
+	Owner           VillagePublicOwner          `json:"owner"`
 	LocalID         SessionID                   `json:"local_id"`
 	ParentSessionID *SessionID                  `json:"parent_session_id"`
 	// Status uses the shared lifecycle enum. Current my-shares responses emit the
@@ -925,10 +944,12 @@ type VillageContributableResponse struct {
 	Transcripts []VillageContributableTranscript `json:"transcripts" nullable:"false"`
 }
 
-// VillageSessionRow preserves the complete transcript summary and the one
-// route-specific projection that produced it.
+// VillageSessionRow preserves the complete transcript summary, its owner as
+// this viewer may see them, and the one route-specific projection that
+// produced it. A route arm that carries an owner mirrors Owner exactly.
 type VillageSessionRow struct {
 	Session       VillageTranscript               `json:"session"`
+	Owner         VillagePublicOwner              `json:"owner"`
 	Collective    *VillageGroupTranscript         `json:"collective,omitempty"`
 	Pending       *VillagePendingShare            `json:"pending,omitempty"`
 	MyShare       *VillageUserGroupShare          `json:"myShare,omitempty"`
@@ -937,6 +958,9 @@ type VillageSessionRow struct {
 
 // Validate checks the route arm and the shared identity and count mirrors.
 func (r VillageSessionRow) Validate() error {
+	if err := r.Owner.Validate(); err != nil {
+		return err
+	}
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "VillageSessionRow.session.input_submission_count"); err != nil {
 		return err
 	}
@@ -949,7 +973,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || r.Collective.OwnerID != r.Session.OwnerID || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -958,7 +982,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Pending.InputSubmissionCount, "VillageSessionRow.pending.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Pending.TranscriptID != r.Session.ID || r.Pending.OwnerID != r.Session.OwnerID || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
+		if r.Pending.TranscriptID != r.Session.ID || !reflect.DeepEqual(r.Pending.Owner, r.Owner) || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: pending identity or inputSubmissionCount differs from session; the review route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -967,7 +991,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.MyShare.InputSubmissionCount, "VillageSessionRow.myShare.input_submission_count"); err != nil {
 			return err
 		}
-		if r.MyShare.ID != r.Session.ID || r.MyShare.OwnerID != r.Session.OwnerID || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1091,7 +1115,56 @@ func (r VillageGroupedGroupDetailResponse) Validate() error {
 	if r.Members == nil || r.Models == nil || r.Contributors == nil {
 		return fmt.Errorf("Village grouped collective validation failed at schema.VillageGroupedGroupDetailResponse.Validate: members, models, or contributors is null; the retained collective envelope requires concrete arrays; initialize every empty collection")
 	}
+	if err := validateVillageCollectivePeople(r.Members, r.PendingMembers, r.Contributors, "schema.VillageGroupedGroupDetailResponse.Validate"); err != nil {
+		return err
+	}
 	return r.TranscriptList.Validate()
+}
+
+// Validate checks the people the flat collective detail shows: every member,
+// pending member, contributor, and transcript owner is a declared public
+// owner shape, and an anonymous member lists no organizations.
+func (r VillageCollectiveDetailResponse) Validate() error {
+	if err := validateVillageCollectivePeople(r.Members, r.PendingMembers, r.Contributors, "schema.VillageCollectiveDetailResponse.Validate"); err != nil {
+		return err
+	}
+	for _, transcript := range r.Transcripts {
+		if err := transcript.Owner.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateVillageOwnerOrganizations refuses organizations beside an owner who
+// is not shown: an organization login can identify the person.
+func validateVillageOwnerOrganizations(owner VillagePublicOwner, organizations int, at string) error {
+	if err := owner.Validate(); err != nil {
+		return err
+	}
+	if !owner.IsProfile() && organizations > 0 {
+		return fmt.Errorf("Village owner validation failed at %s: an anonymous owner lists organizations; an organization login can identify the person; emit an empty owner_orgs for an anonymous owner", at)
+	}
+	return nil
+}
+
+func validateVillageCollectivePeople(members, pending []VillageCollectiveMember, contributors []VillageCollectiveContributor, at string) error {
+	for _, roster := range [][]VillageCollectiveMember{members, pending} {
+		for _, member := range roster {
+			if err := member.Member.Validate(); err != nil {
+				return err
+			}
+			if !member.Member.IsProfile() && len(member.GithubOrgs) > 0 {
+				return fmt.Errorf("Village collective validation failed at %s: an anonymous member lists organizations; an organization login can identify the person; emit empty github_orgs for an anonymous member", at)
+			}
+		}
+	}
+	for _, contributor := range contributors {
+		if err := contributor.Contributor.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type VillageGroupedContributableResponse struct {

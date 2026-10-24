@@ -62,6 +62,8 @@ required_names:
   - local-search-member-identity-mismatch
   - village-collective-member-mirrors
   - village-collective-member-count-mismatch
+  - village-collective-owner-mismatch
+  - village-anonymous-owner-mirrored
   - village-pending-member-mirrors
   - village-pending-member-identity-mismatch
   - village-my-share-member-mirrors
@@ -100,9 +102,9 @@ cases:
             - &villageG1
               kind: transcript
               transcript:
+                owner: &villageOwnerProfile {kind: profile, id: '123e4567-e89b-12d3-a456-426614174001', username: owner, display_name: null, avatar_url: null}
                 session: &villageSession
                   id: '123e4567-e89b-12d3-a456-426614174003'
-                  owner_id: '123e4567-e89b-12d3-a456-426614174001'
                   local_id: '123e4567-e89b-12d3-a456-426614174002'
                   title: null
                   description: null
@@ -181,7 +183,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'public nested scope returns one stable G2 identity'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{kind: transcript, transcript: {session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{kind: transcript, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
       expected: {valid: true}
     - name: local-member-context-rejected
       classification: must-fail
@@ -289,7 +291,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'two public helper identities cannot fit a one-row page'}
-      input: {schema: VillageHelperMembersPayload, payload: {members: [*villageG1, {kind: transcript, transcript: {session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}], page: 1, limit: 1, total: 2}}
+      input: {schema: VillageHelperMembersPayload, payload: {members: [*villageG1, {kind: transcript, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}], page: 1, limit: 1, total: 2}}
       expected: {valid: false}
     - name: local-count-zero-preserved
       classification: must-pass
@@ -301,7 +303,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'public member preserves zero input count and independent turn and helper counts'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: {<<: *villageSession, input_submission_count: 0}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, input_submission_count: 0}}}]}}
       expected: {valid: true}
     - name: local-count-null-rejected
       classification: must-fail
@@ -313,7 +315,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'public null input count must not disappear'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: {<<: *villageSession, input_submission_count: null}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, input_submission_count: null}}}]}}
       expected: {valid: false}
     - name: local-count-absent-preserved
       classification: must-pass
@@ -414,7 +416,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'public P root retains ordinary one, helpers two, top items one and direct group one'}
-      input: {schema: VillageSessionListPayload, payload: {items: [{kind: transcript, transcript: {session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174005'}}, helperGroups: [{groupId: hg_p, purpose: helper_review, helperThreadCount: 1, memberScope: scope_p}]}], page: 1, limit: 1, totalItems: 1, ordinarySessionTotal: 1, helperThreadTotal: 2}}
+      input: {schema: VillageSessionListPayload, payload: {items: [{kind: transcript, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174005'}}, helperGroups: [{groupId: hg_p, purpose: helper_review, helperThreadCount: 1, memberScope: scope_p}]}], page: 1, limit: 1, totalItems: 1, ordinarySessionTotal: 1, helperThreadTotal: 2}}
       expected: {valid: true}
     - name: village-structured-diagnostics-warnings
       classification: must-pass
@@ -426,6 +428,7 @@ cases:
           items:
             - kind: transcript
               transcript:
+                owner: *villageOwnerProfile
                 session:
                   <<: *villageSession
                   id: '123e4567-e89b-12d3-a456-426614174006'
@@ -450,6 +453,7 @@ cases:
           items:
             - kind: transcript
               transcript:
+                owner: *villageOwnerProfile
                 session:
                   <<: *villageSession
                   id: '123e4567-e89b-12d3-a456-426614174007'
@@ -546,7 +550,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'distinct public members cannot both claim one group'}
-      input: {schema: VillageHelperMembersPayload, payload: {members: [*villageG1, {<<: *villageG1, transcript: {session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}], page: 1, limit: 2, total: 2}}
+      input: {schema: VillageHelperMembersPayload, payload: {members: [*villageG1, {<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: {<<: *villageSession, id: '123e4567-e89b-12d3-a456-426614174004'}}}], page: 1, limit: 2, total: 2}}
       expected: {valid: false}
     - name: local-zero-nested-group-count
       classification: must-pass
@@ -608,47 +612,59 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'collective helper expansion preserves its owner usage summary and nested group'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, collective: &collective {<<: *villageSession, owner_username: owner, owner_avatar_url: null, owner_is_discoverable: true, pull_requests: {count: 0, recent: []}}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, collective: &collective {<<: *villageSession, owner: *villageOwnerProfile, pull_requests: {count: 0, recent: []}}}}]}}
       expected: {valid: true}
     - name: village-collective-member-count-mismatch
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'collective helper count cannot change unknown into measured zero'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, collective: {<<: *collective, input_submission_count: 0}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, collective: {<<: *collective, input_submission_count: 0}}}]}}
       expected: {valid: false}
+    - name: village-collective-owner-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'collective arm shows the owner anonymous while the row shows the profile'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, collective: {<<: *collective, owner: {kind: anonymous}}}}]}}
+      expected: {valid: false}
+    - name: village-anonymous-owner-mirrored
+      classification: must-pass
+      provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'an anonymous owner on the row and the collective arm carries no identity and still mirrors'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: *villageSession, collective: {<<: *collective, owner: {kind: anonymous}}}}]}}
+      expected: {valid: true}
     - name: village-pending-member-mirrors
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'pending route uses transcript_id and branch aliases without losing member context'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, pending: &pending {transcript_id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, owner_id: '123e4567-e89b-12d3-a456-426614174001', local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_name: null, branch: null, owner_username: owner, owner_is_discoverable: true, shared_at: '2026-09-08T00:00:00Z'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: &pending {transcript_id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_name: null, branch: null, owner: *villageOwnerProfile, shared_at: '2026-09-08T00:00:00Z'}}}]}}
       expected: {valid: true}
     - name: village-pending-member-identity-mismatch
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'pending alias cannot target another public transcript'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, pending: {<<: *pending, transcript_id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: {<<: *pending, transcript_id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
       expected: {valid: false}
     - name: village-my-share-member-mirrors
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'my-shares helper keeps individual review status and usage mirrors'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, myShare: &myShare {id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, model_name: null, visibility: public, published_at: '2026-09-08T00:00:00Z', turn_count: 5, tokens_in: null, tokens_out: null, owner_id: '123e4567-e89b-12d3-a456-426614174001', local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, status: approved, shared_at: '2026-09-08T00:00:00Z'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: &myShare {id: '123e4567-e89b-12d3-a456-426614174003', title: null, model_provider: codex, model_name: null, visibility: public, published_at: '2026-09-08T00:00:00Z', turn_count: 5, tokens_in: null, tokens_out: null, owner: *villageOwnerProfile, local_id: '123e4567-e89b-12d3-a456-426614174002', parent_session_id: null, status: approved, shared_at: '2026-09-08T00:00:00Z'}}}]}}
       expected: {valid: true}
     - name: village-my-share-member-count-mismatch
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'my-shares turn count cannot replace the stored member total'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, myShare: {<<: *myShare, turn_count: 1}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, myShare: {<<: *myShare, turn_count: 1}}}]}}
       expected: {valid: false}
     - name: village-contributable-member-mirrors
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'contribution expansion preserves individual eligibility and project context'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, contributable: &contributable {id: '123e4567-e89b-12d3-a456-426614174003', local_id: '123e4567-e89b-12d3-a456-426614174002', title: null, visibility: public, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_display_name: example, project_name_source: privacy, git_branch: null, parent_session_id: null, session_origin: agent, model_provider: codex, published_at: '2026-09-08T00:00:00Z', already_shared: false}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, contributable: &contributable {id: '123e4567-e89b-12d3-a456-426614174003', local_id: '123e4567-e89b-12d3-a456-426614174002', title: null, visibility: public, project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', project_display_name: example, project_name_source: privacy, git_branch: null, parent_session_id: null, session_origin: agent, model_provider: codex, published_at: '2026-09-08T00:00:00Z', already_shared: false}}}]}}
       expected: {valid: true}
     - name: village-contributable-member-identity-mismatch
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'contribution row cannot claim another local helper identity'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {session: *villageSession, contributable: {<<: *contributable, local_id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, contributable: {<<: *contributable, local_id: '123e4567-e89b-12d3-a456-426614174004'}}}]}}
       expected: {valid: false}

@@ -1,0 +1,182 @@
+# VillagePublicOwner: a person as another viewer sees them. The server resolves
+# anonymity per viewer; these cases pin the two wire shapes, the reader rule for
+# kinds a later version adds, and which served surfaces carry the shape.
+#
+# encode: Go values a producer emits. A valid case pins the exact JSON bytes.
+# decode: raw JSON a reader receives, read by the Go decoder and the generated
+#         Zod validator alike. is_account reports whether the value is the
+#         profile of the viewer account named in the input.
+encode:
+  cases:
+    - name: profile-exact-fields
+      input: {kind: profile, id: '123e4567-e89b-12d3-a456-426614174001', username: alice, display_name: Alice, avatar_url: 'https://avatars.example/alice.png'}
+      expected: {valid: true, json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","display_name":"Alice","avatar_url":"https://avatars.example/alice.png"}'}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: emits the public profile with every declared field}
+    - name: profile-null-display-name-and-avatar
+      input: {kind: profile, id: '123e4567-e89b-12d3-a456-426614174001', username: alice}
+      expected: {valid: true, json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","display_name":null,"avatar_url":null}'}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: keeps display_name and avatar_url present as null rather than omitting them}
+    - name: anonymous-exact-fields
+      input: {kind: anonymous}
+      expected: {valid: true, json: '{"kind":"anonymous"}'}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-anonymous}
+      mutation: {description: emits only the kind for an anonymous person}
+    - name: anonymous-with-id-refused
+      input: {kind: anonymous, id: '123e4567-e89b-12d3-a456-426614174001'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-anonymous}
+      mutation: {description: adds a stable id that would link one anonymous person's transcripts}
+    - name: anonymous-with-username-refused
+      input: {kind: anonymous, username: alice}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-anonymous}
+      mutation: {description: adds the hidden handle to an anonymous person}
+    - name: anonymous-with-avatar-refused
+      input: {kind: anonymous, avatar_url: 'https://avatars.example/alice.png'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-anonymous}
+      mutation: {description: adds an avatar that can identify an anonymous person}
+    - name: profile-without-username-refused
+      input: {kind: profile, id: '123e4567-e89b-12d3-a456-426614174001'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: drops the username a profile must carry}
+    - name: profile-noncanonical-id-refused
+      input: {kind: profile, id: '123E4567-E89B-12D3-A456-426614174001', username: alice}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: village-uuid}
+      mutation: {description: uppercases the id so it is no longer the canonical Village UUID}
+    - name: undefined-kind-refused-for-producers
+      input: {kind: organization}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: emits a kind this contract version does not define}
+    - name: zero-value-refused
+      input: {}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: leaves the owner unresolved instead of choosing profile or anonymous}
+decode:
+  cases:
+    - name: profile-reads-profile
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","display_name":null,"avatar_url":null}'}
+      expected: {valid: true, profile: true, is_account: false}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: reads another person's public profile}
+    - name: own-profile-is-the-viewer
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174001', json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","display_name":"Alice","avatar_url":null}'}
+      expected: {valid: true, profile: true, is_account: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-own-check}
+      mutation: {description: reads the viewer's own profile, which is how a reader recognizes its own transcript}
+    - name: anonymous-is-never-the-viewer
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174001', json: '{"kind":"anonymous"}'}
+      expected: {valid: true, profile: false, is_account: false}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-own-check}
+      mutation: {description: reads an anonymous person, who is never the viewer}
+    - name: unknown-kind-reads-as-anonymous
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174001', json: '{"kind":"organization","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","org_login":"acme"}'}
+      expected: {valid: true, profile: false, is_account: false}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: reads a kind a later version adds, keeping no identity from it}
+    - name: anonymous-extra-fields-are-not-kept
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174001', json: '{"kind":"anonymous","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice"}'}
+      expected: {valid: true, profile: false, is_account: false}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-anonymous}
+      mutation: {description: reads an anonymous person whose producer leaked fields, keeping none of them}
+    - name: profile-later-field-ignored
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","display_name":null,"avatar_url":null,"pronouns":"she/her"}'}
+      expected: {valid: true, profile: true, is_account: false}
+      classification: must-pass
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: reads a profile carrying a field a later version adds}
+    - name: profile-missing-display-name-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"alice","avatar_url":null}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: omits display_name instead of sending null}
+    - name: profile-missing-id-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":"profile","username":"alice","display_name":null,"avatar_url":null}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-profile}
+      mutation: {description: omits the profile id}
+    - name: profile-empty-username-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":"profile","id":"123e4567-e89b-12d3-a456-426614174001","username":"","display_name":null,"avatar_url":null}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: public-owner-profile}
+      mutation: {description: empties the profile username}
+    - name: null-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: 'null'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: sends null instead of the anonymous shape}
+    - name: missing-kind-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"id":"123e4567-e89b-12d3-a456-426614174001"}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: drops the kind that selects the shape}
+    - name: empty-kind-refused
+      input: {viewer: '123e4567-e89b-12d3-a456-426614174009', json: '{"kind":""}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: public-owner-kinds}
+      mutation: {description: sends an empty kind}
+
+# surfaces pins where the served Village API carries a person.
+#
+# public_owner_properties is the exact set of component properties that hold a
+# VillagePublicOwner. self_operations may return the caller's own complete
+# VillageUser; no other operation may reach it. forbidden_properties may not
+# appear on any component another viewer's response reaches.
+surfaces:
+  public_owner_properties:
+    - SchemaVillageTranscriptMetadataResponse.owner
+    - SchemaVillageTranscriptListRow.owner
+    - SchemaVillageSessionRow.owner
+    - SchemaVillageCollectiveTranscript.owner
+    - SchemaVillagePendingShare.owner
+    - SchemaVillageUserCollectiveShare.owner
+    - SchemaVillageCollectiveMember.member
+    - SchemaVillageCollectiveContributor.contributor
+    - SchemaPullTranscriptInfo.owner
+    - SchemaPullAnnotation.author
+  self_operations:
+    - getAuthenticatedVillageUser
+  forbidden_properties:
+    - owner_id
+    - owner_username
+    - owner_avatar_url
+    - owner_is_discoverable
+    - ownerUserId
+    - ownerUsername
+    - authorUserId
+    - authorUsername
+    - github_username
+    - is_discoverable
+    - provider_user_id
+    - provider_username
+
+required_names:
+  encode: [profile-exact-fields, profile-null-display-name-and-avatar, anonymous-exact-fields, anonymous-with-id-refused, anonymous-with-username-refused, anonymous-with-avatar-refused, profile-without-username-refused, profile-noncanonical-id-refused, undefined-kind-refused-for-producers, zero-value-refused]
+  decode: [profile-reads-profile, own-profile-is-the-viewer, anonymous-is-never-the-viewer, unknown-kind-reads-as-anonymous, anonymous-extra-fields-are-not-kept, profile-later-field-ignored, profile-missing-display-name-refused, profile-missing-id-refused, profile-empty-username-refused, null-refused, missing-kind-refused, empty-kind-refused]

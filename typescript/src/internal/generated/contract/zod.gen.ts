@@ -2844,35 +2844,6 @@ export const zAnnotationsPayload = z.object({
 
 export type AnnotationsPayload = z.infer<typeof zAnnotationsPayload>;
 
-export const zPullAnnotation = z.object({
-    annotatorKind: zAnnotatorKind.optional(),
-    annotatorName: z.string().optional(),
-    authorUserId: z.string(),
-    authorUsername: z.string(),
-    confidence: z.number().nullish(),
-    contentHash: z.string().nullish(),
-    createdAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
-    id: z.string().optional(),
-    isPrimary: z.boolean().optional(),
-    provenance: zProvenance.optional(),
-    reason: z.string().nullish(),
-    supersededBy: z.string().nullish(),
-    targetAnnotationId: z.string().nullish(),
-    targetAssociationId: zAssociationID.optional(),
-    targetContentHash: z.string().nullish(),
-    targetEntryEndIndex: z.int().nullish(),
-    targetEntryIndex: z.int().nullish(),
-    targetFilePath: z.string().nullish(),
-    targetKind: zTargetKind.optional(),
-    targetProjectHash: zProjectHash.optional(),
-    targetSessionId: z.string().nullish(),
-    typeId: z.string().optional(),
-    typeName: z.string().optional(),
-    value: z.string().optional()
-});
-
-export type PullAnnotation = z.infer<typeof zPullAnnotation>;
-
 export const zQualitySession = z.object({
     date: z.string(),
     discoveryTurns: z.int(),
@@ -3869,6 +3840,13 @@ export const zVillageListTranscriptAttestation = z.object({
 
 export type VillageListTranscriptAttestation = z.infer<typeof zVillageListTranscriptAttestation>;
 
+export const zVillageListUserOrganization = z.object({
+    avatar_url: z.string().nullable(),
+    org_login: z.string()
+});
+
+export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganization>;
+
 export const zVillageMetadataUserOrganization = z.object({
     avatar_url: z.string().nullable(),
     fetched_at: z.iso.datetime(),
@@ -3902,6 +3880,98 @@ export type VillageProjectNameSource = z.infer<typeof zVillageProjectNameSource>
 export const zVillagePromptsCheckMode = z.enum(['informational', 'required']);
 
 export type VillagePromptsCheckMode = z.infer<typeof zVillagePromptsCheckMode>;
+
+/**
+ * Village Public Owner
+ *
+ * A person as another viewer sees them. The server resolves anonymity per viewer; consumers render what they receive and never re-derive the rule. profile carries id, username, display_name, and avatar_url; anonymous carries only its kind, with no id. Readers treat an unknown kind as anonymous.
+ */
+export const zVillagePublicOwner = z.union([
+    z.object({
+        avatar_url: z.string().nullable(),
+        display_name: z.string().nullable(),
+        id: z.uuid().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+        kind: z.literal('profile'),
+        username: z.string().min(1)
+    }),
+    z.object({
+        kind: z.literal('anonymous')
+    })
+]);
+
+export type VillagePublicOwner = z.infer<typeof zVillagePublicOwner>;
+
+export const zPullAnnotation = z.object({
+    annotatorKind: zAnnotatorKind.optional(),
+    annotatorName: z.string().optional(),
+    author: zVillagePublicOwner,
+    confidence: z.number().nullish(),
+    contentHash: z.string().nullish(),
+    createdAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    id: z.string().optional(),
+    isPrimary: z.boolean().optional(),
+    provenance: zProvenance.optional(),
+    reason: z.string().nullish(),
+    supersededBy: z.string().nullish(),
+    targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.optional(),
+    targetContentHash: z.string().nullish(),
+    targetEntryEndIndex: z.int().nullish(),
+    targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
+    targetKind: zTargetKind.optional(),
+    targetProjectHash: zProjectHash.optional(),
+    targetSessionId: z.string().nullish(),
+    typeId: z.string().optional(),
+    typeName: z.string().optional(),
+    value: z.string().optional()
+});
+
+export type PullAnnotation = z.infer<typeof zPullAnnotation>;
+
+export const zVillageCollectiveContributor = z.object({
+    contributor: zVillagePublicOwner,
+    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+});
+
+export type VillageCollectiveContributor = z.infer<typeof zVillageCollectiveContributor>;
+
+export const zVillageCollectiveMember = z.object({
+    github_orgs: z.array(z.string()),
+    joined_at: z.iso.datetime(),
+    member: zVillagePublicOwner,
+    role: zVillageCollectiveRole
+});
+
+export type VillageCollectiveMember = z.infer<typeof zVillageCollectiveMember>;
+
+export const zVillagePendingShare = z.object({
+    branch: z.string().nullable(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
+    local_id: zSessionID,
+    model_provider: z.string(),
+    owner: zVillagePublicOwner,
+    parent_session_id: zSessionID.nullable(),
+    project_hash: zProjectHash,
+    project_name: z.string().nullable(),
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    root_session_id: zSessionID.nullish(),
+    shared_at: z.iso.datetime(),
+    title: z.string().nullable(),
+    transcript_id: zTranscriptID
+});
+
+export type VillagePendingShare = z.infer<typeof zVillagePendingShare>;
+
+/**
+ * Village Public Owner Kind
+ *
+ * How a person is shown to the viewer: their public profile, or anonymous. Readers treat a kind they do not know as anonymous.
+ */
+export const zVillagePublicOwnerKind = z.enum(['profile', 'anonymous']);
+
+export type VillagePublicOwnerKind = z.infer<typeof zVillagePublicOwnerKind>;
 
 /**
  * Village Pull Request Attachment State
@@ -4102,6 +4172,81 @@ export const zVillageTranscriptVisibility = z.enum([
 
 export type VillageTranscriptVisibility = z.infer<typeof zVillageTranscriptVisibility>;
 
+export const zVillageCollectiveTranscript = z.object({
+    blob_size_bytes: z.int().nullable(),
+    compute_version: z.int().nullable(),
+    computed_at: z.iso.datetime().nullable(),
+    content_hash: zTranscriptContentHash.nullable(),
+    description: z.string().nullable(),
+    diagnostics_partial: z.boolean().nullable(),
+    diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
+    discovery_turns: z.int().nullable(),
+    duration_ms: z.int().nullable(),
+    exploration_ratio: z.number().nullable(),
+    files_touched: z.int().nullable(),
+    git_branch: z.string().nullable(),
+    git_remote: z.string().nullable(),
+    harness_version: z.string().nullable(),
+    id: zTranscriptID,
+    ingested_at: z.iso.datetime().nullable(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
+    license_id: zLicense.nullable(),
+    lines_changed: z.int().nullable(),
+    local_id: zSessionID,
+    m2_token_outcome_ratio: z.number().nullable(),
+    m3_unique_tool_count: z.int().nullable(),
+    m4_consecutive_error_max: z.int().nullable(),
+    m4_error_recovery_count: z.int().nullable(),
+    m5_avg_message_tokens: z.int().nullable(),
+    m5_context_utilization_pct: z.number().nullable(),
+    m5_peak_context_tokens: z.int().nullable(),
+    m6_lines_survived: z.int().nullable(),
+    m6_lines_total: z.int().nullable(),
+    m6_output_survival_pct: z.number().nullable(),
+    m7_spec_has_constraints: z.boolean().nullable(),
+    m7_spec_has_examples: z.boolean().nullable(),
+    m7_spec_word_count: z.int().nullable(),
+    model_name: z.string().nullable(),
+    model_provider: z.string(),
+    outcome: zSessionOutcome.nullable(),
+    owner: zVillagePublicOwner,
+    parent_session_id: zSessionID.nullable(),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name: z.string().nullable(),
+    project_name_source: zVillageProjectNameSource,
+    project_remote_label: z.string(),
+    published_at: z.iso.datetime(),
+    pull_requests: zVillagePullRequestsSummary,
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retry_loops: z.int().nullable(),
+    retry_tokens_wasted: z.int().nullable(),
+    root_session_id: zSessionID.nullish(),
+    schema_version: z.string(),
+    scope_breadth: z.int().nullable(),
+    session_end: z.iso.datetime().nullable(),
+    session_origin: zSessionOrigin,
+    session_start: z.iso.datetime().nullable(),
+    signal_density: z.number().nullable(),
+    source_format: zSourceFormat.nullable(),
+    spec_quality_score: z.number().nullable(),
+    subagent_count: z.int().nullable(),
+    subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
+    title: z.string().nullable(),
+    title_generated: z.string().nullable(),
+    token_count: z.int().nullable(),
+    tokens_in: z.int().nullable(),
+    tokens_out: z.int().nullable(),
+    tool_call_count: z.int().nullable(),
+    turn_count: z.int().nullable(),
+    updated_at: z.iso.datetime(),
+    visibility: zVillageTranscriptVisibility,
+    within_session_reverts: z.int().nullable()
+});
+
+export type VillageCollectiveTranscript = z.infer<typeof zVillageCollectiveTranscript>;
+
 export const zVillageContributableTranscript = z.object({
     already_shared: z.boolean(),
     git_branch: z.string().nullable(),
@@ -4133,6 +4278,79 @@ export const zVillagePullRequestAttachedTranscript = z.object({
 });
 
 export type VillagePullRequestAttachedTranscript = z.infer<typeof zVillagePullRequestAttachedTranscript>;
+
+export const zVillageTranscript = z.object({
+    blob_size_bytes: z.int().nullable(),
+    compute_version: z.int().nullable(),
+    computed_at: z.iso.datetime().nullable(),
+    content_hash: zTranscriptContentHash.nullable(),
+    description: z.string().nullable(),
+    diagnostics_partial: z.boolean().nullable(),
+    diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
+    discovery_turns: z.int().nullable(),
+    duration_ms: z.int().nullable(),
+    exploration_ratio: z.number().nullable(),
+    files_touched: z.int().nullable(),
+    git_branch: z.string().nullable(),
+    git_remote: z.string().nullable(),
+    harness_version: z.string().nullable(),
+    id: zTranscriptID,
+    ingested_at: z.iso.datetime().nullable(),
+    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
+    license_id: zLicense.nullable(),
+    lines_changed: z.int().nullable(),
+    local_id: zSessionID,
+    m2_token_outcome_ratio: z.number().nullable(),
+    m3_unique_tool_count: z.int().nullable(),
+    m4_consecutive_error_max: z.int().nullable(),
+    m4_error_recovery_count: z.int().nullable(),
+    m5_avg_message_tokens: z.int().nullable(),
+    m5_context_utilization_pct: z.number().nullable(),
+    m5_peak_context_tokens: z.int().nullable(),
+    m6_lines_survived: z.int().nullable(),
+    m6_lines_total: z.int().nullable(),
+    m6_output_survival_pct: z.number().nullable(),
+    m7_spec_has_constraints: z.boolean().nullable(),
+    m7_spec_has_examples: z.boolean().nullable(),
+    m7_spec_word_count: z.int().nullable(),
+    model_name: z.string().nullable(),
+    model_provider: z.string(),
+    outcome: zSessionOutcome.nullable(),
+    parent_session_id: zSessionID.nullable(),
+    project_display_name: z.string(),
+    project_hash: zProjectHash,
+    project_name: z.string().nullable(),
+    project_name_source: zVillageProjectNameSource,
+    project_remote_label: z.string(),
+    published_at: z.iso.datetime(),
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retry_loops: z.int().nullable(),
+    retry_tokens_wasted: z.int().nullable(),
+    root_session_id: zSessionID.nullish(),
+    schema_version: z.string(),
+    scope_breadth: z.int().nullable(),
+    session_end: z.iso.datetime().nullable(),
+    session_origin: zSessionOrigin,
+    session_start: z.iso.datetime().nullable(),
+    signal_density: z.number().nullable(),
+    source_format: zSourceFormat.nullable(),
+    spec_quality_score: z.number().nullable(),
+    subagent_count: z.int().nullable(),
+    subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
+    title: z.string().nullable(),
+    title_generated: z.string().nullable(),
+    token_count: z.int().nullable(),
+    tokens_in: z.int().nullable(),
+    tokens_out: z.int().nullable(),
+    tool_call_count: z.int().nullable(),
+    turn_count: z.int().nullable(),
+    updated_at: z.iso.datetime(),
+    visibility: zVillageTranscriptVisibility,
+    within_session_reverts: z.int().nullable()
+});
+
+export type VillageTranscript = z.infer<typeof zVillageTranscript>;
 
 /**
  * Village UUID
@@ -4414,15 +4632,6 @@ export const zVillageCollective = z.object({
 
 export type VillageCollective = z.infer<typeof zVillageCollective>;
 
-export const zVillageCollectiveContributor = z.object({
-    avatar_url: z.string().nullable(),
-    github_username: z.string(),
-    id: zVillageUUID,
-    transcript_count: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
-});
-
-export type VillageCollectiveContributor = z.infer<typeof zVillageCollectiveContributor>;
-
 export const zVillageCollectiveDetailRecord = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
     created_at: z.iso.datetime(),
@@ -4441,17 +4650,19 @@ export const zVillageCollectiveDetailRecord = z.object({
 
 export type VillageCollectiveDetailRecord = z.infer<typeof zVillageCollectiveDetailRecord>;
 
-export const zVillageCollectiveMember = z.object({
-    avatar_url: z.string().nullable(),
-    display_name: z.string().nullable(),
-    github_orgs: z.array(z.string()),
-    github_username: z.string(),
-    id: zVillageUUID,
-    joined_at: z.iso.datetime(),
-    role: zVillageCollectiveRole
+export const zVillageCollectiveDetailResponse = z.object({
+    can_read: z.boolean(),
+    contributors: z.array(zVillageCollectiveContributor),
+    group: zVillageCollectiveDetailRecord,
+    members: z.array(zVillageCollectiveMember),
+    models: z.array(zVillageCollectiveModelBreakdown),
+    pending_members: z.array(zVillageCollectiveMember).optional(),
+    stats: zVillageCollectiveTranscriptStats,
+    transcripts: z.array(zVillageCollectiveTranscript),
+    your_role: zVillageCollectiveViewerRole
 });
 
-export type VillageCollectiveMember = z.infer<typeof zVillageCollectiveMember>;
+export type VillageCollectiveDetailResponse = z.infer<typeof zVillageCollectiveDetailResponse>;
 
 export const zVillageCollectiveSearchResult = z.object({
     description: z.string().nullable(),
@@ -4480,98 +4691,6 @@ export const zVillageCollectiveSubmission = z.object({
 });
 
 export type VillageCollectiveSubmission = z.infer<typeof zVillageCollectiveSubmission>;
-
-export const zVillageCollectiveTranscript = z.object({
-    blob_size_bytes: z.int().nullable(),
-    compute_version: z.int().nullable(),
-    computed_at: z.iso.datetime().nullable(),
-    content_hash: zTranscriptContentHash.nullable(),
-    description: z.string().nullable(),
-    diagnostics_partial: z.boolean().nullable(),
-    diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
-    discovery_turns: z.int().nullable(),
-    duration_ms: z.int().nullable(),
-    exploration_ratio: z.number().nullable(),
-    files_touched: z.int().nullable(),
-    git_branch: z.string().nullable(),
-    git_remote: z.string().nullable(),
-    harness_version: z.string().nullable(),
-    id: zTranscriptID,
-    ingested_at: z.iso.datetime().nullable(),
-    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
-    license_id: zLicense.nullable(),
-    lines_changed: z.int().nullable(),
-    local_id: zSessionID,
-    m2_token_outcome_ratio: z.number().nullable(),
-    m3_unique_tool_count: z.int().nullable(),
-    m4_consecutive_error_max: z.int().nullable(),
-    m4_error_recovery_count: z.int().nullable(),
-    m5_avg_message_tokens: z.int().nullable(),
-    m5_context_utilization_pct: z.number().nullable(),
-    m5_peak_context_tokens: z.int().nullable(),
-    m6_lines_survived: z.int().nullable(),
-    m6_lines_total: z.int().nullable(),
-    m6_output_survival_pct: z.number().nullable(),
-    m7_spec_has_constraints: z.boolean().nullable(),
-    m7_spec_has_examples: z.boolean().nullable(),
-    m7_spec_word_count: z.int().nullable(),
-    model_name: z.string().nullable(),
-    model_provider: z.string(),
-    outcome: zSessionOutcome.nullable(),
-    owner_avatar_url: z.string().nullable(),
-    owner_id: zVillageUUID,
-    owner_is_discoverable: z.boolean(),
-    owner_username: z.string(),
-    parent_session_id: zSessionID.nullable(),
-    project_display_name: z.string(),
-    project_hash: zProjectHash,
-    project_name: z.string().nullable(),
-    project_name_source: zVillageProjectNameSource,
-    project_remote_label: z.string(),
-    published_at: z.iso.datetime(),
-    pull_requests: zVillagePullRequestsSummary,
-    purpose: zSessionPurpose.optional(),
-    relationships: z.array(zSessionRelationship).optional(),
-    retry_loops: z.int().nullable(),
-    retry_tokens_wasted: z.int().nullable(),
-    root_session_id: zSessionID.nullish(),
-    schema_version: z.string(),
-    scope_breadth: z.int().nullable(),
-    session_end: z.iso.datetime().nullable(),
-    session_origin: zSessionOrigin,
-    session_start: z.iso.datetime().nullable(),
-    signal_density: z.number().nullable(),
-    source_format: zSourceFormat.nullable(),
-    spec_quality_score: z.number().nullable(),
-    subagent_count: z.int().nullable(),
-    subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
-    title: z.string().nullable(),
-    title_generated: z.string().nullable(),
-    token_count: z.int().nullable(),
-    tokens_in: z.int().nullable(),
-    tokens_out: z.int().nullable(),
-    tool_call_count: z.int().nullable(),
-    turn_count: z.int().nullable(),
-    updated_at: z.iso.datetime(),
-    visibility: zVillageTranscriptVisibility,
-    within_session_reverts: z.int().nullable()
-});
-
-export type VillageCollectiveTranscript = z.infer<typeof zVillageCollectiveTranscript>;
-
-export const zVillageCollectiveDetailResponse = z.object({
-    can_read: z.boolean(),
-    contributors: z.array(zVillageCollectiveContributor),
-    group: zVillageCollectiveDetailRecord,
-    members: z.array(zVillageCollectiveMember),
-    models: z.array(zVillageCollectiveModelBreakdown),
-    pending_members: z.array(zVillageCollectiveMember).optional(),
-    stats: zVillageCollectiveTranscriptStats,
-    transcripts: z.array(zVillageCollectiveTranscript),
-    your_role: zVillageCollectiveViewerRole
-});
-
-export type VillageCollectiveDetailResponse = z.infer<typeof zVillageCollectiveDetailResponse>;
 
 export const zVillageContributableResponse = z.object({
     group_id: zVillageUUID,
@@ -4630,14 +4749,6 @@ export const zVillageLinkedRepositoriesResponse = z.object({
 
 export type VillageLinkedRepositoriesResponse = z.infer<typeof zVillageLinkedRepositoriesResponse>;
 
-export const zVillageListUserOrganization = z.object({
-    avatar_url: z.string().nullable(),
-    org_login: z.string(),
-    user_id: zVillageUUID
-});
-
-export type VillageListUserOrganization = z.infer<typeof zVillageListUserOrganization>;
-
 export const zVillageOrganizationCollective = z.object({
     description: z.string().nullable(),
     id: zVillageUUID,
@@ -4653,27 +4764,6 @@ export const zVillageOrganizationCollectivesResponse = z.object({
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("VillageOrganizationCollectivesResponse", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
 export type VillageOrganizationCollectivesResponse = z.infer<typeof zVillageOrganizationCollectivesResponse>;
-
-export const zVillagePendingShare = z.object({
-    branch: z.string().nullable(),
-    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
-    local_id: zSessionID,
-    model_provider: z.string(),
-    owner_id: zVillageUUID,
-    owner_is_discoverable: z.boolean(),
-    owner_username: z.string(),
-    parent_session_id: zSessionID.nullable(),
-    project_hash: zProjectHash,
-    project_name: z.string().nullable(),
-    purpose: zSessionPurpose.optional(),
-    relationships: z.array(zSessionRelationship).optional(),
-    root_session_id: zSessionID.nullish(),
-    shared_at: z.iso.datetime(),
-    title: z.string().nullable(),
-    transcript_id: zTranscriptID
-});
-
-export type VillagePendingShare = z.infer<typeof zVillagePendingShare>;
 
 export const zVillagePublicCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
@@ -4733,80 +4823,6 @@ export const zVillageTag = z.object({
 
 export type VillageTag = z.infer<typeof zVillageTag>;
 
-export const zVillageTranscript = z.object({
-    blob_size_bytes: z.int().nullable(),
-    compute_version: z.int().nullable(),
-    computed_at: z.iso.datetime().nullable(),
-    content_hash: zTranscriptContentHash.nullable(),
-    description: z.string().nullable(),
-    diagnostics_partial: z.boolean().nullable(),
-    diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
-    discovery_turns: z.int().nullable(),
-    duration_ms: z.int().nullable(),
-    exploration_ratio: z.number().nullable(),
-    files_touched: z.int().nullable(),
-    git_branch: z.string().nullable(),
-    git_remote: z.string().nullable(),
-    harness_version: z.string().nullable(),
-    id: zTranscriptID,
-    ingested_at: z.iso.datetime().nullable(),
-    input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
-    license_id: zLicense.nullable(),
-    lines_changed: z.int().nullable(),
-    local_id: zSessionID,
-    m2_token_outcome_ratio: z.number().nullable(),
-    m3_unique_tool_count: z.int().nullable(),
-    m4_consecutive_error_max: z.int().nullable(),
-    m4_error_recovery_count: z.int().nullable(),
-    m5_avg_message_tokens: z.int().nullable(),
-    m5_context_utilization_pct: z.number().nullable(),
-    m5_peak_context_tokens: z.int().nullable(),
-    m6_lines_survived: z.int().nullable(),
-    m6_lines_total: z.int().nullable(),
-    m6_output_survival_pct: z.number().nullable(),
-    m7_spec_has_constraints: z.boolean().nullable(),
-    m7_spec_has_examples: z.boolean().nullable(),
-    m7_spec_word_count: z.int().nullable(),
-    model_name: z.string().nullable(),
-    model_provider: z.string(),
-    outcome: zSessionOutcome.nullable(),
-    owner_id: zVillageUUID,
-    parent_session_id: zSessionID.nullable(),
-    project_display_name: z.string(),
-    project_hash: zProjectHash,
-    project_name: z.string().nullable(),
-    project_name_source: zVillageProjectNameSource,
-    project_remote_label: z.string(),
-    published_at: z.iso.datetime(),
-    purpose: zSessionPurpose.optional(),
-    relationships: z.array(zSessionRelationship).optional(),
-    retry_loops: z.int().nullable(),
-    retry_tokens_wasted: z.int().nullable(),
-    root_session_id: zSessionID.nullish(),
-    schema_version: z.string(),
-    scope_breadth: z.int().nullable(),
-    session_end: z.iso.datetime().nullable(),
-    session_origin: zSessionOrigin,
-    session_start: z.iso.datetime().nullable(),
-    signal_density: z.number().nullable(),
-    source_format: zSourceFormat.nullable(),
-    spec_quality_score: z.number().nullable(),
-    subagent_count: z.int().nullable(),
-    subagents: z.array(z.record(z.string(), z.unknown())).nullable(),
-    title: z.string().nullable(),
-    title_generated: z.string().nullable(),
-    token_count: z.int().nullable(),
-    tokens_in: z.int().nullable(),
-    tokens_out: z.int().nullable(),
-    tool_call_count: z.int().nullable(),
-    turn_count: z.int().nullable(),
-    updated_at: z.iso.datetime(),
-    visibility: zVillageTranscriptVisibility,
-    within_session_reverts: z.int().nullable()
-});
-
-export type VillageTranscript = z.infer<typeof zVillageTranscript>;
-
 export const zVillageTranscriptAttestation = z.object({
     attestation_type: z.string(),
     attester_avatar: z.string().nullable(),
@@ -4836,6 +4852,28 @@ export const zVillageTranscriptCollectivesResponse = z.object({
 
 export type VillageTranscriptCollectivesResponse = z.infer<typeof zVillageTranscriptCollectivesResponse>;
 
+export const zVillageTranscriptListRow = z.object({
+    attestations: z.array(zVillageListTranscriptAttestation).nullable(),
+    owner: zVillagePublicOwner,
+    owner_orgs: z.array(zVillageListUserOrganization).nullable(),
+    pull_requests: zVillagePullRequestsSummary,
+    shares: z.array(zVillageEnrichedTranscriptShare).nullable(),
+    tags: z.array(zVillageTag),
+    transcript: zVillageTranscript
+});
+
+export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>;
+
+export const zVillageTranscriptListResponse = z.object({
+    agent_total: z.int(),
+    limit: z.int(),
+    page: z.int(),
+    total: z.int(),
+    transcripts: z.array(zVillageTranscriptListRow)
+});
+
+export type VillageTranscriptListResponse = z.infer<typeof zVillageTranscriptListResponse>;
+
 export const zVillageTranscriptShare = z.object({
     group_id: zVillageUUID,
     group_name: z.string(),
@@ -4843,6 +4881,19 @@ export const zVillageTranscriptShare = z.object({
 });
 
 export type VillageTranscriptShare = z.infer<typeof zVillageTranscriptShare>;
+
+export const zVillageTranscriptMetadataResponse = z.object({
+    attestations: z.array(zVillageTranscriptAttestation),
+    enriched_shares: z.array(zVillageEnrichedTranscriptShare),
+    owner: zVillagePublicOwner,
+    owner_orgs: z.array(zVillageMetadataUserOrganization),
+    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
+    shares: z.array(zVillageTranscriptShare),
+    tags: z.array(zVillageTag),
+    transcript: zVillageTranscript
+});
+
+export type VillageTranscriptMetadataResponse = z.infer<typeof zVillageTranscriptMetadataResponse>;
 
 export const zVillageUpdateCollectiveRequest = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode.optional(),
@@ -4881,41 +4932,6 @@ export const zVillageUser = z.object({
 });
 
 export type VillageUser = z.infer<typeof zVillageUser>;
-
-export const zVillageTranscriptListRow = z.object({
-    attestations: z.array(zVillageListTranscriptAttestation).nullable(),
-    owner: zVillageUser,
-    owner_orgs: z.array(zVillageListUserOrganization).nullable(),
-    pull_requests: zVillagePullRequestsSummary,
-    shares: z.array(zVillageEnrichedTranscriptShare).nullable(),
-    tags: z.array(zVillageTag),
-    transcript: zVillageTranscript
-});
-
-export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>;
-
-export const zVillageTranscriptListResponse = z.object({
-    agent_total: z.int(),
-    limit: z.int(),
-    page: z.int(),
-    total: z.int(),
-    transcripts: z.array(zVillageTranscriptListRow)
-});
-
-export type VillageTranscriptListResponse = z.infer<typeof zVillageTranscriptListResponse>;
-
-export const zVillageTranscriptMetadataResponse = z.object({
-    attestations: z.array(zVillageTranscriptAttestation),
-    enriched_shares: z.array(zVillageEnrichedTranscriptShare),
-    owner: zVillageUser,
-    owner_orgs: z.array(zVillageMetadataUserOrganization),
-    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
-    shares: z.array(zVillageTranscriptShare),
-    tags: z.array(zVillageTag),
-    transcript: zVillageTranscript
-});
-
-export type VillageTranscriptMetadataResponse = z.infer<typeof zVillageTranscriptMetadataResponse>;
 
 export const zVillageUserCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,
@@ -4956,7 +4972,7 @@ export const zVillageUserCollectiveShare = z.object({
     local_id: zSessionID,
     model_name: z.string().nullable(),
     model_provider: z.string(),
-    owner_id: zVillageUUID,
+    owner: zVillagePublicOwner,
     parent_session_id: zSessionID.nullable(),
     published_at: z.iso.datetime(),
     purpose: zSessionPurpose.optional(),
@@ -4977,6 +4993,7 @@ export const zVillageSessionRow = z.object({
     collective: zVillageCollectiveTranscript.nullish(),
     contributable: zVillageContributableTranscript.nullish(),
     myShare: zVillageUserCollectiveShare.nullish(),
+    owner: zVillagePublicOwner,
     pending: zVillagePendingShare.nullish(),
     session: zVillageTranscript
 }).superRefine((value, context) => {
@@ -4995,10 +5012,11 @@ export const zVillageSessionRow = z.object({
       const row = v as Record<string, unknown>, session = s as unknown as Record<string, unknown>;
       for (const key of keys) if (!equal(row[key], session[aliases[key] ?? key])) fail("route identity or metric mirrors disagree; derive both from the same row");
     };
+    for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "id", "owner_id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
-    check(value.pending, [...graph, "transcript_id", "owner_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "id", "owner_id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.collective, [...graph, "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    check(value.pending, [...graph, "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
+    check(value.myShare, [...graph, "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
   });
 
@@ -5192,8 +5210,7 @@ export const zPullTranscriptInfo = z.object({
     harness: zHarness.optional(),
     license: zLicense.optional(),
     localId: z.string().optional(),
-    ownerUserId: z.string(),
-    ownerUsername: z.string(),
+    owner: zVillagePublicOwner,
     projectName: z.string().optional(),
     publishedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     title: z.string().optional(),

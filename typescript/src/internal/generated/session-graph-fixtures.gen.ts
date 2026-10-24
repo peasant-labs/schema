@@ -3130,6 +3130,8 @@ export const canonicalSessionGraphFixtures = {
       "local-search-member-identity-mismatch",
       "village-collective-member-mirrors",
       "village-collective-member-count-mismatch",
+      "village-collective-owner-mismatch",
+      "village-anonymous-owner-mirrored",
       "village-pending-member-mirrors",
       "village-pending-member-identity-mismatch",
       "village-my-share-member-mirrors",
@@ -3205,9 +3207,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -3348,9 +3356,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174004",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -3557,9 +3571,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -3735,9 +3755,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -3815,9 +3841,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -3972,9 +4004,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4267,9 +4305,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4433,9 +4477,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4513,9 +4563,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174004",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4656,9 +4712,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4808,9 +4870,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -4951,9 +5019,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -5102,9 +5176,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -5562,9 +5642,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174005",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -5668,9 +5754,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174006",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -5773,9 +5865,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174007",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -5920,9 +6018,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -6270,9 +6374,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -6485,9 +6595,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -6565,9 +6681,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174004",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -6716,9 +6838,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -6867,9 +6995,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7213,9 +7347,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7282,7 +7422,6 @@ export const canonicalSessionGraphFixtures = {
                     },
                     "collective": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7346,9 +7485,13 @@ export const canonicalSessionGraphFixtures = {
                       "content_hash": null,
                       "license_id": null,
                       "session_origin": "agent",
-                      "owner_username": "owner",
-                      "owner_avatar_url": null,
-                      "owner_is_discoverable": true,
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "pull_requests": {
                         "count": 0,
                         "recent": []
@@ -7391,9 +7534,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7460,7 +7609,6 @@ export const canonicalSessionGraphFixtures = {
                     },
                     "collective": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7524,9 +7672,13 @@ export const canonicalSessionGraphFixtures = {
                       "content_hash": null,
                       "license_id": null,
                       "session_origin": "agent",
-                      "owner_username": "owner",
-                      "owner_avatar_url": null,
-                      "owner_is_discoverable": true,
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "pull_requests": {
                         "count": 0,
                         "recent": []
@@ -7554,6 +7706,368 @@ export const canonicalSessionGraphFixtures = {
           }
         },
         {
+          "name": "village-collective-owner-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "the owner is resolved once per viewer and mirrored into the route arm"
+          },
+          "mutation": {
+            "description": "collective arm shows the owner anonymous while the row shows the profile"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "collective": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "owner": {
+                        "kind": "anonymous"
+                      },
+                      "pull_requests": {
+                        "count": 0,
+                        "recent": []
+                      }
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "village-anonymous-owner-mirrored",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "the owner is resolved once per viewer and mirrored into the route arm"
+          },
+          "mutation": {
+            "description": "an anonymous owner on the row and the collective arm carries no identity and still mirrors"
+          },
+          "input": {
+            "schema": "VillageHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "owner": {
+                      "kind": "anonymous"
+                    },
+                    "session": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent"
+                    },
+                    "collective": {
+                      "id": "123e4567-e89b-12d3-a456-426614174003",
+                      "local_id": "123e4567-e89b-12d3-a456-426614174002",
+                      "title": null,
+                      "description": null,
+                      "visibility": "public",
+                      "model_provider": "codex",
+                      "model_name": null,
+                      "harness_version": null,
+                      "session_start": null,
+                      "session_end": null,
+                      "turn_count": 5,
+                      "token_count": 13,
+                      "blob_size_bytes": null,
+                      "schema_version": "11",
+                      "published_at": "2026-09-08T00:00:00Z",
+                      "updated_at": "2026-09-08T00:00:00Z",
+                      "parent_session_id": null,
+                      "ingested_at": null,
+                      "source_format": null,
+                      "git_branch": null,
+                      "git_remote": null,
+                      "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "project_name": null,
+                      "project_display_name": "example",
+                      "project_name_source": "privacy",
+                      "project_remote_label": "",
+                      "tool_call_count": null,
+                      "subagent_count": null,
+                      "duration_ms": null,
+                      "subagents": null,
+                      "diagnostics_warnings": null,
+                      "diagnostics_partial": null,
+                      "tokens_in": null,
+                      "tokens_out": null,
+                      "title_generated": null,
+                      "outcome": null,
+                      "files_touched": null,
+                      "lines_changed": null,
+                      "retry_loops": null,
+                      "retry_tokens_wasted": null,
+                      "within_session_reverts": null,
+                      "signal_density": null,
+                      "spec_quality_score": null,
+                      "exploration_ratio": null,
+                      "scope_breadth": null,
+                      "discovery_turns": null,
+                      "m2_token_outcome_ratio": null,
+                      "m3_unique_tool_count": null,
+                      "m4_error_recovery_count": null,
+                      "m4_consecutive_error_max": null,
+                      "m5_context_utilization_pct": null,
+                      "m5_peak_context_tokens": null,
+                      "m5_avg_message_tokens": null,
+                      "m6_output_survival_pct": null,
+                      "m6_lines_survived": null,
+                      "m6_lines_total": null,
+                      "m7_spec_word_count": null,
+                      "m7_spec_has_examples": null,
+                      "m7_spec_has_constraints": null,
+                      "computed_at": null,
+                      "compute_version": null,
+                      "content_hash": null,
+                      "license_id": null,
+                      "session_origin": "agent",
+                      "owner": {
+                        "kind": "anonymous"
+                      },
+                      "pull_requests": {
+                        "count": 0,
+                        "recent": []
+                      }
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
           "name": "village-pending-member-mirrors",
           "classification": "must-pass",
           "provenance": {
@@ -7570,9 +8084,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7641,14 +8161,18 @@ export const canonicalSessionGraphFixtures = {
                       "transcript_id": "123e4567-e89b-12d3-a456-426614174003",
                       "title": null,
                       "model_provider": "codex",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "parent_session_id": null,
                       "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                       "project_name": null,
                       "branch": null,
-                      "owner_username": "owner",
-                      "owner_is_discoverable": true,
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "shared_at": "2026-09-08T00:00:00Z"
                     }
                   },
@@ -7688,9 +8212,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7759,14 +8289,18 @@ export const canonicalSessionGraphFixtures = {
                       "transcript_id": "123e4567-e89b-12d3-a456-426614174004",
                       "title": null,
                       "model_provider": "codex",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "parent_session_id": null,
                       "project_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                       "project_name": null,
                       "branch": null,
-                      "owner_username": "owner",
-                      "owner_is_discoverable": true,
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "shared_at": "2026-09-08T00:00:00Z"
                     }
                   },
@@ -7806,9 +8340,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -7883,7 +8423,13 @@ export const canonicalSessionGraphFixtures = {
                       "turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "parent_session_id": null,
                       "status": "approved",
@@ -7926,9 +8472,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -8003,7 +8555,13 @@ export const canonicalSessionGraphFixtures = {
                       "turn_count": 1,
                       "tokens_in": null,
                       "tokens_out": null,
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
+                      "owner": {
+                        "kind": "profile",
+                        "id": "123e4567-e89b-12d3-a456-426614174001",
+                        "username": "owner",
+                        "display_name": null,
+                        "avatar_url": null
+                      },
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "parent_session_id": null,
                       "status": "approved",
@@ -8046,9 +8604,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,
@@ -8165,9 +8729,15 @@ export const canonicalSessionGraphFixtures = {
                 {
                   "kind": "transcript",
                   "transcript": {
+                    "owner": {
+                      "kind": "profile",
+                      "id": "123e4567-e89b-12d3-a456-426614174001",
+                      "username": "owner",
+                      "display_name": null,
+                      "avatar_url": null
+                    },
                     "session": {
                       "id": "123e4567-e89b-12d3-a456-426614174003",
-                      "owner_id": "123e4567-e89b-12d3-a456-426614174001",
                       "local_id": "123e4567-e89b-12d3-a456-426614174002",
                       "title": null,
                       "description": null,

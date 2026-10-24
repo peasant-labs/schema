@@ -292,8 +292,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		ID string `path:"id"`
 	}))
 	pullMetaOC.AddRespStructure(new(schema.PullTranscriptInfo))
-	pullMetaOC.SetDescription("Get a pullable transcript's metadata (owner, visibility, " +
-		"server-computed content_hash, push contract version). 404 (not 403) when not pullable.")
+	pullMetaOC.SetDescription("Get a pullable transcript's metadata (the owner as the caller may see them, " +
+		"visibility, server-computed content_hash, push contract version). The server resolves the owner per " +
+		"viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable.")
 	pullMetaOC.SetID("getPullTranscript")
 	pullMetaOC.SetTags("pull")
 	if err := r.AddOperation(pullMetaOC); err != nil {
@@ -319,7 +320,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// GET /api/v1/pull/transcripts/{id}/annotations — PullAnnotation rows with
-	// author identity (users join on annotations.owner_id).
+	// the author as the caller may see them.
 	pullAnnotOC, err := r.NewOperationContext(http.MethodGet, "/api/v1/pull/transcripts/{id}/annotations")
 	if err != nil {
 		return nil, fmt.Errorf("new pull annotations operation: %w", err)
@@ -329,7 +330,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}))
 	pullAnnotOC.AddRespStructure(new([]schema.PullAnnotation))
 	pullAnnotOC.SetDescription("List a transcript's annotations as PullAnnotation rows (AnnotationSummary " +
-		"plus author identity), so pulled annotations can be foreign-marked and own-authored rows excluded.")
+		"plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows " +
+		"carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id " +
+		"with the caller's account; an anonymous author is never the caller and is foreign-marked.")
 	pullAnnotOC.SetID("getPullTranscriptAnnotations")
 	pullAnnotOC.SetTags("pull")
 	if err := r.AddOperation(pullAnnotOC); err != nil {

@@ -89,7 +89,13 @@ const (
 	// diagnostics_warnings as bare strings: publication carries structured
 	// DiagnosticEntry objects, so the declared read shape could never describe a
 	// stored row (corrective type change = minor bump on a 0.x contract).
-	VillageAPIVersion = "0.28.0"
+	// Bumped to 0.29.0 when every response that shows a person to another
+	// viewer adopted VillagePublicOwner (a profile or anonymous, resolved by
+	// the server per viewer) in place of the whole VillageUser, owner ids,
+	// usernames, avatars, and discoverable flags; the pull envelope moved to
+	// pull contract 0.3.0 with it (breaking change on a 0.x contract = minor
+	// bump).
+	VillageAPIVersion = "0.29.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -210,5 +216,8 @@ const (
 	// Bumped to 0.33.0 when the catalog's Village transcript metadata adopted
 	// structured DiagnosticEntry diagnostics warnings instead of bare strings,
 	// matching what publication carries and Village stores.
-	TypesVersion = "0.33.0"
+	// Bumped to 0.34.0 when VillagePublicOwner and its kind entered the
+	// catalog and the catalog's Village rows and pull envelope adopted it in
+	// place of owner ids, usernames, avatars, and the whole VillageUser.
+	TypesVersion = "0.34.0"
 )

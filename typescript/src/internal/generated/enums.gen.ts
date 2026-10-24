@@ -78,6 +78,7 @@ import { zNativePiMessageRole, type NativePiMessageRole as NativePiMessageRoleCo
 import { zDigestItemKind, type DigestItemKind as DigestItemKindContract } from "./contract/zod.gen.js";
 import { zVillagePullRequestAttachmentState, type VillagePullRequestAttachmentState as VillagePullRequestAttachmentStateContract } from "./contract/zod.gen.js";
 import { zVillagePromptsCheckMode, type VillagePromptsCheckMode as VillagePromptsCheckModeContract } from "./contract/zod.gen.js";
+import { zVillagePublicOwnerKind, type VillagePublicOwnerKind as VillagePublicOwnerKindContract } from "./contract/zod.gen.js";
 import { zSessionRelationshipKind, type SessionRelationshipKind as SessionRelationshipKindContract } from "./contract/zod.gen.js";
 import { zRelationshipTargetState, type RelationshipTargetState as RelationshipTargetStateContract } from "./contract/zod.gen.js";
 import { zEvidenceKind, type EvidenceKind as EvidenceKindContract } from "./contract/zod.gen.js";
@@ -1055,6 +1056,16 @@ export const VillagePromptsCheckMode = Object.freeze({
 export const AllVillagePromptsCheckModes = Object.freeze([VillagePromptsCheckMode.Informational, VillagePromptsCheckMode.Required]) as readonly VillagePromptsCheckMode[];
 export function isVillagePromptsCheckMode(value: unknown): value is VillagePromptsCheckMode {
   return zVillagePromptsCheckMode.safeParse(value).success;
+}
+
+export type VillagePublicOwnerKind = VillagePublicOwnerKindContract;
+export const VillagePublicOwnerKind = Object.freeze({
+  Profile: zVillagePublicOwnerKind.parse("profile"),
+  Anonymous: zVillagePublicOwnerKind.parse("anonymous"),
+} as const);
+export const AllVillagePublicOwnerKinds = Object.freeze([VillagePublicOwnerKind.Profile, VillagePublicOwnerKind.Anonymous]) as readonly VillagePublicOwnerKind[];
+export function isVillagePublicOwnerKind(value: unknown): value is VillagePublicOwnerKind {
+  return zVillagePublicOwnerKind.safeParse(value).success;
 }
 
 export type SessionRelationshipKind = SessionRelationshipKindContract;
