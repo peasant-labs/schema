@@ -80,6 +80,12 @@ func (VillagePromptsCheckMode) JSONSchema() (jsonschema.Schema, error) {
 // VillagePullRequestAttachment is one pull request's attachment row. Title and
 // HeadRef are the pull request's title and head branch; they are null when
 // Village does not know them.
+//
+// Author is the pull request's author and RequestedBy the person who asked
+// for prompts, each as this viewer may see them, resolved by the server per
+// viewer. RequestedBy is null when no request was recorded. A requester
+// without a Village account is anonymous, exactly like a hidden one, so the
+// shape never reveals whether a GitHub user has a Village account.
 type VillagePullRequestAttachment struct {
 	ID                  VillageUUID                       `json:"id"`
 	Owner               string                            `json:"owner"`
@@ -90,8 +96,8 @@ type VillagePullRequestAttachment struct {
 	HeadSHA             string                            `json:"head_sha"`
 	IsPrivateRepository bool                              `json:"is_private_repository"`
 	State               VillagePullRequestAttachmentState `json:"state"`
-	AuthorUserID        *VillageUUID                      `json:"author_user_id"`
-	RequestedByGithubID *int64                            `json:"requested_by_github_id"`
+	Author              VillagePublicOwner                `json:"author"`
+	RequestedBy         *VillagePublicOwner               `json:"requested_by"`
 	CommentID           *int64                            `json:"comment_id"`
 	CheckRunID          *int64                            `json:"check_run_id"`
 	CreatedAt           time.Time                         `json:"created_at"`
@@ -214,7 +220,10 @@ func (r VillageTranscriptPullRequestsResponse) Validate() error {
 	return nil
 }
 
-// VillagePullRequestRef names one pull request.
+// VillagePullRequestRef names one pull request. A pull request the owner
+// attached is shown even when the owner is anonymous; attaching is the owner's
+// own act, and the pull request is public on GitHub. A later per-transcript
+// credit choice may revisit this.
 type VillagePullRequestRef struct {
 	Owner  string `json:"owner" minLength:"1"`
 	Name   string `json:"name" minLength:"1"`
@@ -235,7 +244,8 @@ func (r VillagePullRequestRef) Validate() error {
 // visibility rule of VillageTranscriptPullRequestsResponse, failing closed;
 // detached pull requests are not counted. Recent holds the most recent of them, at most as
 // many as the server shows, so a row reads "#42, #45 +2" without one read per
-// row.
+// row. A pull request the owner attached is shown even when the owner is
+// anonymous; attaching is the owner's own act.
 type VillagePullRequestsSummary struct {
 	Count  int32                   `json:"count" minimum:"0"`
 	Recent []VillagePullRequestRef `json:"recent" nullable:"false"`

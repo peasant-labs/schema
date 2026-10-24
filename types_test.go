@@ -503,7 +503,7 @@ func TestLicense_WireRoundTrip(t *testing.T) {
 	}
 
 	// PullTranscriptInfo.License
-	var pti schema.PullTranscriptInfo
+	pti := schema.PullTranscriptInfo{Owner: schema.AnonymousVillageOwner()}
 	b, err = json.Marshal(pti)
 	if err != nil {
 		t.Fatalf("marshal empty PullTranscriptInfo: %v", err)

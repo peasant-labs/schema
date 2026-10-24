@@ -513,6 +513,12 @@ enums:
       - {name: Informational, value: "informational"}
       - {name: Required, value: "required"}
     all_values: ["informational", "required"]
+  - name: VillagePublicOwnerKind
+    all_name: AllVillagePublicOwnerKinds
+    members:
+      - {name: Profile, value: "profile"}
+      - {name: Anonymous, value: "anonymous"}
+    all_values: ["profile", "anonymous"]
   - name: SessionRelationshipKind
     all_name: AllSessionRelationshipKinds
     members:

@@ -78,6 +78,15 @@ func (ContentKind) JSONSchema() (jsonschema.Schema, error) {
 // embedded SchemaVersion is advisory and exists so a SessionDetailPayload
 // extracted and stored on its OWN (outside any envelope) remains self-describing.
 // The village ContentMigrator MUST honor this same rule.
+//
+// Served by Village (GET /api/v1/transcripts/{id}/content), the envelope
+// follows the public owner rule: when the transcript's owner is anonymous to
+// the viewer, Village serves SessionDetail without its repository identity,
+// leaving project, workingDirectory, gitBranch, gitRemote and every
+// childSessions[].project absent. Peasant's own reads of SessionDetailPayload
+// are unchanged. The response carries no owner, so no validator here can pair
+// the two; Village enforces and tests it on the server. Text inside the
+// conversation is content and is not covered by this rule.
 type TranscriptContent struct {
 	ContractVersion PushContractVersion   `json:"contractVersion"`
 	Kind            ContentKind           `json:"kind"`

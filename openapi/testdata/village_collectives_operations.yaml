@@ -313,7 +313,6 @@ component_required:
   - component: VillageCollectiveTranscript
     contains:
       - id
-      - owner_id
       - local_id
       - visibility
       - model_provider
@@ -325,12 +324,14 @@ component_required:
       - project_name_source
       - project_remote_label
       - session_origin
-      - owner_username
-      - owner_avatar_url
-      - owner_is_discoverable
+      - owner
       - pull_requests
     excludes:
       - VillageTranscript
+      - owner_id
+      - owner_username
+      - owner_avatar_url
+      - owner_is_discoverable
   - component: VillagePullRequestAttachment
     contains:
       - id

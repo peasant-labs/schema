@@ -14,6 +14,7 @@ export function applyGroupedReadZodRefinements(source) {
     if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");`);
   output = append(output, "zVillageSessionRow", `
     const s = value.session;
+    if (s.parent_transcript_id != null && (s.parent_session_id == null || s.parent_transcript_id === s.id)) fail("parent_transcript_id is set without a parent_session_id or names the row itself; resolve the parent within the same owner, or emit null");
     const arms = [value.collective, value.pending, value.myShare, value.contributable].filter(v => v != null);
     if (arms.length > 1) fail("multiple route arms supplied; retain the originating route only");
     const equal = (a: unknown, b: unknown): boolean => {
@@ -27,10 +28,11 @@ export function applyGroupedReadZodRefinements(source) {
       const row = v as Record<string, unknown>, session = s as unknown as Record<string, unknown>;
       for (const key of keys) if (!equal(row[key], session[aliases[key] ?? key])) fail("route identity or metric mirrors disagree; derive both from the same row");
     };
+    for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "id", "owner_id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
-    check(value.pending, [...graph, "transcript_id", "owner_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "id", "owner_id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.collective, [...graph, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    check(value.pending, [...graph, "parent_transcript_id", "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
+    check(value.myShare, [...graph, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);`);
   for (const prefix of ["Local", "Village"]) {
     output = append(output, `z${prefix}SessionListItem`, `

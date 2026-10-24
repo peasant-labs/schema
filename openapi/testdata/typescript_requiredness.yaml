@@ -2,10 +2,10 @@ cases:
   - name: collective detail compatible group record
     input:
       component: VillageCollectiveDetailRecord
-      required: [id, name, description, created_by, created_at, updated_at, acceptance_mode, data_access, linked_github_org, display_members, transcript_deletion_policy]
+      required: [id, name, description, creator, created_at, updated_at, acceptance_mode, data_access, linked_github_org, display_members, transcript_deletion_policy]
       optional: [post_prompts_check, prompts_check_mode]
       nullable: [description, linked_github_org, post_prompts_check, prompts_check_mode]
-      nonnullable: [id, name, created_by, created_at, updated_at, acceptance_mode, data_access, display_members, transcript_deletion_policy]
+      nonnullable: [id, name, creator, created_at, updated_at, acceptance_mode, data_access, display_members, transcript_deletion_policy]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: compatible collective read settings}
@@ -167,10 +167,10 @@ cases:
   - name: pull request attachment
     input:
       component: VillagePullRequestAttachment
-      required: [id, owner, name, number, head_sha, is_private_repository, state, author_user_id, requested_by_github_id, comment_id, check_run_id, created_at, updated_at, confirmed_at, detached_at]
+      required: [id, owner, name, number, head_sha, is_private_repository, state, author, requested_by, comment_id, check_run_id, created_at, updated_at, confirmed_at, detached_at]
       optional: []
-      nullable: [author_user_id, requested_by_github_id, comment_id, check_run_id, confirmed_at, detached_at]
-      nonnullable: [id, owner, name, number, head_sha, is_private_repository, state, created_at, updated_at]
+      nullable: [requested_by, comment_id, check_run_id, confirmed_at, detached_at]
+      nonnullable: [id, owner, name, number, head_sha, is_private_repository, state, author, created_at, updated_at]
     expected: true
     classification: must-pass
     provenance: {source: requirement, ref: Village rows are emitted whole with null for fields a state has not reached}

@@ -1273,6 +1273,8 @@ types:
   - {go_name: VillageTranscriptMetadataResponse, disposition: catalog, component: VillageTranscriptMetadataResponse, reason: public session graph and grouped read contract}
   - {go_name: VillageTag, disposition: catalog, component: VillageTag, reason: public session graph and grouped read contract}
   - {go_name: VillageUser, disposition: catalog, component: VillageUser, reason: public session graph and grouped read contract}
+  - {go_name: VillagePublicOwner, disposition: catalog, component: VillagePublicOwner, reason: "a person as another viewer sees them, resolved by the server per viewer"}
+  - {go_name: VillagePublicOwnerKind, disposition: catalog, component: VillagePublicOwnerKind, reason: closed producer set of public owner shapes}
   - {go_name: VillageMetadataUserOrganization, disposition: catalog, component: VillageMetadataUserOrganization, reason: public session graph and grouped read contract}
   - {go_name: VillageListUserOrganization, disposition: catalog, component: VillageListUserOrganization, reason: public session graph and grouped read contract}
   - {go_name: VillageEnrichedTranscriptShare, disposition: catalog, component: VillageEnrichedTranscriptShare, reason: public session graph and grouped read contract}

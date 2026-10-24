@@ -905,7 +905,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get a pullable transcript's metadata (owner, visibility, server-computed content_hash, push contract version). 404 (not 403) when not pullable. */
+        /** @description Get a pullable transcript's metadata (the owner as the caller may see them, visibility, server-computed content_hash, push contract version). The server resolves the owner per viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable. */
         get: operations["getPullTranscript"];
         put?: never;
         post?: never;
@@ -922,7 +922,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List a transcript's annotations as PullAnnotation rows (AnnotationSummary plus author identity), so pulled annotations can be foreign-marked and own-authored rows excluded. */
+        /** @description List a transcript's annotations as PullAnnotation rows (AnnotationSummary plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id with the caller's account; an anonymous author is never the caller and is foreign-marked. */
         get: operations["getPullTranscriptAnnotations"];
         put?: never;
         post?: never;
@@ -1025,7 +1025,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. */
+        /** @description List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. The owner and org filters match only transcripts whose owner this viewer may see as a profile: a person shown to this viewer as anonymous never matches a username or an organization filter, so a filter cannot reveal who an anonymous owner is. */
         get: operations["listTranscripts"];
         put?: never;
         post?: never;
@@ -1094,7 +1094,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. */
+        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. */
         get: operations["getTranscriptContent"];
         put?: never;
         post?: never;
@@ -1111,7 +1111,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. An attachment on a private repository is listed only to the pull request author, a member of the collective the attachment belongs to, or, for an attached attachment, a reader of the repository; any other attachment on a private repository is omitted rather than refused, and so is one whose visibility check cannot complete. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. 429 means the private-repository visibility check is rate limited; retry later. */
+        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. An attachment on a private repository is listed only to the pull request author, a member of the collective the attachment belongs to, or, for an attached attachment, a reader of the repository; any other attachment on a private repository is omitted rather than refused, and so is one whose visibility check cannot complete. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. 429 means the private-repository visibility check is rate limited; retry later. A pull request the owner attached is shown even when the owner is anonymous to this viewer; attaching is the owner's own act. */
         get: operations["listTranscriptPullRequests"];
         put?: never;
         post?: never;
@@ -1897,6 +1897,11 @@ export interface components {
          */
         SchemaVillagePromptsCheckMode: Schema.VillagePromptsCheckMode;
         SchemaVillagePublicCollective: Schema.VillagePublicCollective;
+        /**
+         * Village Public Owner
+         * @description A person as another viewer sees them. The server resolves anonymity per viewer; consumers render what they receive and never re-derive the rule. profile carries id, username, display_name, and avatar_url; anonymous carries only its kind, with no id. Readers treat an unknown kind as anonymous.
+         */
+        SchemaVillagePublicOwner: Schema.VillagePublicOwner;
         SchemaVillagePullRequestAttachedTranscript: Schema.VillagePullRequestAttachedTranscript;
         SchemaVillagePullRequestAttachment: Schema.VillagePullRequestAttachment;
         SchemaVillagePullRequestAttachmentResponse: Schema.VillagePullRequestAttachmentResponse;
@@ -5699,11 +5704,16 @@ export interface operations {
                 view?: components["schemas"]["OpenapiVillageGroupedView"];
                 page?: number;
                 limit?: number;
+                /** @description Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched. */
                 q?: string;
                 provider?: string;
+                /** @description Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 owner?: string;
+                /** @description Project filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches. */
                 project?: string;
+                /** @description Repository filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches. */
                 repo?: string;
+                /** @description Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 org?: string;
                 tags?: string;
                 origin?: components["schemas"]["SchemaSessionOrigin"];
