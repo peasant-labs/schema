@@ -435,11 +435,11 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
 		Page     int                  `query:"page"`
 		Limit    int                  `query:"limit"`
-		Query    string               `query:"q"`
+		Query    string               `query:"q" description:"Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched."`
 		Provider string               `query:"provider"`
 		Owner    string               `query:"owner" description:"Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
-		Project  string               `query:"project"`
-		Repo     string               `query:"repo"`
+		Project  string               `query:"project" description:"Project filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches."`
+		Repo     string               `query:"repo" description:"Repository filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches."`
 		Org      string               `query:"org" description:"Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
 		Tags     string               `query:"tags"`
 		Origin   schema.SessionOrigin `query:"origin"`
@@ -497,7 +497,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
-			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation.",
+			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
 		},

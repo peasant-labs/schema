@@ -71,8 +71,11 @@ type PullTranscriptInfo struct {
 	Title        string             `json:"title,omitempty"`
 	Harness      Harness            `json:"harness,omitempty"` // existing typed form
 	// ProjectName identifies the owner's repository, so it is omitted when
-	// Owner is anonymous to the caller, as well as when it was not recorded.
-	ProjectName     string          `json:"projectName,omitempty"`
+	// Owner is anonymous to the caller, as well as when it was not recorded. It
+	// is a pointer so an explicit empty string is distinguishable from an
+	// omitted field: withheld means absent, and an empty string beside an
+	// anonymous owner is refused like any other value.
+	ProjectName     *string         `json:"projectName,omitempty"`
 	Visibility      Visibility      `json:"visibility"`                // existing typed form
 	License         License         `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
 	ContentHash     string          `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
@@ -85,11 +88,11 @@ type PullTranscriptInfo struct {
 // Validate checks the owner and that an anonymous owner's project name is
 // omitted.
 func (p PullTranscriptInfo) Validate() error {
-	var present []string
-	if p.ProjectName != "" {
-		present = append(present, "projectName")
-	}
-	return validateAnonymousRepository(p.Owner, present, "schema.PullTranscriptInfo.Validate")
+	return validateAnonymousRepository(p.Owner, presentFieldNames(p.repositoryFields()), "schema.PullTranscriptInfo.Validate")
+}
+
+func (p PullTranscriptInfo) repositoryFields() map[string]bool {
+	return map[string]bool{"projectName": p.ProjectName != nil}
 }
 
 // Validate checks every listed transcript.
@@ -120,6 +123,13 @@ type PullListResponse struct {
 // annotation-refresh exclusion; an anonymous author is never the caller and is
 // marked foreign. Pull contract 0.3.0 replaced the authorUserId and
 // authorUsername strings with Author.
+//
+// The embedded summary's targetProjectHash and targetFilePath identify the
+// owner's repository, so Village leaves both absent when the annotated
+// transcript's owner is anonymous to the caller. AnnotationSummary keeps its
+// Local API meaning; the rule applies to this Village envelope only. The
+// annotations response carries no owner, so no validator here can pair the
+// two; Village enforces and tests it on the server.
 type PullAnnotation struct {
 	AnnotationSummary                    // embedded existing summary (annotator entity, content hash, etc.)
 	Author            VillagePublicOwner `json:"author"`

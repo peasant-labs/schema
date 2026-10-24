@@ -55,11 +55,11 @@ rows:
       provenance: {source: boundary, ref: input-count-safe-range}
       mutation: {description: increases the count one above the JS-safe maximum}
     - name: collective-owner-mismatch
-      input: {variant: collective, session_count: 7, variant_count: 7, mismatch_owner: true}
+      input: {variant: collective, session_count: 7, variant_count: 7, anonymous_owner: true, mismatch_owner: true}
       expected: {valid: false}
       classification: must-fail
       provenance: {source: requirement, ref: public-owner-mirror}
-      mutation: {description: shows the collective arm's owner as anonymous while the row shows the profile}
+      mutation: {description: shows the collective arm's owner as a profile while the row is anonymous, with every repository field withheld, so only the owner mirror refuses it}
     - name: pending-anonymous-owner-mirrored
       input: {variant: pending, session_count: 4, variant_count: 4, anonymous_owner: true}
       expected: {valid: true}
@@ -73,11 +73,11 @@ rows:
       provenance: {source: requirement, ref: public-owner-mirror}
       mutation: {description: shows the own-share arm's owner as a profile while the row is anonymous}
     - name: pending-owner-mismatch
-      input: {variant: pending, session_count: 4, variant_count: 4, mismatch_owner: true}
+      input: {variant: pending, session_count: 4, variant_count: 4, anonymous_owner: true, mismatch_owner: true}
       expected: {valid: false}
       classification: must-fail
       provenance: {source: requirement, ref: public-owner-mirror}
-      mutation: {description: shows the pending arm's submitter as anonymous while the row shows the profile}
+      mutation: {description: shows the pending arm's submitter as a profile while the row is anonymous, with every repository field withheld, so only the owner mirror refuses it}
     - name: anonymous-owner-with-remote
       input: {variant: collective, session_count: 7, variant_count: 7, anonymous_owner: true, anonymous_with_remote: true}
       expected: {valid: false}

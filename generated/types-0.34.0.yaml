@@ -5200,7 +5200,11 @@ components:
         owner:
           $ref: '#/components/schemas/VillagePublicOwner'
         projectName:
-          type: string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         publishedAt:
           format: int64
           type: integer

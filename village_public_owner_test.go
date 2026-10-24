@@ -54,6 +54,8 @@ type publicOwnerFixtures struct {
 	Responses                 testcase.Corpus[publicOwnerResponseInput, villageExpected]         `yaml:"responses"`
 	WithheldRepositoryFields  map[string][]string                                                `yaml:"withheld_repository_fields"`
 	WithheldRepositorySamples map[string]any                                                     `yaml:"withheld_repository_samples"`
+	ServerWithheldFields      map[string][]string                                                `yaml:"server_withheld_fields"`
+	EmptyStringSamples        map[string]string                                                  `yaml:"empty_string_samples"`
 	Surfaces                  struct {
 		PublicOwnerProperties []string `yaml:"public_owner_properties"`
 		SelfOperations        []string `yaml:"self_operations"`
@@ -78,7 +80,7 @@ func loadPublicOwnerFixtures(t *testing.T) publicOwnerFixtures {
 	assertcase.RequireValid(t, f.Decode)
 	requirePublicOwnerNames(t, "encode", f.RequiredNames.Encode, namesOf(f.Encode))
 	requirePublicOwnerNames(t, "decode", f.RequiredNames.Decode, namesOf(f.Decode))
-	assertcase.RequireMin(t, f.Responses, 13)
+	assertcase.RequireMin(t, f.Responses, 14)
 	assertcase.RequireValid(t, f.Responses)
 	requirePublicOwnerNames(t, "responses", f.RequiredNames.Responses, namesOf(f.Responses))
 	if len(f.Surfaces.PublicOwnerProperties) == 0 || len(f.Surfaces.SelfOperations) == 0 || len(f.Surfaces.ForbiddenProperties) == 0 {
@@ -189,6 +191,8 @@ func TestVillagePublicOwnerResponsesKeepAnonymousPeopleAnonymous(t *testing.T) {
 				err = schema.VillageCollectiveDetailResponse{Members: []schema.VillageCollectiveMember{{Member: person, GithubOrgs: orgs}}}.Validate()
 			case "flat_detail_transcript":
 				err = schema.VillageCollectiveDetailResponse{Members: []schema.VillageCollectiveMember{{Member: person, GithubOrgs: orgs}}, Transcripts: []schema.VillageCollectiveTranscript{{}}}.Validate()
+			case "metadata_invalid_attester":
+				err = schema.VillageTranscriptMetadataResponse{Tags: []schema.VillageTag{}, Shares: []schema.VillageTranscriptShare{}, EnrichedShares: []schema.VillageEnrichedTranscriptShare{}, Owner: person, OwnerOrgs: []schema.VillageMetadataUserOrganization{}, Attestations: []schema.VillageTranscriptAttestation{{}}}.Validate()
 			case "flat_detail_transcript_remote":
 				err = schema.VillageCollectiveDetailResponse{Transcripts: []schema.VillageCollectiveTranscript{{Owner: person, GitRemote: remote}}}.Validate()
 			default:
@@ -244,6 +248,11 @@ func TestVillagePublicOwnerWithholdsRepositoryFromAnonymousOwners(t *testing.T) 
 		"PullTranscriptInfo":          schema.PullTranscriptInfo{Owner: schema.AnonymousVillageOwner()},
 	}
 	assertSameStrings(t, "repository field holders", mapKeys(boolSet(holders)), mapKeysAny(f.WithheldRepositoryFields))
+	goFields := schema.VillageWithheldRepositoryFields()
+	assertSameStrings(t, "Go and fixture repository field holders", mapKeysAny(goFields), mapKeysAny(f.WithheldRepositoryFields))
+	for holder, fields := range f.WithheldRepositoryFields {
+		assertSameStrings(t, holder+" withheld fields, Go against the fixture", fields, goFields[holder])
+	}
 	spec, err := openapi.BuildVillageAPISpec()
 	if err != nil {
 		t.Fatal(err)
@@ -267,6 +276,20 @@ func TestVillagePublicOwnerWithholdsRepositoryFromAnonymousOwners(t *testing.T) 
 		required := map[string]bool{}
 		for _, name := range component["required"].([]any) {
 			required[name.(string)] = true
+		}
+		if field, ok := f.EmptyStringSamples[holder]; ok {
+			t.Run(holder+"."+field+" empty string", func(t *testing.T) {
+				var object map[string]any
+				if err := json.Unmarshal(baseJSON, &object); err != nil {
+					t.Fatal(err)
+				}
+				object[field] = ""
+				if err := validate(mustJSON(t, object)); err == nil {
+					t.Fatalf("an empty %s.%s beside an anonymous owner was accepted; withheld means null or absent", holder, field)
+				}
+			})
+		} else {
+			t.Fatalf("no empty-string sample for %s", holder)
 		}
 		for _, field := range fields {
 			t.Run(holder+"."+field, func(t *testing.T) {
@@ -313,6 +336,46 @@ func mustJSON(t *testing.T, value any) []byte {
 		t.Fatal(err)
 	}
 	return encoded
+}
+
+// TestVillagePublicOwnerServerWithheldFieldsAreOptional requires every field
+// Village withholds without a pairing validator to be optional in the served
+// document, so the server can leave it out.
+func TestVillagePublicOwnerServerWithheldFieldsAreOptional(t *testing.T) {
+	f := loadPublicOwnerFixtures(t)
+	if len(f.ServerWithheldFields) == 0 {
+		t.Fatal("no server-withheld fields; the check is vacuous")
+	}
+	spec, err := openapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(mustJSON(t, spec), &doc); err != nil {
+		t.Fatal(err)
+	}
+	components := doc["components"].(map[string]any)["schemas"].(map[string]any)
+	for holder, fields := range f.ServerWithheldFields {
+		component, ok := components["Schema"+holder].(map[string]any)
+		if !ok {
+			t.Fatalf("the served Village document has no %s", holder)
+		}
+		required := map[string]bool{}
+		if list, ok := component["required"].([]any); ok {
+			for _, name := range list {
+				required[name.(string)] = true
+			}
+		}
+		properties := declaredPropertyNames(component)
+		for _, field := range fields {
+			if !properties[field] {
+				t.Errorf("the served %s does not declare %s", holder, field)
+			}
+			if required[field] {
+				t.Errorf("the served %s.%s is required; Village cannot leave it out for an anonymous owner", holder, field)
+			}
+		}
+	}
 }
 
 // TestVillagePublicOwnerSurfaces walks the served Village API: every property

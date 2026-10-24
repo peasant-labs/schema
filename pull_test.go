@@ -80,13 +80,14 @@ func TestNewTranscriptID_ErrorIsActionable(t *testing.T) {
 // --- PullTranscriptInfo wire shape ---
 
 func TestPullTranscriptInfo_JSONRoundTrip(t *testing.T) {
+	project := "peasant"
 	info := schema.PullTranscriptInfo{
 		TranscriptID:    schema.TranscriptID(testValidTranscriptUUID),
 		LocalID:         "ses_local123",
 		Owner:           schema.NewVillagePublicProfile(testOwnerID, testOwnerName, nil, nil),
 		Title:           "Refactor pipeline",
 		Harness:         schema.HarnessClaudeCode,
-		ProjectName:     "peasant",
+		ProjectName:     &project,
 		Visibility:      schema.VisibilityGroup,
 		ContentHash:     "deadbeef",
 		ContractVersion: "0.1.0",

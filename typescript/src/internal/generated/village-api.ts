@@ -1094,7 +1094,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. */
+        /** @description Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered. */
         get: operations["getTranscriptContent"];
         put?: never;
         post?: never;
@@ -1111,7 +1111,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. An attachment on a private repository is listed only to the pull request author, a member of the collective the attachment belongs to, or, for an attached attachment, a reader of the repository; any other attachment on a private repository is omitted rather than refused, and so is one whose visibility check cannot complete. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. 429 means the private-repository visibility check is rate limited; retry later. */
+        /** @description List the pull requests whose prompt attachment includes this transcript, attached or detached, with each pull request's title and head branch. A requested, waiting, or preview attachment is never listed. An attachment on a private repository is listed only to the pull request author, a member of the collective the attachment belongs to, or, for an attached attachment, a reader of the repository; any other attachment on a private repository is omitted rather than refused, and so is one whose visibility check cannot complete. A caller who may not read the transcript receives 404, never 403, so the read does not reveal that the transcript exists. 429 means the private-repository visibility check is rate limited; retry later. A pull request the owner attached is shown even when the owner is anonymous to this viewer; attaching is the owner's own act. */
         get: operations["listTranscriptPullRequests"];
         put?: never;
         post?: never;
@@ -5704,11 +5704,14 @@ export interface operations {
                 view?: components["schemas"]["OpenapiVillageGroupedView"];
                 page?: number;
                 limit?: number;
+                /** @description Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched. */
                 q?: string;
                 provider?: string;
                 /** @description Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 owner?: string;
+                /** @description Project filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches. */
                 project?: string;
+                /** @description Repository filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches. */
                 repo?: string;
                 /** @description Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches. */
                 org?: string;

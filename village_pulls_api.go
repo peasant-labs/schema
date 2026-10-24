@@ -220,7 +220,10 @@ func (r VillageTranscriptPullRequestsResponse) Validate() error {
 	return nil
 }
 
-// VillagePullRequestRef names one pull request.
+// VillagePullRequestRef names one pull request. A pull request the owner
+// attached is shown even when the owner is anonymous; attaching is the owner's
+// own act, and the pull request is public on GitHub. A later per-transcript
+// credit choice may revisit this.
 type VillagePullRequestRef struct {
 	Owner  string `json:"owner" minLength:"1"`
 	Name   string `json:"name" minLength:"1"`
@@ -241,7 +244,8 @@ func (r VillagePullRequestRef) Validate() error {
 // visibility rule of VillageTranscriptPullRequestsResponse, failing closed;
 // detached pull requests are not counted. Recent holds the most recent of them, at most as
 // many as the server shows, so a row reads "#42, #45 +2" without one read per
-// row.
+// row. A pull request the owner attached is shown even when the owner is
+// anonymous; attaching is the owner's own act.
 type VillagePullRequestsSummary struct {
 	Count  int32                   `json:"count" minimum:"0"`
 	Recent []VillagePullRequestRef `json:"recent" nullable:"false"`

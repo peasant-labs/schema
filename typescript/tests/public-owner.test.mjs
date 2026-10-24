@@ -67,6 +67,9 @@ test("generated validators withhold the repository of an anonymous owner", async
     await t.test(`${holder} without repository fields is accepted`, () => {
       assert.equal(validator.safeParse(base).success, true);
     });
+    await t.test(`${holder} with an empty repository field beside an anonymous owner is refused`, () => {
+      assert.equal(validator.safeParse({ ...base, [fixture.empty_string_samples[holder]]: "" }).success, false);
+    });
     for (const field of fixture.withheld_repository_fields[holder]) {
       await t.test(`${holder}.${field} beside an anonymous owner is refused`, () => {
         assert.equal(validator.safeParse({ ...base, [field]: fixture.withheld_repository_samples[field] }).success, false);

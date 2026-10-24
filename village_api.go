@@ -681,7 +681,9 @@ type VillageTranscriptListRow struct {
 	OwnerOrgs    []VillageListUserOrganization      `json:"owner_orgs"`
 	Shares       []VillageEnrichedTranscriptShare   `json:"shares"`
 	Attestations []VillageListTranscriptAttestation `json:"attestations"`
-	PullRequests VillagePullRequestsSummary         `json:"pull_requests"`
+	// PullRequests is shown even when Owner is anonymous: a pull request the
+	// owner attached is public by the owner's own act.
+	PullRequests VillagePullRequestsSummary `json:"pull_requests"`
 }
 type VillageTranscriptListResponse struct {
 	Transcripts []VillageTranscriptListRow `json:"transcripts" nullable:"false"`
@@ -773,57 +775,59 @@ type VillageCollectiveTranscript struct {
 	// when the owner is anonymous to this viewer, as well as when it was not
 	// recorded. The server decides; Validate refuses any of them beside an
 	// anonymous owner.
-	GitBranch               *string                    `json:"git_branch"`
-	GitRemote               *string                    `json:"git_remote"`
-	ProjectHash             *ProjectHash               `json:"project_hash"`
-	ProjectName             *string                    `json:"project_name"`
-	ProjectDisplayName      *string                    `json:"project_display_name"`
-	ProjectNameSource       *VillageProjectNameSource  `json:"project_name_source"`
-	ProjectRemoteLabel      *string                    `json:"project_remote_label"`
-	ToolCallCount           *int32                     `json:"tool_call_count"`
-	SubagentCount           *int32                     `json:"subagent_count"`
-	DurationMs              *int64                     `json:"duration_ms"`
-	Subagents               *[]map[string]interface{}  `json:"subagents"`
-	DiagnosticsWarnings     *[]DiagnosticEntry         `json:"diagnostics_warnings"`
-	DiagnosticsPartial      *bool                      `json:"diagnostics_partial"`
-	TokensIn                *int64                     `json:"tokens_in"`
-	TokensOut               *int64                     `json:"tokens_out"`
-	TitleGenerated          *string                    `json:"title_generated"`
-	Outcome                 *SessionOutcome            `json:"outcome"`
-	FilesTouched            *int32                     `json:"files_touched"`
-	LinesChanged            *int32                     `json:"lines_changed"`
-	RetryLoops              *int32                     `json:"retry_loops"`
-	RetryTokensWasted       *int32                     `json:"retry_tokens_wasted"`
-	WithinSessionReverts    *int32                     `json:"within_session_reverts"`
-	SignalDensity           *float32                   `json:"signal_density"`
-	SpecQualityScore        *float32                   `json:"spec_quality_score"`
-	ExplorationRatio        *float32                   `json:"exploration_ratio"`
-	ScopeBreadth            *int32                     `json:"scope_breadth"`
-	DiscoveryTurns          *int32                     `json:"discovery_turns"`
-	M2TokenOutcomeRatio     *float32                   `json:"m2_token_outcome_ratio"`
-	M3UniqueToolCount       *int32                     `json:"m3_unique_tool_count"`
-	M4ErrorRecoveryCount    *int32                     `json:"m4_error_recovery_count"`
-	M4ConsecutiveErrorMax   *int32                     `json:"m4_consecutive_error_max"`
-	M5ContextUtilizationPct *float32                   `json:"m5_context_utilization_pct"`
-	M5PeakContextTokens     *int32                     `json:"m5_peak_context_tokens"`
-	M5AvgMessageTokens      *int32                     `json:"m5_avg_message_tokens"`
-	M6OutputSurvivalPct     *float32                   `json:"m6_output_survival_pct"`
-	M6LinesSurvived         *int32                     `json:"m6_lines_survived"`
-	M6LinesTotal            *int32                     `json:"m6_lines_total"`
-	M7SpecWordCount         *int32                     `json:"m7_spec_word_count"`
-	M7SpecHasExamples       *bool                      `json:"m7_spec_has_examples"`
-	M7SpecHasConstraints    *bool                      `json:"m7_spec_has_constraints"`
-	ComputedAt              *time.Time                 `json:"computed_at"`
-	ComputeVersion          *int32                     `json:"compute_version"`
-	ContentHash             *TranscriptContentHash     `json:"content_hash"`
-	LicenseID               *License                   `json:"license_id"`
-	SessionOrigin           SessionOrigin              `json:"session_origin"`
-	Owner                   VillagePublicOwner         `json:"owner"`
-	InputSubmissionCount    *int64                     `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	RootSessionID           *SessionID                 `json:"root_session_id,omitempty"`
-	Purpose                 SessionPurpose             `json:"purpose,omitempty"`
-	Relationships           []SessionRelationship      `json:"relationships,omitempty"`
-	PullRequests            VillagePullRequestsSummary `json:"pull_requests"`
+	GitBranch               *string                   `json:"git_branch"`
+	GitRemote               *string                   `json:"git_remote"`
+	ProjectHash             *ProjectHash              `json:"project_hash"`
+	ProjectName             *string                   `json:"project_name"`
+	ProjectDisplayName      *string                   `json:"project_display_name"`
+	ProjectNameSource       *VillageProjectNameSource `json:"project_name_source"`
+	ProjectRemoteLabel      *string                   `json:"project_remote_label"`
+	ToolCallCount           *int32                    `json:"tool_call_count"`
+	SubagentCount           *int32                    `json:"subagent_count"`
+	DurationMs              *int64                    `json:"duration_ms"`
+	Subagents               *[]map[string]interface{} `json:"subagents"`
+	DiagnosticsWarnings     *[]DiagnosticEntry        `json:"diagnostics_warnings"`
+	DiagnosticsPartial      *bool                     `json:"diagnostics_partial"`
+	TokensIn                *int64                    `json:"tokens_in"`
+	TokensOut               *int64                    `json:"tokens_out"`
+	TitleGenerated          *string                   `json:"title_generated"`
+	Outcome                 *SessionOutcome           `json:"outcome"`
+	FilesTouched            *int32                    `json:"files_touched"`
+	LinesChanged            *int32                    `json:"lines_changed"`
+	RetryLoops              *int32                    `json:"retry_loops"`
+	RetryTokensWasted       *int32                    `json:"retry_tokens_wasted"`
+	WithinSessionReverts    *int32                    `json:"within_session_reverts"`
+	SignalDensity           *float32                  `json:"signal_density"`
+	SpecQualityScore        *float32                  `json:"spec_quality_score"`
+	ExplorationRatio        *float32                  `json:"exploration_ratio"`
+	ScopeBreadth            *int32                    `json:"scope_breadth"`
+	DiscoveryTurns          *int32                    `json:"discovery_turns"`
+	M2TokenOutcomeRatio     *float32                  `json:"m2_token_outcome_ratio"`
+	M3UniqueToolCount       *int32                    `json:"m3_unique_tool_count"`
+	M4ErrorRecoveryCount    *int32                    `json:"m4_error_recovery_count"`
+	M4ConsecutiveErrorMax   *int32                    `json:"m4_consecutive_error_max"`
+	M5ContextUtilizationPct *float32                  `json:"m5_context_utilization_pct"`
+	M5PeakContextTokens     *int32                    `json:"m5_peak_context_tokens"`
+	M5AvgMessageTokens      *int32                    `json:"m5_avg_message_tokens"`
+	M6OutputSurvivalPct     *float32                  `json:"m6_output_survival_pct"`
+	M6LinesSurvived         *int32                    `json:"m6_lines_survived"`
+	M6LinesTotal            *int32                    `json:"m6_lines_total"`
+	M7SpecWordCount         *int32                    `json:"m7_spec_word_count"`
+	M7SpecHasExamples       *bool                     `json:"m7_spec_has_examples"`
+	M7SpecHasConstraints    *bool                     `json:"m7_spec_has_constraints"`
+	ComputedAt              *time.Time                `json:"computed_at"`
+	ComputeVersion          *int32                    `json:"compute_version"`
+	ContentHash             *TranscriptContentHash    `json:"content_hash"`
+	LicenseID               *License                  `json:"license_id"`
+	SessionOrigin           SessionOrigin             `json:"session_origin"`
+	Owner                   VillagePublicOwner        `json:"owner"`
+	InputSubmissionCount    *int64                    `json:"input_submission_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	RootSessionID           *SessionID                `json:"root_session_id,omitempty"`
+	Purpose                 SessionPurpose            `json:"purpose,omitempty"`
+	Relationships           []SessionRelationship     `json:"relationships,omitempty"`
+	// PullRequests is shown even when Owner is anonymous: a pull request the
+	// owner attached is public by the owner's own act.
+	PullRequests VillagePullRequestsSummary `json:"pull_requests"`
 }
 
 type VillageTranscriptShare struct {
@@ -1205,19 +1209,53 @@ func (r VillageCollectiveDetailResponse) Validate() error {
 	return nil
 }
 
-// repositoryFieldsPresent names the repository fields a transcript row
-// carries. They identify the owner's repository, so none may sit beside an
-// anonymous owner.
+// repositoryFields maps each repository field a transcript row carries to
+// whether it is present. The fields identify the owner's repository, so none
+// may sit beside an anonymous owner. These maps are the only Go statement of
+// which fields are withheld; VillageWithheldRepositoryFields reads them.
+func (t VillageTranscript) repositoryFields() map[string]bool {
+	return map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil}
+}
+
+func (t VillageCollectiveTranscript) repositoryFields() map[string]bool {
+	return map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil}
+}
+
+func (p VillagePendingShare) repositoryFields() map[string]bool {
+	return map[string]bool{"project_hash": p.ProjectHash != nil, "project_name": p.ProjectName != nil, "branch": p.Branch != nil}
+}
+
 func (t VillageTranscript) repositoryFieldsPresent() []string {
-	return presentFieldNames(map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil})
+	return presentFieldNames(t.repositoryFields())
 }
 
 func (t VillageCollectiveTranscript) repositoryFieldsPresent() []string {
-	return presentFieldNames(map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil})
+	return presentFieldNames(t.repositoryFields())
 }
 
 func (p VillagePendingShare) repositoryFieldsPresent() []string {
-	return presentFieldNames(map[string]bool{"project_hash": p.ProjectHash != nil, "project_name": p.ProjectName != nil, "branch": p.Branch != nil})
+	return presentFieldNames(p.repositoryFields())
+}
+
+// VillageWithheldRepositoryFields returns, per holder, the JSON names of the
+// repository fields Validate refuses beside an anonymous owner. A withheld
+// field is null or absent; an empty string is present and is refused too.
+func VillageWithheldRepositoryFields() map[string][]string {
+	return map[string][]string{
+		"VillageTranscript":           fieldNames(VillageTranscript{}.repositoryFields()),
+		"VillageCollectiveTranscript": fieldNames(VillageCollectiveTranscript{}.repositoryFields()),
+		"VillagePendingShare":         fieldNames(VillagePendingShare{}.repositoryFields()),
+		"PullTranscriptInfo":          fieldNames(PullTranscriptInfo{}.repositoryFields()),
+	}
+}
+
+func fieldNames(fields map[string]bool) []string {
+	names := make([]string, 0, len(fields))
+	for name := range fields {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
 }
 
 func presentFieldNames(fields map[string]bool) []string {

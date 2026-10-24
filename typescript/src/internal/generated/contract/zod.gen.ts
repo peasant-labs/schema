@@ -3969,7 +3969,7 @@ export const zVillagePendingShare = z.object({
     transcript_id: zTranscriptID
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillagePendingShare: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["project_hash","project_name","branch"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["project_hash","project_name","branch"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type VillagePendingShare = z.infer<typeof zVillagePendingShare>;
@@ -4256,7 +4256,7 @@ export const zVillageCollectiveTranscript = z.object({
     within_session_reverts: z.int().nullable()
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageCollectiveTranscript: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type VillageCollectiveTranscript = z.infer<typeof zVillageCollectiveTranscript>;
@@ -4879,7 +4879,7 @@ export const zVillageTranscriptListRow = z.object({
     if (value.owner.kind !== "profile" && (value.owner_orgs?.length ?? 0) > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");
   }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageTranscriptListRow: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.transcript as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.transcript as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>;
@@ -4916,7 +4916,7 @@ export const zVillageTranscriptMetadataResponse = z.object({
     if (value.owner.kind !== "profile" && value.owner_orgs.length > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");
   }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageTranscriptMetadataResponse: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.transcript as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.transcript as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type VillageTranscriptMetadataResponse = z.infer<typeof zVillageTranscriptMetadataResponse>;
@@ -5048,7 +5048,7 @@ export const zVillageSessionRow = z.object({
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
   }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionRow: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.session as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["git_branch","git_remote","project_hash","project_name","project_display_name","project_name_source","project_remote_label"].filter((field) => { const v = (value.session as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type VillageSessionRow = z.infer<typeof zVillageSessionRow>;
@@ -5242,7 +5242,7 @@ export const zPullTranscriptInfo = z.object({
     license: zLicense.optional(),
     localId: z.string().optional(),
     owner: zVillagePublicOwner,
-    projectName: z.string().optional(),
+    projectName: z.string().nullish(),
     publishedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     title: z.string().optional(),
     transcriptId: zTranscriptID,
@@ -5250,7 +5250,7 @@ export const zPullTranscriptInfo = z.object({
     visibility: zVisibility
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zPullTranscriptInfo: " + reason });
-    if (value.owner.kind !== "profile") { const present = ["projectName"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
+    if (value.owner.kind !== "profile") { const present = ["projectName"].filter((field) => { const v = (value as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }
   });
 
 export type PullTranscriptInfo = z.infer<typeof zPullTranscriptInfo>;

@@ -68,6 +68,8 @@ required_names:
   - anonymous-owner-with-project-hash
   - anonymous-collective-arm-with-label
   - pending-owner-mismatch
+  - collective-parent-transcript-id-mismatch
+  - pending-parent-transcript-id-mismatch
   - my-share-owner-mismatch
   - parent-transcript-id-mismatch
   - parent-transcript-id-without-parent-session
@@ -632,14 +634,14 @@ cases:
     - name: village-collective-owner-mismatch
       classification: must-fail
       provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
-      mutation: {description: 'collective arm shows the owner anonymous while the row shows the profile'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, collective: {<<: *collective, owner: {kind: anonymous}}}}]}}
+      mutation: {description: 'collective arm shows a profile while the row shows the owner anonymous; every repository field is withheld, so only the owner mirror refuses it'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [&withheldRepository {git_branch: null, git_remote: null, project_hash: null, project_name: null, project_display_name: null, project_name_source: null, project_remote_label: null}, *villageSession]}, collective: {<<: [*withheldRepository, *collective], owner: *villageOwnerProfile}}}]}}
       expected: {valid: false}
     - name: village-anonymous-owner-mirrored
       classification: must-pass
       provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
       mutation: {description: 'an anonymous owner on the row and the collective arm carries no identity, no repository, and still mirrors'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [&withheldRepository {git_branch: null, git_remote: null, project_hash: null, project_name: null, project_display_name: null, project_name_source: null, project_remote_label: null}, *villageSession]}, collective: {<<: [*withheldRepository, *collective], owner: {kind: anonymous}}}}]}}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [*withheldRepository, *villageSession]}, collective: {<<: [*withheldRepository, *collective], owner: {kind: anonymous}}}}]}}
       expected: {valid: true}
     - name: anonymous-owner-with-remote
       classification: must-fail
@@ -668,8 +670,20 @@ cases:
     - name: pending-owner-mismatch
       classification: must-fail
       provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
-      mutation: {description: 'pending arm shows the submitter anonymous while the row shows the profile'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: {<<: *pending, owner: {kind: anonymous}}}}]}}
+      mutation: {description: 'pending arm shows a profile while the row shows the submitter anonymous; every repository field is withheld, so only the owner mirror refuses it'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [*withheldRepository, *villageSession]}, pending: {<<: [&withheldPendingRepository {project_hash: null, project_name: null, branch: null}, *pending], owner: *villageOwnerProfile}}}]}}
+      expected: {valid: false}
+    - name: collective-parent-transcript-id-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the parent transcript is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'collective arm names a parent transcript the session row does not'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, collective: {<<: *collective, parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}}}]}}
+      expected: {valid: false}
+    - name: pending-parent-transcript-id-mismatch
+      classification: must-fail
+      provenance: {source: requirement, ref: 'the parent transcript is resolved once per viewer and mirrored into the route arm'}
+      mutation: {description: 'pending arm names a parent transcript the session row does not'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: *villageOwnerProfile, session: *villageSession, pending: {<<: *pending, parent_transcript_id: '123e4567-e89b-12d3-a456-426614174009'}}}]}}
       expected: {valid: false}
     - name: village-pending-member-identity-mismatch
       classification: must-fail

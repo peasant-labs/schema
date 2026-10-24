@@ -27,14 +27,15 @@ export function applyPublicOwnerZodRefinements(source, withheld) {
   output = refine(output, "zVillageTranscriptMetadataResponse", `if (value.owner.kind !== "profile" && value.owner_orgs.length > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");`);
   output = refine(output, "zVillageCollectiveMember", `if (value.member.kind !== "profile" && value.github_orgs.length > 0) fail("github_orgs lists organizations beside an anonymous member; emit none for an anonymous member");`);
   // Repository fields identify the owner's repository, so none may sit beside
-  // an anonymous owner. The field lists come from
+  // an anonymous owner. Withheld means null or absent: an empty string is a
+  // value and is refused, exactly as the Go Validate refuses it. The field lists come from
   // testdata/village_public_owner.yaml, the list the Go test also checks.
   const fields = (holder) => {
     const list = withheld?.[holder];
     if (!Array.isArray(list) || list.length === 0) throw new Error(`TypeScript contract generation found no withheld repository fields for ${holder} in testdata/village_public_owner.yaml; the package would accept a repository beside an anonymous owner; restore the list.`);
     return JSON.stringify(list);
   };
-  const withheldCheck = (owner, record, holder) => `if (${owner}.kind !== "profile") { const present = ${fields(holder)}.filter((field) => { const v = (${record} as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }`;
+  const withheldCheck = (owner, record, holder) => `if (${owner}.kind !== "profile") { const present = ${fields(holder)}.filter((field) => { const v = (${record} as Record<string, unknown>)[field]; return v !== null && v !== undefined; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }`;
   output = refine(output, "zVillageTranscriptListRow", withheldCheck("value.owner", "value.transcript", "VillageTranscript"));
   output = refine(output, "zVillageTranscriptMetadataResponse", withheldCheck("value.owner", "value.transcript", "VillageTranscript"));
   output = refine(output, "zVillageSessionRow", withheldCheck("value.owner", "value.session", "VillageTranscript"));

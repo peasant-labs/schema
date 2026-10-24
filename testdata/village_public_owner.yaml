@@ -220,6 +220,12 @@ responses:
       classification: must-fail
       provenance: {source: requirement, ref: anonymous-owner-repository}
       mutation: {description: keeps the git remote on an anonymous owner's transcript in the flat collective detail}
+    - name: metadata-invalid-attester-refused
+      input: {target: metadata_invalid_attester, anonymous: false, orgs: 0}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: public-owner-kinds}
+      mutation: {description: leaves an attestation's attester unresolved on the metadata response}
     - name: flat-detail-unresolved-transcript-owner-refused
       input: {target: flat_detail_transcript, anonymous: false, orgs: 0}
       expected: {valid: false}
@@ -237,6 +243,14 @@ withheld_repository_fields:
   VillageCollectiveTranscript: [git_branch, git_remote, project_hash, project_name, project_display_name, project_name_source, project_remote_label]
   VillagePendingShare: [project_hash, project_name, branch]
   PullTranscriptInfo: [projectName]
+# server_withheld_fields lists repository fields Village withholds where no
+# response pairs them with the owner, so no validator in this module can check
+# them; Village enforces and tests them on the server. The Go test requires
+# each one to be optional in the served Village document.
+server_withheld_fields:
+  SessionDetailPayload: [project, workingDirectory, gitBranch, gitRemote]
+  ChildSessionRef: [project]
+  PullAnnotation: [targetProjectHash, targetFilePath]
 withheld_repository_samples:
   git_branch: main
   git_remote: 'https://github.com/alice/project.git'
@@ -247,6 +261,13 @@ withheld_repository_samples:
   project_remote_label: 'github.com:alice/project'
   branch: main
   projectName: project
+# empty_string_samples holds, per holder, a field whose empty string beside an
+# anonymous owner must be refused, because withheld means null or absent.
+empty_string_samples:
+  VillageTranscript: git_remote
+  VillageCollectiveTranscript: project_remote_label
+  VillagePendingShare: branch
+  PullTranscriptInfo: projectName
 
 # surfaces pins where the served Village API carries a person.
 #
@@ -299,6 +320,6 @@ surfaces:
     - user_id
 
 required_names:
-  responses: [list-row-anonymous-owner-with-orgs-refused, list-row-anonymous-owner-without-orgs, list-row-profile-owner-with-orgs, metadata-anonymous-owner-with-orgs-refused, metadata-anonymous-owner-without-orgs, grouped-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-without-orgs, flat-detail-unresolved-transcript-owner-refused, list-row-anonymous-owner-with-remote-refused, list-row-profile-owner-with-remote, metadata-anonymous-owner-with-remote-refused, flat-detail-anonymous-transcript-with-remote-refused]
+  responses: [list-row-anonymous-owner-with-orgs-refused, list-row-anonymous-owner-without-orgs, list-row-profile-owner-with-orgs, metadata-anonymous-owner-with-orgs-refused, metadata-anonymous-owner-without-orgs, grouped-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-without-orgs, flat-detail-unresolved-transcript-owner-refused, list-row-anonymous-owner-with-remote-refused, list-row-profile-owner-with-remote, metadata-anonymous-owner-with-remote-refused, flat-detail-anonymous-transcript-with-remote-refused, metadata-invalid-attester-refused]
   encode: [profile-exact-fields, profile-null-display-name-and-avatar, anonymous-exact-fields, anonymous-with-id-refused, anonymous-with-username-refused, anonymous-with-avatar-refused, profile-without-username-refused, profile-noncanonical-id-refused, undefined-kind-refused-for-producers, zero-value-refused]
   decode: [profile-reads-profile, own-profile-is-the-viewer, anonymous-is-never-the-viewer, unknown-kind-reads-as-anonymous, anonymous-extra-fields-are-not-kept, profile-later-field-ignored, profile-missing-display-name-refused, profile-missing-id-refused, profile-empty-username-refused, null-refused, missing-kind-refused, empty-kind-refused]
