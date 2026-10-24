@@ -85,7 +85,11 @@ const (
 	// collectives filter, which narrows the list to the approved shares of the
 	// listed collectives the caller belongs to (additive parameter = minor bump).
 	// Canonical collective routes retain deprecated groups for a full release window.
-	VillageAPIVersion = "0.27.0"
+	// Bumped to 0.28.0 when the grouped transcript metadata stopped declaring
+	// diagnostics_warnings as bare strings: publication carries structured
+	// DiagnosticEntry objects, so the declared read shape could never describe a
+	// stored row (corrective type change = minor bump on a 0.x contract).
+	VillageAPIVersion = "0.28.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git

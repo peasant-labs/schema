@@ -530,7 +530,7 @@ type VillageTranscript struct {
 	SubagentCount           *int32                      `json:"subagent_count"`
 	DurationMs              *int64                      `json:"duration_ms"`
 	Subagents               *[]map[string]interface{}   `json:"subagents"`
-	DiagnosticsWarnings     *[]string                   `json:"diagnostics_warnings"`
+	DiagnosticsWarnings     *[]DiagnosticEntry          `json:"diagnostics_warnings"`
 	DiagnosticsPartial      *bool                       `json:"diagnostics_partial"`
 	TokensIn                *int64                      `json:"tokens_in"`
 	TokensOut               *int64                      `json:"tokens_out"`
@@ -719,7 +719,7 @@ type VillageCollectiveTranscript struct {
 	SubagentCount           *int32                      `json:"subagent_count"`
 	DurationMs              *int64                      `json:"duration_ms"`
 	Subagents               *[]map[string]interface{}   `json:"subagents"`
-	DiagnosticsWarnings     *[]string                   `json:"diagnostics_warnings"`
+	DiagnosticsWarnings     *[]DiagnosticEntry          `json:"diagnostics_warnings"`
 	DiagnosticsPartial      *bool                       `json:"diagnostics_partial"`
 	TokensIn                *int64                      `json:"tokens_in"`
 	TokensOut               *int64                      `json:"tokens_out"`

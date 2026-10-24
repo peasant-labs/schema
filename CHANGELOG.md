@@ -3,6 +3,21 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [v0.32.0] - 2026-10-24
+
+### Fixed
+
+- Village API 0.28.0 declares `VillageTranscript.diagnostics_warnings` and
+  `VillageCollectiveTranscript.diagnostics_warnings` as `DiagnosticEntry[]`
+  instead of `string[]`. Publication has always carried structured diagnostic
+  entries (`errorType`, `location`, `message`, `remediation`) and Village
+  stores them verbatim, so the previous string declaration described a shape
+  no stored row can produce. Village grouped reads round-tripped the stored
+  entries into that declaration and failed on every transcript that carried a
+  warning, which took the collective, profile, and project grouped reads down
+  with a 500. A null warning list is still allowed; a bare string is now
+  refused by the same shape that refuses it on the publish contract.
+
 ## [Unreleased]
 
 ### Fixed
