@@ -15,8 +15,8 @@ import (
 // The set is closed for producers and open for readers. A later contract
 // version may add a kind (for example an organization credit); a reader that
 // meets a kind it does not know MUST treat the person as anonymous: it renders
-// no identity and never infers one. VillagePublicOwner.UnmarshalJSON applies
-// that rule for Go readers.
+// no identity and never infers one. VillagePublicOwner.UnmarshalJSON decodes
+// such a kind to AnonymousVillageOwner() for Go readers.
 type VillagePublicOwnerKind string
 
 const (
@@ -154,9 +154,10 @@ func (o VillagePublicOwner) MarshalJSON() ([]byte, error) {
 //
 //   - profile requires every declared field and keeps only those;
 //   - anonymous keeps nothing but its kind, whatever else arrives;
-//   - a kind this contract version does not know decodes to a value that
-//     carries only that kind, so IsProfile is false, the reader shows the
-//     person as anonymous, and no identity from the unknown shape is kept.
+//   - a kind this contract version does not know decodes to
+//     AnonymousVillageOwner(), exactly as the generated TypeScript reader
+//     does, so no identity from the unknown shape is kept and re-encoding
+//     the decoded value always succeeds.
 //
 // Fields a later version adds to a shape are ignored, as the generated
 // TypeScript reader ignores them, so adding a field or a kind stays additive.
@@ -192,7 +193,7 @@ func (o *VillagePublicOwner) UnmarshalJSON(data []byte) error {
 	case VillagePublicOwnerAnonymous:
 		*o = AnonymousVillageOwner()
 	default:
-		*o = VillagePublicOwner{Kind: kind}
+		*o = AnonymousVillageOwner()
 	}
 	return nil
 }

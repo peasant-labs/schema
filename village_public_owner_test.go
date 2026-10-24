@@ -120,8 +120,14 @@ func TestVillagePublicOwnerReadsEveryKindFailClosed(t *testing.T) {
 			if owner.IsProfile() != c.Expected.Profile || owner.IsAccount(c.Input.Viewer) != c.Expected.IsAccount {
 				t.Fatalf("profile=%v is_account=%v, want %v and %v", owner.IsProfile(), owner.IsAccount(c.Input.Viewer), c.Expected.Profile, c.Expected.IsAccount)
 			}
-			if !owner.IsProfile() && (owner.ID != "" || owner.Username != "" || owner.DisplayName != nil || owner.AvatarURL != nil) {
-				t.Fatalf("a person read as anonymous kept identity: %+v", owner)
+			if !owner.IsProfile() && owner != schema.AnonymousVillageOwner() {
+				t.Fatalf("a person not read as a profile must decode to exactly the anonymous value, got %+v", owner)
+			}
+			if !owner.IsProfile() && owner.Kind != schema.VillagePublicOwnerAnonymous {
+				t.Fatalf("kind=%q, want anonymous", owner.Kind)
+			}
+			if _, err := json.Marshal(owner); err != nil {
+				t.Fatalf("re-encoding a decoded value failed: %v", err)
 			}
 		})
 	}
