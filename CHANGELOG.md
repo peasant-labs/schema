@@ -8,8 +8,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 ### Changed
 
 - **Breaking:** a response that shows a person to another viewer no longer
-  carries that person's account. Village API 0.29.0 and Types 0.34.0 add
-  `VillagePublicOwner`, a union on `kind`:
+  carries that person's account. Every reference to a person that another
+  viewer can receive is a `VillagePublicOwner`. Village API 0.29.0, Types
+  0.34.0 and Local API 0.22.0 add it as a union on `kind`:
   - `{"kind":"profile","id","username","display_name","avatar_url"}`;
   - `{"kind":"anonymous"}`, with no other field and no id, because a stable
     id would link one anonymous person's transcripts.
@@ -19,8 +20,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   the rule; `IsAccount(viewerID)` is the own-transcript check in Go, and
   `owner.kind === "profile" && owner.id === viewerId` in TypeScript.
 - Readers treat a `kind` they do not know as anonymous and keep no field from
-  it. The Go decoder and the generated `zVillagePublicOwner` both apply this,
-  so a later kind (for example an organization credit) is an additive change.
+  it. The Go decoder returns `AnonymousVillageOwner()` and the generated
+  `zVillagePublicOwner` returns `{kind: "anonymous"}`, so a decoded value
+  always re-encodes and a later kind (for example an organization credit) is
+  an additive change.
 - Fields replaced by `VillagePublicOwner`:
   - `VillageTranscriptMetadataResponse.owner` and
     `VillageTranscriptListRow.owner`: were the whole `VillageUser`.
@@ -37,11 +40,44 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - `VillageCollectiveContributor`: `id`, `github_username` and `avatar_url`
     become `contributor`.
   - `VillageListUserOrganization.user_id` is removed.
+  - `VillageTranscriptAttestation`: `attester_username` and `attester_avatar`
+    become `attester`, so an anonymous owner who attests their own transcript
+    is not named beside their anonymous `owner`.
+  - `VillagePullRequestAttachment`: `author_user_id` becomes `author`, and
+    `requested_by_github_id` becomes `requested_by` (null when no request was
+    recorded). A requester without a Village account is anonymous, like a
+    hidden one, so the shape does not reveal who has an account.
+  - `created_by` becomes `creator` on `VillageCollective`,
+    `VillageCollectiveDetailRecord`, `VillageUserCollective` and
+    `VillageVisibleCollective`. `VillageUserCollective` is embedded in the
+    Local API collectives proxy, so Local API moves to 0.22.0.
+  - `VillageLinkedRepository.linked_by` changes from an account id to a
+    `VillagePublicOwner`.
 - `owner_orgs` and a member's `github_orgs` are empty when the person is
   anonymous, because an organization login can identify them. `Validate`
   refuses a response that breaks this.
-- `GET /api/v1/auth/me` still returns the complete `VillageUser`; it is the
+- `GET /api/v1/auth/me` still returns the complete `VillageUser`, and the CLI
+  sign-in exchange still returns the caller's own user id; both are the
   caller's own record.
+- The `owner` and `org` filters on `GET /api/v1/transcripts` match only owners
+  this viewer may see as a profile, so a filter cannot reveal who an anonymous
+  owner is. Village enforces it; the operation now documents it.
+
+### Added
+
+- `parent_transcript_id` (nullable, always present) on `VillageTranscript`,
+  `VillageCollectiveTranscript`, `VillagePendingShare` and
+  `VillageUserCollectiveShare`. Readers used to fold a child session under
+  its parent by matching `parent_session_id` against `local_id` within one
+  `owner_id`, because a session id is unique only per owner. With no owner id
+  on the wire for an anonymous owner, the server now resolves the parent
+  itself: at read time it looks up the transcript published from
+  `parent_session_id` within the same owner, and sends its transcript id.
+  It sends null when nothing started the session, the parent is not
+  published, or this viewer may not read it, so the field never discloses a
+  transcript the viewer cannot open. This adds no stored state and needs no
+  migration. A route arm mirrors the row's value, and a value without a
+  `parent_session_id`, or one naming the row itself, is refused.
 - **Pull envelope 0.3.0 (breaking):** `PullTranscriptInfo.ownerUserId` and
   `ownerUsername` become `owner`, and `PullAnnotation.authorUserId` and
   `authorUsername` become `author`, both `VillagePublicOwner`.
@@ -57,6 +93,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     upgrade instruction. Publishing, `/auth/me` and every other route keep
     working. A peasant release on pull contract 0.3.0 must ship before, or
     together with, the Village deploy.
+  - **Peasant must change when it re-pins.** It reads the pull envelope, not
+    only `/auth/me`: its pull, refresh and install code and its test doubles
+    use the removed owner and author fields and stop compiling until they
+    move to `owner`, `author` and `IsAccount`.
 
 ## [v0.32.0] - 2026-10-24
 
