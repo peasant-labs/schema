@@ -38,3 +38,20 @@ test("generated VillagePublicOwner accepts the exact producer shapes", async (t)
     });
   }
 });
+
+test("generated validators keep organizations away from an anonymous person", async (t) => {
+  const member = (person, orgs) => ({ role: "member", joined_at: "2026-09-08T00:00:00Z", member: person, github_orgs: orgs });
+  const profile = { kind: "profile", id: "123e4567-e89b-12d3-a456-426614174001", username: "alice", display_name: null, avatar_url: null };
+  await t.test("anonymous member with organizations is refused", () => {
+    assert.equal(schema.zVillageCollectiveMember.safeParse(member({ kind: "anonymous" }, ["acme"])).success, false);
+  });
+  await t.test("anonymous member without organizations is accepted", () => {
+    assert.equal(schema.zVillageCollectiveMember.safeParse(member({ kind: "anonymous" }, [])).success, true);
+  });
+  await t.test("unknown kind read as anonymous may not carry organizations", () => {
+    assert.equal(schema.zVillageCollectiveMember.safeParse(member({ kind: "organization" }, ["acme"])).success, false);
+  });
+  await t.test("shown member keeps organizations", () => {
+    assert.equal(schema.zVillageCollectiveMember.safeParse(member(profile, ["acme"])).success, true);
+  });
+});

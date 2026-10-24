@@ -3944,7 +3944,10 @@ export const zVillageCollectiveMember = z.object({
     joined_at: z.iso.datetime(),
     member: zVillagePublicOwner,
     role: zVillageCollectiveRole
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageCollectiveMember: " + reason });
+    if (value.member.kind !== "profile" && value.github_orgs.length > 0) fail("github_orgs lists organizations beside an anonymous member; emit none for an anonymous member");
+  });
 
 export type VillageCollectiveMember = z.infer<typeof zVillageCollectiveMember>;
 
@@ -4865,7 +4868,10 @@ export const zVillageTranscriptListRow = z.object({
     shares: z.array(zVillageEnrichedTranscriptShare).nullable(),
     tags: z.array(zVillageTag),
     transcript: zVillageTranscript
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageTranscriptListRow: " + reason });
+    if (value.owner.kind !== "profile" && (value.owner_orgs?.length ?? 0) > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");
+  });
 
 export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>;
 
@@ -4896,7 +4902,10 @@ export const zVillageTranscriptMetadataResponse = z.object({
     shares: z.array(zVillageTranscriptShare),
     tags: z.array(zVillageTag),
     transcript: zVillageTranscript
-});
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageTranscriptMetadataResponse: " + reason });
+    if (value.owner.kind !== "profile" && value.owner_orgs.length > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");
+  });
 
 export type VillageTranscriptMetadataResponse = z.infer<typeof zVillageTranscriptMetadataResponse>;
 

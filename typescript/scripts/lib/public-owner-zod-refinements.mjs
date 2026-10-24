@@ -20,5 +20,23 @@ export function applyPublicOwnerZodRefinements(source) {
     throw new Error(`TypeScript contract generation found kinds ${JSON.stringify(kinds)} on zVillagePublicOwner; expected the declared profile and anonymous arms; inspect the generated union and update scripts/lib/public-owner-zod-refinements.mjs.`);
   }
   const reader = `,\n    z.object({\n        kind: z.string().min(1).refine((kind) => !${JSON.stringify(kinds)}.includes(kind))\n    }).transform((): { kind: 'anonymous' } => ({ kind: 'anonymous' }))\n]);`;
-  return source.replace(declaration, `${declaration.slice(0, -"\n]);".length)}${reader}`);
+  let output = source.replace(declaration, `${declaration.slice(0, -"\n]);".length)}${reader}`);
+  // An organization login can identify a person, so none may sit beside one
+  // shown as anonymous. These mirror the Go Validate rules on the same shapes.
+  output = refine(output, "zVillageTranscriptListRow", `if (value.owner.kind !== "profile" && (value.owner_orgs?.length ?? 0) > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");`);
+  output = refine(output, "zVillageTranscriptMetadataResponse", `if (value.owner.kind !== "profile" && value.owner_orgs.length > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");`);
+  output = refine(output, "zVillageCollectiveMember", `if (value.member.kind !== "profile" && value.github_orgs.length > 0) fail("github_orgs lists organizations beside an anonymous member; emit none for an anonymous member");`);
+  return output;
+}
+
+function refine(source, name, body) {
+  const start = source.indexOf(`export const ${name} = z.object({`);
+  const end = start < 0 ? -1 : source.indexOf(";", source.indexOf("\n})", start));
+  if (start < 0 || end < start) {
+    throw new Error(`TypeScript contract generation could not keep anonymous people anonymous on ${name} in src/internal/generated/contract/zod.gen.ts; the generated object declaration was not found, so the package would accept organizations beside an anonymous person; update scripts/lib/public-owner-zod-refinements.mjs.`);
+  }
+  return source.slice(0, end) + `.superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.${name}: " + reason });
+    ${body}
+  })` + source.slice(end);
 }
