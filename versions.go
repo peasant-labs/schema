@@ -207,5 +207,8 @@ const (
 	// Bumped to 0.31.0 for concrete sync pages, tokens, and project options.
 	// Bumped to 0.32.0 for scoped collective observations, retained contribution
 	// evidence and deprecated collective envelopes alongside shared sync pages.
-	TypesVersion = "0.32.0"
+	// Bumped to 0.33.0 when the catalog's Village transcript metadata adopted
+	// structured DiagnosticEntry diagnostics warnings instead of bare strings,
+	// matching what publication carries and Village stores.
+	TypesVersion = "0.33.0"
 )
