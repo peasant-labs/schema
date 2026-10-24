@@ -5,6 +5,59 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** a response that shows a person to another viewer no longer
+  carries that person's account. Village API 0.29.0 and Types 0.34.0 add
+  `VillagePublicOwner`, a union on `kind`:
+  - `{"kind":"profile","id","username","display_name","avatar_url"}`;
+  - `{"kind":"anonymous"}`, with no other field and no id, because a stable
+    id would link one anonymous person's transcripts.
+
+  The server resolves anonymity for each viewer, and a viewer always sees
+  their own profile. Consumers render what they receive and never re-derive
+  the rule; `IsAccount(viewerID)` is the own-transcript check in Go, and
+  `owner.kind === "profile" && owner.id === viewerId` in TypeScript.
+- Readers treat a `kind` they do not know as anonymous and keep no field from
+  it. The Go decoder and the generated `zVillagePublicOwner` both apply this,
+  so a later kind (for example an organization credit) is an additive change.
+- Fields replaced by `VillagePublicOwner`:
+  - `VillageTranscriptMetadataResponse.owner` and
+    `VillageTranscriptListRow.owner`: were the whole `VillageUser`.
+  - `VillageCollectiveTranscript`: `owner_id`, `owner_username`,
+    `owner_avatar_url` and `owner_is_discoverable` become `owner`.
+  - `VillagePendingShare`: `owner_id`, `owner_username` and
+    `owner_is_discoverable` become `owner`.
+  - `VillageUserCollectiveShare`: `owner_id` becomes `owner`.
+  - `VillageTranscript`: `owner_id` is removed. The owner sits beside the
+    transcript instead: `VillageSessionRow.owner` (new, required), and the
+    metadata and list-row `owner`. A route arm's `owner` must equal the row's.
+  - `VillageCollectiveMember`: `id`, `github_username`, `display_name` and
+    `avatar_url` become `member`.
+  - `VillageCollectiveContributor`: `id`, `github_username` and `avatar_url`
+    become `contributor`.
+  - `VillageListUserOrganization.user_id` is removed.
+- `owner_orgs` and a member's `github_orgs` are empty when the person is
+  anonymous, because an organization login can identify them. `Validate`
+  refuses a response that breaks this.
+- `GET /api/v1/auth/me` still returns the complete `VillageUser`; it is the
+  caller's own record.
+- **Pull envelope 0.3.0 (breaking):** `PullTranscriptInfo.ownerUserId` and
+  `ownerUsername` become `owner`, and `PullAnnotation.authorUserId` and
+  `authorUsername` become `author`, both `VillagePublicOwner`.
+  - The negotiated pull window constants live in Village and peasant, not in
+    this module. A Village that serves this envelope must advertise
+    `pullContractVersion` 0.3.0 and raise `minPullContractVersion` to 0.3.0.
+    A pull request does not say which envelope the client reads, so Village
+    cannot keep serving the 0.2.0 shape to older CLIs without leaking the
+    identity it now hides.
+  - **Consequence for older CLIs:** every released peasant CLI negotiates
+    pull contract 0.2.0. Once Village advertises [0.3.0, 0.3.0], those CLIs
+    stop pulling with the existing "pull-contract incompatible" error and its
+    upgrade instruction. Publishing, `/auth/me` and every other route keep
+    working. A peasant release on pull contract 0.3.0 must ship before, or
+    together with, the Village deploy.
+
 ## [v0.32.0] - 2026-10-24
 
 ### Fixed
