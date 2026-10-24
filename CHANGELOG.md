@@ -59,6 +59,26 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `GET /api/v1/auth/me` still returns the complete `VillageUser`, and the CLI
   sign-in exchange still returns the caller's own user id; both are the
   caller's own record.
+- A transcript whose owner is anonymous to the viewer carries none of its
+  repository identity. These fields are now nullable, always present, and
+  null when the owner is anonymous or the value was not recorded:
+  - `VillageTranscript` and `VillageCollectiveTranscript`: `git_branch`,
+    `git_remote`, `project_hash`, `project_name`, `project_display_name`,
+    `project_name_source` and `project_remote_label`;
+  - `VillagePendingShare`: `project_hash`, `project_name` and `branch`;
+  - `PullTranscriptInfo.projectName` is omitted.
+
+  At the only redaction level peasant offers, a git remote is not redacted
+  and peasant sends the remote and its `host:owner/repo` label by default. A
+  personal repository therefore named its owner beside `owner: {kind:
+  "anonymous"}`. The project hash is withheld too because it links one
+  person's transcripts. Go `Validate` and the generated Zod refuse any of these
+  fields beside an anonymous owner, on metadata, list rows, grouped session
+  rows, and the collective, pending and pull rows. The lists live once, in
+  `testdata/village_public_owner.yaml`. The caller's own contributable rows
+  keep their repository fields, because the caller is never anonymous to
+  themselves. A later per-user choice (polyrepo#43) may let an anonymous owner
+  show their repository.
 - The `owner` and `org` filters on `GET /api/v1/transcripts` match only owners
   this viewer may see as a profile, so a filter cannot reveal who an anonymous
   owner is. Village enforces it; the operation now documents it.
