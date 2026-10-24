@@ -66,7 +66,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     `git_remote`, `project_hash`, `project_name`, `project_display_name`,
     `project_name_source` and `project_remote_label`;
   - `VillagePendingShare`: `project_hash`, `project_name` and `branch`;
-  - `PullTranscriptInfo.projectName` is omitted.
+  - `PullTranscriptInfo.projectName` is omitted. It is now a `*string` in Go,
+    so an explicit empty string is distinguishable from an omitted field.
 
   At the only redaction level peasant offers, a git remote is not redacted
   and peasant sends the remote and its `host:owner/repo` label by default. A
@@ -74,11 +75,32 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   "anonymous"}`. The project hash is withheld too because it links one
   person's transcripts. Go `Validate` and the generated Zod refuse any of these
   fields beside an anonymous owner, on metadata, list rows, grouped session
-  rows, and the collective, pending and pull rows. The lists live once, in
-  `testdata/village_public_owner.yaml`. The caller's own contributable rows
+  rows, and the collective, pending and pull rows. Withheld means null or
+  absent: an empty string is a value and is refused in both languages.
+  `VillageWithheldRepositoryFields` returns the Go lists, and a test holds
+  them equal to `testdata/village_public_owner.yaml`, the file the
+  TypeScript generator reads. The caller's own contributable rows
   keep their repository fields, because the caller is never anonymous to
   themselves. A later per-user choice (polyrepo#43) may let an anonymous owner
   show their repository.
+- The same rule covers responses that carry no owner, so nothing in this
+  module can pair the two and Village enforces it on the server:
+  - `GET /api/v1/transcripts/{id}/content` serves `sessionDetail` without
+    `project`, `workingDirectory`, `gitBranch`, `gitRemote` or any
+    `childSessions[].project` when the owner is anonymous to the viewer. Text
+    inside the conversation is content and is not covered.
+    `SessionDetailPayload` keeps its Local API meaning.
+  - `PullAnnotation` leaves the embedded `targetProjectHash` and
+    `targetFilePath` absent when the annotated transcript's owner is
+    anonymous to the caller. `AnnotationSummary` keeps its Local API meaning.
+  - The `project`, `repo` and `q` filters on `GET /api/v1/transcripts` match
+    only rows whose repository this viewer may see.
+- Pull request references stay public by design. A pull request the owner
+  attached is shown even when the owner is anonymous, because attaching is
+  the owner's own act and the pull request is public on GitHub. This is
+  documented on `VillagePullRequestRef`, the `pull_requests` summaries and
+  `GET /api/v1/transcripts/{id}/pulls`. The per-transcript credit choice
+  (polyrepo#43) may revisit it.
 - The `owner` and `org` filters on `GET /api/v1/transcripts` match only owners
   this viewer may see as a profile, so a filter cannot reveal who an anonymous
   owner is. Village enforces it; the operation now documents it.
