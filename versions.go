@@ -96,7 +96,8 @@ const (
 	// pull contract 0.3.0 with it, attesters, pull request authors and
 	// requesters, collective creators, and repository linkers adopted it too,
 	// and transcript rows gained the server-resolved parent_transcript_id
-	// (breaking change on a 0.x contract = minor bump).
+	// and made their repository fields nullable, withheld beside an anonymous
+	// owner (breaking change on a 0.x contract = minor bump).
 	VillageAPIVersion = "0.29.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops

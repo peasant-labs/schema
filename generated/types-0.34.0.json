@@ -13095,10 +13095,27 @@
             ]
           },
           "project_display_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -13114,10 +13131,27 @@
             ]
           },
           "project_name_source": {
-            "$ref": "#/components/schemas/VillageProjectNameSource"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageProjectNameSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_remote_label": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "published_at": {
             "format": "date-time",
@@ -14272,7 +14306,14 @@
             ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -15745,10 +15786,27 @@
             ]
           },
           "project_display_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/ProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -15764,10 +15822,27 @@
             ]
           },
           "project_name_source": {
-            "$ref": "#/components/schemas/VillageProjectNameSource"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VillageProjectNameSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_remote_label": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "published_at": {
             "format": "date-time",

@@ -8358,9 +8358,15 @@ components:
           - $ref: '#/components/schemas/TranscriptID'
           - type: "null"
         project_display_name:
-          type: string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         project_hash:
-          $ref: '#/components/schemas/ProjectHash'
+          anyOf:
+          - $ref: '#/components/schemas/ProjectHash'
+          - type: "null"
         project_name:
           anyOf:
           - type:
@@ -8368,9 +8374,15 @@ components:
             - string
           - type: "null"
         project_name_source:
-          $ref: '#/components/schemas/VillageProjectNameSource'
+          anyOf:
+          - $ref: '#/components/schemas/VillageProjectNameSource'
+          - type: "null"
         project_remote_label:
-          type: string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         published_at:
           format: date-time
           type: string
@@ -9103,7 +9115,9 @@ components:
           - $ref: '#/components/schemas/TranscriptID'
           - type: "null"
         project_hash:
-          $ref: '#/components/schemas/ProjectHash'
+          anyOf:
+          - $ref: '#/components/schemas/ProjectHash'
+          - type: "null"
         project_name:
           anyOf:
           - type:
@@ -9976,9 +9990,15 @@ components:
           - $ref: '#/components/schemas/TranscriptID'
           - type: "null"
         project_display_name:
-          type: string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         project_hash:
-          $ref: '#/components/schemas/ProjectHash'
+          anyOf:
+          - $ref: '#/components/schemas/ProjectHash'
+          - type: "null"
         project_name:
           anyOf:
           - type:
@@ -9986,9 +10006,15 @@ components:
             - string
           - type: "null"
         project_name_source:
-          $ref: '#/components/schemas/VillageProjectNameSource'
+          anyOf:
+          - $ref: '#/components/schemas/VillageProjectNameSource'
+          - type: "null"
         project_remote_label:
-          type: string
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
         published_at:
           format: date-time
           type: string

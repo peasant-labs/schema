@@ -55,3 +55,25 @@ test("generated validators keep organizations away from an anonymous person", as
     assert.equal(schema.zVillageCollectiveMember.safeParse(member(profile, ["acme"])).success, true);
   });
 });
+
+test("generated validators withhold the repository of an anonymous owner", async (t) => {
+  const anonymous = { kind: "anonymous" };
+  const profile = { kind: "profile", id: "123e4567-e89b-12d3-a456-426614174001", username: "alice", display_name: null, avatar_url: null };
+  const holders = {
+    VillagePendingShare: [schema.zVillagePendingShare, { transcript_id: "123e4567-e89b-12d3-a456-426614174003", title: null, model_provider: "codex", owner: anonymous, local_id: "123e4567-e89b-12d3-a456-426614174002", parent_session_id: null, parent_transcript_id: null, project_hash: null, project_name: null, branch: null, shared_at: "2026-09-08T00:00:00Z" }],
+    PullTranscriptInfo: [schema.zPullTranscriptInfo, { transcriptId: "123e4567-e89b-12d3-a456-426614174003", owner: anonymous, visibility: "group", publishedAt: 1, updatedAt: 1, annotationCount: 0 }],
+  };
+  for (const [holder, [validator, base]] of Object.entries(holders)) {
+    await t.test(`${holder} without repository fields is accepted`, () => {
+      assert.equal(validator.safeParse(base).success, true);
+    });
+    for (const field of fixture.withheld_repository_fields[holder]) {
+      await t.test(`${holder}.${field} beside an anonymous owner is refused`, () => {
+        assert.equal(validator.safeParse({ ...base, [field]: fixture.withheld_repository_samples[field] }).success, false);
+      });
+      await t.test(`${holder}.${field} beside a shown owner is accepted`, () => {
+        assert.equal(validator.safeParse({ ...base, owner: profile, [field]: fixture.withheld_repository_samples[field] }).success, true);
+      });
+    }
+  }
+});

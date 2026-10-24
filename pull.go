@@ -65,19 +65,41 @@ func (TranscriptID) JSONSchema() (jsonschema.Schema, error) {
 // anonymous owner is never the caller. This envelope shape is pull contract
 // 0.3.0, which replaced the ownerUserId and ownerUsername strings.
 type PullTranscriptInfo struct {
-	TranscriptID    TranscriptID       `json:"transcriptId"`
-	LocalID         string             `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
-	Owner           VillagePublicOwner `json:"owner"`
-	Title           string             `json:"title,omitempty"`
-	Harness         Harness            `json:"harness,omitempty"` // existing typed form
-	ProjectName     string             `json:"projectName,omitempty"`
-	Visibility      Visibility         `json:"visibility"`                // existing typed form
-	License         License            `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
-	ContentHash     string             `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
-	ContractVersion ContractVersion    `json:"contractVersion,omitempty"` // push contract the blob was published under
-	PublishedAt     int64              `json:"publishedAt"`
-	UpdatedAt       int64              `json:"updatedAt"`
-	AnnotationCount int                `json:"annotationCount"`
+	TranscriptID TranscriptID       `json:"transcriptId"`
+	LocalID      string             `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
+	Owner        VillagePublicOwner `json:"owner"`
+	Title        string             `json:"title,omitempty"`
+	Harness      Harness            `json:"harness,omitempty"` // existing typed form
+	// ProjectName identifies the owner's repository, so it is omitted when
+	// Owner is anonymous to the caller, as well as when it was not recorded.
+	ProjectName     string          `json:"projectName,omitempty"`
+	Visibility      Visibility      `json:"visibility"`                // existing typed form
+	License         License         `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
+	ContentHash     string          `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
+	ContractVersion ContractVersion `json:"contractVersion,omitempty"` // push contract the blob was published under
+	PublishedAt     int64           `json:"publishedAt"`
+	UpdatedAt       int64           `json:"updatedAt"`
+	AnnotationCount int             `json:"annotationCount"`
+}
+
+// Validate checks the owner and that an anonymous owner's project name is
+// omitted.
+func (p PullTranscriptInfo) Validate() error {
+	var present []string
+	if p.ProjectName != "" {
+		present = append(present, "projectName")
+	}
+	return validateAnonymousRepository(p.Owner, present, "schema.PullTranscriptInfo.Validate")
+}
+
+// Validate checks every listed transcript.
+func (r PullListResponse) Validate() error {
+	for _, info := range r.Transcripts {
+		if err := info.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // PullListResponse is the village's paginated listing of pullable transcripts

@@ -11925,10 +11925,27 @@
             ]
           },
           "project_display_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -11944,10 +11961,27 @@
             ]
           },
           "project_name_source": {
-            "$ref": "#/components/schemas/SchemaVillageProjectNameSource"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaVillageProjectNameSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_remote_label": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "published_at": {
             "format": "date-time",
@@ -13102,7 +13136,14 @@
             ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -14562,10 +14603,27 @@
             ]
           },
           "project_display_name": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_hash": {
-            "$ref": "#/components/schemas/SchemaProjectHash"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaProjectHash"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_name": {
             "anyOf": [
@@ -14581,10 +14639,27 @@
             ]
           },
           "project_name_source": {
-            "$ref": "#/components/schemas/SchemaVillageProjectNameSource"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaVillageProjectNameSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "project_remote_label": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "published_at": {
             "format": "date-time",

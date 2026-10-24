@@ -47,6 +47,7 @@ const timelineSource = parse(await readFile(join(moduleRoot, "testdata", "local-
 const sessionGraphSource = parse(await readFile(join(moduleRoot, "testdata", "session_graph_provenance.yaml"), "utf8"), { merge: true });
 const groupedReadSource = parse(await readFile(join(moduleRoot, "testdata", "grouped_read_boundaries.yaml"), "utf8"), { merge: true });
 const sessionGraphCapabilitySource = parse(await readFile(join(moduleRoot, "testdata", "content_capability_session_graph.yaml"), "utf8"));
+const publicOwnerSource = parse(await readFile(join(moduleRoot, "testdata", "village_public_owner.yaml"), "utf8"));
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
@@ -78,7 +79,8 @@ async function refineRootZodContract() {
   const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
   const source = applyCollectiveZodRefinements(attemptSource, spec);
-  await writeFile(zodPath, applyPublicOwnerZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))))))));
+  const refined = applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))))));
+  await writeFile(zodPath, applyPublicOwnerZodRefinements(refined, publicOwnerSource.withheld_repository_fields));
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have

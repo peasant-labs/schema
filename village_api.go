@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -528,16 +529,22 @@ type VillageTranscript struct {
 	// that session is not published, or when this viewer may not read it, so
 	// it never discloses a transcript the viewer cannot open. Readers group
 	// children under parents by this id, never by matching session ids.
-	ParentTranscriptID      *TranscriptID             `json:"parent_transcript_id"`
-	IngestedAt              *time.Time                `json:"ingested_at"`
-	SourceFormat            *SourceFormat             `json:"source_format"`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id"`
+	IngestedAt         *time.Time    `json:"ingested_at"`
+	SourceFormat       *SourceFormat `json:"source_format"`
+	// The repository fields below (git_branch, git_remote, project_hash,
+	// project_name, project_display_name, project_name_source,
+	// project_remote_label) identify the owner's repository, so each is null
+	// when the owner is anonymous to this viewer, as well as when it was not
+	// recorded. The server decides; Validate refuses any of them beside an
+	// anonymous owner.
 	GitBranch               *string                   `json:"git_branch"`
 	GitRemote               *string                   `json:"git_remote"`
-	ProjectHash             ProjectHash               `json:"project_hash"`
+	ProjectHash             *ProjectHash              `json:"project_hash"`
 	ProjectName             *string                   `json:"project_name"`
-	ProjectDisplayName      string                    `json:"project_display_name"`
-	ProjectNameSource       VillageProjectNameSource  `json:"project_name_source"`
-	ProjectRemoteLabel      string                    `json:"project_remote_label"`
+	ProjectDisplayName      *string                   `json:"project_display_name"`
+	ProjectNameSource       *VillageProjectNameSource `json:"project_name_source"`
+	ProjectRemoteLabel      *string                   `json:"project_remote_label"`
 	ToolCallCount           *int32                    `json:"tool_call_count"`
 	SubagentCount           *int32                    `json:"subagent_count"`
 	DurationMs              *int64                    `json:"duration_ms"`
@@ -692,6 +699,9 @@ func (r VillageTranscriptListResponse) Validate() error {
 		if err := validateVillageOwnerOrganizations(row.Owner, len(row.OwnerOrgs), "schema.VillageTranscriptListResponse.Validate"); err != nil {
 			return err
 		}
+		if err := validateAnonymousRepository(row.Owner, row.Transcript.repositoryFieldsPresent(), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+			return err
+		}
 		if row.Tags == nil {
 			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
 		}
@@ -707,6 +717,9 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 		return fmt.Errorf("Village transcript metadata validation failed at schema.VillageTranscriptMetadataResponse.Validate: tags, shares, enriched_shares, owner_orgs, or attestations is null; the existing metadata envelope requires concrete arrays; initialize every empty collection")
 	}
 	if err := validateVillageOwnerOrganizations(r.Owner, len(r.OwnerOrgs), "schema.VillageTranscriptMetadataResponse.Validate"); err != nil {
+		return err
+	}
+	if err := validateAnonymousRepository(r.Owner, r.Transcript.repositoryFieldsPresent(), "schema.VillageTranscriptMetadataResponse.Validate"); err != nil {
 		return err
 	}
 	for _, attestation := range r.Attestations {
@@ -751,16 +764,22 @@ type VillageCollectiveTranscript struct {
 	// that session is not published, or when this viewer may not read it, so
 	// it never discloses a transcript the viewer cannot open. Readers group
 	// children under parents by this id, never by matching session ids.
-	ParentTranscriptID      *TranscriptID              `json:"parent_transcript_id"`
-	IngestedAt              *time.Time                 `json:"ingested_at"`
-	SourceFormat            *SourceFormat              `json:"source_format"`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id"`
+	IngestedAt         *time.Time    `json:"ingested_at"`
+	SourceFormat       *SourceFormat `json:"source_format"`
+	// The repository fields below (git_branch, git_remote, project_hash,
+	// project_name, project_display_name, project_name_source,
+	// project_remote_label) identify the owner's repository, so each is null
+	// when the owner is anonymous to this viewer, as well as when it was not
+	// recorded. The server decides; Validate refuses any of them beside an
+	// anonymous owner.
 	GitBranch               *string                    `json:"git_branch"`
 	GitRemote               *string                    `json:"git_remote"`
-	ProjectHash             ProjectHash                `json:"project_hash"`
+	ProjectHash             *ProjectHash               `json:"project_hash"`
 	ProjectName             *string                    `json:"project_name"`
-	ProjectDisplayName      string                     `json:"project_display_name"`
-	ProjectNameSource       VillageProjectNameSource   `json:"project_name_source"`
-	ProjectRemoteLabel      string                     `json:"project_remote_label"`
+	ProjectDisplayName      *string                    `json:"project_display_name"`
+	ProjectNameSource       *VillageProjectNameSource  `json:"project_name_source"`
+	ProjectRemoteLabel      *string                    `json:"project_remote_label"`
 	ToolCallCount           *int32                     `json:"tool_call_count"`
 	SubagentCount           *int32                     `json:"subagent_count"`
 	DurationMs              *int64                     `json:"duration_ms"`
@@ -877,8 +896,11 @@ type VillagePendingShare struct {
 	LocalID         SessionID          `json:"local_id"`
 	ParentSessionID *SessionID         `json:"parent_session_id"`
 	// ParentTranscriptID follows VillageTranscript.ParentTranscriptID.
-	ParentTranscriptID   *TranscriptID         `json:"parent_transcript_id"`
-	ProjectHash          ProjectHash           `json:"project_hash"`
+	ParentTranscriptID *TranscriptID `json:"parent_transcript_id"`
+	// ProjectHash, ProjectName and Branch identify the owner's repository, so
+	// each is null when the owner is anonymous to this viewer, as well as when
+	// it was not recorded.
+	ProjectHash          *ProjectHash          `json:"project_hash"`
 	ProjectName          *string               `json:"project_name"`
 	Branch               *string               `json:"branch"`
 	SharedAt             time.Time             `json:"shared_at"`
@@ -950,6 +972,9 @@ type VillageReviewShareRequest struct {
 	Status VillageReviewDecision `json:"status"`
 }
 
+// VillageContributableTranscript is one of the caller's own transcripts it may
+// offer to a collective. Its owner is always the caller, shown their own
+// profile, so its repository fields are never withheld.
 type VillageContributableTranscript struct {
 	ID                   TranscriptID                `json:"id"`
 	LocalID              SessionID                   `json:"local_id"`
@@ -989,8 +1014,18 @@ type VillageSessionRow struct {
 
 // Validate checks the route arm and the shared identity and count mirrors.
 func (r VillageSessionRow) Validate() error {
-	if err := r.Owner.Validate(); err != nil {
+	if err := validateAnonymousRepository(r.Owner, r.Session.repositoryFieldsPresent(), "schema.VillageSessionRow.Validate"); err != nil {
 		return err
+	}
+	if r.Collective != nil {
+		if err := r.Collective.Validate(); err != nil {
+			return err
+		}
+	}
+	if r.Pending != nil {
+		if err := r.Pending.Validate(); err != nil {
+			return err
+		}
 	}
 	if r.Session.ParentTranscriptID != nil && (r.Session.ParentSessionID == nil || *r.Session.ParentTranscriptID == r.Session.ID) {
 		return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: parent_transcript_id is set without a parent_session_id or names the row itself; readers would fold the session under the wrong parent; resolve the parent from parent_session_id within the same owner, or emit null")
@@ -1007,7 +1042,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || r.Collective.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || r.Collective.ProjectDisplayName != r.Session.ProjectDisplayName || r.Collective.ProjectNameSource != r.Session.ProjectNameSource || r.Collective.ProjectRemoteLabel != r.Session.ProjectRemoteLabel || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || !reflect.DeepEqual(r.Collective.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Collective.ProjectDisplayName, r.Session.ProjectDisplayName) || !reflect.DeepEqual(r.Collective.ProjectNameSource, r.Session.ProjectNameSource) || !reflect.DeepEqual(r.Collective.ProjectRemoteLabel, r.Session.ProjectRemoteLabel) || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1016,7 +1051,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Pending.InputSubmissionCount, "VillageSessionRow.pending.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Pending.TranscriptID != r.Session.ID || !reflect.DeepEqual(r.Pending.Owner, r.Owner) || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || r.Pending.ProjectHash != r.Session.ProjectHash || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
+		if r.Pending.TranscriptID != r.Session.ID || !reflect.DeepEqual(r.Pending.Owner, r.Owner) || r.Pending.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Pending.Title, r.Session.Title) || !equalOptionalInt64(r.Pending.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Pending.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Pending.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Pending.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Pending.Branch, r.Session.GitBranch) || !reflect.DeepEqual(r.Pending.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Pending.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Pending.RootSessionID, r.Session.RootSessionID) || r.Pending.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Pending.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: pending identity or inputSubmissionCount differs from session; the review route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1034,7 +1069,7 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.Contributable.InputSubmissionCount, "VillageSessionRow.contributable.input_submission_count"); err != nil {
 			return err
 		}
-		if r.Contributable.ID != r.Session.ID || r.Contributable.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Contributable.Title, r.Session.Title) || r.Contributable.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Contributable.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Contributable.ModelProvider != r.Session.ModelProvider || r.Contributable.ProjectHash != r.Session.ProjectHash || r.Contributable.ProjectDisplayName != r.Session.ProjectDisplayName || r.Contributable.ProjectNameSource != r.Session.ProjectNameSource || !reflect.DeepEqual(r.Contributable.GitBranch, r.Session.GitBranch) || !r.Contributable.PublishedAt.Equal(r.Session.PublishedAt) || !reflect.DeepEqual(r.Contributable.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Contributable.RootSessionID, r.Session.RootSessionID) || r.Contributable.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Contributable.Relationships, r.Session.Relationships) || r.Contributable.SessionOrigin != r.Session.SessionOrigin {
+		if r.Contributable.ID != r.Session.ID || r.Contributable.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Contributable.Title, r.Session.Title) || r.Contributable.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Contributable.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Contributable.ModelProvider != r.Session.ModelProvider || r.Session.ProjectHash == nil || r.Contributable.ProjectHash != *r.Session.ProjectHash || r.Session.ProjectDisplayName == nil || r.Contributable.ProjectDisplayName != *r.Session.ProjectDisplayName || r.Session.ProjectNameSource == nil || r.Contributable.ProjectNameSource != *r.Session.ProjectNameSource || !reflect.DeepEqual(r.Contributable.GitBranch, r.Session.GitBranch) || !r.Contributable.PublishedAt.Equal(r.Session.PublishedAt) || !reflect.DeepEqual(r.Contributable.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Contributable.RootSessionID, r.Session.RootSessionID) || r.Contributable.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Contributable.Relationships, r.Session.Relationships) || r.Contributable.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: contributable identity or inputSubmissionCount differs from session; the contribution route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1163,11 +1198,62 @@ func (r VillageCollectiveDetailResponse) Validate() error {
 		return err
 	}
 	for _, transcript := range r.Transcripts {
-		if err := transcript.Owner.Validate(); err != nil {
+		if err := transcript.Validate(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// repositoryFieldsPresent names the repository fields a transcript row
+// carries. They identify the owner's repository, so none may sit beside an
+// anonymous owner.
+func (t VillageTranscript) repositoryFieldsPresent() []string {
+	return presentFieldNames(map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil})
+}
+
+func (t VillageCollectiveTranscript) repositoryFieldsPresent() []string {
+	return presentFieldNames(map[string]bool{"git_branch": t.GitBranch != nil, "git_remote": t.GitRemote != nil, "project_hash": t.ProjectHash != nil, "project_name": t.ProjectName != nil, "project_display_name": t.ProjectDisplayName != nil, "project_name_source": t.ProjectNameSource != nil, "project_remote_label": t.ProjectRemoteLabel != nil})
+}
+
+func (p VillagePendingShare) repositoryFieldsPresent() []string {
+	return presentFieldNames(map[string]bool{"project_hash": p.ProjectHash != nil, "project_name": p.ProjectName != nil, "branch": p.Branch != nil})
+}
+
+func presentFieldNames(fields map[string]bool) []string {
+	var present []string
+	for name, set := range fields {
+		if set {
+			present = append(present, name)
+		}
+	}
+	sort.Strings(present)
+	return present
+}
+
+// validateAnonymousRepository refuses repository fields beside an owner who
+// is not shown: a remote, label, project name, hash, or branch identifies the
+// owner's repository and, for a personal repository, the owner.
+func validateAnonymousRepository(owner VillagePublicOwner, present []string, at string) error {
+	if err := owner.Validate(); err != nil {
+		return err
+	}
+	if !owner.IsProfile() && len(present) > 0 {
+		return fmt.Errorf("Village owner validation failed at %s: %v identify the repository of an anonymous owner; the viewer could find who it is; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous", at, present)
+	}
+	return nil
+}
+
+// Validate checks the owner and that an anonymous owner's repository fields
+// are null.
+func (t VillageCollectiveTranscript) Validate() error {
+	return validateAnonymousRepository(t.Owner, t.repositoryFieldsPresent(), "schema.VillageCollectiveTranscript.Validate")
+}
+
+// Validate checks the submitter and that an anonymous submitter's repository
+// fields are null.
+func (p VillagePendingShare) Validate() error {
+	return validateAnonymousRepository(p.Owner, p.repositoryFieldsPresent(), "schema.VillagePendingShare.Validate")
 }
 
 // validateVillageOwnerOrganizations refuses organizations beside an owner who

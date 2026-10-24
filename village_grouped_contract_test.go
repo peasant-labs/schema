@@ -25,6 +25,9 @@ type villageRowInput struct {
 	MismatchMetric bool   `yaml:"mismatch_metric"`
 	AnonymousOwner bool   `yaml:"anonymous_owner"`
 	MismatchOwner  bool   `yaml:"mismatch_owner"`
+	// AnonymousWithRemote keeps the repository fields beside an anonymous
+	// owner, which the contract refuses.
+	AnonymousWithRemote bool `yaml:"anonymous_with_remote"`
 }
 type villageItemInput struct {
 	Kind       schema.SessionListItemKind `yaml:"kind"`
@@ -164,7 +167,10 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	display := "display"
 	avatar := "avatar"
 	note := "note"
-	transcript := schema.VillageTranscript{ID: transcriptID, LocalID: localID, Title: &title, Visibility: schema.VillageTranscriptVisibilityPublic, ModelProvider: "provider", SchemaVersion: "1", PublishedAt: now, UpdatedAt: now, ProjectHash: schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), ProjectDisplayName: "project", ProjectNameSource: schema.VillageProjectNameSourceOverride, ProjectRemoteLabel: "owner/repo", SessionOrigin: schema.SessionOriginUser}
+	projectHash := schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	projectDisplay, projectLabel := "project", "owner/repo"
+	projectSource := schema.VillageProjectNameSourceOverride
+	transcript := schema.VillageTranscript{ID: transcriptID, LocalID: localID, Title: &title, Visibility: schema.VillageTranscriptVisibilityPublic, ModelProvider: "provider", SchemaVersion: "1", PublishedAt: now, UpdatedAt: now, ProjectHash: &projectHash, ProjectDisplayName: &projectDisplay, ProjectNameSource: &projectSource, ProjectRemoteLabel: &projectLabel, SessionOrigin: schema.SessionOriginUser}
 	tags := []schema.VillageTag{{ID: ownerID, Name: "tag"}}
 	owner := schema.NewVillagePublicProfile(ownerID, "owner", &display, &avatar)
 	listOrgs := []schema.VillageListUserOrganization{{OrgLogin: "org", AvatarURL: &avatar}}
@@ -257,7 +263,19 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 	tokensIn := int64(3)
 	tokensOut := int64(5)
 	project := schema.ProjectHash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	r := schema.VillageSessionRow{Owner: owner, Session: schema.VillageTranscript{ID: id, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.SessionCount}}
+	display := "project"
+	source := schema.VillageProjectNameSourceRemote
+	remote := "https://github.com/owner/project.git"
+	// Repository fields are present only beside a shown owner, unless the
+	// case deliberately keeps them beside an anonymous one.
+	var projectRef *schema.ProjectHash
+	var displayRef *string
+	var sourceRef *schema.VillageProjectNameSource
+	var remoteRef *string
+	if owner.IsProfile() || in.AnonymousWithRemote {
+		projectRef, displayRef, sourceRef, remoteRef = &project, &display, &source, &remote
+	}
+	r := schema.VillageSessionRow{Owner: owner, Session: schema.VillageTranscript{ID: id, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: projectRef, ProjectDisplayName: displayRef, ProjectNameSource: sourceRef, GitRemote: remoteRef, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.SessionCount}}
 	variantID := id
 	if in.MismatchID {
 		variantID = other
@@ -268,13 +286,13 @@ func villageRow(in villageRowInput) schema.VillageSessionRow {
 		if in.MismatchMetric {
 			variantTurns++
 		}
-		r.Collective = &schema.VillageGroupTranscript{ID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
+		r.Collective = &schema.VillageGroupTranscript{ID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &variantTurns, TokenCount: &tokens, TokensIn: &tokensIn, TokensOut: &tokensOut, ProjectHash: projectRef, ProjectDisplayName: displayRef, ProjectNameSource: sourceRef, GitRemote: remoteRef, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}
 	case "pending":
-		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
+		r.Pending = &schema.VillagePendingShare{TranscriptID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ProjectHash: projectRef, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "myShare":
 		r.MyShare = &schema.VillageUserGroupShare{ID: variantID, Owner: armOwner, LocalID: local, ModelProvider: "provider", ModelName: &model, TurnCount: &turns, TokensIn: &tokensIn, TokensOut: &tokensOut, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, InputSubmissionCount: in.VariantCount}
 	case "contributable":
-		r.Contributable = &schema.VillageContributableTranscript{ID: variantID, LocalID: local, ModelProvider: "provider", ProjectHash: project, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
+		r.Contributable = &schema.VillageContributableTranscript{ID: variantID, LocalID: local, ModelProvider: "provider", ProjectHash: project, ProjectDisplayName: display, ProjectNameSource: source, ParentSessionID: &parent, Purpose: schema.SessionPurposeInteraction, SessionOrigin: schema.SessionOriginUser, InputSubmissionCount: in.VariantCount}
 	}
 	return r
 }

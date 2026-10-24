@@ -196,12 +196,57 @@ responses:
       classification: must-pass
       provenance: {source: requirement, ref: public-owner-organizations}
       mutation: {description: shows an anonymous member with no organizations in the flat collective roster}
+    - name: list-row-anonymous-owner-with-remote-refused
+      input: {target: list_row, anonymous: true, orgs: 0, remote: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: anonymous-owner-repository}
+      mutation: {description: keeps the git remote beside an anonymous owner on a list row}
+    - name: list-row-profile-owner-with-remote
+      input: {target: list_row, anonymous: false, orgs: 0, remote: true}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: anonymous-owner-repository}
+      mutation: {description: keeps the git remote beside a shown owner on a list row}
+    - name: metadata-anonymous-owner-with-remote-refused
+      input: {target: metadata, anonymous: true, orgs: 0, remote: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: anonymous-owner-repository}
+      mutation: {description: keeps the git remote beside an anonymous owner on the metadata response}
+    - name: flat-detail-anonymous-transcript-with-remote-refused
+      input: {target: flat_detail_transcript_remote, anonymous: true, orgs: 0, remote: true}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: anonymous-owner-repository}
+      mutation: {description: keeps the git remote on an anonymous owner's transcript in the flat collective detail}
     - name: flat-detail-unresolved-transcript-owner-refused
       input: {target: flat_detail_transcript, anonymous: false, orgs: 0}
       expected: {valid: false}
       classification: must-fail
       provenance: {source: requirement, ref: public-owner-kinds}
       mutation: {description: leaves a collective transcript's owner unresolved in the flat collective detail}
+
+# withheld_repository_fields is the exact set of fields, per holder, that
+# identify the owner's repository. Each is null (or, on the pull envelope,
+# omitted) when the owner is anonymous to the viewer. The Go test sets each one
+# beside an anonymous owner and requires a refusal; the TypeScript generator
+# reads this same list to build the matching Zod checks.
+withheld_repository_fields:
+  VillageTranscript: [git_branch, git_remote, project_hash, project_name, project_display_name, project_name_source, project_remote_label]
+  VillageCollectiveTranscript: [git_branch, git_remote, project_hash, project_name, project_display_name, project_name_source, project_remote_label]
+  VillagePendingShare: [project_hash, project_name, branch]
+  PullTranscriptInfo: [projectName]
+withheld_repository_samples:
+  git_branch: main
+  git_remote: 'https://github.com/alice/project.git'
+  project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+  project_name: project
+  project_display_name: project
+  project_name_source: remote
+  project_remote_label: 'github.com:alice/project'
+  branch: main
+  projectName: project
 
 # surfaces pins where the served Village API carries a person.
 #
@@ -254,6 +299,6 @@ surfaces:
     - user_id
 
 required_names:
-  responses: [list-row-anonymous-owner-with-orgs-refused, list-row-anonymous-owner-without-orgs, list-row-profile-owner-with-orgs, metadata-anonymous-owner-with-orgs-refused, metadata-anonymous-owner-without-orgs, grouped-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-without-orgs, flat-detail-unresolved-transcript-owner-refused]
+  responses: [list-row-anonymous-owner-with-orgs-refused, list-row-anonymous-owner-without-orgs, list-row-profile-owner-with-orgs, metadata-anonymous-owner-with-orgs-refused, metadata-anonymous-owner-without-orgs, grouped-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-with-orgs-refused, flat-detail-anonymous-member-without-orgs, flat-detail-unresolved-transcript-owner-refused, list-row-anonymous-owner-with-remote-refused, list-row-profile-owner-with-remote, metadata-anonymous-owner-with-remote-refused, flat-detail-anonymous-transcript-with-remote-refused]
   encode: [profile-exact-fields, profile-null-display-name-and-avatar, anonymous-exact-fields, anonymous-with-id-refused, anonymous-with-username-refused, anonymous-with-avatar-refused, profile-without-username-refused, profile-noncanonical-id-refused, undefined-kind-refused-for-producers, zero-value-refused]
   decode: [profile-reads-profile, own-profile-is-the-viewer, anonymous-is-never-the-viewer, unknown-kind-reads-as-anonymous, anonymous-extra-fields-are-not-kept, profile-later-field-ignored, profile-missing-display-name-refused, profile-missing-id-refused, profile-empty-username-refused, null-refused, missing-kind-refused, empty-kind-refused]

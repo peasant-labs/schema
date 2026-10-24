@@ -10,7 +10,7 @@
 // shape. The known kinds come from the generated literals, never a second list.
 const declarationPattern = /export const zVillagePublicOwner = z\.union\(\[\n[\s\S]*?\n\]\);/;
 
-export function applyPublicOwnerZodRefinements(source) {
+export function applyPublicOwnerZodRefinements(source, withheld) {
   const declaration = source.match(declarationPattern)?.[0];
   if (declaration === undefined) {
     throw new Error("TypeScript contract generation could not open zVillagePublicOwner to unknown kinds in src/internal/generated/contract/zod.gen.ts; the generated declaration no longer matches `z.union([...])`, so readers would refuse a response carrying a kind added later instead of showing the person as anonymous; inspect the pinned generator output and update scripts/lib/public-owner-zod-refinements.mjs.");
@@ -26,14 +26,30 @@ export function applyPublicOwnerZodRefinements(source) {
   output = refine(output, "zVillageTranscriptListRow", `if (value.owner.kind !== "profile" && (value.owner_orgs?.length ?? 0) > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");`);
   output = refine(output, "zVillageTranscriptMetadataResponse", `if (value.owner.kind !== "profile" && value.owner_orgs.length > 0) fail("owner_orgs lists organizations beside an anonymous owner; emit none for an anonymous owner");`);
   output = refine(output, "zVillageCollectiveMember", `if (value.member.kind !== "profile" && value.github_orgs.length > 0) fail("github_orgs lists organizations beside an anonymous member; emit none for an anonymous member");`);
+  // Repository fields identify the owner's repository, so none may sit beside
+  // an anonymous owner. The field lists come from
+  // testdata/village_public_owner.yaml, the list the Go test also checks.
+  const fields = (holder) => {
+    const list = withheld?.[holder];
+    if (!Array.isArray(list) || list.length === 0) throw new Error(`TypeScript contract generation found no withheld repository fields for ${holder} in testdata/village_public_owner.yaml; the package would accept a repository beside an anonymous owner; restore the list.`);
+    return JSON.stringify(list);
+  };
+  const withheldCheck = (owner, record, holder) => `if (${owner}.kind !== "profile") { const present = ${fields(holder)}.filter((field) => { const v = (${record} as Record<string, unknown>)[field]; return v !== null && v !== undefined && v !== ""; }); if (present.length > 0) fail(present.join(", ") + " identify the repository of an anonymous owner; withhold every repository field (null, or omitted on the pull envelope) when the owner is anonymous"); }`;
+  output = refine(output, "zVillageTranscriptListRow", withheldCheck("value.owner", "value.transcript", "VillageTranscript"));
+  output = refine(output, "zVillageTranscriptMetadataResponse", withheldCheck("value.owner", "value.transcript", "VillageTranscript"));
+  output = refine(output, "zVillageSessionRow", withheldCheck("value.owner", "value.session", "VillageTranscript"));
+  output = refine(output, "zVillageCollectiveTranscript", withheldCheck("value.owner", "value", "VillageCollectiveTranscript"));
+  output = refine(output, "zVillagePendingShare", withheldCheck("value.owner", "value", "VillagePendingShare"));
+  output = refine(output, "zPullTranscriptInfo", withheldCheck("value.owner", "value", "PullTranscriptInfo"));
   return output;
 }
 
 function refine(source, name, body) {
   const start = source.indexOf(`export const ${name} = z.object({`);
-  const end = start < 0 ? -1 : source.indexOf(";", source.indexOf("\n})", start));
+  const typeDeclaration = start < 0 ? -1 : source.indexOf(`\n\nexport type ${name.slice(1)} =`, start);
+  const end = typeDeclaration < 0 ? -1 : source.lastIndexOf(";", typeDeclaration);
   if (start < 0 || end < start) {
-    throw new Error(`TypeScript contract generation could not keep anonymous people anonymous on ${name} in src/internal/generated/contract/zod.gen.ts; the generated object declaration was not found, so the package would accept organizations beside an anonymous person; update scripts/lib/public-owner-zod-refinements.mjs.`);
+    throw new Error(`TypeScript contract generation could not keep anonymous people anonymous on ${name} in src/internal/generated/contract/zod.gen.ts; the generated object declaration was not found, so the package would accept identifying data beside an anonymous person; update scripts/lib/public-owner-zod-refinements.mjs.`);
   }
   return source.slice(0, end) + `.superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.${name}: " + reason });

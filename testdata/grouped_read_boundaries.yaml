@@ -64,6 +64,9 @@ required_names:
   - village-collective-member-count-mismatch
   - village-collective-owner-mismatch
   - village-anonymous-owner-mirrored
+  - anonymous-owner-with-remote
+  - anonymous-owner-with-project-hash
+  - anonymous-collective-arm-with-label
   - pending-owner-mismatch
   - my-share-owner-mismatch
   - parent-transcript-id-mismatch
@@ -635,9 +638,27 @@ cases:
     - name: village-anonymous-owner-mirrored
       classification: must-pass
       provenance: {source: requirement, ref: 'the owner is resolved once per viewer and mirrored into the route arm'}
-      mutation: {description: 'an anonymous owner on the row and the collective arm carries no identity and still mirrors'}
-      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: *villageSession, collective: {<<: *collective, owner: {kind: anonymous}}}}]}}
+      mutation: {description: 'an anonymous owner on the row and the collective arm carries no identity, no repository, and still mirrors'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [&withheldRepository {git_branch: null, git_remote: null, project_hash: null, project_name: null, project_display_name: null, project_name_source: null, project_remote_label: null}, *villageSession]}, collective: {<<: [*withheldRepository, *collective], owner: {kind: anonymous}}}}]}}
       expected: {valid: true}
+    - name: anonymous-owner-with-remote
+      classification: must-fail
+      provenance: {source: requirement, ref: 'an anonymous owner carries no repository identity'}
+      mutation: {description: 'keeps the git remote beside an anonymous row owner'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [*withheldRepository, *villageSession], git_remote: 'https://github.com/alice/project.git'}}}]}}
+      expected: {valid: false}
+    - name: anonymous-owner-with-project-hash
+      classification: must-fail
+      provenance: {source: requirement, ref: 'an anonymous owner carries no repository identity'}
+      mutation: {description: 'keeps the correlatable project hash beside an anonymous row owner'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [*withheldRepository, *villageSession], project_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}}}]}}
+      expected: {valid: false}
+    - name: anonymous-collective-arm-with-label
+      classification: must-fail
+      provenance: {source: requirement, ref: 'an anonymous owner carries no repository identity'}
+      mutation: {description: 'keeps the remote label on the collective arm of an anonymous owner'}
+      input: {schema: VillageHelperMembersPayload, payload: {<<: *villageOwner, members: [{<<: *villageG1, transcript: {owner: {kind: anonymous}, session: {<<: [*withheldRepository, *villageSession]}, collective: {<<: [*withheldRepository, *collective], owner: {kind: anonymous}, project_remote_label: 'github.com:alice/project'}}}]}}
+      expected: {valid: false}
     - name: village-pending-member-mirrors
       classification: must-pass
       provenance: *requirement
