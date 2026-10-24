@@ -7,7 +7,7 @@ export function applyContributionAttemptZodRefinements(source) {
     if (value.recorded_at === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\\.0+Z$/.test(value.recorded_at)) fail("recorded_at must be a nonzero UTC timestamp");
     if (value.decided_by_actor !== actors[value.status]) fail("decided_by_actor does not match the status's actor capacity");
     if (value.status === "pending" && value.decided_at !== null) fail("pending attempts must have null decided_at");
-    if (value.status !== "pending" && value.status !== "approved" && value.decided_at === null) fail("this terminal status requires decided_at");
+    if (value.status !== "pending" && value.status !== "approved" && value.status !== "rejected" && value.decided_at === null) fail("this terminal status requires decided_at");
     if (value.decided_at !== null && (value.decided_at === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\\.0+Z$/.test(value.decided_at))) fail("decided_at must be a nonzero UTC timestamp when present");`);
   output = append(output, "LocalRemoteContributionAttempt", `
     if (value.firstSeenAt === "0001-01-01T00:00:00Z" || /^0001-01-01T00:00:00\\.0+Z$/.test(value.firstSeenAt)) fail("firstSeenAt must be a nonzero UTC timestamp");`);

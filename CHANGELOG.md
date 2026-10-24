@@ -5,6 +5,17 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Fixed
+
+- `VillageShareEvent.Validate`, `ReconcileVillageContributionAttempt`, and the
+  generated `zVillageShareEvent` accept a legacy `rejected` attempt whose
+  `decided_at` is null. Some recorded rejections predate decision-time capture;
+  the null is honest unknown evidence and is never replaced with the
+  `recorded_at` value or inferred from the ordinal. `retracted` and `revoked`
+  still require their decision time, a pending attempt still requires null, and
+  a pending-to-terminal reconciliation still requires a newly recorded
+  decision time. The declared wire shape is unchanged.
+
 ### Added
 
 - Durable child identity on the local session lists. Local API 0.18.0 and

@@ -11,6 +11,11 @@ required_names:
   - attempt-terminal-decision-conflict
   - attempt-approved-withdrawal-new-ordinal
   - attempt-initial-auto-approved-null-decision
+  - attempt-legacy-rejected-null-decision
+  - attempt-legacy-rejected-null-replay
+  - attempt-legacy-rejected-null-late-pending
+  - attempt-legacy-rejected-null-decision-added-conflict
+  - attempt-pending-rejected-null-decision-missing
   - attempt-moderator-deletion-wire-unchanged
   - attempt-identity-conflict
   - attempt-transcript-identity-conflict
@@ -131,6 +136,37 @@ corpus:
       classification: must-pass
       provenance: *provenance
       mutation: {description: initial automatic approval has actor capacity without a decision date}
+    - name: attempt-legacy-rejected-null-decision
+      input:
+        incoming: &legacy-rejected {<<: *automatic, status: rejected}
+      expected: {disposition: inserted, status: rejected}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: legacy rejection recorded before its decision time stays honest unknown evidence}
+    - name: attempt-legacy-rejected-null-replay
+      input: {saved: *legacy-rejected, incoming: {<<: *legacy-rejected, first_seen_at: 2026-10-03T10:00:00Z}}
+      expected: {disposition: unchanged, status: rejected}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: an identical poll of legacy rejection evidence keeps its first observation date and null decision}
+    - name: attempt-legacy-rejected-null-late-pending
+      input: {saved: *legacy-rejected, incoming: *pending}
+      expected: {disposition: superseded, status: rejected}
+      classification: must-pass
+      provenance: *provenance
+      mutation: {description: a delayed pending poll cannot erase legacy rejection evidence}
+    - name: attempt-legacy-rejected-null-decision-added-conflict
+      input: {saved: *legacy-rejected, incoming: {<<: *legacy-rejected, decided_at: 2026-10-01T12:00:00Z}}
+      expected: {status: rejected}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: known legacy rejection evidence cannot gain a fabricated decision time in place}
+    - name: attempt-pending-rejected-null-decision-missing
+      input: {saved: *pending, incoming: *legacy-rejected}
+      expected: {status: pending}
+      classification: must-fail
+      provenance: *provenance
+      mutation: {description: a newly decided rejection must record its decision time even though legacy rejection may omit one}
     - name: attempt-moderator-deletion-wire-unchanged
       input: {saved: *automatic, incoming: *automatic}
       expected: {disposition: unchanged, status: approved}

@@ -45,7 +45,10 @@ func VillageContributionAttemptActor(status VillageShareStatus) (VillageShareEve
 }
 
 // Validate checks the historical wire payload before reconciliation or emission.
-// Approved attempts may have a null decided_at when initially auto-approved.
+// A null decided_at is valid for an initially auto-approved attempt and for
+// rejected history recorded before the decision time was captured. In the
+// rejected case the null is honest unknown evidence, not a decision time:
+// callers must not infer one from recorded_at or from the ordinal.
 func (event VillageShareEvent) Validate() error {
 	actor, err := VillageContributionAttemptActor(event.Status)
 	if err != nil {
@@ -67,7 +70,10 @@ func (event VillageShareEvent) Validate() error {
 		return nil
 	}
 	if event.DecidedAt == nil {
-		if event.Status != VillageShareStatusApproved {
+		// Rejected history written before the decision time was recorded is
+		// honest unknown evidence; an approved attempt may be initially
+		// automatic. Every other terminal status must carry its decision time.
+		if event.Status != VillageShareStatusApproved && event.Status != VillageShareStatusRejected {
 			return attemptValidationError("this terminal status requires decided_at")
 		}
 	} else if !attemptUTCTime(*event.DecidedAt) {
