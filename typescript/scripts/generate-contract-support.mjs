@@ -16,6 +16,7 @@ import { applyPublicationZodRefinements } from "./lib/publication-zod-refinement
 import { applyPublicRefZodRefinements } from "./lib/public-ref-zod-refinements.mjs";
 import { applyGroupedReadZodRefinements } from "./lib/grouped-read-zod-refinements.mjs";
 import { applyThinkingLevelZodRefinements } from "./lib/thinking-level-zod-refinements.mjs";
+import { applyPublicOwnerZodRefinements } from "./lib/public-owner-zod-refinements.mjs";
 import { applyContributionAttemptZodRefinements } from "./lib/contribution-attempt-zod-refinements.mjs";
 import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
@@ -77,7 +78,7 @@ async function refineRootZodContract() {
   const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
   const source = applyCollectiveZodRefinements(attemptSource, spec);
-  await writeFile(zodPath, applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))));
+  await writeFile(zodPath, applyPublicOwnerZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))))))));
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have

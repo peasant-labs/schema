@@ -3896,7 +3896,10 @@ export const zVillagePublicOwner = z.union([
     }),
     z.object({
         kind: z.literal('anonymous')
-    })
+    }),
+    z.object({
+        kind: z.string().min(1).refine((kind) => !["profile","anonymous"].includes(kind))
+    }).transform((): { kind: 'anonymous' } => ({ kind: 'anonymous' }))
 ]);
 
 export type VillagePublicOwner = z.infer<typeof zVillagePublicOwner>;
