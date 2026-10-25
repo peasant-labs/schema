@@ -17,13 +17,13 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 	operations := []localOperationSpec{
 		{
 			method: http.MethodGet, path: "/api/v1/publications", id: "listPublications", tag: "publications",
-			description: "Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved ingestion and push selection: every requested stored session is returned, with outsideSelection reporting only whether that selection would admit the session to a future ingest or an upload hook. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate.",
+			description: "Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved ingestion and push selection: every requested stored session is returned, with outsideSelection reporting only whether that selection would admit the session to a future ingest or an upload hook. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. 500 when the saved selection or the local store cannot be read: the read reports the failure with an actionable cause instead of omitting a row or guessing a flag, while a selection that merely excludes a session neither fails the read nor omits the row. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate.",
 			requests: []interface{}{new(struct {
 				SessionIDs string `query:"sessionIds" required:"true" minLength:"1" description:"Comma-separated local session IDs"`
 				Include    string `query:"include" enum:"audience" description:"Set to audience to add each published transcript's collectives"`
 			})},
 			response:      new(schema.LocalPublicationsResponse),
-			errorStatuses: []int{http.StatusBadRequest, http.StatusBadGateway},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusBadGateway, http.StatusInternalServerError},
 			errorResponse: new(LocalErrorResponse),
 		},
 		{

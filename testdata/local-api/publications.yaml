@@ -34,8 +34,8 @@ operations:
     method: get
     path: /api/v1/publications
     response: LocalPublicationsResponse
-    statuses: ["200", "400", "502"]
-    error_responses: {"400": OpenapiLocalErrorResponse, "502": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "500", "502"]
+    error_responses: {"400": OpenapiLocalErrorResponse, "500": OpenapiLocalErrorResponse, "502": OpenapiLocalErrorResponse}
     parameters:
       - {name: sessionIds, in: query, required: true}
       - {name: include, in: query, required: false, enum: [audience]}

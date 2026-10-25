@@ -28,18 +28,21 @@ type localAPISurfaceFixture struct {
 type localAPIDescriptionAnchor string
 
 const (
-	localAPIAnchorNoIngestionBrowseFilter      localAPIDescriptionAnchor = "no_ingestion_browse_filter"
-	localAPIAnchorListIndependentBounds        localAPIDescriptionAnchor = "list_independent_bounds"
-	localAPIAnchorIndexedSearchMatch           localAPIDescriptionAnchor = "indexed_search_match"
-	localAPIAnchorEligibleSessionCount         localAPIDescriptionAnchor = "eligible_session_count"
-	localAPIAnchorHomeNoIngestionBrowseFilter  localAPIDescriptionAnchor = "home_no_ingestion_browse_filter"
-	localAPIAnchorHomeIndependentBounds        localAPIDescriptionAnchor = "home_independent_bounds"
-	localAPIAnchorUnknownParentOnly404         localAPIDescriptionAnchor = "unknown_parent_only_404"
-	localAPIAnchorTokenScopeExcludesSelection  localAPIDescriptionAnchor = "token_scope_excludes_ingestion_selection"
-	localAPIAnchorTokenScopeExcludesPageSize   localAPIDescriptionAnchor = "token_scope_excludes_page_size"
-	localAPIAnchorMetadataFailsClosed          localAPIDescriptionAnchor = "publication_metadata_fails_closed"
-	localAPIAnchorMemberScopeExcludesSelection localAPIDescriptionAnchor = "member_scope_excludes_ingestion_selection"
-	localAPIAnchorSummariesReadNotNarrowed     localAPIDescriptionAnchor = "summaries_stored_read_not_narrowed"
+	localAPIAnchorNoIngestionBrowseFilter            localAPIDescriptionAnchor = "no_ingestion_browse_filter"
+	localAPIAnchorListIndependentBounds              localAPIDescriptionAnchor = "list_independent_bounds"
+	localAPIAnchorIndexedSearchMatch                 localAPIDescriptionAnchor = "indexed_search_match"
+	localAPIAnchorEligibleSessionCount               localAPIDescriptionAnchor = "eligible_session_count"
+	localAPIAnchorHomeNoIngestionBrowseFilter        localAPIDescriptionAnchor = "home_no_ingestion_browse_filter"
+	localAPIAnchorHomeIndependentBounds              localAPIDescriptionAnchor = "home_independent_bounds"
+	localAPIAnchorUnknownParentOnly404               localAPIDescriptionAnchor = "unknown_parent_only_404"
+	localAPIAnchorTokenScopeExcludesSelection        localAPIDescriptionAnchor = "token_scope_excludes_ingestion_selection"
+	localAPIAnchorTokenScopeExcludesPageSize         localAPIDescriptionAnchor = "token_scope_excludes_page_size"
+	localAPIAnchorMetadataFailsClosed                localAPIDescriptionAnchor = "publication_metadata_fails_closed"
+	localAPIAnchorMemberScopeExcludesSelection       localAPIDescriptionAnchor = "member_scope_excludes_ingestion_selection"
+	localAPIAnchorPublicationsNotSelectionFiltered   localAPIDescriptionAnchor = "publications_not_selection_filtered"
+	localAPIAnchorSessionByIDNotSelectionFiltered    localAPIDescriptionAnchor = "session_by_id_not_selection_filtered"
+	localAPIAnchorSummariesReadNotNarrowed           localAPIDescriptionAnchor = "summaries_stored_read_not_narrowed"
+	localAPIAnchorTranscriptByIDNotSelectionFiltered localAPIDescriptionAnchor = "transcript_by_id_not_selection_filtered"
 )
 
 // allLocalAPIDescriptionAnchors is the canonical set. Its order is
@@ -53,9 +56,12 @@ var allLocalAPIDescriptionAnchors = []localAPIDescriptionAnchor{
 	localAPIAnchorMemberScopeExcludesSelection,
 	localAPIAnchorMetadataFailsClosed,
 	localAPIAnchorNoIngestionBrowseFilter,
+	localAPIAnchorPublicationsNotSelectionFiltered,
+	localAPIAnchorSessionByIDNotSelectionFiltered,
 	localAPIAnchorSummariesReadNotNarrowed,
 	localAPIAnchorTokenScopeExcludesPageSize,
 	localAPIAnchorTokenScopeExcludesSelection,
+	localAPIAnchorTranscriptByIDNotSelectionFiltered,
 	localAPIAnchorUnknownParentOnly404,
 }
 
