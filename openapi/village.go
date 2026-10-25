@@ -268,11 +268,13 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new pull list operation: %w", err)
 	}
 	pullListOC.AddReqStructure(new(struct {
-		Page        int    `query:"page"`
-		Limit       int    `query:"limit"`
-		Collectives string `query:"collectives" description:"Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript."`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
+		Page         int    `query:"page"`
+		Limit        int    `query:"limit"`
+		Collectives  string `query:"collectives" description:"Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript."`
 	}))
 	pullListOC.AddRespStructure(new(schema.PullListResponse))
+	pullListOC.AddRespStructure(new(schema.LegacyPullListResponse))
 	pullListOC.SetDescription("List transcripts the authenticated user may pull (own + group-shared; " +
 		"public excluded by the canPullTranscript policy). Offset pagination. The optional " +
 		"collectives filter narrows the list to the approved shares of the listed collectives the " +
@@ -289,9 +291,11 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new pull metadata operation: %w", err)
 	}
 	pullMetaOC.AddReqStructure(new(struct {
-		ID string `path:"id"`
+		ID           string `path:"id"`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
 	}))
 	pullMetaOC.AddRespStructure(new(schema.PullTranscriptInfo))
+	pullMetaOC.AddRespStructure(new(schema.LegacyPullTranscriptInfo))
 	pullMetaOC.SetDescription("Get a pullable transcript's metadata (the owner as the caller may see them, " +
 		"visibility, server-computed content_hash, push contract version). The server resolves the owner per " +
 		"viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable.")
@@ -309,7 +313,8 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new pull content operation: %w", err)
 	}
 	pullContentOC.AddReqStructure(new(struct {
-		ID string `path:"id"`
+		ID           string `path:"id"`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
 	}))
 	pullContentOC.SetDescription("Stream the transcript blob as served. Sends ETag: \"<content_hash>\"; " +
 		"a matching If-None-Match request yields 304 Not Modified.")
@@ -326,9 +331,11 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new pull annotations operation: %w", err)
 	}
 	pullAnnotOC.AddReqStructure(new(struct {
-		ID string `path:"id"`
+		ID           string `path:"id"`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
 	}))
 	pullAnnotOC.AddRespStructure(new([]schema.PullAnnotation))
+	pullAnnotOC.AddRespStructure(new([]schema.LegacyPullAnnotation))
 	pullAnnotOC.SetDescription("List a transcript's annotations as PullAnnotation rows (AnnotationSummary " +
 		"plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows " +
 		"carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id " +
@@ -337,6 +344,10 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	pullAnnotOC.SetTags("pull")
 	if err := r.AddOperation(pullAnnotOC); err != nil {
 		return nil, fmt.Errorf("add pull annotations operation: %w", err)
+	}
+
+	if err := configurePullContractResponses(r.Spec); err != nil {
+		return nil, err
 	}
 
 	// POST /api/v1/pull/transcripts/skip-gate. Batch currency check: the client
@@ -1149,5 +1160,59 @@ func setMultipartMetadataEncoding(spec *openapi31.Spec, operationPath string) er
 	body.Content["multipart/form-data"] = media
 	item.Post.RequestBody.RequestBody = body
 	spec.Paths.MapOfPathItemValues[operationPath] = item
+	return nil
+}
+
+// pullContractResponses names, per pull operation, the 0.3.0 and 0.2.0 JSON
+// bodies a response may carry. The content read streams a blob and has none.
+var pullContractResponses = []struct {
+	path    string
+	current map[string]interface{}
+	legacy  map[string]interface{}
+}{
+	{"/api/v1/pull/transcripts", schemaRef("SchemaPullListResponse"), schemaRef("SchemaLegacyPullListResponse")},
+	{"/api/v1/pull/transcripts/{id}", schemaRef("SchemaPullTranscriptInfo"), schemaRef("SchemaLegacyPullTranscriptInfo")},
+	{"/api/v1/pull/transcripts/{id}/annotations", map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaPullAnnotation")}, map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaLegacyPullAnnotation")}},
+	{"/api/v1/pull/transcripts/{id}/content", nil, nil},
+}
+
+func schemaRef(name string) map[string]interface{} {
+	return map[string]interface{}{"$ref": "#/components/schemas/" + name}
+}
+
+// configurePullContractResponses declares, on every pull operation, the
+// Peasant-Pull-Contract response header that reports the served envelope and,
+// where the response is JSON, the two bodies it selects between.
+func configurePullContractResponses(spec *openapi31.Spec) error {
+	required := true
+	description := "The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope."
+	for _, op := range pullContractResponses {
+		item, ok := spec.Paths.MapOfPathItemValues[op.path]
+		if !ok || item.Get == nil || item.Get.Responses == nil {
+			return fmt.Errorf("configure pull contract response for GET %s: operation is missing; clients could not learn which envelope they received; register the pull route first", op.path)
+		}
+		response, ok := item.Get.Responses.MapOfResponseOrReferenceValues["200"]
+		if !ok || response.Response == nil {
+			response = openapi31.ResponseOrReference{Response: &openapi31.Response{Description: "OK"}}
+		}
+		if response.Response.Headers == nil {
+			response.Response.Headers = map[string]openapi31.HeaderOrReference{}
+		}
+		response.Response.Headers[schema.PullContractHeader] = openapi31.HeaderOrReference{Header: &openapi31.Header{
+			Description: &description,
+			Required:    &required,
+			Schema:      map[string]interface{}{"type": "string", "pattern": `^[0-9]+\.[0-9]+\.[0-9]+$`},
+		}}
+		if op.current != nil {
+			media, ok := response.Response.Content["application/json"]
+			if !ok {
+				return fmt.Errorf("configure pull contract response for GET %s: JSON media type is missing; clients cannot decode either envelope; register an application/json response", op.path)
+			}
+			media.Schema = map[string]interface{}{"oneOf": []interface{}{op.current, op.legacy}}
+			response.Response.Content["application/json"] = media
+		}
+		item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
+		spec.Paths.MapOfPathItemValues[op.path] = item
+	}
 	return nil
 }

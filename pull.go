@@ -134,3 +134,168 @@ type PullAnnotation struct {
 	AnnotationSummary                    // embedded existing summary (annotator entity, content hash, etc.)
 	Author            VillagePublicOwner `json:"author"`
 }
+
+// --- Requestable pull envelope versions ---
+
+// PullContractHeader names the request and response header that selects and
+// reports the pull envelope version on the four pull operations: the list,
+// the metadata read, the annotations read and the content read.
+//
+// A client sends the newest pull contract it reads. Village serves the highest
+// version it supports that is no newer than the requested one and no older than
+// its minimum; with no header it serves its default (the advertised
+// pullContractVersion); a requested version below its minimum is the existing
+// incompatible-contract refusal. Every pull response carries the header with
+// the version actually served, so a client knows exactly which envelope it got.
+//
+// Compatibility: a patch bump within a minor (0.3.x) is additive, so a client
+// that reads 0.3.0 accepts any 0.3.z and ignores fields it does not know. Only
+// a new minor needs a new client, and Village keeps serving older minors to
+// older clients for a deprecation period.
+const PullContractHeader = "Peasant-Pull-Contract"
+
+const (
+	// LegacyPullContractVersion is the pull envelope every released CLI before
+	// the public owner reads: LegacyPullTranscriptInfo, LegacyPullListResponse
+	// and LegacyPullAnnotation. Village serves it by default, with people
+	// anonymous to the caller blanked.
+	LegacyPullContractVersion ContractVersion = "0.2.0"
+	// PublicOwnerPullContractVersion is the envelope that carries people as
+	// VillagePublicOwner: PullTranscriptInfo, PullListResponse and
+	// PullAnnotation. Village serves it to a client that asks for it.
+	PublicOwnerPullContractVersion ContractVersion = "0.3.0"
+)
+
+// LegacyPullAnonymousUsername is the username the 0.2.0 envelope carries for
+// a person anonymous to the caller, beside an empty id. The empty id plus
+// "anon" is the one value every released CLI tolerates: it decodes, it never
+// equals the caller's own id, so the transcript or annotation is foreign, and
+// it never names the hidden person.
+const LegacyPullAnonymousUsername = "anon"
+
+// LegacyPullTranscriptInfo is pull envelope 0.2.0's metadata view of one
+// pullable transcript, frozen byte-for-byte from the shape released before the
+// public owner (schema v0.32.0). Village serves it to clients that do not ask
+// for a newer envelope, and must build it with LegacyPullTranscriptInfoFrom
+// rather than its own structs.
+//
+// Blanking rule: a person anonymous to the caller is OwnerUserID "" with
+// OwnerUsername "anon", and ProjectName is omitted beside them. A profile
+// carries the real id and username. Validate refuses any other pairing.
+type LegacyPullTranscriptInfo struct {
+	TranscriptID    TranscriptID    `json:"transcriptId"`
+	LocalID         string          `json:"localId,omitempty"`
+	OwnerUserID     string          `json:"ownerUserId"`
+	OwnerUsername   string          `json:"ownerUsername"`
+	Title           string          `json:"title,omitempty"`
+	Harness         Harness         `json:"harness,omitempty"`
+	ProjectName     string          `json:"projectName,omitempty"`
+	Visibility      Visibility      `json:"visibility"`
+	License         License         `json:"license,omitempty"`
+	ContentHash     string          `json:"contentHash,omitempty"`
+	ContractVersion ContractVersion `json:"contractVersion,omitempty"`
+	PublishedAt     int64           `json:"publishedAt"`
+	UpdatedAt       int64           `json:"updatedAt"`
+	AnnotationCount int             `json:"annotationCount"`
+}
+
+// LegacyPullListResponse is pull envelope 0.2.0's paginated listing.
+type LegacyPullListResponse struct {
+	Transcripts []LegacyPullTranscriptInfo `json:"transcripts"`
+	Page        int                        `json:"page"`
+	Limit       int                        `json:"limit"`
+	Total       int                        `json:"total"`
+}
+
+// LegacyPullAnnotation is pull envelope 0.2.0's annotation row. An author
+// anonymous to the caller is AuthorUserID "" with AuthorUsername "anon". The
+// embedded summary's targetProjectHash and targetFilePath are left absent when
+// the annotated transcript's owner is anonymous to the caller, exactly as on
+// PullAnnotation; the response carries no owner, so Village enforces that.
+type LegacyPullAnnotation struct {
+	AnnotationSummary
+	AuthorUserID   string `json:"authorUserId"`
+	AuthorUsername string `json:"authorUsername"`
+}
+
+// legacyPullPerson renders a public owner in the 0.2.0 shape.
+func legacyPullPerson(person VillagePublicOwner) (id, username string, shown bool) {
+	if person.IsProfile() {
+		return string(person.ID), person.Username, true
+	}
+	return "", LegacyPullAnonymousUsername, false
+}
+
+// validateLegacyPullPerson refuses a 0.2.0 person that pairs an anonymous
+// marker with identity: an empty id must come with "anon", and a non-empty id
+// with a non-empty username.
+func validateLegacyPullPerson(id, username string, at string) error {
+	if id == "" && username != LegacyPullAnonymousUsername {
+		return fmt.Errorf("legacy pull envelope validation failed at %s: an empty id carries username %q; a hidden person would be named; send username %q beside an empty id", at, username, LegacyPullAnonymousUsername)
+	}
+	if id != "" && username == "" {
+		return fmt.Errorf("legacy pull envelope validation failed at %s: an id carries no username; released CLIs cannot display the person; send the profile's username, or an empty id with %q", at, LegacyPullAnonymousUsername)
+	}
+	return nil
+}
+
+// LegacyPullTranscriptInfoFrom renders a 0.3.0 transcript in the 0.2.0 shape,
+// applying the blanking rule. It is the only way Village should build one.
+func LegacyPullTranscriptInfoFrom(info PullTranscriptInfo) LegacyPullTranscriptInfo {
+	id, username, shown := legacyPullPerson(info.Owner)
+	legacy := LegacyPullTranscriptInfo{
+		TranscriptID: info.TranscriptID, LocalID: info.LocalID, OwnerUserID: id, OwnerUsername: username,
+		Title: info.Title, Harness: info.Harness, Visibility: info.Visibility, License: info.License,
+		ContentHash: info.ContentHash, ContractVersion: info.ContractVersion, PublishedAt: info.PublishedAt,
+		UpdatedAt: info.UpdatedAt, AnnotationCount: info.AnnotationCount,
+	}
+	if shown && info.ProjectName != nil {
+		legacy.ProjectName = *info.ProjectName
+	}
+	return legacy
+}
+
+// LegacyPullListResponseFrom renders a 0.3.0 listing in the 0.2.0 shape.
+func LegacyPullListResponseFrom(list PullListResponse) LegacyPullListResponse {
+	legacy := LegacyPullListResponse{Page: list.Page, Limit: list.Limit, Total: list.Total}
+	if list.Transcripts != nil {
+		legacy.Transcripts = make([]LegacyPullTranscriptInfo, 0, len(list.Transcripts))
+	}
+	for _, info := range list.Transcripts {
+		legacy.Transcripts = append(legacy.Transcripts, LegacyPullTranscriptInfoFrom(info))
+	}
+	return legacy
+}
+
+// LegacyPullAnnotationFrom renders a 0.3.0 annotation row in the 0.2.0 shape.
+func LegacyPullAnnotationFrom(annotation PullAnnotation) LegacyPullAnnotation {
+	id, username, _ := legacyPullPerson(annotation.Author)
+	return LegacyPullAnnotation{AnnotationSummary: annotation.AnnotationSummary, AuthorUserID: id, AuthorUsername: username}
+}
+
+// Validate checks the blanking rule: an empty owner id comes with "anon" and
+// no project name, and an owner id comes with a username.
+func (p LegacyPullTranscriptInfo) Validate() error {
+	if err := validateLegacyPullPerson(p.OwnerUserID, p.OwnerUsername, "schema.LegacyPullTranscriptInfo.Validate"); err != nil {
+		return err
+	}
+	if p.OwnerUserID == "" && p.ProjectName != "" {
+		return fmt.Errorf("legacy pull envelope validation failed at schema.LegacyPullTranscriptInfo.Validate: projectName sits beside an anonymous owner; it identifies the owner's repository; omit it for an anonymous owner")
+	}
+	return nil
+}
+
+// Validate checks every listed transcript.
+func (r LegacyPullListResponse) Validate() error {
+	for _, info := range r.Transcripts {
+		if err := info.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Validate checks the blanking rule on the author.
+func (a LegacyPullAnnotation) Validate() error {
+	return validateLegacyPullPerson(a.AuthorUserID, a.AuthorUsername, "schema.LegacyPullAnnotation.Validate")
+}

@@ -1465,6 +1465,9 @@ export interface components {
          */
         SchemaInputModality: Schema.InputModality;
         SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
+        SchemaLegacyPullAnnotation: Schema.LegacyPullAnnotation;
+        SchemaLegacyPullListResponse: Schema.LegacyPullListResponse;
+        SchemaLegacyPullTranscriptInfo: Schema.LegacyPullTranscriptInfo;
         /**
          * License
          * @description Content license for a published transcript
@@ -5274,7 +5277,10 @@ export interface operations {
                 /** @description Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript. */
                 collectives?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5283,10 +5289,12 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullListResponse"];
+                    "application/json": components["schemas"]["SchemaPullListResponse"] | components["schemas"]["SchemaLegacyPullListResponse"];
                 };
             };
         };
@@ -5318,7 +5326,10 @@ export interface operations {
     getPullTranscript: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5329,10 +5340,12 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullTranscriptInfo"];
+                    "application/json": components["schemas"]["SchemaPullTranscriptInfo"] | components["schemas"]["SchemaLegacyPullTranscriptInfo"];
                 };
             };
         };
@@ -5340,7 +5353,10 @@ export interface operations {
     getPullTranscriptAnnotations: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5351,10 +5367,12 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaPullAnnotation"][];
+                    "application/json": (null | components["schemas"]["SchemaPullAnnotation"][]) | (null | components["schemas"]["SchemaLegacyPullAnnotation"][]);
                 };
             };
         };
@@ -5362,7 +5380,10 @@ export interface operations {
     getPullTranscriptContent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5370,6 +5391,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description No Content */
             204: {
                 headers: {

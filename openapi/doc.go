@@ -30,6 +30,18 @@
 // NOT touch the contract windows, and a window slide that does not alter the HTTP
 // surface does NOT bump the spec.
 //
+// The pull envelope is requestable. A client sends the newest pull contract it
+// reads in the Peasant-Pull-Contract request header (schema.PullContractHeader);
+// Village serves the highest version it supports at or below that and at or
+// above its minimum, serves its default (pullContractVersion) to a request
+// without the header, and reports the served version in the same response
+// header. Released CLIs read pullContractVersion as "the envelope I will get",
+// so the default stays at the version header-less clients read, and
+// pullContractMaxVersion advertises the newest Village can serve. Within one
+// minor, patch bumps are additive: a client accepts any 0.3.z and ignores
+// fields it does not know. Only a new minor needs a new client, and Village
+// keeps serving older minors to older clients for a deprecation period.
+//
 // # Single source per spec
 //
 // Each spec's version is written in EXACTLY ONE place — the const block in

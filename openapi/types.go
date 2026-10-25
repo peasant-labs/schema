@@ -112,7 +112,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"PublishedAssociation", new(schema.PublishedAssociation)}, {"PullAnnotation", new(schema.PullAnnotation)}, {"PullListResponse", new(schema.PullListResponse)},
 		{"PullSkipGateItem", new(schema.PullSkipGateItem)}, {"PullSkipGateRequest", new(schema.PullSkipGateRequest)},
 		{"PullSkipGateResponse", new(schema.PullSkipGateResponse)}, {"PullSkipGateResult", new(schema.PullSkipGateResult)},
-		{"PullTranscriptInfo", new(schema.PullTranscriptInfo)}, {"QualityMetrics", new(schema.QualityMetrics)},
+		{"PullTranscriptInfo", new(schema.PullTranscriptInfo)}, {"LegacyPullTranscriptInfo", new(schema.LegacyPullTranscriptInfo)}, {"LegacyPullListResponse", new(schema.LegacyPullListResponse)}, {"LegacyPullAnnotation", new(schema.LegacyPullAnnotation)}, {"QualityMetrics", new(schema.QualityMetrics)},
 		{"QualityPayload", new(schema.QualityPayload)}, {"QualitySession", new(schema.QualitySession)},
 		{"ReadAttributionState", new(schema.ReadAttributionState)}, {"ReadStateGrade", new(schema.ReadStateGrade)},
 		{"RedactionInfo", new(schema.RedactionInfo)}, {"ReviewListPayload", new(schema.ReviewListPayload)},

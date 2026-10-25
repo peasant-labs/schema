@@ -3,6 +3,7 @@ package schema_test
 import (
 	_ "embed"
 	"encoding/json"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -60,6 +61,9 @@ type publicOwnerFixtures struct {
 		PublicOwnerProperties []string `yaml:"public_owner_properties"`
 		SelfOperations        []string `yaml:"self_operations"`
 		ForbiddenProperties   []string `yaml:"forbidden_properties"`
+		// ForbiddenPropertyExceptions names, per component, forbidden names a
+		// frozen legacy envelope keeps under its own blanking rule.
+		ForbiddenPropertyExceptions map[string][]string `yaml:"forbidden_property_exceptions"`
 	} `yaml:"surfaces"`
 	RequiredNames struct {
 		Encode    []string `yaml:"encode"`
@@ -435,7 +439,7 @@ func TestVillagePublicOwnerSurfaces(t *testing.T) {
 			}
 			for name := range reached {
 				for property := range declaredPropertyNames(components[name]) {
-					if forbidden[property] {
+					if forbidden[property] && !slices.Contains(f.Surfaces.ForbiddenPropertyExceptions[name], property) {
 						t.Errorf("%s %s (%s) reaches %s.%s, which identifies a person outside VillagePublicOwner", strings.ToUpper(method), path, id, name, property)
 					}
 				}

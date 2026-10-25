@@ -1,0 +1,117 @@
+# Pull envelope 0.2.0, frozen as the Legacy* types Village serves to clients
+# that do not request a newer envelope.
+#
+# frozen_against names the retired Village document whose pull components the
+# Legacy* components must equal, field for field, with only the component
+# names changed.
+frozen_against:
+  document: generated/village-api-0.28.0.json
+  components:
+    SchemaLegacyPullTranscriptInfo: SchemaPullTranscriptInfo
+    SchemaLegacyPullListResponse: SchemaPullListResponse
+    SchemaLegacyPullAnnotation: SchemaPullAnnotation
+
+# exact_fields pins each legacy body's JSON field set: required are always
+# sent, optional only when set.
+exact_fields:
+  LegacyPullTranscriptInfo:
+    required: [transcriptId, ownerUserId, ownerUsername, visibility, publishedAt, updatedAt, annotationCount]
+    optional: [localId, title, harness, projectName, license, contentHash, contractVersion]
+  LegacyPullListResponse:
+    required: [transcripts, page, limit, total]
+    optional: []
+  LegacyPullAnnotation:
+    required: [authorUserId, authorUsername]
+    optional: []
+
+# The sentinel and the version names, read by the Go constants test and the
+# TypeScript generator.
+anonymous_username: anon
+header: Peasant-Pull-Contract
+versions: {legacy: 0.2.0, public_owner: 0.3.0}
+
+# persons: one legacy person checked by the holder's Validate. holder is
+# transcript or annotation; project_name applies to a transcript only.
+persons:
+  cases:
+    - name: transcript-profile
+      input: {holder: transcript, id: 123e4567-e89b-12d3-a456-426614174001, username: alice, project_name: project}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-profile}
+      mutation: {description: carries a shown owner's real id, username and project}
+    - name: transcript-anonymous-sentinel
+      input: {holder: transcript, id: '', username: anon, project_name: ''}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: blanks an anonymous owner to the empty id and anon with no project}
+    - name: annotation-anonymous-sentinel
+      input: {holder: annotation, id: '', username: anon}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: blanks an anonymous author to the empty id and anon}
+    - name: annotation-profile
+      input: {holder: annotation, id: 123e4567-e89b-12d3-a456-426614174002, username: bob}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-profile}
+      mutation: {description: carries a shown author's real id and username}
+    - name: transcript-empty-id-with-real-username-refused
+      input: {holder: transcript, id: '', username: alice, project_name: ''}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: keeps the hidden owner's username beside the anonymous marker}
+    - name: transcript-empty-id-with-empty-username-refused
+      input: {holder: transcript, id: '', username: '', project_name: ''}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: legacy-pull-sentinel}
+      mutation: {description: drops the anon username a released CLI displays}
+    - name: transcript-anonymous-with-project-refused
+      input: {holder: transcript, id: '', username: anon, project_name: project}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: keeps the project name beside an anonymous owner}
+    - name: transcript-id-without-username-refused
+      input: {holder: transcript, id: 123e4567-e89b-12d3-a456-426614174001, username: '', project_name: ''}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: legacy-pull-profile}
+      mutation: {description: sends an owner id with no username}
+    - name: annotation-empty-id-with-real-username-refused
+      input: {holder: annotation, id: '', username: bob}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: keeps the hidden author's username beside the anonymous marker}
+
+# conversions: a 0.3.0 person rendered in the 0.2.0 shape by the contract's
+# own converters, which Village calls instead of re-deriving the rule.
+conversions:
+  cases:
+    - name: profile-owner-kept
+      input: {anonymous: false, project_name: project}
+      expected: {owner_user_id: 123e4567-e89b-12d3-a456-426614174001, owner_username: alice, project_name: project}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-profile}
+      mutation: {description: renders a shown owner with their id, username and project}
+    - name: anonymous-owner-blanked
+      input: {anonymous: true, project_name: project}
+      expected: {owner_user_id: '', owner_username: anon, project_name: ''}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-sentinel}
+      mutation: {description: renders an anonymous owner as the sentinel and drops a project name the caller may not see}
+    - name: profile-owner-without-project
+      input: {anonymous: false, project_name: null}
+      expected: {owner_user_id: 123e4567-e89b-12d3-a456-426614174001, owner_username: alice, project_name: ''}
+      classification: must-pass
+      provenance: {source: requirement, ref: legacy-pull-profile}
+      mutation: {description: renders a shown owner whose project was not recorded}
+
+required_names:
+  persons: [transcript-profile, transcript-anonymous-sentinel, annotation-anonymous-sentinel, annotation-profile, transcript-empty-id-with-real-username-refused, transcript-empty-id-with-empty-username-refused, transcript-anonymous-with-project-refused, transcript-id-without-username-refused, annotation-empty-id-with-real-username-refused]
+  conversions: [profile-owner-kept, anonymous-owner-blanked, profile-owner-without-project]
