@@ -25,6 +25,9 @@ required_names:
   - session-pull-requests-null-array
   - session-pull-request-zero-number
   - session-pull-request-empty-owner
+  - session-pull-request-empty-repo
+  - session-pull-request-empty-url
+  - session-pull-request-empty-source
 round_trip:
   cases:
     - name: flat-detail-root
@@ -185,3 +188,21 @@ validation:
       classification: must-fail
       provenance: {source: boundary, ref: "a detected row must attribute its repository owner"}
       mutation: {description: "empties only the row owner of an otherwise valid detected row"}
+    - name: session-pull-request-empty-repo
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"","number":42,"url":"https://github.com/acme/api/pull/42","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a detected row must attribute its repository name"}
+      mutation: {description: "empties only the row repo of an otherwise valid detected row"}
+    - name: session-pull-request-empty-url
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a detected row must carry the canonical address it was read from"}
+      mutation: {description: "empties only the row url of an otherwise valid detected row"}
+    - name: session-pull-request-empty-source
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"https://github.com/acme/api/pull/42","source":""}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a missing detector must not be told apart from an unknown one"}
+      mutation: {description: "empties only the row source of an otherwise valid detected row"}
