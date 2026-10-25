@@ -296,6 +296,8 @@ surfaces:
     - SchemaVillageUserCollective.creator
     - SchemaVillageVisibleCollective.creator
     - SchemaVillageLinkedRepository.linked_by
+    - SchemaVillageCollectiveInvitation.invited_by
+    - SchemaVillageCollectiveInvitationSent.invited_by
   self_operations:
     - getAuthenticatedVillageUser
     - cliExchangeCode

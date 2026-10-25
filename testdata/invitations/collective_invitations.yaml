@@ -1,0 +1,269 @@
+# Collective invitations and the caller's notification email. An owner sees an
+# invitation only as the handle they typed, with no status, so a decline is
+# not revealed. The invitee sees the inviting owner as a VillagePublicOwner.
+# The notification address appears only in the caller's own settings. The
+# operations' exact status sets live in
+# openapi/testdata/village_collectives_operations.yaml.
+required_names:
+  - sent-profile-inviter-valid
+  - sent-anonymous-inviter-valid
+  - sent-empty-valid
+  - sent-null-list-rejected
+  - sent-empty-username-rejected
+  - sent-missing-inviter-rejected
+  - sent-expiry-not-after-creation-rejected
+  - sent-duplicate-rejected
+  - mine-profile-inviter-valid
+  - mine-anonymous-inviter-valid
+  - mine-empty-valid
+  - mine-missing-collective-name-rejected
+  - mine-unknown-acceptance-mode-rejected
+  - mine-duplicate-rejected
+  - settings-no-email-valid
+  - settings-unverified-email-valid
+  - settings-verified-email-valid
+  - settings-missing-notification-email-rejected
+  - settings-missing-email-invitations-rejected
+  - settings-address-without-at-rejected
+  - update-email-invitations-off-valid
+  - set-email-valid
+  - set-email-two-at-signs-rejected
+  - set-email-whitespace-rejected
+operations:
+  - api: village
+    method: post
+    path: /api/v1/collectives/{id}/invitations
+    request: VillageCollectiveInvitationRequest
+    response: VillageStatusResponse
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: village
+    method: get
+    path: /api/v1/collectives/{id}/invitations
+    response: VillageCollectiveInvitationsSentResponse
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: village
+    method: get
+    path: /api/v1/users/me/invitations
+    response: VillageMyInvitationsResponse
+  - api: village
+    method: put
+    path: /api/v1/users/me/email
+    request: VillageSetNotificationEmailRequest
+    response: VillageUserSettings
+cases:
+  - name: sent-profile-inviter-valid
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            invited_username: octocat
+            invited_by: {kind: profile, id: 1b2c3d4e-5f60-4718-9a0b-c1d2e3f4a5b6, username: maintainer, display_name: null, avatar_url: null}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the owner sees the handle they typed and who sent it"}
+    mutation: {description: "a discoverable owner's open invitation"}
+  - name: sent-anonymous-inviter-valid
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            invited_username: octocat
+            invited_by: {kind: anonymous}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a co-owner who is not discoverable stays anonymous"}
+    mutation: {description: "the inviting owner is anonymous to this viewer"}
+  - name: sent-empty-valid
+    input: {schema: VillageCollectiveInvitationsSentResponse, payload: {invitations: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "no open invitation"}
+    mutation: {description: "an empty list"}
+  - name: sent-null-list-rejected
+    input: {schema: VillageCollectiveInvitationsSentResponse, payload: {invitations: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "invitations is null"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an empty list is [], never null"}
+    mutation: {description: "sends null instead of []"}
+  - name: sent-empty-username-rejected
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, invited_username: "", invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "invited_username is empty"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the owner's row is the handle they typed"}
+    mutation: {description: "drops the typed handle"}
+  - name: sent-missing-inviter-rejected
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, invited_username: octocat, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "invited_by"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "every person reference is a VillagePublicOwner"}
+    mutation: {description: "omits invited_by"}
+  - name: sent-expiry-not-after-creation-rejected
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, invited_username: octocat, invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-10-24T10:00:00Z"}
+    expected: {valid: false, rejected_by: semantics, error_contains: "is not after created_at"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an invitation expires after it is created"}
+    mutation: {description: "expires at the moment it is created"}
+  - name: sent-duplicate-rejected
+    input:
+      schema: VillageCollectiveInvitationsSentResponse
+      payload:
+        invitations:
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, invited_username: octocat, invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, invited_username: octocat, invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+    expected: {valid: false, rejected_by: semantics, error_contains: "is listed twice"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each invitation is listed once"}
+    mutation: {description: "repeats one invitation"}
+  - name: mine-profile-inviter-valid
+    input:
+      schema: VillageMyInvitationsResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, name: Acme Platform, description: null, acceptance_mode: curated}
+            invited_by: {kind: profile, id: 1b2c3d4e-5f60-4718-9a0b-c1d2e3f4a5b6, username: maintainer, display_name: Mai, avatar_url: null}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "curated collectives join by invitation"}
+    mutation: {description: "an invitation from a discoverable owner"}
+  - name: mine-anonymous-inviter-valid
+    input:
+      schema: VillageMyInvitationsResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, name: Acme Platform, description: internal agents, acceptance_mode: open}
+            invited_by: {kind: anonymous}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an owner who is not discoverable is anonymous to the invitee"}
+    mutation: {description: "the inviting owner is anonymous"}
+  - name: mine-empty-valid
+    input: {schema: VillageMyInvitationsResponse, payload: {invitations: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "no pending invitation"}
+    mutation: {description: "an empty list"}
+  - name: mine-missing-collective-name-rejected
+    input:
+      schema: VillageMyInvitationsResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, description: null, acceptance_mode: open}
+            invited_by: {kind: anonymous}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "collective.name is empty"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the invitee decides by the collective's name"}
+    mutation: {description: "omits the collective's name"}
+  - name: mine-unknown-acceptance-mode-rejected
+    input:
+      schema: VillageMyInvitationsResponse
+      payload:
+        invitations:
+          - id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b
+            collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, name: Acme Platform, description: null, acceptance_mode: invite_only}
+            invited_by: {kind: anonymous}
+            created_at: "2026-10-24T10:00:00Z"
+            expires_at: "2026-11-23T10:00:00Z"
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "not in the closed menu"}
+    classification: must-fail
+    provenance: {source: enum, ref: "acceptance_mode is the closed collective menu"}
+    mutation: {description: "an acceptance mode outside the menu"}
+  - name: mine-duplicate-rejected
+    input:
+      schema: VillageMyInvitationsResponse
+      payload:
+        invitations:
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, name: Acme Platform, description: null, acceptance_mode: open}, invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+          - {id: 7a3f9c1e-0b2d-4e5f-8a9b-0c1d2e3f4a5b, collective: {id: 2c3d4e5f-6071-4829-ab0c-d1e2f3a4b5c6, name: Acme Platform, description: null, acceptance_mode: open}, invited_by: {kind: anonymous}, created_at: "2026-10-24T10:00:00Z", expires_at: "2026-11-23T10:00:00Z"}
+    expected: {valid: false, rejected_by: semantics, error_contains: "is listed twice"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "each invitation is listed once"}
+    mutation: {description: "repeats one invitation"}
+  - name: settings-no-email-valid
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null, email_invitations: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "no address is stored until the person gives one"}
+    mutation: {description: "the default: no address, invitation emails on"}
+  - name: settings-unverified-email-valid
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: false}, email_invitations: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an address is unverified until its token is confirmed"}
+    mutation: {description: "an address waiting for verification"}
+  - name: settings-verified-email-valid
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone@example.org, verified: true}, email_invitations: false}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a person can keep an address and turn invitation emails off"}
+    mutation: {description: "a verified address with invitation emails off"}
+  - name: settings-missing-notification-email-rejected
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, email_invitations: true}}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the server states the address or null, never omits it"}
+    mutation: {description: "omits notification_email"}
+  - name: settings-missing-email-invitations-rejected
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the server holds the preference, so it always states it"}
+    mutation: {description: "omits email_invitations"}
+  - name: settings-address-without-at-rejected
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: {address: someone.example.org, verified: false}, email_invitations: true}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "exactly one @"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an address has one @ with text on both sides"}
+    mutation: {description: "drops the @"}
+  - name: update-email-invitations-off-valid
+    input: {schema: VillageUpdateUserSettingsRequest, payload: {email_invitations: false}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a settings toggle turns invitation emails off"}
+    mutation: {description: "changes only the invitation email preference"}
+  - name: set-email-valid
+    input: {schema: VillageSetNotificationEmailRequest, payload: {address: someone@example.org}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the person types the address"}
+    mutation: {description: "a plain address"}
+  - name: set-email-two-at-signs-rejected
+    input: {schema: VillageSetNotificationEmailRequest, payload: {address: some@one@example.org}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "exactly one @"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an address has one @ with text on both sides"}
+    mutation: {description: "two @ signs"}
+  - name: set-email-whitespace-rejected
+    input: {schema: VillageSetNotificationEmailRequest, payload: {address: "some one@example.org"}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "whitespace"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "an address holds no whitespace"}
+    mutation: {description: "a space inside the address"}

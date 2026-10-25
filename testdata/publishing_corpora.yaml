@@ -12,3 +12,4 @@ corpora:
   - testdata/local-api/settings.yaml
   - testdata/pulls/transcript_pull_requests.yaml
   - testdata/pulls/personal_stats.yaml
+  - testdata/invitations/collective_invitations.yaml

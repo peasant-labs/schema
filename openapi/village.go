@@ -381,6 +381,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillagePullRequestOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageInvitationOperations(r); err != nil {
+		return nil, err
+	}
 
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
@@ -643,22 +646,6 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 				http.StatusForbidden,
 				http.StatusNotFound,
 				http.StatusConflict,
-				http.StatusInternalServerError,
-			},
-		},
-		{
-			method:      http.MethodPost,
-			path:        "/api/v1/groups/{id}/members",
-			id:          "addGroupMember",
-			tag:         "collectives",
-			description: "Add a platform user to an owned collective by username.",
-			requests:    []interface{}{groupPath, new(schema.VillageGroupMemberUsernameRequest)},
-			response:    new(schema.VillageStatusResponse),
-			errorStatuses: []int{
-				http.StatusBadRequest,
-				http.StatusUnauthorized,
-				http.StatusForbidden,
-				http.StatusNotFound,
 				http.StatusInternalServerError,
 			},
 		},
@@ -999,7 +986,6 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	}{
 		{http.MethodPost, "/api/v1/groups"},
 		{http.MethodPatch, "/api/v1/groups/{id}"},
-		{http.MethodPost, "/api/v1/groups/{id}/members"},
 		{http.MethodPatch, "/api/v1/groups/{id}/members/{userID}/role"},
 		{http.MethodPost, "/api/v1/groups/{id}/shares"},
 		{http.MethodPatch, "/api/v1/groups/{id}/shares"},

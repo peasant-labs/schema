@@ -62,13 +62,76 @@ operations:
     response_components: [VillageCollectiveStatusRoleResponse]
     statuses: ["200", "400", "401", "403", "404", "409", "500"]
     description_anchors: [Join an open or verified collective, Curated collectives]
-  - path: /api/v1/collectives/{id}/members
+  - path: /api/v1/collectives/{id}/invitations
     method: post
-    operation_id: addGroupMember
-    request_components: [VillageCollectiveMemberUsernameRequest]
+    operation_id: createGroupInvitation
+    request_components: [VillageCollectiveInvitationRequest]
+    response_components: [VillageStatusResponse]
+    statuses: ["202", "400", "401", "403", "409", "429", "500"]
+    description_anchors: [only by accepting, 202 with status invited for every username, never confirms that an account exists, notifies no one, until it expires, already a member who consented, predates invitations, curated and verified_only, whether or not an account holds the name, off the request path, never depends on the invitee]
+  - path: /api/v1/collectives/{id}/invitations
+    method: get
+    operation_id: listGroupInvitations
+    request_components: []
+    response_components: [VillageCollectiveInvitationsSentResponse]
+    statuses: ["200", "400", "401", "403", "500"]
+    description_anchors: [handle the inviting owner typed, listed alike, with no status, decline is not revealed, whether or not an account holds the name, deletion is not revealed]
+  - path: /api/v1/collectives/{id}/invitations/{invitationID}
+    method: delete
+    operation_id: revokeGroupInvitation
+    request_components: []
     response_components: [VillageStatusResponse]
     statuses: ["200", "400", "401", "403", "404", "500"]
-    description_anchors: [by username]
+    description_anchors: [Revoke an open invitation, nothing is recorded, deleted their account, reveals nothing about the invitee]
+  - path: /api/v1/users/me/invitations
+    method: get
+    operation_id: listMyInvitations
+    request_components: []
+    response_components: [VillageMyInvitationsResponse]
+    statuses: ["200", "401", "500"]
+    description_anchors: [caller's own pending invitations, visible only to its members, never listed]
+  - path: /api/v1/users/me/invitations/{invitationID}/accept
+    method: post
+    operation_id: acceptMyInvitation
+    request_components: []
+    response_components: [VillageCollectiveStatusRoleResponse]
+    statuses: ["200", "400", "401", "404", "500"]
+    description_anchors: [Accepting is consent, other members still see the caller as anonymous, addressed to someone else, takes no body]
+  - path: /api/v1/users/me/invitations/{invitationID}/decline
+    method: post
+    operation_id: declineMyInvitation
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "401", "404", "500"]
+    description_anchors: [owners are not told, notifies no one, addressed to someone else]
+  - path: /api/v1/users/me/email
+    method: put
+    operation_id: setMyNotificationEmail
+    request_components: [VillageSetNotificationEmailRequest]
+    response_components: [VillageUserSettings]
+    statuses: ["200", "400", "401", "429", "500", "501"]
+    description_anchors: [replacing any earlier one, verification token, only to a verified address, sends no email]
+  - path: /api/v1/users/me/email
+    method: delete
+    operation_id: removeMyNotificationEmail
+    request_components: []
+    response_components: [VillageUserSettings]
+    statuses: ["200", "401", "500"]
+    description_anchors: [keeps no copy]
+  - path: /api/v1/users/me/email/verify
+    method: post
+    operation_id: verifyMyNotificationEmail
+    request_components: [VillageVerifyNotificationEmailRequest]
+    response_components: [VillageUserSettings]
+    statuses: ["200", "400", "401", "500"]
+    description_anchors: [bound to the caller's account, does not say which]
+  - path: /api/v1/email/unsubscribe
+    method: post
+    operation_id: unsubscribeInvitationEmails
+    request_components: []
+    response_components: [VillageStatusResponse]
+    statuses: ["200", "400", "500"]
+    description_anchors: [without signing in, RFC 8058, can only turn this one setting off]
   - path: /api/v1/collectives/{id}/members/{userID}/role
     method: patch
     operation_id: updateGroupMemberRole
@@ -243,7 +306,7 @@ operations:
     request_components: []
     response_components: [VillageUserSettings]
     statuses: ["200", "401", "500"]
-    description_anchors: [preview_before_attach, auto_attach_pull_requests is off by default, never changes who can read]
+    description_anchors: [preview_before_attach, auto_attach_pull_requests is off by default, never changes who can read, notification_email, only response that carries an email address, email_invitations is on by default]
   - path: /api/v1/users/me/settings
     method: patch
     operation_id: updateMySettings
@@ -296,7 +359,25 @@ component_enums:
     values: [informational, required]
 component_required:
   - component: VillageUserSettings
-    contains: [preview_before_attach, auto_attach_pull_requests]
+    contains: [preview_before_attach, auto_attach_pull_requests, notification_email, email_invitations]
+    excludes: []
+  - component: VillageCollectiveInvitationSent
+    contains: [id, invited_username, invited_by, created_at, expires_at]
+    excludes: []
+  - component: VillageCollectiveInvitation
+    contains: [id, collective, invited_by, created_at, expires_at]
+    excludes: []
+  - component: VillageInvitedCollective
+    contains: [id, name, description, acceptance_mode]
+    excludes: []
+  - component: VillageCollectiveInvitationsSentResponse
+    contains: [invitations]
+    excludes: []
+  - component: VillageMyInvitationsResponse
+    contains: [invitations]
+    excludes: []
+  - component: VillageNotificationEmail
+    contains: [address, verified]
     excludes: []
   - component: VillageTranscriptListRow
     contains: [transcript, tags, pull_requests]
@@ -346,6 +427,24 @@ component_required:
       - updated_at
     excludes: []
 component_properties:
+  - component: VillageUserSettings
+    property: notification_email
+    required: true
+    nullable: true
+  - component: VillageInvitedCollective
+    property: description
+    required: true
+    nullable: true
+  - component: VillageCollectiveInvitationsSentResponse
+    property: invitations
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageCollectiveInvitationSent"
+  - component: VillageMyInvitationsResponse
+    property: invitations
+    required: true
+    nullable: false
+    items_ref: "#/components/schemas/SchemaVillageCollectiveInvitation"
   - component: VillageCreateCollectiveRequest
     property: linked_github_org
     required: false
@@ -466,7 +565,18 @@ component_properties:
     required: true
     nullable: false
     items_ref: "#/components/schemas/SchemaVillagePullRequestAttachedTranscript"
+removed_operations:
+  - {path: '/api/v1/groups/{id}/members', method: post, reason: an owner can no longer make a person a member without their consent; createGroupInvitation replaces it}
+  - {path: '/api/v1/collectives/{id}/members', method: post, reason: the canonical alias of the removed add-member operation}
 request_body_names:
+  - invite-username-valid
+  - invite-empty-username-rejected
+  - invite-missing-username-rejected
+  - set-email-valid
+  - set-email-missing-address-rejected
+  - set-email-too-short-rejected
+  - verify-email-valid
+  - verify-email-empty-token-rejected
   - create-group-null-organization
   - create-group-omitted-organization
   - create-group-named-organization
@@ -504,3 +614,43 @@ request_bodies:
     method: patch
     body: {linked_github_org: null}
     valid: true
+  - name: invite-username-valid
+    path: /api/v1/groups/{id}/invitations
+    method: post
+    body: {username: octocat}
+    valid: true
+  - name: invite-empty-username-rejected
+    path: /api/v1/groups/{id}/invitations
+    method: post
+    body: {username: ""}
+    valid: false
+  - name: invite-missing-username-rejected
+    path: /api/v1/groups/{id}/invitations
+    method: post
+    body: {}
+    valid: false
+  - name: set-email-valid
+    path: /api/v1/users/me/email
+    method: put
+    body: {address: someone@example.org}
+    valid: true
+  - name: set-email-missing-address-rejected
+    path: /api/v1/users/me/email
+    method: put
+    body: {}
+    valid: false
+  - name: set-email-too-short-rejected
+    path: /api/v1/users/me/email
+    method: put
+    body: {address: "@"}
+    valid: false
+  - name: verify-email-valid
+    path: /api/v1/users/me/email/verify
+    method: post
+    body: {token: 0123456789abcdef}
+    valid: true
+  - name: verify-email-empty-token-rejected
+    path: /api/v1/users/me/email/verify
+    method: post
+    body: {token: ""}
+    valid: false

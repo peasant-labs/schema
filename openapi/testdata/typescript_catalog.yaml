@@ -832,6 +832,15 @@ types:
     component: VillageUserCollectiveShare
     reason: schema-owned Village collectives wire contract
   - {go_name: VillageUserSettings, disposition: catalog, component: VillageUserSettings, reason: pull request attachment contract}
+  - {go_name: VillageCollectiveInvitationRequest, disposition: catalog, component: VillageCollectiveInvitationRequest, reason: collective invitation contract}
+  - {go_name: VillageCollectiveInvitationSent, disposition: catalog, component: VillageCollectiveInvitationSent, reason: collective invitation contract}
+  - {go_name: VillageCollectiveInvitationsSentResponse, disposition: catalog, component: VillageCollectiveInvitationsSentResponse, reason: collective invitation contract}
+  - {go_name: VillageInvitedCollective, disposition: catalog, component: VillageInvitedCollective, reason: collective invitation contract}
+  - {go_name: VillageCollectiveInvitation, disposition: catalog, component: VillageCollectiveInvitation, reason: collective invitation contract}
+  - {go_name: VillageMyInvitationsResponse, disposition: catalog, component: VillageMyInvitationsResponse, reason: collective invitation contract}
+  - {go_name: VillageNotificationEmail, disposition: catalog, component: VillageNotificationEmail, reason: the caller's own notification email}
+  - {go_name: VillageSetNotificationEmailRequest, disposition: catalog, component: VillageSetNotificationEmailRequest, reason: the caller's own notification email}
+  - {go_name: VillageVerifyNotificationEmailRequest, disposition: catalog, component: VillageVerifyNotificationEmailRequest, reason: the caller's own notification email}
   - go_name: VillageUUID
     disposition: catalog
     component: VillageUUID
