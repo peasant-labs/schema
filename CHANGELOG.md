@@ -11,10 +11,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   CLI upgrade. Village API 0.29.1 and Types 0.34.1 declare:
   - an optional `Peasant-Pull-Contract` request header on the pull list,
     metadata, annotations and content reads. A client sends the newest pull
-    contract it reads; Village serves the highest version it supports at or
-    below that and at or above its minimum, its default without the header,
-    and the existing incompatible-contract refusal below its minimum;
-  - the same header on every pull response, carrying the version served;
+    contract it reads, as MAJOR.MINOR.PATCH digits. Village serves the
+    highest version it supports at or below that and at or above its
+    minimum. Without the header, or with a malformed one (`0.3`, `v0.3.0`,
+    any other text), it serves its default, so a client with a buggy header
+    still pulls. A version below its minimum is refused with 406 and a
+    `VillageErrorResponse`, which a client reports as its
+    incompatible-contract error;
+  - the same header on every pull response, carrying the version served.
+    The JSON reads declare both envelopes with `anyOf`, because an empty page
+    or an empty or null annotation list fits both;
   - `pullContractMaxVersion` on the version response, the newest envelope
     Village can serve. `pullContractVersion` now means the default served
     without the header. Released CLIs read it as "what I will get", so it
