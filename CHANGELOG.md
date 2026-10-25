@@ -5,6 +5,62 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** an owner can no longer make a person a member of a collective
+  without their consent. `POST /api/v1/groups/{id}/members` and its canonical
+  `/collectives` path (`addGroupMember`) are removed; an owner invites the
+  person instead, and the person accepts or declines. Village API 0.30.0 and
+  Types 0.35.0. Local API is unchanged.
+  `VillageCollectiveMemberUsernameRequest` and its alias stay exported,
+  deprecated, for the alias window, but no operation accepts them.
+
+### Added
+
+- **Collective invitations.** New operations, declared on `/groups` and
+  expanded to canonical `/collectives` like every collective route:
+  - `POST /api/v1/collectives/{id}/invitations` (`createGroupInvitation`):
+    the owner invites by username with `VillageCollectiveInvitationRequest`.
+    It answers 202 `{"status":"invited"}` for every username, whether no
+    account holds it, its account is not discoverable, or it is discoverable,
+    so inviting never confirms that an account exists. 409 means the person is
+    already a member who consented; 429 is an invitation limit.
+  - `GET /api/v1/collectives/{id}/invitations` (`listGroupInvitations`):
+    `VillageCollectiveInvitationsSentResponse`, each row the handle the owner
+    typed (`invited_username`) and the inviting owner (`invited_by`, a
+    `VillagePublicOwner`). There is no status: a declined invitation is listed
+    like a pending one until it expires, so a decline is not revealed.
+  - `DELETE /api/v1/collectives/{id}/invitations/{invitationID}`
+    (`revokeGroupInvitation`).
+  - `GET /api/v1/users/me/invitations` (`listMyInvitations`):
+    `VillageMyInvitationsResponse`, the caller's own pending invitations, each
+    with a `VillageInvitedCollective` summary and the inviting owner as the
+    caller may see them.
+  - `POST /api/v1/users/me/invitations/{invitationID}/accept`
+    (`acceptMyInvitation`, no body, answers `VillageCollectiveStatusRoleResponse`)
+    and `.../decline` (`declineMyInvitation`). Both answer 404 for an
+    invitation not addressed to the caller. Accepting is consent: the
+    collective's owners may then see the caller's profile.
+- **Notification email.** A person may give Village one address to be emailed
+  when a collective invites them:
+  - `PUT /api/v1/users/me/email` (`setMyNotificationEmail`,
+    `VillageSetNotificationEmailRequest`) sets it and emails a verification
+    token; 501 means the deployment sends no email.
+  - `POST /api/v1/users/me/email/verify` (`verifyMyNotificationEmail`,
+    `VillageVerifyNotificationEmailRequest`) confirms it.
+  - `DELETE /api/v1/users/me/email` (`removeMyNotificationEmail`).
+  - `POST /api/v1/email/unsubscribe?token=` (`unsubscribeInvitationEmails`):
+    the signed-out one-click unsubscribe target (RFC 8058). It can only turn
+    invitation emails off.
+  - `VillageUserSettings` gains `notification_email`
+    (`VillageNotificationEmail {address, verified}` or null) and
+    `email_invitations` (on by default; effective once the address is
+    verified). `VillageUpdateUserSettingsRequest` gains `email_invitations`.
+- The notification address appears only in the caller's own settings. A guard
+  test walks every response of the Village and Local API specs and fails if
+  any other response reaches the address or declares a property named like an
+  email, except two listed git commit author fields.
+
 ## [v0.33.1] - 2026-10-25
 
 ### Added
