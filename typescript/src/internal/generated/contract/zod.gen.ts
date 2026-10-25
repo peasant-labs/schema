@@ -2290,6 +2290,23 @@ export const zSessionStats = z.object({
 
 export type SessionStats = z.infer<typeof zSessionStats>;
 
+/**
+ * Session Teammate Evidence
+ *
+ * Record a local teammate identity rests on; only a native dynamic workflow spawn is recorded
+ */
+export const zSessionTeammateEvidence = z.enum(['native_dynamic_workflow']);
+
+export type SessionTeammateEvidence = z.infer<typeof zSessionTeammateEvidence>;
+
+export const zSessionTeammate = z.object({
+    evidence: zSessionTeammateEvidence,
+    name: z.string().min(1).max(256).regex(/^[^\x00-\x1F\x7F-\x9F]*$/),
+    team: z.string().min(1).max(256).regex(/^[^\x00-\x1F\x7F-\x9F]*$/)
+});
+
+export type SessionTeammate = z.infer<typeof zSessionTeammate>;
+
 export const zShutdownResponse = z.object({
     status: z.string()
 });
@@ -2367,6 +2384,7 @@ export const zSessionSummary = z.object({
     rootSessionId: zSessionID.nullish(),
     sessionOrigin: zSessionOrigin.optional(),
     startTime: z.iso.datetime(),
+    teammate: zSessionTeammate.nullish(),
     toolCallCount: z.int(),
     totalTokens: z.int(),
     turnCount: z.int()
@@ -2604,6 +2622,7 @@ export const zLocalSyncSummary = z.object({
     projectName: z.string(),
     startTime: z.string(),
     syncStatus: zSyncStatus,
+    teammate: zSessionTeammate.nullish(),
     totalTokens: z.int(),
     turnCount: z.int()
 });
@@ -3625,6 +3644,7 @@ export const zSessionDetailReadPayload = z.object({
     source: z.string().optional(),
     startTime: z.iso.datetime().optional(),
     status: z.string().optional(),
+    teammate: zSessionTeammate.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),

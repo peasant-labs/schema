@@ -28,6 +28,16 @@ required_names:
   - session-pull-request-empty-repo
   - session-pull-request-empty-url
   - session-pull-request-empty-source
+  - teammate-detail-round-trip
+  - teammate-sync-row-round-trip
+  - teammate-wrong-evidence
+  - teammate-empty-name
+  - teammate-mismatched-sync
+  - teammate-name-multibyte-under-bound
+  - teammate-name-over-bound
+  - teammate-name-control-character
+  - teammate-only-in-session
+  - teammate-only-in-sync
 round_trip:
   cases:
     - name: flat-detail-root
@@ -108,6 +118,24 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "source is an open string, so a later detector needs no rewrite of rows already stored by a consumer"}
       mutation: {description: "carries a detector label the contract does not define through the read unchanged"}
+    - name: teammate-name-multibyte-under-bound
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"teammate":{"team":"review-crew","name":"éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé","evidence":"native_dynamic_workflow"}}' }
+      expected: {valid: true, requiredKeys: [id, turns, teammate], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: boundary, ref: "a name is bounded by Unicode code points, not by encoded bytes"}
+      mutation: {description: "keeps a 200-character name of two-byte characters, over 256 encoded bytes but under the 256-character bound"}
+    - name: teammate-detail-round-trip
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"parentSessionId":"ses_root","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}' }
+      expected: {valid: true, requiredKeys: [id, turns, parentSessionId, teammate], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "local detail read carries the recorded teammate beside the durable root fields"}
+      mutation: {description: "adds one exact teammate identity to a flat detail read"}
+    - name: teammate-sync-row-round-trip
+      input: {kind: row, json: '{"session":{"id":"teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0,"project":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","parentSessionId":"ses_root","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}},"sync":{"id":"teammate","harness":"claude-code","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"h","startTime":"2026-09-08T00:00:00Z","durationMs":60000,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","previouslyPushed":false,"parentSessionId":"ses_root","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}}' }
+      expected: {valid: true, requiredKeys: [session, sync], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the list summary and the sync summary carry the same recorded teammate"}
+      mutation: {description: "supplies one equal teammate identity on both summaries of a sync row"}
 validation:
   cases:
     - name: mismatched-sync-count
@@ -206,3 +234,45 @@ validation:
       classification: must-fail
       provenance: {source: boundary, ref: "a missing detector must not be told apart from an unknown one"}
       mutation: {description: "empties only the row source of an otherwise valid detected row"}
+    - name: teammate-wrong-evidence
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_typed"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "teammate evidence comes from the dedicated teammate evidence menu, not the shared session graph set"}
+      mutation: {description: "changes only the teammate evidence to native_typed, a shared session graph kind outside the teammate menu"}
+    - name: teammate-empty-name
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"teammate":{"team":"review-crew","name":"","evidence":"native_dynamic_workflow"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "teammate identity fields are non-empty"}
+      mutation: {description: "empties only the teammate name"}
+    - name: teammate-mismatched-sync
+      input: {kind: row, json: '{"session":{"id":"teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0,"teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}},"sync":{"id":"teammate","harness":"claude-code","projectName":"","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","teammate":{"team":"review-crew","name":"other-reviewer","evidence":"native_dynamic_workflow"}}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one saved transcript has one teammate identity across its route summaries"}
+      mutation: {description: "changes only the sync row teammate name away from the session row"}
+    - name: teammate-name-over-bound
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"teammate":{"team":"review-crew","name":"ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé","evidence":"native_dynamic_workflow"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "teammate identity fields are bounded at 256 characters (Unicode code points)"}
+      mutation: {description: "grows only the teammate name to 257 characters (Unicode code points), one over the bound"}
+    - name: teammate-name-control-character
+      input: {kind: detail, json: '{"id":"teammate","harness":"claude-code","turnCount":1,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"teammate":{"team":"review-crew","name":"reviewer\u0007","evidence":"native_dynamic_workflow"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "teammate identity fields carry no control characters"}
+      mutation: {description: "appends the U+0007 bell character to the teammate name, which a rendered identity line cannot carry"}
+    - name: teammate-only-in-session
+      input: {kind: row, json: '{"session":{"id":"teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0,"teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}},"sync":{"id":"teammate","harness":"claude-code","projectName":"","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new"}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one saved transcript has one teammate identity across its route summaries"}
+      mutation: {description: "keeps the teammate on the session summary and omits it from the sync summary"}
+    - name: teammate-only-in-sync
+      input: {kind: row, json: '{"session":{"id":"teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"toolCallCount":0},"sync":{"id":"teammate","harness":"claude-code","projectName":"","hostSlug":"h","startTime":"x","durationMs":1,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}}' }
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "one saved transcript has one teammate identity across its route summaries"}
+      mutation: {description: "keeps the teammate on the sync summary and omits it from the session summary"}

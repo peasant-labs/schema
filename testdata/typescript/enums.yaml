@@ -544,6 +544,11 @@ enums:
       - {name: Unknown, value: "unknown"}
       - {name: Conflict, value: "conflict"}
     all_values: ["native_typed", "lifecycle_typed", "existing_adapter", "retained_last_good", "unknown", "conflict"]
+  - name: SessionTeammateEvidence
+    all_name: AllSessionTeammateEvidences
+    members:
+      - {name: NativeDynamicWorkflow, value: "native_dynamic_workflow"}
+    all_values: ["native_dynamic_workflow"]
   - name: SessionPurpose
     all_name: AllSessionPurposes
     members:

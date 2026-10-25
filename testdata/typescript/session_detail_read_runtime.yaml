@@ -1,0 +1,37 @@
+# Local session-detail read runtime: the optional teammate identity rides beside
+# the durable detail, and the hand-written read normalization must carry it
+# through unchanged.
+#
+# The read normalization strips the local additions before the durable parser
+# (which refuses unknown members) and restores exactly the ones the incoming
+# value carries as OWN properties. That is why this corpus pins three distinct
+# absences: an omitted key, an own null, and a refused value. A truthiness test
+# would collapse the first two, so the third case exists to keep the difference
+# observable.
+#
+# Each case carries the raw session_detail WebSocket text, so the probe runs the
+# production entry point a browser uses rather than a re-implementation.
+
+session_id: ses_teammate
+
+required_names:
+  - teammate-preserved
+  - teammate-absent
+  - teammate-explicit-null
+  - teammate-invalid-evidence
+
+cases:
+  - name: teammate-preserved
+    message: '{"type":"session_detail","data":{"id":"ses_teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","endTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":9,"tokensIn":3,"tokensOut":6,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"parentSessionId":"ses_root","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}}'
+    expected:
+      valid: true
+      teammate: {team: review-crew, name: parser-reviewer, evidence: native_dynamic_workflow}
+  - name: teammate-absent
+    message: '{"type":"session_detail","data":{"id":"ses_teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","endTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":9,"tokensIn":3,"tokensOut":6,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"parentSessionId":"ses_root"}}'
+    expected: {valid: true, teammate_absent: true}
+  - name: teammate-explicit-null
+    message: '{"type":"session_detail","data":{"id":"ses_teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","endTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":9,"tokensIn":3,"tokensOut":6,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"parentSessionId":"ses_root","teammate":null}}'
+    expected: {valid: true, teammate_null: true}
+  - name: teammate-invalid-evidence
+    message: '{"type":"session_detail","data":{"id":"ses_teammate","harness":"claude-code","startTime":"2026-09-08T00:00:00Z","endTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":9,"tokensIn":3,"tokensOut":6,"turnCount":1,"toolCallCount":0,"turns":[{"index":0,"role":"user","content":"hello","timestamp":"2026-09-08T00:00:00Z","depth":0}],"parentSessionId":"ses_root","teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_typed"}}}'
+    expected: {valid: false, error_contains: "native_dynamic_workflow"}

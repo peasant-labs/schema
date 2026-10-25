@@ -137,6 +137,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"RelationshipNavigationStatus", new(schema.RelationshipNavigationStatus)}, {"SessionRelationshipNavigation", new(schema.SessionRelationshipNavigation)},
 		{"SessionListItemKind", new(schema.SessionListItemKind)}, {"HelperGroupSummary", new(schema.HelperGroupSummary)},
 		{"HelperContextSummary", new(schema.HelperContextSummary)}, {"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
 		{"LocalSessionListPayload", new(schema.LocalSessionListPayload)}, {"LocalHelperMembersPayload", new(schema.LocalHelperMembersPayload)},

@@ -82,6 +82,24 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   - Both reads answer an empty array for a stored session with nothing
     recorded, and 404 for an identifier that names no stored session, so "none
     recorded" and "not here" stay distinguishable.
+- Local session surfaces carry the Claude Code teammate identity a stored
+  parent transcript records spawning: `SessionSummary.teammate`,
+  `LocalSyncSummary.teammate`, and `SessionDetailReadPayload.teammate` hold a
+  `SessionTeammate` (`team`, `name`, `evidence`). It is local read evidence
+  only: `SessionDetailPayload`, `UnifiedMetadata`, and the published Village
+  wire are unchanged, and a session with ordinary subagent parentage carries no
+  teammate object. `SessionTeammate.Validate` refuses an empty or malformed
+  identity and evidence outside `SessionTeammateEvidence`, and a grouped row
+  must carry the same teammate on both of its summaries. The published
+  component carries the same rules: `team` and `name` declare the 256-character
+  bound as `minLength`/`maxLength` and refuse control characters by pattern, so
+  a generated binding enforces what the Go predicate enforces.
+- `SessionTeammateEvidence` is a closed set of its own with one member,
+  `native_dynamic_workflow`, the native harness record of a dynamic workflow
+  spawn. It is deliberately not a member of the shared `EvidenceKind` menu,
+  which is embedded in the published Village wire. Types 0.37.0 and Local API
+  0.24.0 add the types; Village API stays 0.30.0, so the Village spec is
+  unchanged.
 
 ## [v0.33.1] - 2026-10-25
 

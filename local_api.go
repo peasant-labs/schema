@@ -3,6 +3,8 @@ package schema
 import (
 	"fmt"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -71,6 +73,110 @@ func (o SessionOrigin) IsValid() bool {
 
 func (o SessionOrigin) String() string { return string(o) }
 
+// SessionTeammateMaxIdentityRunes is the bound on each SessionTeammate
+// identity field, counted in Unicode code points. It matches the published
+// maxLength, which counts code points too.
+const SessionTeammateMaxIdentityRunes = 256
+
+// SessionTeammateEvidence is the kind of record a teammate identity rests on.
+// It is a closed set of its own rather than a member of EvidenceKind: the
+// session-graph evidence menu is embedded in the published Village wire, so a
+// kind that only a local read carries must not widen it for every consumer.
+type SessionTeammateEvidence string
+
+const (
+	// SessionTeammateEvidenceNativeDynamicWorkflow: the stored parent
+	// transcript records spawning this exact team and name.
+	SessionTeammateEvidenceNativeDynamicWorkflow SessionTeammateEvidence = "native_dynamic_workflow"
+)
+
+// AllSessionTeammateEvidences is the canonical teammate evidence menu.
+var AllSessionTeammateEvidences = []SessionTeammateEvidence{SessionTeammateEvidenceNativeDynamicWorkflow}
+
+// IsValid reports whether e is a member of the teammate evidence menu.
+func (e SessionTeammateEvidence) IsValid() bool { return inSet(e, AllSessionTeammateEvidences) }
+
+// String returns the wire representation of the teammate evidence kind.
+func (e SessionTeammateEvidence) String() string { return string(e) }
+
+// JSONSchema implements jsonschema.Exposer.
+func (SessionTeammateEvidence) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema(
+		"Session Teammate Evidence",
+		"Record a local teammate identity rests on; only a native dynamic workflow spawn is recorded",
+		AllSessionTeammateEvidences,
+	), nil
+}
+
+// SessionTeammate is the Claude Code teammate identity of a session whose
+// stored parent transcript records spawning that identity. It is local read
+// evidence, never published transcript content: a session with only ordinary
+// subagent parentage, another harness's parentage, or no recorded spawn edge
+// carries no teammate object, so a consumer can tell the two apart.
+type SessionTeammate struct {
+	// Team is the recorded team name the spawn edge names. Non-empty, valid
+	// UTF-8, at most 256 characters (Unicode code points), and no control
+	// characters. The published minLength, maxLength, and pattern carry the
+	// same three rules; Validate applies them directly.
+	Team string `json:"team" minLength:"1" maxLength:"256" pattern:"^[^\\x00-\\x1F\\x7F-\\x9F]*$" description:"Recorded Claude Code team name of the spawn edge. Non-empty, valid UTF-8, at most 256 characters (Unicode code points), and no control characters."`
+	// Name is the recorded teammate name the spawn edge names, under the same
+	// bound as Team.
+	Name string `json:"name" minLength:"1" maxLength:"256" pattern:"^[^\\x00-\\x1F\\x7F-\\x9F]*$" description:"Recorded Claude Code teammate name of the spawn edge. Non-empty, valid UTF-8, at most 256 characters (Unicode code points), and no control characters."`
+	// Evidence is the kind of record the spawn edge rests on. Only
+	// native_dynamic_workflow is accepted.
+	Evidence SessionTeammateEvidence `json:"evidence"`
+}
+
+// Validate checks that the teammate identity is present, exact, and carries
+// the one evidence kind a recorded spawn edge produces. The identity fields
+// carry the published 256-character bound plus the no-control-character rule.
+func (t *SessionTeammate) Validate() error {
+	if t == nil {
+		return nil
+	}
+	const where = "teammate validation failed at schema.SessionTeammate.Validate while projecting local session evidence: "
+	if err := validateTeammateIdentityField(where, "team", t.Team); err != nil {
+		return err
+	}
+	if err := validateTeammateIdentityField(where, "name", t.Name); err != nil {
+		return err
+	}
+	if !t.Evidence.IsValid() {
+		return fmt.Errorf("%sevidence %q is outside the closed set; a teammate object only exists for a spawn edge the parent transcript records, so another kind would claim a link the store cannot support; omit teammate or emit a member of schema.AllSessionTeammateEvidences", where, t.Evidence)
+	}
+	return nil
+}
+
+// validateTeammateIdentityField applies the identity field rule: non-empty
+// valid UTF-8, at most SessionTeammateMaxIdentityRunes Unicode code points, and
+// no control characters.
+func validateTeammateIdentityField(where, field, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s%s is empty, so the identity cannot be matched to the parent's recorded spawn; emit the harness-recorded %s or omit teammate", where, field, field)
+	}
+	if !utf8.ValidString(value) {
+		return fmt.Errorf("%s%s %q is not valid UTF-8, so it cannot be emitted on the wire without changing the harness bytes; emit the recorded %s as valid UTF-8", where, field, value, field)
+	}
+	if utf8.RuneCountInString(value) > SessionTeammateMaxIdentityRunes {
+		return fmt.Errorf("%s%s is %d characters, over the %d-character bound, and truncation would fabricate an identity; emit the harness-recorded %s or omit teammate", where, field, utf8.RuneCountInString(value), SessionTeammateMaxIdentityRunes, field)
+	}
+	for _, r := range value {
+		if unicode.IsControl(r) {
+			return fmt.Errorf("%s%s %q contains the control character U+%04X, which a rendered identity line cannot carry; emit the harness-recorded %s without control characters or omit teammate", where, field, value, r, field)
+		}
+	}
+	return nil
+}
+
+// equalOptionalTeammate reports whether two optional teammate identities carry
+// the same recorded identity.
+func equalOptionalTeammate(a, b *SessionTeammate) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return *a == *b
+}
+
 // JSONSchema implements jsonschema.Exposer. The published enum is the declared
 // menu only; the empty string is the absence of the field, which omitempty
 // already expresses, so it is not a menu member.
@@ -117,6 +223,11 @@ type SessionSummary struct {
 	// is redaction-safe by construction. Empty when the session has no indexed
 	// user entry. The web client formats it for display.
 	Preview string `json:"preview,omitempty"`
+	// Teammate is the Claude Code teammate identity this session was spawned
+	// under, present only when the stored parent transcript records spawning
+	// that exact identity. Ordinary subagent parentage carries no teammate
+	// object. Local read evidence, never published transcript content.
+	Teammate *SessionTeammate `json:"teammate,omitempty"`
 }
 
 // SessionDetailReadPayload is the local read projection. Anonymous embedding
@@ -125,6 +236,25 @@ type SessionSummary struct {
 type SessionDetailReadPayload struct {
 	SessionDetailPayload
 	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
+	// Teammate is the Claude Code teammate identity this session was spawned
+	// under, present only when the stored parent transcript records spawning
+	// that exact identity. Local read evidence, never published transcript
+	// content: SessionDetailPayload itself never carries it.
+	Teammate *SessionTeammate `json:"teammate,omitempty"`
+}
+
+// Validate checks the durable detail payload, the authorized navigation
+// metadata, and the optional local teammate evidence.
+func (p SessionDetailReadPayload) Validate() error {
+	if err := ValidateSessionDetailPayload(p.SessionDetailPayload); err != nil {
+		return err
+	}
+	for _, navigation := range p.RelationshipNavigation {
+		if err := navigation.Validate(); err != nil {
+			return err
+		}
+	}
+	return p.Teammate.Validate()
 }
 
 // LocalSyncSummary preserves the existing sync-list row alongside its matching
@@ -155,6 +285,10 @@ type LocalSyncSummary struct {
 	// ParentUnresolved marks a known spawned child whose parent cannot be
 	// named. At most one of ParentSessionID and ParentUnresolved=true is set.
 	ParentUnresolved *bool `json:"parentUnresolved,omitempty" nullable:"false"`
+	// Teammate is the Claude Code teammate identity this session was spawned
+	// under, the same value its SessionSummary carries. Present only when the
+	// stored parent transcript records spawning that exact identity.
+	Teammate *SessionTeammate `json:"teammate,omitempty"`
 }
 
 // LocalSyncSessionsPayload is the exact omitted-view response produced by the
@@ -210,6 +344,9 @@ func (r LocalSessionRow) Validate() error {
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "LocalSessionRow.session.inputSubmissionCount"); err != nil {
 		return err
 	}
+	if err := r.Session.Teammate.Validate(); err != nil {
+		return err
+	}
 	if r.Sync != nil && len(r.Matches) != 0 {
 		return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped route projection: sync and matches are both populated; the row cannot belong to two incompatible route variants; retain only the originating sync or search arm", r.Session.ID)
 	}
@@ -220,6 +357,9 @@ func (r LocalSessionRow) Validate() error {
 		}
 		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
 			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity, parent, or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
+		}
+		if !equalOptionalTeammate(s.Teammate, r.Session.Teammate) {
+			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync.teammate disagrees with session.teammate; the list and the sync chooser would show different teammate identities for one saved transcript; derive both summaries from the same evidence read", r.Session.ID)
 		}
 	}
 	for i, match := range r.Matches {
