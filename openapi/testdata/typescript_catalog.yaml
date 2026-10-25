@@ -1273,6 +1273,9 @@ types:
   - {go_name: VillageTranscriptMetadataResponse, disposition: catalog, component: VillageTranscriptMetadataResponse, reason: public session graph and grouped read contract}
   - {go_name: VillageTag, disposition: catalog, component: VillageTag, reason: public session graph and grouped read contract}
   - {go_name: VillageUser, disposition: catalog, component: VillageUser, reason: public session graph and grouped read contract}
+  - {go_name: LegacyPullTranscriptInfo, disposition: catalog, component: LegacyPullTranscriptInfo, reason: frozen pull envelope 0.2.0 served to clients that do not request a newer one}
+  - {go_name: LegacyPullListResponse, disposition: catalog, component: LegacyPullListResponse, reason: frozen pull envelope 0.2.0 served to clients that do not request a newer one}
+  - {go_name: LegacyPullAnnotation, disposition: catalog, component: LegacyPullAnnotation, reason: frozen pull envelope 0.2.0 served to clients that do not request a newer one}
   - {go_name: VillagePublicOwner, disposition: catalog, component: VillagePublicOwner, reason: "a person as another viewer sees them, resolved by the server per viewer"}
   - {go_name: VillagePublicOwnerKind, disposition: catalog, component: VillagePublicOwnerKind, reason: closed producer set of public owner shapes}
   - {go_name: VillageMetadataUserOrganization, disposition: catalog, component: VillageMetadataUserOrganization, reason: public session graph and grouped read contract}

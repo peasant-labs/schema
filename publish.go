@@ -195,6 +195,17 @@ type AnnotationPushResult struct {
 // fields are `omitempty` so an OLDER village that predates the pull surface
 // emits the prior wire shape; the CLI treats an ABSENT advertisement as
 // "village too old for pull" (actionable error), not as compatible.
+//
+// Since the pull envelope became requestable (PullContractHeader), the three
+// pull fields mean:
+//   - PullContractVersion is the DEFAULT envelope Village serves to a request
+//     without the header. Released CLIs read it as "the envelope I will get"
+//     and refuse a window that excludes their own version, so it must stay at
+//     the version header-less clients read (LegacyPullContractVersion).
+//   - MinPullContractVersion is unchanged: the oldest envelope Village serves.
+//   - MaxPullContractVersion (pullContractMaxVersion) is the newest envelope
+//     Village can serve when a client asks for it. It is omitted by a Village
+//     that cannot serve anything newer than its default.
 type SchemaVersionResponse struct {
 	AnnotationSchemaVersion string              `json:"annotationSchemaVersion"`
 	SupportedTargetKinds    []string            `json:"supportedTargetKinds"`
@@ -203,6 +214,7 @@ type SchemaVersionResponse struct {
 	MinPushContractVersion  PushContractVersion `json:"minPushContractVersion"`
 	PullContractVersion     PushContractVersion `json:"pullContractVersion,omitempty"`
 	MinPullContractVersion  PushContractVersion `json:"minPullContractVersion,omitempty"`
+	MaxPullContractVersion  PushContractVersion `json:"pullContractMaxVersion,omitempty"`
 	// ContentCapabilities advertises optional enriched-content contracts proven
 	// safe through the server's publish, storage, migration, and serving paths.
 	// Omitted and empty mean no capability; JSON null is outside the contract.

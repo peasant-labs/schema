@@ -1465,6 +1465,9 @@ export interface components {
          */
         SchemaInputModality: Schema.InputModality;
         SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
+        SchemaLegacyPullAnnotation: Schema.LegacyPullAnnotation;
+        SchemaLegacyPullListResponse: Schema.LegacyPullListResponse;
+        SchemaLegacyPullTranscriptInfo: Schema.LegacyPullTranscriptInfo;
         /**
          * License
          * @description Content license for a published transcript
@@ -5274,7 +5277,10 @@ export interface operations {
                 /** @description Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript. */
                 collectives?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5283,10 +5289,21 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullListResponse"];
+                    "application/json": components["schemas"]["SchemaPullListResponse"] | components["schemas"]["SchemaLegacyPullListResponse"];
+                };
+            };
+            /** @description Not Acceptable */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
         };
@@ -5318,7 +5335,10 @@ export interface operations {
     getPullTranscript: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5329,10 +5349,21 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SchemaPullTranscriptInfo"];
+                    "application/json": components["schemas"]["SchemaPullTranscriptInfo"] | components["schemas"]["SchemaLegacyPullTranscriptInfo"];
+                };
+            };
+            /** @description Not Acceptable */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
         };
@@ -5340,7 +5371,10 @@ export interface operations {
     getPullTranscriptAnnotations: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5351,10 +5385,21 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaPullAnnotation"][];
+                    "application/json": (null | components["schemas"]["SchemaPullAnnotation"][]) | (null | components["schemas"]["SchemaLegacyPullAnnotation"][]);
+                };
+            };
+            /** @description Not Acceptable */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
                 };
             };
         };
@@ -5362,7 +5407,10 @@ export interface operations {
     getPullTranscriptContent: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse. */
+                "Peasant-Pull-Contract"?: string;
+            };
             path: {
                 id: string;
             };
@@ -5370,12 +5418,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
+                    /** @description The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope. */
+                    "Peasant-Pull-Contract": string;
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Not Acceptable */
+            406: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
             };
         };
     };

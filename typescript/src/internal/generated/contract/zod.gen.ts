@@ -1912,6 +1912,7 @@ export const zSchemaVersionResponse = z.object({
     contentCapabilities: z.array(z.string()).optional(),
     minPullContractVersion: z.string().optional(),
     minPushContractVersion: z.string(),
+    pullContractMaxVersion: z.string().optional(),
     pullContractVersion: z.string().optional(),
     pushContractVersion: z.string(),
     supportedTargetKinds: z.array(z.string()).nullable(),
@@ -2843,6 +2844,38 @@ export const zAnnotationsPayload = z.object({
 });
 
 export type AnnotationsPayload = z.infer<typeof zAnnotationsPayload>;
+
+export const zLegacyPullAnnotation = z.object({
+    annotatorKind: zAnnotatorKind.optional(),
+    annotatorName: z.string().optional(),
+    authorUserId: z.string(),
+    authorUsername: z.string(),
+    confidence: z.number().nullish(),
+    contentHash: z.string().nullish(),
+    createdAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }).optional(),
+    id: z.string().optional(),
+    isPrimary: z.boolean().optional(),
+    provenance: zProvenance.optional(),
+    reason: z.string().nullish(),
+    supersededBy: z.string().nullish(),
+    targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.optional(),
+    targetContentHash: z.string().nullish(),
+    targetEntryEndIndex: z.int().nullish(),
+    targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
+    targetKind: zTargetKind.optional(),
+    targetProjectHash: zProjectHash.optional(),
+    targetSessionId: z.string().nullish(),
+    typeId: z.string().optional(),
+    typeName: z.string().optional(),
+    value: z.string().optional()
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLegacyPullAnnotation: " + reason });
+    if (value.authorUserId === "" && value.authorUsername !== "anon") fail("an empty id carries a username; a hidden person would be named; send anon beside an empty id"); if (value.authorUserId !== "" && value.authorUsername === "") fail("an id carries no username; send the profile's username, or an empty id with anon");
+  });
+
+export type LegacyPullAnnotation = z.infer<typeof zLegacyPullAnnotation>;
 
 export const zQualitySession = z.object({
     date: z.string(),
@@ -5191,6 +5224,37 @@ export const zVisibility = z.enum([
 ]);
 
 export type Visibility = z.infer<typeof zVisibility>;
+
+export const zLegacyPullTranscriptInfo = z.object({
+    annotationCount: z.int(),
+    contentHash: z.string().optional(),
+    contractVersion: z.string().optional(),
+    harness: zHarness.optional(),
+    license: zLicense.optional(),
+    localId: z.string().optional(),
+    ownerUserId: z.string(),
+    ownerUsername: z.string(),
+    projectName: z.string().optional(),
+    publishedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    title: z.string().optional(),
+    transcriptId: zTranscriptID,
+    updatedAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    visibility: zVisibility
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLegacyPullTranscriptInfo: " + reason });
+    if (value.ownerUserId === "" && value.ownerUsername !== "anon") fail("an empty id carries a username; a hidden person would be named; send anon beside an empty id"); if (value.ownerUserId !== "" && value.ownerUsername === "") fail("an id carries no username; send the profile's username, or an empty id with anon"); if (value.ownerUserId === "" && (value.projectName ?? "") !== "") fail("projectName sits beside an anonymous owner; omit it for an anonymous owner");
+  });
+
+export type LegacyPullTranscriptInfo = z.infer<typeof zLegacyPullTranscriptInfo>;
+
+export const zLegacyPullListResponse = z.object({
+    limit: z.int(),
+    page: z.int(),
+    total: z.int(),
+    transcripts: z.array(zLegacyPullTranscriptInfo).nullable()
+});
+
+export type LegacyPullListResponse = z.infer<typeof zLegacyPullListResponse>;
 
 export const zPublishNormalizedValues = z.object({
     derivedTitle: z.string().nullable(),

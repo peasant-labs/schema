@@ -98,7 +98,12 @@ const (
 	// and transcript rows gained the server-resolved parent_transcript_id
 	// and made their repository fields nullable, withheld beside an anonymous
 	// owner (breaking change on a 0.x contract = minor bump).
-	VillageAPIVersion = "0.29.0"
+	// Bumped to 0.29.1 when the pull operations accepted the optional
+	// Peasant-Pull-Contract request header, reported the served envelope in the
+	// same response header, declared the frozen 0.2.0 Legacy* envelope beside
+	// the 0.3.0 one, and the version response gained pullContractMaxVersion
+	// (additive = patch bump; every 0.29.0 client reads it unchanged).
+	VillageAPIVersion = "0.29.1"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -225,5 +230,9 @@ const (
 	// catalog and the catalog's Village rows and pull envelope adopted it in
 	// place of owner ids, usernames, avatars, and the whole VillageUser, and
 	// the catalog's Village transcript rows gained parent_transcript_id.
-	TypesVersion = "0.34.0"
+	// Bumped to 0.34.1 when the frozen 0.2.0 pull envelope types
+	// (LegacyPullTranscriptInfo, LegacyPullListResponse, LegacyPullAnnotation)
+	// entered the catalog and SchemaVersionResponse gained
+	// pullContractMaxVersion (additive = patch bump).
+	TypesVersion = "0.34.1"
 )

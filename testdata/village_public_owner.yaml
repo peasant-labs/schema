@@ -299,6 +299,13 @@ surfaces:
   self_operations:
     - getAuthenticatedVillageUser
     - cliExchangeCode
+  # forbidden_property_exceptions lets the frozen 0.2.0 pull envelope keep its
+  # released id and username fields. Their Validate (Go and Zod) holds the
+  # blanking rule: a person anonymous to the caller is an empty id beside
+  # "anon", never a real identity.
+  forbidden_property_exceptions:
+    SchemaLegacyPullTranscriptInfo: [ownerUserId, ownerUsername]
+    SchemaLegacyPullAnnotation: [authorUserId, authorUsername]
   forbidden_properties:
     - owner_id
     - owner_username

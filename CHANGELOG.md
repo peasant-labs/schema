@@ -5,6 +5,47 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- A requestable pull envelope, so Village can hide people without forcing a
+  CLI upgrade. Village API 0.29.1 and Types 0.34.1 declare:
+  - an optional `Peasant-Pull-Contract` request header on the pull list,
+    metadata, annotations and content reads. A client sends the newest pull
+    contract it reads, as MAJOR.MINOR.PATCH digits. Village serves the
+    highest version it supports at or below that and at or above its
+    minimum. Without the header, or with a malformed one (`0.3`, `v0.3.0`,
+    any other text), it serves its default, so a client with a buggy header
+    still pulls. A version below its minimum is refused with 406 and a
+    `VillageErrorResponse`, which a client reports as its
+    incompatible-contract error;
+  - the same header on every pull response, carrying the version served.
+    The JSON reads declare both envelopes with `anyOf`, because an empty page
+    or an empty or null annotation list fits both;
+  - `pullContractMaxVersion` on the version response, the newest envelope
+    Village can serve. `pullContractVersion` now means the default served
+    without the header. Released CLIs read it as "what I will get", so it
+    stays at 0.2.0, and `minPullContractVersion` is unchanged;
+  - the frozen pull envelope 0.2.0 as `LegacyPullTranscriptInfo`,
+    `LegacyPullListResponse` and `LegacyPullAnnotation`, identical to the
+    shapes released in v0.32.0. A test holds them equal to the retired
+    Village API 0.28.0 components.
+- Pull envelope 0.2.0 blanks a person anonymous to the caller to an empty
+  `ownerUserId`/`authorUserId` beside the username `anon`, and omits
+  `projectName` beside an anonymous owner. A profile carries the real id and
+  username. Every released CLI tolerates the empty id plus `anon` and reads it
+  as someone else's. `LegacyPullTranscriptInfoFrom`, `LegacyPullListResponseFrom`
+  and `LegacyPullAnnotationFrom` apply the rule, so Village renders 0.2.0 from
+  the 0.3.0 values instead of re-deriving it. Go `Validate` and the generated
+  Zod refuse an empty id with any other username, an id without a username,
+  and a project name beside an anonymous owner.
+- `PullContractHeader`, `LegacyPullContractVersion` (0.2.0),
+  `PublicOwnerPullContractVersion` (0.3.0) and `LegacyPullAnonymousUsername`
+  name these values once.
+- Compatibility rule: patch bumps within a minor (0.3.x) are additive, so
+  clients accept any 0.3.z and ignore unknown fields. Only a new minor needs a
+  new client, and Village keeps serving older minors to older clients for a
+  deprecation period.
+
 ## [v0.33.0] - 2026-10-24
 
 ### Changed
