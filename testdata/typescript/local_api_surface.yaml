@@ -49,7 +49,8 @@ operations:
       - {name: home_no_ingestion_browse_filter, text: "The saved ingestion selection narrows neither a view nor a page"}
       - {name: home_independent_bounds, text: "Independent origin, index-readiness, publication, project, and parent rules still apply"}
       - {name: unknown_parent_only_404, text: "Unknown parents return 404"}
-      - {name: token_scope_excludes_ingestion_selection, text: "the saved ingestion selection is not part of that scope"}
+      - {name: token_scope_excludes_ingestion_selection, text: "or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid"}
+      - {name: token_scope_excludes_page_size, text: "it does not include the page size, which a caller may change independently"}
       - {name: publication_metadata_fails_closed, text: "when that metadata cannot be determined the read returns 500"}
   - {path: /api/v1/publications, method: get, operation_id: listPublications}
   - {path: /api/v1/settings, method: get, operation_id: getSettings}

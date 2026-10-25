@@ -36,6 +36,7 @@ const (
 	localAPIAnchorHomeIndependentBounds        localAPIDescriptionAnchor = "home_independent_bounds"
 	localAPIAnchorUnknownParentOnly404         localAPIDescriptionAnchor = "unknown_parent_only_404"
 	localAPIAnchorTokenScopeExcludesSelection  localAPIDescriptionAnchor = "token_scope_excludes_ingestion_selection"
+	localAPIAnchorTokenScopeExcludesPageSize   localAPIDescriptionAnchor = "token_scope_excludes_page_size"
 	localAPIAnchorMetadataFailsClosed          localAPIDescriptionAnchor = "publication_metadata_fails_closed"
 	localAPIAnchorMemberScopeExcludesSelection localAPIDescriptionAnchor = "member_scope_excludes_ingestion_selection"
 	localAPIAnchorSummariesReadNotNarrowed     localAPIDescriptionAnchor = "summaries_stored_read_not_narrowed"
@@ -53,6 +54,7 @@ var allLocalAPIDescriptionAnchors = []localAPIDescriptionAnchor{
 	localAPIAnchorMetadataFailsClosed,
 	localAPIAnchorNoIngestionBrowseFilter,
 	localAPIAnchorSummariesReadNotNarrowed,
+	localAPIAnchorTokenScopeExcludesPageSize,
 	localAPIAnchorTokenScopeExcludesSelection,
 	localAPIAnchorUnknownParentOnly404,
 }
