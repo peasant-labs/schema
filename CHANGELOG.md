@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.33.0] - 2026-10-24
+
 ### Changed
 
 - **Breaking:** a response that shows a person to another viewer no longer
