@@ -452,9 +452,12 @@ paths:
     get:
       description: List an owned collective's open invitations, each as the handle
         the inviting owner typed. Pending and declined invitations that have not expired
-        are listed alike, with no status, so a decline is not revealed. An accepted
-        invitation leaves the list and its person appears in the roster; a revoked
-        or expired one leaves the list.
+        are listed alike, with no status, so a decline is not revealed. Every invited
+        name is listed until its invitation expires or is revoked, whether or not
+        an account holds the name. An invitation whose invitee deletes their account
+        stays listed, unchanged, until it expires, so a deletion is not revealed either.
+        An accepted invitation leaves the list and its person appears in the roster;
+        a revoked or expired one leaves the list.
       operationId: listGroupInvitations
       parameters:
       - description: Collective identifier
@@ -502,13 +505,17 @@ paths:
         becomes a member only by accepting. The answer is 202 with status invited
         for every username, whether no account holds it, its account is not discoverable,
         or it is discoverable, so inviting never confirms that an account exists.
-        Inviting the same username again while an invitation is open is the same 202
-        and notifies no one. An invitation the person declined stays open to the owner,
-        unchanged, until it expires. 409 means the person is already a member who
-        consented; a member whose membership predates invitations may be invited again
-        so that they can consent. An owner's invitation admits the person whatever
-        the collective's acceptance mode, including curated and verified_only. 429
-        means the inviter or the collective has reached its invitation limit.
+        Every invited name gets an invitation that the owners' list shows until it
+        expires or is revoked, whether or not an account holds the name. Any invitation
+        email is sent after this response, off the request path, so the response's
+        timing never depends on the invitee. Inviting the same username again while
+        an invitation is open is the same 202 and notifies no one. An invitation the
+        person declined stays open to the owner, unchanged, until it expires. 409
+        means the person is already a member who consented; a member whose membership
+        predates invitations may be invited again so that they can consent. An owner's
+        invitation admits the person whatever the collective's acceptance mode, including
+        curated and verified_only. 429 means the inviter or the collective has reached
+        its invitation limit.
       operationId: createGroupInvitation
       parameters:
       - description: Collective identifier
@@ -572,8 +579,10 @@ paths:
   /api/v1/collectives/{id}/invitations/{invitationID}:
     delete:
       description: Revoke an open invitation of an owned collective. The invitation
-        leaves the invitee's list and nothing is recorded. 404 means the collective
-        has no open invitation with this id.
+        leaves the invitee's list and nothing is recorded. Revoking any listed invitation
+        answers 200, including one for a name no account holds or one whose invitee
+        has deleted their account, so revoking reveals nothing about the invitee.
+        404 means the collective has no open invitation with this id.
       operationId: revokeGroupInvitation
       parameters:
       - description: Collective identifier
@@ -1883,9 +1892,12 @@ paths:
       deprecated: true
       description: List an owned collective's open invitations, each as the handle
         the inviting owner typed. Pending and declined invitations that have not expired
-        are listed alike, with no status, so a decline is not revealed. An accepted
-        invitation leaves the list and its person appears in the roster; a revoked
-        or expired one leaves the list.
+        are listed alike, with no status, so a decline is not revealed. Every invited
+        name is listed until its invitation expires or is revoked, whether or not
+        an account holds the name. An invitation whose invitee deletes their account
+        stays listed, unchanged, until it expires, so a deletion is not revealed either.
+        An accepted invitation leaves the list and its person appears in the roster;
+        a revoked or expired one leaves the list.
       operationId: listGroupInvitationsDeprecated
       parameters:
       - description: Collective identifier
@@ -1934,13 +1946,17 @@ paths:
         becomes a member only by accepting. The answer is 202 with status invited
         for every username, whether no account holds it, its account is not discoverable,
         or it is discoverable, so inviting never confirms that an account exists.
-        Inviting the same username again while an invitation is open is the same 202
-        and notifies no one. An invitation the person declined stays open to the owner,
-        unchanged, until it expires. 409 means the person is already a member who
-        consented; a member whose membership predates invitations may be invited again
-        so that they can consent. An owner's invitation admits the person whatever
-        the collective's acceptance mode, including curated and verified_only. 429
-        means the inviter or the collective has reached its invitation limit.
+        Every invited name gets an invitation that the owners' list shows until it
+        expires or is revoked, whether or not an account holds the name. Any invitation
+        email is sent after this response, off the request path, so the response's
+        timing never depends on the invitee. Inviting the same username again while
+        an invitation is open is the same 202 and notifies no one. An invitation the
+        person declined stays open to the owner, unchanged, until it expires. 409
+        means the person is already a member who consented; a member whose membership
+        predates invitations may be invited again so that they can consent. An owner's
+        invitation admits the person whatever the collective's acceptance mode, including
+        curated and verified_only. 429 means the inviter or the collective has reached
+        its invitation limit.
       operationId: createGroupInvitationDeprecated
       parameters:
       - description: Collective identifier
@@ -2005,8 +2021,10 @@ paths:
     delete:
       deprecated: true
       description: Revoke an open invitation of an owned collective. The invitation
-        leaves the invitee's list and nothing is recorded. 404 means the collective
-        has no open invitation with this id.
+        leaves the invitee's list and nothing is recorded. Revoking any listed invitation
+        answers 200, including one for a name no account holds or one whose invitee
+        has deleted their account, so revoking reveals nothing about the invitee.
+        404 means the collective has no open invitation with this id.
       operationId: revokeGroupInvitationDeprecated
       parameters:
       - description: Collective identifier

@@ -68,21 +68,21 @@ operations:
     request_components: [VillageCollectiveInvitationRequest]
     response_components: [VillageStatusResponse]
     statuses: ["202", "400", "401", "403", "409", "429", "500"]
-    description_anchors: [only by accepting, 202 with status invited for every username, never confirms that an account exists, notifies no one, until it expires, already a member who consented, predates invitations, curated and verified_only]
+    description_anchors: [only by accepting, 202 with status invited for every username, never confirms that an account exists, notifies no one, until it expires, already a member who consented, predates invitations, curated and verified_only, whether or not an account holds the name, off the request path, never depends on the invitee]
   - path: /api/v1/collectives/{id}/invitations
     method: get
     operation_id: listGroupInvitations
     request_components: []
     response_components: [VillageCollectiveInvitationsSentResponse]
     statuses: ["200", "400", "401", "403", "500"]
-    description_anchors: [handle the inviting owner typed, listed alike, with no status, decline is not revealed]
+    description_anchors: [handle the inviting owner typed, listed alike, with no status, decline is not revealed, whether or not an account holds the name, deletion is not revealed]
   - path: /api/v1/collectives/{id}/invitations/{invitationID}
     method: delete
     operation_id: revokeGroupInvitation
     request_components: []
     response_components: [VillageStatusResponse]
     statuses: ["200", "400", "401", "403", "404", "500"]
-    description_anchors: [Revoke an open invitation, nothing is recorded]
+    description_anchors: [Revoke an open invitation, nothing is recorded, deleted their account, reveals nothing about the invitee]
   - path: /api/v1/users/me/invitations
     method: get
     operation_id: listMyInvitations
