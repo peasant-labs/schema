@@ -3741,6 +3741,12 @@ export const zVillageCollectiveDataAccess = z.enum([
 
 export type VillageCollectiveDataAccess = z.infer<typeof zVillageCollectiveDataAccess>;
 
+export const zVillageCollectiveInvitationRequest = z.object({
+    username: z.string().min(1)
+});
+
+export type VillageCollectiveInvitationRequest = z.infer<typeof zVillageCollectiveInvitationRequest>;
+
 export const zVillageCollectiveMemberRoleRequest = z.object({
     role: zVillageAssignableCollectiveRole
 });
@@ -3889,6 +3895,13 @@ export const zVillageMetadataUserOrganization = z.object({
 });
 
 export type VillageMetadataUserOrganization = z.infer<typeof zVillageMetadataUserOrganization>;
+
+export const zVillageNotificationEmail = z.object({
+    address: z.string().min(3).max(254),
+    verified: z.boolean()
+});
+
+export type VillageNotificationEmail = z.infer<typeof zVillageNotificationEmail>;
 
 /**
  * Village Project Name Source
@@ -4120,6 +4133,12 @@ export const zVillageReviewShareResponse = z.object({
 });
 
 export type VillageReviewShareResponse = z.infer<typeof zVillageReviewShareResponse>;
+
+export const zVillageSetNotificationEmailRequest = z.object({
+    address: z.string().min(3).max(254)
+});
+
+export type VillageSetNotificationEmailRequest = z.infer<typeof zVillageSetNotificationEmailRequest>;
 
 /**
  * Village Share Event Actor
@@ -4712,6 +4731,22 @@ export const zVillageCollectiveDetailResponse = z.object({
 
 export type VillageCollectiveDetailResponse = z.infer<typeof zVillageCollectiveDetailResponse>;
 
+export const zVillageCollectiveInvitationSent = z.object({
+    created_at: z.iso.datetime(),
+    expires_at: z.iso.datetime(),
+    id: zVillageUUID,
+    invited_by: zVillagePublicOwner,
+    invited_username: z.string().min(1)
+});
+
+export type VillageCollectiveInvitationSent = z.infer<typeof zVillageCollectiveInvitationSent>;
+
+export const zVillageCollectiveInvitationsSentResponse = z.object({
+    invitations: z.array(zVillageCollectiveInvitationSent)
+});
+
+export type VillageCollectiveInvitationsSentResponse = z.infer<typeof zVillageCollectiveInvitationsSentResponse>;
+
 export const zVillageCollectiveSearchResult = z.object({
     description: z.string().nullable(),
     id: zVillageUUID,
@@ -4777,6 +4812,25 @@ export const zVillageEnrichedTranscriptShare = z.object({
 
 export type VillageEnrichedTranscriptShare = z.infer<typeof zVillageEnrichedTranscriptShare>;
 
+export const zVillageInvitedCollective = z.object({
+    acceptance_mode: zVillageCollectiveAcceptanceMode,
+    description: z.string().nullable(),
+    id: zVillageUUID,
+    name: z.string().min(1)
+});
+
+export type VillageInvitedCollective = z.infer<typeof zVillageInvitedCollective>;
+
+export const zVillageCollectiveInvitation = z.object({
+    collective: zVillageInvitedCollective,
+    created_at: z.iso.datetime(),
+    expires_at: z.iso.datetime(),
+    id: zVillageUUID,
+    invited_by: zVillagePublicOwner
+});
+
+export type VillageCollectiveInvitation = z.infer<typeof zVillageCollectiveInvitation>;
+
 export const zVillageLinkedRepository = z.object({
     created_at: z.iso.datetime().nullable(),
     group_id: zVillageUUID,
@@ -4796,6 +4850,12 @@ export const zVillageLinkedRepositoriesResponse = z.object({
 });
 
 export type VillageLinkedRepositoriesResponse = z.infer<typeof zVillageLinkedRepositoriesResponse>;
+
+export const zVillageMyInvitationsResponse = z.object({
+    invitations: z.array(zVillageCollectiveInvitation)
+});
+
+export type VillageMyInvitationsResponse = z.infer<typeof zVillageMyInvitationsResponse>;
 
 export const zVillageOrganizationCollective = z.object({
     description: z.string().nullable(),
@@ -4970,6 +5030,7 @@ export type VillageUpdateCollectiveRequest = z.infer<typeof zVillageUpdateCollec
 
 export const zVillageUpdateUserSettingsRequest = z.object({
     auto_attach_pull_requests: z.boolean().nullish(),
+    email_invitations: z.boolean().nullish(),
     preview_before_attach: z.boolean().nullish()
 });
 
@@ -5177,6 +5238,8 @@ export type VillageGroupedContributableResponse = z.infer<typeof zVillageGrouped
 
 export const zVillageUserSettings = z.object({
     auto_attach_pull_requests: z.boolean(),
+    email_invitations: z.boolean(),
+    notification_email: zVillageNotificationEmail.nullable(),
     preview_before_attach: z.boolean()
 });
 
@@ -5191,6 +5254,12 @@ export const zVillageUserStats = z.object({
 });
 
 export type VillageUserStats = z.infer<typeof zVillageUserStats>;
+
+export const zVillageVerifyNotificationEmailRequest = z.object({
+    token: z.string().min(1)
+});
+
+export type VillageVerifyNotificationEmailRequest = z.infer<typeof zVillageVerifyNotificationEmailRequest>;
 
 export const zVillageVisibleCollective = z.object({
     acceptance_mode: zVillageCollectiveAcceptanceMode,

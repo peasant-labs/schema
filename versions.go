@@ -103,7 +103,13 @@ const (
 	// same response header, declared the frozen 0.2.0 Legacy* envelope beside
 	// the 0.3.0 one, and the version response gained pullContractMaxVersion
 	// (additive = patch bump; every 0.29.0 client reads it unchanged).
-	VillageAPIVersion = "0.29.1"
+	// Bumped to 0.30.0 when collective invitations replaced the owner's add by
+	// username: the add-member operation was removed (breaking change on a 0.x
+	// contract = minor bump), and the invitation operations, the caller's
+	// notification email operations, the one-click unsubscribe operation, and
+	// the notification email and invitation-email preference on the caller's
+	// settings were added.
+	VillageAPIVersion = "0.30.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -234,5 +240,8 @@ const (
 	// (LegacyPullTranscriptInfo, LegacyPullListResponse, LegacyPullAnnotation)
 	// entered the catalog and SchemaVersionResponse gained
 	// pullContractMaxVersion (additive = patch bump).
-	TypesVersion = "0.34.1"
+	// Bumped to 0.35.0 when the catalog dropped the add-member username
+	// request, gained the collective invitation and notification email types,
+	// and VillageUserSettings gained notification_email and email_invitations.
+	TypesVersion = "0.35.0"
 )

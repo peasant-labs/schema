@@ -136,7 +136,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/users/me/settings",
 			id:          "getMySettings",
 			tag:         "users",
-			description: "Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them.",
+			description: "Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. notification_email is the caller's own notification address with whether it is verified, or null; this is the only response that carries an email address, and only its owner receives it. email_invitations is on by default and decides whether Village emails the caller when a collective invites them, once the address is verified.",
 			response:    new(schema.VillageUserSettings),
 			errorStatuses: []int{
 				http.StatusUnauthorized,
@@ -148,7 +148,7 @@ func addVillagePullRequestOperations(r *openapi31.Reflector) error {
 			path:        "/api/v1/users/me/settings",
 			id:          "updateMySettings",
 			tag:         "users",
-			description: "Patch the caller's settings. A field that is omitted is left unchanged.",
+			description: "Patch the caller's settings. A field that is omitted is left unchanged. The notification address is set, verified, and removed through its own operations under /api/v1/users/me/email, because setting it sends mail.",
 			requests:    []interface{}{new(schema.VillageUpdateUserSettingsRequest)},
 			response:    new(schema.VillageUserSettings),
 			errorStatuses: []int{

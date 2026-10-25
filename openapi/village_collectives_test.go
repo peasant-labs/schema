@@ -18,6 +18,7 @@ type villageCollectivesOperationFixtures struct {
 	ComponentEnums    []villageComponentEnumFixture        `yaml:"component_enums"`
 	ComponentRequired []villageComponentRequiredFixture    `yaml:"component_required"`
 	ComponentProps    []villageComponentPropertyFixture    `yaml:"component_properties"`
+	RemovedOperations []villageRemovedOperationFixture     `yaml:"removed_operations"`
 	RequestBodyNames  []string                             `yaml:"request_body_names"`
 	RequestBodies     []villageRequestBodyFixture          `yaml:"request_bodies"`
 }
@@ -31,6 +32,14 @@ type villageRequestBodyFixture struct {
 	Method string         `yaml:"method"`
 	Body   map[string]any `yaml:"body"`
 	Valid  bool           `yaml:"valid"`
+}
+
+// villageRemovedOperationFixture is an operation the contract no longer
+// declares, with the reason it was removed.
+type villageRemovedOperationFixture struct {
+	Path   string `yaml:"path"`
+	Method string `yaml:"method"`
+	Reason string `yaml:"reason"`
 }
 
 type villageCollectivesOperationFixture struct {
@@ -107,6 +116,32 @@ func TestBuildVillageAPISpec_CollectivesOperations(t *testing.T) {
 			if !strings.Contains(description, anchor) {
 				t.Fatalf("%s description is missing anchor %q: %q", key, anchor, description)
 			}
+		}
+	}
+}
+
+// TestBuildVillageAPISpec_RemovedOperationsStayRemoved fails if a removed
+// operation returns under either the legacy or the canonical path.
+func TestBuildVillageAPISpec_RemovedOperationsStayRemoved(t *testing.T) {
+	fixtures := loadVillageCollectivesFixtures(t)
+	document := currentVillageSpecDocument(t)
+	if len(fixtures.RemovedOperations) == 0 {
+		t.Fatal("removed_operations is empty; the absence check would be vacuous")
+	}
+	paths, ok := document["paths"].(map[string]any)
+	if !ok {
+		t.Fatal("Village API spec declares no paths")
+	}
+	for _, removed := range fixtures.RemovedOperations {
+		if removed.Path == "" || removed.Method == "" || removed.Reason == "" {
+			t.Fatalf("removed operation fixture has a blank field: %+v", removed)
+		}
+		item, ok := paths[removed.Path].(map[string]any)
+		if !ok {
+			continue
+		}
+		if _, declared := item[removed.Method]; declared {
+			t.Errorf("%s %s was removed (%s) but the contract declares it again", strings.ToUpper(removed.Method), removed.Path, removed.Reason)
 		}
 	}
 }

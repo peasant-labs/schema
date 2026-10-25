@@ -207,6 +207,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/collectives/{id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List an owned collective's open invitations, each as the handle the inviting owner typed. Pending and declined invitations that have not expired are listed alike, with no status, so a decline is not revealed. An accepted invitation leaves the list and its person appears in the roster; a revoked or expired one leaves the list. */
+        get: operations["listGroupInvitations"];
+        put?: never;
+        /** @description Invite a person to an owned collective by username. The person becomes a member only by accepting. The answer is 202 with status invited for every username, whether no account holds it, its account is not discoverable, or it is discoverable, so inviting never confirms that an account exists. Inviting the same username again while an invitation is open is the same 202 and notifies no one. An invitation the person declined stays open to the owner, unchanged, until it expires. 409 means the person is already a member who consented; a member whose membership predates invitations may be invited again so that they can consent. An owner's invitation admits the person whatever the collective's acceptance mode, including curated and verified_only. 429 means the inviter or the collective has reached its invitation limit. */
+        post: operations["createGroupInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/collectives/{id}/invitations/{invitationID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Revoke an open invitation of an owned collective. The invitation leaves the invitee's list and nothing is recorded. 404 means the collective has no open invitation with this id. */
+        delete: operations["revokeGroupInvitation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/collectives/{id}/join": {
         parameters: {
             query?: never;
@@ -218,23 +253,6 @@ export interface paths {
         put?: never;
         /** @description Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route. */
         post: operations["joinGroup"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/collectives/{id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Add a platform user to an owned collective by username. */
-        post: operations["addGroupMember"];
         delete?: never;
         options?: never;
         head?: never;
@@ -430,6 +448,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/email/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Turn off invitation emails for the account a signed unsubscribe token names, without signing in. This is the one-click unsubscribe target (RFC 8058) that every invitation email links to; a request body, such as List-Unsubscribe=One-Click, is ignored. The token can only turn this one setting off. 400 means the token is malformed, forged, or expired. */
+        post: operations["unsubscribeInvitationEmails"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups": {
         parameters: {
             query?: never;
@@ -562,6 +597,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/groups/{id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @deprecated
+         * @description List an owned collective's open invitations, each as the handle the inviting owner typed. Pending and declined invitations that have not expired are listed alike, with no status, so a decline is not revealed. An accepted invitation leaves the list and its person appears in the roster; a revoked or expired one leaves the list.
+         */
+        get: operations["listGroupInvitationsDeprecated"];
+        put?: never;
+        /**
+         * @deprecated
+         * @description Invite a person to an owned collective by username. The person becomes a member only by accepting. The answer is 202 with status invited for every username, whether no account holds it, its account is not discoverable, or it is discoverable, so inviting never confirms that an account exists. Inviting the same username again while an invitation is open is the same 202 and notifies no one. An invitation the person declined stays open to the owner, unchanged, until it expires. 409 means the person is already a member who consented; a member whose membership predates invitations may be invited again so that they can consent. An owner's invitation admits the person whatever the collective's acceptance mode, including curated and verified_only. 429 means the inviter or the collective has reached its invitation limit.
+         */
+        post: operations["createGroupInvitationDeprecated"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/groups/{id}/invitations/{invitationID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * @deprecated
+         * @description Revoke an open invitation of an owned collective. The invitation leaves the invitee's list and nothing is recorded. 404 means the collective has no open invitation with this id.
+         */
+        delete: operations["revokeGroupInvitationDeprecated"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/groups/{id}/join": {
         parameters: {
             query?: never;
@@ -576,26 +655,6 @@ export interface paths {
          * @description Join an open or verified collective as a contributor. Curated collectives require invitation and refuse this route.
          */
         post: operations["joinGroupDeprecated"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/groups/{id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @deprecated
-         * @description Add a platform user to an owned collective by username.
-         */
-        post: operations["addGroupMemberDeprecated"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1206,6 +1265,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Set the caller's notification email address, replacing any earlier one, and email a verification token to it. The address is unverified until the token is confirmed, and Village emails invitations only to a verified address. The answer is the caller's own settings. 429 means too many verification emails were requested; 501 means this Village sends no email. */
+        put: operations["setMyNotificationEmail"];
+        post?: never;
+        /** @description Remove the caller's notification email address. Village keeps no copy of it. The answer is the caller's own settings. */
+        delete: operations["removeMyNotificationEmail"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/email/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Confirm the caller's notification email address with the token Village emailed to it. The token is bound to the caller's account and to that address, so it confirms nothing for anyone else. 400 means the token is wrong, expired, or for an address the caller has since replaced; the answer does not say which. The answer is the caller's own settings. */
+        post: operations["verifyMyNotificationEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List the caller's own pending invitations that have not expired, each with the collective's summary and the inviting owner as the caller may see them. The summary is disclosed even for a collective visible only to its members. Another person's invitations are never listed. */
+        get: operations["listMyInvitations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/invitations/{invitationID}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Accept one of the caller's pending invitations and join the collective as a member. Accepting is consent: the collective's owners may then see the caller's profile, while other members still see the caller as anonymous. Accepting when the caller is already a member who consented joins nothing new and answers 200. 404 means the caller holds no pending, unexpired invitation with this id, including one addressed to someone else. The operation takes no body; a later choice made at the moment of joining, such as how the caller is credited, would be an optional body. */
+        post: operations["acceptMyInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/me/invitations/{invitationID}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Decline one of the caller's pending invitations. The owners are not told: the invitation stays in their list unchanged until it expires, and inviting the caller again from the same collective before then notifies no one. 404 means the caller holds no pending, unexpired invitation with this id, including one addressed to someone else. */
+        post: operations["declineMyInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me/prompt-requests": {
         parameters: {
             query?: never;
@@ -1230,14 +1375,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. */
+        /** @description Read the caller's settings, including preview_before_attach and auto_attach_pull_requests. auto_attach_pull_requests is off by default; when on, Village links the caller's transcripts that trace a pull request's commits when the pull request opens in a repository one of the caller's collectives links, and never changes who can read them. notification_email is the caller's own notification address with whether it is verified, or null; this is the only response that carries an email address, and only its owner receives it. email_invitations is on by default and decides whether Village emails the caller when a collective invites them, once the address is verified. */
         get: operations["getMySettings"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Patch the caller's settings. A field that is omitted is left unchanged. */
+        /** @description Patch the caller's settings. A field that is omitted is left unchanged. The notification address is set, verified, and removed through its own operations under /api/v1/users/me/email, because setting it sends mail. */
         patch: operations["updateMySettings"];
         trace?: never;
     };
@@ -1810,9 +1955,12 @@ export interface components {
         SchemaVillageCollectiveDataAccess: Schema.VillageCollectiveDataAccess;
         SchemaVillageCollectiveDetailRecord: Schema.VillageCollectiveDetailRecord;
         SchemaVillageCollectiveDetailResponse: Schema.VillageCollectiveDetailResponse;
+        SchemaVillageCollectiveInvitation: Schema.VillageCollectiveInvitation;
+        SchemaVillageCollectiveInvitationRequest: Schema.VillageCollectiveInvitationRequest;
+        SchemaVillageCollectiveInvitationSent: Schema.VillageCollectiveInvitationSent;
+        SchemaVillageCollectiveInvitationsSentResponse: Schema.VillageCollectiveInvitationsSentResponse;
         SchemaVillageCollectiveMember: Schema.VillageCollectiveMember;
         SchemaVillageCollectiveMemberRoleRequest: Schema.VillageCollectiveMemberRoleRequest;
-        SchemaVillageCollectiveMemberUsernameRequest: Schema.VillageCollectiveMemberUsernameRequest;
         SchemaVillageCollectiveModelBreakdown: Schema.VillageCollectiveModelBreakdown;
         /**
          * Village Group Role
@@ -1869,12 +2017,15 @@ export interface components {
         SchemaVillageGroupedCollectiveDetailResponse: Schema.VillageGroupedCollectiveDetailResponse;
         SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
         SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
+        SchemaVillageInvitedCollective: Schema.VillageInvitedCollective;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
         SchemaVillageLinkedRepositoriesResponse: Schema.VillageLinkedRepositoriesResponse;
         SchemaVillageLinkedRepository: Schema.VillageLinkedRepository;
         SchemaVillageListTranscriptAttestation: Schema.VillageListTranscriptAttestation;
         SchemaVillageListUserOrganization: Schema.VillageListUserOrganization;
         SchemaVillageMetadataUserOrganization: Schema.VillageMetadataUserOrganization;
+        SchemaVillageMyInvitationsResponse: Schema.VillageMyInvitationsResponse;
+        SchemaVillageNotificationEmail: Schema.VillageNotificationEmail;
         SchemaVillageOrganizationCollective: Schema.VillageOrganizationCollective;
         SchemaVillageOrganizationCollectivesResponse: Schema.VillageOrganizationCollectivesResponse;
         SchemaVillagePendingShare: Schema.VillagePendingShare;
@@ -1937,6 +2088,7 @@ export interface components {
         SchemaVillageSessionListItem: Schema.VillageSessionListItem;
         SchemaVillageSessionListPayload: Schema.VillageSessionListPayload;
         SchemaVillageSessionRow: Schema.VillageSessionRow;
+        SchemaVillageSetNotificationEmailRequest: Schema.VillageSetNotificationEmailRequest;
         SchemaVillageShareEvent: Schema.VillageShareEvent;
         /**
          * Village Share Event Actor
@@ -2003,6 +2155,7 @@ export interface components {
         SchemaVillageUserCollectiveShare: Schema.VillageUserCollectiveShare;
         SchemaVillageUserSettings: Schema.VillageUserSettings;
         SchemaVillageUserStats: Schema.VillageUserStats;
+        SchemaVillageVerifyNotificationEmailRequest: Schema.VillageVerifyNotificationEmailRequest;
         SchemaVillageVisibleCollective: Schema.VillageVisibleCollective;
         /**
          * Visibility
@@ -2640,6 +2793,216 @@ export interface operations {
             };
         };
     };
+    listGroupInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveInvitationsSentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createGroupInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCollectiveInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeGroupInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Invitation identifier */
+                invitationID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     joinGroup: {
         parameters: {
             query?: never;
@@ -2699,78 +3062,6 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-        };
-    };
-    addGroupMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Collective identifier */
-                id: components["schemas"]["SchemaVillageUUID"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SchemaVillageCollectiveMemberUsernameRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3683,6 +3974,47 @@ export interface operations {
             };
         };
     };
+    unsubscribeInvitationEmails: {
+        parameters: {
+            query: {
+                /** @description The signed token from the email's unsubscribe link */
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     listGroupsDeprecated: {
         parameters: {
             query?: never;
@@ -4119,6 +4451,216 @@ export interface operations {
             };
         };
     };
+    listGroupInvitationsDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveInvitationsSentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    createGroupInvitationDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageCollectiveInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeGroupInvitationDeprecated: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Collective identifier */
+                id: components["schemas"]["SchemaVillageUUID"];
+                /** @description Invitation identifier */
+                invitationID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     joinGroupDeprecated: {
         parameters: {
             query?: never;
@@ -4178,78 +4720,6 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-        };
-    };
-    addGroupMemberDeprecated: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Collective identifier */
-                id: components["schemas"]["SchemaVillageUUID"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SchemaVillageCollectiveMemberUsernameRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6378,6 +6848,320 @@ export interface operations {
                 };
                 content: {
                     "application/json": null | components["schemas"]["SchemaVillageShareEvent"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    setMyNotificationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageSetNotificationEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Implemented */
+            501: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    removeMyNotificationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserSettings"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    verifyMyNotificationEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaVillageVerifyNotificationEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageUserSettings"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyInvitations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageMyInvitationsResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    acceptMyInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Invitation identifier */
+                invitationID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageCollectiveStatusRoleResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    declineMyInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Invitation identifier */
+                invitationID: components["schemas"]["SchemaVillageUUID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageStatusResponse"];
                 };
             };
             /** @description Bad Request */

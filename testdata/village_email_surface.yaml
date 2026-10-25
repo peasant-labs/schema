@@ -1,0 +1,23 @@
+# Where an email address may appear in a response. A person's notification
+# address is personal contact data: only that person's own settings carry it.
+# The guard walks every operation's response in each served spec and fails
+# when a response outside self_operations reaches the address component or
+# declares a property whose name contains "email" that is not exempt below.
+address_component: SchemaVillageNotificationEmail
+specs:
+  village:
+    # The caller's own settings and the operations that change the address
+    # return VillageUserSettings to the caller alone.
+    self_operations:
+      - getMySettings
+      - updateMySettings
+      - setMyNotificationEmail
+      - removeMyNotificationEmail
+      - verifyMyNotificationEmail
+    # Properties named like an email that are not an account's contact
+    # address, each with the reason it may reach other viewers.
+    exempt_properties:
+      SchemaVillageRepositoryCommit.author_email: a git commit's author email in a linked repository's history, read from GitHub, not a Village account's address
+  local:
+    self_operations: []
+    exempt_properties: {}

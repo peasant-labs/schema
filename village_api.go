@@ -440,6 +440,12 @@ type VillageRemoveCollectiveMemberResponse struct {
 	Retracted bool   `json:"retracted"`
 }
 
+// VillageCollectiveMemberUsernameRequest was the body of the removed owner
+// add-member operation.
+//
+// Deprecated: no operation accepts it. An owner invites a person with
+// VillageCollectiveInvitationRequest instead. It stays exported, with its
+// deprecated alias, for the released alias window.
 type VillageCollectiveMemberUsernameRequest struct {
 	Username string `json:"username"`
 }

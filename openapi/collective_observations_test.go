@@ -40,7 +40,7 @@ func loadObservationRoutes(t *testing.T) observationRoutes {
 	}
 	assertSameStringSet(t, "observation route manifest", names, f.RequiredNames)
 	assertSameStringSet(t, "required observation routes", f.RequiredNames, strings.Fields("offline-catalog bounded-evidence metadata-only-fetch explicit-track offline-untrack"))
-	assertSameStringSet(t, "required compatibility operations", f.AliasOperations, strings.Fields("searchCollectives listPublicGroups createGroup listGroups listVisibleGroups getGroup updateGroup deleteGroup joinGroup addGroupMember updateGroupMemberRole removeGroupMember listContributableTranscripts batchShareProject listPendingShares listMyGroupShares batchReviewShares reviewShare removeGroupTranscript listGroupRepositories linkGroupRepository listAvailableGroupRepositories unlinkGroupRepository listGroupRepositoryCommits"))
+	assertSameStringSet(t, "required compatibility operations", f.AliasOperations, strings.Fields("searchCollectives listPublicGroups createGroup listGroups listVisibleGroups getGroup updateGroup deleteGroup joinGroup updateGroupMemberRole removeGroupMember listContributableTranscripts batchShareProject listPendingShares listMyGroupShares batchReviewShares reviewShare removeGroupTranscript listGroupRepositories linkGroupRepository listAvailableGroupRepositories unlinkGroupRepository listGroupRepositoryCommits createGroupInvitation listGroupInvitations revokeGroupInvitation"))
 	return f
 }
 func TestCollectiveObservationRoutes(t *testing.T) {

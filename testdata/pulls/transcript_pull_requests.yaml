@@ -51,19 +51,19 @@ operations:
     response: VillageUserSettings
 cases:
   - name: settings-auto-attach-off-valid
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, auto_attach_pull_requests: false, notification_email: null, email_invitations: true}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "automatic linking is off by default"}
     mutation: {description: "the default setting"}
   - name: settings-auto-attach-on-valid
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: false, auto_attach_pull_requests: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: false, auto_attach_pull_requests: true, notification_email: null, email_invitations: true}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "each author decides for their own transcripts"}
     mutation: {description: "the author turned automatic linking on"}
   - name: settings-missing-auto-attach-rejected
-    input: {schema: VillageUserSettings, payload: {preview_before_attach: true}}
+    input: {schema: VillageUserSettings, payload: {preview_before_attach: true, notification_email: null, email_invitations: true}}
     expected: {valid: false, rejected_by: shape, go_rejects: false}
     classification: must-fail
     provenance: {source: requirement, ref: "the server holds the value, so it always states it"}

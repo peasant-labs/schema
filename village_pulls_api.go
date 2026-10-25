@@ -151,16 +151,35 @@ type VillagePromptRequestsResponse struct {
 // to a pull request automatically when it opens in a repository one of their
 // collectives links. It is off by default and never changes who can read a
 // transcript.
+//
+// NotificationEmail is the caller's own notification address, or null when
+// they have given none. It is the only response in the contract that carries
+// an email address, and only its owner receives it. EmailInvitations is the
+// caller's choice to be emailed when a collective invites them; it is on by
+// default and takes effect only once the address is verified. The one-click
+// unsubscribe link in an invitation email turns it off.
 type VillageUserSettings struct {
-	PreviewBeforeAttach    bool `json:"preview_before_attach"`
-	AutoAttachPullRequests bool `json:"auto_attach_pull_requests"`
+	PreviewBeforeAttach    bool                      `json:"preview_before_attach"`
+	AutoAttachPullRequests bool                      `json:"auto_attach_pull_requests"`
+	NotificationEmail      *VillageNotificationEmail `json:"notification_email"`
+	EmailInvitations       bool                      `json:"email_invitations"`
+}
+
+// Validate refuses settings a producer must not emit.
+func (s VillageUserSettings) Validate() error {
+	if s.NotificationEmail != nil {
+		return s.NotificationEmail.Validate()
+	}
+	return nil
 }
 
 // VillageUpdateUserSettingsRequest patches the caller's settings. An omitted
-// field is left unchanged.
+// field is left unchanged. The notification address itself is set, verified,
+// and removed through its own operations, because setting it sends mail.
 type VillageUpdateUserSettingsRequest struct {
 	PreviewBeforeAttach    *bool `json:"preview_before_attach,omitempty"`
 	AutoAttachPullRequests *bool `json:"auto_attach_pull_requests,omitempty"`
+	EmailInvitations       *bool `json:"email_invitations,omitempty"`
 }
 
 // VillageTranscriptPullRequest is one pull request that includes a transcript,
