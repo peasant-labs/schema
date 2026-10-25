@@ -1,4 +1,4 @@
-required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, empty-token]
+required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, outside-ingestion-selection-published-row-visible, outside-ingestion-selection-auto-publish-rejected, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, empty-token]
 operations:
   - api: local
     method: get
@@ -89,6 +89,18 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "the saved ingestion selection never narrows a stored read"}
     mutation: {description: "keeps a stored row whose session the ingestion and push selection leaves out"}
+  - name: outside-ingestion-selection-published-row-visible
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {sessionId: local-a, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://example.test/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-10-12T10:00:00Z", autoPublish: false, outsideSelection: true}}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a published session outside the saved selection is still listed"}
+    mutation: {description: "keeps the published row shape with its truthy outsideSelection"}
+  - name: outside-ingestion-selection-auto-publish-rejected
+    input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {sessionId: local-a, state: unpublished, autoPublish: true, outsideSelection: true}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: leaves the session out}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an upload hook the selection excludes publishes nothing"}
+    mutation: {description: "reports auto-publish on for a home row whose ingestion and push selection leaves it out"}
   - name: audience-on-page
     input: {schema: LocalSyncSessionRow, payload: {<<: *row, publication: {sessionId: local-a, state: published, transcriptId: 3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a, transcriptUrl: "https://example.test/transcripts/3f9c1d2e-4b5a-4c6d-8e7f-90a1b2c3e21a", publishedAt: "2026-10-12T10:00:00Z", autoPublish: false, outsideSelection: false, audience: []}}}
     expected: {valid: false, rejected_by: semantics, error_contains: audience}

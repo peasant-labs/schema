@@ -161,7 +161,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). Every count covers every session this computer has stored; the saved ingestion selection never narrows this read. */
+        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every eligible stored session: the saved ingestion selection never narrows it. Independent origin, index-readiness, and account rules still apply; recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings. */
         get: operations["listProjectSummaries"];
         put?: never;
         post?: never;
@@ -246,7 +246,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never narrows the result set: every stored entry is searchable. */
+        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. Independent origin and index-readiness rules still apply. */
         get: operations["searchMessages"];
         put?: never;
         post?: never;
@@ -263,7 +263,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List authorized saved helper sessions within the originating grouped query scope. */
+        /** @description List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. Account, origin, index-readiness, parent, and group-scope integrity still apply. */
         get: operations["listLocalHelperGroupMembers"];
         put?: never;
         post?: never;
@@ -297,7 +297,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List session summaries. The saved ingestion selection never narrows this read: every session this computer has stored is listed, whether or not that selection would admit it to a future ingest. */
+        /** @description List session summaries. The saved ingestion selection never narrows this read: a stored session is not withheld because that selection would leave it out of a future ingest. Independent origin, index-readiness, query, and account rules still apply, so the list holds every eligible stored session. */
         get: operations["listSessions"];
         put?: never;
         post?: never;
@@ -314,7 +314,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get session detail by ID. The saved ingestion selection never narrows a by-id read: a session this computer has stored resolves here whether or not that selection would admit it to a future ingest. */
+        /** @description Get session detail by ID. The saved ingestion selection never refuses a stored session here: a session this computer has stored is not refused because that selection would leave it out of a future ingest. */
         get: operations["getSession"];
         put?: never;
         post?: never;
@@ -365,7 +365,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the flat additive session transcript by ID. The saved ingestion selection never narrows a by-id read: a session this computer has stored resolves here whether or not that selection would admit it to a future ingest. */
+        /** @description Get the flat additive session transcript by ID. The saved ingestion selection never refuses a stored session here: a session this computer has stored is not refused because that selection would leave it out of a future ingest. */
         get: operations["getSessionTranscript"];
         put?: never;
         post?: never;
@@ -537,7 +537,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection narrows neither a view nor a page: every stored root, child, and project option is returned whether or not that selection would admit the session to a future ingest, so counts, empty states, and continuation follow the stored library alone. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots. Store failures return 500 and unavailable readers 503, never empty success. */
+        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection narrows neither a view nor a page: it excludes no root, child, or project option that the view's own eligibility rules admit, and it changes no count or empty state. Independent origin, index-readiness, publication, project, and parent rules still apply before paging. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. A token's scope is the view, the parent, the root filters, and the page size it was issued under; the saved ingestion selection is not part of that scope, so changing it leaves an in-flight continuation valid. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success. */
         get: operations["listSyncSessionsGrouped"];
         put?: never;
         post?: never;
@@ -2654,6 +2654,7 @@ export interface operations {
                 pageToken?: string;
                 parentSessionId?: string;
                 projectHash?: components["schemas"]["SchemaProjectHash"];
+                /** @description Root publication filter; auto uses the canonical live hook decision. This is an explicit publication filter, not selection scope */
                 publication?: components["schemas"]["SchemaLocalSyncPublicationFilter"];
             };
             header?: never;

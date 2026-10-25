@@ -35,7 +35,7 @@ type LocalSyncSessionsQuery struct {
 	PageToken       *PageToken                  `query:"pageToken" nullable:"false" maxLength:"4096" description:"Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected"`
 	ParentSessionID *string                     `query:"parentSessionId" nullable:"false" minLength:"1"`
 	ProjectHash     *ProjectHash                `query:"projectHash" nullable:"false"`
-	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all"`
+	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all" description:"Root publication filter; auto uses the canonical live hook decision. This is an explicit publication filter, not selection scope"`
 }
 
 func (q LocalSyncSessionsQuery) Validate() error {

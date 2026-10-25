@@ -35,7 +35,7 @@ by_id_operation:
   description_anchors:
     - {name: resolves_links, text: "resolves links"}
     - {name: no_origin_scope, text: "NEITHER origin scope"}
-    - {name: no_selection_scope, text: "the saved ingestion selection never narrows a stored read"}
+    - {name: no_selection_scope, text: "NOR the saved ingestion selection"}
     - {name: unknown_identifier_omitted, text: "omitted from the response rather than failing the batch"}
 
 validities:

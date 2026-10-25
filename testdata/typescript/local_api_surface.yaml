@@ -14,20 +14,43 @@ operations:
   - {path: "/api/v1/map/{projectHash}/node", method: get, operation_id: getMapNodeDetail}
   - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}
   - {path: /api/v1/projects/resolve, method: get, operation_id: resolveProject}
-  - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries}
+  - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries,
+     description_anchors: [{name: eligible_session_count, text: "The sessions count covers every eligible stored session"}]}
   - {path: "/api/v1/review/{projectHash}", method: get, operation_id: listReviewChanges}
   - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
   - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}
-  - {path: /api/v1/search, method: get, operation_id: searchMessages}
-  - {path: /api/v1/session-summaries, method: get, operation_id: getSessionSummariesByID}
-  - {path: "/api/v1/session-groups/{groupId}/members", method: get, operation_id: listLocalHelperGroupMembers}
-  - {path: /api/v1/sessions, method: get, operation_id: listSessions}
+  - {path: /api/v1/search, method: get, operation_id: searchMessages,
+     description_anchors: [{name: indexed_search_match, text: "The saved ingestion selection never excludes an indexed entry that matches the query"}]}
+  - path: /api/v1/session-summaries
+    method: get
+    operation_id: getSessionSummariesByID
+    description_anchors:
+      - {name: summaries_stored_read_not_narrowed, text: "the saved ingestion selection never narrows a stored read"}
+  - path: "/api/v1/session-groups/{groupId}/members"
+    method: get
+    operation_id: listLocalHelperGroupMembers
+    description_anchors:
+      - {name: member_scope_excludes_ingestion_selection, text: "the saved ingestion selection is not part of it"}
+  - path: /api/v1/sessions
+    method: get
+    operation_id: listSessions
+    description_anchors:
+      - {name: no_ingestion_browse_filter, text: "The saved ingestion selection never narrows this read"}
+      - {name: list_independent_bounds, text: "Independent origin, index-readiness, query, and account rules still apply"}
   - {path: "/api/v1/sessions/{id}", method: get, operation_id: getSession}
   - {path: "/api/v1/sessions/{id}/commits", method: get, operation_id: getSessionCommits}
   - {path: "/api/v1/sessions/{id}/pull-requests", method: get, operation_id: getSessionPullRequests}
   - {path: "/api/v1/sessions/{id}/transcript", method: get, operation_id: getSessionTranscript}
   - {path: /api/v1/shutdown, method: post, operation_id: postShutdown}
-  - {path: /api/v1/sync/sessions, method: get, operation_id: listSyncSessionsGrouped}
+  - path: /api/v1/sync/sessions
+    method: get
+    operation_id: listSyncSessionsGrouped
+    description_anchors:
+      - {name: home_no_ingestion_browse_filter, text: "The saved ingestion selection narrows neither a view nor a page"}
+      - {name: home_independent_bounds, text: "Independent origin, index-readiness, publication, project, and parent rules still apply"}
+      - {name: unknown_parent_only_404, text: "Unknown parents return 404"}
+      - {name: token_scope_excludes_ingestion_selection, text: "the saved ingestion selection is not part of that scope"}
+      - {name: publication_metadata_fails_closed, text: "when that metadata cannot be determined the read returns 500"}
   - {path: /api/v1/publications, method: get, operation_id: listPublications}
   - {path: /api/v1/settings, method: get, operation_id: getSettings}
   - {path: /api/v1/settings, method: patch, operation_id: updateSetting}
