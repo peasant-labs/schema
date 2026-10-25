@@ -89,7 +89,16 @@ const (
 	// diagnostics_warnings as bare strings: publication carries structured
 	// DiagnosticEntry objects, so the declared read shape could never describe a
 	// stored row (corrective type change = minor bump on a 0.x contract).
-	VillageAPIVersion = "0.28.0"
+	// Bumped to 0.29.0 when every response that shows a person to another
+	// viewer adopted VillagePublicOwner (a profile or anonymous, resolved by
+	// the server per viewer) in place of the whole VillageUser, owner ids,
+	// usernames, avatars, and discoverable flags; the pull envelope moved to
+	// pull contract 0.3.0 with it, attesters, pull request authors and
+	// requesters, collective creators, and repository linkers adopted it too,
+	// and transcript rows gained the server-resolved parent_transcript_id
+	// and made their repository fields nullable, withheld beside an anonymous
+	// owner (breaking change on a 0.x contract = minor bump).
+	VillageAPIVersion = "0.29.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -140,7 +149,9 @@ const (
 	// Bumped to 0.20.0 for forward sync pages and metadata-only project options.
 	// Bumped to 0.21.0 for independent account-scoped collective observations
 	// and bounded contribution evidence, retaining the forward sync views.
-	PeasantLocalAPIVersion = "0.21.0"
+	// Bumped to 0.22.0 when the embedded VillageUserCollective replaced its
+	// created_by account id with the creator as a VillagePublicOwner.
+	PeasantLocalAPIVersion = "0.22.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -210,5 +221,9 @@ const (
 	// Bumped to 0.33.0 when the catalog's Village transcript metadata adopted
 	// structured DiagnosticEntry diagnostics warnings instead of bare strings,
 	// matching what publication carries and Village stores.
-	TypesVersion = "0.33.0"
+	// Bumped to 0.34.0 when VillagePublicOwner and its kind entered the
+	// catalog and the catalog's Village rows and pull envelope adopted it in
+	// place of owner ids, usernames, avatars, and the whole VillageUser, and
+	// the catalog's Village transcript rows gained parent_transcript_id.
+	TypesVersion = "0.34.0"
 )

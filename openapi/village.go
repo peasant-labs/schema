@@ -292,8 +292,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		ID string `path:"id"`
 	}))
 	pullMetaOC.AddRespStructure(new(schema.PullTranscriptInfo))
-	pullMetaOC.SetDescription("Get a pullable transcript's metadata (owner, visibility, " +
-		"server-computed content_hash, push contract version). 404 (not 403) when not pullable.")
+	pullMetaOC.SetDescription("Get a pullable transcript's metadata (the owner as the caller may see them, " +
+		"visibility, server-computed content_hash, push contract version). The server resolves the owner per " +
+		"viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable.")
 	pullMetaOC.SetID("getPullTranscript")
 	pullMetaOC.SetTags("pull")
 	if err := r.AddOperation(pullMetaOC); err != nil {
@@ -319,7 +320,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 
 	// GET /api/v1/pull/transcripts/{id}/annotations — PullAnnotation rows with
-	// author identity (users join on annotations.owner_id).
+	// the author as the caller may see them.
 	pullAnnotOC, err := r.NewOperationContext(http.MethodGet, "/api/v1/pull/transcripts/{id}/annotations")
 	if err != nil {
 		return nil, fmt.Errorf("new pull annotations operation: %w", err)
@@ -329,7 +330,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}))
 	pullAnnotOC.AddRespStructure(new([]schema.PullAnnotation))
 	pullAnnotOC.SetDescription("List a transcript's annotations as PullAnnotation rows (AnnotationSummary " +
-		"plus author identity), so pulled annotations can be foreign-marked and own-authored rows excluded.")
+		"plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows " +
+		"carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id " +
+		"with the caller's account; an anonymous author is never the caller and is foreign-marked.")
 	pullAnnotOC.SetID("getPullTranscriptAnnotations")
 	pullAnnotOC.SetTags("pull")
 	if err := r.AddOperation(pullAnnotOC); err != nil {
@@ -432,12 +435,12 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
 		Page     int                  `query:"page"`
 		Limit    int                  `query:"limit"`
-		Query    string               `query:"q"`
+		Query    string               `query:"q" description:"Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched."`
 		Provider string               `query:"provider"`
-		Owner    string               `query:"owner"`
-		Project  string               `query:"project"`
-		Repo     string               `query:"repo"`
-		Org      string               `query:"org"`
+		Owner    string               `query:"owner" description:"Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
+		Project  string               `query:"project" description:"Project filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches."`
+		Repo     string               `query:"repo" description:"Repository filter. Matches only rows whose repository this viewer may see; a transcript whose owner is anonymous to this viewer never matches."`
+		Org      string               `query:"org" description:"Organization filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
 		Tags     string               `query:"tags"`
 		Origin   schema.SessionOrigin `query:"origin"`
 		Sort     string               `query:"sort"`
@@ -482,7 +485,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		})}, response: new(schema.VillageOrganizationCollectivesResponse), errorStatuses: []int{400, 404, 500}},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts", id: "listTranscripts", tag: "transcripts",
-			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array.",
+			description: "List authorized transcripts using the existing global, recent, explore, profile, project, and search filters. view=grouped returns grouped list items; omitting view preserves the flat transcript array. The owner and org filters match only transcripts whose owner this viewer may see as a profile: a person shown to this viewer as anonymous never matches a username or an organization filter, so a filter cannot reveal who an anonymous owner is.",
 			requests:    []interface{}{transcriptListQuery}, responseAlternatives: []interface{}{new(schema.VillageTranscriptListResponse), new(schema.VillageSessionListPayload)},
 			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
 		},
@@ -494,7 +497,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}/content", id: "getTranscriptContent", tag: "transcripts",
-			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation.",
+			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
 		},

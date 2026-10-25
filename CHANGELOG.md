@@ -3,6 +3,143 @@
 All notable changes to the `github.com/peasant-labs/schema` contract module are
 documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+
+- **Breaking:** a response that shows a person to another viewer no longer
+  carries that person's account. Every reference to a person that another
+  viewer can receive is a `VillagePublicOwner`. Village API 0.29.0, Types
+  0.34.0 and Local API 0.22.0 add it as a union on `kind`:
+  - `{"kind":"profile","id","username","display_name","avatar_url"}`;
+  - `{"kind":"anonymous"}`, with no other field and no id, because a stable
+    id would link one anonymous person's transcripts.
+
+  The server resolves anonymity for each viewer, and a viewer always sees
+  their own profile. Consumers render what they receive and never re-derive
+  the rule; `IsAccount(viewerID)` is the own-transcript check in Go, and
+  `owner.kind === "profile" && owner.id === viewerId` in TypeScript.
+- Readers treat a `kind` they do not know as anonymous and keep no field from
+  it. The Go decoder returns `AnonymousVillageOwner()` and the generated
+  `zVillagePublicOwner` returns `{kind: "anonymous"}`, so a decoded value
+  always re-encodes and a later kind (for example an organization credit) is
+  an additive change.
+- Fields replaced by `VillagePublicOwner`:
+  - `VillageTranscriptMetadataResponse.owner` and
+    `VillageTranscriptListRow.owner`: were the whole `VillageUser`.
+  - `VillageCollectiveTranscript`: `owner_id`, `owner_username`,
+    `owner_avatar_url` and `owner_is_discoverable` become `owner`.
+  - `VillagePendingShare`: `owner_id`, `owner_username` and
+    `owner_is_discoverable` become `owner`.
+  - `VillageUserCollectiveShare`: `owner_id` becomes `owner`.
+  - `VillageTranscript`: `owner_id` is removed. The owner sits beside the
+    transcript instead: `VillageSessionRow.owner` (new, required), and the
+    metadata and list-row `owner`. A route arm's `owner` must equal the row's.
+  - `VillageCollectiveMember`: `id`, `github_username`, `display_name` and
+    `avatar_url` become `member`.
+  - `VillageCollectiveContributor`: `id`, `github_username` and `avatar_url`
+    become `contributor`.
+  - `VillageListUserOrganization.user_id` is removed.
+  - `VillageTranscriptAttestation`: `attester_username` and `attester_avatar`
+    become `attester`, so an anonymous owner who attests their own transcript
+    is not named beside their anonymous `owner`.
+  - `VillagePullRequestAttachment`: `author_user_id` becomes `author`, and
+    `requested_by_github_id` becomes `requested_by` (null when no request was
+    recorded). A requester without a Village account is anonymous, like a
+    hidden one, so the shape does not reveal who has an account.
+  - `created_by` becomes `creator` on `VillageCollective`,
+    `VillageCollectiveDetailRecord`, `VillageUserCollective` and
+    `VillageVisibleCollective`. `VillageUserCollective` is embedded in the
+    Local API collectives proxy, so Local API moves to 0.22.0.
+  - `VillageLinkedRepository.linked_by` changes from an account id to a
+    `VillagePublicOwner`.
+- `owner_orgs` and a member's `github_orgs` are empty when the person is
+  anonymous, because an organization login can identify them. `Validate`
+  refuses a response that breaks this.
+- `GET /api/v1/auth/me` still returns the complete `VillageUser`, and the CLI
+  sign-in exchange still returns the caller's own user id; both are the
+  caller's own record.
+- A transcript whose owner is anonymous to the viewer carries none of its
+  repository identity. These fields are now nullable, always present, and
+  null when the owner is anonymous or the value was not recorded:
+  - `VillageTranscript` and `VillageCollectiveTranscript`: `git_branch`,
+    `git_remote`, `project_hash`, `project_name`, `project_display_name`,
+    `project_name_source` and `project_remote_label`;
+  - `VillagePendingShare`: `project_hash`, `project_name` and `branch`;
+  - `PullTranscriptInfo.projectName` is omitted. It is now a `*string` in Go,
+    so an explicit empty string is distinguishable from an omitted field.
+
+  At the only redaction level peasant offers, a git remote is not redacted
+  and peasant sends the remote and its `host:owner/repo` label by default. A
+  personal repository therefore named its owner beside `owner: {kind:
+  "anonymous"}`. The project hash is withheld too because it links one
+  person's transcripts. Go `Validate` and the generated Zod refuse any of these
+  fields beside an anonymous owner, on metadata, list rows, grouped session
+  rows, and the collective, pending and pull rows. Withheld means null or
+  absent: an empty string is a value and is refused in both languages.
+  `VillageWithheldRepositoryFields` returns the Go lists, and a test holds
+  them equal to `testdata/village_public_owner.yaml`, the file the
+  TypeScript generator reads. The caller's own contributable rows
+  keep their repository fields, because the caller is never anonymous to
+  themselves. A later per-user choice (polyrepo#43) may let an anonymous owner
+  show their repository.
+- The same rule covers responses that carry no owner, so nothing in this
+  module can pair the two and Village enforces it on the server:
+  - `GET /api/v1/transcripts/{id}/content` serves `sessionDetail` without
+    `project`, `workingDirectory`, `gitBranch`, `gitRemote` or any
+    `childSessions[].project` when the owner is anonymous to the viewer. Text
+    inside the conversation is content and is not covered.
+    `SessionDetailPayload` keeps its Local API meaning.
+  - `PullAnnotation` leaves the embedded `targetProjectHash` and
+    `targetFilePath` absent when the annotated transcript's owner is
+    anonymous to the caller. `AnnotationSummary` keeps its Local API meaning.
+  - The `project`, `repo` and `q` filters on `GET /api/v1/transcripts` match
+    only rows whose repository this viewer may see.
+- Pull request references stay public by design. A pull request the owner
+  attached is shown even when the owner is anonymous, because attaching is
+  the owner's own act and the pull request is public on GitHub. This is
+  documented on `VillagePullRequestRef`, the `pull_requests` summaries and
+  `GET /api/v1/transcripts/{id}/pulls`. The per-transcript credit choice
+  (polyrepo#43) may revisit it.
+- The `owner` and `org` filters on `GET /api/v1/transcripts` match only owners
+  this viewer may see as a profile, so a filter cannot reveal who an anonymous
+  owner is. Village enforces it; the operation now documents it.
+
+### Added
+
+- `parent_transcript_id` (nullable, always present) on `VillageTranscript`,
+  `VillageCollectiveTranscript`, `VillagePendingShare` and
+  `VillageUserCollectiveShare`. Readers used to fold a child session under
+  its parent by matching `parent_session_id` against `local_id` within one
+  `owner_id`, because a session id is unique only per owner. With no owner id
+  on the wire for an anonymous owner, the server now resolves the parent
+  itself: at read time it looks up the transcript published from
+  `parent_session_id` within the same owner, and sends its transcript id.
+  It sends null when nothing started the session, the parent is not
+  published, or this viewer may not read it, so the field never discloses a
+  transcript the viewer cannot open. This adds no stored state and needs no
+  migration. A route arm mirrors the row's value, and a value without a
+  `parent_session_id`, or one naming the row itself, is refused.
+- **Pull envelope 0.3.0 (breaking):** `PullTranscriptInfo.ownerUserId` and
+  `ownerUsername` become `owner`, and `PullAnnotation.authorUserId` and
+  `authorUsername` become `author`, both `VillagePublicOwner`.
+  - The negotiated pull window constants live in Village and peasant, not in
+    this module. A Village that serves this envelope must advertise
+    `pullContractVersion` 0.3.0 and raise `minPullContractVersion` to 0.3.0.
+    A pull request does not say which envelope the client reads, so Village
+    cannot keep serving the 0.2.0 shape to older CLIs without leaking the
+    identity it now hides.
+  - **Consequence for older CLIs:** every released peasant CLI negotiates
+    pull contract 0.2.0. Once Village advertises [0.3.0, 0.3.0], those CLIs
+    stop pulling with the existing "pull-contract incompatible" error and its
+    upgrade instruction. Publishing, `/auth/me` and every other route keep
+    working. A peasant release on pull contract 0.3.0 must ship before, or
+    together with, the Village deploy.
+  - **Peasant must change when it re-pins.** It reads the pull envelope, not
+    only `/auth/me`: its pull, refresh and install code and its test doubles
+    use the removed owner and author fields and stop compiling until they
+    move to `owner`, `author` and `IsAccount`.
+
 ## [v0.32.0] - 2026-10-24
 
 ### Fixed
@@ -18,7 +155,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   with a 500. A null warning list is still allowed; a bare string is now
   refused by the same shape that refuses it on the publish contract.
 
-## [Unreleased]
+## [v0.31.1] - 2026-10-24
 
 ### Fixed
 
@@ -30,22 +167,6 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   still require their decision time, a pending attempt still requires null, and
   a pending-to-terminal reconciliation still requires a newly recorded
   decision time. The declared wire shape is unchanged.
-
-### Added
-
-- Durable child identity on the local session lists. Local API 0.18.0 and
-  Types 0.29.0 declare:
-  - `SessionSummary.parentUnresolved` (optional boolean): marks a known
-    spawned child whose parent cannot be named. `parentSessionId` now names
-    the durable logical parent of a spawned child and may name a session the
-    local store does not hold.
-  - `LocalSyncSummary.parentSessionId` and `LocalSyncSummary.parentUnresolved`
-    (both optional), so the flat sync list carries the same parent identity
-    as the grouped list.
-  - `LocalSyncSummary.Validate` refuses a row that sets `parentSessionId`
-    together with `parentUnresolved=true`.
-  - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
-    the grouped sync arm to mirror both fields of its session by value.
 
 ## [v0.31.0] - 2026-10-18
 
@@ -112,6 +233,24 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   share into any listed collective the caller belongs to; an omission lists every
   pullable transcript, and the pull envelope window moves to [0.1.0, 0.2.0] so a
   client that sends the parameter refuses a village that predates it.
+
+## [v0.28.0] - 2026-10-13
+
+### Added
+
+- Durable child identity on the local session lists. Local API 0.18.0 and
+  Types 0.29.0 declare:
+  - `SessionSummary.parentUnresolved` (optional boolean): marks a known
+    spawned child whose parent cannot be named. `parentSessionId` now names
+    the durable logical parent of a spawned child and may name a session the
+    local store does not hold.
+  - `LocalSyncSummary.parentSessionId` and `LocalSyncSummary.parentUnresolved`
+    (both optional), so the flat sync list carries the same parent identity
+    as the grouped list.
+  - `LocalSyncSummary.Validate` refuses a row that sets `parentSessionId`
+    together with `parentUnresolved=true`.
+  - `LocalSessionRow.Validate` and the generated `zLocalSessionRow` require
+    the grouped sync arm to mirror both fields of its session by value.
 
 ## [v0.25.0] - 2026-09-30
 

@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -14,8 +15,9 @@ import (
 // canonical example UUID is then one edit, not five).
 const (
 	testValidTranscriptUUID = "99d59925-36bc-424c-a789-8be54d9702ba"
-	testOwnerID             = "user-1"
+	testOwnerID             = "123e4567-e89b-12d3-a456-426614174001"
 	testOwnerName           = "alice"
+	testAuthorID            = "123e4567-e89b-12d3-a456-426614174002"
 )
 
 // --- NewTranscriptID validation ---
@@ -78,14 +80,14 @@ func TestNewTranscriptID_ErrorIsActionable(t *testing.T) {
 // --- PullTranscriptInfo wire shape ---
 
 func TestPullTranscriptInfo_JSONRoundTrip(t *testing.T) {
+	project := "peasant"
 	info := schema.PullTranscriptInfo{
 		TranscriptID:    schema.TranscriptID(testValidTranscriptUUID),
 		LocalID:         "ses_local123",
-		OwnerUserID:     testOwnerID,
-		OwnerUsername:   testOwnerName,
+		Owner:           schema.NewVillagePublicProfile(testOwnerID, testOwnerName, nil, nil),
 		Title:           "Refactor pipeline",
 		Harness:         schema.HarnessClaudeCode,
-		ProjectName:     "peasant",
+		ProjectName:     &project,
 		Visibility:      schema.VisibilityGroup,
 		ContentHash:     "deadbeef",
 		ContractVersion: "0.1.0",
@@ -101,12 +103,12 @@ func TestPullTranscriptInfo_JSONRoundTrip(t *testing.T) {
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if got != info {
+	if !reflect.DeepEqual(got, info) {
 		t.Errorf("round-trip mismatch:\n got %+v\nwant %+v", got, info)
 	}
 	// Verify the wire keys are the camelCase JSON tags consumers depend on.
 	for _, key := range []string{
-		`"transcriptId"`, `"ownerUserId"`, `"ownerUsername"`,
+		`"transcriptId"`, `"owner"`,
 		`"visibility"`, `"publishedAt"`, `"updatedAt"`, `"annotationCount"`,
 	} {
 		if !strings.Contains(string(data), key) {
@@ -118,10 +120,9 @@ func TestPullTranscriptInfo_JSONRoundTrip(t *testing.T) {
 func TestPullTranscriptInfo_OmitEmpty(t *testing.T) {
 	// A minimal info: empty optional fields must be omitted; required fields stay.
 	info := schema.PullTranscriptInfo{
-		TranscriptID:  schema.TranscriptID(testValidTranscriptUUID),
-		OwnerUserID:   testOwnerID,
-		OwnerUsername: testOwnerName,
-		Visibility:    schema.VisibilityPrivate,
+		TranscriptID: schema.TranscriptID(testValidTranscriptUUID),
+		Owner:        schema.AnonymousVillageOwner(),
+		Visibility:   schema.VisibilityPrivate,
 	}
 	data, err := json.Marshal(info)
 	if err != nil {
@@ -144,10 +145,9 @@ func TestPullListResponse_JSONRoundTrip(t *testing.T) {
 	resp := schema.PullListResponse{
 		Transcripts: []schema.PullTranscriptInfo{
 			{
-				TranscriptID:  schema.TranscriptID(testValidTranscriptUUID),
-				OwnerUserID:   testOwnerID,
-				OwnerUsername: testOwnerName,
-				Visibility:    schema.VisibilityGroup,
+				TranscriptID: schema.TranscriptID(testValidTranscriptUUID),
+				Owner:        schema.NewVillagePublicProfile(testOwnerID, testOwnerName, nil, nil),
+				Visibility:   schema.VisibilityGroup,
 			},
 		},
 		Page:  1,
@@ -182,8 +182,7 @@ func TestPullAnnotation_EmbedsSummaryWithAuthorIdentity(t *testing.T) {
 			Value:         "observed",
 			CreatedAt:     1700000000000,
 		},
-		AuthorUserID:   "user-2",
-		AuthorUsername: "bob",
+		Author: schema.NewVillagePublicProfile(testAuthorID, "bob", nil, nil),
 	}
 	data, err := json.Marshal(pa)
 	if err != nil {
@@ -199,10 +198,10 @@ func TestPullAnnotation_EmbedsSummaryWithAuthorIdentity(t *testing.T) {
 	}
 	// Author identity is the value-add over AnnotationSummary (needed to
 	// foreign-mark and to exclude own-authored rows on refresh).
-	if got.AuthorUserID != "user-2" || got.AuthorUsername != "bob" {
+	if !got.Author.IsAccount(testAuthorID) || got.Author.Username != "bob" {
 		t.Errorf("author identity not preserved: %+v", got)
 	}
-	for _, key := range []string{`"authorUserId"`, `"authorUsername"`, `"id"`, `"typeId"`} {
+	for _, key := range []string{`"author"`, `"id"`, `"typeId"`} {
 		if !strings.Contains(string(data), key) {
 			t.Errorf("missing wire key %s in %s", key, data)
 		}

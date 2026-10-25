@@ -58,14 +58,24 @@ func (TranscriptID) JSONSchema() (jsonschema.Schema, error) {
 // ingest-time, pre-push-redaction hash). ContractVersion records the push
 // content contract the blob was published under (the blob carries its own
 // publish-time version; the pull envelope does not version the blob).
+//
+// Owner is the transcript's owner as the caller may see them, resolved by the
+// server per viewer. A caller pulling its own transcript always receives its
+// own profile, so Owner.IsAccount(callerID) is exactly "this is mine"; an
+// anonymous owner is never the caller. This envelope shape is pull contract
+// 0.3.0, which replaced the ownerUserId and ownerUsername strings.
 type PullTranscriptInfo struct {
-	TranscriptID    TranscriptID    `json:"transcriptId"`
-	LocalID         string          `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
-	OwnerUserID     string          `json:"ownerUserId"`
-	OwnerUsername   string          `json:"ownerUsername"`
-	Title           string          `json:"title,omitempty"`
-	Harness         Harness         `json:"harness,omitempty"` // existing typed form
-	ProjectName     string          `json:"projectName,omitempty"`
+	TranscriptID TranscriptID       `json:"transcriptId"`
+	LocalID      string             `json:"localId,omitempty"` // peasant SessionID at publish — round-trip correlation
+	Owner        VillagePublicOwner `json:"owner"`
+	Title        string             `json:"title,omitempty"`
+	Harness      Harness            `json:"harness,omitempty"` // existing typed form
+	// ProjectName identifies the owner's repository, so it is omitted when
+	// Owner is anonymous to the caller, as well as when it was not recorded. It
+	// is a pointer so an explicit empty string is distinguishable from an
+	// omitted field: withheld means absent, and an empty string beside an
+	// anonymous owner is refused like any other value.
+	ProjectName     *string         `json:"projectName,omitempty"`
 	Visibility      Visibility      `json:"visibility"`                // existing typed form
 	License         License         `json:"license,omitempty"`         // legal axis; omitempty ⇒ legacy/un-set
 	ContentHash     string          `json:"contentHash,omitempty"`     // SERVED-BLOB hash; empty ⇒ server has none
@@ -73,6 +83,26 @@ type PullTranscriptInfo struct {
 	PublishedAt     int64           `json:"publishedAt"`
 	UpdatedAt       int64           `json:"updatedAt"`
 	AnnotationCount int             `json:"annotationCount"`
+}
+
+// Validate checks the owner and that an anonymous owner's project name is
+// omitted.
+func (p PullTranscriptInfo) Validate() error {
+	return validateAnonymousRepository(p.Owner, presentFieldNames(p.repositoryFields()), "schema.PullTranscriptInfo.Validate")
+}
+
+func (p PullTranscriptInfo) repositoryFields() map[string]bool {
+	return map[string]bool{"projectName": p.ProjectName != nil}
+}
+
+// Validate checks every listed transcript.
+func (r PullListResponse) Validate() error {
+	for _, info := range r.Transcripts {
+		if err := info.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // PullListResponse is the village's paginated listing of pullable transcripts
@@ -87,12 +117,20 @@ type PullListResponse struct {
 
 // PullAnnotation is the authored-annotation row for the pull surface
 // (GET /api/v1/pull/transcripts/{id}/annotations). It embeds the existing
-// AnnotationSummary and adds the village account identity (AuthorUserID /
-// AuthorUsername) the summary does not carry — required to foreign-mark pulled
-// annotations and to exclude the requester's own authored rows during the
-// annotation-refresh path (creds.UserID == AuthorUserID).
+// AnnotationSummary and adds the author as the caller may see them, resolved
+// by the server per viewer. The caller's own rows always carry the caller's
+// profile, so Author.IsAccount(callerID) identifies them for the
+// annotation-refresh exclusion; an anonymous author is never the caller and is
+// marked foreign. Pull contract 0.3.0 replaced the authorUserId and
+// authorUsername strings with Author.
+//
+// The embedded summary's targetProjectHash and targetFilePath identify the
+// owner's repository, so Village leaves both absent when the annotated
+// transcript's owner is anonymous to the caller. AnnotationSummary keeps its
+// Local API meaning; the rule applies to this Village envelope only. The
+// annotations response carries no owner, so no validator here can pair the
+// two; Village enforces and tests it on the server.
 type PullAnnotation struct {
-	AnnotationSummary        // embedded existing summary (annotator entity, content hash, etc.)
-	AuthorUserID      string `json:"authorUserId"`
-	AuthorUsername    string `json:"authorUsername"`
+	AnnotationSummary                    // embedded existing summary (annotator entity, content hash, etc.)
+	Author            VillagePublicOwner `json:"author"`
 }

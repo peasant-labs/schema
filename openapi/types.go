@@ -197,7 +197,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"VillageShareStatus", new(schema.VillageShareStatus)}, {"VillageShareTranscriptRequest", new(schema.VillageShareTranscriptRequest)},
 		{"VillageStatusResponse", new(schema.VillageStatusResponse)}, {"VillageTranscript", new(schema.VillageTranscript)},
 		{"VillageTranscriptMetadataResponse", new(schema.VillageTranscriptMetadataResponse)}, {"VillageTag", new(schema.VillageTag)},
-		{"VillageUser", new(schema.VillageUser)}, {"VillageMetadataUserOrganization", new(schema.VillageMetadataUserOrganization)},
+		{"VillageUser", new(schema.VillageUser)}, {"VillagePublicOwner", new(schema.VillagePublicOwner)}, {"VillagePublicOwnerKind", new(schema.VillagePublicOwnerKind)}, {"VillageMetadataUserOrganization", new(schema.VillageMetadataUserOrganization)},
 		{"VillageListUserOrganization", new(schema.VillageListUserOrganization)}, {"VillageEnrichedTranscriptShare", new(schema.VillageEnrichedTranscriptShare)},
 		{"VillageTranscriptAttestation", new(schema.VillageTranscriptAttestation)}, {"VillageListTranscriptAttestation", new(schema.VillageListTranscriptAttestation)},
 		{"VillageTranscriptListRow", new(schema.VillageTranscriptListRow)}, {"VillageTranscriptListResponse", new(schema.VillageTranscriptListResponse)},
