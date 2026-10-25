@@ -7466,18 +7466,23 @@
       "SchemaSessionPullRequest": {
         "properties": {
           "number": {
+            "minimum": 1,
             "type": "integer"
           },
           "owner": {
+            "minLength": 1,
             "type": "string"
           },
           "repo": {
+            "minLength": 1,
             "type": "string"
           },
           "source": {
+            "minLength": 1,
             "type": "string"
           },
           "url": {
+            "minLength": 1,
             "type": "string"
           }
         },

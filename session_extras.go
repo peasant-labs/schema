@@ -1,6 +1,9 @@
 package schema
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // --- Session commits ---
 
@@ -41,21 +44,44 @@ func (r SessionCommitsResponse) Validate() error {
 // boundary, it never widens who may read the transcript, and nothing is posted
 // to GitHub on the caller's behalf.
 type SessionPullRequest struct {
-	Owner  string `json:"owner"`  // GitHub repository owner (user or organization) the pull request was opened against
-	Repo   string `json:"repo"`   // GitHub repository name the pull request was opened against
-	Number int    `json:"number"` // pull request number within that repository
+	Owner  string `json:"owner" minLength:"1"` // GitHub repository owner (user or organization) the pull request was opened against
+	Repo   string `json:"repo" minLength:"1"`  // GitHub repository name the pull request was opened against
+	Number int    `json:"number" minimum:"1"`  // pull request number within that repository
 	// URL is the canonical pull request address recorded in the tool call
 	// result. It may carry no sub-page, so it is the identity of the pull
 	// request rather than a link to one of its tabs.
-	URL string `json:"url"`
-	// Source names how the row was detected, so a later detector can be added
-	// without rewriting the rows already stored in a consumer's cache. The
-	// contract currently defines one value, gh_pr_create: a recorded
-	// `gh pr create` invocation whose result carried a GitHub pull request URL.
-	// It is deliberately an open label rather than a closed set: a consumer
+	URL string `json:"url" minLength:"1"`
+	// Source is an open string naming how the row was detected, so a later
+	// detector can be added without rewriting the rows already stored in a
+	// consumer's cache. The only value the contract currently defines is
+	// gh_pr_create: a recorded `gh pr create` invocation whose result carried a
+	// GitHub pull request URL. It is deliberately not a closed set: a consumer
 	// reads the rows it knows and does not refuse the response over a value it
-	// does not know.
-	Source string `json:"source"`
+	// does not know, and an empty string is not a detector at all.
+	Source string `json:"source" minLength:"1"`
+}
+
+// Validate checks that the row names its repository, a positive pull request
+// number, the canonical address, and the detector that found it. A row missing
+// any of them cannot be shown as evidence of what the session did, and the
+// fields cannot be recovered from one another.
+func (p SessionPullRequest) Validate() error {
+	if strings.TrimSpace(p.Owner) == "" {
+		return fmt.Errorf("session pull request validation failed at schema.SessionPullRequest.Validate during local read construction: owner is empty; a caller cannot attribute the row to a GitHub repository; emit the repository owner recorded in the detected pull request URL")
+	}
+	if strings.TrimSpace(p.Repo) == "" {
+		return fmt.Errorf("session pull request validation failed at schema.SessionPullRequest.Validate during local read construction: repo is empty for %q; a caller cannot attribute the row to a repository; emit the repository name recorded in the detected pull request URL", p.Owner)
+	}
+	if p.Number < 1 {
+		return fmt.Errorf("session pull request validation failed at schema.SessionPullRequest.Validate during local read construction: number is %d for %q/%q; a pull request number is one or greater; emit the number recorded in the detected pull request URL", p.Number, p.Owner, p.Repo)
+	}
+	if strings.TrimSpace(p.URL) == "" {
+		return fmt.Errorf("session pull request validation failed at schema.SessionPullRequest.Validate during local read construction: url is empty for %q/%q#%d; the row is not evidence without its canonical address; emit the pull request URL the recorded tool call returned", p.Owner, p.Repo, p.Number)
+	}
+	if strings.TrimSpace(p.Source) == "" {
+		return fmt.Errorf("session pull request validation failed at schema.SessionPullRequest.Validate during local read construction: source is empty for %q/%q#%d; an unknown detector cannot be told apart from a missing one; emit the detector label, currently gh_pr_create", p.Owner, p.Repo, p.Number)
+	}
+	return nil
 }
 
 // SessionPullRequestsResponse is the response of
@@ -68,11 +94,17 @@ type SessionPullRequestsResponse struct {
 	PullRequests []SessionPullRequest `json:"pullRequests" nullable:"false"`
 }
 
-// Validate checks that the envelope carries an array, so an empty detection and
-// a detection that never ran stay distinguishable.
+// Validate checks that the envelope carries an array and that every row names a
+// pull request and the detector that found it, so an empty detection and a
+// detection that never ran stay distinguishable.
 func (r SessionPullRequestsResponse) Validate() error {
 	if r.PullRequests == nil {
 		return fmt.Errorf("session pull requests validation failed at schema.SessionPullRequestsResponse.Validate during local read construction: pullRequests is null; a stored session with no detected pull request must emit an empty array; initialize the slice so an empty answer cannot be misread as a failed detection")
+	}
+	for _, pull := range r.PullRequests {
+		if err := pull.Validate(); err != nil {
+			return err
+		}
 	}
 	return nil
 }

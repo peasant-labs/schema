@@ -186,3 +186,14 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: an omitted setting is left unchanged}
     mutation: {description: a single optional boolean patch}
+  - name: session pull request row
+    input:
+      component: SessionPullRequest
+      required: [owner, repo, number, url, source]
+      optional: []
+      nullable: []
+      nonnullable: [owner, repo, number, url, source]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "a detected pull request row always carries its repository identity, address, and detector"}
+    mutation: {description: "pins every session pull request field as required and non-null"}
