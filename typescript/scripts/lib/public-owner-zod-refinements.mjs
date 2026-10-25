@@ -57,3 +57,19 @@ function refine(source, name, body) {
     ${body}
   })` + source.slice(end);
 }
+
+// Pull envelope 0.2.0 blanks a person anonymous to the caller to an empty id
+// beside the anon username, and omits the project name beside an anonymous
+// owner. These checks mirror the Go Validate on the Legacy* types; the
+// sentinel comes from testdata/pull/legacy_envelope.yaml, the value the Go
+// constant is tested against.
+export function applyLegacyPullZodRefinements(source, anonymousUsername) {
+  if (typeof anonymousUsername !== "string" || anonymousUsername === "") {
+    throw new Error("TypeScript contract generation found no anonymous_username in testdata/pull/legacy_envelope.yaml; the legacy pull validators would accept a hidden person's name; restore the sentinel.");
+  }
+  const sentinel = JSON.stringify(anonymousUsername);
+  const person = (id, username) => `if (${id} === "" && ${username} !== ${sentinel}) fail("an empty id carries a username; a hidden person would be named; send ${anonymousUsername} beside an empty id"); if (${id} !== "" && ${username} === "") fail("an id carries no username; send the profile's username, or an empty id with ${anonymousUsername}");`;
+  let output = refine(source, "zLegacyPullTranscriptInfo", `${person("value.ownerUserId", "value.ownerUsername")} if (value.ownerUserId === "" && (value.projectName ?? "") !== "") fail("projectName sits beside an anonymous owner; omit it for an anonymous owner");`);
+  output = refine(output, "zLegacyPullAnnotation", person("value.authorUserId", "value.authorUsername"));
+  return output;
+}
