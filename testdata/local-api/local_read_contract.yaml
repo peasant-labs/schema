@@ -18,6 +18,10 @@ required_names:
   - mixed-sync-search
   - invalid-nested-list-row
   - invalid-nested-member-row
+  - session-commits-empty
+  - session-pull-request-row
+  - session-commits-null-array
+  - session-pull-requests-null-array
 round_trip:
   cases:
     - name: flat-detail-root
@@ -80,6 +84,18 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "existing WebSocket sessions payload"}
       mutation: {description: "preserves the legacy flat sessions array"}
+    - name: session-commits-empty
+      input: {kind: commits, json: '{"commits":[]}'}
+      expected: {valid: true, requiredKeys: [commits], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a stored session with no recorded commits answers an empty array"}
+      mutation: {description: "emits the empty commits array rather than null"}
+    - name: session-pull-request-row
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"https://github.com/acme/api/pull/42","source":"gh_pr_create"}]}'}
+      expected: {valid: true, requiredKeys: [pullRequests], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a detected pull request carries its repository identity and detector"}
+      mutation: {description: "carries one detected row with the open source label"}
 validation:
   cases:
     - name: mismatched-sync-count
@@ -136,3 +152,15 @@ validation:
       classification: must-fail
       provenance: {source: boundary, ref: "member validator traverses rows"}
       mutation: {description: "places one unsafe count inside a typed member row"}
+    - name: session-commits-null-array
+      input: {kind: commits, json: '{"commits":null}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty read must not be answerable with null"}
+      mutation: {description: "nulls the commits array of an otherwise empty answer"}
+    - name: session-pull-requests-null-array
+      input: {kind: pull-requests, json: '{"pullRequests":null}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty detection must not be answerable with null"}
+      mutation: {description: "nulls the pullRequests array of an otherwise empty answer"}
