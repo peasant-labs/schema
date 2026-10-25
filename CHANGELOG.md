@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.33.1] - 2026-10-25
+
 ### Added
 
 - A requestable pull envelope, so Village can hide people without forcing a
