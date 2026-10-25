@@ -161,7 +161,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). */
+        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). Every count covers every session this computer has stored; the saved ingestion selection never narrows this read. */
         get: operations["listProjectSummaries"];
         put?: never;
         post?: never;
@@ -178,7 +178,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved selection: a session the lists leave out is still returned, with outsideSelection true. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate. */
+        /** @description Read the durable publication state of named local sessions for the Village account this computer is signed in to; a signed-out computer reports every session unpublished. This read ignores the saved ingestion and push selection: every requested stored session is returned, with outsideSelection reporting only whether that selection would admit the session to a future ingest or an upload hook. An identifier that names no session on this computer is omitted. include=audience adds the collectives each published transcript is shared with, as [] when it is shared with none, and returns 502 when Village cannot be read. 400 when sessionIds is missing or empty. A client counts the turns recorded after publishedAt to say about how many turns are new; the count is approximate. */
         get: operations["listPublications"];
         put?: never;
         post?: never;
@@ -246,7 +246,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. */
+        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never narrows the result set: every stored entry is searchable. */
         get: operations["searchMessages"];
         put?: never;
         post?: never;
@@ -280,7 +280,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get session summaries for an explicit set of session identifiers. This operation resolves links, so it applies NEITHER origin scope NOR selection scope: a session hidden from every discovery list is still returned here when its identifier is named. An identifier that names no session on this machine is omitted from the response rather than failing the batch, so a partially stale link still resolves the sessions that do exist. */
+        /** @description Get session summaries for an explicit set of session identifiers. This operation resolves links, so it applies NEITHER origin scope NOR the saved ingestion selection: a stored session is returned here when its identifier is named, even when its origin keeps it out of a list, and the saved ingestion selection never narrows a stored read. An identifier that names no session on this machine is omitted from the response rather than failing the batch, so a partially stale link still resolves the sessions that do exist. */
         get: operations["getSessionSummariesByID"];
         put?: never;
         post?: never;
@@ -297,7 +297,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List session summaries. */
+        /** @description List session summaries. The saved ingestion selection never narrows this read: every session this computer has stored is listed, whether or not that selection would admit it to a future ingest. */
         get: operations["listSessions"];
         put?: never;
         post?: never;
@@ -314,7 +314,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get session detail by ID. */
+        /** @description Get session detail by ID. The saved ingestion selection never narrows a by-id read: a session this computer has stored resolves here whether or not that selection would admit it to a future ingest. */
         get: operations["getSession"];
         put?: never;
         post?: never;
@@ -365,7 +365,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the flat additive session transcript by ID. */
+        /** @description Get the flat additive session transcript by ID. The saved ingestion selection never narrows a by-id read: a session this computer has stored resolves here whether or not that selection would admit it to a future ingest. */
         get: operations["getSessionTranscript"];
         put?: never;
         post?: never;
@@ -537,7 +537,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success. */
+        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection narrows neither a view nor a page: every stored root, child, and project option is returned whether or not that selection would admit the session to a future ingest, so counts, empty states, and continuation follow the stored library alone. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots. Store failures return 500 and unavailable readers 503, never empty success. */
         get: operations["listSyncSessionsGrouped"];
         put?: never;
         post?: never;

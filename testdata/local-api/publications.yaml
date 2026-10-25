@@ -1,6 +1,7 @@
-# The publication read. It ignores the saved selection and returns the durable
-# publication state of each named session for the signed-in Village account;
-# include=audience adds the collectives a published transcript is shared with.
+# The publication read. It ignores the saved ingestion and push selection and
+# returns the durable publication state of each named session for the signed-in
+# Village account; include=audience adds the collectives a published transcript
+# is shared with.
 required_names:
   - unpublished-row-valid
   - published-row-valid
@@ -86,8 +87,8 @@ cases:
           - {sessionId: s-2, state: unpublished, autoPublish: false, outsideSelection: true}
     expected: {valid: true}
     classification: must-pass
-    provenance: {source: requirement, ref: "the read ignores the saved selection"}
-    mutation: {description: "a session the lists leave out, opened by link"}
+    provenance: {source: requirement, ref: "the read ignores the saved ingestion and push selection"}
+    mutation: {description: "a session the ingestion and push selection leaves out, still returned with its truthy outsideSelection"}
   - name: failed-attempt-after-publication-valid
     input:
       schema: LocalPublicationsResponse
@@ -199,8 +200,8 @@ cases:
           - {sessionId: s-2, state: unpublished, autoPublish: true, outsideSelection: true}
     expected: {valid: false, rejected_by: semantics, error_contains: leaves the session out}
     classification: must-fail
-    provenance: {source: requirement, ref: "autoPublish is false when the saved selection leaves the session out"}
-    mutation: {description: "reports auto-publish on for a session outside the saved selection"}
+    provenance: {source: requirement, ref: "autoPublish is false when the saved ingestion and push selection leaves the session out"}
+    mutation: {description: "reports auto-publish on for a session outside the saved ingestion and push selection"}
   - name: auto-publish-missing-rejected
     input:
       schema: LocalPublicationsResponse
