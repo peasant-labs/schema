@@ -34,8 +34,11 @@
 // reads in the Peasant-Pull-Contract request header (schema.PullContractHeader);
 // Village serves the highest version it supports at or below that and at or
 // above its minimum, serves its default (pullContractVersion) to a request
-// without the header, and reports the served version in the same response
-// header. Released CLIs read pullContractVersion as "the envelope I will get",
+// without the header or with a malformed one (anything but MAJOR.MINOR.PATCH
+// digits), refuses a version below its minimum with 406 and a
+// VillageErrorResponse, and reports the served version in the same response
+// header. The JSON reads declare the two envelopes with anyOf, because an
+// empty page or annotation list fits both. Released CLIs read pullContractVersion as "the envelope I will get",
 // so the default stays at the version header-less clients read, and
 // pullContractMaxVersion advertises the newest Village can serve. Within one
 // minor, patch bumps are additive: a client accepts any 0.3.z and ignores

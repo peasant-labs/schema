@@ -4410,9 +4410,9 @@
           {
             "name": "Peasant-Pull-Contract",
             "in": "header",
-            "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+            "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
             "schema": {
-              "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+              "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
               "type": "string"
             }
           }
@@ -4434,7 +4434,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "$ref": "#/components/schemas/SchemaPullListResponse"
                     },
@@ -4442,6 +4442,16 @@
                       "$ref": "#/components/schemas/SchemaLegacyPullListResponse"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
                 }
               }
             }
@@ -4498,9 +4508,9 @@
           {
             "name": "Peasant-Pull-Contract",
             "in": "header",
-            "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+            "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
             "schema": {
-              "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+              "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
               "type": "string"
             }
           }
@@ -4522,7 +4532,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "$ref": "#/components/schemas/SchemaPullTranscriptInfo"
                     },
@@ -4530,6 +4540,16 @@
                       "$ref": "#/components/schemas/SchemaLegacyPullTranscriptInfo"
                     }
                   ]
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
                 }
               }
             }
@@ -4556,9 +4576,9 @@
           {
             "name": "Peasant-Pull-Contract",
             "in": "header",
-            "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+            "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
             "schema": {
-              "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+              "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
               "type": "string"
             }
           }
@@ -4580,7 +4600,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "items": {
                         "$ref": "#/components/schemas/SchemaPullAnnotation"
@@ -4600,6 +4620,16 @@
                       ]
                     }
                   ]
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
                 }
               }
             }
@@ -4626,9 +4656,9 @@
           {
             "name": "Peasant-Pull-Contract",
             "in": "header",
-            "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+            "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
             "schema": {
-              "description": "Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract.",
+              "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
               "type": "string"
             }
           }
@@ -4648,8 +4678,15 @@
               }
             }
           },
-          "204": {
-            "description": "No Content"
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
           }
         }
       }

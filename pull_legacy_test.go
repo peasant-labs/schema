@@ -1,6 +1,7 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/peasant-labs/schema/openapi"
 	"github.com/peasant-labs/schema/testcase"
 	assertcase "github.com/peasant-labs/schema/testcase/assert"
+	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -27,8 +29,16 @@ type legacyPersonInput struct {
 }
 
 type legacyConversionInput struct {
-	Anonymous   bool    `yaml:"anonymous"`
+	Anonymous bool `yaml:"anonymous"`
+	// Malformed builds a profile Validate would refuse: no_username or
+	// noncanonical_id. The converter must still leak nothing.
+	Malformed   string  `yaml:"malformed"`
 	ProjectName *string `yaml:"project_name"`
+}
+
+type legacyServedBodyInput struct {
+	Path string `yaml:"path"`
+	Body string `yaml:"body"`
 }
 
 type legacyConversionExpected struct {
@@ -54,9 +64,11 @@ type legacyPullFixtures struct {
 	} `yaml:"versions"`
 	Persons       testcase.Corpus[legacyPersonInput, villageExpected]              `yaml:"persons"`
 	Conversions   testcase.Corpus[legacyConversionInput, legacyConversionExpected] `yaml:"conversions"`
+	ServedBodies  testcase.Corpus[legacyServedBodyInput, villageExpected]          `yaml:"served_bodies"`
 	RequiredNames struct {
-		Persons     []string `yaml:"persons"`
-		Conversions []string `yaml:"conversions"`
+		Persons      []string `yaml:"persons"`
+		Conversions  []string `yaml:"conversions"`
+		ServedBodies []string `yaml:"served_bodies"`
 	} `yaml:"required_names"`
 }
 
@@ -68,7 +80,10 @@ func loadLegacyPullFixtures(t *testing.T) legacyPullFixtures {
 	}
 	assertcase.RequireMin(t, f.Persons, 9)
 	assertcase.RequireValid(t, f.Persons)
-	assertcase.RequireMin(t, f.Conversions, 3)
+	assertcase.RequireMin(t, f.Conversions, 5)
+	assertcase.RequireMin(t, f.ServedBodies, 7)
+	assertcase.RequireValid(t, f.ServedBodies)
+	assertSameStrings(t, "legacy served body case names", f.RequiredNames.ServedBodies, mapKeys(namesOf(f.ServedBodies)))
 	assertcase.RequireValid(t, f.Conversions)
 	assertSameStrings(t, "legacy person case names", f.RequiredNames.Persons, mapKeys(namesOf(f.Persons)))
 	assertSameStrings(t, "legacy conversion case names", f.RequiredNames.Conversions, mapKeys(namesOf(f.Conversions)))
@@ -218,6 +233,18 @@ func TestLegacyPullConvertersApplyTheBlankingRule(t *testing.T) {
 			if c.Input.Anonymous {
 				owner, author = schema.AnonymousVillageOwner(), schema.AnonymousVillageOwner()
 			}
+			switch c.Input.Malformed {
+			case "":
+			case "no_username":
+				owner = schema.VillagePublicOwner{Kind: schema.VillagePublicOwnerProfile, ID: "123e4567-e89b-12d3-a456-426614174001"}
+			case "noncanonical_id":
+				owner = schema.NewVillagePublicProfile("123E4567-E89B-12D3-A456-426614174001", "alice", nil, nil)
+			default:
+				t.Fatalf("unknown malformed profile %q", c.Input.Malformed)
+			}
+			if c.Input.Malformed != "" {
+				author = owner
+			}
 			info := schema.LegacyPullTranscriptInfoFrom(schema.PullTranscriptInfo{Owner: owner, ProjectName: c.Input.ProjectName})
 			if info.OwnerUserID != c.Expected.OwnerUserID || info.OwnerUsername != c.Expected.OwnerUsername || info.ProjectName != c.Expected.ProjectName {
 				t.Fatalf("converted %+v, want %+v", info, c.Expected)
@@ -268,6 +295,10 @@ func TestPullOperationsDeclareTheContractHeader(t *testing.T) {
 		if !found {
 			t.Errorf("GET %s does not declare an optional %s request header", path, schema.PullContractHeader)
 		}
+		refusal, declared := get["responses"].(map[string]any)["406"].(map[string]any)
+		if !declared || !schemaRefs(refusal["content"])["SchemaVillageErrorResponse"] {
+			t.Errorf("GET %s does not declare the 406 VillageErrorResponse refusal for a version below the minimum", path)
+		}
 		ok := get["responses"].(map[string]any)["200"].(map[string]any)
 		headers, _ := ok["headers"].(map[string]any)
 		if _, present := headers[schema.PullContractHeader]; !present {
@@ -286,5 +317,39 @@ func TestPullOperationsDeclareTheContractHeader(t *testing.T) {
 	version := doc["components"].(map[string]any)["schemas"].(map[string]any)["SchemaSchemaVersionResponse"].(map[string]any)
 	if _, ok := schemaProperties(version)["pullContractMaxVersion"]; !ok || strings.Contains(string(mustJSON(t, version["required"])), "pullContractMaxVersion") {
 		t.Error("the version response must declare an optional pullContractMaxVersion")
+	}
+}
+
+// TestPullResponsesAcceptBothEnvelopes validates bodies against the served
+// document's 200 schema for each pull read, so a body that fits both
+// envelopes (an empty page, no annotations) is accepted.
+func TestPullResponsesAcceptBothEnvelopes(t *testing.T) {
+	f := loadLegacyPullFixtures(t)
+	spec, err := openapi.BuildVillageAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := mustJSON(t, spec)
+	compiler := schema.NewJSONSchemaCompiler()
+	compiler.Draft = jsonschema.Draft2020
+	if err := compiler.AddResource("village.json", bytes.NewReader(raw)); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range f.ServedBodies.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			pointer := "village.json#/paths/" + strings.ReplaceAll(strings.ReplaceAll(c.Input.Path, "~", "~0"), "/", "~1") + "/get/responses/200/content/application~1json/schema"
+			compiled, err := compiler.Compile(pointer)
+			if err != nil {
+				t.Fatalf("compile the served 200 schema for %s: %v", c.Input.Path, err)
+			}
+			var body any
+			if err := json.Unmarshal([]byte(c.Input.Body), &body); err != nil {
+				t.Fatal(err)
+			}
+			err = compiled.Validate(body)
+			if (err == nil) != c.Expected.Valid {
+				t.Fatalf("valid=%v error=%v", err == nil, err)
+			}
+		})
 	}
 }

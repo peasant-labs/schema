@@ -2844,24 +2844,28 @@ paths:
             the caller belongs to. Omission, or only empty elements, lists every pullable
             transcript.
           type: string
-      - description: Optional. The newest pull contract this client reads. Village
-          serves the highest version it supports that is no newer than this and no
-          older than its minimum; omitted, it serves its default (pullContractVersion);
-          below its minimum, it refuses as an incompatible contract.
+      - description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+          digits (for example 0.3.0). Village serves the highest version it supports
+          that is no newer than this and no older than its minimum. Omitted or malformed
+          (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+          its default (pullContractVersion), so a client with a buggy header still
+          pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
         in: header
         name: Peasant-Pull-Contract
         schema:
-          description: Optional. The newest pull contract this client reads. Village
-            serves the highest version it supports that is no newer than this and
-            no older than its minimum; omitted, it serves its default (pullContractVersion);
-            below its minimum, it refuses as an incompatible contract.
+          description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+            digits (for example 0.3.0). Village serves the highest version it supports
+            that is no newer than this and no older than its minimum. Omitted or malformed
+            (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+            its default (pullContractVersion), so a client with a buggy header still
+            pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
           type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                 - $ref: '#/components/schemas/SchemaPullListResponse'
                 - $ref: '#/components/schemas/SchemaLegacyPullListResponse'
           description: OK
@@ -2875,6 +2879,12 @@ paths:
                 pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
                 type: string
               style: simple
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Acceptable
       tags:
       - pull
   /api/v1/pull/transcripts/{id}:
@@ -2890,24 +2900,28 @@ paths:
         required: true
         schema:
           type: string
-      - description: Optional. The newest pull contract this client reads. Village
-          serves the highest version it supports that is no newer than this and no
-          older than its minimum; omitted, it serves its default (pullContractVersion);
-          below its minimum, it refuses as an incompatible contract.
+      - description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+          digits (for example 0.3.0). Village serves the highest version it supports
+          that is no newer than this and no older than its minimum. Omitted or malformed
+          (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+          its default (pullContractVersion), so a client with a buggy header still
+          pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
         in: header
         name: Peasant-Pull-Contract
         schema:
-          description: Optional. The newest pull contract this client reads. Village
-            serves the highest version it supports that is no newer than this and
-            no older than its minimum; omitted, it serves its default (pullContractVersion);
-            below its minimum, it refuses as an incompatible contract.
+          description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+            digits (for example 0.3.0). Village serves the highest version it supports
+            that is no newer than this and no older than its minimum. Omitted or malformed
+            (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+            its default (pullContractVersion), so a client with a buggy header still
+            pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
           type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                 - $ref: '#/components/schemas/SchemaPullTranscriptInfo'
                 - $ref: '#/components/schemas/SchemaLegacyPullTranscriptInfo'
           description: OK
@@ -2921,6 +2935,12 @@ paths:
                 pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
                 type: string
               style: simple
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Acceptable
       tags:
       - pull
   /api/v1/pull/transcripts/{id}/annotations:
@@ -2937,24 +2957,28 @@ paths:
         required: true
         schema:
           type: string
-      - description: Optional. The newest pull contract this client reads. Village
-          serves the highest version it supports that is no newer than this and no
-          older than its minimum; omitted, it serves its default (pullContractVersion);
-          below its minimum, it refuses as an incompatible contract.
+      - description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+          digits (for example 0.3.0). Village serves the highest version it supports
+          that is no newer than this and no older than its minimum. Omitted or malformed
+          (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+          its default (pullContractVersion), so a client with a buggy header still
+          pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
         in: header
         name: Peasant-Pull-Contract
         schema:
-          description: Optional. The newest pull contract this client reads. Village
-            serves the highest version it supports that is no newer than this and
-            no older than its minimum; omitted, it serves its default (pullContractVersion);
-            below its minimum, it refuses as an incompatible contract.
+          description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+            digits (for example 0.3.0). Village serves the highest version it supports
+            that is no newer than this and no older than its minimum. Omitted or malformed
+            (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+            its default (pullContractVersion), so a client with a buggy header still
+            pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
           type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                 - items:
                     $ref: '#/components/schemas/SchemaPullAnnotation'
                   type:
@@ -2976,6 +3000,12 @@ paths:
                 pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
                 type: string
               style: simple
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Acceptable
       tags:
       - pull
   /api/v1/pull/transcripts/{id}/content:
@@ -2989,17 +3019,21 @@ paths:
         required: true
         schema:
           type: string
-      - description: Optional. The newest pull contract this client reads. Village
-          serves the highest version it supports that is no newer than this and no
-          older than its minimum; omitted, it serves its default (pullContractVersion);
-          below its minimum, it refuses as an incompatible contract.
+      - description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+          digits (for example 0.3.0). Village serves the highest version it supports
+          that is no newer than this and no older than its minimum. Omitted or malformed
+          (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+          its default (pullContractVersion), so a client with a buggy header still
+          pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
         in: header
         name: Peasant-Pull-Contract
         schema:
-          description: Optional. The newest pull contract this client reads. Village
-            serves the highest version it supports that is no newer than this and
-            no older than its minimum; omitted, it serves its default (pullContractVersion);
-            below its minimum, it refuses as an incompatible contract.
+          description: Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH
+            digits (for example 0.3.0). Village serves the highest version it supports
+            that is no newer than this and no older than its minimum. Omitted or malformed
+            (0.3, v0.3.0, any other text), it is treated as absent and Village serves
+            its default (pullContractVersion), so a client with a buggy header still
+            pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.
           type: string
       responses:
         "200":
@@ -3014,8 +3048,12 @@ paths:
                 pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
                 type: string
               style: simple
-        "204":
-          description: No Content
+        "406":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Acceptable
       tags:
       - pull
   /api/v1/pull/transcripts/skip-gate:

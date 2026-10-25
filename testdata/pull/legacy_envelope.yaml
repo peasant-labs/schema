@@ -111,7 +111,68 @@ conversions:
       classification: must-pass
       provenance: {source: requirement, ref: legacy-pull-profile}
       mutation: {description: renders a shown owner whose project was not recorded}
+    - name: profile-without-username-blanked
+      input: {anonymous: false, malformed: no_username, project_name: project}
+      expected: {owner_user_id: '', owner_username: anon, project_name: ''}
+      classification: must-pass
+      provenance: {source: boundary, ref: legacy-pull-sentinel}
+      mutation: {description: renders a profile with an id but no username as the sentinel, so neither the id nor the project leaks}
+    - name: profile-noncanonical-id-blanked
+      input: {anonymous: false, malformed: noncanonical_id, project_name: project}
+      expected: {owner_user_id: '', owner_username: anon, project_name: ''}
+      classification: must-pass
+      provenance: {source: boundary, ref: legacy-pull-sentinel}
+      mutation: {description: renders a profile with an uppercase id as the sentinel, so neither the username nor the project leaks}
+
+# served_bodies validates response bodies against the served Village document's
+# 200 schema for each pull read. An empty page and an empty or null annotation
+# list fit both envelopes, so the response declares them with anyOf.
+served_bodies:
+  cases:
+    - name: empty-list-page
+      input: {path: /api/v1/pull/transcripts, body: '{"transcripts":[],"page":1,"limit":50,"total":0}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'an empty page matched both envelopes and failed oneOf'}
+      mutation: {description: serves an empty page, which either envelope describes}
+    - name: empty-annotations
+      input: {path: '/api/v1/pull/transcripts/{id}/annotations', body: '[]'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'an empty annotation list matched both envelopes and failed oneOf'}
+      mutation: {description: serves no annotations as an empty array}
+    - name: null-annotations
+      input: {path: '/api/v1/pull/transcripts/{id}/annotations', body: 'null'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'a null annotation list matched both envelopes and failed oneOf'}
+      mutation: {description: serves no annotations as null}
+    - name: public-owner-list-row
+      input: {path: /api/v1/pull/transcripts, body: '{"transcripts":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174003","owner":{"kind":"anonymous"},"visibility":"group","publishedAt":1,"updatedAt":1,"annotationCount":0}],"page":1,"limit":50,"total":1}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: requestable-pull-envelope}
+      mutation: {description: serves a 0.3.0 row}
+    - name: legacy-list-row
+      input: {path: /api/v1/pull/transcripts, body: '{"transcripts":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174003","ownerUserId":"","ownerUsername":"anon","visibility":"group","publishedAt":1,"updatedAt":1,"annotationCount":0}],"page":1,"limit":50,"total":1}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: requestable-pull-envelope}
+      mutation: {description: serves a 0.2.0 row with the anonymous sentinel}
+    - name: legacy-metadata
+      input: {path: '/api/v1/pull/transcripts/{id}', body: '{"transcriptId":"123e4567-e89b-12d3-a456-426614174003","ownerUserId":"","ownerUsername":"anon","visibility":"group","publishedAt":1,"updatedAt":1,"annotationCount":0}'}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: requestable-pull-envelope}
+      mutation: {description: serves 0.2.0 metadata}
+    - name: list-row-in-neither-envelope-refused
+      input: {path: /api/v1/pull/transcripts, body: '{"transcripts":[{"transcriptId":"123e4567-e89b-12d3-a456-426614174003","visibility":"group","publishedAt":1,"updatedAt":1,"annotationCount":0}],"page":1,"limit":50,"total":1}'}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: requirement, ref: requestable-pull-envelope}
+      mutation: {description: drops every owner field, so the row is in neither envelope}
 
 required_names:
   persons: [transcript-profile, transcript-anonymous-sentinel, annotation-anonymous-sentinel, annotation-profile, transcript-empty-id-with-real-username-refused, transcript-empty-id-with-empty-username-refused, transcript-anonymous-with-project-refused, transcript-id-without-username-refused, annotation-empty-id-with-real-username-refused]
-  conversions: [profile-owner-kept, anonymous-owner-blanked, profile-owner-without-project]
+  conversions: [profile-owner-kept, anonymous-owner-blanked, profile-owner-without-project, profile-without-username-blanked, profile-noncanonical-id-blanked]
+  served_bodies: [empty-list-page, empty-annotations, null-annotations, public-owner-list-row, legacy-list-row, legacy-metadata, list-row-in-neither-envelope-refused]

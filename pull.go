@@ -144,9 +144,14 @@ type PullAnnotation struct {
 // A client sends the newest pull contract it reads. Village serves the highest
 // version it supports that is no newer than the requested one and no older than
 // its minimum; with no header it serves its default (the advertised
-// pullContractVersion); a requested version below its minimum is the existing
-// incompatible-contract refusal. Every pull response carries the header with
-// the version actually served, so a client knows exactly which envelope it got.
+// pullContractVersion); a requested version below its minimum is refused with
+// 406 Not Acceptable and a VillageErrorResponse, which a client reports as its
+// incompatible-contract error. Every pull response carries the header with the
+// version actually served, so a client knows exactly which envelope it got.
+//
+// A well-formed value is MAJOR.MINOR.PATCH digits only (0.3.0). A malformed
+// value (0.3, v0.3.0, any other text) is treated as absent and the default is
+// served: lenient, so a client with a buggy header still pulls.
 //
 // Compatibility: a patch bump within a minor (0.3.x) is additive, so a client
 // that reads 0.3.0 accepts any 0.3.z and ignores fields it does not know. Only

@@ -268,7 +268,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("new pull list operation: %w", err)
 	}
 	pullListOC.AddReqStructure(new(struct {
-		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
 		Page         int    `query:"page"`
 		Limit        int    `query:"limit"`
 		Collectives  string `query:"collectives" description:"Optional comma-separated collective identifiers. Narrows the list to transcripts with an approved share into any listed collective the caller belongs to. Omission, or only empty elements, lists every pullable transcript."`
@@ -279,6 +279,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"public excluded by the canPullTranscript policy). Offset pagination. The optional " +
 		"collectives filter narrows the list to the approved shares of the listed collectives the " +
 		"caller belongs to; a collective the caller is not in contributes nothing.")
+	pullListOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusNotAcceptable))
 	pullListOC.SetID("listPullableTranscripts")
 	pullListOC.SetTags("pull")
 	if err := r.AddOperation(pullListOC); err != nil {
@@ -292,13 +293,14 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 	pullMetaOC.AddReqStructure(new(struct {
 		ID           string `path:"id"`
-		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
 	}))
 	pullMetaOC.AddRespStructure(new(schema.PullTranscriptInfo))
 	pullMetaOC.AddRespStructure(new(schema.LegacyPullTranscriptInfo))
 	pullMetaOC.SetDescription("Get a pullable transcript's metadata (the owner as the caller may see them, " +
 		"visibility, server-computed content_hash, push contract version). The server resolves the owner per " +
 		"viewer; a caller always sees its own profile on its own transcripts. 404 (not 403) when not pullable.")
+	pullMetaOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusNotAcceptable))
 	pullMetaOC.SetID("getPullTranscript")
 	pullMetaOC.SetTags("pull")
 	if err := r.AddOperation(pullMetaOC); err != nil {
@@ -314,10 +316,11 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 	pullContentOC.AddReqStructure(new(struct {
 		ID           string `path:"id"`
-		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
 	}))
 	pullContentOC.SetDescription("Stream the transcript blob as served. Sends ETag: \"<content_hash>\"; " +
 		"a matching If-None-Match request yields 304 Not Modified.")
+	pullContentOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusNotAcceptable))
 	pullContentOC.SetID("getPullTranscriptContent")
 	pullContentOC.SetTags("pull")
 	if err := r.AddOperation(pullContentOC); err != nil {
@@ -332,7 +335,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	}
 	pullAnnotOC.AddReqStructure(new(struct {
 		ID           string `path:"id"`
-		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads. Village serves the highest version it supports that is no newer than this and no older than its minimum; omitted, it serves its default (pullContractVersion); below its minimum, it refuses as an incompatible contract."`
+		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
 	}))
 	pullAnnotOC.AddRespStructure(new([]schema.PullAnnotation))
 	pullAnnotOC.AddRespStructure(new([]schema.LegacyPullAnnotation))
@@ -340,6 +343,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		"plus the author as the caller may see them, resolved by the server per viewer). The caller's own rows " +
 		"carry the caller's profile, so own-authored rows are excluded by comparing the author's profile id " +
 		"with the caller's account; an anonymous author is never the caller and is foreign-marked.")
+	pullAnnotOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusNotAcceptable))
 	pullAnnotOC.SetID("getPullTranscriptAnnotations")
 	pullAnnotOC.SetTags("pull")
 	if err := r.AddOperation(pullAnnotOC); err != nil {
@@ -1208,7 +1212,10 @@ func configurePullContractResponses(spec *openapi31.Spec) error {
 			if !ok {
 				return fmt.Errorf("configure pull contract response for GET %s: JSON media type is missing; clients cannot decode either envelope; register an application/json response", op.path)
 			}
-			media.Schema = map[string]interface{}{"oneOf": []interface{}{op.current, op.legacy}}
+			// anyOf, not oneOf: neither envelope is a closed object, so an empty
+			// page or an empty annotation list matches both. The response header
+			// says which one was served.
+			media.Schema = map[string]interface{}{"anyOf": []interface{}{op.current, op.legacy}}
 			response.Response.Content["application/json"] = media
 		}
 		item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response
