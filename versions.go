@@ -240,8 +240,9 @@ const (
 	// (LegacyPullTranscriptInfo, LegacyPullListResponse, LegacyPullAnnotation)
 	// entered the catalog and SchemaVersionResponse gained
 	// pullContractMaxVersion (additive = patch bump).
-	// Bumped to 0.35.0 when the catalog dropped the add-member username
-	// request, gained the collective invitation and notification email types,
-	// and VillageUserSettings gained notification_email and email_invitations.
+	// Bumped to 0.35.0 when the catalog gained the collective invitation and
+	// notification email types and VillageUserSettings gained
+	// notification_email and email_invitations. The add-member username
+	// request stays in the catalog, deprecated, for the alias window.
 	TypesVersion = "0.35.0"
 )

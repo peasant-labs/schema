@@ -23,13 +23,18 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
     the owner invites by username with `VillageCollectiveInvitationRequest`.
     It answers 202 `{"status":"invited"}` for every username, whether no
     account holds it, its account is not discoverable, or it is discoverable,
-    so inviting never confirms that an account exists. 409 means the person is
-    already a member who consented; 429 is an invitation limit.
+    so inviting never confirms that an account exists. Every invited name is
+    listed until it expires or is revoked, whether or not an account holds
+    it, and any invitation email is sent after the response, so its timing
+    never depends on the invitee. 409 means the person is already a member
+    who consented; 429 is an invitation limit.
   - `GET /api/v1/collectives/{id}/invitations` (`listGroupInvitations`):
     `VillageCollectiveInvitationsSentResponse`, each row the handle the owner
     typed (`invited_username`) and the inviting owner (`invited_by`, a
     `VillagePublicOwner`). There is no status: a declined invitation is listed
-    like a pending one until it expires, so a decline is not revealed.
+    like a pending one until it expires, so a decline is not revealed. An
+    invitation whose invitee deletes their account stays listed until it
+    expires, and revoking it still answers 200.
   - `DELETE /api/v1/collectives/{id}/invitations/{invitationID}`
     (`revokeGroupInvitation`).
   - `GET /api/v1/users/me/invitations` (`listMyInvitations`):
@@ -59,7 +64,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - The notification address appears only in the caller's own settings. A guard
   test walks every response of the Village and Local API specs and fails if
   any other response reaches the address or declares a property named like an
-  email, except two listed git commit author fields.
+  email, except one listed git commit author field (`author_email` on
+  `VillageRepositoryCommit`). It also matches properties named `address` and
+  any string property with `format: email`.
 
 ## [v0.33.1] - 2026-10-25
 
