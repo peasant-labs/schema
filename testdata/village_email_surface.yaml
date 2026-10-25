@@ -2,8 +2,11 @@
 # address is personal contact data: only that person's own settings carry it.
 # The guard walks every operation's response in each served spec and fails
 # when a response outside self_operations reaches the address component or
-# declares a property whose name contains "email" that is not exempt below.
+# declares a property that looks like a contact address (a name containing
+# one of name_terms, or a string with one of formats) and is not exempt below.
 address_component: SchemaVillageNotificationEmail
+name_terms: [email, address]
+formats: [email]
 specs:
   village:
     # The caller's own settings and the operations that change the address

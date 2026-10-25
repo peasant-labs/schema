@@ -16,7 +16,11 @@ var villageEmailSurfaceYAML []byte
 
 type emailSurfaceFixture struct {
 	AddressComponent string `yaml:"address_component"`
-	Specs            map[string]struct {
+	// NameTerms are the substrings that mark a property name as contact
+	// data; Formats are the string formats that do.
+	NameTerms []string `yaml:"name_terms"`
+	Formats   []string `yaml:"formats"`
+	Specs     map[string]struct {
 		SelfOperations   []string          `yaml:"self_operations"`
 		ExemptProperties map[string]string `yaml:"exempt_properties"`
 	} `yaml:"specs"`
@@ -37,6 +41,9 @@ func TestNoResponseButOwnSettingsCarriesAnEmail(t *testing.T) {
 	}
 	if f.AddressComponent == "" {
 		t.Fatal("address_component is empty; the guard would have nothing to protect")
+	}
+	if len(f.NameTerms) == 0 || len(f.Formats) == 0 {
+		t.Fatal("name_terms and formats must both be non-empty; the guard would match nothing")
 	}
 	builders := map[string]func() (any, error){
 		"village": func() (any, error) { return openapi.BuildVillageAPISpec() },
@@ -85,8 +92,8 @@ func TestNoResponseButOwnSettingsCarriesAnEmail(t *testing.T) {
 						t.Errorf("%s reaches %s; only the caller's own settings may carry an email address", label, f.AddressComponent)
 					}
 					for name := range reached {
-						for property := range declaredPropertyNames(components[name]) {
-							if !strings.Contains(strings.ToLower(property), "email") {
+						for property, propertySchema := range declaredProperties(components[name]) {
+							if !looksLikeContactAddress(property, propertySchema, f.NameTerms, f.Formats) {
 								continue
 							}
 							key := name + "." + property
@@ -94,7 +101,7 @@ func TestNoResponseButOwnSettingsCarriesAnEmail(t *testing.T) {
 								usedExemptions[key] = true
 								continue
 							}
-							t.Errorf("%s reaches %s, a property named like an email outside the caller's own settings", label, key)
+							t.Errorf("%s reaches %s, a property named or formatted like an email address outside the caller's own settings", label, key)
 						}
 					}
 				}
@@ -119,4 +126,74 @@ func TestNoResponseButOwnSettingsCarriesAnEmail(t *testing.T) {
 			}
 		})
 	}
+}
+
+// declaredProperties maps every property a component declares, including
+// those inside allOf, oneOf, anyOf, items, and inline objects, to its schema.
+// A name declared twice keeps both schemas reachable through a slice.
+func declaredProperties(value any) map[string][]any {
+	properties := map[string][]any{}
+	var walk func(any)
+	walk = func(v any) {
+		switch typed := v.(type) {
+		case map[string]any:
+			for key, child := range typed {
+				if declared, ok := child.(map[string]any); ok && key == "properties" {
+					for name, property := range declared {
+						properties[name] = append(properties[name], property)
+						walk(property)
+					}
+					continue
+				}
+				walk(child)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child)
+			}
+		}
+	}
+	walk(value)
+	return properties
+}
+
+// looksLikeContactAddress reports whether a property's name contains one of
+// the contact terms, or any of its schemas (including nested anyOf and oneOf
+// arms, but not referenced components, which are walked on their own) carries
+// one of the contact formats.
+func looksLikeContactAddress(name string, schemas []any, terms, formats []string) bool {
+	lower := strings.ToLower(name)
+	for _, term := range terms {
+		if strings.Contains(lower, term) {
+			return true
+		}
+	}
+	found := false
+	var walk func(any)
+	walk = func(v any) {
+		switch typed := v.(type) {
+		case map[string]any:
+			if format, ok := typed["format"].(string); ok {
+				for _, want := range formats {
+					if format == want {
+						found = true
+					}
+				}
+			}
+			for key, child := range typed {
+				if key == "properties" {
+					continue
+				}
+				walk(child)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child)
+			}
+		}
+	}
+	for _, schema := range schemas {
+		walk(schema)
+	}
+	return found
 }
