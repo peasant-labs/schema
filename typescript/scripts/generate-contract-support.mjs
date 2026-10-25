@@ -21,12 +21,15 @@ import { applyContributionAttemptZodRefinements } from "./lib/contribution-attem
 import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.mjs";
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
+import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
 const generatedRoot = join(packageRoot, "src", "internal", "generated");
 
 const versionsSource = await readFile(join(moduleRoot, "versions.go"), "utf8");
+const localAPISource = await readFile(join(moduleRoot, "local_api.go"), "utf8");
+const sessionTeammateBound = Number(requiredMatch(localAPISource, /SessionTeammateMaxIdentityRunes\s*=\s*(\d+)/, "SessionTeammateMaxIdentityRunes", "local_api.go"));
 const metadataSource = await readFile(join(moduleRoot, "metadata.go"), "utf8");
 const usageMetadataSource = await readFile(join(moduleRoot, "usage_metadata.go"), "utf8");
 const maxNativeMetadataStringBytes = Number(requiredMatch(usageMetadataSource, /^const maxNativeMetadataStringBytes = (\d+)$/m, "maxNativeMetadataStringBytes", "usage_metadata.go"));
@@ -80,7 +83,7 @@ async function refineRootZodContract() {
   const retainedSource = normalizeAutoPublishTargetZod(applyRetainedUnknownZodRefinements(generatedSource));
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
   const source = applyCollectiveZodRefinements(attemptSource, spec);
-  const refined = applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source)))))));
+  const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
   await writeFile(zodPath, applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(refined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username));
 }
 

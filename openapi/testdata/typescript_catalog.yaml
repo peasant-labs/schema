@@ -1296,6 +1296,15 @@ types:
   - go_name: SessionTeammateIdentityProbe
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsInput
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
   - go_name: SessionTeammateFixtures
     disposition: fixture-only
     reason: test fixture type, exported on a utility subpath when applicable

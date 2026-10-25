@@ -2301,8 +2301,14 @@ export type SessionTeammateEvidence = z.infer<typeof zSessionTeammateEvidence>;
 
 export const zSessionTeammate = z.object({
     evidence: zSessionTeammateEvidence,
-    name: z.string().min(1).max(256).regex(/^[^\x00-\x1F\x7F-\x9F]*$/),
-    team: z.string().min(1).max(256).regex(/^[^\x00-\x1F\x7F-\x9F]*$/)
+    name: z.string().min(1).regex(/^[^\x00-\x1F\x7F-\x9F]*$/),
+    team: z.string().min(1).regex(/^[^\x00-\x1F\x7F-\x9F]*$/)
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.SessionTeammate during local teammate identity validation: " + reason });
+    for (const entry of [["team", value.team], ["name", value.name]] as const) {
+      const codePoints = [...entry[1]].length;
+      if (codePoints > 256) fail(entry[0] + " is " + codePoints + " Unicode code points, over the 256-code-point bound that Go and the published JSON Schema enforce; shorten the recorded " + entry[0] + " at the producing boundary rather than truncating here");
+    }
 });
 
 export type SessionTeammate = z.infer<typeof zSessionTeammate>;
@@ -2640,6 +2646,11 @@ export const zLocalSessionRow = z.object({
     if (value.sync) {
       const s = value.session, v = value.sync;
       if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
+        if (left == null || right == null) return left == null && right == null;
+        return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
+      };
+      if (!sameTeammate(s.teammate, v.teammate)) fail("sync teammate disagrees with the session teammate; the list and the sync chooser would show different identities for one transcript, so derive both from the same evidence read");
     }
     if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");
   });

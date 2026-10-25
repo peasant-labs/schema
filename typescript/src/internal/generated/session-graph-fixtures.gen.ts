@@ -3126,6 +3126,8 @@ export const canonicalSessionGraphFixtures = {
       "village-null-nested-group-count",
       "local-sync-member-mirrors",
       "local-sync-member-count-mismatch",
+      "local-teammate-mirrors",
+      "local-teammate-mirror-mismatch",
       "local-search-member-mirrors",
       "local-search-member-identity-mismatch",
       "village-collective-member-mirrors",
@@ -7287,6 +7289,154 @@ export const canonicalSessionGraphFixtures = {
                       "model": "codex",
                       "syncStatus": "synced",
                       "previouslyPushed": true
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": false
+          }
+        },
+        {
+          "name": "local-teammate-mirrors",
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "both grouped summaries carry the same recorded teammate identity"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1,
+                      "project": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "teammate": {
+                        "team": "review-crew",
+                        "name": "parser-reviewer",
+                        "evidence": "native_dynamic_workflow"
+                      }
+                    },
+                    "sync": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "projectName": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "hostSlug": "host",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMs": 60000,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "inputSubmissionCount": 1,
+                      "model": "codex",
+                      "syncStatus": "synced",
+                      "previouslyPushed": true,
+                      "teammate": {
+                        "team": "review-crew",
+                        "name": "parser-reviewer",
+                        "evidence": "native_dynamic_workflow"
+                      }
+                    }
+                  },
+                  "helperGroups": [
+                    {
+                      "groupId": "hg_g1",
+                      "purpose": "helper_review",
+                      "helperThreadCount": 1,
+                      "memberScope": "scope_g1"
+                    }
+                  ]
+                }
+              ],
+              "page": 1,
+              "limit": 1,
+              "total": 1
+            }
+          },
+          "expected": {
+            "valid": true
+          }
+        },
+        {
+          "name": "local-teammate-mirror-mismatch",
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "immediate-owner grouped read contract"
+          },
+          "mutation": {
+            "description": "sync member teammate cannot disagree with its saved session teammate"
+          },
+          "input": {
+            "schema": "LocalHelperMembersPayload",
+            "payload": {
+              "members": [
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1,
+                      "project": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "teammate": {
+                        "team": "review-crew",
+                        "name": "parser-reviewer",
+                        "evidence": "native_dynamic_workflow"
+                      }
+                    },
+                    "sync": {
+                      "id": "g1",
+                      "harness": "codex",
+                      "projectName": "example",
+                      "projectHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "hostSlug": "host",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMs": 60000,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "inputSubmissionCount": 1,
+                      "model": "codex",
+                      "syncStatus": "synced",
+                      "previouslyPushed": true,
+                      "teammate": {
+                        "team": "review-crew",
+                        "name": "other-reviewer",
+                        "evidence": "native_dynamic_workflow"
+                      }
                     }
                   },
                   "helperGroups": [
