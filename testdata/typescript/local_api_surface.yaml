@@ -15,12 +15,12 @@ operations:
   - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}
   - {path: /api/v1/projects/resolve, method: get, operation_id: resolveProject}
   - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries,
-     description_anchors: [{name: eligible_session_count, text: "The sessions count covers every session recorded for a project"}]}
+     description_anchors: [{name: eligible_session_count, text: "The sessions count covers every session recorded for a project: the saved ingestion selection never narrows it, and no origin, index-readiness, or account bound applies to it."}]}
   - {path: "/api/v1/review/{projectHash}", method: get, operation_id: listReviewChanges}
   - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
   - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}
   - {path: /api/v1/search, method: get, operation_id: searchMessages,
-     description_anchors: [{name: indexed_search_match, text: "The saved ingestion selection never excludes an indexed entry that matches the query"}]}
+     description_anchors: [{name: indexed_search_match, text: "The saved ingestion selection never excludes an indexed entry that matches the query. The search index and the query bounds above still apply."}]}
   - path: /api/v1/session-summaries
     method: get
     operation_id: getSessionSummariesByID

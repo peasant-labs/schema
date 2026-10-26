@@ -13,7 +13,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   0.25.0 makes the selection govern what a future ingest picks up and what an
   upload hook may publish, never what this computer already holds. The home
   page, its child reads, its project options, the session list, search, the
-  project summaries, the publication read, and both by-id reads state the rule;
+  project summaries, the publication read, and the by-id and helper-member reads
+  state the rule;
   a `LocalSyncSessionRow` may carry `outsideSelection: true` and still be
   visible; an unknown parent still returns 404. Query, origin, account, and
   group-scope bounds are unchanged, and so are publication consent and hook

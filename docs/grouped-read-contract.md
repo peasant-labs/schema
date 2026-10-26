@@ -35,11 +35,13 @@ For an admitted ordinary P, helper G1 owned by P, and helper G2 owned by G1:
 
 Hosts construct the owner/group index over the full currently authorized and
 eligible original-query candidate set before member paging. Nested scopes retain
-the same viewer and parsed route/search/profile/project/collective/status/
-selection predicates, but name the nested group's own ID. The outer group's
-final membership restriction is not the nested candidate universe. Scope misses,
-expiration, or changed selection require an actionable list refresh, never a
-fallback to all members. Every expansion rechecks current rights and eligibility.
+the same viewer and parsed route/search/profile/project/collective/status
+predicates, but name the nested group's own ID. The outer group's final membership
+restriction is not the nested candidate universe. Scope misses, expiration, or a
+changed explicit query require an actionable list refresh, never a fallback to all
+members. The local saved ingestion selection is not a scope predicate: changing
+it neither revokes an issued scope nor changes its members. Every expansion
+rechecks current rights and the originating route's eligibility.
 
 Each disclosure has independent paging and callback state. A member key and
 selection callback identify exactly `item.transcript.session.id`; group IDs and
