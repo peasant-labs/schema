@@ -5,6 +5,29 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.35.0] - 2026-10-26
+
+### Changed
+
+- **The saved ingestion selection stops scoping stored browsing.** Local API
+  0.25.0 makes the selection govern what a future ingest picks up and what an
+  upload hook may publish, never what this computer already holds. The home
+  page, its child reads, its project options, the session list, search, the
+  project summaries, the publication read, and both by-id reads state the rule;
+  a `LocalSyncSessionRow` may carry `outsideSelection: true` and still be
+  visible; an unknown parent still returns 404. Query, origin, account, and
+  group-scope bounds are unchanged, and so are publication consent and hook
+  eligibility: `autoPublish` stays false for a session the selection leaves out.
+- Types 0.38.0 describes `LocalPublication.outsideSelection`, and its
+  `autoPublish` neighbour, as ingestion and push selection membership rather
+  than browsing permission. No field, enum, or required set changes.
+- Village API stays 0.30.0; its spec, request schemas, and generated
+  TypeScript operations are unchanged.
+- The publication read declares the 500 it already returns when a hydrated
+  row's saved-selection metadata cannot be determined, and the home page size
+  sits outside the continuation token's scope. The helper-member read keeps the
+  originating grouped route's own eligibility and query predicate.
+
 ## [v0.34.1] - 2026-10-26
 
 ### Added

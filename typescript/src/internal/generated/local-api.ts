@@ -263,7 +263,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. Account, origin, index-readiness, parent, and group-scope integrity still apply. */
+        /** @description List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. The originating grouped route's own eligibility and query predicate rules are kept, together with parent and group-scope integrity; this read adds no further browsing bound. */
         get: operations["listLocalHelperGroupMembers"];
         put?: never;
         post?: never;
