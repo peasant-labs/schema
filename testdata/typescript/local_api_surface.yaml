@@ -15,7 +15,7 @@ operations:
   - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}
   - {path: /api/v1/projects/resolve, method: get, operation_id: resolveProject}
   - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries,
-     description_anchors: [{name: eligible_session_count, text: "The sessions count covers every eligible stored session"}]}
+     description_anchors: [{name: eligible_session_count, text: "The sessions count covers every session recorded for a project"}]}
   - {path: "/api/v1/review/{projectHash}", method: get, operation_id: listReviewChanges}
   - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
   - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}
@@ -49,7 +49,8 @@ operations:
     method: get
     operation_id: listSyncSessionsGrouped
     description_anchors:
-      - {name: home_no_ingestion_browse_filter, text: "The saved ingestion selection is not applied as a direct browsing eligibility predicate"}
+      - {name: home_no_ingestion_browse_filter, text: "it excludes no root, child, or project option that the view's own eligibility rules admit"}
+      - {name: home_counts_follow_eligible_filters, text: "counts and empty states derive from the eligible browsing set the caller's explicit filters select"}
       - {name: home_independent_bounds, text: "Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging"}
       - {name: unknown_parent_only_404, text: "Unknown parents return 404"}
       - {name: token_scope_excludes_ingestion_selection, text: "or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid"}

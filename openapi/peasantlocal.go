@@ -296,7 +296,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 
 	// GET /api/v1/projects/summary
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/projects/summary",
-		"listProjectSummaries", "List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every eligible stored session: the saved ingestion selection never narrows it. Independent origin, index-readiness, and account rules still apply; recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings.", []string{"map"},
+		"listProjectSummaries", "List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every session recorded for a project: the saved ingestion selection never narrows it, and no origin, index-readiness, or account bound applies to it. recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings.", []string{"map"},
 		nil,
 		new(schema.ProjectSummariesPayload)); err != nil {
 		return nil, err
@@ -347,7 +347,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 
 	// GET /api/v1/search?q=<query>&limit=<n>
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/search",
-		"searchMessages", "Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. Independent origin and index-readiness rules still apply.", []string{"search"},
+		"searchMessages", "Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. The search index and the query bounds above still apply.", []string{"search"},
 		new(struct {
 			Q     string `query:"q" required:"true" description:"Search query (min 2 chars; whitespace tokens ANDed)"`
 			Limit int    `query:"limit" description:"Max results (default 20, capped at 50)"`

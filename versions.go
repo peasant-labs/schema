@@ -169,7 +169,7 @@ const (
 	// read gained the optional Claude Code teammate identity, with its own
 	// teammate evidence set, a local read addition that never reaches the
 	// publish wire (additive = minor bump).
-	
+
 	// Bumped to 0.25.0 when the stored-browsing reads stopped being scoped by
 	// the saved ingestion selection: the home page, its child reads and its
 	// project options describe the stored library, a page row may carry
@@ -264,7 +264,7 @@ const (
 	// closed set entered the catalog (additive = minor bump). The session-graph
 	// EvidenceKind set is unchanged: teammate evidence is local read evidence
 	// and must not widen the shared published menu.
-	
+
 	// Bumped to 0.38.0 to describe the local publication's selection fields as
 	// ingest and push membership rather than browsing permission, without
 	// changing any field or enum.

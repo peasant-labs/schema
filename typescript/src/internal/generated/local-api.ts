@@ -161,7 +161,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every eligible stored session: the saved ingestion selection never narrows it. Independent origin, index-readiness, and account rules still apply; recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings. */
+        /** @description List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every session recorded for a project: the saved ingestion selection never narrows it, and no origin, index-readiness, or account bound applies to it. recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings. */
         get: operations["listProjectSummaries"];
         put?: never;
         post?: never;
@@ -246,7 +246,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. Independent origin and index-readiness rules still apply. */
+        /** @description Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. The search index and the query bounds above still apply. */
         get: operations["searchMessages"];
         put?: never;
         post?: never;

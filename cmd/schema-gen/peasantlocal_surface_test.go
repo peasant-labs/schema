@@ -33,6 +33,7 @@ const (
 	localAPIAnchorIndexedSearchMatch                 localAPIDescriptionAnchor = "indexed_search_match"
 	localAPIAnchorEligibleSessionCount               localAPIDescriptionAnchor = "eligible_session_count"
 	localAPIAnchorHomeNoIngestionBrowseFilter        localAPIDescriptionAnchor = "home_no_ingestion_browse_filter"
+	localAPIAnchorHomeCountsFollowEligibleFilters    localAPIDescriptionAnchor = "home_counts_follow_eligible_filters"
 	localAPIAnchorHomeIndependentBounds              localAPIDescriptionAnchor = "home_independent_bounds"
 	localAPIAnchorUnknownParentOnly404               localAPIDescriptionAnchor = "unknown_parent_only_404"
 	localAPIAnchorTokenScopeExcludesSelection        localAPIDescriptionAnchor = "token_scope_excludes_ingestion_selection"
@@ -50,6 +51,7 @@ const (
 // alphabetical by constant name so a reader can compare it with the fixture.
 var allLocalAPIDescriptionAnchors = []localAPIDescriptionAnchor{
 	localAPIAnchorEligibleSessionCount,
+	localAPIAnchorHomeCountsFollowEligibleFilters,
 	localAPIAnchorHomeIndependentBounds,
 	localAPIAnchorHomeNoIngestionBrowseFilter,
 	localAPIAnchorIndexedSearchMatch,
