@@ -5,6 +5,32 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.34.1] - 2026-10-26
+
+### Added
+
+- **Session extras reads.** The Local API declares
+  `GET /api/v1/sessions/{id}/commits` (`SessionCommitsResponse`) and
+  `GET /api/v1/sessions/{id}/pull-requests`
+  (`SessionPullRequestsResponse`). A detected pull request carries
+  `SessionPullRequest` (`owner`, `repo`, `number`, `url`, `source`) with a
+  `Validate` rule; `source` is an open string so a later detector is additive.
+  Local API 0.23.0, Types 0.36.0.
+- **Recorded Claude teammate identity.** The Local API
+  `SessionSummary`, `LocalSyncSummary`, and `SessionDetailReadPayload` carry an
+  optional `SessionTeammate` (`team`, `name`, `evidence`) whose dedicated
+  `SessionTeammateEvidence` set accepts `native_dynamic_workflow`. The object
+  exists only when the stored parent transcript records spawning that exact
+  identity. It never enters `SessionDetailPayload`, `UnifiedMetadata`, or the
+  Village wire. Local API 0.24.0, Types 0.37.0.
+
+### Verification
+
+- The Local and Types specs and TypeScript bindings are regenerated from
+  source; released Village artifacts are byte-identical to v0.34.0.
+- Contract fixtures cover teammate identity bounds and session/sync mirrors;
+  the generated Zod preserves an own `teammate` through `parseServerMessageRaw`.
+
 ## [v0.34.0] - 2026-10-25
 
 ### Changed
