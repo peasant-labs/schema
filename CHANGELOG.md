@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.34.0] - 2026-10-25
+
 ### Changed
 
 - **Breaking:** an owner can no longer make a person a member of a collective
