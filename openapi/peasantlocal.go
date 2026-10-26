@@ -112,7 +112,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// GET /api/v1/session-groups/{groupId}/members requires the opaque scope
 	// returned by the originating grouped list and accepts no route filters.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-groups/{groupId}/members",
-		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. Account, origin, index-readiness, parent, and group-scope integrity still apply.", []string{"sessions"},
+		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. The originating grouped route's own eligibility and query predicate rules are kept, together with parent and group-scope integrity; this read adds no further browsing bound.", []string{"sessions"},
 		new(struct {
 			GroupID string `path:"groupId"`
 			Scope   string `query:"scope" required:"true" description:"Opaque member scope from the originating grouped response"`

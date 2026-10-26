@@ -39,6 +39,7 @@ const (
 	localAPIAnchorTokenScopeExcludesPageSize         localAPIDescriptionAnchor = "token_scope_excludes_page_size"
 	localAPIAnchorMetadataFailsClosed                localAPIDescriptionAnchor = "publication_metadata_fails_closed"
 	localAPIAnchorMemberScopeExcludesSelection       localAPIDescriptionAnchor = "member_scope_excludes_ingestion_selection"
+	localAPIAnchorMemberScopeKeepsRouteEligibility   localAPIDescriptionAnchor = "member_scope_keeps_route_eligibility"
 	localAPIAnchorPublicationsNotSelectionFiltered   localAPIDescriptionAnchor = "publications_not_selection_filtered"
 	localAPIAnchorSessionByIDNotSelectionFiltered    localAPIDescriptionAnchor = "session_by_id_not_selection_filtered"
 	localAPIAnchorSummariesReadNotNarrowed           localAPIDescriptionAnchor = "summaries_stored_read_not_narrowed"
@@ -54,6 +55,7 @@ var allLocalAPIDescriptionAnchors = []localAPIDescriptionAnchor{
 	localAPIAnchorIndexedSearchMatch,
 	localAPIAnchorListIndependentBounds,
 	localAPIAnchorMemberScopeExcludesSelection,
+	localAPIAnchorMemberScopeKeepsRouteEligibility,
 	localAPIAnchorMetadataFailsClosed,
 	localAPIAnchorNoIngestionBrowseFilter,
 	localAPIAnchorPublicationsNotSelectionFiltered,

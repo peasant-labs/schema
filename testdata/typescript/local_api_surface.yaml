@@ -31,6 +31,7 @@ operations:
     operation_id: listLocalHelperGroupMembers
     description_anchors:
       - {name: member_scope_excludes_ingestion_selection, text: "the saved ingestion selection is not part of it"}
+      - {name: member_scope_keeps_route_eligibility, text: "The originating grouped route's own eligibility and query predicate rules are kept"}
   - path: /api/v1/sessions
     method: get
     operation_id: listSessions
