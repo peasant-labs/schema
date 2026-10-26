@@ -320,6 +320,18 @@ types:
     disposition: catalog
     component: SessionSummary
     reason: public wire or domain contract type
+  - go_name: SessionCommitsResponse
+    disposition: catalog
+    component: SessionCommitsResponse
+    reason: recorded session commit binding read
+  - go_name: SessionPullRequest
+    disposition: catalog
+    component: SessionPullRequest
+    reason: display-only pull request detected in a session's own tool calls
+  - go_name: SessionPullRequestsResponse
+    disposition: catalog
+    component: SessionPullRequestsResponse
+    reason: detected session pull request read
   - go_name: SessionsPayload
     disposition: catalog
     component: SessionsPayload

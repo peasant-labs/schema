@@ -16,3 +16,4 @@ required_names:
   - command invocation
   - pull request attachment
   - update user settings request
+  - session pull request row

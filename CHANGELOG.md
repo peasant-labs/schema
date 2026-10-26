@@ -67,6 +67,21 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   email, except one listed git commit author field (`author_email` on
   `VillageRepositoryCommit`). It also matches properties named `address` and
   any string property with `format: email`.
+- **Local API 0.23.0** declares two session reads and Types 0.36.0 catalogs
+  their types:
+  - `GET /api/v1/sessions/{id}/commits` returns `{"commits": [CommitInfo]}`,
+    the session's recorded commit binding rather than a replay of the
+    repository's git log.
+  - `GET /api/v1/sessions/{id}/pull-requests` returns
+    `{"pullRequests": [SessionPullRequest]}`, the pull requests detected in the
+    session's own `gh pr create` tool calls. A row exists only when one
+    recorded call both invokes the command and returns a GitHub pull request
+    URL, so the answer is display-only evidence: it is not an access boundary
+    and nothing is posted to GitHub. `SessionPullRequest.source` names the
+    detector and stays an open label, so a later detector is additive.
+  - Both reads answer an empty array for a stored session with nothing
+    recorded, and 404 for an identifier that names no stored session, so "none
+    recorded" and "not here" stay distinguishable.
 
 ## [v0.33.1] - 2026-10-25
 

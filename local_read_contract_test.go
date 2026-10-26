@@ -187,6 +187,10 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 		value = &schema.LocalSyncSessionsPayload{}
 	case "sessions":
 		value = &schema.SessionsPayload{}
+	case "commits":
+		value = &schema.SessionCommitsResponse{}
+	case "pull-requests":
+		value = &schema.SessionPullRequestsResponse{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)
 	}
@@ -216,6 +220,14 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 			return nil, err
 		}
 	case *schema.LocalSessionListPayload:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.SessionCommitsResponse:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.SessionPullRequestsResponse:
 		if err := typed.Validate(); err != nil {
 			return nil, err
 		}

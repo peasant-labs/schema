@@ -324,6 +324,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{id}/commits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get the commits recorded for one stored session. The rows are the session's recorded session-to-commit bindings, the same binding the review surfaces read, rather than a replay of the repository's git log. A stored session with no recorded commits answers an empty array, and an identifier that names no stored session is a 404 rather than an empty list. */
+        get: operations["getSessionCommits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{id}/pull-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Get the pull requests detected in one stored session's own `gh pr create` tool calls. A row exists only when one recorded call both invokes `gh pr create` and returns a GitHub pull request URL, so the answer is display-only evidence of what the session did: it is not an access boundary, it never widens who may read the transcript, and nothing is posted to GitHub. A session with no detected pull request answers an empty array, and an identifier that names no stored session is a 404 rather than an empty list. */
+        get: operations["getSessionPullRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions/{id}/transcript": {
         parameters: {
             query?: never;
@@ -863,6 +897,7 @@ export interface components {
          */
         SchemaCollectiveSourceOutcome: Schema.CollectiveSourceOutcome;
         SchemaCommandInvocation: Schema.CommandInvocation;
+        SchemaCommitInfo: Schema.CommitInfo;
         SchemaCommitRef: Schema.CommitRef;
         /**
          * Confidence
@@ -1300,6 +1335,7 @@ export interface components {
         SchemaScaleKind: Schema.ScaleKind;
         SchemaSearchResult: Schema.SearchResult;
         SchemaSessionAssociation: Schema.SessionAssociation;
+        SchemaSessionCommitsResponse: Schema.SessionCommitsResponse;
         SchemaSessionDetailReadPayload: Schema.SessionDetailReadPayload;
         /**
          * Session ID
@@ -1340,6 +1376,8 @@ export interface components {
          * @enum {string}
          */
         SchemaSessionOutcome: Schema.SessionOutcome;
+        SchemaSessionPullRequest: Schema.SessionPullRequest;
+        SchemaSessionPullRequestsResponse: Schema.SessionPullRequestsResponse;
         /**
          * Session Purpose
          * @description Closed session graph value
@@ -2151,6 +2189,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaSessionDetailReadPayload"];
+                };
+            };
+        };
+    };
+    getSessionCommits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSessionCommitsResponse"];
+                };
+            };
+        };
+    };
+    getSessionPullRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaSessionPullRequestsResponse"];
                 };
             };
         };

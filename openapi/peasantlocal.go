@@ -64,6 +64,40 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}), new(schema.SessionDetailReadPayload)); err != nil {
 		return nil, err
 	}
+	// GET /api/v1/sessions/{id}/commits is the session's recorded commit
+	// binding, the same one the review surfaces read.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/commits",
+		"getSessionCommits",
+		"Get the commits recorded for one stored session. "+
+			"The rows are the session's recorded session-to-commit bindings, the same "+
+			"binding the review surfaces read, rather than a replay of the repository's "+
+			"git log. A stored session with no recorded commits answers an empty array, "+
+			"and an identifier that names no stored session is a 404 rather than an "+
+			"empty list.",
+		[]string{"sessions"},
+		new(struct {
+			ID string `path:"id"`
+		}), new(schema.SessionCommitsResponse)); err != nil {
+		return nil, err
+	}
+	// GET /api/v1/sessions/{id}/pull-requests is display-only evidence detected
+	// from the session's own gh pr create calls.
+	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/pull-requests",
+		"getSessionPullRequests",
+		"Get the pull requests detected in one stored session's own `gh pr create` "+
+			"tool calls. A row exists only when one recorded call both invokes "+
+			"`gh pr create` and returns a GitHub pull request URL, so the answer is "+
+			"display-only evidence of what the session did: it is not an access "+
+			"boundary, it never widens who may read the transcript, and nothing is "+
+			"posted to GitHub. A session with no detected pull request answers an empty "+
+			"array, and an identifier that names no stored session is a 404 rather than "+
+			"an empty list.",
+		[]string{"sessions"},
+		new(struct {
+			ID string `path:"id"`
+		}), new(schema.SessionPullRequestsResponse)); err != nil {
+		return nil, err
+	}
 	// Explicit views share the sync resource without changing legacy responses.
 	if err := addLocalOperations(r, []localOperationSpec{{
 		method: http.MethodGet, path: "/api/v1/sync/sessions", id: "listSyncSessionsGrouped", tag: "sync",

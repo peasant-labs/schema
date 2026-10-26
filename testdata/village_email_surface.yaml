@@ -23,4 +23,5 @@ specs:
       SchemaVillageRepositoryCommit.author_email: a git commit's author email in a linked repository's history, read from GitHub, not a Village account's address
   local:
     self_operations: []
-    exempt_properties: {}
+    exempt_properties:
+      SchemaCommitInfo.authorEmail: a git commit's author email recorded in the session's own repository, not a Village account's address

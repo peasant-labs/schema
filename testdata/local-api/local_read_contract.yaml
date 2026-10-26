@@ -18,6 +18,16 @@ required_names:
   - mixed-sync-search
   - invalid-nested-list-row
   - invalid-nested-member-row
+  - session-commits-empty
+  - session-pull-request-row
+  - session-pull-request-open-source
+  - session-commits-null-array
+  - session-pull-requests-null-array
+  - session-pull-request-zero-number
+  - session-pull-request-empty-owner
+  - session-pull-request-empty-repo
+  - session-pull-request-empty-url
+  - session-pull-request-empty-source
 round_trip:
   cases:
     - name: flat-detail-root
@@ -80,6 +90,24 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "existing WebSocket sessions payload"}
       mutation: {description: "preserves the legacy flat sessions array"}
+    - name: session-commits-empty
+      input: {kind: commits, json: '{"commits":[]}'}
+      expected: {valid: true, requiredKeys: [commits], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a stored session with no recorded commits answers an empty array"}
+      mutation: {description: "emits the empty commits array rather than null"}
+    - name: session-pull-request-row
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"https://github.com/acme/api/pull/42","source":"gh_pr_create"}]}'}
+      expected: {valid: true, requiredKeys: [pullRequests], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a detected pull request carries its repository identity and detector"}
+      mutation: {description: "carries one detected row with the open source label"}
+    - name: session-pull-request-open-source
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":7,"url":"https://github.com/acme/api/pull/7","source":"gh_pr_create_v2"}]}'}
+      expected: {valid: true, requiredKeys: [pullRequests], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "source is an open string, so a later detector needs no rewrite of rows already stored by a consumer"}
+      mutation: {description: "carries a detector label the contract does not define through the read unchanged"}
 validation:
   cases:
     - name: mismatched-sync-count
@@ -136,3 +164,45 @@ validation:
       classification: must-fail
       provenance: {source: boundary, ref: "member validator traverses rows"}
       mutation: {description: "places one unsafe count inside a typed member row"}
+    - name: session-commits-null-array
+      input: {kind: commits, json: '{"commits":null}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty read must not be answerable with null"}
+      mutation: {description: "nulls the commits array of an otherwise empty answer"}
+    - name: session-pull-requests-null-array
+      input: {kind: pull-requests, json: '{"pullRequests":null}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty detection must not be answerable with null"}
+      mutation: {description: "nulls the pullRequests array of an otherwise empty answer"}
+    - name: session-pull-request-zero-number
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":0,"url":"https://github.com/acme/api/pull/0","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a pull request number is one or greater"}
+      mutation: {description: "changes only the row number of an otherwise valid detected row to zero"}
+    - name: session-pull-request-empty-owner
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"","repo":"api","number":42,"url":"https://github.com/acme/api/pull/42","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a detected row must attribute its repository owner"}
+      mutation: {description: "empties only the row owner of an otherwise valid detected row"}
+    - name: session-pull-request-empty-repo
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"","number":42,"url":"https://github.com/acme/api/pull/42","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a detected row must attribute its repository name"}
+      mutation: {description: "empties only the row repo of an otherwise valid detected row"}
+    - name: session-pull-request-empty-url
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"","source":"gh_pr_create"}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a detected row must carry the canonical address it was read from"}
+      mutation: {description: "empties only the row url of an otherwise valid detected row"}
+    - name: session-pull-request-empty-source
+      input: {kind: pull-requests, json: '{"pullRequests":[{"owner":"acme","repo":"api","number":42,"url":"https://github.com/acme/api/pull/42","source":""}]}'}
+      expected: false
+      classification: must-fail
+      provenance: {source: boundary, ref: "a missing detector must not be told apart from an unknown one"}
+      mutation: {description: "empties only the row source of an otherwise valid detected row"}

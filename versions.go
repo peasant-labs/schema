@@ -162,7 +162,10 @@ const (
 	// and bounded contribution evidence, retaining the forward sync views.
 	// Bumped to 0.22.0 when the embedded VillageUserCollective replaced its
 	// created_by account id with the creator as a VillagePublicOwner.
-	PeasantLocalAPIVersion = "0.22.0"
+	// Bumped to 0.23.0 when the session reads gained the recorded commits and
+	// the pull requests detected in the session's own gh pr create calls
+	// (additive operations = minor bump).
+	PeasantLocalAPIVersion = "0.23.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -244,5 +247,7 @@ const (
 	// notification email types and VillageUserSettings gained
 	// notification_email and email_invitations. The add-member username
 	// request stays in the catalog, deprecated, for the alias window.
-	TypesVersion = "0.35.0"
+	// Bumped to 0.36.0 when the session commits read and the detected session
+	// pull request rows entered the catalog (additive = minor bump).
+	TypesVersion = "0.36.0"
 )

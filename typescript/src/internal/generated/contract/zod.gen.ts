@@ -1952,6 +1952,12 @@ export const zServerMessage = z.object({
 
 export type ServerMessage = z.infer<typeof zServerMessage>;
 
+export const zSessionCommitsResponse = z.object({
+    commits: z.array(zCommitInfo)
+});
+
+export type SessionCommitsResponse = z.infer<typeof zSessionCommitsResponse>;
+
 /**
  * Session ID
  *
@@ -2199,6 +2205,22 @@ export const zQualityMetrics = z.object({
 });
 
 export type QualityMetrics = z.infer<typeof zQualityMetrics>;
+
+export const zSessionPullRequest = z.object({
+    number: z.int().gte(1),
+    owner: z.string().min(1),
+    repo: z.string().min(1),
+    source: z.string().min(1),
+    url: z.string().min(1)
+});
+
+export type SessionPullRequest = z.infer<typeof zSessionPullRequest>;
+
+export const zSessionPullRequestsResponse = z.object({
+    pullRequests: z.array(zSessionPullRequest)
+});
+
+export type SessionPullRequestsResponse = z.infer<typeof zSessionPullRequestsResponse>;
 
 /**
  * Session Purpose
