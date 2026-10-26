@@ -73,7 +73,7 @@ types:
   - {go_name: LocalSyncPublicationFilter, disposition: catalog, component: LocalSyncPublicationFilter, reason: root publication filter}
   - {go_name: LocalSyncSessionRow, disposition: catalog, component: LocalSyncSessionRow, reason: hydrated sync row}
   - {go_name: LocalSyncSessionPage, disposition: catalog, component: LocalSyncSessionPage, reason: concrete generic sync page}
-  - {go_name: LocalSyncProjectOption, disposition: catalog, component: LocalSyncProjectOption, reason: selected root project identity}
+  - {go_name: LocalSyncProjectOption, disposition: catalog, component: LocalSyncProjectOption, reason: stored root project identity}
   - {go_name: LocalSyncProjectOptions, disposition: catalog, component: LocalSyncProjectOptions, reason: complete metadata-only root picker}
   - {go_name: LocalSyncSessionsQuery, disposition: runtime-only, reason: Local operation query parameters rather than a JSON body}
   - {go_name: AuthoritativeCommitInfo, disposition: catalog, component: AuthoritativeCommitInfo, reason: successor recursive strictness}

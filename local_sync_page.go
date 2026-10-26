@@ -9,7 +9,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-// LocalSyncPublicationFilter narrows the selected root cohort before paging.
+// LocalSyncPublicationFilter narrows the stored root cohort before paging.
 type LocalSyncPublicationFilter string
 
 const (
@@ -35,7 +35,7 @@ type LocalSyncSessionsQuery struct {
 	PageToken       *PageToken                  `query:"pageToken" nullable:"false" maxLength:"4096" description:"Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected"`
 	ParentSessionID *string                     `query:"parentSessionId" nullable:"false" minLength:"1"`
 	ProjectHash     *ProjectHash                `query:"projectHash" nullable:"false"`
-	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all"`
+	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all" description:"Root publication filter; auto uses the canonical live hook decision. This is an explicit publication filter, not selection scope"`
 }
 
 func (q LocalSyncSessionsQuery) Validate() error {
@@ -120,7 +120,9 @@ func ParseLocalSyncSessionsQuery(values url.Values) (LocalSyncSessionsQuery, err
 }
 
 // LocalSyncSessionRow hydrates only a returned session, sharing the canonical
-// sync/publication projections. Preview is bounded and redaction-safe.
+// sync/publication projections. Preview is bounded and redaction-safe. A row may
+// carry OutsideSelection: that field reports ingestion and upload-hook selection
+// membership, so it never removes a stored row from a page.
 type LocalSyncSessionRow struct {
 	Sync        LocalSyncSummary `json:"sync"`
 	Publication LocalPublication `json:"publication"`
@@ -136,8 +138,8 @@ func (r LocalSyncSessionRow) Validate() error {
 	if err := r.Publication.Validate(); err != nil {
 		return err
 	}
-	if r.Sync.ID != r.Publication.SessionID || r.Publication.OutsideSelection || r.Publication.Audience != nil || r.ChildCount < 0 {
-		return syncPageError("LocalSyncSessionRow", "sync/publication identity, selection, audience, or childCount is inconsistent; emit the same visible session ID, no audience, and a nonnegative immediate-child count")
+	if r.Sync.ID != r.Publication.SessionID || r.Publication.Audience != nil || r.ChildCount < 0 {
+		return syncPageError("LocalSyncSessionRow", "sync/publication identity, audience, or childCount is inconsistent; emit the same visible session ID, no audience, and a nonnegative immediate-child count")
 	}
 	return nil
 }
@@ -150,7 +152,7 @@ type LocalSyncProjectOption struct {
 	ProjectName string      `json:"projectName"`
 }
 
-// LocalSyncProjectOptions contains the complete selected root picker, independent
+// LocalSyncProjectOptions contains the complete stored root picker, independent
 // of the chosen root project/publication filter. No counts or enrichment.
 type LocalSyncProjectOptions struct {
 	Projects []LocalSyncProjectOption `json:"projects" nullable:"false"`
@@ -158,12 +160,12 @@ type LocalSyncProjectOptions struct {
 
 func (o LocalSyncProjectOptions) Validate() error {
 	if o.Projects == nil {
-		return syncPageError("LocalSyncProjectOptions", "projects is null; emit [] when no selected root projects exist")
+		return syncPageError("LocalSyncProjectOptions", "projects is null; emit [] when no stored root project exists")
 	}
 	seen := map[ProjectHash]bool{}
 	for i, p := range o.Projects {
 		if p.ProjectHash.Validate() != nil || seen[p.ProjectHash] {
-			return syncPageError("LocalSyncProjectOptions", "projects contains a malformed or duplicate hash; emit each canonical selected root project once")
+			return syncPageError("LocalSyncProjectOptions", "projects contains a malformed or duplicate hash; emit each canonical stored root project once")
 		}
 		if i > 0 {
 			previous := o.Projects[i-1]

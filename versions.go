@@ -169,7 +169,14 @@ const (
 	// read gained the optional Claude Code teammate identity, with its own
 	// teammate evidence set, a local read addition that never reaches the
 	// publish wire (additive = minor bump).
-	PeasantLocalAPIVersion = "0.24.0"
+
+	// Bumped to 0.25.0 when the stored-browsing reads stopped being scoped by
+	// the saved ingestion selection: the home page, its child reads and its
+	// project options describe the stored library, a page row may carry
+	// outsideSelection while remaining visible, and a by-id or publication
+	// read states the same rule. A saved selection scopes future ingest and
+	// hook publication only, never a stored read.
+	PeasantLocalAPIVersion = "0.25.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -257,5 +264,9 @@ const (
 	// closed set entered the catalog (additive = minor bump). The session-graph
 	// EvidenceKind set is unchanged: teammate evidence is local read evidence
 	// and must not widen the shared published menu.
-	TypesVersion = "0.37.0"
+
+	// Bumped to 0.38.0 to describe the local publication's selection fields as
+	// ingest and push membership rather than browsing permission, without
+	// changing any field or enum.
+	TypesVersion = "0.38.0"
 )

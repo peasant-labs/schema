@@ -37,7 +37,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// GET /api/v1/sessions. The view parameter is opt-in; consumers that omit it
 	// continue to receive SessionsPayload from existing servers.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions",
-		"listSessions", "List session summaries.", []string{"sessions"},
+		"listSessions", "List session summaries. The saved ingestion selection never narrows this read: a stored session is not withheld because that selection would leave it out of a future ingest. Independent origin, index-readiness, and query rules still apply, so the list holds every eligible stored session.", []string{"sessions"},
 		new(struct {
 			View string `query:"view" description:"Set to grouped to return owner-nested helper groups" enum:"grouped"`
 		}), new(schema.LocalSessionListPayload)); err != nil {
@@ -49,7 +49,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// with `path:"name"` tags. Use an anonymous struct here so the "id" path
 	// parameter is registered correctly.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}",
-		"getSession", "Get session detail by ID.", []string{"sessions"},
+		"getSession", "Get session detail by ID. The saved ingestion selection never refuses a stored session here: a session this computer has stored is not refused because that selection would leave it out of a future ingest.", []string{"sessions"},
 		new(struct {
 			ID string `path:"id"`
 		}),
@@ -58,7 +58,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 	// GET /api/v1/sessions/{id}/transcript is the mounted full-transcript read.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/transcript",
-		"getSessionTranscript", "Get the flat additive session transcript by ID.", []string{"sessions"},
+		"getSessionTranscript", "Get the flat additive session transcript by ID. The saved ingestion selection never refuses a stored session here: a session this computer has stored is not refused because that selection would leave it out of a future ingest.", []string{"sessions"},
 		new(struct {
 			ID string `path:"id"`
 		}), new(schema.SessionDetailReadPayload)); err != nil {
@@ -101,7 +101,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// Explicit views share the sync resource without changing legacy responses.
 	if err := addLocalOperations(r, []localOperationSpec{{
 		method: http.MethodGet, path: "/api/v1/sync/sessions", id: "listSyncSessionsGrouped", tag: "sync",
-		description:   "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of selected authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. Root project/publication filters apply before paging; child calls reject them. Unknown or unselected parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only selected root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize and reapply canonical selection every request. Tokens are not credentials or snapshots. Selection failures retain 500/code selection_visibility; store failures return 500 and unavailable readers 503, never empty success.",
+		description:   "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection is not applied as a direct browsing eligibility predicate: it excludes no root, child, or project option that the view's own eligibility rules admit, and counts and empty states derive from the eligible browsing set the caller's explicit filters select. Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging, and an explicit publication=auto filter may reflect legitimate hook eligibility, so that filtered view can change with the selection while no unfiltered stored row is added or removed. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. A token's scope is the view, the parent, the root project or publication filter, and the caller's account; it does not include the page size, which a caller may change independently, or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots: a continuation stays valid when publication metadata changes which rows a filter selects. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success.",
 		requests:      []interface{}{new(schema.LocalSyncSessionsQuery)},
 		response:      new(schema.LocalSyncSessionPage),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError, http.StatusServiceUnavailable},
@@ -112,7 +112,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// GET /api/v1/session-groups/{groupId}/members requires the opaque scope
 	// returned by the originating grouped list and accepts no route filters.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-groups/{groupId}/members",
-		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope.", []string{"sessions"},
+		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. The originating grouped route's own eligibility and query predicate rules are kept, together with parent and group-scope integrity; this read adds no further browsing bound.", []string{"sessions"},
 		new(struct {
 			GroupID string `path:"groupId"`
 			Scope   string `query:"scope" required:"true" description:"Opaque member scope from the originating grouped response"`
@@ -130,9 +130,11 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-summaries",
 		"getSessionSummariesByID",
 		"Get session summaries for an explicit set of session identifiers. "+
-			"This operation resolves links, so it applies NEITHER origin scope NOR "+
-			"selection scope: a session hidden from every discovery list is still "+
-			"returned here when its identifier is named. An identifier that names "+
+			"This operation resolves links, so it applies NEITHER origin scope "+
+			"NOR the saved ingestion selection: a stored session is returned here "+
+			"when its identifier is named, even when its origin keeps it out of a "+
+			"list, and the saved ingestion selection never narrows a stored read. "+
+			"An identifier that names "+
 			"no session on this machine is omitted from the response rather than "+
 			"failing the batch, so a partially stale link still resolves the "+
 			"sessions that do exist.",
@@ -294,7 +296,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 
 	// GET /api/v1/projects/summary
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/projects/summary",
-		"listProjectSummaries", "List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes).", []string{"map"},
+		"listProjectSummaries", "List per-project summary rows for the home picker (sessions, recorded coverage, last work, open changes). The sessions count covers every session recorded for a project: the saved ingestion selection never narrows it, and no origin, index-readiness, or account bound applies to it. recordedFiles, totalFiles, openChanges, and lastWorkMs keep their own file-coverage and Git meanings.", []string{"map"},
 		nil,
 		new(schema.ProjectSummariesPayload)); err != nil {
 		return nil, err
@@ -345,7 +347,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 
 	// GET /api/v1/search?q=<query>&limit=<n>
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/search",
-		"searchMessages", "Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output.", []string{"search"},
+		"searchMessages", "Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. The search index and the query bounds above still apply.", []string{"search"},
 		new(struct {
 			Q     string `query:"q" required:"true" description:"Search query (min 2 chars; whitespace tokens ANDed)"`
 			Limit int    `query:"limit" description:"Max results (default 20, capped at 50)"`

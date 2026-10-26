@@ -153,13 +153,14 @@ type SessionSummariesByIDAnchor string
 
 const (
 	// SessionSummariesByIDAnchorResolvesLinks: the operation exists to resolve
-	// links, which is why the two scopes below do not apply to it.
+	// links, which is why the origin scope below does not apply to it.
 	SessionSummariesByIDAnchorResolvesLinks SessionSummariesByIDAnchor = "resolves_links"
 	// SessionSummariesByIDAnchorNoOriginScope: origin scope is a discovery
 	// boundary and must not reach a by-id resolution.
 	SessionSummariesByIDAnchorNoOriginScope SessionSummariesByIDAnchor = "no_origin_scope"
-	// SessionSummariesByIDAnchorNoSelectionScope: selection scope is the same
-	// kind of boundary and is excluded for the same reason.
+	// SessionSummariesByIDAnchorNoSelectionScope: the saved ingestion selection
+	// is not a browsing scope at all, so it narrows no stored read and cannot
+	// reach a by-id resolution either.
 	SessionSummariesByIDAnchorNoSelectionScope SessionSummariesByIDAnchor = "no_selection_scope"
 	// SessionSummariesByIDAnchorUnknownIDOmitted: an identifier that names no
 	// local session is omitted rather than failing the whole batch.
@@ -250,7 +251,7 @@ type SessionOriginFixtures struct {
 	// The loader compares it to AllSessionOrigins by membership, so widening the
 	// enum without adding a row fails here.
 	// ByIDOperation is the declared shape of the by-id session-summaries
-	// operation, the link-resolution surface a hidden session still reaches.
+	// operation, the link-resolution surface a stored session still reaches.
 	ByIDOperation SessionSummariesByIDContract                                                    `yaml:"by_id_operation"`
 	RequiredMenu  []SessionOrigin                                                                 `yaml:"required_menu"`
 	Validities    testcase.Corpus[string, SessionOriginValidityExpectation]                       `yaml:"validities"`

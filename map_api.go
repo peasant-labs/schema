@@ -1435,7 +1435,8 @@ type ProjectSummary struct {
 
 // ProjectResolutionPayload resolves one explicitly requested project display
 // identity to its opaque hash without enumerating sibling projects. It exists
-// for stable deep links when discovery lists are narrowed by user selection.
+// for stable deep links that name one stored project without listing the
+// others; the saved ingestion selection never narrows it.
 type ProjectResolutionPayload struct {
 	Project     string      `json:"project" required:"true"`
 	ProjectHash ProjectHash `json:"projectHash" required:"true"`

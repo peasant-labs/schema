@@ -72,12 +72,20 @@ type LocalPublication struct {
 	// this session on a commit or push. Rule-required hooks need an active rule
 	// for that repository and event; removing or pausing the last binding makes
 	// the retained hook dormant. Separately installed terminal hooks have their
-	// own consent. False outside the saved selection or when rules cannot be read.
-	AutoPublish bool `json:"autoPublish" description:"An executable Peasant upload hook can publish this session on a commit or push. A rule-required hook publishes only while an active rule covers the repository and event; removing or pausing its last binding makes the retained hook dormant. Separately installed terminal hooks keep their independent consent. False when the saved selection leaves the session out or the rules cannot be read."`
-	// OutsideSelection reports that the saved selection leaves this session
-	// out of the local lists. The read ignores the selection, so such a
-	// session is still returned.
-	OutsideSelection bool `json:"outsideSelection"`
+	// own consent. False when the saved ingestion and push selection leaves the
+	// session out or when rules cannot be read. When the saved selection itself
+	// cannot be determined, the enclosing operation reports a failure with an
+	// actionable cause rather than reporting a fabricated false.
+	AutoPublish bool `json:"autoPublish" description:"An executable Peasant upload hook can publish this session on a commit or push. A rule-required hook publishes only while an active rule covers the repository and event; removing or pausing its last binding makes the retained hook dormant. Separately installed terminal hooks keep their independent consent. False when the saved ingestion and push selection leaves the session out or the rules cannot be read. When the saved selection itself cannot be determined, the enclosing operation reports a failure with an actionable cause rather than reporting a fabricated false."`
+	// OutsideSelection reports whether the saved ingestion and push selection
+	// leaves this session out. It describes future ingests and upload-hook
+	// eligibility only: it is not a browsing permission, so that selection
+	// leaves an otherwise eligible stored session listed, resolvable by
+	// identifier, and counted, with outsideSelection true. The value is never
+	// fabricated: when the saved selection cannot be determined, the enclosing
+	// operation reports a failure with an actionable cause rather than omitting
+	// the row or guessing.
+	OutsideSelection bool `json:"outsideSelection" description:"Whether the saved ingestion and push selection leaves this session out. It reports selection membership for future ingests and upload hooks, not browsing permission: that selection leaves an otherwise eligible stored session listed, resolvable by identifier, and counted. The value is never fabricated: when the saved selection cannot be determined, the enclosing operation reports a failure with an actionable cause rather than omitting the row or guessing."`
 	// Audience lists the collectives the transcript is shared with. It is
 	// present on a published row exactly when the request asked for
 	// include=audience, as [] when the transcript is shared with no
@@ -104,7 +112,7 @@ func (p LocalPublication) Validate() error {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: lastAttempt lacks its time or message; the caller cannot say what failed or when; emit both", p.SessionID)
 	}
 	if p.AutoPublish && p.OutsideSelection {
-		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: autoPublish is true although the saved selection leaves the session out; a hook that does not match publishes nothing; emit autoPublish false", p.SessionID)
+		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: autoPublish is true although the saved ingestion and push selection leaves the session out; an upload hook the selection excludes publishes nothing; emit autoPublish false", p.SessionID)
 	}
 	if !published && p.Audience != nil {
 		return fmt.Errorf("publication validation failed for %q at schema.LocalPublication.Validate: an unpublished row carries an audience; nothing is shared before publication; omit audience", p.SessionID)
