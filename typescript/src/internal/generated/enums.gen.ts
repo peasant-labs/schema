@@ -82,6 +82,7 @@ import { zVillagePublicOwnerKind, type VillagePublicOwnerKind as VillagePublicOw
 import { zSessionRelationshipKind, type SessionRelationshipKind as SessionRelationshipKindContract } from "./contract/zod.gen.js";
 import { zRelationshipTargetState, type RelationshipTargetState as RelationshipTargetStateContract } from "./contract/zod.gen.js";
 import { zEvidenceKind, type EvidenceKind as EvidenceKindContract } from "./contract/zod.gen.js";
+import { zSessionTeammateEvidence, type SessionTeammateEvidence as SessionTeammateEvidenceContract } from "./contract/zod.gen.js";
 import { zSessionPurpose, type SessionPurpose as SessionPurposeContract } from "./contract/zod.gen.js";
 import { zContentOrigin, type ContentOrigin as ContentOriginContract } from "./contract/zod.gen.js";
 import { zActorOrigin, type ActorOrigin as ActorOriginContract } from "./contract/zod.gen.js";
@@ -1103,6 +1104,15 @@ export const EvidenceKind = Object.freeze({
 export const AllEvidenceKinds = Object.freeze([EvidenceKind.NativeTyped, EvidenceKind.LifecycleTyped, EvidenceKind.ExistingAdapter, EvidenceKind.RetainedLastGood, EvidenceKind.Unknown, EvidenceKind.Conflict]) as readonly EvidenceKind[];
 export function isEvidenceKind(value: unknown): value is EvidenceKind {
   return zEvidenceKind.safeParse(value).success;
+}
+
+export type SessionTeammateEvidence = SessionTeammateEvidenceContract;
+export const SessionTeammateEvidence = Object.freeze({
+  NativeDynamicWorkflow: zSessionTeammateEvidence.parse("native_dynamic_workflow"),
+} as const);
+export const AllSessionTeammateEvidences = Object.freeze([SessionTeammateEvidence.NativeDynamicWorkflow]) as readonly SessionTeammateEvidence[];
+export function isSessionTeammateEvidence(value: unknown): value is SessionTeammateEvidence {
+  return zSessionTeammateEvidence.safeParse(value).success;
 }
 
 export type SessionPurpose = SessionPurposeContract;

@@ -1285,6 +1285,29 @@ types:
   - {go_name: HelperGroupSummary, disposition: catalog, component: HelperGroupSummary, reason: public session graph and grouped read contract}
   - {go_name: HelperContextSummary, disposition: catalog, component: HelperContextSummary, reason: public session graph and grouped read contract}
   - {go_name: SessionDetailReadPayload, disposition: catalog, component: SessionDetailReadPayload, reason: public session graph and grouped read contract}
+  - {go_name: SessionTeammate, disposition: catalog, component: SessionTeammate, reason: "local teammate identity evidence for a session whose parent transcript records the spawn"}
+  - {go_name: SessionTeammateEvidence, disposition: catalog, component: SessionTeammateEvidence, reason: "closed local teammate evidence menu, kept out of the shared session graph evidence set"}
+  - go_name: SessionTeammateSchemaProbe
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateSchemaExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateIdentityProbe
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsInput
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateBoundsExpectation
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
+  - go_name: SessionTeammateFixtures
+    disposition: fixture-only
+    reason: test fixture type, exported on a utility subpath when applicable
   - {go_name: LocalSyncSummary, disposition: catalog, component: LocalSyncSummary, reason: public session graph and grouped read contract}
   - {go_name: LocalSyncSessionsPayload, disposition: catalog, component: LocalSyncSessionsPayload, reason: public session graph and grouped read contract}
   - {go_name: LocalSessionRow, disposition: catalog, component: LocalSessionRow, reason: public session graph and grouped read contract}

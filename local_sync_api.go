@@ -78,6 +78,9 @@ func (s LocalSyncSummary) Validate() error {
 	if s.ParentSessionID != nil && s.ParentUnresolved != nil && *s.ParentUnresolved {
 		return fmt.Errorf("local sync row validation failed for %q at schema.LocalSyncSummary.Validate: parentSessionId %q is set together with parentUnresolved=true; a row names its parent or marks it unresolved, never both, so the list cannot tell where to group it; emit parentSessionId alone when the parent is known, or parentUnresolved=true alone when it cannot be named", s.ID, *s.ParentSessionID)
 	}
+	if err := s.Teammate.Validate(); err != nil {
+		return err
+	}
 	return ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSyncSummary.inputSubmissionCount")
 }
 

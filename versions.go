@@ -165,7 +165,11 @@ const (
 	// Bumped to 0.23.0 when the session reads gained the recorded commits and
 	// the pull requests detected in the session's own gh pr create calls
 	// (additive operations = minor bump).
-	PeasantLocalAPIVersion = "0.23.0"
+	// Bumped to 0.24.0 when the local session summaries and the flat detail
+	// read gained the optional Claude Code teammate identity, with its own
+	// teammate evidence set, a local read addition that never reaches the
+	// publish wire (additive = minor bump).
+	PeasantLocalAPIVersion = "0.24.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -249,5 +253,9 @@ const (
 	// request stays in the catalog, deprecated, for the alias window.
 	// Bumped to 0.36.0 when the session commits read and the detected session
 	// pull request rows entered the catalog (additive = minor bump).
-	TypesVersion = "0.36.0"
+	// Bumped to 0.37.0 when SessionTeammate and its own SessionTeammateEvidence
+	// closed set entered the catalog (additive = minor bump). The session-graph
+	// EvidenceKind set is unchanged: teammate evidence is local read evidence
+	// and must not widen the shared published menu.
+	TypesVersion = "0.37.0"
 )

@@ -13,10 +13,10 @@ constants:
     value: 0.30.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.23.0
+    value: 0.24.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.36.0
+    value: 0.37.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"

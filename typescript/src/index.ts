@@ -285,11 +285,17 @@ function rejectWireAliases(value: unknown, descriptor: WireAliasShape | string):
 function parseSessionDetailReadPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailReadPayload {
   rejectExplicitNullEvidence(value);
   if (!isRecord(value)) failSemantic("session detail read payload is not an object");
-  const durable = {...value}; delete durable.relationshipNavigation;
+  // Local read additions ride beside the durable detail. Strip them before the
+  // durable parser, which refuses unknown members, then restore each one the
+  // incoming value carries as an OWN property: absence stays absent and an own
+  // null stays null, so a fixture cannot be satisfied by truthiness alone.
+  const durable = {...value}; delete durable.relationshipNavigation; delete durable.teammate;
   const normalized = parseSessionDetailPayloadValue(durable);
-  return zSessionDetailReadPayload.parse(Object.hasOwn(value, "relationshipNavigation")
-    ? {...normalized, relationshipNavigation: value.relationshipNavigation}
-    : normalized);
+  return zSessionDetailReadPayload.parse({
+    ...normalized,
+    ...(Object.hasOwn(value, "relationshipNavigation") ? {relationshipNavigation: value.relationshipNavigation} : {}),
+    ...(Object.hasOwn(value, "teammate") ? {teammate: value.teammate} : {}),
+  });
 }
 
 function validateRelationships(payload: Detail): void {

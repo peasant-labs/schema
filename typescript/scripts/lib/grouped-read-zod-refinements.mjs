@@ -10,6 +10,11 @@ export function applyGroupedReadZodRefinements(source) {
     if (value.sync) {
       const s = value.session, v = value.sync;
       if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
+        if (left == null || right == null) return left == null && right == null;
+        return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
+      };
+      if (!sameTeammate(s.teammate, v.teammate)) fail("sync teammate disagrees with the session teammate; the list and the sync chooser would show different identities for one transcript, so derive both from the same evidence read");
     }
     if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");`);
   output = append(output, "zVillageSessionRow", `

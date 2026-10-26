@@ -58,6 +58,8 @@ required_names:
   - village-null-nested-group-count
   - local-sync-member-mirrors
   - local-sync-member-count-mismatch
+  - local-teammate-mirrors
+  - local-teammate-mirror-mismatch
   - local-search-member-mirrors
   - local-search-member-identity-mismatch
   - village-collective-member-mirrors
@@ -606,6 +608,18 @@ cases:
       provenance: *requirement
       mutation: {description: 'sync member input count cannot disagree with its saved session'}
       input: {schema: LocalHelperMembersPayload, payload: {<<: *localOwner, members: [{<<: *localG1, transcript: {<<: *syncRow, sync: {<<: *sync, inputSubmissionCount: 0}}}]}}
+      expected: {valid: false}
+    - name: local-teammate-mirrors
+      classification: must-pass
+      provenance: *requirement
+      mutation: {description: 'both grouped summaries carry the same recorded teammate identity'}
+      input: {schema: LocalHelperMembersPayload, payload: {<<: *localOwner, members: [{<<: *localG1, transcript: {<<: *syncRow, session: {<<: *localSession, project: example, projectHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', teammate: {team: review-crew, name: parser-reviewer, evidence: native_dynamic_workflow}}, sync: {<<: *sync, teammate: {team: review-crew, name: parser-reviewer, evidence: native_dynamic_workflow}}}}]}}
+      expected: {valid: true}
+    - name: local-teammate-mirror-mismatch
+      classification: must-fail
+      provenance: *requirement
+      mutation: {description: 'sync member teammate cannot disagree with its saved session teammate'}
+      input: {schema: LocalHelperMembersPayload, payload: {<<: *localOwner, members: [{<<: *localG1, transcript: {<<: *syncRow, session: {<<: *localSession, project: example, projectHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', teammate: {team: review-crew, name: parser-reviewer, evidence: native_dynamic_workflow}}, sync: {<<: *sync, teammate: {team: review-crew, name: other-reviewer, evidence: native_dynamic_workflow}}}}]}}
       expected: {valid: false}
     - name: local-search-member-mirrors
       classification: must-pass

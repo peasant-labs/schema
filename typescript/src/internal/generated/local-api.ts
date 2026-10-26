@@ -1400,6 +1400,14 @@ export interface components {
         SchemaSessionRelationshipNavigation: Schema.SessionRelationshipNavigation;
         SchemaSessionScorecard: Schema.SessionScorecard;
         SchemaSessionSummary: Schema.SessionSummary;
+        SchemaSessionTeammate: Schema.SessionTeammate;
+        /**
+         * Session Teammate Evidence
+         * @description Record a local teammate identity rests on; only a native dynamic workflow spawn is recorded
+         * @example native_dynamic_workflow
+         * @enum {string}
+         */
+        SchemaSessionTeammateEvidence: Schema.SessionTeammateEvidence;
         SchemaSessionsPayload: Schema.SessionsPayload;
         SchemaShutdownResponse: Schema.ShutdownResponse;
         /**

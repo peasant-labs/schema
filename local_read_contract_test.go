@@ -199,13 +199,8 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 	}
 	switch typed := value.(type) {
 	case *schema.SessionDetailReadPayload:
-		if err := schema.ValidateSessionDetailPayload(typed.SessionDetailPayload); err != nil {
+		if err := typed.Validate(); err != nil {
 			return nil, err
-		}
-		for _, navigation := range typed.RelationshipNavigation {
-			if err := navigation.Validate(); err != nil {
-				return nil, err
-			}
 		}
 	case *schema.LocalSessionRow:
 		if err := typed.Validate(); err != nil {

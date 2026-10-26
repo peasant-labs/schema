@@ -1,0 +1,47 @@
+# Teammate identity bound parity: Go, the published JSON Schema, and the
+# generated TypeScript validator must agree on ONE measure of length.
+#
+# The Go rule and the published maxLength count Unicode code points; JavaScript
+# string length counts UTF-16 units. An astral character is one code point and
+# two UTF-16 units, so a 200-astral-character name is valid on the wire and was
+# refused by the generated Zod chain before this corpus existed. Each case
+# states both measurements so the metric itself is asserted, not assumed.
+#
+# Go reads this corpus in session_teammate_bounds_test.go; TypeScript reads the
+# same file in typescript/tests/session-teammate-bounds.test.mjs. A case the two
+# languages disagree about fails one of the two suites.
+
+bound: 256
+
+required_names:
+  - ascii-256-accepted
+  - astral-200-accepted
+  - astral-257-refused
+  - ascii-257-refused
+
+cases:
+  cases:
+    - name: ascii-256-accepted
+      input: {team: review-crew, name: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', evidence: native_dynamic_workflow, code_points: 256, utf16_units: 256}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: 'SessionTeammateMaxIdentityRunes is the inclusive 256-code-point bound'}
+      mutation: {description: 'Offers a name of exactly 256 ASCII characters, the largest accepted identity.'}
+    - name: astral-200-accepted
+      input: {team: review-crew, name: '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀', evidence: native_dynamic_workflow, code_points: 200, utf16_units: 400}
+      expected: {valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: 'an astral character is one code point but two UTF-16 units'}
+      mutation: {description: 'Offers 200 astral characters: 200 code points inside the bound, 400 UTF-16 units over it; a UTF-16-counting validator refuses a value the wire accepts.'}
+    - name: astral-257-refused
+      input: {team: review-crew, name: '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀', evidence: native_dynamic_workflow, code_points: 257, utf16_units: 514}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: 'the 256-code-point bound is exceeded by code points, not only by UTF-16 units'}
+      mutation: {description: 'Offers 257 astral characters, one code point over the bound.'}
+    - name: ascii-257-refused
+      input: {team: review-crew, name: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', evidence: native_dynamic_workflow, code_points: 257, utf16_units: 257}
+      expected: {valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: 'an ASCII name over the code-point bound is refused for the same reason'}
+      mutation: {description: 'Offers 257 ASCII characters, one character over the bound.'}

@@ -1,0 +1,98 @@
+# Published teammate identity: the component that carries the recorded team and
+# name, and the one-value evidence set it references instead of an open string.
+#
+# The evidence field must publish a $ref to its own closed set. Teammate
+# evidence is local read evidence, so it is deliberately NOT a member of the
+# shared session graph evidence menu the Village wire embeds: a producer that
+# sends the shared kind must be refused here, not quietly accepted.
+#
+# error_contains values are authored HERE as independent literals. They are the
+# message the JSON Schema validator actually emits, never a copy of a production
+# message constant: a needle derived from the code under test cannot detect that
+# code changing.
+
+component: SessionTeammate
+evidence_field: evidence
+evidence_component: SessionTeammateEvidence
+evidence_ref: "#/components/schemas/SessionTeammateEvidence"
+
+identity_max_length: 256
+identity_fields: [team, name]
+identity_required: [team, name, evidence]
+
+required_menu:
+  - native_dynamic_workflow
+
+schema_probes:
+  cases:
+    - name: the published evidence component accepts the recorded spawn kind
+      input: {evidence: "native_dynamic_workflow"}
+      expected: {accepted: true, error_contains: ""}
+      classification: must-pass
+      provenance: {source: enum, ref: "AllSessionTeammateEvidences member SessionTeammateEvidenceNativeDynamicWorkflow"}
+      mutation: {description: "Offers the one declared teammate evidence kind to the published component."}
+    - name: the published evidence component refuses the shared session graph kind
+      input: {evidence: "native_typed"}
+      expected:
+        accepted: false
+        error_contains: 'value must be "native_dynamic_workflow"'
+      classification: must-fail
+      provenance: {source: boundary, ref: "native_typed is a member of EvidenceKind, not of the local teammate evidence set"}
+      mutation: {description: "Substitutes the shared session graph kind, which a producer holding the wrong type would send; the component must refuse it rather than widen to the shared menu."}
+    - name: the published evidence component refuses an empty kind
+      input: {evidence: ""}
+      expected:
+        accepted: false
+        error_contains: 'value must be "native_dynamic_workflow"'
+      classification: must-fail
+      provenance: {source: boundary, ref: "an absent evidence kind is not a recorded spawn edge"}
+      mutation: {description: "Offers the empty string, which would turn an unrecorded edge into an accepted one."}
+    - name: the published evidence component refuses a future kind
+      input: {evidence: "future_dynamic_workflow"}
+      expected:
+        accepted: false
+        error_contains: 'value must be "native_dynamic_workflow"'
+      classification: must-fail
+      provenance: {source: boundary, ref: "closed set: an unknown kind is refused, never passed through"}
+      mutation: {description: "Offers a plausible future kind, proving the component is a closed set rather than an open string."}
+
+identity_probes:
+  cases:
+    - name: a 200-character multi-byte name is accepted
+      input: {team: "review-crew", name: "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé", evidence: "native_dynamic_workflow"}
+      expected: {accepted: true, error_contains: ""}
+      classification: must-pass
+      provenance: {source: boundary, ref: "the identity bound counts characters, so 200 two-byte characters are inside it"}
+      mutation: {description: "Offers a 200-character name whose 400 encoded bytes exceed a byte-counted bound; the published component must accept it."}
+    - name: a 257-character name is refused at the published bound
+      input: {team: "review-crew", name: "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé", evidence: "native_dynamic_workflow"}
+      expected:
+        accepted: false
+        error_contains: "length must be <= 256, but got 257"
+      classification: must-fail
+      provenance: {source: boundary, ref: "SessionTeammateMaxIdentityRunes is the 256-character bound"}
+      mutation: {description: "Offers a 257-character name, one character over the published bound."}
+    - name: an empty name is refused
+      input: {team: "review-crew", name: "", evidence: "native_dynamic_workflow"}
+      expected:
+        accepted: false
+        error_contains: "length must be >= 1, but got 0"
+      classification: must-fail
+      provenance: {source: boundary, ref: "an unnamed teammate cannot be matched to a recorded spawn"}
+      mutation: {description: "Empties only the name, keeping a valid team and evidence kind."}
+    - name: an empty team is refused
+      input: {team: "", name: "parser-reviewer", evidence: "native_dynamic_workflow"}
+      expected:
+        accepted: false
+        error_contains: "length must be >= 1, but got 0"
+      classification: must-fail
+      provenance: {source: boundary, ref: "a teammate without a team cannot be matched to a recorded spawn"}
+      mutation: {description: "Empties only the team, keeping a valid name and evidence kind."}
+    - name: a control character in the name is refused
+      input: {team: "review-crew", name: "reviewer\u0007", evidence: "native_dynamic_workflow"}
+      expected:
+        accepted: false
+        error_contains: "does not match pattern"
+      classification: must-fail
+      provenance: {source: boundary, ref: "the published identity pattern refuses control characters"}
+      mutation: {description: "Appends the U+0007 bell character to an otherwise valid name; a rendered identity line cannot carry it."}
