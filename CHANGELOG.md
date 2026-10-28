@@ -5,6 +5,38 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.37.0] - 2026-10-28
+
+### Added
+
+- Village API 0.32.0 declares `POST /api/v1/transcripts/{id}/integrity-check`,
+  an owner-only check that answers only flagged, not flagged or unchecked, with
+  a daily limit.
+- The transcript metadata read gains optional `integrity`, present only for a
+  public flagged transcript, whose presence is the flag. It carries only
+  `flagged_turns`, positions in the content whose hash is
+  `transcript.content_hash`.
+- Publish metadata gains optional `client` (`name`, up to 64 bytes; `version`,
+  SemVer 2.0 with no leading `v`, up to 128 bytes; explicit null refused). It is
+  outside canonicalization and the publish fingerprint, so a client upgrade does
+  not make held transcripts look changed. **Deployment order:** the publish
+  decoder rejects unknown keys, so a village must run this release before any
+  client sends `client`; an older village refuses the whole publish.
+- Village API 0.32.0 declares `GET /api/v1/pull/transcripts/{id}/publish-metadata`,
+  which returns the stored publish metadata under pull-contract negotiation. Only
+  the transcript's owner or an owner of a collective it was submitted to may read
+  it, and every other caller gets 404.
+- The web content route `GET /api/v1/transcripts/{id}/content` declares the
+  response header `Village-Content-Hash`, the bare content hash (not an ETag), so
+  a reader can tell whether the content it rendered is the copy the positions
+  refer to.
+- Types 0.40.0 defines `ScryCheckRequest`, `ScryCheckResponse`,
+  `ScryHealthResponse` (contract 0.1.0) and the closed sets `ScryVerdict`
+  (`checked`, `unchecked`) and `VillageIntegrityCheckResult`. A flagged result is
+  derived as checked with at least one position.
+
+Local API is unchanged.
+
 ## [v0.36.0] - 2026-10-27
 
 ### Added
