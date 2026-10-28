@@ -1,0 +1,80 @@
+required_names:
+  - uppercase required owner only
+  - uppercase owner after canonical
+  - uppercase owner before canonical
+  - nested uppercase index only
+  - nested uppercase index after canonical
+  - unknown fields accepted
+cases:
+  - name: uppercase required owner only
+    input:
+      json: '{"OWNER":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase required owner only
+  - name: uppercase owner after canonical
+    input:
+      json: '{"owner":"Acme","OWNER":"evil","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase owner after canonical
+  - name: uppercase owner before canonical
+    input:
+      json: '{"OWNER":"evil","owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase owner before canonical
+  - name: nested uppercase index only
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"TURNINDEX":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: nested uppercase index only
+  - name: nested uppercase index after canonical
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"TURNINDEX":-1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: nested uppercase index after canonical
+  - name: unknown fields accepted
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0},"future":"supported"}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: unknown fields accepted

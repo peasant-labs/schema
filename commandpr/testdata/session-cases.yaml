@@ -450,6 +450,127 @@ cases:
       ref: statically unexecuted shell branches
     mutation:
       description: until true skips body
+  - name: negated true if
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if ! true; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated true if
+  - name: negated true and
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated true and
+  - name: empty for loop
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"for x in; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: empty for loop
+  - name: nonmatching case
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"case x in y) gh pr create;; esac","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: nonmatching case
+  - name: negated false if
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if ! false; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated false if
+  - name: negated false and
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! false && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated false and
+  - name: nonempty for loop
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"for x in item; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: nonempty for loop
+  - name: matching case
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"case x in x) gh pr create;; esac","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: matching case
+  - name: ftp outer query
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"ftp://example.test/?next=https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: ftp outer query
+  - name: custom outer fragment
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"custom://example.test/#https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: custom outer fragment
+  - name: canonical separate after ftp
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"ftp://example.test/a https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: canonical separate after ftp
 required_names:
   - sparse turn second call exact id
   - empty id retained by call index
@@ -492,3 +613,14 @@ required_names:
   - run terminal cmd real identity
   - if true skips else
   - until true skips body
+  - negated true if
+  - negated true and
+  - empty for loop
+  - nonmatching case
+  - negated false if
+  - negated false and
+  - nonempty for loop
+  - matching case
+  - ftp outer query
+  - custom outer fragment
+  - canonical separate after ftp

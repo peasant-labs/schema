@@ -116,6 +116,72 @@ func TestUnverifiedPullRequestRows(t *testing.T) {
 			if (err == nil) != c.Expected.Valid {
 				t.Fatalf("valid=%t, error=%v", c.Expected.Valid, err)
 			}
+			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid)
+		})
+	}
+}
+
+func checkRowEnvelopes(t *testing.T, row string, valid bool) {
+	t.Helper()
+	local := &schema.SessionPullRequestsResponse{}
+	err := json.Unmarshal([]byte(`{"pullRequests":[],"unverified_pull_requests":[`+row+`]}`), local)
+	if err == nil {
+		err = local.Validate()
+	}
+	if (err == nil) != valid {
+		t.Errorf("local valid=%t error=%v", valid, err)
+	}
+	village := &schema.VillageTranscriptPullRequestsResponse{}
+	err = json.Unmarshal([]byte(`{"pull_requests":[],"unverified_pull_requests":[`+row+`]}`), village)
+	if err == nil {
+		err = village.Validate()
+	}
+	if (err == nil) != valid {
+		t.Errorf("village valid=%t error=%v", valid, err)
+	}
+}
+
+//go:embed testdata/unverified_pull_request_casing.yaml
+var unverifiedCasingYAML []byte
+
+type casingExpected struct {
+	Valid bool   `yaml:"valid"`
+	Owner string `yaml:"owner"`
+}
+
+func TestUnverifiedCanonicalCasing(t *testing.T) {
+	var f struct {
+		RequiredNames []string                                  `yaml:"required_names"`
+		Cases         []testcase.Case[rowProbe, casingExpected] `yaml:"cases"`
+	}
+	if err := yaml.Unmarshal(unverifiedCasingYAML, &f); err != nil {
+		t.Fatal(err)
+	}
+	corpus := testcase.Corpus[rowProbe, casingExpected]{Cases: f.Cases}
+	tcassert.RequireValid(t, corpus)
+	names := map[string]bool{}
+	for _, c := range f.Cases {
+		names[c.Name] = true
+	}
+	for _, n := range f.RequiredNames {
+		if !names[n] {
+			t.Errorf("missing case %q", n)
+		}
+	}
+	for _, c := range f.Cases {
+		t.Run(c.Name, func(t *testing.T) {
+			var row schema.UnverifiedPullRequest
+			err := json.Unmarshal([]byte(c.Input.JSON), &row)
+			if err == nil {
+				err = row.Validate()
+			}
+			if (err == nil) != c.Expected.Valid {
+				t.Errorf("row valid=%v error=%v", c.Expected.Valid, err)
+			}
+			if err == nil && row.Owner != c.Expected.Owner {
+				t.Errorf("owner=%q", row.Owner)
+			}
+			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid)
 		})
 	}
 }

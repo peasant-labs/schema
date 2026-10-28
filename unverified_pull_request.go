@@ -57,6 +57,11 @@ func validateUnverifiedPullRequests(rows *[]UnverifiedPullRequest) error {
 // UnmarshalJSON rejects explicit null on an optional source ID.
 func (s *UnverifiedPullRequestSource) UnmarshalJSON(data []byte) error {
 	type plain UnverifiedPullRequestSource
+	var err error
+	data, err = canonicalJSONFields(data, "turnIndex", "toolCallIndex", "toolCallId")
+	if err != nil {
+		return err
+	}
 	if err := rejectOptionalNull(data, "toolCallId"); err != nil {
 		return err
 	}
@@ -97,6 +102,11 @@ func rejectOptionalNull(data []byte, key string) error {
 // UnmarshalJSON preserves omission while rejecting an explicit null array.
 func (r *SessionPullRequestsResponse) UnmarshalJSON(data []byte) error {
 	type plain SessionPullRequestsResponse
+	var err error
+	data, err = canonicalJSONFields(data, "pullRequests", "unverified_pull_requests")
+	if err != nil {
+		return err
+	}
 	if err := rejectOptionalNull(data, "unverified_pull_requests"); err != nil {
 		return err
 	}
@@ -111,6 +121,11 @@ func (r *SessionPullRequestsResponse) UnmarshalJSON(data []byte) error {
 // UnmarshalJSON preserves omission while rejecting an explicit null array.
 func (r *VillageTranscriptPullRequestsResponse) UnmarshalJSON(data []byte) error {
 	type plain VillageTranscriptPullRequestsResponse
+	var err error
+	data, err = canonicalJSONFields(data, "pull_requests", "unverified_pull_requests")
+	if err != nil {
+		return err
+	}
 	if err := rejectOptionalNull(data, "unverified_pull_requests"); err != nil {
 		return err
 	}
@@ -126,6 +141,11 @@ func (r *VillageTranscriptPullRequestsResponse) UnmarshalJSON(data []byte) error
 // an invented zero-index call.
 func (p *UnverifiedPullRequest) UnmarshalJSON(data []byte) error {
 	type plain UnverifiedPullRequest
+	var err error
+	data, err = canonicalJSONFields(data, "owner", "repo", "number", "url", "source")
+	if err != nil {
+		return err
+	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
@@ -140,4 +160,22 @@ func (p *UnverifiedPullRequest) UnmarshalJSON(data []byte) error {
 	}
 	*p = UnverifiedPullRequest(value)
 	return nil
+}
+
+// canonicalJSONFields ignores case aliases as unknown fields before Go's
+// case-insensitive decoder can use them to overwrite known wire properties.
+func canonicalJSONFields(data []byte, canonical ...string) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, err
+	}
+	for key := range fields {
+		for _, name := range canonical {
+			if key != name && strings.EqualFold(key, name) {
+				delete(fields, key)
+				break
+			}
+		}
+	}
+	return json.Marshal(fields)
 }

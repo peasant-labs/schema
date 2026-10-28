@@ -29,3 +29,14 @@ test("public validators enforce canonical identity and source bounds", async (t)
     assert.equal(schema.zVillageTranscriptPullRequestsResponse.safeParse({pull_requests: [], unverified_pull_requests: [value]}).success, row.expected.valid, "village");
   });
 });
+
+const casingFixture = parse(await readFile(new URL("../../testdata/unverified_pull_request_casing.yaml", import.meta.url), "utf8"));
+test("canonical property casing remains forward compatible", async (t) => {
+  assert.equal(validateCorpus(casingFixture), undefined);
+  for (const name of casingFixture.required_names) assert.ok(casingFixture.cases.some((c) => c.name === name), name);
+  for (const row of casingFixture.cases) await t.test(row.name, () => {
+    const value = JSON.parse(row.input.json);
+    for (const result of [schema.zUnverifiedPullRequest.safeParse(value), schema.zSessionPullRequestsResponse.safeParse({pullRequests: [], unverified_pull_requests: [value]}), schema.zVillageTranscriptPullRequestsResponse.safeParse({pull_requests: [], unverified_pull_requests: [value]})]) assert.equal(result.success,row.expected.valid);
+    const parsed = schema.zUnverifiedPullRequest.safeParse(value); if (parsed.success) assert.equal(parsed.data.owner,row.expected.owner);
+  });
+});

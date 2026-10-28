@@ -155,6 +155,30 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 					return false
 				}
 			}
+		case *syntax.ForClause:
+			if iter, ok := n.Loop.(*syntax.WordIter); ok && iter.InPos.IsValid() && len(iter.Items) == 0 {
+				return false
+			}
+		case *syntax.CaseClause:
+			word := n.Word.Lit()
+			if word == "" {
+				return false
+			}
+			for _, item := range n.Items {
+				for _, pattern := range item.Patterns {
+					lit := pattern.Lit()
+					if lit == "" || strings.ContainsAny(lit, "*?[\\") {
+						return false
+					}
+					if lit == word {
+						for _, stmt := range item.Stmts {
+							syntax.Walk(stmt, visit)
+						}
+						return false
+					}
+				}
+			}
+			return false
 		case *syntax.WhileClause:
 			if len(n.Cond) == 1 && ((!n.Until && staticTruth(n.Cond[0]) == -1) || (n.Until && staticTruth(n.Cond[0]) == 1)) {
 				syntax.Walk(n.Cond[0], visit)
@@ -180,20 +204,24 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 
 // staticTruth recognizes only literal shell builtins without guessing.
 func staticTruth(stmt *syntax.Stmt) int {
-	if stmt == nil || stmt.Negated {
+	if stmt == nil {
 		return 0
 	}
 	call, ok := stmt.Cmd.(*syntax.CallExpr)
 	if !ok || len(call.Assigns) != 0 || len(call.Args) != 1 {
 		return 0
 	}
+	truth := 0
 	switch call.Args[0].Lit() {
 	case "false":
-		return -1
+		truth = -1
 	case "true":
-		return 1
+		truth = 1
 	}
-	return 0
+	if stmt.Negated {
+		truth = -truth
+	}
+	return truth
 }
 
 // commandWord is one word of a simple command, kept in both literal forms the
@@ -458,7 +486,7 @@ type pullRequestReference struct {
 }
 
 // Scan entire URL tokens, so URLs inside a query or fragment are never new candidates.
-var resultURLToken = regexp.MustCompile(`https?://[^\s<>"']+`)
+var resultURLToken = regexp.MustCompile(`[A-Za-z][A-Za-z0-9+.-]*:[^\s<>"']+`)
 
 func lastPullRequestReference(result string) (pullRequestReference, bool) {
 	tokens := resultURLToken.FindAllStringIndex(result, -1)
