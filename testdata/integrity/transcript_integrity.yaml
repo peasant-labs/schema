@@ -52,7 +52,35 @@ required_names:
   - check-response-negative-remaining-rejected
   - check-response-unknown-result-rejected
   - check-response-turns-field-rejected
-operations: []
+operations:
+  - api: village
+    method: post
+    path: /api/v1/transcripts/{id}/integrity-check
+    response: VillageIntegrityCheckResponse
+    statuses: ["200", "400", "401", "403", "404", "409", "429", "500", "503"]
+    error_responses:
+      "400": VillageErrorResponse
+      "401": VillageErrorResponse
+      "404": VillageErrorResponse
+      "409": VillageErrorResponse
+      "429": VillageErrorResponse
+      "500": VillageErrorResponse
+      "503": VillageErrorResponse
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: village
+    method: get
+    path: /api/v1/pull/transcripts/{id}/publish-metadata
+    response: AuthoritativePublishRequest
+    statuses: ["200", "401", "404", "406", "500"]
+    error_responses:
+      "401": VillageErrorResponse
+      "404": VillageErrorResponse
+      "406": VillageErrorResponse
+      "500": VillageErrorResponse
+    parameters:
+      - {name: id, in: path, required: true}
+      - {name: Peasant-Pull-Contract, in: header, required: false}
 cases:
   - name: scry-request-minimal-valid
     input:

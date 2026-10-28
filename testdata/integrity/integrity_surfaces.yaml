@@ -12,4 +12,8 @@ exact_properties:
   VillageTranscriptIntegrity: [flagged_turns]
 content_hash_header:
   name: Village-Content-Hash
-description_anchors: {}
+description_anchors:
+  integrity_check_operation: [owner, synchronous, UTC day, spends nothing, unchecked, never shown publicly, remaining_today, not_flagged]
+  publish_metadata_operation: [owner of a collective, pending or approved, "404", no stored metadata, never reveals more, stored, "406"]
+  transcript_metadata_operation: [content_hash, Village-Content-Hash, presence, top-level, TurnDetail.index]
+  flagged_turn_properties: [top-level, TurnDetail.index]

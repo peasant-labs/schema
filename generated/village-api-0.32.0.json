@@ -5095,6 +5095,97 @@
         }
       }
     },
+    "/api/v1/pull/transcripts/{id}/publish-metadata": {
+      "get": {
+        "tags": [
+          "pull"
+        ],
+        "description": "Get the publish metadata village stored for the transcript: the validated publish request, re-encoded, not a reconstruction. Only the transcript's owner, or an owner of a collective the transcript was submitted to (pending or approved), may read it. Every other caller gets 404, including one who can read the transcript, so the route never reveals more than the transcript does. 404 also means village holds no stored metadata for the transcript (transcripts published before metadata was stored). 406 means the requested pull contract is below village's minimum.",
+        "operationId": "getPullTranscriptPublishMetadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Peasant-Pull-Contract",
+            "in": "header",
+            "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
+            "schema": {
+              "description": "Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse.",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Peasant-Pull-Contract": {
+                "style": "simple",
+                "description": "The pull contract version this response was served under. 0.2.0 bodies are the Legacy* envelope; 0.3.0 and any later 0.3.z bodies are the public owner envelope.",
+                "required": true,
+                "schema": {
+                  "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaAuthoritativePublishRequest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "406": {
+            "description": "Not Acceptable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/pulls/{owner}/{name}/{number}": {
       "get": {
         "tags": [
@@ -5911,7 +6002,7 @@
         "tags": [
           "transcripts"
         ],
-        "description": "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays.",
+        "description": "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is public and flagged, and its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing.",
         "operationId": "getTranscriptMetadata",
         "parameters": [
           {
@@ -6145,6 +6236,16 @@
         "responses": {
           "200": {
             "description": "OK",
+            "headers": {
+              "Village-Content-Hash": {
+                "style": "simple",
+                "description": "Bare SHA3-256 hash of the served content bytes, without quotes; equals the transcript's content_hash when the served copy is the stored copy. A reader highlights flagged turns only when this header equals transcript.content_hash from the metadata read. A plain header, not an ETag.",
+                "required": true,
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaTranscriptContentHash"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -6165,6 +6266,119 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transcripts/{id}/integrity-check": {
+      "post": {
+        "tags": [
+          "transcripts"
+        ],
+        "description": "Ask village to check one of the caller's own transcripts for integrity. Only the signed-in owner may call it. The call is synchronous: the response carries the answer. Statuses are decided in this order: 401 when the caller is signed out; 400 for a malformed id; 404 when the caller cannot read the transcript; 403 when the caller can read it but does not own it; 409 when the owner's transcript is public; 503 when the check is not available; 429 when the owner's daily allowance is used up; otherwise village runs the check, and answers 503 if it does not complete, or 200. 409 means a public transcript, which is checked automatically. 429 means the owner's daily checks for the UTC day are used up. 503 means the check is not available now. A check that does not complete spends nothing, and an unchecked result spends nothing. The answer is only flagged, not_flagged or unchecked, with no turns, rule or field. remaining_today is the number of checks left after this one. A requested check is never shown publicly and never affects the public status.",
+        "operationId": "checkTranscriptIntegrity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Transcript identifier",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SchemaTranscriptID",
+              "description": "Transcript identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageIntegrityCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaVillageErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -8159,6 +8373,67 @@
         "required": [
           "hash",
           "name"
+        ],
+        "type": "object"
+      },
+      "SchemaAuthoritativePublishRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeClientInfo"
+          },
+          "contentHash": {
+            "$ref": "#/components/schemas/SchemaTranscriptContentHash"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeDiagnosticsInfo"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaAuthoritativeSessionEntry"
+            },
+            "type": "array"
+          },
+          "git": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeGitContext"
+          },
+          "identity": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeSessionIdentity"
+          },
+          "license": {
+            "$ref": "#/components/schemas/SchemaLicense"
+          },
+          "model": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeModelInfo"
+          },
+          "project": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeProjectContext"
+          },
+          "quality": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeQualityMetrics"
+          },
+          "source": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeSourceInfo"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeSessionStats"
+          },
+          "subagents": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaAuthoritativeSubagentRef"
+            },
+            "type": "array"
+          },
+          "timestamp": {
+            "$ref": "#/components/schemas/SchemaAuthoritativeTimestampInfo"
+          },
+          "visibilityIntent": {
+            "$ref": "#/components/schemas/SchemaVisibilityIntent"
+          }
+        },
+        "required": [
+          "model",
+          "contentHash"
         ],
         "type": "object"
       },
@@ -14126,6 +14401,39 @@
           "total"
         ],
         "type": "object"
+      },
+      "SchemaVillageIntegrityCheckResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "remaining_today": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "result": {
+            "$ref": "#/components/schemas/SchemaVillageIntegrityCheckResult"
+          }
+        },
+        "required": [
+          "result",
+          "remaining_today"
+        ],
+        "type": "object"
+      },
+      "SchemaVillageIntegrityCheckResult": {
+        "description": "What an owner's integrity check found; unchecked means scry declined and the daily allowance is not spent",
+        "enum": [
+          "flagged",
+          "not_flagged",
+          "unchecked"
+        ],
+        "examples": [
+          "flagged",
+          "not_flagged",
+          "unchecked"
+        ],
+        "title": "Village Integrity Check Result",
+        "type": "string"
       },
       "SchemaVillageInvitedCollective": {
         "properties": {
