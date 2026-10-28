@@ -934,6 +934,127 @@ cases:
       ref: shell execution options
     mutation:
       description: shell uppercase noexec option fails closed
+  - name: env chdir short fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -C /dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir short fails closed
+  - name: env chdir long equals fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --chdir=/dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir long equals fails closed
+  - name: env chdir long separate fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --chdir /dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir long separate fails closed
+  - name: env chdir attached fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -C/dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir attached fails closed
+  - name: valid env unset executes
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: valid env unset executes
+  - name: shell errexit combined unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -ec 'false; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell errexit combined unproven
+  - name: shell nounset combined unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -uc 'echo $UNDEFINED; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell nounset combined unproven
+  - name: shell errexit separate unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -e -c 'false; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell errexit separate unproven
+  - name: shell nounset separate unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -u -c 'echo $UNDEFINED; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell nounset separate unproven
+  - name: shell plain c stays supported
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell plain c stays supported
+  - name: shell login c stays supported
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -lc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell login c stays supported
 required_names:
   - sparse turn second call exact id
   - empty id retained by call index
@@ -1020,3 +1141,14 @@ required_names:
   - sh unsupported pipefail fails closed
   - shell named verbose listing fails closed
   - shell uppercase noexec option fails closed
+  - env chdir short fails closed
+  - env chdir long equals fails closed
+  - env chdir long separate fails closed
+  - env chdir attached fails closed
+  - valid env unset executes
+  - shell errexit combined unproven
+  - shell nounset combined unproven
+  - shell errexit separate unproven
+  - shell nounset separate unproven
+  - shell plain c stays supported
+  - shell login c stays supported

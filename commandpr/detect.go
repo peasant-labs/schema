@@ -400,7 +400,7 @@ func wordsInvoke(words []commandWord, depth int) bool {
 	case "env":
 		rest := skipWrapperOptions(words[1:], envFlags, envValueFlags)
 		for len(rest) > 0 && isEnvironmentAssignment(rest[0]) {
-			if strings.HasPrefix(rest[0].value, "--split-string=") {
+			if strings.HasPrefix(rest[0].value, "--split-string=") || strings.HasPrefix(rest[0].value, "--chdir=") || strings.HasPrefix(rest[0].value, "-C=") {
 				return false
 			}
 			rest = rest[1:]
@@ -438,7 +438,7 @@ var (
 	sudoValueFlags = stringSet("-u", "-g", "-h", "-p", "-C", "-T", "-r", "-t")
 	commandFlags   = stringSet("-p")
 	envFlags       = stringSet("-i")
-	envValueFlags  = stringSet("-u", "-C")
+	envValueFlags  = stringSet("-u")
 	nohupFlags     = stringSet()
 )
 
@@ -528,7 +528,7 @@ func shellCommandScript(shell string, args []commandWord) (string, bool) {
 					return "", false
 				}
 				hasC = true
-			case 'l', 'e', 'x', 'u', 'f':
+			case 'l', 'x', 'f':
 			default:
 				return "", false
 			}
