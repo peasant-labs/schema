@@ -120,6 +120,20 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"VillageCollectiveInvitationsSentResponse": decodeValidated[schema.VillageCollectiveInvitationsSentResponse],
 	"VillageMyInvitationsResponse":             decodeValidated[schema.VillageMyInvitationsResponse],
 	"VillageSetNotificationEmailRequest":       decodeValidated[schema.VillageSetNotificationEmailRequest],
+	"ScryCheckRequest":                         decodeValidated[schema.ScryCheckRequest],
+	"ScryCheckResponse":                        decodeScryCheckResponseUnbounded,
+	"ScryHealthResponse":                       decodeValidated[schema.ScryHealthResponse],
+}
+
+// decodeScryCheckResponseUnbounded checks every response rule except the
+// turn-count bound, because the boundary corpus carries no turn count. The
+// bound is owned by testdata/integrity/scry_turn_bounds.yaml.
+func decodeScryCheckResponseUnbounded(raw []byte) (any, error) {
+	var value schema.ScryCheckResponse
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	return value, value.Validate(int(9007199254740991))
 }
 
 func decodeValidated[T interface{ Validate() error }](raw []byte) (any, error) {

@@ -81,6 +81,11 @@ types:
   - {go_name: AuthoritativeDiagnosticsInfo, disposition: catalog, component: AuthoritativeDiagnosticsInfo, reason: successor recursive strictness}
   - {go_name: AuthoritativeGitContext, disposition: catalog, component: AuthoritativeGitContext, reason: successor recursive strictness}
   - {go_name: AuthoritativeClientInfo, disposition: catalog, component: AuthoritativeClientInfo, reason: self-reported publishing client}
+  - {go_name: ScryCheckRequest, disposition: catalog, component: ScryCheckRequest, reason: transcript integrity checker contract}
+  - {go_name: ScryCheckResponse, disposition: catalog, component: ScryCheckResponse, reason: transcript integrity checker contract}
+  - {go_name: ScryHealthResponse, disposition: catalog, component: ScryHealthResponse, reason: transcript integrity checker contract}
+  - {go_name: ScryTranscriptRecord, disposition: catalog, component: ScryTranscriptRecord, reason: transcript integrity checker contract}
+  - {go_name: ScryVerdict, disposition: catalog, component: ScryVerdict, reason: transcript integrity checker contract}
   - {go_name: AuthoritativeModelInfo, disposition: catalog, component: AuthoritativeModelInfo, reason: successor recursive strictness}
   - {go_name: AuthoritativePublishRequest, disposition: catalog, component: AuthoritativePublishRequest, reason: successor multipart metadata contract}
   - {go_name: AuthoritativePublishResponse, disposition: catalog, component: AuthoritativePublishResponse, reason: authoritative publication receipt}

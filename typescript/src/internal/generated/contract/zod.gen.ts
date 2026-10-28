@@ -1928,6 +1928,37 @@ export const zSchemaVersionResponse = z.object({
 
 export type SchemaVersionResponse = z.infer<typeof zSchemaVersionResponse>;
 
+export const zScryHealthResponse = z.object({
+    contractVersion: z.string().min(1),
+    scryVersion: z.string().regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
+}).strict();
+
+export type ScryHealthResponse = z.infer<typeof zScryHealthResponse>;
+
+export const zScryTranscriptRecord = z.object({
+    publishedAtMs: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(9007199254740991)),
+    updatedAtMs: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(9007199254740991))
+}).strict();
+
+export type ScryTranscriptRecord = z.infer<typeof zScryTranscriptRecord>;
+
+/**
+ * Scry Verdict
+ *
+ * Whether scry examined the transcript; unchecked means scry declined unsupported content or harness
+ */
+export const zScryVerdict = z.enum(['checked', 'unchecked']);
+
+export type ScryVerdict = z.infer<typeof zScryVerdict>;
+
+export const zScryCheckResponse = z.object({
+    flaggedTurns: z.array(z.int().gte(0).lte(9007199254740991)),
+    scryVersion: z.string().regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/),
+    verdict: zScryVerdict
+}).strict();
+
+export type ScryCheckResponse = z.infer<typeof zScryCheckResponse>;
+
 export const zSearchResult = z.object({
     entryIndex: z.int(),
     project: z.string(),
@@ -5514,6 +5545,16 @@ export const zAuthoritativePublishRequest = z.object({
 }).strict();
 
 export type AuthoritativePublishRequest = z.infer<typeof zAuthoritativePublishRequest>;
+
+export const zScryCheckRequest = z.object({
+    contractVersion: z.string().min(1),
+    publishMetadata: zAuthoritativePublishRequest.nullish(),
+    record: zScryTranscriptRecord,
+    sessionDetail: zSessionDetailPayload,
+    transcriptId: zTranscriptID
+});
+
+export type ScryCheckRequest = z.infer<typeof zScryCheckRequest>;
 
 export const zWalkthroughStep = z.object({
     excerpt: z.string(),

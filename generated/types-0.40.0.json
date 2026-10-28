@@ -9471,6 +9471,120 @@
         ],
         "type": "object"
       },
+      "ScryCheckRequest": {
+        "properties": {
+          "contractVersion": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "publishMetadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthoritativePublishRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "record": {
+            "$ref": "#/components/schemas/ScryTranscriptRecord"
+          },
+          "sessionDetail": {
+            "$ref": "#/components/schemas/SessionDetailPayload"
+          },
+          "transcriptId": {
+            "$ref": "#/components/schemas/TranscriptID"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "transcriptId",
+          "sessionDetail",
+          "record"
+        ],
+        "type": "object"
+      },
+      "ScryCheckResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "flaggedTurns": {
+            "description": "Zero-based positions in the top-level sessionDetail.turns array; never TurnDetail.index values and never positions in earlierHistory or child sessions. Flagged means verdict checked with at least one position.",
+            "items": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "scryVersion": {
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+            "type": "string"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/ScryVerdict"
+          }
+        },
+        "required": [
+          "scryVersion",
+          "verdict",
+          "flaggedTurns"
+        ],
+        "type": "object"
+      },
+      "ScryHealthResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "contractVersion": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "scryVersion": {
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contractVersion",
+          "scryVersion"
+        ],
+        "type": "object"
+      },
+      "ScryTranscriptRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "publishedAtMs": {
+            "format": "int64",
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "updatedAtMs": {
+            "format": "int64",
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "publishedAtMs",
+          "updatedAtMs"
+        ],
+        "type": "object"
+      },
+      "ScryVerdict": {
+        "description": "Whether scry examined the transcript; unchecked means scry declined unsupported content or harness",
+        "enum": [
+          "checked",
+          "unchecked"
+        ],
+        "examples": [
+          "checked",
+          "unchecked"
+        ],
+        "title": "Scry Verdict",
+        "type": "string"
+      },
       "SearchPayload": {
         "properties": {
           "query": {

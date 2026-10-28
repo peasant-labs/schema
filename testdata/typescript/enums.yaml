@@ -740,3 +740,9 @@ enums:
       - {name: Ultra, value: "ultra"}
       - {name: Ultracode, value: "ultracode"}
     all_values: ["off", "minimal", "low", "medium", "high", "xhigh", "max", "ultra", "ultracode"]
+  - name: ScryVerdict
+    all_name: AllScryVerdicts
+    members:
+      - {name: Checked, value: "checked"}
+      - {name: Unchecked, value: "unchecked"}
+    all_values: ["checked", "unchecked"]

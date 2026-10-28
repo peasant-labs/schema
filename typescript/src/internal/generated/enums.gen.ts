@@ -107,6 +107,7 @@ import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } 
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
+import { zScryVerdict, type ScryVerdict as ScryVerdictContract } from "./contract/zod.gen.js";
 
 export type CollectiveObservationReason = CollectiveObservationReasonContract;
 export const CollectiveObservationReason = Object.freeze({
@@ -1400,4 +1401,14 @@ export const ThinkingLevel = Object.freeze({
 export const AllThinkingLevels = Object.freeze([ThinkingLevel.Off, ThinkingLevel.Minimal, ThinkingLevel.Low, ThinkingLevel.Medium, ThinkingLevel.High, ThinkingLevel.XHigh, ThinkingLevel.Max, ThinkingLevel.Ultra, ThinkingLevel.Ultracode]) as readonly ThinkingLevel[];
 export function isThinkingLevel(value: unknown): value is ThinkingLevel {
   return zThinkingLevel.safeParse(value).success;
+}
+
+export type ScryVerdict = ScryVerdictContract;
+export const ScryVerdict = Object.freeze({
+  Checked: zScryVerdict.parse("checked"),
+  Unchecked: zScryVerdict.parse("unchecked"),
+} as const);
+export const AllScryVerdicts = Object.freeze([ScryVerdict.Checked, ScryVerdict.Unchecked]) as readonly ScryVerdict[];
+export function isScryVerdict(value: unknown): value is ScryVerdict {
+  return zScryVerdict.safeParse(value).success;
 }

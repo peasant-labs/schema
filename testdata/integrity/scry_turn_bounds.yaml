@@ -1,0 +1,33 @@
+# Turn-count bound of a scry response: each flagged position is below the
+# number of top-level turns in the checked sessionDetail.
+cases:
+  - name: last-index-in-range
+    input: {turn_count: 2, response: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: [1]}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "flags the last turn"}
+    mutation: {description: "flags the last turn"}
+  - name: index-equal-to-count-rejected
+    input: {turn_count: 2, response: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: [2]}}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "flags position equal to the turn count"}
+    mutation: {description: "flags position equal to the turn count"}
+  - name: checked-clean-with-zero-turns
+    input: {turn_count: 0, response: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: []}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: boundary, ref: "a clean check of an empty transcript"}
+    mutation: {description: "a clean check of an empty transcript"}
+  - name: checked-with-zero-turns-rejected
+    input: {turn_count: 0, response: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: [0]}}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "flags a turn of an empty transcript"}
+    mutation: {description: "flags a turn of an empty transcript"}
+  - name: index-beyond-count-rejected
+    input: {turn_count: 3, response: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: [0, 9]}}
+    expected: {valid: false}
+    classification: must-fail
+    provenance: {source: boundary, ref: "flags a position far beyond the turn count"}
+    mutation: {description: "flags a position far beyond the turn count"}
