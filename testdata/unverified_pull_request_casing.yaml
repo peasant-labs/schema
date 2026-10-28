@@ -1,0 +1,339 @@
+required_names:
+  - uppercase required owner only
+  - uppercase owner after canonical
+  - uppercase owner before canonical
+  - nested uppercase index only
+  - nested uppercase index after canonical
+  - unknown fields accepted
+  - duplicate owner last valid
+  - duplicate owner last invalid
+  - duplicate turn last valid
+  - duplicate turn last invalid
+  - decimal integer number
+  - exponent integer source
+  - decimal fractional number
+  - fractional source
+  - negative source
+  - unsafe source
+  - maximum safe source
+  - rounded js safe source
+  - number overflow
+  - fraction rounding integer
+  - negative zero source
+  - decimal tool index
+  - fractional tool index
+  - unsafe tool index
+  - underflow rounds zero
+cases:
+  - name: uppercase required owner only
+    input:
+      json: '{"OWNER":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase required owner only
+  - name: uppercase owner after canonical
+    input:
+      json: '{"owner":"Acme","OWNER":"evil","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase owner after canonical
+  - name: uppercase owner before canonical
+    input:
+      json: '{"OWNER":"evil","owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: uppercase owner before canonical
+  - name: nested uppercase index only
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"TURNINDEX":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: nested uppercase index only
+  - name: nested uppercase index after canonical
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"TURNINDEX":-1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: nested uppercase index after canonical
+  - name: unknown fields accepted
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0},"future":"supported"}'
+    expected:
+      valid: true
+      owner: Acme
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: canonical wire field casing
+    mutation:
+      description: unknown fields accepted
+  - name: duplicate owner last valid
+    input:
+      json: '{"owner":"evil","owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate owner last valid
+  - name: duplicate owner last invalid
+    input:
+      json: '{"owner":"Acme","owner":"evil","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+      turnIndex: 1
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate owner last invalid
+  - name: duplicate turn last valid
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":-1,"turnIndex":42,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 42
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate turn last valid
+  - name: duplicate turn last invalid
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"turnIndex":-1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+      turnIndex: -1
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate turn last invalid
+  - name: decimal integer number
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17.0,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: decimal integer number
+  - name: exponent integer source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1e0,"toolCallIndex":0e1}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: exponent integer source
+  - name: decimal fractional number
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17.5,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: decimal fractional number
+  - name: fractional source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1.5,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: fractional source
+  - name: negative source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":-1e0,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: negative source
+  - name: unsafe source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: unsafe source
+  - name: maximum safe source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740991.0,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 9007199254740991
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: maximum safe source
+  - name: rounded js safe source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740991.1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 9007199254740991
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: rounded js safe source
+  - name: number overflow
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":1e400,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: number overflow
+  - name: fraction rounding integer
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17.000000000000001,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: fraction rounding integer
+  - name: negative zero source
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":-0.0,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 0
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: JSON number safe integer semantics
+    mutation:
+      description: negative zero source
+  - name: decimal tool index
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":1.0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: safe JSON number semantics
+    mutation:
+      description: decimal tool index
+  - name: fractional tool index
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0.5}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: safe JSON number semantics
+    mutation:
+      description: fractional tool index
+  - name: unsafe tool index
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":9007199254740992}}'
+    expected:
+      valid: false
+      owner: Acme
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: safe JSON number semantics
+    mutation:
+      description: unsafe tool index
+  - name: underflow rounds zero
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1e-400,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 0
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: safe JSON number semantics
+    mutation:
+      description: underflow rounds zero

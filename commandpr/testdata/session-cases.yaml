@@ -1,0 +1,1154 @@
+cases:
+  - name: sparse turn second call exact id
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"echo no","name":"Bash"},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":"exact-id","name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"exact-id"}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: sparse turn second call exact id
+  - name: empty id retained by call index
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"echo no","id":"","name":"Bash"},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":"","name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: empty id retained by call index
+  - name: casefold dedup keeps first source
+    input:
+      detail: '{"turns":[{"index":9,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","name":"Bash"}]},{"index":11,"depth":1,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/acme/REPO/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: casefold dedup keeps first source
+  - name: nested turn included
+    input:
+      detail: '{"turns":[{"index":3,"depth":2,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":3,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: nested turn included
+  - name: earlier history excluded
+    input:
+      detail: '{"turns":[],"earlierHistory":[{"turns":[{"index":3,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","name":"Bash"}]}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: earlier history excluded
+  - name: nonzero exit excluded
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","exitCode":1,"name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: nonzero exit excluded
+  - name: explicit error excluded
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","isError":true,"name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: explicit error excluded
+  - name: numeric suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17evil","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: numeric suffix
+  - name: spoofed host
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com.evil/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: spoofed host
+  - name: embedded credential
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://attacker@github.com/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: embedded credential
+  - name: embedded path
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://evil.test/https://github.com/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: embedded path
+  - name: port
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com:443/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: port
+  - name: negative index
+    input:
+      detail: '{"turns":[{"index":-1,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: negative index
+  - name: overlapping earlier history excluded
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","name":"Bash"}]}],"earlierHistory":[{"state":"uncertain_migrated","turns":[{"index":42,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/evil/repo/pull/44","name":"Bash"}]}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: overlapping earlier history excluded
+  - name: zero exit accepted
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","exitCode":0,"name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: zero exit accepted
+  - name: second empty id selected
+    input:
+      detail: '{"turns":[{"index":8,"toolCalls":[{"arguments":"echo hi","id":"","name":"Bash"},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":"","name":"Bash"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":8,"toolCallIndex":1}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: second empty id selected
+  - name: at suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17@evil","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: at suffix
+  - name: colon suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17:443","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: colon suffix
+  - name: percent suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17%30","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: percent suffix
+  - name: username spoof
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com@evil/Acme/repo/pull/17","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: username spoof
+  - name: numeric overflow
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/9007199254740992","name":"Bash"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: numeric overflow
+  - name: non-shell read_file command property
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"read_file","arguments":"{\"command\":\"gh pr create\"}","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: non-shell read_file command property
+  - name: unknown tool command property
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"mystery","arguments":"{\"command\":\"gh pr create\"}","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: unknown tool command property
+  - name: uncalled function body
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"f() { gh pr create; }; echo hi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: uncalled function body
+  - name: statically false conditional
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if false; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: statically false conditional
+  - name: nested URL in query is not a result
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://example.com/?next=https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: nested URL in query is not a result
+  - name: nested URL in fragment is not a result
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://example.com/#https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: nested URL in fragment is not a result
+  - name: unsupported pull subpage
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2/other"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: unsupported pull subpage
+  - name: actual exec_command
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"exec_command","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: actual exec_command
+  - name: canonical execute kind
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"special-tool","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2","toolKind":"execute"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: recorded command and URL boundaries
+    mutation:
+      description: canonical execute kind
+  - name: false and skips command
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: false and skips command
+  - name: true or skips command
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true || gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: true or skips command
+  - name: while false skips body
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"while false; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: while false skips body
+  - name: valid command after function
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"f() { echo hi; }; gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: valid command after function
+  - name: outer valid PR beats nested query
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2?next=https://github.com/evil/repo/pull/3"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: outer valid PR beats nested query
+  - name: outer valid PR beats nested fragment
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2#https://github.com/evil/repo/pull/3"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: outer valid PR beats nested fragment
+  - name: known commits subpage
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2/commits"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: known commits subpage
+  - name: known checks subpage
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2/checks"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: known checks subpage
+  - name: run terminal cmd real identity
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"run_terminal_cmd","arguments":"gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded shell execution and complete result URL
+    mutation:
+      description: run terminal cmd real identity
+  - name: if true skips else
+    input:
+      detail: '{"turns":[{"index":1,"toolCalls":[{"name":"Bash","arguments":"if true; then echo hi; else gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: statically unexecuted shell branches
+    mutation:
+      description: if true skips else
+  - name: until true skips body
+    input:
+      detail: '{"turns":[{"index":1,"toolCalls":[{"name":"Bash","arguments":"until true; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: statically unexecuted shell branches
+    mutation:
+      description: until true skips body
+  - name: negated true if
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if ! true; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated true if
+  - name: negated true and
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated true and
+  - name: empty for loop
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"for x in; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: empty for loop
+  - name: nonmatching case
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"case x in y) gh pr create;; esac","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: nonmatching case
+  - name: negated false if
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if ! false; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated false if
+  - name: negated false and
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! false && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: negated false and
+  - name: nonempty for loop
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"for x in item; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: nonempty for loop
+  - name: matching case
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"case x in x) gh pr create;; esac","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: matching case
+  - name: ftp outer query
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"ftp://example.test/?next=https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: ftp outer query
+  - name: custom outer fragment
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"custom://example.test/#https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: custom outer fragment
+  - name: canonical separate after ftp
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create","result":"ftp://example.test/a https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell execution and URL token
+    mutation:
+      description: canonical separate after ftp
+  - name: chained false and skips gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false && echo nope && gh pr create; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: chained false and skips gh
+  - name: nested false or guard skips gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"( false || false ) && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: nested false or guard skips gh
+  - name: true and chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true && true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: true and chain executes gh
+  - name: false or true chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false || true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: false or true chain executes gh
+  - name: negated guard chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! false && true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: negated guard chain executes gh
+  - name: false and then or executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false && echo nope || gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: false and then or executes gh
+  - name: redirected true and does not prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true >/dev/null/nope && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: redirected true and does not prove execution
+  - name: redirected true if does not prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if true >/dev/null/nope; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: redirected true if does not prove execution
+  - name: nested redirected guard is unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true >/dev/null/nope && echo ok && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: nested redirected guard is unproven
+  - name: unredirected true guard remains supported
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: unredirected true guard remains supported
+  - name: env null-output option is nonexecuting
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -0 gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env null-output option is nonexecuting
+  - name: env split string is not interpreted
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -S echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env split string is not interpreted
+  - name: env split string long option is not interpreted
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --split-string=echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env split string long option is not interpreted
+  - name: env unset remains supported
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env unset remains supported
+  - name: redirected while guard is unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"while true >/dev/null/nope; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: redirected while guard is unproven
+  - name: env command argument is not a wrapper option
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env gh pr create --title -S","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: env command argument is not a wrapper option
+  - name: env split after unset remains unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN --split-string=echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: env split after unset remains unproven
+  - name: candidate redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: candidate redirect cannot prove execution
+  - name: group redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"{ gh pr create; } >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: group redirect cannot prove execution
+  - name: subshell redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"( gh pr create ) >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: subshell redirect cannot prove execution
+  - name: candidate without redirect executes
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: candidate without redirect executes
+  - name: independent redirect does not suppress candidate
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"echo hi >/dev/null; gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: independent redirect does not suppress candidate
+  - name: shell version option does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --version -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell version option does not execute
+  - name: shell help option does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --help -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell help option does not execute
+  - name: shell noexec separate does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -n -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell noexec separate does not execute
+  - name: shell noexec combined does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -nc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell noexec combined does not execute
+  - name: shell named noexec does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -o noexec -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell named noexec does not execute
+  - name: shell unknown long option fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --unknown -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell unknown long option fails closed
+  - name: shell valid c executes
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell valid c executes
+  - name: shell valid lc executes
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -lc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell valid lc executes
+  - name: sh unsupported pipefail fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"sh -o pipefail -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: sh unsupported pipefail fails closed
+  - name: shell named verbose listing fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -o -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: shell named verbose listing fails closed
+  - name: shell uppercase noexec option fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -O noexec -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: shell uppercase noexec option fails closed
+  - name: env chdir short fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -C /dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir short fails closed
+  - name: env chdir long equals fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --chdir=/dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir long equals fails closed
+  - name: env chdir long separate fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --chdir /dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir long separate fails closed
+  - name: env chdir attached fails closed
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -C/dev/null/nope gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: env chdir attached fails closed
+  - name: valid env unset executes
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: valid env unset executes
+  - name: shell errexit combined unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -ec 'false; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell errexit combined unproven
+  - name: shell nounset combined unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -uc 'echo $UNDEFINED; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell nounset combined unproven
+  - name: shell errexit separate unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -e -c 'false; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell errexit separate unproven
+  - name: shell nounset separate unproven
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -u -c 'echo $UNDEFINED; gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell nounset separate unproven
+  - name: shell plain c stays supported
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell plain c stays supported
+  - name: shell login c stays supported
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -lc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell wrapper execution evidence
+    mutation:
+      description: shell login c stays supported
+required_names:
+  - sparse turn second call exact id
+  - empty id retained by call index
+  - casefold dedup keeps first source
+  - nested turn included
+  - earlier history excluded
+  - nonzero exit excluded
+  - explicit error excluded
+  - numeric suffix
+  - spoofed host
+  - embedded credential
+  - embedded path
+  - port
+  - negative index
+  - overlapping earlier history excluded
+  - zero exit accepted
+  - second empty id selected
+  - at suffix
+  - colon suffix
+  - percent suffix
+  - username spoof
+  - numeric overflow
+  - non-shell read_file command property
+  - unknown tool command property
+  - uncalled function body
+  - statically false conditional
+  - nested URL in query is not a result
+  - nested URL in fragment is not a result
+  - unsupported pull subpage
+  - actual exec_command
+  - canonical execute kind
+  - false and skips command
+  - true or skips command
+  - while false skips body
+  - valid command after function
+  - outer valid PR beats nested query
+  - outer valid PR beats nested fragment
+  - known commits subpage
+  - known checks subpage
+  - run terminal cmd real identity
+  - if true skips else
+  - until true skips body
+  - negated true if
+  - negated true and
+  - empty for loop
+  - nonmatching case
+  - negated false if
+  - negated false and
+  - nonempty for loop
+  - matching case
+  - ftp outer query
+  - custom outer fragment
+  - canonical separate after ftp
+  - chained false and skips gh
+  - nested false or guard skips gh
+  - true and chain executes gh
+  - false or true chain executes gh
+  - negated guard chain executes gh
+  - false and then or executes gh
+  - redirected true and does not prove execution
+  - redirected true if does not prove execution
+  - nested redirected guard is unproven
+  - unredirected true guard remains supported
+  - env null-output option is nonexecuting
+  - env split string is not interpreted
+  - env split string long option is not interpreted
+  - env unset remains supported
+  - redirected while guard is unproven
+  - env command argument is not a wrapper option
+  - env split after unset remains unproven
+  - candidate redirect cannot prove execution
+  - group redirect cannot prove execution
+  - subshell redirect cannot prove execution
+  - candidate without redirect executes
+  - independent redirect does not suppress candidate
+  - shell version option does not execute
+  - shell help option does not execute
+  - shell noexec separate does not execute
+  - shell noexec combined does not execute
+  - shell named noexec does not execute
+  - shell unknown long option fails closed
+  - shell valid c executes
+  - shell valid lc executes
+  - sh unsupported pipefail fails closed
+  - shell named verbose listing fails closed
+  - shell uppercase noexec option fails closed
+  - env chdir short fails closed
+  - env chdir long equals fails closed
+  - env chdir long separate fails closed
+  - env chdir attached fails closed
+  - valid env unset executes
+  - shell errexit combined unproven
+  - shell nounset combined unproven
+  - shell errexit separate unproven
+  - shell nounset separate unproven
+  - shell plain c stays supported
+  - shell login c stays supported

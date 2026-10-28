@@ -146,7 +146,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"SessionIdentity", new(schema.SessionIdentity)}, {"SessionInsight", new(schema.SessionInsight)},
 		{"SessionOrigin", new(schema.SessionOrigin)},
 		{"SessionOutcome", new(schema.SessionOutcome)},
-		{"SessionPullRequest", new(schema.SessionPullRequest)}, {"SessionPullRequestsResponse", new(schema.SessionPullRequestsResponse)},
+		{"UnverifiedPullRequestSource", new(schema.UnverifiedPullRequestSource)}, {"UnverifiedPullRequest", new(schema.UnverifiedPullRequest)}, {"SessionPullRequest", new(schema.SessionPullRequest)}, {"SessionPullRequestsResponse", new(schema.SessionPullRequestsResponse)},
 		{"SessionScorecard", new(schema.SessionScorecard)}, {"SessionStats", new(schema.SessionStats)},
 		{"SessionSummary", new(schema.SessionSummary)}, {"SessionsPayload", new(schema.SessionsPayload)},
 		{"ShutdownResponse", new(schema.ShutdownResponse)}, {"SourceFormat", new(schema.SourceFormat)},

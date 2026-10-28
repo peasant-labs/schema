@@ -1,0 +1,211 @@
+package schema
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"math"
+	"regexp"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+)
+
+// UnverifiedPullRequestSource locates the original call in the main transcript.
+type UnverifiedPullRequestSource struct {
+	TurnIndex     int    `json:"turnIndex" minimum:"0" maximum:"9007199254740991"`
+	ToolCallIndex int    `json:"toolCallIndex" minimum:"0" maximum:"9007199254740991"`
+	ToolCallID    string `json:"toolCallId,omitempty" minLength:"1"`
+}
+
+// UnverifiedPullRequest is evidence from a recorded command, not a verified attachment.
+type UnverifiedPullRequest struct {
+	Owner  string                      `json:"owner" minLength:"1"`
+	Repo   string                      `json:"repo" minLength:"1"`
+	Number int                         `json:"number" minimum:"1" maximum:"9007199254740991"`
+	URL    string                      `json:"url" minLength:"1"`
+	Source UnverifiedPullRequestSource `json:"source"`
+}
+
+var githubPRSegment = regexp.MustCompile(`^[A-Za-z0-9_-][A-Za-z0-9._-]*$`)
+
+// Validate checks the canonical URL and exact, safe source coordinates.
+func (p UnverifiedPullRequest) Validate() error {
+	if !githubPRSegment.MatchString(p.Owner) || !githubPRSegment.MatchString(p.Repo) || p.Owner == "." || p.Owner == ".." || p.Repo == "." || p.Repo == ".." || p.Number < 1 || int64(p.Number) > maxSafeJSONInteger || p.URL != "https://github.com/"+p.Owner+"/"+p.Repo+"/pull/"+strconv.Itoa(p.Number) {
+		return fmt.Errorf("unverified pull request validation failed at schema.UnverifiedPullRequest.Validate: invalid GitHub identity or canonical URL; emit the exact owner, repository and positive pull number from the recorded result")
+	}
+	if p.Source.TurnIndex < 0 || int64(p.Source.TurnIndex) > maxSafeJSONInteger || p.Source.ToolCallIndex < 0 || int64(p.Source.ToolCallIndex) > maxSafeJSONInteger || !utf8.ValidString(p.Source.ToolCallID) {
+		return fmt.Errorf("unverified pull request validation failed at schema.UnverifiedPullRequest.Validate: invalid source locator; emit safe nonnegative turn and call indices and a valid UTF-8 call ID")
+	}
+	return nil
+}
+
+func validateUnverifiedPullRequests(rows *[]UnverifiedPullRequest) error {
+	if rows == nil {
+		return nil
+	}
+	if *rows == nil {
+		return fmt.Errorf("unverified pull requests validation failed: null array; omit unsupported projections or emit an initialized array")
+	}
+	for _, row := range *rows {
+		if err := row.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// UnmarshalJSON rejects explicit null on an optional source ID.
+func (s *UnverifiedPullRequestSource) UnmarshalJSON(data []byte) error {
+	type plain UnverifiedPullRequestSource
+	var err error
+	data, err = canonicalJSONFields(data, "turnIndex", "toolCallIndex", "toolCallId")
+	if err != nil {
+		return err
+	}
+	if err := rejectOptionalNull(data, "toolCallId"); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for _, key := range []string{"turnIndex", "toolCallIndex"} {
+		value, ok := fields[key]
+		if !ok || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return fmt.Errorf("source locator decoding failed at schema.UnverifiedPullRequestSource.UnmarshalJSON: %s is missing or null; provide both exact nonnegative coordinates", key)
+		}
+	}
+	if id, ok := fields["toolCallId"]; ok && bytes.Equal(bytes.TrimSpace(id), []byte(`""`)) {
+		return fmt.Errorf("source locator decoding failed at schema.UnverifiedPullRequestSource.UnmarshalJSON: toolCallId is empty; omit an absent ID or provide the exact recorded ID")
+	}
+	data, err = normalizeSafeIntegers(data, "turnIndex", "toolCallIndex")
+	if err != nil {
+		return err
+	}
+	var value plain
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = UnverifiedPullRequestSource(value)
+	return nil
+}
+
+func rejectOptionalNull(data []byte, key string) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for name, value := range fields {
+		if strings.EqualFold(name, key) && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return fmt.Errorf("read validation failed at schema JSON decoding: %s is null; omit it when unsupported or provide its nonnull value", key)
+		}
+	}
+	return nil
+}
+
+// UnmarshalJSON preserves omission while rejecting an explicit null array.
+func (r *SessionPullRequestsResponse) UnmarshalJSON(data []byte) error {
+	type plain SessionPullRequestsResponse
+	var err error
+	data, err = canonicalJSONFields(data, "pullRequests", "unverified_pull_requests")
+	if err != nil {
+		return err
+	}
+	if err := rejectOptionalNull(data, "unverified_pull_requests"); err != nil {
+		return err
+	}
+	var value plain
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = SessionPullRequestsResponse(value)
+	return nil
+}
+
+// UnmarshalJSON preserves omission while rejecting an explicit null array.
+func (r *VillageTranscriptPullRequestsResponse) UnmarshalJSON(data []byte) error {
+	type plain VillageTranscriptPullRequestsResponse
+	var err error
+	data, err = canonicalJSONFields(data, "pull_requests", "unverified_pull_requests")
+	if err != nil {
+		return err
+	}
+	if err := rejectOptionalNull(data, "unverified_pull_requests"); err != nil {
+		return err
+	}
+	var value plain
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*r = VillageTranscriptPullRequestsResponse(value)
+	return nil
+}
+
+// UnmarshalJSON requires a concrete locator instead of treating absent source as
+// an invented zero-index call.
+func (p *UnverifiedPullRequest) UnmarshalJSON(data []byte) error {
+	type plain UnverifiedPullRequest
+	var err error
+	data, err = canonicalJSONFields(data, "owner", "repo", "number", "url", "source")
+	if err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	source, ok := fields["source"]
+	if !ok || bytes.Equal(bytes.TrimSpace(source), []byte("null")) {
+		return fmt.Errorf("unverified pull request decoding failed at schema.UnverifiedPullRequest.UnmarshalJSON: source is missing or null; callers cannot locate recorded evidence; provide the source turn and tool call indices")
+	}
+	data, err = normalizeSafeIntegers(data, "number")
+	if err != nil {
+		return err
+	}
+	var value plain
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = UnverifiedPullRequest(value)
+	return nil
+}
+
+// canonicalJSONFields ignores case aliases as unknown fields before Go's
+// case-insensitive decoder can use them to overwrite known wire properties.
+func canonicalJSONFields(data []byte, canonical ...string) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, err
+	}
+	for key := range fields {
+		for _, name := range canonical {
+			if key != name && strings.EqualFold(key, name) {
+				delete(fields, key)
+				break
+			}
+		}
+	}
+	return json.Marshal(fields)
+}
+
+// normalizeSafeIntegers applies JSON.parse's binary64 rounding before checking
+// the same safe-integer bounds enforced by the public TypeScript validator.
+func normalizeSafeIntegers(data []byte, keys ...string) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, err
+	}
+	for _, key := range keys {
+		raw, ok := fields[key]
+		if !ok {
+			continue
+		}
+		number, err := strconv.ParseFloat(string(raw), 64)
+		if err != nil || math.IsNaN(number) || math.IsInf(number, 0) || math.Trunc(number) != number || number > float64(maxSafeJSONInteger) || number < -float64(maxSafeJSONInteger) || (strconv.IntSize == 32 && (number > math.MaxInt32 || number < math.MinInt32)) {
+			return nil, fmt.Errorf("unverified pull request decoding failed at schema.normalizeSafeIntegers: %s is not a safe integer; use a finite integral JSON number within supported bounds", key)
+		}
+		fields[key] = json.RawMessage(strconv.FormatInt(int64(number), 10))
+	}
+	return json.Marshal(fields)
+}

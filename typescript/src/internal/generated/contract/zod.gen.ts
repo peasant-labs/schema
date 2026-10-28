@@ -2216,12 +2216,6 @@ export const zSessionPullRequest = z.object({
 
 export type SessionPullRequest = z.infer<typeof zSessionPullRequest>;
 
-export const zSessionPullRequestsResponse = z.object({
-    pullRequests: z.array(zSessionPullRequest)
-});
-
-export type SessionPullRequestsResponse = z.infer<typeof zSessionPullRequestsResponse>;
-
 /**
  * Session Purpose
  *
@@ -3494,6 +3488,40 @@ export const zChangeDetailPayload = z.object({
 
 export type ChangeDetailPayload = z.infer<typeof zChangeDetailPayload>;
 
+export const zUnverifiedPullRequestSource = z.object({
+    toolCallId: z.string().min(1).optional(),
+    toolCallIndex: z.int().gte(0).lte(9007199254740991),
+    turnIndex: z.int().gte(0).lte(9007199254740991)
+});
+
+export type UnverifiedPullRequestSource = z.infer<typeof zUnverifiedPullRequestSource>;
+
+export const zUnverifiedPullRequest = z.object({
+    number: z.int().gte(1).lte(9007199254740991),
+    owner: z.string().min(1),
+    repo: z.string().min(1),
+    source: zUnverifiedPullRequestSource,
+    url: z.string().min(1)
+}).superRefine((value, context) => {
+    const segment = /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
+    const validSegment = (part: string) => segment.test(part) && part !== "." && part !== "..";
+    if (!validSegment(value.owner) || !validSegment(value.repo) || value.url !== "https://github.com/" + value.owner + "/" + value.repo + "/pull/" + String(value.number)) {
+      context.addIssue({ code: "custom", message: "Unverified pull request identity and canonical GitHub URL must agree" });
+    }
+    if (value.source.toolCallId !== undefined && /[\uD800-\uDFFF]/u.test(value.source.toolCallId)) {
+      context.addIssue({ code: "custom", message: "Recorded tool call ID must be valid Unicode" });
+    }
+  });
+
+export type UnverifiedPullRequest = z.infer<typeof zUnverifiedPullRequest>;
+
+export const zSessionPullRequestsResponse = z.object({
+    pullRequests: z.array(zSessionPullRequest),
+    unverified_pull_requests: z.array(zUnverifiedPullRequest).optional()
+});
+
+export type SessionPullRequestsResponse = z.infer<typeof zSessionPullRequestsResponse>;
+
 /**
  * Usage Completeness
  *
@@ -4269,7 +4297,8 @@ export const zVillageTranscriptPullRequest = z.object({
 export type VillageTranscriptPullRequest = z.infer<typeof zVillageTranscriptPullRequest>;
 
 export const zVillageTranscriptPullRequestsResponse = z.object({
-    pull_requests: z.array(zVillageTranscriptPullRequest)
+    pull_requests: z.array(zVillageTranscriptPullRequest),
+    unverified_pull_requests: z.array(zUnverifiedPullRequest).optional()
 });
 
 export type VillageTranscriptPullRequestsResponse = z.infer<typeof zVillageTranscriptPullRequestsResponse>;

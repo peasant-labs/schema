@@ -218,6 +218,8 @@ func (p VillageTranscriptPullRequest) Validate() error {
 // repository, and one whose visibility check cannot complete is omitted.
 type VillageTranscriptPullRequestsResponse struct {
 	PullRequests []VillageTranscriptPullRequest `json:"pull_requests" nullable:"false"`
+	// UnverifiedPullRequests is separate from attachments; omission means unsupported and [] means no evidence.
+	UnverifiedPullRequests *[]UnverifiedPullRequest `json:"unverified_pull_requests,omitempty" nullable:"false"`
 }
 
 // Validate checks each pull request and that each appears once.
@@ -235,6 +237,9 @@ func (r VillageTranscriptPullRequestsResponse) Validate() error {
 			return fmt.Errorf("transcript pull requests validation failed at schema.VillageTranscriptPullRequestsResponse.Validate: %s/%s#%d is listed twice; list each pull request once", ref.Owner, ref.Name, ref.Number)
 		}
 		seen[ref] = struct{}{}
+	}
+	if err := validateUnverifiedPullRequests(r.UnverifiedPullRequests); err != nil {
+		return err
 	}
 	return nil
 }

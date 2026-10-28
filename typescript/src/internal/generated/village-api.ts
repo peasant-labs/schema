@@ -1899,6 +1899,8 @@ export interface components {
          */
         SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
         SchemaTurnDetail: Schema.TurnDetail;
+        SchemaUnverifiedPullRequest: Schema.UnverifiedPullRequest;
+        SchemaUnverifiedPullRequestSource: Schema.UnverifiedPullRequestSource;
         /**
          * Usage Completeness
          * @description Completeness of the five base token fields

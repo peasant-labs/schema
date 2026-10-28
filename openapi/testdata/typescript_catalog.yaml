@@ -324,6 +324,14 @@ types:
     disposition: catalog
     component: SessionCommitsResponse
     reason: recorded session commit binding read
+  - go_name: UnverifiedPullRequestSource
+    disposition: catalog
+    component: UnverifiedPullRequestSource
+    reason: exact recorded tool call locator
+  - go_name: UnverifiedPullRequest
+    disposition: catalog
+    component: UnverifiedPullRequest
+    reason: unverified pull request evidence
   - go_name: SessionPullRequest
     disposition: catalog
     component: SessionPullRequest
