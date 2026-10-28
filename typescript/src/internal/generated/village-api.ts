@@ -1015,7 +1015,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Get the publish metadata village stored for the transcript: the validated publish request, re-encoded, not a reconstruction. Only the transcript's owner, or an owner of a collective the transcript was submitted to (pending or approved), may read it. Every other caller gets 404, including one who can read the transcript, so the route never reveals more than the transcript does. 404 also means village holds no stored metadata for the transcript (transcripts published before metadata was stored). 406 means the requested pull contract is below village's minimum. */
+        /** @description Get the publish metadata village stored for the transcript: the validated publish request, re-encoded, not a reconstruction. Only the transcript's owner, or an owner of a collective the transcript was submitted to (pending or approved), may read it. Every other caller gets 404, including one who can read the transcript, so the route never reveals more than the transcript does. It also answers 404 when the transcript's owner is anonymous to the caller (the public-owner rule decides), so it never exposes a hidden owner's repository, paths or commit authors. 404 also means village holds no stored metadata for the transcript (transcripts published before metadata was stored). 406 means the requested pull contract is below village's minimum. */
         get: operations["getPullTranscriptPublishMetadata"];
         put?: never;
         post?: never;
@@ -6616,8 +6616,8 @@ export interface operations {
             /** @description OK */
             200: {
                 headers: {
-                    /** @description Bare SHA3-256 hash of the served content bytes, without quotes; equals the transcript's content_hash when the served copy is the stored copy. A reader highlights flagged turns only when this header equals transcript.content_hash from the metadata read. A plain header, not an ETag. */
-                    "Village-Content-Hash": components["schemas"]["SchemaTranscriptContentHash"];
+                    /** @description The bare content_hash, without quotes, of the stored copy this response was served from; it is not a hash of the served bytes. A rewrite on read sends the new hash, and withholding repository fields for an anonymous owner does not change it. Absent while village holds no hash for the served copy. A reader highlights flagged turns only when it equals transcript.content_hash from the metadata read. A plain header, not an ETag. */
+                    "Village-Content-Hash"?: components["schemas"]["SchemaTranscriptContentHash"];
                     [name: string]: unknown;
                 };
                 content: {

@@ -6095,14 +6095,13 @@ components:
       - minPushContractVersion
       type: object
     ScryCheckRequest:
+      additionalProperties: false
       properties:
         contractVersion:
           minLength: 1
           type: string
         publishMetadata:
-          anyOf:
-          - $ref: '#/components/schemas/AuthoritativePublishRequest'
-          - type: "null"
+          $ref: '#/components/schemas/AuthoritativePublishRequest'
         record:
           $ref: '#/components/schemas/ScryTranscriptRecord'
         sessionDetail:

@@ -344,6 +344,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	pullPublishMetadataOC.SetDescription("Get the publish metadata village stored for the transcript: the validated publish request, re-encoded, not a reconstruction. " +
 		"Only the transcript's owner, or an owner of a collective the transcript was submitted to (pending or approved), may read it. " +
 		"Every other caller gets 404, including one who can read the transcript, so the route never reveals more than the transcript does. " +
+		"It also answers 404 when the transcript's owner is anonymous to the caller (the public-owner rule decides), so it never exposes a hidden owner's repository, paths or commit authors. " +
 		"404 also means village holds no stored metadata for the transcript (transcripts published before metadata was stored). " +
 		"406 means the requested pull contract is below village's minimum.")
 	for _, status := range []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusNotAcceptable, http.StatusInternalServerError} {

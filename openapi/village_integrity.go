@@ -43,8 +43,8 @@ func addVillageIntegrityOperations(r *openapi31.Reflector) error {
 }
 
 // setTranscriptContentHashHeader declares, on the 200 response of the
-// transcript content read, the header carrying the bare hash of the served
-// bytes.
+// transcript content read, the optional header carrying the bare content hash
+// of the stored copy the response was served from.
 func setTranscriptContentHashHeader(spec *openapi31.Spec) error {
 	const path = "/api/v1/transcripts/{id}/content"
 	item, ok := spec.Paths.MapOfPathItemValues[path]
@@ -61,11 +61,9 @@ func setTranscriptContentHashHeader(spec *openapi31.Spec) error {
 	if response.Response.Headers == nil {
 		response.Response.Headers = map[string]openapi31.HeaderOrReference{}
 	}
-	required := true
-	description := "Bare SHA3-256 hash of the served content bytes, without quotes; equals the transcript's content_hash when the served copy is the stored copy. A reader highlights flagged turns only when this header equals transcript.content_hash from the metadata read. A plain header, not an ETag."
+	description := "The bare content_hash, without quotes, of the stored copy this response was served from; it is not a hash of the served bytes. A rewrite on read sends the new hash, and withholding repository fields for an anonymous owner does not change it. Absent while village holds no hash for the served copy. A reader highlights flagged turns only when it equals transcript.content_hash from the metadata read. A plain header, not an ETag."
 	response.Response.Headers[contentHashHeader] = openapi31.HeaderOrReference{Header: &openapi31.Header{
 		Description: &description,
-		Required:    &required,
 		Schema:      schemaRef("SchemaTranscriptContentHash"),
 	}}
 	item.Get.Responses.MapOfResponseOrReferenceValues["200"] = response

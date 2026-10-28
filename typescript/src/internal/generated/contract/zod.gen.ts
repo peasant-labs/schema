@@ -5575,11 +5575,11 @@ export type AuthoritativePublishRequest = z.infer<typeof zAuthoritativePublishRe
 
 export const zScryCheckRequest = z.object({
     contractVersion: z.string().min(1),
-    publishMetadata: zAuthoritativePublishRequest.nullish(),
+    publishMetadata: zAuthoritativePublishRequest.optional(),
     record: zScryTranscriptRecord,
     sessionDetail: zSessionDetailPayload,
     transcriptId: zTranscriptID
-});
+}).strict();
 
 export type ScryCheckRequest = z.infer<typeof zScryCheckRequest>;
 

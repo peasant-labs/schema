@@ -44,6 +44,7 @@ export const STRICT_OBJECTS = [
   "zAuthoritativeDiagnosticEntry",
   "zAuthoritativeDiagnosticsInfo",
   "zAuthoritativeClientInfo",
+  "zScryCheckRequest",
   "zScryTranscriptRecord",
   "zScryCheckResponse",
   "zScryHealthResponse",

@@ -10,7 +10,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 ### Added
 
 - Village API 0.32.0 declares `POST /api/v1/transcripts/{id}/integrity-check`,
-  an owner-only check that answers only flagged, not flagged or unchecked, with
+  an owner-only check that answers only flagged, `not_flagged` or unchecked, with
   a daily limit.
 - The transcript metadata read gains optional `integrity`, present only for a
   public flagged transcript, whose presence is the flag. It carries only
@@ -25,14 +25,21 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - Village API 0.32.0 declares `GET /api/v1/pull/transcripts/{id}/publish-metadata`,
   which returns the stored publish metadata under pull-contract negotiation. Only
   the transcript's owner or an owner of a collective it was submitted to may read
-  it, and every other caller gets 404.
+  it, and every other caller gets 404. It also answers 404 when the transcript's
+  owner is anonymous to the caller, so it never exposes a hidden owner's
+  repository, paths or commit authors.
 - The web content route `GET /api/v1/transcripts/{id}/content` declares the
-  response header `Village-Content-Hash`, the bare content hash (not an ETag), so
-  a reader can tell whether the content it rendered is the copy the positions
-  refer to.
+  optional response header `Village-Content-Hash`: the bare `content_hash` of the
+  stored copy the response was served from (not a hash of the served bytes, and
+  not an ETag). It is absent while village holds no hash for the served copy. A
+  reader highlights flagged turns only when it equals `transcript.content_hash`
+  from the metadata read.
 - Types 0.40.0 defines `ScryCheckRequest`, `ScryCheckResponse`,
-  `ScryHealthResponse` (contract 0.1.0) and the closed sets `ScryVerdict`
-  (`checked`, `unchecked`) and `VillageIntegrityCheckResult`. A flagged result is
+  `ScryHealthResponse` (contract 0.1.0), `AuthoritativeClientInfo`,
+  `VillageTranscriptIntegrity` and `VillageIntegrityCheckResponse`, the closed
+  sets `ScryVerdict` (`checked`, `unchecked`) and `VillageIntegrityCheckResult`,
+  and the public `ScryCheckResponse.Validate(turnCount)`. `ScryCheckRequest` is a
+  strict object that requires every member except `publishMetadata`. A flagged result is
   derived as checked with at least one position.
 
 Local API is unchanged.

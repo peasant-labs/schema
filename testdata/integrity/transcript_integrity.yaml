@@ -14,6 +14,9 @@ required_names:
   - scry-request-noncanonical-transcript-id-rejected
   - scry-request-zero-published-at-rejected
   - scry-request-record-copied-field-rejected
+  - scry-request-missing-session-detail-rejected
+  - scry-request-unknown-member-rejected
+  - scry-request-null-publish-metadata-rejected
   - scry-response-checked-flagged-valid
   - scry-response-checked-clean-valid
   - scry-response-unchecked-valid
@@ -61,6 +64,7 @@ operations:
     error_responses:
       "400": VillageErrorResponse
       "401": VillageErrorResponse
+      "403": VillageErrorResponse
       "404": VillageErrorResponse
       "409": VillageErrorResponse
       "429": VillageErrorResponse
@@ -137,6 +141,24 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "record holds only facts village itself holds"}
     mutation: {description: "copies the publisher's turn count into record"}
+  - name: scry-request-missing-session-detail-rejected
+    input: {schema: ScryCheckRequest, payload: {contractVersion: "0.1.0", transcriptId: "99d59925-36bc-424c-a789-8be54d9702ba", record: *scry_record}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a request without the session cannot be checked"}
+    mutation: {description: "omits sessionDetail"}
+  - name: scry-request-unknown-member-rejected
+    input: {schema: ScryCheckRequest, payload: {<<: *scry_request, turnCount: 2}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the request is a strict object so village cannot smuggle a derived field"}
+    mutation: {description: "adds a top-level turnCount"}
+  - name: scry-request-null-publish-metadata-rejected
+    input: {schema: ScryCheckRequest, payload: {<<: *scry_request, publishMetadata: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "publishMetadata is omitted, never null"}
+    mutation: {description: "sends publishMetadata as null"}
   - name: scry-response-checked-flagged-valid
     input: {schema: ScryCheckResponse, payload: {scryVersion: "1.0.0", verdict: checked, flaggedTurns: [0, 1]}}
     expected: {valid: true}

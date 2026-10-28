@@ -135,8 +135,8 @@ func TestIntegritySurfacesAreExact(t *testing.T) {
 	if !ok {
 		t.Fatalf("the content 200 response does not declare the %s header", f.ContentHashHeader.Name)
 	}
-	if required, _ := header["required"].(bool); !required {
-		t.Errorf("%s must be required", f.ContentHashHeader.Name)
+	if required, _ := header["required"].(bool); required {
+		t.Errorf("%s must be optional: village sends no header while it holds no hash for the served copy", f.ContentHashHeader.Name)
 	}
 	ref, _ := header["schema"].(map[string]any)["$ref"].(string)
 	hashName := strings.TrimPrefix(strings.TrimPrefix(ref, "#/components/schemas/"), "Schema")
@@ -148,7 +148,7 @@ func TestIntegritySurfacesAreExact(t *testing.T) {
 		t.Errorf("TranscriptContentHash carries no pattern")
 	}
 	description, _ := header["description"].(string)
-	requireAnchors(t, "content hash header description", description, []string{"bare", "not an ETag"})
+	requireAnchors(t, "content hash header description", description, []string{"bare", "not an ETag", "stored copy", "absent"})
 
 	pull := integrityOperation(t, h, "get", "/api/v1/pull/transcripts/{id}/publish-metadata")
 	pullResponse, _ := pull["responses"].(map[string]any)["200"].(map[string]any)

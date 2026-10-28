@@ -3369,9 +3369,11 @@ paths:
         owner, or an owner of a collective the transcript was submitted to (pending
         or approved), may read it. Every other caller gets 404, including one who
         can read the transcript, so the route never reveals more than the transcript
-        does. 404 also means village holds no stored metadata for the transcript (transcripts
-        published before metadata was stored). 406 means the requested pull contract
-        is below village''s minimum.'
+        does. It also answers 404 when the transcript''s owner is anonymous to the
+        caller (the public-owner rule decides), so it never exposes a hidden owner''s
+        repository, paths or commit authors. 404 also means village holds no stored
+        metadata for the transcript (transcripts published before metadata was stored).
+        406 means the requested pull contract is below village''s minimum.'
       operationId: getPullTranscriptPublishMetadata
       parameters:
       - in: path
@@ -4050,12 +4052,13 @@ paths:
           description: OK
           headers:
             Village-Content-Hash:
-              description: Bare SHA3-256 hash of the served content bytes, without
-                quotes; equals the transcript's content_hash when the served copy
-                is the stored copy. A reader highlights flagged turns only when this
-                header equals transcript.content_hash from the metadata read. A plain
+              description: The bare content_hash, without quotes, of the stored copy
+                this response was served from; it is not a hash of the served bytes.
+                A rewrite on read sends the new hash, and withholding repository fields
+                for an anonymous owner does not change it. Absent while village holds
+                no hash for the served copy. A reader highlights flagged turns only
+                when it equals transcript.content_hash from the metadata read. A plain
                 header, not an ETag.
-              required: true
               schema:
                 $ref: '#/components/schemas/SchemaTranscriptContentHash'
               style: simple

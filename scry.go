@@ -17,13 +17,11 @@ import (
 const ScryContractVersion = "0.1.0"
 
 // scrySemVerCorePattern is MAJOR.MINOR.PATCH without a prerelease, build
-// metadata or a leading v. It is the single source for the struct tags below
-// and for Validate.
+// metadata or a leading v. The struct tags below repeat it because tags cannot
+// reference constants; a test keeps them equal. Validate uses the constant.
 const scrySemVerCorePattern = `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`
 
 var scrySemVerCoreRE = regexp.MustCompile(scrySemVerCorePattern)
-
-const scryFlaggedTurnsDescription = "Zero-based positions in the top-level sessionDetail.turns array; never TurnDetail.index values and never positions in earlierHistory or child sessions. Flagged means verdict checked with at least one position."
 
 // ScryVerdict is whether scry examined the transcript.
 type ScryVerdict string
@@ -122,6 +120,35 @@ func (r ScryCheckRequest) Validate() error {
 			return scryError(what, fmt.Sprintf("%s %d is outside 1..%d", name, ms, maxSafeJSONInteger), "send the epoch milliseconds village holds")
 		}
 	}
+	return nil
+}
+
+// scryRequestFields are the top-level members of ScryCheckRequest.
+var scryRequestFields = fieldSet("contractVersion", "transcriptId", "sessionDetail", "publishMetadata", "record")
+
+// UnmarshalJSON refuses unknown top-level members, requires every member but
+// publishMetadata, and refuses an explicit null for any of them.
+func (r *ScryCheckRequest) UnmarshalJSON(data []byte) error {
+	raw, err := decodeStrictObject(data, scryRequestFields, "scry check request")
+	if err != nil {
+		return err
+	}
+	for name, value := range raw {
+		if bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return scryError("scry check request", fmt.Sprintf("member %q is null", name), "omit publishMetadata when there is none; send the other members")
+		}
+	}
+	for _, name := range []string{"contractVersion", "transcriptId", "sessionDetail", "record"} {
+		if _, ok := raw[name]; !ok {
+			return scryError("scry check request", fmt.Sprintf("required member %q is missing", name), "send the complete request")
+		}
+	}
+	type wire ScryCheckRequest
+	var decoded wire
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return scryError("scry check request", err.Error(), "send values matching the declared field types")
+	}
+	*r = ScryCheckRequest(decoded)
 	return nil
 }
 

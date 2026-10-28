@@ -61,8 +61,9 @@ type AuthoritativePublishRequest struct {
 	Client           *AuthoritativeClientInfo     `json:"client,omitempty"`
 }
 
-// authoritativeClientVersionPattern is SemVer 2.0 without a leading v. It is
-// the single source for the struct tag below and for Validate.
+// authoritativeClientVersionPattern is SemVer 2.0 without a leading v. The
+// struct tag below repeats it because tags cannot reference constants; a test
+// keeps them equal. Validate uses the constant.
 const authoritativeClientVersionPattern = `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$`
 
 const authoritativeClientNamePattern = `^[a-z][a-z0-9-]{0,63}$`
