@@ -1,0 +1,314 @@
+required_names:
+  - local omitted
+  - local empty
+  - local coexistence
+  - local null
+  - local absent turn index
+  - local null turn index
+  - local negative index
+  - local unsafe index
+  - local empty id
+  - local null id
+  - village omitted
+  - village empty
+  - village coexistence
+  - village null
+  - village absent turn index
+  - village null turn index
+  - village negative index
+  - village unsafe index
+  - village empty id
+  - village null id
+  - local missing source
+  - local null source
+  - village missing source
+  - village null source
+cases:
+  - name: local omitted
+    input:
+      kind: local
+      json: '{"pullRequests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":"future_detector"}]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local omitted
+  - name: local empty
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local empty
+  - name: local coexistence
+    input:
+      kind: local
+      json: '{"pullRequests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":"future_detector"}],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"real-id"}}]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local coexistence
+  - name: local null
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":null}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local null
+  - name: local absent turn index
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local absent turn index
+  - name: local null turn index
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":null,"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local null turn index
+  - name: local negative index
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":-1}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local negative index
+  - name: local unsafe index
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local unsafe index
+  - name: local empty id
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":""}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local empty id
+  - name: local null id
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":null}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local null id
+  - name: village omitted
+    input:
+      kind: village
+      json: '{"pull_requests":[{"owner":"Acme","name":"repo","number":17,"title":null,"head_ref":null,"state":"attached"}]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village omitted
+  - name: village empty
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village empty
+  - name: village coexistence
+    input:
+      kind: village
+      json: '{"pull_requests":[{"owner":"Acme","name":"repo","number":17,"title":null,"head_ref":null,"state":"attached"}],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"real-id"}}]}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village coexistence
+  - name: village null
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":null}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village null
+  - name: village absent turn index
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village absent turn index
+  - name: village null turn index
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":null,"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village null turn index
+  - name: village negative index
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":-1}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village negative index
+  - name: village unsafe index
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village unsafe index
+  - name: village empty id
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":""}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village empty id
+  - name: village null id
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0,"toolCallId":null}}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village null id
+  - name: local missing source
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17"}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local missing source
+  - name: local null source
+    input:
+      kind: local
+      json: '{"pullRequests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":null}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: local null source
+  - name: village missing source
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17"}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village missing source
+  - name: village null source
+    input:
+      kind: village
+      json: '{"pull_requests":[],"unverified_pull_requests":[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":null}]}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: unverified pull request read contract
+    mutation:
+      description: village null source

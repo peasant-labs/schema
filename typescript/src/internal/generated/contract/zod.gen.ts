@@ -2216,12 +2216,6 @@ export const zSessionPullRequest = z.object({
 
 export type SessionPullRequest = z.infer<typeof zSessionPullRequest>;
 
-export const zSessionPullRequestsResponse = z.object({
-    pullRequests: z.array(zSessionPullRequest)
-});
-
-export type SessionPullRequestsResponse = z.infer<typeof zSessionPullRequestsResponse>;
-
 /**
  * Session Purpose
  *
@@ -3494,6 +3488,31 @@ export const zChangeDetailPayload = z.object({
 
 export type ChangeDetailPayload = z.infer<typeof zChangeDetailPayload>;
 
+export const zUnverifiedPullRequestSource = z.object({
+    toolCallId: z.string().min(1).optional(),
+    toolCallIndex: z.int().gte(0).lte(9007199254740991),
+    turnIndex: z.int().gte(0).lte(9007199254740991)
+});
+
+export type UnverifiedPullRequestSource = z.infer<typeof zUnverifiedPullRequestSource>;
+
+export const zUnverifiedPullRequest = z.object({
+    number: z.int().gte(1).lte(9007199254740991),
+    owner: z.string().min(1),
+    repo: z.string().min(1),
+    source: zUnverifiedPullRequestSource,
+    url: z.string().min(1)
+});
+
+export type UnverifiedPullRequest = z.infer<typeof zUnverifiedPullRequest>;
+
+export const zSessionPullRequestsResponse = z.object({
+    pullRequests: z.array(zSessionPullRequest),
+    unverified_pull_requests: z.array(zUnverifiedPullRequest).optional()
+});
+
+export type SessionPullRequestsResponse = z.infer<typeof zSessionPullRequestsResponse>;
+
 /**
  * Usage Completeness
  *
@@ -4269,7 +4288,8 @@ export const zVillageTranscriptPullRequest = z.object({
 export type VillageTranscriptPullRequest = z.infer<typeof zVillageTranscriptPullRequest>;
 
 export const zVillageTranscriptPullRequestsResponse = z.object({
-    pull_requests: z.array(zVillageTranscriptPullRequest)
+    pull_requests: z.array(zVillageTranscriptPullRequest),
+    unverified_pull_requests: z.array(zUnverifiedPullRequest).optional()
 });
 
 export type VillageTranscriptPullRequestsResponse = z.infer<typeof zVillageTranscriptPullRequestsResponse>;

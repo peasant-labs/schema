@@ -1,0 +1,54 @@
+names:
+  - real invocation after a cd
+  - assignment-prefixed invocation
+  - heredoc-only mention
+  - non-shell arguments
+  - multiple URLs in one result
+  - duplicate calls
+  - gh pr view is not an invocation
+  - errored call
+  - raw text arguments
+  - two distinct pull requests, first-seen order
+  - last matching url wins
+  - pull zero ignored
+  - piped gh pr create
+  - quoted mention
+  - sudo gh pr create
+  - sudo with an environment flag
+  - command gh pr create
+  - env assignment before gh pr create
+  - bash -c script
+  - sh -lc script
+  - sudo bash -c script
+  - windows gh executable
+  - bash -c echoes a quoted mention
+  - bash -c echoes the words
+  - bash -c with an escaped quote
+  - bash -c plain script
+  - command -v is not an invocation
+  - command with the default-search flag
+  - nohup --help is not an invocation
+  - nohup gh pr create
+  - sudo with the end-of-options marker
+  - sudo with an unknown flag
+  - sudo -u user
+  - sudo -u consumes the command word
+  - env -u variable
+  - env -u consumes the command word
+  - bash -o pipefail -c script
+  - bash -c nested two levels
+  - bash -c nested four levels
+  - bash -c nested five levels
+  - bash -c non-literal script
+  - quoted command word
+  - bash with a script file
+  - env long unset option
+  - bash -c with an escaped title
+  - "url: fragment after the number"
+  - "url: pull request sub-page"
+  - "url: query string after the number"
+  - "url: dotted owner and dashed repository"
+  - "url: another host is not GitHub"
+  - "url: plural pulls path"
+  - "url: no pull request URL"
+  - "url: created url first, lower number later"

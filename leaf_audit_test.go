@@ -25,6 +25,7 @@ var allowedDirectRequires = map[string]bool{
 	"github.com/swaggest/openapi-go":           true,
 	"golang.org/x/crypto":                      true,
 	"gopkg.in/yaml.v3":                         true,
+	"mvdan.cc/sh/v3":                           true, // shared recorded-command parser, not an executable runtime
 }
 
 // parseDirectRequires extracts the DIRECT (non-`// indirect`) require paths from

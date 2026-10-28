@@ -92,6 +92,8 @@ func (p SessionPullRequest) Validate() error {
 // empty list, for the same reason the commits read distinguishes them.
 type SessionPullRequestsResponse struct {
 	PullRequests []SessionPullRequest `json:"pullRequests" nullable:"false"`
+	// UnverifiedPullRequests is omitted when unsupported; an empty array means detection completed without evidence.
+	UnverifiedPullRequests *[]UnverifiedPullRequest `json:"unverified_pull_requests,omitempty" nullable:"false"`
 }
 
 // Validate checks that the envelope carries an array and that every row names a
@@ -105,6 +107,9 @@ func (r SessionPullRequestsResponse) Validate() error {
 		if err := pull.Validate(); err != nil {
 			return err
 		}
+	}
+	if err := validateUnverifiedPullRequests(r.UnverifiedPullRequests); err != nil {
+		return err
 	}
 	return nil
 }

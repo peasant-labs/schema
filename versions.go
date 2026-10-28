@@ -109,7 +109,8 @@ const (
 	// notification email operations, the one-click unsubscribe operation, and
 	// the notification email and invitation-email preference on the caller's
 	// settings were added.
-	VillageAPIVersion = "0.30.0"
+	// Bumped to 0.31.0 for the optional unverified pull request read projection.
+	VillageAPIVersion = "0.31.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -176,7 +177,8 @@ const (
 	// outsideSelection while remaining visible, and a by-id or publication
 	// read states the same rule. A saved selection scopes future ingest and
 	// hook publication only, never a stored read.
-	PeasantLocalAPIVersion = "0.25.0"
+	// Bumped to 0.26.0 for the optional unverified pull request read projection.
+	PeasantLocalAPIVersion = "0.26.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -268,5 +270,6 @@ const (
 	// Bumped to 0.38.0 to describe the local publication's selection fields as
 	// ingest and push membership rather than browsing permission, without
 	// changing any field or enum.
-	TypesVersion = "0.38.0"
+	// Bumped to 0.39.0 for unverified pull request evidence and exact source locators.
+	TypesVersion = "0.39.0"
 )

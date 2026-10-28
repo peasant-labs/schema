@@ -1,0 +1,146 @@
+required_names:
+  - valid canonical identity
+  - safe maximum indices
+  - negative turn
+  - unsafe turn
+  - unsafe tool index
+  - mismatched owner
+  - mismatched number
+  - subpage not canonical
+  - credential url
+  - host spoof
+  - invalid repo
+  - zero number
+cases:
+  - name: valid canonical identity
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: valid canonical identity
+  - name: safe maximum indices
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740991,"toolCallIndex":9007199254740991}}'
+    expected:
+      valid: true
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: safe maximum indices
+  - name: negative turn
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":-1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: negative turn
+  - name: unsafe turn
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9007199254740992,"toolCallIndex":0}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: unsafe turn
+  - name: unsafe tool index
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":9007199254740992}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: unsafe tool index
+  - name: mismatched owner
+    input:
+      json: '{"owner":"other","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: mismatched owner
+  - name: mismatched number
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":18,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: mismatched number
+  - name: subpage not canonical
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17/files","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: subpage not canonical
+  - name: credential url
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://user@github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: credential url
+  - name: host spoof
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com.evil/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: host spoof
+  - name: invalid repo
+    input:
+      json: '{"owner":"Acme","repo":"..","number":17,"url":"https://github.com/Acme/../pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: invalid repo
+  - name: zero number
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":0,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}'
+    expected:
+      valid: false
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: canonical GitHub identity and call locator
+    mutation:
+      description: zero number

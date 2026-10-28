@@ -71,6 +71,7 @@ github.com/swaggest/jsonschema-go
 github.com/swaggest/openapi-go
 golang.org/x/crypto
 gopkg.in/yaml.v3
+mvdan.cc/sh/v3
 ```
 
 - **No `tools.go`, no `go get -tool`.** Dev/CI tools (`oasdiff`, `go-apidiff`,

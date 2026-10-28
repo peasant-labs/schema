@@ -1569,6 +1569,8 @@ export interface components {
          */
         SchemaTypeOrigin: Schema.TypeOrigin;
         SchemaUnusualSignal: Schema.UnusualSignal;
+        SchemaUnverifiedPullRequest: Schema.UnverifiedPullRequest;
+        SchemaUnverifiedPullRequestSource: Schema.UnverifiedPullRequestSource;
         /**
          * Usage Completeness
          * @description Completeness of the five base token fields

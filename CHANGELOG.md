@@ -5,6 +5,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.36.0] - 2026-10-27
+
+### Added
+
+- Local API 0.26.0 and Village API 0.31.0 add an optional nonnull
+  `unverified_pull_requests` read projection. An omitted array means unsupported;
+  an empty array means detection completed without a match. Existing local rows
+  and Village attachment rows are unchanged.
+- Types 0.39.0 defines unverified pull request identities and exact turn and
+  tool-call source coordinates. The session-aware `commandpr` library parses
+  recorded commands and successful results without making network requests.
+  These rows are evidence, not verified attachments or access grants.
+
 ## [v0.35.0] - 2026-10-26
 
 ### Changed

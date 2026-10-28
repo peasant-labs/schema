@@ -1,0 +1,254 @@
+cases:
+  - name: sparse turn second call exact id
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"echo no"},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":"exact-id"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1,"toolCallId":"exact-id"}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: sparse turn second call exact id
+  - name: empty id retained by call index
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"echo no","id":""},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":""}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":1}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: empty id retained by call index
+  - name: casefold dedup keeps first source
+    input:
+      detail: '{"turns":[{"index":9,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17"}]},{"index":11,"depth":1,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/acme/REPO/pull/17"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":9,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: casefold dedup keeps first source
+  - name: nested turn included
+    input:
+      detail: '{"turns":[{"index":3,"depth":2,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":3,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: nested turn included
+  - name: earlier history excluded
+    input:
+      detail: '{"turns":[],"earlierHistory":[{"turns":[{"index":3,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17"}]}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: earlier history excluded
+  - name: nonzero exit excluded
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","exitCode":1}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: nonzero exit excluded
+  - name: explicit error excluded
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","isError":true}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: explicit error excluded
+  - name: numeric suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17evil"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: numeric suffix
+  - name: spoofed host
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com.evil/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: spoofed host
+  - name: embedded credential
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://attacker@github.com/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: embedded credential
+  - name: embedded path
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://evil.test/https://github.com/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: embedded path
+  - name: port
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com:443/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: port
+  - name: negative index
+    input:
+      detail: '{"turns":[{"index":-1,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded session source
+    mutation:
+      description: negative index
+  - name: overlapping earlier history excluded
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17"}]}],"earlierHistory":[{"state":"uncertain_migrated","turns":[{"index":42,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/evil/repo/pull/44"}]}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: overlapping earlier history excluded
+  - name: zero exit accepted
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","exitCode":0}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":0,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: zero exit accepted
+  - name: second empty id selected
+    input:
+      detail: '{"turns":[{"index":8,"toolCalls":[{"arguments":"echo hi","id":""},{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17","id":""}]}]}'
+    expected:
+      rows: '[{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":8,"toolCallIndex":1}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: second empty id selected
+  - name: at suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17@evil"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: at suffix
+  - name: colon suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17:443"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: colon suffix
+  - name: percent suffix
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/17%30"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: percent suffix
+  - name: username spoof
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com@evil/Acme/repo/pull/17"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: username spoof
+  - name: numeric overflow
+    input:
+      detail: '{"turns":[{"index":0,"toolCalls":[{"arguments":"gh pr create","result":"https://github.com/Acme/repo/pull/9007199254740992"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: recorded source locator and URL
+    mutation:
+      description: numeric overflow
+required_names:
+  - sparse turn second call exact id
+  - empty id retained by call index
+  - casefold dedup keeps first source
+  - nested turn included
+  - earlier history excluded
+  - nonzero exit excluded
+  - explicit error excluded
+  - numeric suffix
+  - spoofed host
+  - embedded credential
+  - embedded path
+  - port
+  - negative index
+  - overlapping earlier history excluded
+  - zero exit accepted
+  - second empty id selected
+  - at suffix
+  - colon suffix
+  - percent suffix
+  - username spoof
+  - numeric overflow
