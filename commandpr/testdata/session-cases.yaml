@@ -758,6 +758,182 @@ cases:
       ref: guard execution and wrapper option boundary
     mutation:
       description: env split after unset remains unproven
+  - name: candidate redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: candidate redirect cannot prove execution
+  - name: group redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"{ gh pr create; } >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: group redirect cannot prove execution
+  - name: subshell redirect cannot prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"( gh pr create ) >/dev/null/nope; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: subshell redirect cannot prove execution
+  - name: candidate without redirect executes
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"gh pr create; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: candidate without redirect executes
+  - name: independent redirect does not suppress candidate
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"echo hi >/dev/null; gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: independent redirect does not suppress candidate
+  - name: shell version option does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --version -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell version option does not execute
+  - name: shell help option does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --help -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell help option does not execute
+  - name: shell noexec separate does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -n -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell noexec separate does not execute
+  - name: shell noexec combined does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -nc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell noexec combined does not execute
+  - name: shell named noexec does not execute
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -o noexec -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell named noexec does not execute
+  - name: shell unknown long option fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash --unknown -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell unknown long option fails closed
+  - name: shell valid c executes
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell valid c executes
+  - name: shell valid lc executes
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -lc 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: shell command execution evidence
+    mutation:
+      description: shell valid lc executes
+  - name: sh unsupported pipefail fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"sh -o pipefail -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: sh unsupported pipefail fails closed
+  - name: shell named verbose listing fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -o -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: shell named verbose listing fails closed
+  - name: shell uppercase noexec option fails closed
+    input:
+      detail: "{\"turns\":[{\"index\":42,\"toolCalls\":[{\"name\":\"Bash\",\"arguments\":\"bash -O noexec -c 'gh pr create'\",\"result\":\"https://github.com/acme/repo/pull/2\"}]}]}"
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: shell execution options
+    mutation:
+      description: shell uppercase noexec option fails closed
 required_names:
   - sparse turn second call exact id
   - empty id retained by call index
@@ -828,3 +1004,19 @@ required_names:
   - redirected while guard is unproven
   - env command argument is not a wrapper option
   - env split after unset remains unproven
+  - candidate redirect cannot prove execution
+  - group redirect cannot prove execution
+  - subshell redirect cannot prove execution
+  - candidate without redirect executes
+  - independent redirect does not suppress candidate
+  - shell version option does not execute
+  - shell help option does not execute
+  - shell noexec separate does not execute
+  - shell noexec combined does not execute
+  - shell named noexec does not execute
+  - shell unknown long option fails closed
+  - shell valid c executes
+  - shell valid lc executes
+  - sh unsupported pipefail fails closed
+  - shell named verbose listing fails closed
+  - shell uppercase noexec option fails closed

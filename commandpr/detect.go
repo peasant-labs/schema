@@ -138,6 +138,11 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 			return false
 		}
 		switch n := node.(type) {
+		case *syntax.Stmt:
+			// Redirections execute before the statement, including enclosing groups.
+			if len(n.Redirs) > 0 {
+				return false
+			}
 		case *syntax.FuncDecl:
 			return false
 		case *syntax.IfClause:
@@ -408,7 +413,7 @@ func wordsInvoke(words []commandWord, depth int) bool {
 			if words[0].value != name {
 				continue
 			}
-			script, ok := shellCommandScript(words[1:])
+			script, ok := shellCommandScript(name, words[1:])
 			if !ok {
 				return false
 			}
@@ -486,10 +491,6 @@ func isEnvironmentAssignment(word commandWord) bool {
 	return ok && name != ""
 }
 
-// shellValueFlags are the short shell options that consume the following word,
-// so `bash -o pipefail -c '…'` still finds its script.
-var shellValueFlags = stringSet("-o", "-O")
-
 // shellCommandScript returns the script a shell runs for its `-c` option. The
 // option may be written alone (`-c`) or in a combined flag word that contains
 // `c` (`-lc`, `-xec`). A shell followed by a script file instead of `-c` runs
@@ -506,37 +507,43 @@ var shellValueFlags = stringSet("-o", "-O")
 // call detects nothing rather than guessing. The cost is accepted knowingly: a
 // script that would really run the command and happens to keep a backslash is
 // missed, which is cheaper than reporting a pull request nobody created.
-func shellCommandScript(args []commandWord) (string, bool) {
+func shellCommandScript(shell string, args []commandWord) (string, bool) {
 	for index := 0; index < len(args); index++ {
 		word := args[index].value
-		switch {
-		case word == "":
-			return "", false
-		case word == "--":
-			return "", false
-		case strings.HasPrefix(word, "--"):
+		if word == "-o" {
+			if shell != "bash" || index+1 >= len(args) || args[index+1].value != "pipefail" {
+				return "", false
+			}
+			index++
 			continue
-		case len(word) > 1 && word[0] == '-':
-			if hasWord(shellValueFlags, word) {
-				index++
-				continue
-			}
-			if !strings.Contains(word[1:], "c") {
-				continue
-			}
-			if index+1 >= len(args) || !args[index+1].literal {
-				return "", false
-			}
-			script := args[index+1].text
-			if strings.ContainsRune(script, '\\') {
-				return "", false
-			}
-			return script, true
-		default:
-			// A non-flag word before -c is a script file the shell reads; the
-			// words after it are that script's arguments, not a shell command.
+		}
+		if len(word) < 2 || word[0] != '-' || strings.HasPrefix(word, "--") {
 			return "", false
 		}
+		hasC := false
+		for _, flag := range word[1:] {
+			switch flag {
+			case 'c':
+				if hasC {
+					return "", false
+				}
+				hasC = true
+			case 'l', 'e', 'x', 'u', 'f':
+			default:
+				return "", false
+			}
+		}
+		if !hasC {
+			continue
+		}
+		if index+1 >= len(args) || !args[index+1].literal {
+			return "", false
+		}
+		script := args[index+1].text
+		if strings.ContainsRune(script, '\\') {
+			return "", false
+		}
+		return script, true
 	}
 	return "", false
 }
