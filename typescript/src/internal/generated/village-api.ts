@@ -2130,6 +2130,7 @@ export interface components {
          * @enum {string}
          */
         SchemaVillageTranscriptDeletionPolicy: Schema.VillageTranscriptDeletionPolicy;
+        SchemaVillageTranscriptIntegrity: Schema.VillageTranscriptIntegrity;
         SchemaVillageTranscriptListResponse: Schema.VillageTranscriptListResponse;
         SchemaVillageTranscriptListRow: Schema.VillageTranscriptListRow;
         SchemaVillageTranscriptMetadataResponse: Schema.VillageTranscriptMetadataResponse;

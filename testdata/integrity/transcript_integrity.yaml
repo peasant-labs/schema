@@ -31,6 +31,27 @@ required_names:
   - scry-health-missing-contract-version-rejected
   - scry-health-nonsemver-version-rejected
   - scry-health-extra-field-rejected
+  - metadata-public-flagged-valid
+  - metadata-public-flagged-sticky-empty-turns-valid
+  - metadata-without-integrity-valid
+  - metadata-integrity-on-private-rejected
+  - metadata-integrity-on-shared-rejected
+  - metadata-integrity-without-content-hash-rejected
+  - metadata-integrity-null-turns-rejected
+  - metadata-integrity-unsorted-turns-rejected
+  - metadata-integrity-duplicate-turns-rejected
+  - metadata-integrity-negative-turn-rejected
+  - metadata-integrity-unsafe-position-rejected
+  - metadata-integrity-null-rejected
+  - metadata-integrity-rule-field-rejected
+  - metadata-integrity-status-field-rejected
+  - metadata-integrity-content-hash-field-rejected
+  - check-response-flagged-valid
+  - check-response-not-flagged-valid
+  - check-response-unchecked-valid
+  - check-response-negative-remaining-rejected
+  - check-response-unknown-result-rejected
+  - check-response-turns-field-rejected
 operations: []
 cases:
   - name: scry-request-minimal-valid
@@ -190,3 +211,148 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "health never reports rule counts"}
     mutation: {description: "adds a rules member"}
+  - name: metadata-public-flagged-valid
+    input:
+      schema: VillageTranscriptMetadataResponse
+      payload: &metadata_public
+        transcript: &metadata_transcript {"id":"123e4567-e89b-12d3-a456-426614174003","local_id":"123e4567-e89b-12d3-a456-426614174002","title":null,"description":null,"visibility":"public","model_provider":"codex","model_name":null,"harness_version":null,"session_start":null,"session_end":null,"turn_count":12,"token_count":null,"blob_size_bytes":null,"schema_version":"11","published_at":"2026-09-20T10:00:00Z","updated_at":"2026-09-20T10:00:00Z","parent_session_id":null,"parent_transcript_id":null,"ingested_at":null,"source_format":null,"git_branch":null,"git_remote":null,"project_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","project_name":null,"project_display_name":"ingest-api","project_name_source":"remote","project_remote_label":"github.com:acme/ingest-api","tool_call_count":null,"subagent_count":null,"duration_ms":null,"subagents":null,"diagnostics_warnings":null,"diagnostics_partial":null,"tokens_in":null,"tokens_out":null,"title_generated":null,"outcome":null,"files_touched":null,"lines_changed":null,"retry_loops":null,"retry_tokens_wasted":null,"within_session_reverts":null,"signal_density":null,"spec_quality_score":null,"exploration_ratio":null,"scope_breadth":null,"discovery_turns":null,"m2_token_outcome_ratio":null,"m3_unique_tool_count":null,"m4_error_recovery_count":null,"m4_consecutive_error_max":null,"m5_context_utilization_pct":null,"m5_peak_context_tokens":null,"m5_avg_message_tokens":null,"m6_output_survival_pct":null,"m6_lines_survived":null,"m6_lines_total":null,"m7_spec_word_count":null,"m7_spec_has_examples":null,"m7_spec_has_constraints":null,"computed_at":null,"compute_version":null,"content_hash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","license_id":null,"session_origin":"user"}
+        tags: []
+        shares: []
+        enriched_shares: []
+        owner: {kind: profile, id: "123e4567-e89b-12d3-a456-426614174001", username: alice-dev, display_name: null, avatar_url: null}
+        owner_orgs: []
+        attestations: []
+        integrity: {flagged_turns: [3, 7]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a flagged public transcript serves its flagged positions"}
+    mutation: {description: "flags two positions"}
+  - name: metadata-public-flagged-sticky-empty-turns-valid
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_public, integrity: {flagged_turns: []}}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a sticky flag may have no flagged turn in the current copy"}
+    mutation: {description: "empty positions"}
+  - name: metadata-without-integrity-valid
+    input:
+      schema: VillageTranscriptMetadataResponse
+      payload: &metadata_unflagged
+        transcript: *metadata_transcript
+        tags: []
+        shares: []
+        enriched_shares: []
+        owner: {kind: profile, id: "123e4567-e89b-12d3-a456-426614174001", username: alice-dev, display_name: null, avatar_url: null}
+        owner_orgs: []
+        attestations: []
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "absence of integrity means not flagged"}
+    mutation: {description: "omits integrity"}
+  - name: metadata-integrity-on-private-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: private}, integrity: {flagged_turns: [3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: public}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    mutation: {description: "flags a private transcript"}
+  - name: metadata-integrity-on-shared-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: shared}, integrity: {flagged_turns: [3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: public}
+    classification: must-fail
+    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    mutation: {description: "flags a shared transcript"}
+  - name: metadata-integrity-without-content-hash-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, content_hash: null}, integrity: {flagged_turns: [3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: content_hash}
+    classification: must-fail
+    provenance: {source: requirement, ref: "positions need a content to refer to"}
+    mutation: {description: "flags a transcript with no content hash"}
+  - name: metadata-integrity-null-turns-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: null}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "flagged_turns is an array, never null"}
+    mutation: {description: "sends null positions"}
+  - name: metadata-integrity-unsorted-turns-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [7, 3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: ascending}
+    classification: must-fail
+    provenance: {source: requirement, ref: "positions are ascending"}
+    mutation: {description: "sends descending positions"}
+  - name: metadata-integrity-duplicate-turns-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [3, 3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: ascending}
+    classification: must-fail
+    provenance: {source: requirement, ref: "positions are unique"}
+    mutation: {description: "repeats a position"}
+  - name: metadata-integrity-negative-turn-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [-1]}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "positions are zero-based"}
+    mutation: {description: "sends a negative position"}
+  - name: metadata-integrity-unsafe-position-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [9007199254740992]}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "positions stay in the safe integer range"}
+    mutation: {description: "sends 2^53"}
+  - name: metadata-integrity-rule-field-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [3], rule: x}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the read never names a rule"}
+    mutation: {description: "adds rule"}
+  - name: metadata-integrity-status-field-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [3], status: flagged}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "presence is the flag"}
+    mutation: {description: "adds status"}
+  - name: metadata-integrity-content-hash-field-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: [3], content_hash: a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the hash is already on the transcript"}
+    mutation: {description: "adds content_hash"}
+  - name: metadata-integrity-null-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: null}}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "integrity is absent or an object"}
+    mutation: {description: "sends null integrity"}
+  - name: check-response-flagged-valid
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: 2}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a check may flag"}
+    mutation: {description: "flagged result"}
+  - name: check-response-not-flagged-valid
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: not_flagged, remaining_today: 0}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a check may find nothing and spend the last allowance"}
+    mutation: {description: "not flagged, none remaining"}
+  - name: check-response-unchecked-valid
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: unchecked, remaining_today: 3}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an unchecked result spends nothing"}
+    mutation: {description: "unchecked result"}
+  - name: check-response-negative-remaining-rejected
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: -1}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "remaining_today is not negative"}
+    mutation: {description: "sends -1"}
+  - name: check-response-unknown-result-rejected
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: clean, remaining_today: 1}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "result is a closed set"}
+    mutation: {description: "sends an unknown result"}
+  - name: check-response-turns-field-rejected
+    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: 1, flagged_turns: [3]}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the check response never lists positions"}
+    mutation: {description: "adds flagged_turns"}

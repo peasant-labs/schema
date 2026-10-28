@@ -609,6 +609,8 @@ type VillageTranscriptMetadataResponse struct {
 	OwnerOrgs              []VillageMetadataUserOrganization `json:"owner_orgs" nullable:"false"`
 	Attestations           []VillageTranscriptAttestation    `json:"attestations" nullable:"false"`
 	RelationshipNavigation []SessionRelationshipNavigation   `json:"relationshipNavigation,omitempty"`
+	// Integrity is present only for a public transcript scry flagged.
+	Integrity *VillageTranscriptIntegrity `json:"integrity,omitempty" nullable:"false"`
 }
 
 type VillageTag struct {
@@ -738,6 +740,17 @@ func (r VillageTranscriptMetadataResponse) Validate() error {
 	for _, navigation := range r.RelationshipNavigation {
 		if err := navigation.Validate(); err != nil {
 			return err
+		}
+	}
+	if r.Integrity != nil {
+		if err := r.Integrity.Validate(); err != nil {
+			return err
+		}
+		if r.Transcript.Visibility != VillageTranscriptVisibilityPublic {
+			return publicationError("village transcript metadata", fmt.Sprintf("integrity is present on a %s transcript", r.Transcript.Visibility), "serve integrity only for a public transcript")
+		}
+		if r.Transcript.ContentHash == nil {
+			return publicationError("village transcript metadata", "integrity is present but transcript.content_hash is null", "serve integrity only when the positions have a content_hash to refer to")
 		}
 	}
 	return nil

@@ -746,3 +746,10 @@ enums:
       - {name: Checked, value: "checked"}
       - {name: Unchecked, value: "unchecked"}
     all_values: ["checked", "unchecked"]
+  - name: VillageIntegrityCheckResult
+    all_name: AllVillageIntegrityCheckResults
+    members:
+      - {name: Flagged, value: "flagged"}
+      - {name: NotFlagged, value: "not_flagged"}
+      - {name: Unchecked, value: "unchecked"}
+    all_values: ["flagged", "not_flagged", "unchecked"]

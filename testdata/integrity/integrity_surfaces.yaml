@@ -1,0 +1,15 @@
+# The exact public surface of the transcript integrity contract. Each
+# exact_properties entry lists every property of a component, in no order, so
+# a field added later fails until this manifest names it. Carriers are the
+# components that serve the flag. The content hash header and the description
+# anchors are checked against the generated operations.
+integrity_carriers: [VillageTranscriptMetadataResponse]
+exact_properties:
+  ScryTranscriptRecord: [publishedAtMs, updatedAtMs]
+  ScryCheckResponse: [scryVersion, verdict, flaggedTurns]
+  ScryHealthResponse: [contractVersion, scryVersion]
+  VillageIntegrityCheckResponse: [result, remaining_today]
+  VillageTranscriptIntegrity: [flagged_turns]
+content_hash_header:
+  name: Village-Content-Hash
+description_anchors: {}

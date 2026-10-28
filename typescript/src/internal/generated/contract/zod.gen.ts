@@ -3981,6 +3981,26 @@ export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
 
+/**
+ * Village Integrity Check Result
+ *
+ * What an owner's integrity check found; unchecked means scry declined and the daily allowance is not spent
+ */
+export const zVillageIntegrityCheckResult = z.enum([
+    'flagged',
+    'not_flagged',
+    'unchecked'
+]);
+
+export type VillageIntegrityCheckResult = z.infer<typeof zVillageIntegrityCheckResult>;
+
+export const zVillageIntegrityCheckResponse = z.object({
+    remaining_today: z.int().gte(0).lte(9007199254740991),
+    result: zVillageIntegrityCheckResult
+}).strict();
+
+export type VillageIntegrityCheckResponse = z.infer<typeof zVillageIntegrityCheckResponse>;
+
 export const zVillageLinkRepositoryRequest = z.object({
     installation_id: z.int().nullish(),
     name: z.string(),
@@ -4322,6 +4342,12 @@ export type VillageStatusResponse = z.infer<typeof zVillageStatusResponse>;
 export const zVillageTranscriptDeletionPolicy = z.enum(['user_choice', 'mandatory']);
 
 export type VillageTranscriptDeletionPolicy = z.infer<typeof zVillageTranscriptDeletionPolicy>;
+
+export const zVillageTranscriptIntegrity = z.object({
+    flagged_turns: z.array(z.int().gte(0).lte(9007199254740991))
+}).strict();
+
+export type VillageTranscriptIntegrity = z.infer<typeof zVillageTranscriptIntegrity>;
 
 export const zVillageTranscriptPullRequest = z.object({
     head_ref: z.string().nullable(),
@@ -5118,6 +5144,7 @@ export type VillageTranscriptShare = z.infer<typeof zVillageTranscriptShare>;
 export const zVillageTranscriptMetadataResponse = z.object({
     attestations: z.array(zVillageTranscriptAttestation),
     enriched_shares: z.array(zVillageEnrichedTranscriptShare),
+    integrity: zVillageTranscriptIntegrity.optional(),
     owner: zVillagePublicOwner,
     owner_orgs: z.array(zVillageMetadataUserOrganization),
     relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),

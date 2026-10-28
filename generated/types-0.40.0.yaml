@@ -9377,6 +9377,32 @@ components:
       - limit
       - total
       type: object
+    VillageIntegrityCheckResponse:
+      additionalProperties: false
+      properties:
+        remaining_today:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        result:
+          $ref: '#/components/schemas/VillageIntegrityCheckResult'
+      required:
+      - result
+      - remaining_today
+      type: object
+    VillageIntegrityCheckResult:
+      description: What an owner's integrity check found; unchecked means scry declined
+        and the daily allowance is not spent
+      enum:
+      - flagged
+      - not_flagged
+      - unchecked
+      examples:
+      - flagged
+      - not_flagged
+      - unchecked
+      title: Village Integrity Check Result
+      type: string
     VillageInvitedCollective:
       properties:
         acceptance_mode:
@@ -10792,6 +10818,22 @@ components:
       - mandatory
       title: Village Transcript Deletion Policy
       type: string
+    VillageTranscriptIntegrity:
+      additionalProperties: false
+      properties:
+        flagged_turns:
+          description: Zero-based positions in the top-level sessionDetail.turns array
+            of the content whose bare hash is transcript.content_hash; never TurnDetail.index
+            values and never positions in earlierHistory or child sessions. Presence
+            of integrity is the flag.
+          items:
+            maximum: 9.007199254740991e+15
+            minimum: 0
+            type: integer
+          type: array
+      required:
+      - flagged_turns
+      type: object
     VillageTranscriptListResponse:
       properties:
         agent_total:
@@ -10862,6 +10904,8 @@ components:
           items:
             $ref: '#/components/schemas/VillageEnrichedTranscriptShare'
           type: array
+        integrity:
+          $ref: '#/components/schemas/VillageTranscriptIntegrity'
         owner:
           $ref: '#/components/schemas/VillagePublicOwner'
         owner_orgs:

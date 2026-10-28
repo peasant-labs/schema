@@ -123,6 +123,8 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"ScryCheckRequest":                         decodeValidated[schema.ScryCheckRequest],
 	"ScryCheckResponse":                        decodeScryCheckResponseUnbounded,
 	"ScryHealthResponse":                       decodeValidated[schema.ScryHealthResponse],
+	"VillageTranscriptMetadataResponse":        decodeValidated[schema.VillageTranscriptMetadataResponse],
+	"VillageIntegrityCheckResponse":            decodeValidated[schema.VillageIntegrityCheckResponse],
 }
 
 // decodeScryCheckResponseUnbounded checks every response rule except the

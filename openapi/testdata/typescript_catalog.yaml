@@ -86,6 +86,9 @@ types:
   - {go_name: ScryHealthResponse, disposition: catalog, component: ScryHealthResponse, reason: transcript integrity checker contract}
   - {go_name: ScryTranscriptRecord, disposition: catalog, component: ScryTranscriptRecord, reason: transcript integrity checker contract}
   - {go_name: ScryVerdict, disposition: catalog, component: ScryVerdict, reason: transcript integrity checker contract}
+  - {go_name: VillageIntegrityCheckResponse, disposition: catalog, component: VillageIntegrityCheckResponse, reason: transcript integrity checker contract}
+  - {go_name: VillageIntegrityCheckResult, disposition: catalog, component: VillageIntegrityCheckResult, reason: transcript integrity checker contract}
+  - {go_name: VillageTranscriptIntegrity, disposition: catalog, component: VillageTranscriptIntegrity, reason: transcript integrity checker contract}
   - {go_name: AuthoritativeModelInfo, disposition: catalog, component: AuthoritativeModelInfo, reason: successor recursive strictness}
   - {go_name: AuthoritativePublishRequest, disposition: catalog, component: AuthoritativePublishRequest, reason: successor multipart metadata contract}
   - {go_name: AuthoritativePublishResponse, disposition: catalog, component: AuthoritativePublishResponse, reason: authoritative publication receipt}
