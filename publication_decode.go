@@ -16,7 +16,8 @@ var (
 	licenseOperationFields     = map[string]struct{}{"kind": {}, "license": {}}
 	associationOperationFields = map[string]struct{}{"kind": {}, "associations": {}}
 	publishedAssociationFields = map[string]struct{}{"id": {}, "observedCommitHash": {}}
-	authoritativeRequestFields = map[string]struct{}{"identity": {}, "model": {}, "contentHash": {}, "visibilityIntent": {}, "timestamp": {}, "source": {}, "git": {}, "project": {}, "stats": {}, "quality": {}, "entries": {}, "subagents": {}, "diagnostics": {}, "license": {}}
+	authoritativeRequestFields = map[string]struct{}{"identity": {}, "model": {}, "contentHash": {}, "visibilityIntent": {}, "client": {}, "timestamp": {}, "source": {}, "git": {}, "project": {}, "stats": {}, "quality": {}, "entries": {}, "subagents": {}, "diagnostics": {}, "license": {}}
+	clientFields               = fieldSet("name", "version")
 	identityFields             = fieldSet("sessionId", "schemaVersion", "parentSessionId", "rootSessionId", "purpose", "relationships")
 	modelFields                = fieldSet("harness", "model", "harnessVersion", "hostSlug")
 	timestampFields            = fieldSet("start", "end", "ingested")
@@ -68,6 +69,9 @@ func (value *AuthoritativePublishRequest) UnmarshalJSON(data []byte) error {
 	if intent, present := raw["visibilityIntent"]; present && bytes.Equal(bytes.TrimSpace(intent), []byte("null")) {
 		return publicationError("authoritative publish request", "optional field \"visibilityIntent\" is null", "omit it for legacy compatibility or send private/public")
 	}
+	if client, present := raw["client"]; present && bytes.Equal(bytes.TrimSpace(client), []byte("null")) {
+		return publicationError("authoritative publish request", "optional field \"client\" is null", "omit it when the client is unknown")
+	}
 	type wire AuthoritativePublishRequest
 	var decoded wire
 	if err := json.Unmarshal(data, &decoded); err != nil {
@@ -115,6 +119,11 @@ func validateAuthoritativePublishMetadata(value AuthoritativePublishRequest) err
 	}
 	if !value.VisibilityIntent.IsValid() {
 		return publicationError("authoritative publish request", fmt.Sprintf("visibilityIntent %q is invalid", value.VisibilityIntent), "omit it or send private/public")
+	}
+	if value.Client != nil {
+		if err := value.Client.Validate(); err != nil {
+			return err
+		}
 	}
 	if !value.Model.Harness.IsKnown() || value.Model.Model == "" {
 		return publicationError("authoritative publish request", "model.harness or model.model is missing or invalid", "send a canonical harness and nonempty model identifier")
@@ -210,6 +219,7 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 	}{
 		{"identity", identityFields}, {"model", modelFields}, {"timestamp", timestampFields}, {"source", sourceFields},
 		{"project", projectFields}, {"stats", statsFields}, {"quality", qualityFields}, {"diagnostics", diagnosticsFields},
+		{"client", clientFields},
 	}
 	for _, object := range objects {
 		value, present := raw[object.name]

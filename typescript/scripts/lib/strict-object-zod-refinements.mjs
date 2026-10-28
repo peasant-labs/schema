@@ -43,6 +43,7 @@ export const STRICT_OBJECTS = [
   "zAuthoritativeSubagentRef",
   "zAuthoritativeDiagnosticEntry",
   "zAuthoritativeDiagnosticsInfo",
+  "zAuthoritativeClientInfo",
   "zCanonicalPublishGitContext",
   "zCanonicalPublishReplacement",
   "zPublishLicenseOperation",

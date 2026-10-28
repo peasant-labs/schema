@@ -1164,6 +1164,28 @@
         "title": "Association ID",
         "type": "string"
       },
+      "AuthoritativeClientInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9-]{0,63}$",
+            "type": "string"
+          },
+          "version": {
+            "maxLength": 128,
+            "minLength": 5,
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version"
+        ],
+        "type": "object"
+      },
       "AuthoritativeCommitInfo": {
         "additionalProperties": false,
         "properties": {
@@ -1364,6 +1386,9 @@
       "AuthoritativePublishRequest": {
         "additionalProperties": false,
         "properties": {
+          "client": {
+            "$ref": "#/components/schemas/AuthoritativeClientInfo"
+          },
           "contentHash": {
             "$ref": "#/components/schemas/TranscriptContentHash"
           },

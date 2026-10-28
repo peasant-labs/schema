@@ -1424,6 +1424,7 @@ export interface components {
         /** Format: binary */
         MultipartFileHeader: string;
         OpenapiAuthoritativeTranscriptPublishRequest: {
+            client?: components["schemas"]["SchemaAuthoritativeClientInfo"];
             contentHash: components["schemas"]["SchemaTranscriptContentHash"];
             diagnostics?: components["schemas"]["SchemaAuthoritativeDiagnosticsInfo"];
             entries?: components["schemas"]["SchemaAuthoritativeSessionEntry"][];
@@ -1485,6 +1486,7 @@ export interface components {
          * @example assoc-20260726:session-a:commit-1
          */
         SchemaAssociationID: Schema.AssociationID;
+        SchemaAuthoritativeClientInfo: Schema.AuthoritativeClientInfo;
         SchemaAuthoritativeCommitInfo: Schema.AuthoritativeCommitInfo;
         SchemaAuthoritativeDiagnosticEntry: Schema.AuthoritativeDiagnosticEntry;
         SchemaAuthoritativeDiagnosticsInfo: Schema.AuthoritativeDiagnosticsInfo;

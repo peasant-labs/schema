@@ -237,6 +237,13 @@ export const zAssociationID = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Z
 
 export type AssociationID = z.infer<typeof zAssociationID>;
 
+export const zAuthoritativeClientInfo = z.object({
+    name: z.string().min(1).max(64).regex(/^[a-z][a-z0-9-]{0,63}$/),
+    version: z.string().min(5).max(128).regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$/)
+}).strict();
+
+export type AuthoritativeClientInfo = z.infer<typeof zAuthoritativeClientInfo>;
+
 export const zAuthoritativeCommitInfo = z.object({
     authorEmail: z.string(),
     authorName: z.string(),
@@ -5489,6 +5496,7 @@ export const zVisibilityIntent = z.enum(['private', 'public']);
 export type VisibilityIntent = z.infer<typeof zVisibilityIntent>;
 
 export const zAuthoritativePublishRequest = z.object({
+    client: zAuthoritativeClientInfo.optional(),
     contentHash: zTranscriptContentHash,
     diagnostics: zAuthoritativeDiagnosticsInfo.optional(),
     entries: z.array(zAuthoritativeSessionEntry).optional(),
