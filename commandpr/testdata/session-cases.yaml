@@ -637,6 +637,127 @@ cases:
       ref: short circuit command execution
     mutation:
       description: false and then or executes gh
+  - name: redirected true and does not prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true >/dev/null/nope && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: redirected true and does not prove execution
+  - name: redirected true if does not prove execution
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"if true >/dev/null/nope; then gh pr create; fi","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: redirected true if does not prove execution
+  - name: nested redirected guard is unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true >/dev/null/nope && echo ok && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: nested redirected guard is unproven
+  - name: unredirected true guard remains supported
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: unredirected true guard remains supported
+  - name: env null-output option is nonexecuting
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -0 gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env null-output option is nonexecuting
+  - name: env split string is not interpreted
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -S echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env split string is not interpreted
+  - name: env split string long option is not interpreted
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env --split-string=echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env split string long option is not interpreted
+  - name: env unset remains supported
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: guard redirection and env wrapper execution
+    mutation:
+      description: env unset remains supported
+  - name: redirected while guard is unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"while true >/dev/null/nope; do gh pr create; done","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: redirected while guard is unproven
+  - name: env command argument is not a wrapper option
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env gh pr create --title -S","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: env command argument is not a wrapper option
+  - name: env split after unset remains unproven
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"env -u TOKEN --split-string=echo gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: guard execution and wrapper option boundary
+    mutation:
+      description: env split after unset remains unproven
 required_names:
   - sparse turn second call exact id
   - empty id retained by call index
@@ -696,3 +817,14 @@ required_names:
   - false or true chain executes gh
   - negated guard chain executes gh
   - false and then or executes gh
+  - redirected true and does not prove execution
+  - redirected true if does not prove execution
+  - nested redirected guard is unproven
+  - unredirected true guard remains supported
+  - env null-output option is nonexecuting
+  - env split string is not interpreted
+  - env split string long option is not interpreted
+  - env unset remains supported
+  - redirected while guard is unproven
+  - env command argument is not a wrapper option
+  - env split after unset remains unproven

@@ -40,9 +40,9 @@ test("canonical property casing remains forward compatible", async (t) => {
     const parsed = schema.zUnverifiedPullRequest.safeParse(value); if (parsed.success) {
       assert.equal(parsed.data.owner,row.expected.owner);
       if (row.expected.turnIndex !== undefined) {
-        assert.equal(parsed.data.source.turnIndex,row.expected.turnIndex);
-        assert.equal(schema.zSessionPullRequestsResponse.parse({pullRequests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex,row.expected.turnIndex);
-        assert.equal(schema.zVillageTranscriptPullRequestsResponse.parse({pull_requests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex,row.expected.turnIndex);
+        assert.equal(parsed.data.source.turnIndex + 0,row.expected.turnIndex);
+        assert.equal(schema.zSessionPullRequestsResponse.parse({pullRequests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex + 0,row.expected.turnIndex);
+        assert.equal(schema.zVillageTranscriptPullRequestsResponse.parse({pull_requests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex + 0,row.expected.turnIndex);
       }
     }
   });

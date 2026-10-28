@@ -141,6 +141,11 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 		case *syntax.FuncDecl:
 			return false
 		case *syntax.IfClause:
+			for _, condition := range n.Cond {
+				if hasRedirect(condition) {
+					return false
+				}
+			}
 			if len(n.Cond) == 1 {
 				switch staticTruth(n.Cond[0]) {
 				case -1:
@@ -180,11 +185,19 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 			}
 			return false
 		case *syntax.WhileClause:
+			for _, condition := range n.Cond {
+				if hasRedirect(condition) {
+					return false
+				}
+			}
 			if len(n.Cond) == 1 && ((!n.Until && staticTruth(n.Cond[0]) == -1) || (n.Until && staticTruth(n.Cond[0]) == 1)) {
 				syntax.Walk(n.Cond[0], visit)
 				return false
 			}
 		case *syntax.BinaryCmd:
+			if hasRedirect(n.X) {
+				return false
+			}
 			truth := staticTruth(n.X)
 			if (n.Op == syntax.AndStmt && truth == -1) || (n.Op == syntax.OrStmt && truth == 1) {
 				syntax.Walk(n.X, visit)
@@ -202,12 +215,26 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 	return found
 }
 
+// A guard containing a redirect can fail before its command runs. Do not
+// infer that a dependent branch executed or inspect the filesystem.
+func hasRedirect(node syntax.Node) bool {
+	found := false
+	syntax.Walk(node, func(n syntax.Node) bool {
+		if stmt, ok := n.(*syntax.Stmt); ok && len(stmt.Redirs) > 0 {
+			found = true
+			return false
+		}
+		return !found
+	})
+	return found
+}
+
 // staticTruth infers only literal statuses and bounded boolean composition.
 // Unknown commands remain unknown; no recorded command is executed here.
 func staticTruth(stmt *syntax.Stmt) int { return staticTruthBounded(stmt, 64) }
 
 func staticTruthBounded(stmt *syntax.Stmt, budget int) int {
-	if stmt == nil || budget <= 0 {
+	if stmt == nil || budget <= 0 || len(stmt.Redirs) > 0 {
 		return 0
 	}
 	truth := 0
@@ -368,6 +395,9 @@ func wordsInvoke(words []commandWord, depth int) bool {
 	case "env":
 		rest := skipWrapperOptions(words[1:], envFlags, envValueFlags)
 		for len(rest) > 0 && isEnvironmentAssignment(rest[0]) {
+			if strings.HasPrefix(rest[0].value, "--split-string=") {
+				return false
+			}
 			rest = rest[1:]
 		}
 		return wordsInvoke(rest, depth)
@@ -402,8 +432,8 @@ var (
 	sudoFlags      = stringSet("-E", "-H", "-n", "-S", "-b")
 	sudoValueFlags = stringSet("-u", "-g", "-h", "-p", "-C", "-T", "-r", "-t")
 	commandFlags   = stringSet("-p")
-	envFlags       = stringSet("-i", "-0")
-	envValueFlags  = stringSet("-u", "-C", "-S")
+	envFlags       = stringSet("-i")
+	envValueFlags  = stringSet("-u", "-C")
 	nohupFlags     = stringSet()
 )
 

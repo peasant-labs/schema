@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -77,6 +78,10 @@ func (s *UnverifiedPullRequestSource) UnmarshalJSON(data []byte) error {
 	}
 	if id, ok := fields["toolCallId"]; ok && bytes.Equal(bytes.TrimSpace(id), []byte(`""`)) {
 		return fmt.Errorf("source locator decoding failed at schema.UnverifiedPullRequestSource.UnmarshalJSON: toolCallId is empty; omit an absent ID or provide the exact recorded ID")
+	}
+	data, err = normalizeSafeIntegers(data, "turnIndex", "toolCallIndex")
+	if err != nil {
+		return err
 	}
 	var value plain
 	if err := json.Unmarshal(data, &value); err != nil {
@@ -154,6 +159,10 @@ func (p *UnverifiedPullRequest) UnmarshalJSON(data []byte) error {
 	if !ok || bytes.Equal(bytes.TrimSpace(source), []byte("null")) {
 		return fmt.Errorf("unverified pull request decoding failed at schema.UnverifiedPullRequest.UnmarshalJSON: source is missing or null; callers cannot locate recorded evidence; provide the source turn and tool call indices")
 	}
+	data, err = normalizeSafeIntegers(data, "number")
+	if err != nil {
+		return err
+	}
 	var value plain
 	if err := json.Unmarshal(data, &value); err != nil {
 		return err
@@ -176,6 +185,27 @@ func canonicalJSONFields(data []byte, canonical ...string) ([]byte, error) {
 				break
 			}
 		}
+	}
+	return json.Marshal(fields)
+}
+
+// normalizeSafeIntegers applies JSON.parse's binary64 rounding before checking
+// the same safe-integer bounds enforced by the public TypeScript validator.
+func normalizeSafeIntegers(data []byte, keys ...string) ([]byte, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil, err
+	}
+	for _, key := range keys {
+		raw, ok := fields[key]
+		if !ok {
+			continue
+		}
+		number, err := strconv.ParseFloat(string(raw), 64)
+		if err != nil || math.IsNaN(number) || math.IsInf(number, 0) || math.Trunc(number) != number || number > float64(maxSafeJSONInteger) || number < -float64(maxSafeJSONInteger) || (strconv.IntSize == 32 && (number > math.MaxInt32 || number < math.MinInt32)) {
+			return nil, fmt.Errorf("unverified pull request decoding failed at schema.normalizeSafeIntegers: %s is not a safe integer; use a finite integral JSON number within supported bounds", key)
+		}
+		fields[key] = json.RawMessage(strconv.FormatInt(int64(number), 10))
 	}
 	return json.Marshal(fields)
 }
