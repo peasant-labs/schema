@@ -49,7 +49,7 @@
       # in this leaf module (proven by TestVendorHashStableOnFirstPartyEdit).
       # Recompute ONLY on a go.mod/go.sum dep bump: set this to
       # nixpkgs.lib.fakeHash, run `nix build`, copy the reported `got:` hash here.
-      vendorHash = "sha256-NLnbYGFXmzgfT9eFWEKIV7yK+OjhTfOS9XuP9gQUeBw=";
+      vendorHash = "sha256-bDWO5Dgb9UsR1EVT2KrS/XpqkmHo28gkyG5NNV4S9a4=";
 
       # Extra CLI tools available in the dev shell. The contract-gate CLIs
       # (oasdiff / go-apidiff / vacuum) are dev/CI tools and MUST NOT enter
