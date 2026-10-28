@@ -116,12 +116,12 @@ func TestUnverifiedPullRequestRows(t *testing.T) {
 			if (err == nil) != c.Expected.Valid {
 				t.Fatalf("valid=%t, error=%v", c.Expected.Valid, err)
 			}
-			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid)
+			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid, nil)
 		})
 	}
 }
 
-func checkRowEnvelopes(t *testing.T, row string, valid bool) {
+func checkRowEnvelopes(t *testing.T, row string, valid bool, turnIndex *int) {
 	t.Helper()
 	local := &schema.SessionPullRequestsResponse{}
 	err := json.Unmarshal([]byte(`{"pullRequests":[],"unverified_pull_requests":[`+row+`]}`), local)
@@ -131,6 +131,9 @@ func checkRowEnvelopes(t *testing.T, row string, valid bool) {
 	if (err == nil) != valid {
 		t.Errorf("local valid=%t error=%v", valid, err)
 	}
+	if err == nil && turnIndex != nil && (*local.UnverifiedPullRequests)[0].Source.TurnIndex != *turnIndex {
+		t.Errorf("local source turn=%d, want %d", (*local.UnverifiedPullRequests)[0].Source.TurnIndex, *turnIndex)
+	}
 	village := &schema.VillageTranscriptPullRequestsResponse{}
 	err = json.Unmarshal([]byte(`{"pull_requests":[],"unverified_pull_requests":[`+row+`]}`), village)
 	if err == nil {
@@ -139,14 +142,18 @@ func checkRowEnvelopes(t *testing.T, row string, valid bool) {
 	if (err == nil) != valid {
 		t.Errorf("village valid=%t error=%v", valid, err)
 	}
+	if err == nil && turnIndex != nil && (*village.UnverifiedPullRequests)[0].Source.TurnIndex != *turnIndex {
+		t.Errorf("village source turn=%d, want %d", (*village.UnverifiedPullRequests)[0].Source.TurnIndex, *turnIndex)
+	}
 }
 
 //go:embed testdata/unverified_pull_request_casing.yaml
 var unverifiedCasingYAML []byte
 
 type casingExpected struct {
-	Valid bool   `yaml:"valid"`
-	Owner string `yaml:"owner"`
+	Valid     bool   `yaml:"valid"`
+	Owner     string `yaml:"owner"`
+	TurnIndex *int   `yaml:"turnIndex"`
 }
 
 func TestUnverifiedCanonicalCasing(t *testing.T) {
@@ -181,7 +188,10 @@ func TestUnverifiedCanonicalCasing(t *testing.T) {
 			if err == nil && row.Owner != c.Expected.Owner {
 				t.Errorf("owner=%q", row.Owner)
 			}
-			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid)
+			if err == nil && c.Expected.TurnIndex != nil && row.Source.TurnIndex != *c.Expected.TurnIndex {
+				t.Errorf("row source turn=%d want %d", row.Source.TurnIndex, *c.Expected.TurnIndex)
+			}
+			checkRowEnvelopes(t, c.Input.JSON, c.Expected.Valid, c.Expected.TurnIndex)
 		})
 	}
 }

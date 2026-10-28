@@ -5,6 +5,10 @@ required_names:
   - nested uppercase index only
   - nested uppercase index after canonical
   - unknown fields accepted
+  - duplicate owner last valid
+  - duplicate owner last invalid
+  - duplicate turn last valid
+  - duplicate turn last invalid
 cases:
   - name: uppercase required owner only
     input:
@@ -78,3 +82,55 @@ cases:
       ref: canonical wire field casing
     mutation:
       description: unknown fields accepted
+  - name: duplicate owner last valid
+    input:
+      json: '{"owner":"evil","owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 1
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate owner last valid
+  - name: duplicate owner last invalid
+    input:
+      json: '{"owner":"Acme","owner":"evil","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+      turnIndex: 1
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate owner last invalid
+  - name: duplicate turn last valid
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":-1,"turnIndex":42,"toolCallIndex":0}}'
+    expected:
+      valid: true
+      owner: Acme
+      turnIndex: 42
+    classification: must-pass
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate turn last valid
+  - name: duplicate turn last invalid
+    input:
+      json: '{"owner":"Acme","repo":"repo","number":17,"url":"https://github.com/Acme/repo/pull/17","source":{"turnIndex":42,"turnIndex":-1,"toolCallIndex":0}}'
+    expected:
+      valid: false
+      owner: Acme
+      turnIndex: -1
+    classification: must-fail
+    provenance:
+      source: boundary
+      ref: duplicate canonical JSON keys last value wins
+    mutation:
+      description: duplicate turn last invalid

@@ -37,6 +37,13 @@ test("canonical property casing remains forward compatible", async (t) => {
   for (const row of casingFixture.cases) await t.test(row.name, () => {
     const value = JSON.parse(row.input.json);
     for (const result of [schema.zUnverifiedPullRequest.safeParse(value), schema.zSessionPullRequestsResponse.safeParse({pullRequests: [], unverified_pull_requests: [value]}), schema.zVillageTranscriptPullRequestsResponse.safeParse({pull_requests: [], unverified_pull_requests: [value]})]) assert.equal(result.success,row.expected.valid);
-    const parsed = schema.zUnverifiedPullRequest.safeParse(value); if (parsed.success) assert.equal(parsed.data.owner,row.expected.owner);
+    const parsed = schema.zUnverifiedPullRequest.safeParse(value); if (parsed.success) {
+      assert.equal(parsed.data.owner,row.expected.owner);
+      if (row.expected.turnIndex !== undefined) {
+        assert.equal(parsed.data.source.turnIndex,row.expected.turnIndex);
+        assert.equal(schema.zSessionPullRequestsResponse.parse({pullRequests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex,row.expected.turnIndex);
+        assert.equal(schema.zVillageTranscriptPullRequestsResponse.parse({pull_requests: [], unverified_pull_requests: [value]}).unverified_pull_requests[0].source.turnIndex,row.expected.turnIndex);
+      }
+    }
   });
 });

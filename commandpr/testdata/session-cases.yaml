@@ -571,6 +571,72 @@ cases:
       ref: shell execution and URL token
     mutation:
       description: canonical separate after ftp
+  - name: chained false and skips gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false && echo nope && gh pr create; echo result","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: chained false and skips gh
+  - name: nested false or guard skips gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"( false || false ) && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: "[]"
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: nested false or guard skips gh
+  - name: true and chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"true && true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: true and chain executes gh
+  - name: false or true chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false || true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: false or true chain executes gh
+  - name: negated guard chain executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"! false && true && gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: negated guard chain executes gh
+  - name: false and then or executes gh
+    input:
+      detail: '{"turns":[{"index":42,"toolCalls":[{"name":"Bash","arguments":"false && echo nope || gh pr create","result":"https://github.com/acme/repo/pull/2"}]}]}'
+    expected:
+      rows: '[{"owner":"acme","repo":"repo","number":2,"url":"https://github.com/acme/repo/pull/2","source":{"turnIndex":42,"toolCallIndex":0}}]'
+    classification: must-pass
+    provenance:
+      source: bug
+      ref: short circuit command execution
+    mutation:
+      description: false and then or executes gh
 required_names:
   - sparse turn second call exact id
   - empty id retained by call index
@@ -624,3 +690,9 @@ required_names:
   - ftp outer query
   - custom outer fragment
   - canonical separate after ftp
+  - chained false and skips gh
+  - nested false or guard skips gh
+  - true and chain executes gh
+  - false or true chain executes gh
+  - negated guard chain executes gh
+  - false and then or executes gh

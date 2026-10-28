@@ -202,21 +202,55 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 	return found
 }
 
-// staticTruth recognizes only literal shell builtins without guessing.
-func staticTruth(stmt *syntax.Stmt) int {
-	if stmt == nil {
-		return 0
-	}
-	call, ok := stmt.Cmd.(*syntax.CallExpr)
-	if !ok || len(call.Assigns) != 0 || len(call.Args) != 1 {
+// staticTruth infers only literal statuses and bounded boolean composition.
+// Unknown commands remain unknown; no recorded command is executed here.
+func staticTruth(stmt *syntax.Stmt) int { return staticTruthBounded(stmt, 64) }
+
+func staticTruthBounded(stmt *syntax.Stmt, budget int) int {
+	if stmt == nil || budget <= 0 {
 		return 0
 	}
 	truth := 0
-	switch call.Args[0].Lit() {
-	case "false":
-		truth = -1
-	case "true":
-		truth = 1
+	switch cmd := stmt.Cmd.(type) {
+	case *syntax.CallExpr:
+		if len(cmd.Assigns) == 0 && len(cmd.Args) == 1 {
+			switch cmd.Args[0].Lit() {
+			case "true":
+				truth = 1
+			case "false":
+				truth = -1
+			}
+		}
+	case *syntax.Subshell:
+		if len(cmd.Stmts) == 1 {
+			truth = staticTruthBounded(cmd.Stmts[0], budget-1)
+		}
+	case *syntax.BinaryCmd:
+		left := staticTruthBounded(cmd.X, budget-1)
+		switch cmd.Op {
+		case syntax.AndStmt:
+			if left == -1 {
+				truth = -1
+			} else {
+				right := staticTruthBounded(cmd.Y, budget-1)
+				if left == 1 {
+					truth = right
+				} else if right == -1 {
+					truth = -1
+				}
+			}
+		case syntax.OrStmt:
+			if left == 1 {
+				truth = 1
+			} else {
+				right := staticTruthBounded(cmd.Y, budget-1)
+				if left == -1 {
+					truth = right
+				} else if right == 1 {
+					truth = 1
+				}
+			}
+		}
 	}
 	if stmt.Negated {
 		truth = -truth
