@@ -9,6 +9,7 @@ package commandpr
 
 import (
 	"encoding/json"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ func DetectSession(detail schema.SessionDetailPayload) []schema.UnverifiedPullRe
 	seen := make(map[string]struct{})
 	for _, turn := range detail.Turns {
 		for index, call := range turn.ToolCalls {
-			if call.IsError || (call.ExitCode != nil && *call.ExitCode != 0) {
+			if !isShellCall(call) || call.IsError || (call.ExitCode != nil && *call.ExitCode != 0) {
 				continue
 			}
 			command := commandFromArguments(call.Arguments)
@@ -47,6 +48,23 @@ func DetectSession(detail schema.SessionDetailPayload) []schema.UnverifiedPullRe
 		}
 	}
 	return detected
+}
+
+// isShellCall requires recorded execution identity; arguments alone are not evidence.
+func isShellCall(call schema.ToolCallDetail) bool {
+	name := strings.ToLower(strings.TrimSpace(call.Name))
+	switch name {
+	case "read", "read_file", "readfile", "write", "write_file", "edit", "grep", "glob", "search", "fetch", "webfetch":
+		return false
+	}
+	if call.ToolKind != "" {
+		return call.ToolKind == schema.ToolCallKindExecute
+	}
+	switch name {
+	case "bash", "shell", "terminal", "execute", "run", "command", "exec_command", "exec", "runterminalcommand", "run_terminal_cmd", "runcommand", "run_command", "executecommand":
+		return true
+	}
+	return false
 }
 
 // commandFromArguments extracts the shell command from a stored tool call's
@@ -114,21 +132,68 @@ func commandInvokesGHPRCreate(command string, depth int) bool {
 		return false
 	}
 	found := false
-	syntax.Walk(file, func(node syntax.Node) bool {
+	var visit func(syntax.Node) bool
+	visit = func(node syntax.Node) bool {
 		if found {
 			return false
 		}
-		call, ok := node.(*syntax.CallExpr)
-		if !ok {
-			return true
-		}
-		if wordsInvoke(commandWords(call), depth) {
-			found = true
+		switch n := node.(type) {
+		case *syntax.FuncDecl:
 			return false
+		case *syntax.IfClause:
+			if len(n.Cond) == 1 {
+				switch staticTruth(n.Cond[0]) {
+				case -1:
+					if n.Else != nil {
+						syntax.Walk(n.Else, visit)
+					}
+					return false
+				case 1:
+					for _, stmt := range n.Then {
+						syntax.Walk(stmt, visit)
+					}
+					return false
+				}
+			}
+		case *syntax.WhileClause:
+			if len(n.Cond) == 1 && ((!n.Until && staticTruth(n.Cond[0]) == -1) || (n.Until && staticTruth(n.Cond[0]) == 1)) {
+				syntax.Walk(n.Cond[0], visit)
+				return false
+			}
+		case *syntax.BinaryCmd:
+			truth := staticTruth(n.X)
+			if (n.Op == syntax.AndStmt && truth == -1) || (n.Op == syntax.OrStmt && truth == 1) {
+				syntax.Walk(n.X, visit)
+				return false
+			}
+		case *syntax.CallExpr:
+			if wordsInvoke(commandWords(n), depth) {
+				found = true
+				return false
+			}
 		}
 		return true
-	})
+	}
+	syntax.Walk(file, visit)
 	return found
+}
+
+// staticTruth recognizes only literal shell builtins without guessing.
+func staticTruth(stmt *syntax.Stmt) int {
+	if stmt == nil || stmt.Negated {
+		return 0
+	}
+	call, ok := stmt.Cmd.(*syntax.CallExpr)
+	if !ok || len(call.Assigns) != 0 || len(call.Args) != 1 {
+		return 0
+	}
+	switch call.Args[0].Lit() {
+	case "false":
+		return -1
+	case "true":
+		return 1
+	}
+	return 0
 }
 
 // commandWord is one word of a simple command, kept in both literal forms the
@@ -392,29 +457,46 @@ type pullRequestReference struct {
 	URL    string
 }
 
-// lastPullRequestReference extracts a complete URL, never a numeric prefix.
-var pullRequestURL = regexp.MustCompile(`https://github\.com/([A-Za-z0-9._-]+)/([A-Za-z0-9._-]+)/pull/([0-9]+)`)
+// Scan entire URL tokens, so URLs inside a query or fragment are never new candidates.
+var resultURLToken = regexp.MustCompile(`https?://[^\s<>"']+`)
 
 func lastPullRequestReference(result string) (pullRequestReference, bool) {
-	matches := pullRequestURL.FindAllStringSubmatchIndex(result, -1)
-	for i := len(matches) - 1; i >= 0; i-- {
-		m := matches[i]
+	tokens := resultURLToken.FindAllStringIndex(result, -1)
+	for i := len(tokens) - 1; i >= 0; i-- {
+		m := tokens[i]
 		if m[0] > 0 && strings.ContainsAny(result[m[0]-1:m[0]], "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_@./:-") {
 			continue
 		}
-		if m[1] < len(result) && !strings.ContainsAny(result[m[1]:m[1]+1], " /?#\t\r\n,;)]}\"'<>!") {
+		token := strings.TrimRight(result[m[0]:m[1]], ".,;!)]}")
+		parsed, err := url.Parse(token)
+		if err != nil || parsed.Scheme != "https" || parsed.Host != "github.com" || parsed.User != nil || parsed.Opaque != "" {
 			continue
 		}
-		owner, repo, digits := result[m[2]:m[3]], result[m[4]:m[5]], result[m[6]:m[7]]
+		parts := strings.Split(strings.TrimPrefix(parsed.EscapedPath(), "/"), "/")
+		if len(parts) < 4 || parts[2] != "pull" || (len(parts) > 4 && (len(parts) != 5 || !validPullSubpage(parts[4]))) {
+			continue
+		}
+		digits := parts[3]
+		if digits == "" || strings.Trim(digits, "0123456789") != "" {
+			continue
+		}
 		number, err := strconv.Atoi(digits)
-		if err != nil || number <= 0 {
+		if err != nil || number < 1 {
 			continue
 		}
-		ref := pullRequestReference{Owner: owner, Repo: repo, Number: number, URL: "https://github.com/" + owner + "/" + repo + "/pull/" + strconv.Itoa(number)}
+		ref := pullRequestReference{Owner: parts[0], Repo: parts[1], Number: number, URL: "https://github.com/" + parts[0] + "/" + parts[1] + "/pull/" + strconv.Itoa(number)}
 		if (schema.UnverifiedPullRequest{Owner: ref.Owner, Repo: ref.Repo, Number: ref.Number, URL: ref.URL}).Validate() != nil {
 			continue
 		}
 		return ref, true
 	}
 	return pullRequestReference{}, false
+}
+
+func validPullSubpage(part string) bool {
+	switch part {
+	case "files", "commits", "checks", "conversation":
+		return true
+	}
+	return false
 }

@@ -62,7 +62,7 @@ func TestRecordedCommands(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			calls := make([]schema.ToolCallDetail, len(c.Input.Calls))
 			for i, v := range c.Input.Calls {
-				calls[i] = schema.ToolCallDetail{Arguments: v.Arguments, Result: v.Result, IsError: v.IsError}
+				calls[i] = schema.ToolCallDetail{Name: "Bash", Arguments: v.Arguments, Result: v.Result, IsError: v.IsError}
 			}
 			got := commandpr.DetectSession(schema.SessionDetailPayload{Turns: []schema.TurnDetail{{ToolCalls: calls}}})
 			rows := make([]row, 0, len(got))

@@ -1,3 +1,4 @@
+import { applyUnverifiedPullRequestZodRefinements } from "./lib/unverified-pull-request-zod-refinements.mjs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -84,7 +85,7 @@ async function refineRootZodContract() {
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
   const source = applyCollectiveZodRefinements(attemptSource, spec);
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
-  await writeFile(zodPath, applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(refined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username));
+  await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(refined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have

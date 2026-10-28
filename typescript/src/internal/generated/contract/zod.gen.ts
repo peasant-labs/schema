@@ -3502,7 +3502,16 @@ export const zUnverifiedPullRequest = z.object({
     repo: z.string().min(1),
     source: zUnverifiedPullRequestSource,
     url: z.string().min(1)
-});
+}).superRefine((value, context) => {
+    const segment = /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
+    const validSegment = (part: string) => segment.test(part) && part !== "." && part !== "..";
+    if (!validSegment(value.owner) || !validSegment(value.repo) || value.url !== "https://github.com/" + value.owner + "/" + value.repo + "/pull/" + String(value.number)) {
+      context.addIssue({ code: "custom", message: "Unverified pull request identity and canonical GitHub URL must agree" });
+    }
+    if (value.source.toolCallId !== undefined && /[\uD800-\uDFFF]/u.test(value.source.toolCallId)) {
+      context.addIssue({ code: "custom", message: "Recorded tool call ID must be valid Unicode" });
+    }
+  });
 
 export type UnverifiedPullRequest = z.infer<typeof zUnverifiedPullRequest>;
 
