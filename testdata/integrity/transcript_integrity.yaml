@@ -37,9 +37,10 @@ required_names:
   - metadata-public-flagged-valid
   - metadata-public-flagged-sticky-empty-turns-valid
   - metadata-without-integrity-valid
-  - metadata-integrity-on-private-rejected
-  - metadata-integrity-on-shared-rejected
+  - metadata-private-flagged-valid
+  - metadata-shared-flagged-valid
   - metadata-integrity-without-content-hash-rejected
+  - metadata-private-integrity-without-content-hash-rejected
   - metadata-integrity-null-turns-rejected
   - metadata-integrity-unsorted-turns-rejected
   - metadata-integrity-duplicate-turns-rejected
@@ -298,17 +299,17 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "absence of integrity means not flagged"}
     mutation: {description: "omits integrity"}
-  - name: metadata-integrity-on-private-rejected
+  - name: metadata-private-flagged-valid
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: private}, integrity: {flagged_turns: [3]}}}
-    expected: {valid: false, rejected_by: semantics, error_contains: public}
-    classification: must-fail
-    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "village serves integrity to every reader its read policy admits"}
     mutation: {description: "flags a private transcript"}
-  - name: metadata-integrity-on-shared-rejected
+  - name: metadata-shared-flagged-valid
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: shared}, integrity: {flagged_turns: [3]}}}
-    expected: {valid: false, rejected_by: semantics, error_contains: public}
-    classification: must-fail
-    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "village serves integrity to every reader its read policy admits"}
     mutation: {description: "flags a shared transcript"}
   - name: metadata-integrity-without-content-hash-rejected
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, content_hash: null}, integrity: {flagged_turns: [3]}}}
@@ -316,6 +317,12 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "positions need a content to refer to"}
     mutation: {description: "flags a transcript with no content hash"}
+  - name: metadata-private-integrity-without-content-hash-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: private, content_hash: null}, integrity: {flagged_turns: [3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: content_hash}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a flag needs the content hash whatever the visibility"}
+    mutation: {description: "flags a private transcript without a content hash"}
   - name: metadata-integrity-null-turns-rejected
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: null}}}
     expected: {valid: false, rejected_by: shape, go_rejects: true}
