@@ -108,7 +108,6 @@ import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookSt
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
 import { zThinkingLevel, type ThinkingLevel as ThinkingLevelContract } from "./contract/zod.gen.js";
 import { zScryVerdict, type ScryVerdict as ScryVerdictContract } from "./contract/zod.gen.js";
-import { zVillageIntegrityCheckResult, type VillageIntegrityCheckResult as VillageIntegrityCheckResultContract } from "./contract/zod.gen.js";
 
 export type CollectiveObservationReason = CollectiveObservationReasonContract;
 export const CollectiveObservationReason = Object.freeze({
@@ -1412,15 +1411,4 @@ export const ScryVerdict = Object.freeze({
 export const AllScryVerdicts = Object.freeze([ScryVerdict.Checked, ScryVerdict.Unchecked]) as readonly ScryVerdict[];
 export function isScryVerdict(value: unknown): value is ScryVerdict {
   return zScryVerdict.safeParse(value).success;
-}
-
-export type VillageIntegrityCheckResult = VillageIntegrityCheckResultContract;
-export const VillageIntegrityCheckResult = Object.freeze({
-  Flagged: zVillageIntegrityCheckResult.parse("flagged"),
-  NotFlagged: zVillageIntegrityCheckResult.parse("not_flagged"),
-  Unchecked: zVillageIntegrityCheckResult.parse("unchecked"),
-} as const);
-export const AllVillageIntegrityCheckResults = Object.freeze([VillageIntegrityCheckResult.Flagged, VillageIntegrityCheckResult.NotFlagged, VillageIntegrityCheckResult.Unchecked]) as readonly VillageIntegrityCheckResult[];
-export function isVillageIntegrityCheckResult(value: unknown): value is VillageIntegrityCheckResult {
-  return zVillageIntegrityCheckResult.safeParse(value).success;
 }

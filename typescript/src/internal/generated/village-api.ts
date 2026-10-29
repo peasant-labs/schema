@@ -1180,23 +1180,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/transcripts/{id}/integrity-check": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Ask village to check one of the caller's own transcripts for integrity. Only the signed-in owner may call it. The call is synchronous: the response carries the answer. Statuses are decided in this order: 401 when the caller is signed out; 400 for a malformed id; 404 when the caller cannot read the transcript; 403 when the caller can read it but does not own it; 409 when the owner's transcript is public; 503 when the check is not available; 429 when the owner's daily allowance is used up; otherwise village runs the check, and answers 503 if it does not complete, or 200. 409 means a public transcript, which is checked automatically. 429 means the owner's daily checks for the UTC day are used up. 503 means the check is not available now. A check that does not complete spends nothing, and an unchecked result spends nothing. The answer is only flagged, not_flagged or unchecked, with no turns, rule or field. remaining_today is the number of checks left after this one. A requested check is never shown publicly and never affects the public status. */
-        post: operations["checkTranscriptIntegrity"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/transcripts/{id}/pulls": {
         parameters: {
             query?: never;
@@ -2056,16 +2039,6 @@ export interface components {
         SchemaVillageGroupedCollectiveDetailResponse: Schema.VillageGroupedCollectiveDetailResponse;
         SchemaVillageGroupedContributableResponse: Schema.VillageGroupedContributableResponse;
         SchemaVillageHelperMembersPayload: Schema.VillageHelperMembersPayload;
-        SchemaVillageIntegrityCheckResponse: Schema.VillageIntegrityCheckResponse;
-        /**
-         * Village Integrity Check Result
-         * @description What an owner's integrity check found; unchecked means scry declined and the daily allowance is not spent
-         * @example flagged
-         * @example not_flagged
-         * @example unchecked
-         * @enum {string}
-         */
-        SchemaVillageIntegrityCheckResult: Schema.VillageIntegrityCheckResult;
         SchemaVillageInvitedCollective: Schema.VillageInvitedCollective;
         SchemaVillageLinkRepositoryRequest: Schema.VillageLinkRepositoryRequest;
         SchemaVillageLinkedRepositoriesResponse: Schema.VillageLinkedRepositoriesResponse;
@@ -6635,101 +6608,6 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-        };
-    };
-    checkTranscriptIntegrity: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Transcript identifier */
-                id: components["schemas"]["SchemaTranscriptID"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageIntegrityCheckResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Forbidden */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Conflict */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Too Many Requests */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Internal Server Error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
                 headers: {
                     [name: string]: unknown;
                 };
