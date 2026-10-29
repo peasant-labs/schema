@@ -114,7 +114,10 @@ const (
 	// integrity field on the transcript metadata read, the Village-Content-Hash
 	// header on the content read, the stored publish metadata pull read, and the
 	// optional publishing client on publish metadata (additive = minor bump).
-	VillageAPIVersion = "0.32.0"
+	// Bumped to 0.33.0 when the owner integrity-check operation was removed and
+	// integrity became servable on a transcript of any visibility (an operation
+	// removed; minor bump before 1.0).
+	VillageAPIVersion = "0.33.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -278,5 +281,8 @@ const (
 	// Bumped to 0.40.0 for the scry check request, response and health body, the
 	// transcript integrity types, and AuthoritativeClientInfo (additive = minor
 	// bump).
-	TypesVersion = "0.40.0"
+	// Bumped to 0.41.0 when VillageIntegrityCheckResult and
+	// VillageIntegrityCheckResponse were removed with the owner integrity check
+	// (minor bump before 1.0).
+	TypesVersion = "0.41.0"
 )
