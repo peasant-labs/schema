@@ -2,45 +2,13 @@ package openapi
 
 import (
 	"fmt"
-	"net/http"
 
-	schema "github.com/peasant-labs/schema"
 	"github.com/swaggest/openapi-go/openapi31"
 )
 
 // contentHashHeader names the response header that tells a reader which copy
 // of a transcript the content read served.
 const contentHashHeader = "Village-Content-Hash"
-
-// addVillageIntegrityOperations declares the owner's integrity check. The
-// answer is only a result and the owner's remaining daily allowance; it never
-// carries turns, a rule or a field.
-func addVillageIntegrityOperations(r *openapi31.Reflector) error {
-	transcriptPath := new(struct {
-		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
-	})
-	return addVillageOperations(r, []villageOperationSpec{
-		{
-			method:      http.MethodPost,
-			path:        "/api/v1/transcripts/{id}/integrity-check",
-			id:          "checkTranscriptIntegrity",
-			tag:         "transcripts",
-			description: "Ask village to check one of the caller's own transcripts for integrity. Only the signed-in owner may call it. The call is synchronous: the response carries the answer. Statuses are decided in this order: 401 when the caller is signed out; 400 for a malformed id; 404 when the caller cannot read the transcript; 403 when the caller can read it but does not own it; 409 when the owner's transcript is public; 503 when the check is not available; 429 when the owner's daily allowance is used up; otherwise village runs the check, and answers 503 if it does not complete, or 200. 409 means a public transcript, which is checked automatically. 429 means the owner's daily checks for the UTC day are used up. 503 means the check is not available now. A check that does not complete spends nothing, and an unchecked result spends nothing. The answer is only flagged, not_flagged or unchecked, with no turns, rule or field. remaining_today is the number of checks left after this one. A requested check is never shown publicly and never affects the public status.",
-			requests:    []interface{}{transcriptPath},
-			response:    new(schema.VillageIntegrityCheckResponse),
-			errorStatuses: []int{
-				http.StatusBadRequest,
-				http.StatusUnauthorized,
-				http.StatusForbidden,
-				http.StatusNotFound,
-				http.StatusConflict,
-				http.StatusTooManyRequests,
-				http.StatusInternalServerError,
-				http.StatusServiceUnavailable,
-			},
-		},
-	})
-}
 
 // setTranscriptContentHashHeader declares, on the 200 response of the
 // transcript content read, the optional header carrying the bare content hash

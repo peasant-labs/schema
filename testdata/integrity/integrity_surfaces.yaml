@@ -8,12 +8,13 @@ exact_properties:
   ScryTranscriptRecord: [publishedAtMs, updatedAtMs]
   ScryCheckResponse: [scryVersion, verdict, flaggedTurns]
   ScryHealthResponse: [contractVersion, scryVersion]
-  VillageIntegrityCheckResponse: [result, remaining_today]
   VillageTranscriptIntegrity: [flagged_turns]
 content_hash_header:
   name: Village-Content-Hash
 description_anchors:
-  integrity_check_operation: [owner, synchronous, UTC day, spends nothing, unchecked, never shown publicly, remaining_today, not_flagged]
   publish_metadata_operation: [owner of a collective, pending or approved, "404", no stored metadata, never reveals more, anonymous to the caller, stored, "406"]
-  transcript_metadata_operation: [content_hash, Village-Content-Hash, presence, top-level, TurnDetail.index]
+  transcript_metadata_operation: [any reader, content_hash, Village-Content-Hash, presence, top-level, TurnDetail.index]
   flagged_turn_properties: [top-level, TurnDetail.index]
+absent_components: [VillageIntegrityCheckResponse, VillageIntegrityCheckResult]
+absent_operations:
+  - {method: post, path: "/api/v1/transcripts/{id}/integrity-check"}

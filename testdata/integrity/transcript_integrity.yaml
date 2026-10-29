@@ -37,9 +37,10 @@ required_names:
   - metadata-public-flagged-valid
   - metadata-public-flagged-sticky-empty-turns-valid
   - metadata-without-integrity-valid
-  - metadata-integrity-on-private-rejected
-  - metadata-integrity-on-shared-rejected
+  - metadata-private-flagged-valid
+  - metadata-shared-flagged-valid
   - metadata-integrity-without-content-hash-rejected
+  - metadata-private-integrity-without-content-hash-rejected
   - metadata-integrity-null-turns-rejected
   - metadata-integrity-unsorted-turns-rejected
   - metadata-integrity-duplicate-turns-rejected
@@ -49,29 +50,7 @@ required_names:
   - metadata-integrity-rule-field-rejected
   - metadata-integrity-status-field-rejected
   - metadata-integrity-content-hash-field-rejected
-  - check-response-flagged-valid
-  - check-response-not-flagged-valid
-  - check-response-unchecked-valid
-  - check-response-negative-remaining-rejected
-  - check-response-unknown-result-rejected
-  - check-response-turns-field-rejected
 operations:
-  - api: village
-    method: post
-    path: /api/v1/transcripts/{id}/integrity-check
-    response: VillageIntegrityCheckResponse
-    statuses: ["200", "400", "401", "403", "404", "409", "429", "500", "503"]
-    error_responses:
-      "400": VillageErrorResponse
-      "401": VillageErrorResponse
-      "403": VillageErrorResponse
-      "404": VillageErrorResponse
-      "409": VillageErrorResponse
-      "429": VillageErrorResponse
-      "500": VillageErrorResponse
-      "503": VillageErrorResponse
-    parameters:
-      - {name: id, in: path, required: true}
   - api: village
     method: get
     path: /api/v1/pull/transcripts/{id}/publish-metadata
@@ -298,17 +277,17 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "absence of integrity means not flagged"}
     mutation: {description: "omits integrity"}
-  - name: metadata-integrity-on-private-rejected
+  - name: metadata-private-flagged-valid
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: private}, integrity: {flagged_turns: [3]}}}
-    expected: {valid: false, rejected_by: semantics, error_contains: public}
-    classification: must-fail
-    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "village serves integrity to every reader its read policy admits"}
     mutation: {description: "flags a private transcript"}
-  - name: metadata-integrity-on-shared-rejected
+  - name: metadata-shared-flagged-valid
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: shared}, integrity: {flagged_turns: [3]}}}
-    expected: {valid: false, rejected_by: semantics, error_contains: public}
-    classification: must-fail
-    provenance: {source: requirement, ref: "only a public transcript serves a flag"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "village serves integrity to every reader its read policy admits"}
     mutation: {description: "flags a shared transcript"}
   - name: metadata-integrity-without-content-hash-rejected
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, content_hash: null}, integrity: {flagged_turns: [3]}}}
@@ -316,6 +295,12 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "positions need a content to refer to"}
     mutation: {description: "flags a transcript with no content hash"}
+  - name: metadata-private-integrity-without-content-hash-rejected
+    input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, transcript: {<<: *metadata_transcript, visibility: private, content_hash: null}, integrity: {flagged_turns: [3]}}}
+    expected: {valid: false, rejected_by: semantics, error_contains: content_hash}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a flag needs the content hash whatever the visibility"}
+    mutation: {description: "flags a private transcript without a content hash"}
   - name: metadata-integrity-null-turns-rejected
     input: {schema: VillageTranscriptMetadataResponse, payload: {<<: *metadata_unflagged, integrity: {flagged_turns: null}}}
     expected: {valid: false, rejected_by: shape, go_rejects: true}
@@ -370,39 +355,3 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "integrity is absent or an object"}
     mutation: {description: "sends null integrity"}
-  - name: check-response-flagged-valid
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: 2}}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "a check may flag"}
-    mutation: {description: "flagged result"}
-  - name: check-response-not-flagged-valid
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: not_flagged, remaining_today: 0}}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "a check may find nothing and spend the last allowance"}
-    mutation: {description: "not flagged, none remaining"}
-  - name: check-response-unchecked-valid
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: unchecked, remaining_today: 3}}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: requirement, ref: "an unchecked result spends nothing"}
-    mutation: {description: "unchecked result"}
-  - name: check-response-negative-remaining-rejected
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: -1}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: requirement, ref: "remaining_today is not negative"}
-    mutation: {description: "sends -1"}
-  - name: check-response-unknown-result-rejected
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: clean, remaining_today: 1}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: requirement, ref: "result is a closed set"}
-    mutation: {description: "sends an unknown result"}
-  - name: check-response-turns-field-rejected
-    input: {schema: VillageIntegrityCheckResponse, payload: {result: flagged, remaining_today: 1, flagged_turns: [3]}}
-    expected: {valid: false, rejected_by: shape, go_rejects: true}
-    classification: must-fail
-    provenance: {source: requirement, ref: "the check response never lists positions"}
-    mutation: {description: "adds flagged_turns"}

@@ -49,7 +49,6 @@ export const STRICT_OBJECTS = [
   "zScryCheckResponse",
   "zScryHealthResponse",
   "zVillageTranscriptIntegrity",
-  "zVillageIntegrityCheckResponse",
   "zCanonicalPublishGitContext",
   "zCanonicalPublishReplacement",
   "zPublishLicenseOperation",

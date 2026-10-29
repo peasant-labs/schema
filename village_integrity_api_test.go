@@ -3,38 +3,12 @@ package schema_test
 import (
 	"bytes"
 	_ "embed"
-	"reflect"
 	"strings"
 	"testing"
 
 	schema "github.com/peasant-labs/schema"
 	"gopkg.in/yaml.v3"
 )
-
-func TestVillageIntegrityClosedSets(t *testing.T) {
-	var want []string
-	for _, enum := range loadClosedEnumFixture(t).Enums {
-		if enum.Name == "VillageIntegrityCheckResult" {
-			want = enum.AllValues
-		}
-	}
-	if len(want) == 0 {
-		t.Fatal("enums.yaml does not define VillageIntegrityCheckResult")
-	}
-	got := make([]string, 0, len(schema.AllVillageIntegrityCheckResults))
-	for _, result := range schema.AllVillageIntegrityCheckResults {
-		if !result.IsValid() {
-			t.Fatalf("%q is listed but not valid", result)
-		}
-		got = append(got, result.String())
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("AllVillageIntegrityCheckResults = %v, want %v", got, want)
-	}
-	if schema.VillageIntegrityCheckResult("clean").IsValid() || schema.VillageIntegrityCheckResult("").IsValid() {
-		t.Fatal("a result outside the closed set is valid")
-	}
-}
 
 //go:embed testdata/integrity/integrity_surfaces.yaml
 var integritySurfacesYAML []byte
@@ -46,6 +20,11 @@ type integritySurfaces struct {
 		Name string `yaml:"name"`
 	} `yaml:"content_hash_header"`
 	DescriptionAnchors map[string][]string `yaml:"description_anchors"`
+	AbsentComponents   []string            `yaml:"absent_components"`
+	AbsentOperations   []struct {
+		Method string `yaml:"method"`
+		Path   string `yaml:"path"`
+	} `yaml:"absent_operations"`
 }
 
 func loadIntegritySurfaces(t *testing.T) integritySurfaces {
@@ -159,9 +138,24 @@ func TestIntegritySurfacesAreExact(t *testing.T) {
 	pullDescription, _ := pull["description"].(string)
 	requireAnchors(t, "publish metadata description", pullDescription, f.DescriptionAnchors["publish_metadata_operation"])
 
-	check := integrityOperation(t, h, "post", "/api/v1/transcripts/{id}/integrity-check")
-	checkDescription, _ := check["description"].(string)
-	requireAnchors(t, "integrity check description", checkDescription, f.DescriptionAnchors["integrity_check_operation"])
+	if len(f.AbsentComponents) == 0 || len(f.AbsentOperations) == 0 {
+		t.Fatal("the fixture names no absent component or operation")
+	}
+	for _, api := range []string{"types", "village"} {
+		components := integritySchemas(h, api)
+		for _, name := range f.AbsentComponents {
+			if _, ok := components[name]; ok {
+				t.Errorf("%s still declares component %s", api, name)
+			}
+		}
+	}
+	paths, _ := h.documents["village"]["paths"].(map[string]any)
+	for _, absent := range f.AbsentOperations {
+		item, _ := paths[absent.Path].(map[string]any)
+		if _, ok := item[absent.Method]; ok {
+			t.Errorf("village still declares %s %s", strings.ToUpper(absent.Method), absent.Path)
+		}
+	}
 
 	metadata := integrityOperation(t, h, "get", "/api/v1/transcripts/{id}")
 	metadataDescription, _ := metadata["description"].(string)

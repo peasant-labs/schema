@@ -3981,26 +3981,6 @@ export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
 
-/**
- * Village Integrity Check Result
- *
- * What an owner's integrity check found; unchecked means scry declined and the daily allowance is not spent
- */
-export const zVillageIntegrityCheckResult = z.enum([
-    'flagged',
-    'not_flagged',
-    'unchecked'
-]);
-
-export type VillageIntegrityCheckResult = z.infer<typeof zVillageIntegrityCheckResult>;
-
-export const zVillageIntegrityCheckResponse = z.object({
-    remaining_today: z.int().gte(0).lte(9007199254740991),
-    result: zVillageIntegrityCheckResult
-}).strict();
-
-export type VillageIntegrityCheckResponse = z.infer<typeof zVillageIntegrityCheckResponse>;
-
 export const zVillageLinkRepositoryRequest = z.object({
     installation_id: z.int().nullish(),
     name: z.string(),
