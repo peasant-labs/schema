@@ -6,7 +6,7 @@ import (
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
 
-// VillageTranscriptIntegrity is served when the transcript has an open flag, to
+// VillageTranscriptIntegrity is served when the transcript is flagged, to
 // every caller allowed to read it; presence is the flag. FlaggedTurns are
 // zero-based positions in the top-level SessionDetailPayload.turns array of the
 // content whose bare hash is the same response's transcript.content_hash (never

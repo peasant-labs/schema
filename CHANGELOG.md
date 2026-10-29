@@ -11,15 +11,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 - Village API 0.33.0: the transcript metadata read may carry `integrity` on a
   transcript of any visibility. Village serves it to every caller allowed to read
-  the transcript when it has an open flag. `integrity` still requires a non-null
-  `transcript.content_hash`.
+  the transcript when it is flagged. `integrity` still requires a non-null
+  `transcript.content_hash`. `VillageTranscriptMetadataResponse.Validate` no
+  longer refuses `integrity` on a private or shared transcript.
 
 ### Removed
 
-- Village API 0.33.0 removes `POST /api/v1/transcripts/{id}/integrity-check`
+- **Breaking:** Village API 0.33.0 removes `POST /api/v1/transcripts/{id}/integrity-check`
   (`checkTranscriptIntegrity`).
-- Types 0.41.0 removes `VillageIntegrityCheckResult` and
-  `VillageIntegrityCheckResponse`.
+- **Breaking:** Types 0.41.0 removes `VillageIntegrityCheckResult` and
+  `VillageIntegrityCheckResponse` (Go symbols, and their npm exports).
 - No released consumer used the removed route or types; village reads flags only
   from the metadata read.
 
