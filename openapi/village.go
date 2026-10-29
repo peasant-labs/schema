@@ -62,6 +62,14 @@ type TranscriptUpdateErrorResponse struct {
 	Error string `json:"error" required:"true"`
 }
 
+// pullTranscriptRequest is the request structure of the pull reads of one
+// transcript: the transcript id and the optional pull contract header. Every
+// such read reuses this one value so the header text exists once.
+type pullTranscriptRequest struct {
+	ID           string `path:"id"`
+	PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
+}
+
 // BuildVillageAPISpec builds the current OpenAPI 3.1 specification for the
 // Village API. It describes transcript publishing, CLI authentication,
 // annotation registry and manifest synchronization, schema negotiation, group-
@@ -314,10 +322,7 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new pull content operation: %w", err)
 	}
-	pullContentOC.AddReqStructure(new(struct {
-		ID           string `path:"id"`
-		PullContract string `header:"Peasant-Pull-Contract" description:"Optional. The newest pull contract this client reads, as MAJOR.MINOR.PATCH digits (for example 0.3.0). Village serves the highest version it supports that is no newer than this and no older than its minimum. Omitted or malformed (0.3, v0.3.0, any other text), it is treated as absent and Village serves its default (pullContractVersion), so a client with a buggy header still pulls. Below Village's minimum, the read is refused with 406 and a VillageErrorResponse."`
-	}))
+	pullContentOC.AddReqStructure(new(pullTranscriptRequest))
 	pullContentOC.SetDescription("Stream the transcript blob as served. Sends ETag: \"<content_hash>\"; " +
 		"a matching If-None-Match request yields 304 Not Modified.")
 	pullContentOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(http.StatusNotAcceptable))
@@ -325,6 +330,30 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	pullContentOC.SetTags("pull")
 	if err := r.AddOperation(pullContentOC); err != nil {
 		return nil, fmt.Errorf("add pull content operation: %w", err)
+	}
+
+	// GET /api/v1/pull/transcripts/{id}/publish-metadata: the publish metadata
+	// village stored for the transcript, for its owner and the owners of the
+	// collectives it was submitted to.
+	pullPublishMetadataOC, err := r.NewOperationContext(http.MethodGet, "/api/v1/pull/transcripts/{id}/publish-metadata")
+	if err != nil {
+		return nil, fmt.Errorf("new pull publish metadata operation: %w", err)
+	}
+	pullPublishMetadataOC.AddReqStructure(new(pullTranscriptRequest))
+	pullPublishMetadataOC.AddRespStructure(new(schema.AuthoritativePublishRequest))
+	pullPublishMetadataOC.SetDescription("Get the publish metadata village stored for the transcript: the validated publish request, re-encoded, not a reconstruction. " +
+		"Only the transcript's owner, or an owner of a collective the transcript was submitted to (pending or approved), may read it. " +
+		"Every other caller gets 404, including one who can read the transcript, so the route never reveals more than the transcript does. " +
+		"It also answers 404 when the transcript's owner is anonymous to the caller (the public-owner rule decides), so it never exposes a hidden owner's repository, paths or commit authors. " +
+		"404 also means village holds no stored metadata for the transcript (transcripts published before metadata was stored). " +
+		"406 means the requested pull contract is below village's minimum.")
+	for _, status := range []int{http.StatusUnauthorized, http.StatusNotFound, http.StatusNotAcceptable, http.StatusInternalServerError} {
+		pullPublishMetadataOC.AddRespStructure(new(schema.VillageErrorResponse), openapicore.WithHTTPStatus(status))
+	}
+	pullPublishMetadataOC.SetID("getPullTranscriptPublishMetadata")
+	pullPublishMetadataOC.SetTags("pull")
+	if err := r.AddOperation(pullPublishMetadataOC); err != nil {
+		return nil, fmt.Errorf("add pull publish metadata operation: %w", err)
 	}
 
 	// GET /api/v1/pull/transcripts/{id}/annotations — PullAnnotation rows with
@@ -384,6 +413,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 	if err := addVillageInvitationOperations(r); err != nil {
 		return nil, err
 	}
+	if err := addVillageIntegrityOperations(r); err != nil {
+		return nil, err
+	}
 
 	// The reflector automatically registers component schemas for all types referenced
 	// in PublishRequest, including SessionEntry, ToolCallKind, StopReason,
@@ -402,6 +434,9 @@ func BuildVillageAPISpec() (*openapi31.Spec, error) {
 		return nil, fmt.Errorf("harmonize Village API shared components: %w", err)
 	}
 	if err := addVillageCollectiveAliases(r.Spec); err != nil {
+		return nil, err
+	}
+	if err := setTranscriptContentHashHeader(r.Spec); err != nil {
 		return nil, err
 	}
 
@@ -509,7 +544,7 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcripts/{id}", id: "getTranscriptMetadata", tag: "transcripts",
-			description: "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays.",
+			description: "Get transcript metadata and viewer-authorized relationship navigation. Navigation is read-only and is never stored in transcript content. Nonowner collective associations use the same narrow viewer-visible/contributor-discoverable projection as the dedicated collective read; omitted associations do not disclose hidden existence. Query failures are 500, never successful empty arrays. integrity is present only when the transcript is public and flagged, and its presence is the flag. Its flagged_turns are zero-based positions in the top-level sessionDetail.turns array (never TurnDetail.index values, never earlierHistory or child sessions) of the content whose bare hash is transcript.content_hash. A reader highlights turns only when the content read's Village-Content-Hash header equals transcript.content_hash. An empty list means the flag stands with no turn flagged in the current copy. A clean, pending or failed check adds nothing.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.VillageTranscriptMetadataResponse),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError},
 		},
@@ -1164,6 +1199,7 @@ var pullContractResponses = []struct {
 	{"/api/v1/pull/transcripts/{id}", schemaRef("SchemaPullTranscriptInfo"), schemaRef("SchemaLegacyPullTranscriptInfo")},
 	{"/api/v1/pull/transcripts/{id}/annotations", map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaPullAnnotation")}, map[string]interface{}{"type": []interface{}{"null", "array"}, "items": schemaRef("SchemaLegacyPullAnnotation")}},
 	{"/api/v1/pull/transcripts/{id}/content", nil, nil},
+	{"/api/v1/pull/transcripts/{id}/publish-metadata", nil, nil},
 }
 
 func schemaRef(name string) map[string]interface{} {

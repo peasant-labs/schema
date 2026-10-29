@@ -21,6 +21,7 @@ specs:
     # address, each with the reason it may reach other viewers.
     exempt_properties:
       SchemaVillageRepositoryCommit.author_email: a git commit's author email in a linked repository's history, read from GitHub, not a Village account's address
+      SchemaAuthoritativeCommitInfo.authorEmail: a git commit's author email in the publish metadata the owner sent, served back only to that owner and to owners of a collective the transcript was submitted to, and never served when the owner is anonymous to the caller, not a Village account's address
   local:
     self_operations: []
     exempt_properties:

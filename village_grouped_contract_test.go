@@ -389,7 +389,7 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 				t.Errorf("legacy array item=%v, want %s", refs, c.Input.LegacyItem)
 			}
 			if c.Name == "metadata-navigation" {
-				requireExactProperties(t, components[c.Input.Grouped].(map[string]any), []string{"transcript", "tags", "shares", "enriched_shares", "owner", "owner_orgs", "attestations", "relationshipNavigation"})
+				requireExactProperties(t, components[c.Input.Grouped].(map[string]any), []string{"transcript", "tags", "shares", "enriched_shares", "owner", "owner_orgs", "attestations", "relationshipNavigation", "integrity"})
 			}
 			if c.Name == "durable-content" {
 				if _, ok := schemaProperties(components[c.Input.Grouped].(map[string]any))["relationshipNavigation"]; ok {

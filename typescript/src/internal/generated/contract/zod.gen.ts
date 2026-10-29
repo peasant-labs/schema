@@ -237,6 +237,13 @@ export const zAssociationID = z.string().min(1).max(128).regex(/^[A-Za-z0-9][A-Z
 
 export type AssociationID = z.infer<typeof zAssociationID>;
 
+export const zAuthoritativeClientInfo = z.object({
+    name: z.string().min(1).max(64).regex(/^[a-z][a-z0-9-]{0,63}$/),
+    version: z.string().min(5).max(128).regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$/)
+}).strict();
+
+export type AuthoritativeClientInfo = z.infer<typeof zAuthoritativeClientInfo>;
+
 export const zAuthoritativeCommitInfo = z.object({
     authorEmail: z.string(),
     authorName: z.string(),
@@ -1920,6 +1927,37 @@ export const zSchemaVersionResponse = z.object({
 });
 
 export type SchemaVersionResponse = z.infer<typeof zSchemaVersionResponse>;
+
+export const zScryHealthResponse = z.object({
+    contractVersion: z.string().min(1),
+    scryVersion: z.string().regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/)
+}).strict();
+
+export type ScryHealthResponse = z.infer<typeof zScryHealthResponse>;
+
+export const zScryTranscriptRecord = z.object({
+    publishedAtMs: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(9007199254740991)),
+    updatedAtMs: z.coerce.bigint().gte(BigInt(1)).lte(BigInt(9007199254740991))
+}).strict();
+
+export type ScryTranscriptRecord = z.infer<typeof zScryTranscriptRecord>;
+
+/**
+ * Scry Verdict
+ *
+ * Whether scry examined the transcript; unchecked means scry declined unsupported content or harness
+ */
+export const zScryVerdict = z.enum(['checked', 'unchecked']);
+
+export type ScryVerdict = z.infer<typeof zScryVerdict>;
+
+export const zScryCheckResponse = z.object({
+    flaggedTurns: z.array(z.int().gte(0).lte(9007199254740991)),
+    scryVersion: z.string().regex(/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/),
+    verdict: zScryVerdict
+}).strict();
+
+export type ScryCheckResponse = z.infer<typeof zScryCheckResponse>;
 
 export const zSearchResult = z.object({
     entryIndex: z.int(),
@@ -3943,6 +3981,26 @@ export const zVillageGitHubWebhookPayload = z.record(z.string(), z.unknown());
 
 export type VillageGitHubWebhookPayload = z.infer<typeof zVillageGitHubWebhookPayload>;
 
+/**
+ * Village Integrity Check Result
+ *
+ * What an owner's integrity check found; unchecked means scry declined and the daily allowance is not spent
+ */
+export const zVillageIntegrityCheckResult = z.enum([
+    'flagged',
+    'not_flagged',
+    'unchecked'
+]);
+
+export type VillageIntegrityCheckResult = z.infer<typeof zVillageIntegrityCheckResult>;
+
+export const zVillageIntegrityCheckResponse = z.object({
+    remaining_today: z.int().gte(0).lte(9007199254740991),
+    result: zVillageIntegrityCheckResult
+}).strict();
+
+export type VillageIntegrityCheckResponse = z.infer<typeof zVillageIntegrityCheckResponse>;
+
 export const zVillageLinkRepositoryRequest = z.object({
     installation_id: z.int().nullish(),
     name: z.string(),
@@ -4284,6 +4342,12 @@ export type VillageStatusResponse = z.infer<typeof zVillageStatusResponse>;
 export const zVillageTranscriptDeletionPolicy = z.enum(['user_choice', 'mandatory']);
 
 export type VillageTranscriptDeletionPolicy = z.infer<typeof zVillageTranscriptDeletionPolicy>;
+
+export const zVillageTranscriptIntegrity = z.object({
+    flagged_turns: z.array(z.int().gte(0).lte(9007199254740991))
+}).strict();
+
+export type VillageTranscriptIntegrity = z.infer<typeof zVillageTranscriptIntegrity>;
 
 export const zVillageTranscriptPullRequest = z.object({
     head_ref: z.string().nullable(),
@@ -5080,6 +5144,7 @@ export type VillageTranscriptShare = z.infer<typeof zVillageTranscriptShare>;
 export const zVillageTranscriptMetadataResponse = z.object({
     attestations: z.array(zVillageTranscriptAttestation),
     enriched_shares: z.array(zVillageEnrichedTranscriptShare),
+    integrity: zVillageTranscriptIntegrity.optional(),
     owner: zVillagePublicOwner,
     owner_orgs: z.array(zVillageMetadataUserOrganization),
     relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
@@ -5489,6 +5554,7 @@ export const zVisibilityIntent = z.enum(['private', 'public']);
 export type VisibilityIntent = z.infer<typeof zVisibilityIntent>;
 
 export const zAuthoritativePublishRequest = z.object({
+    client: zAuthoritativeClientInfo.optional(),
     contentHash: zTranscriptContentHash,
     diagnostics: zAuthoritativeDiagnosticsInfo.optional(),
     entries: z.array(zAuthoritativeSessionEntry).optional(),
@@ -5506,6 +5572,16 @@ export const zAuthoritativePublishRequest = z.object({
 }).strict();
 
 export type AuthoritativePublishRequest = z.infer<typeof zAuthoritativePublishRequest>;
+
+export const zScryCheckRequest = z.object({
+    contractVersion: z.string().min(1),
+    publishMetadata: zAuthoritativePublishRequest.optional(),
+    record: zScryTranscriptRecord,
+    sessionDetail: zSessionDetailPayload,
+    transcriptId: zTranscriptID
+}).strict();
+
+export type ScryCheckRequest = z.infer<typeof zScryCheckRequest>;
 
 export const zWalkthroughStep = z.object({
     excerpt: z.string(),

@@ -76,6 +76,26 @@ visibility_intents:
       classification: must-pass
       provenance: {source: requirement, ref: public widening remains separate from publish}
       mutation: {description: changes only intent from private to public}
+client_infos:
+  cases:
+    - name: omitted-client
+      input: ''
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: publishing client excluded from content operation currency}
+      mutation: {description: omits the publishing client}
+    - name: peasant-client
+      input: '{"name":"peasant","version":"0.13.0"}'
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: publishing client excluded from content operation currency}
+      mutation: {description: supplies a publishing client}
+    - name: newer-peasant-client
+      input: '{"name":"peasant","version":"0.14.0-rc.1"}'
+      expected: {go_valid: true, zod_valid: true, fingerprint: 1419947a5181f283885477be5d27eec73fdef68fc24612ea3a9b705c501f346d}
+      classification: must-pass
+      provenance: {source: requirement, ref: publishing client excluded from content operation currency}
+      mutation: {description: changes only the client version}
 fingerprint_mutations:
   base: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":null,"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
   cases:
@@ -251,6 +271,102 @@ metadata:
       classification: must-fail
       provenance: {source: boundary, ref: canonical harness}
       mutation: {description: substitutes unknown nested harness}
+    - name: client-info-is-accepted
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.13.0"}}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a well formed client member}
+    - name: client-prerelease-build-version-is-accepted
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.13.0-dev.1+abc1234"}}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a well formed client member}
+    - name: client-describe-without-v-is-accepted
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.13.0-4-gabc1234-dirty"}}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a well formed client member}
+    - name: client-64-byte-name-is-accepted
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"paaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","version":"0.13.0"}}'
+      expected: {go_valid: true, zod_valid: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a well formed client member}
+    - name: client-null-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":null}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-empty-name-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"","version":"0.13.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-65-byte-name-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"paaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","version":"0.13.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-whitespace-name-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant cli","version":"0.13.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-uppercase-name-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"Peasant","version":"0.13.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-leading-v-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"v0.13.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-dev-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"dev"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-describe-with-v-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"v0.13.0-4-gabc1234-dirty"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-two-part-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.13"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-leading-zero-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.013.0"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-oversized-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"0.13.0+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
+    - name: client-missing-version-is-rejected
+      input: '{"model":{"harness":"claude-code","model":"claude-opus-4-6"},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant"}}'
+      expected: {go_valid: false, zod_valid: false}
+      classification: must-fail
+      provenance: {source: boundary, ref: self-reported publishing client identity}
+      mutation: {description: supplies a malformed or missing client member}
 operations:
   cases:
     - name: canonical-private-operation
@@ -375,11 +491,12 @@ responses:
       classification: must-fail
       provenance: {source: boundary, ref: authoritative blob facts}
       mutation: {description: empties blob key}
-strict_components: [identity, model, timestamp, source, git, commit, project, stats, quality, diagnostics, diagnostic-entry, entries, subagents]
-strict_schema_components: [AuthoritativeSessionIdentity, AuthoritativeModelInfo, AuthoritativeTimestampInfo, AuthoritativeSourceInfo, AuthoritativeGitContext, AuthoritativeCommitInfo, AuthoritativeProjectContext, AuthoritativeSessionStats, AuthoritativeQualityMetrics, AuthoritativeDiagnosticsInfo, AuthoritativeDiagnosticEntry, AuthoritativeSessionEntry, AuthoritativeSubagentRef, CanonicalPublishGitContext, CanonicalPublishReplacement]
+strict_components: [identity, model, timestamp, source, git, commit, project, stats, quality, diagnostics, diagnostic-entry, entries, subagents, client]
+strict_schema_components: [AuthoritativeSessionIdentity, AuthoritativeModelInfo, AuthoritativeTimestampInfo, AuthoritativeSourceInfo, AuthoritativeGitContext, AuthoritativeCommitInfo, AuthoritativeProjectContext, AuthoritativeSessionStats, AuthoritativeQualityMetrics, AuthoritativeDiagnosticsInfo, AuthoritativeDiagnosticEntry, AuthoritativeSessionEntry, AuthoritativeSubagentRef, CanonicalPublishGitContext, CanonicalPublishReplacement, AuthoritativeClientInfo]
 nested_unknowns:
   metadata_base: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[],"associations":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[],"subagents":[],"diagnostics":{"warnings":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
   operation_base: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":1},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[],"subagents":[],"diagnostics":{"warnings":[]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+  metadata_only_components: [client]
   cases:
     - {name: identity/metadata, arm: metadata, path: identity.extra, go_valid: false, zod_valid: false}
     - {name: model/metadata, arm: metadata, path: model.extra, go_valid: false, zod_valid: false}
@@ -394,6 +511,7 @@ nested_unknowns:
     - {name: diagnostic-entry/metadata, arm: metadata, path: diagnostics.warnings, value: '[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry","extra":true}]', go_valid: false, zod_valid: false}
     - {name: entries/metadata, arm: metadata, path: entries, value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0,"extraField":true}]', go_valid: false, zod_valid: false}
     - {name: subagents/metadata, arm: metadata, path: subagents, value: '[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba","extra":true}]', go_valid: false, zod_valid: false}
+    - {name: client/metadata, arm: metadata, path: client, value: '{"name":"peasant","version":"0.13.0","extra":true}', go_valid: false, zod_valid: false}
     - {name: identity/operation, arm: operation, path: replacement.identity.extra, go_valid: false, zod_valid: false}
     - {name: model/operation, arm: operation, path: replacement.model.extra, go_valid: false, zod_valid: false}
     - {name: timestamp/operation, arm: operation, path: replacement.timestamp.extra, go_valid: false, zod_valid: false}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
 )
@@ -57,6 +58,38 @@ type AuthoritativePublishRequest struct {
 	License          License                      `json:"license,omitempty"`
 	ContentHash      TranscriptContentHash        `json:"contentHash" required:"true"`
 	VisibilityIntent VisibilityIntent             `json:"visibilityIntent,omitempty"`
+	Client           *AuthoritativeClientInfo     `json:"client,omitempty"`
+}
+
+// authoritativeClientVersionPattern is SemVer 2.0 without a leading v. The
+// struct tag below repeats it because tags cannot reference constants; a test
+// keeps them equal. Validate uses the constant.
+const authoritativeClientVersionPattern = `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$`
+
+const authoritativeClientNamePattern = `^[a-z][a-z0-9-]{0,63}$`
+
+var (
+	authoritativeClientVersionRE = regexp.MustCompile(authoritativeClientVersionPattern)
+	authoritativeClientNameRE    = regexp.MustCompile(authoritativeClientNamePattern)
+)
+
+// AuthoritativeClientInfo names the program that built the publish request.
+// It is self-reported and unsigned: evidence for consistency checks, not proof.
+// It is outside the publish fingerprint.
+type AuthoritativeClientInfo struct {
+	Name    string `json:"name" minLength:"1" maxLength:"64" pattern:"^[a-z][a-z0-9-]{0,63}$"`
+	Version string `json:"version" minLength:"5" maxLength:"128" pattern:"^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"`
+}
+
+// Validate checks the byte bounds and both patterns.
+func (c AuthoritativeClientInfo) Validate() error {
+	if len(c.Name) < 1 || len(c.Name) > 64 || !authoritativeClientNameRE.MatchString(c.Name) {
+		return publicationError("authoritative publish request", "client.name is empty, longer than 64 bytes, or not lowercase letters, digits, and hyphens starting with a letter", "send a short lowercase program name such as peasant")
+	}
+	if len(c.Version) < 5 || len(c.Version) > 128 || !authoritativeClientVersionRE.MatchString(c.Version) {
+		return publicationError("authoritative publish request", "client.version is not SemVer 2.0 without a leading v, or is longer than 128 bytes", "send a version such as 0.13.0 or 0.13.0-dev.1+abc1234, or omit client")
+	}
+	return nil
 }
 
 // PublishResponse is the released rc11 response retained for source and frozen

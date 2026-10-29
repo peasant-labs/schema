@@ -110,7 +110,11 @@ const (
 	// the notification email and invitation-email preference on the caller's
 	// settings were added.
 	// Bumped to 0.31.0 for the optional unverified pull request read projection.
-	VillageAPIVersion = "0.31.0"
+	// Bumped to 0.32.0 for the owner integrity-check operation, the optional
+	// integrity field on the transcript metadata read, the Village-Content-Hash
+	// header on the content read, the stored publish metadata pull read, and the
+	// optional publishing client on publish metadata (additive = minor bump).
+	VillageAPIVersion = "0.32.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -271,5 +275,8 @@ const (
 	// ingest and push membership rather than browsing permission, without
 	// changing any field or enum.
 	// Bumped to 0.39.0 for unverified pull request evidence and exact source locators.
-	TypesVersion = "0.39.0"
+	// Bumped to 0.40.0 for the scry check request, response and health body, the
+	// transcript integrity types, and AuthoritativeClientInfo (additive = minor
+	// bump).
+	TypesVersion = "0.40.0"
 )

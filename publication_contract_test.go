@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -25,6 +26,7 @@ type publicationCorpus struct {
 	OwnerUpdates           testcase.Corpus[string, publicationVerdict]                  `yaml:"owner_updates"`
 	OwnerUpdateResponses   testcase.Corpus[string, publicationVerdict]                  `yaml:"owner_update_responses"`
 	VisibilityIntents      testcase.Corpus[schema.VisibilityIntent, publicationVerdict] `yaml:"visibility_intents"`
+	ClientInfos            testcase.Corpus[string, publicationVerdict]                  `yaml:"client_infos"`
 	Operations             testcase.Corpus[string, publicationVerdict]                  `yaml:"operations"`
 	Responses              testcase.Corpus[string, publicationVerdict]                  `yaml:"responses"`
 	FingerprintMutations   fingerprintMutationFixture                                   `yaml:"fingerprint_mutations"`
@@ -53,9 +55,11 @@ const (
 )
 
 type nestedUnknownFixture struct {
-	MetadataBase  string              `yaml:"metadata_base"`
-	OperationBase string              `yaml:"operation_base"`
-	Cases         []nestedUnknownCase `yaml:"cases"`
+	MetadataBase  string `yaml:"metadata_base"`
+	OperationBase string `yaml:"operation_base"`
+	// MetadataOnly names strict components that exist only on the metadata arm.
+	MetadataOnly []string            `yaml:"metadata_only_components"`
+	Cases        []nestedUnknownCase `yaml:"cases"`
 }
 type nestedUnknownCase struct {
 	Name     string `yaml:"name"`
@@ -107,6 +111,8 @@ func loadPublicationCorpus(t *testing.T) publicationCorpus {
 	assert.RequireValid(t, corpus.OwnerUpdateResponses)
 	assert.RequireMin(t, corpus.VisibilityIntents, 3)
 	assert.RequireValid(t, corpus.VisibilityIntents)
+	assert.RequireMin(t, corpus.ClientInfos, 3)
+	assert.RequireValid(t, corpus.ClientInfos)
 	assert.RequireMin(t, corpus.ParentIdentity, 6)
 	assert.RequireValid(t, corpus.ParentIdentity)
 	requireParentIdentityCoverage(t, corpus.ParentIdentity)
@@ -141,8 +147,8 @@ func loadPublicationCorpus(t *testing.T) publicationCorpus {
 			t.Fatalf("visibility_intents case %q must explicitly declare go_valid and zod_valid", row.Name)
 		}
 	}
-	if len(corpus.NestedUnknowns.Cases) != len(corpus.StrictComponents)*2 {
-		t.Fatalf("nested unknown inventory has %d rows, want two per %d strict nested components", len(corpus.NestedUnknowns.Cases), len(corpus.StrictComponents))
+	if want := len(corpus.StrictComponents)*2 - len(corpus.NestedUnknowns.MetadataOnly); len(corpus.NestedUnknowns.Cases) != want {
+		t.Fatalf("nested unknown inventory has %d rows, want %d (two per %d strict nested components, one for each of %d metadata-only components)", len(corpus.NestedUnknowns.Cases), want, len(corpus.StrictComponents), len(corpus.NestedUnknowns.MetadataOnly))
 	}
 	return corpus
 }
@@ -317,8 +323,18 @@ func TestPublicationContractCorpus_RejectsEveryNestedUnknownField(t *testing.T) 
 		component := strings.Split(row.Name, "/")[0]
 		seen[row.Arm][component] = struct{}{}
 	}
+	metadataOnly := map[string]struct{}{}
+	for _, component := range corpus.NestedUnknowns.MetadataOnly {
+		metadataOnly[component] = struct{}{}
+	}
 	for _, component := range corpus.StrictComponents {
 		for arm, covered := range seen {
+			if _, only := metadataOnly[component]; only && arm == "operation" {
+				if _, ok := covered[component]; ok {
+					t.Fatalf("metadata-only component %q has operation nested-unknown evidence", component)
+				}
+				continue
+			}
 			if _, ok := covered[component]; !ok {
 				t.Fatalf("strict component %q lacks %s nested-unknown evidence", component, arm)
 			}
@@ -430,6 +446,64 @@ func TestPublicationContractCorpus_VisibilityIntentExcludedFromFingerprint(t *te
 		if fingerprint.String() != row.Expected.Fingerprint {
 			t.Fatalf("visibility intent %q fingerprint=%s want %s", row.Input, fingerprint, row.Expected.Fingerprint)
 		}
+	}
+}
+
+func TestPublicationContractCorpus_ClientExcludedFromFingerprint(t *testing.T) {
+	corpus := loadPublicationCorpus(t)
+	operation, err := schema.DecodeCanonicalPublishOperation([]byte(corpus.Operations.Cases[0].Input))
+	if err != nil {
+		t.Fatalf("decode baseline operation: %v", err)
+	}
+	var baseline *schema.CanonicalPublishOperation
+	var baselineJSON []byte
+	for _, row := range corpus.ClientInfos.Cases {
+		request := schema.AuthoritativePublishRequest{
+			Identity: operation.Replacement.Identity, Model: operation.Replacement.Model, Timestamp: operation.Replacement.Timestamp,
+			Source: operation.Replacement.Source, Git: schema.AuthoritativeGitContext{Branch: operation.Replacement.Git.Branch, Remote: operation.Replacement.Git.Remote, Worktree: operation.Replacement.Git.Worktree, Tracking: operation.Replacement.Git.Tracking, Commits: operation.Replacement.Git.Commits, Associations: operation.Associations.Associations},
+			Project: operation.Replacement.Project, Stats: operation.Replacement.Stats, Quality: operation.Replacement.Quality, Entries: operation.Replacement.Entries, Subagents: operation.Replacement.Subagents, Diagnostics: operation.Replacement.Diagnostics,
+			ContentHash: operation.ContentHash}
+		if row.Input != "" {
+			var client schema.AuthoritativeClientInfo
+			if err := json.Unmarshal([]byte(row.Input), &client); err != nil {
+				t.Fatalf("client_infos %q: decode client: %v", row.Name, err)
+			}
+			if err := client.Validate(); err != nil {
+				t.Fatalf("client_infos %q: client is invalid: %v", row.Name, err)
+			}
+			request.Client = &client
+		}
+		canonical, canonicalErr := schema.CanonicalizePublishRequest(request)
+		if canonicalErr != nil {
+			t.Fatalf("canonicalize client %q: %v", row.Name, canonicalErr)
+		}
+		encoded, marshalErr := json.Marshal(canonical)
+		if marshalErr != nil {
+			t.Fatalf("marshal canonical operation for %q: %v", row.Name, marshalErr)
+		}
+		if bytes.Contains(encoded, []byte(`"client"`)) {
+			t.Fatalf("client %q leaked into the canonical operation: %s", row.Name, encoded)
+		}
+		if baseline == nil {
+			baseline, baselineJSON = &canonical, encoded
+		} else {
+			if !reflect.DeepEqual(*baseline, canonical) {
+				t.Fatalf("client %q changed the canonical operation", row.Name)
+			}
+			if !bytes.Equal(baselineJSON, encoded) {
+				t.Fatalf("client %q changed the canonical operation encoding", row.Name)
+			}
+		}
+		fingerprint, fingerprintErr := schema.FingerprintPublishOperation(canonical)
+		if fingerprintErr != nil {
+			t.Fatalf("fingerprint client %q: %v", row.Name, fingerprintErr)
+		}
+		if fingerprint.String() != row.Expected.Fingerprint {
+			t.Fatalf("client %q fingerprint=%s want %s", row.Name, fingerprint, row.Expected.Fingerprint)
+		}
+	}
+	if corpus.ClientInfos.Cases[0].Input != "" {
+		t.Fatal("client_infos must begin with the omitted-client baseline row")
 	}
 }
 

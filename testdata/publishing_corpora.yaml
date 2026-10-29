@@ -13,3 +13,4 @@ corpora:
   - testdata/pulls/transcript_pull_requests.yaml
   - testdata/pulls/personal_stats.yaml
   - testdata/invitations/collective_invitations.yaml
+  - testdata/integrity/transcript_integrity.yaml

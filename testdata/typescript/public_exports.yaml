@@ -10,13 +10,13 @@ aliases:
     surfaces: [local, village]
 constants:
   - name: VillageAPIVersion
-    value: 0.31.0
+    value: 0.32.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
     value: 0.26.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.39.0
+    value: 0.40.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"
