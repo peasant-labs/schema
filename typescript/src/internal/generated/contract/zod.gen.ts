@@ -1310,9 +1310,9 @@ export type ModelID = z.infer<typeof zModelID>;
 
 export const zAuthoritativeModelInfo = z.object({
     harness: zHarness,
+    harnessVersion: z.string().optional(),
     hostSlug: zHostSlug.optional(),
-    model: zModelID,
-    version: z.string().optional()
+    model: zModelID
 }).strict();
 
 export type AuthoritativeModelInfo = z.infer<typeof zAuthoritativeModelInfo>;

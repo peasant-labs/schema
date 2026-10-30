@@ -1,0 +1,1090 @@
+# Every key an authoritative publication decoder accepts must survive a
+# decode and a re-encode. Each case sets one accepted key to a non-empty value
+# in its document's base, decodes it with that document's decoder, encodes the
+# result with encoding/json, and requires the same value back at the same
+# path. The required case names are derived in the test from the decoder field
+# sets, so a newly accepted key without a case here fails.
+#
+# Case names are <document>/<field set>/<key>. A key the contract deliberately
+# discards is listed under discarded with its reason instead of a case.
+documents:
+  request: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":2},"source":{"format":"jsonl"},"git":{"commits":[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}],"associations":[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0}],"subagents":[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}],"diagnostics":{"warnings":[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","client":{"name":"peasant","version":"1.0.0"}}'
+  operation: '{"replacement":{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":9},"model":{"harness":"claude-code","model":"claude-opus-4-6"},"timestamp":{"start":1,"end":2},"source":{"format":"jsonl"},"git":{"branch":null,"remote":null,"worktree":null,"tracking":null,"commits":[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]},"project":{"hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","name":"repo"},"stats":{"turnCount":0,"toolCallCount":0,"subagentCount":0,"durationMs":0,"tokensIn":0,"tokensOut":0},"quality":{},"entries":[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":0,"harness":"claude-code","entryType":"text","role":"user","hasToolUse":false,"hasThinking":false,"isError":false,"depth":0}],"subagents":[{"sessionId":"00000000-0000-4000-8000-000000000001","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}],"diagnostics":{"warnings":[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}]}},"license":{"kind":"preserve","license":null},"associations":{"kind":"append","associations":[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]},"contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"}'
+  response: '{"transcriptId":"99d59925-36bc-424c-a789-8be54d9702ba","transcriptUrl":"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba","visibility":"private","contentHash":"a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","requestOperationFingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","applied":{"license":null,"associations":[],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":[],"derivedTitle":null,"visibility":"private","schemaVersion":"9"}},"blobKey":"transcripts/x","blobSizeBytes":0,"publishedAt":1,"updatedAt":1,"created":true}'
+keys:
+  cases:
+    - name: request/request/identity
+      input: {value: '{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":10}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.identity to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/model
+      input: {value: '{"harness":"claude-code","model":"claude-sonnet-4","harnessVersion":"2.1.314"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.model to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/contentHash
+      input: {value: '"b7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.contentHash to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/visibilityIntent
+      input: {value: '"public"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.visibilityIntent to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/client
+      input: {value: '{"name":"peasant","version":"1.2.3"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.client to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/timestamp
+      input: {value: '{"start":3,"end":4}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.timestamp to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/source
+      input: {value: '{"format":"json","filePath":"session.json"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.source to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/git
+      input: {value: '{"branch":"main","remote":"origin","worktree":"/work","tracking":"origin/main","commits":[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}],"associations":[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.git to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/project
+      input: {value: '{"hash":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","name":"other"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.project to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/stats
+      input: {value: '{"turnCount":1,"inputSubmissionCount":2,"toolCallCount":3,"subagentCount":1,"durationMs":5,"tokensIn":6,"tokensOut":7,"thoughtTokens":8,"cachedReadTokens":9,"cachedWriteTokens":10}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.stats to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/quality
+      input: {value: '{"turnCount":1}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.quality to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/entries
+      input: {value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":1,"harness":"claude-code","entryType":"tool_use","role":"assistant","timestampMs":5,"contentPreview":"preview","tokensIn":3,"tokensOut":4,"hasToolUse":true,"toolKind":"read","toolNamesCsv":"Read","hasThinking":true,"isError":true,"stopReason":"end_turn","rawByteLength":9,"toolCallId":"call-1","entryId":"e1","parentEntryId":"e0","depth":1,"parentIndex":0,"toolInput":"{}","toolOutput":"{}","extra":"{}","partType":"tool_use","sourceEntryRef":"e1","provenance":{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"}}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.entries to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/subagents
+      input: {value: '[{"sessionId":"00000000-0000-4000-8000-000000000002","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.subagents to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/diagnostics
+      input: {value: '{"warnings":[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}],"partial":true}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.diagnostics to a non-empty value and requires it back after decode and re-encode}
+    - name: request/request/license
+      input: {value: '"CC-BY-4.0"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets request.license to a non-empty value and requires it back after decode and re-encode}
+    - name: request/client/name
+      input: {value: '"peasant"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets client.name to a non-empty value and requires it back after decode and re-encode}
+    - name: request/client/version
+      input: {value: '"1.2.3"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets client.version to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/sessionId
+      input: {value: '"99d59925-36bc-424c-a789-8be54d9702ba"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.sessionId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/schemaVersion
+      input: {value: '10'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.schemaVersion to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/parentSessionId
+      input: {value: '"00000000-0000-4000-8000-000000000001"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.parentSessionId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/rootSessionId
+      input: {value: '"00000000-0000-4000-8000-000000000001"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.rootSessionId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/purpose
+      input: {value: '"delegated_work"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.purpose to a non-empty value and requires it back after decode and re-encode}
+    - name: request/identity/relationships
+      input: {value: '[{"kind":"started_by","targetState":"unknown","evidence":"unknown"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets identity.relationships to a non-empty value and requires it back after decode and re-encode}
+    - name: request/model/harness
+      input: {value: '"claude-code"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets model.harness to a non-empty value and requires it back after decode and re-encode}
+    - name: request/model/model
+      input: {value: '"claude-sonnet-4"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets model.model to a non-empty value and requires it back after decode and re-encode}
+    - name: request/model/harnessVersion
+      input: {value: '"2.1.314"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets model.harnessVersion to a non-empty value and requires it back after decode and re-encode}
+    - name: request/model/hostSlug
+      input: {value: '"example"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets model.hostSlug to a non-empty value and requires it back after decode and re-encode}
+    - name: request/timestamp/start
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets timestamp.start to a non-empty value and requires it back after decode and re-encode}
+    - name: request/timestamp/end
+      input: {value: '5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets timestamp.end to a non-empty value and requires it back after decode and re-encode}
+    - name: request/timestamp/ingested
+      input: {value: '6'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets timestamp.ingested to a non-empty value and requires it back after decode and re-encode}
+    - name: request/source/format
+      input: {value: '"json"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets source.format to a non-empty value and requires it back after decode and re-encode}
+    - name: request/source/filePath
+      input: {value: '"session.json"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets source.filePath to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/branch
+      input: {value: '"main"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.branch to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/remote
+      input: {value: '"origin"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.remote to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/worktree
+      input: {value: '"/work"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.worktree to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/tracking
+      input: {value: '"origin/main"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.tracking to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/commits
+      input: {value: '[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.commits to a non-empty value and requires it back after decode and re-encode}
+    - name: request/git/associations
+      input: {value: '[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.associations to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/hash
+      input: {value: '"def"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.hash to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/message
+      input: {value: '"n"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.message to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/authorName
+      input: {value: '"b"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.authorName to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/authorEmail
+      input: {value: '"b@example.com"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.authorEmail to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/commitTime
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.commitTime to a non-empty value and requires it back after decode and re-encode}
+    - name: request/commit/authorTime
+      input: {value: '3'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets commit.authorTime to a non-empty value and requires it back after decode and re-encode}
+    - name: request/project/hash
+      input: {value: '"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets project.hash to a non-empty value and requires it back after decode and re-encode}
+    - name: request/project/filePath
+      input: {value: '"/work/repo"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets project.filePath to a non-empty value and requires it back after decode and re-encode}
+    - name: request/project/name
+      input: {value: '"other"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets project.name to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/turnCount
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.turnCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/inputSubmissionCount
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.inputSubmissionCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/toolCallCount
+      input: {value: '3'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.toolCallCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/subagentCount
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.subagentCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/durationMs
+      input: {value: '5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.durationMs to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/tokensIn
+      input: {value: '6'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.tokensIn to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/tokensOut
+      input: {value: '7'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.tokensOut to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/thoughtTokens
+      input: {value: '8'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.thoughtTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/cachedReadTokens
+      input: {value: '9'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.cachedReadTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/cachedWriteTokens
+      input: {value: '10'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.cachedWriteTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/turnCount
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.turnCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/subagentCount
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.subagentCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/totalTokens
+      input: {value: '3'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.totalTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/inputTokens
+      input: {value: '4'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.inputTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/outputTokens
+      input: {value: '5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.outputTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/toolCalls
+      input: {value: '6'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.toolCalls to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/titleGenerated
+      input: {value: '"title"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.titleGenerated to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/outcome
+      input: {value: '"resolved"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.outcome to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/filesTouched
+      input: {value: '7'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.filesTouched to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/linesChanged
+      input: {value: '8'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.linesChanged to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/retryLoops
+      input: {value: '9'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.retryLoops to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/retryTokensWasted
+      input: {value: '10'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.retryTokensWasted to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/withinSessionReverts
+      input: {value: '11'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.withinSessionReverts to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/signalDensity
+      input: {value: '0.5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.signalDensity to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/specQualityScore
+      input: {value: '0.25'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.specQualityScore to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/explorationRatio
+      input: {value: '0.75'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.explorationRatio to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/scopeBreadth
+      input: {value: '12'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.scopeBreadth to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/discoveryTurns
+      input: {value: '13'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.discoveryTurns to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/durationMinutes
+      input: {value: '1.5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.durationMinutes to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m2TokenOutcomeRatio
+      input: {value: '2.5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m2TokenOutcomeRatio to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m3UniqueToolCount
+      input: {value: '14'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m3UniqueToolCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m4ErrorRecoveryCount
+      input: {value: '15'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m4ErrorRecoveryCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m4ConsecutiveErrorMax
+      input: {value: '16'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m4ConsecutiveErrorMax to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m5ContextUtilizationPct
+      input: {value: '42.5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m5ContextUtilizationPct to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m5PeakContextTokens
+      input: {value: '17'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m5PeakContextTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m5AvgMessageTokens
+      input: {value: '18'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m5AvgMessageTokens to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m6OutputSurvivalPct
+      input: {value: '87.5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m6OutputSurvivalPct to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m6LinesSurvived
+      input: {value: '19'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m6LinesSurvived to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m6LinesTotal
+      input: {value: '20'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m6LinesTotal to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m7SpecWordCount
+      input: {value: '21'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m7SpecWordCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m7SpecHasExamples
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m7SpecHasExamples to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/m7SpecHasConstraints
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.m7SpecHasConstraints to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costInputUsd
+      input: {value: '0.125'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costInputUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costOutputUsd
+      input: {value: '0.375'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costOutputUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costReasoningUsd
+      input: {value: '0.0625'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costReasoningUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costCacheReadUsd
+      input: {value: '0.03125'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costCacheReadUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costCacheWriteUsd
+      input: {value: '0.015625'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costCacheWriteUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costTotalUsd
+      input: {value: '0.609375'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costTotalUsd to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/costModelId
+      input: {value: '"claude-opus-4-6"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.costModelId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/scope
+      input: {value: '"session"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.scope to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/computedAt
+      input: {value: '1700000000000'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.computedAt to a non-empty value and requires it back after decode and re-encode}
+    - name: request/quality/computeVersion
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets quality.computeVersion to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/sessionId
+      input: {value: '"99d59925-36bc-424c-a789-8be54d9702ba"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.sessionId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/entryIndex
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.entryIndex to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/harness
+      input: {value: '"claude-code"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.harness to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/entryType
+      input: {value: '"tool_use"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.entryType to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/role
+      input: {value: '"assistant"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.role to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/timestampMs
+      input: {value: '5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.timestampMs to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/contentPreview
+      input: {value: '"preview"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.contentPreview to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/tokensIn
+      input: {value: '3'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.tokensIn to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/tokensOut
+      input: {value: '4'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.tokensOut to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/hasToolUse
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.hasToolUse to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/toolKind
+      input: {value: '"read"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.toolKind to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/toolNamesCsv
+      input: {value: '"Read"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.toolNamesCsv to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/hasThinking
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.hasThinking to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/isError
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.isError to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/stopReason
+      input: {value: '"end_turn"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.stopReason to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/rawByteLength
+      input: {value: '9'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.rawByteLength to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/toolCallId
+      input: {value: '"call-1"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.toolCallId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/entryId
+      input: {value: '"e1"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.entryId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/parentEntryId
+      input: {value: '"e0"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.parentEntryId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/depth
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.depth to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/parentIndex
+      input: {value: '0'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.parentIndex to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/toolInput
+      input: {value: '"{}"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.toolInput to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/toolOutput
+      input: {value: '"{}"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.toolOutput to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/extra
+      input: {value: '"{}"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.extra to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/partType
+      input: {value: '"tool_use"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.partType to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/sourceEntryRef
+      input: {value: '"e1"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.sourceEntryRef to a non-empty value and requires it back after decode and re-encode}
+    - name: request/entry/provenance
+      input: {value: '{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets entry.provenance to a non-empty value and requires it back after decode and re-encode}
+    - name: request/subagent/sessionId
+      input: {value: '"00000000-0000-4000-8000-000000000002"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets subagent.sessionId to a non-empty value and requires it back after decode and re-encode}
+    - name: request/subagent/parentUuid
+      input: {value: '"99d59925-36bc-424c-a789-8be54d9702ba"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets subagent.parentUuid to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnostics/warnings
+      input: {value: '[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnostics.warnings to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnostics/partial
+      input: {value: 'true'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnostics.partial to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnosticEntry/errorType
+      input: {value: '"copy_failed"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnosticEntry.errorType to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnosticEntry/location
+      input: {value: '"debug/out.json"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnosticEntry.location to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnosticEntry/message
+      input: {value: '"copy failed"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnosticEntry.message to a non-empty value and requires it back after decode and re-encode}
+    - name: request/diagnosticEntry/remediation
+      input: {value: '"retry the copy"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets diagnosticEntry.remediation to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/operation/replacement
+      input: {value: '{"identity":{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":10},"model":{"harness":"claude-code","model":"claude-sonnet-4","harnessVersion":"2.1.314"},"timestamp":{"start":3,"end":4},"source":{"format":"json","filePath":"session.json"},"git":{"branch":"main","remote":"origin","worktree":"/work","tracking":"origin/main","commits":[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]},"project":{"hash":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","name":"other"},"stats":{"turnCount":1,"inputSubmissionCount":2,"toolCallCount":3,"subagentCount":1,"durationMs":5,"tokensIn":6,"tokensOut":7,"thoughtTokens":8,"cachedReadTokens":9,"cachedWriteTokens":10},"quality":{"turnCount":1},"entries":[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":1,"harness":"claude-code","entryType":"tool_use","role":"assistant","timestampMs":5,"contentPreview":"preview","tokensIn":3,"tokensOut":4,"hasToolUse":true,"toolKind":"read","toolNamesCsv":"Read","hasThinking":true,"isError":true,"stopReason":"end_turn","rawByteLength":9,"toolCallId":"call-1","entryId":"e1","parentEntryId":"e0","depth":1,"parentIndex":0,"toolInput":"{}","toolOutput":"{}","extra":"{}","partType":"tool_use","sourceEntryRef":"e1","provenance":{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"}}],"subagents":[{"sessionId":"00000000-0000-4000-8000-000000000002","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}],"diagnostics":{"warnings":[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}],"partial":true}}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets operation.replacement to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/operation/license
+      input: {value: '{"kind":"replace","license":"CC-BY-4.0"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets operation.license to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/operation/associations
+      input: {value: '{"kind":"append","associations":[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets operation.associations to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/operation/contentHash
+      input: {value: '"b7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets operation.contentHash to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/identity
+      input: {value: '{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","schemaVersion":10}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.identity to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/model
+      input: {value: '{"harness":"claude-code","model":"claude-sonnet-4","harnessVersion":"2.1.314"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: bug, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.model to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/timestamp
+      input: {value: '{"start":3,"end":4}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.timestamp to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/source
+      input: {value: '{"format":"json","filePath":"session.json"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.source to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/git
+      input: {value: '{"branch":"main","remote":"origin","worktree":"/work","tracking":"origin/main","commits":[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.git to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/project
+      input: {value: '{"hash":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","name":"other"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.project to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/stats
+      input: {value: '{"turnCount":1,"inputSubmissionCount":2,"toolCallCount":3,"subagentCount":1,"durationMs":5,"tokensIn":6,"tokensOut":7,"thoughtTokens":8,"cachedReadTokens":9,"cachedWriteTokens":10}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.stats to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/quality
+      input: {value: '{"turnCount":1}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.quality to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/entries
+      input: {value: '[{"sessionId":"99d59925-36bc-424c-a789-8be54d9702ba","entryIndex":1,"harness":"claude-code","entryType":"tool_use","role":"assistant","timestampMs":5,"contentPreview":"preview","tokensIn":3,"tokensOut":4,"hasToolUse":true,"toolKind":"read","toolNamesCsv":"Read","hasThinking":true,"isError":true,"stopReason":"end_turn","rawByteLength":9,"toolCallId":"call-1","entryId":"e1","parentEntryId":"e0","depth":1,"parentIndex":0,"toolInput":"{}","toolOutput":"{}","extra":"{}","partType":"tool_use","sourceEntryRef":"e1","provenance":{"origin":"unknown","actor":"unknown","delivery":"unknown","ownership":"uncertain","evidence":"unknown","inputModality":"unknown"}}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.entries to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/subagents
+      input: {value: '[{"sessionId":"00000000-0000-4000-8000-000000000002","parentUuid":"99d59925-36bc-424c-a789-8be54d9702ba"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.subagents to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/replacement/diagnostics
+      input: {value: '{"warnings":[{"errorType":"parse","location":"line 1","message":"warning","remediation":"retry"}],"partial":true}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets replacement.diagnostics to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/git/branch
+      input: {value: '"main"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.branch to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/git/remote
+      input: {value: '"origin"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.remote to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/git/worktree
+      input: {value: '"/work"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.worktree to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/git/tracking
+      input: {value: '"origin/main"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.tracking to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/git/commits
+      input: {value: '[{"hash":"abc","message":"m","authorName":"a","authorEmail":"a@example.com","commitTime":1,"authorTime":1}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets git.commits to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/license/kind
+      input: {value: '"preserve"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets license.kind to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/license/license
+      input: {value: '"CC-BY-4.0"', context: [{path: license.kind, value: '"replace"'}]}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets license.license to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/associations/kind
+      input: {value: '"append"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets associations.kind to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/associations/associations
+      input: {value: '[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets associations.associations to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/association/id
+      input: {value: '"assoc-session-b:commit-b"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets association.id to a non-empty value and requires it back after decode and re-encode}
+    - name: operation/association/observedCommitHash
+      input: {value: '"commit-b"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets association.observedCommitHash to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/transcriptId
+      input: {value: '"99d59925-36bc-424c-a789-8be54d9702ba"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.transcriptId to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/transcriptUrl
+      input: {value: '"https://village.example/transcripts/99d59925-36bc-424c-a789-8be54d9702ba"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.transcriptUrl to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/visibility
+      input: {value: '"private"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.visibility to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/contentHash
+      input: {value: '"b7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.contentHash to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/requestOperationFingerprint
+      input: {value: '"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.requestOperationFingerprint to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/applied
+      input: {value: '{"license":"CC-BY-4.0","associations":[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}],"normalizedValues":{"rootHarness":"claude-code","entryHarnesses":["claude-code"],"derivedTitle":"title","visibility":"private","schemaVersion":"10"}}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.applied to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/blobKey
+      input: {value: '"transcripts/y"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.blobKey to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/blobSizeBytes
+      input: {value: '5'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.blobSizeBytes to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/publishedAt
+      input: {value: '1'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.publishedAt to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/updatedAt
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.updatedAt to a non-empty value and requires it back after decode and re-encode}
+    - name: response/response/created
+      input: {value: 'false'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets response.created to a non-empty value and requires it back after decode and re-encode}
+    - name: response/applied/license
+      input: {value: '"CC-BY-4.0"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets applied.license to a non-empty value and requires it back after decode and re-encode}
+    - name: response/applied/associations
+      input: {value: '[{"id":"assoc-session-a:commit-a","observedCommitHash":"commit-a"}]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets applied.associations to a non-empty value and requires it back after decode and re-encode}
+    - name: response/applied/normalizedValues
+      input: {value: '{"rootHarness":"claude-code","entryHarnesses":["claude-code"],"derivedTitle":"title","visibility":"private","schemaVersion":"10"}'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets applied.normalizedValues to a non-empty value and requires it back after decode and re-encode}
+    - name: response/normalizedValues/rootHarness
+      input: {value: '"claude-code"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets normalizedValues.rootHarness to a non-empty value and requires it back after decode and re-encode}
+    - name: response/normalizedValues/entryHarnesses
+      input: {value: '["claude-code"]'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets normalizedValues.entryHarnesses to a non-empty value and requires it back after decode and re-encode}
+    - name: response/normalizedValues/derivedTitle
+      input: {value: '"title"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets normalizedValues.derivedTitle to a non-empty value and requires it back after decode and re-encode}
+    - name: response/normalizedValues/visibility
+      input: {value: '"private"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets normalizedValues.visibility to a non-empty value and requires it back after decode and re-encode}
+    - name: response/normalizedValues/schemaVersion
+      input: {value: '"10"'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets normalizedValues.schemaVersion to a non-empty value and requires it back after decode and re-encode}
+discarded: []

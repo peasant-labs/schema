@@ -101,6 +101,7 @@ fingerprint_mutations:
   cases:
     - {name: identity, path: replacement.identity.schemaVersion, value: '10', fingerprint: c2aaf3b82c9b4519cdc6ef75a9fd2bacf04dfaee1f19cd4d443714218a597a66}
     - {name: model, path: replacement.model.model, value: '"claude-sonnet-4"', fingerprint: 5cc39d7d2f43a701cd6cad0616e3d6df874402ce318db32f1126fe594b7e871a}
+    - {name: harness-version, path: replacement.model.harnessVersion, value: '"2.1.314"', fingerprint: 216f5256f70390fd340e9ef1303e4256ca555c63355b48cb701793bfdb1da3d7}
     - {name: timestamp, path: replacement.timestamp.end, value: '2', fingerprint: 1ea085a09e63ee602632775d384f88f21dbe73ad5a48296b313f936f952f4601}
     - {name: source, path: replacement.source.filePath, value: '"session.jsonl"', fingerprint: 65b380b072a364ecca28e46bd1ce68f8bf4b52c8609da93b9f61d7d2f7e5f2e0}
     - {name: git-context, path: replacement.git.branch, value: '"main"', fingerprint: 0cb52153ae8464744b811adf898c35cc20f835a2dafe0b441b9db065524c781f}
