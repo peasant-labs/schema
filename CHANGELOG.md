@@ -5,6 +5,29 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Fixed
+
+- **Breaking (wire key):** `AuthoritativeModelInfo` is its own struct and keys
+  the harness version `harnessVersion`, the key the authoritative publish
+  decoders accept. It was `type AuthoritativeModelInfo ModelInfo`, keyed
+  `version`, so `DecodeAuthoritativePublishRequest` and
+  `DecodeCanonicalPublishOperation` accepted `model.harnessVersion` and dropped
+  its value, and an encoded request that carried a version used `version`,
+  which the decoders refuse. `ModelInfo` (the legacy `PublishRequest` model)
+  keeps `version`. The field names and types are unchanged, so Go conversions
+  between the two structs still compile.
+- Village API 0.34.0 and Types 0.42.0 publish the same change:
+  `SchemaAuthoritativeModelInfo` declares `harnessVersion` in place of
+  `version`, in the OpenAPI documents, the publish request JSON Schema and the
+  `zAuthoritativeModelInfo` Zod schema.
+- Publish fingerprints: the canonical encoding is unchanged. A request without
+  a harness version keeps its fingerprint. A request with a harness version
+  now fingerprints the version, so its fingerprint differs from the one
+  computed for the same request before this fix, when the version was dropped.
+
+The released specs (Local API 0.26.0, Village API 0.33.0, Types 0.41.0) are
+unchanged.
+
 ## [v0.38.0] - 2026-10-29
 
 ### Changed
