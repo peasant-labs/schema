@@ -127,7 +127,19 @@ type AuthoritativeSessionIdentity struct {
 	Relationships   []SessionRelationship `json:"relationships,omitempty"`
 	SchemaVersion   int                   `json:"schemaVersion"`
 }
-type AuthoritativeModelInfo ModelInfo
+
+// AuthoritativeModelInfo is the successor publication model. It carries the
+// same values as ModelInfo, but the harness version is keyed harnessVersion,
+// the key the successor decoders accept; ModelInfo keeps the legacy key
+// version. The two structs have identical field names and types, so Go
+// conversions between them keep compiling.
+type AuthoritativeModelInfo struct {
+	Harness        Harness  `json:"harness" required:"true"`
+	Model          ModelID  `json:"model" required:"true"`
+	HarnessVersion string   `json:"harnessVersion,omitempty"`
+	HostSlug       HostSlug `json:"hostSlug,omitempty"`
+}
+
 type AuthoritativeTimestampInfo TimestampInfo
 type AuthoritativeSourceInfo SourceInfo
 type AuthoritativeCommitInfo CommitInfo
