@@ -5,6 +5,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.39.0] - 2026-10-30
+
 ### Fixed
 
 - **Breaking (wire key):** `AuthoritativeModelInfo` is its own struct and keys
@@ -24,9 +26,6 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   a harness version keeps its fingerprint. A request with a harness version
   now fingerprints the version, so its fingerprint differs from the one
   computed for the same request before this fix, when the version was dropped.
-
-The released specs (Local API 0.26.0, Village API 0.33.0, Types 0.41.0) are
-unchanged.
 
 ## [v0.38.0] - 2026-10-29
 
