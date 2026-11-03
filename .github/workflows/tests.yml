@@ -125,6 +125,16 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
+      # GitHub cache archives are not signed Nix substitutes. Restore only in
+      # these ephemeral, read-only test jobs; PR-scoped caches can be restored
+      # by the same PR, but not by the base branch or release/tag workflows.
+      # Only a successful develop push can save a cache for other PRs to use.
+      - name: Restore Nix store cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        with:
+          primary-key: nix-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
+
       - name: Cache Go build + modules
         uses: actions/cache@v4
         with:
@@ -166,6 +176,14 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+
+      # Same ephemeral test-only archive as make check, never a signed substitute.
+      # This PR-only job restores but does not save the Nix store cache.
+      - name: Restore Nix store cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+        with:
+          primary-key: nix-store-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          save: false
 
       - name: Cache Go build + modules
         uses: actions/cache@v4
