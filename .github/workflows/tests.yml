@@ -1,8 +1,7 @@
 name: Tests
 
 # The schema repo quality gate. Mirrors peasant's tests.yml but for a
-# contract-only leaf: NO web/pnpm jobs, NO CGO=0 redact job (the leaf is pure Go,
-# ships no binary). Two jobs:
+# contract-only leaf with TypeScript package checks and no binary build. Two jobs:
 #   - check          : `nix develop -c make check` — gofmt + vet + the release-
 #                      workflow guard + `go test -race ./...` (which includes the
 #                      leaf-audit test and the oasdiff/go-apidiff synthetic-break
@@ -15,10 +14,8 @@ name: Tests
 #
 # Everything runs through the project's own nix dev shell so the toolchain (Go,
 # oasdiff, go-apidiff, vacuum, actionlint, …) matches local exactly. The jobs
-# route to the organization self-hosted pool (self-hosted,container) when a runner
-# is online, falling back to hosted ubuntu-latest otherwise; the
-# determine-runner job delegates to the shared reusable router
-# (peasant-labs/infra runner-router-v1) that picks between them.
+# use the shared reusable router to select the MicroVM pool when available or
+# fall back to hosted ubuntu-latest.
 on:
   pull_request:
     paths:
@@ -100,7 +97,7 @@ permissions:
 
 jobs:
   determine-runner:
-    uses: peasant-labs/infra/.github/workflows/runner-router.yml@runner-router-v1
+    uses: peasant-labs/infra/.github/workflows/runner-router.yml@0233bce3b714e3200a63fab0568a9815e8fca72f
     with:
       fallback: '["ubuntu-latest"]'
     secrets:
