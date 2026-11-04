@@ -2093,7 +2093,7 @@ export interface operations {
             query: {
                 /** @description Search query (min 2 chars; whitespace tokens ANDed) */
                 q: string;
-                /** @description Max results (default 20, capped at 50) */
+                /** @description Max results (default 20, capped at 500) */
                 limit?: number;
                 /** @description Set to grouped to return owner-nested helper groups */
                 view?: "grouped";

@@ -5,6 +5,18 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+## [v0.40.0] - 2026-11-03
+
+### Changed
+
+- Local API 0.27.0 documents the `GET /api/v1/search` result limit as
+  "default 20, capped at 500" instead of 50. The cap bounds one ranked read
+  (`bm25` over the match set plus a snippet per row), not the number of
+  reachable results, which stay available through `offset` paging. A consumer
+  that enforces the published number therefore serves up to 500 rows per page on
+  both the flat and grouped views. The default of 20 is unchanged.
+- Local API 0.26.0 is retired and byte-frozen.
+
 ## [v0.39.0] - 2026-10-30
 
 ### Fixed

@@ -350,7 +350,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		"searchMessages", "Full-text search across recorded (redacted) message entries; matches the first ~2000 chars of each turn plus truncated tool input/output. The saved ingestion selection never excludes an indexed entry that matches the query. The search index and the query bounds above still apply.", []string{"search"},
 		new(struct {
 			Q     string `query:"q" required:"true" description:"Search query (min 2 chars; whitespace tokens ANDed)"`
-			Limit int    `query:"limit" description:"Max results (default 20, capped at 50)"`
+			Limit int    `query:"limit" description:"Max results (default 20, capped at 500)"`
 			View  string `query:"view" description:"Set to grouped to return owner-nested helper groups" enum:"grouped"`
 		}),
 		new(schema.LocalSessionListPayload)); err != nil {
