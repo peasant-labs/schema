@@ -188,7 +188,11 @@ const (
 	// read states the same rule. A saved selection scopes future ingest and
 	// hook publication only, never a stored read.
 	// Bumped to 0.26.0 for the optional unverified pull request read projection.
-	PeasantLocalAPIVersion = "0.26.0"
+	// Bumped to 0.27.0 when the search result limit documented its real cap of
+	// 500 rows in place of 50, so the published page bound and the bound the
+	// consumer enforces are one number (a documented bound widened; minor bump
+	// before 1.0).
+	PeasantLocalAPIVersion = "0.27.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
