@@ -5,6 +5,15 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Changed
+
+- Local API 0.28.0, Types 0.43.0, and Village API 0.35.0 add the optional
+  `TurnDetail.controlKind` annotation. It names the control record a turn was
+  projected from (`mode`, `permission-mode`, `attachment`, `agent-name`,
+  `custom-title`); a compaction notice is a system row and never carries it.
+  It is producer-owned evidence: a consumer must never infer it from `role`,
+  `content`, or any other field.
+
 ## [v0.40.0] - 2026-11-03
 
 ### Changed

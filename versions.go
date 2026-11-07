@@ -120,7 +120,10 @@ const (
 	// Bumped to 0.34.0 when AuthoritativeModelInfo keyed its harness version
 	// harnessVersion, the key the publish decoder accepts, instead of version,
 	// which the decoder refused (minor bump before 1.0).
-	VillageAPIVersion = "0.34.0"
+	// Bumped to 0.35.0 when TurnDetail gained the optional controlKind
+	// annotation, which this spec carries in its embedded session-detail
+	// components (additive = minor bump).
+	VillageAPIVersion = "0.35.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -192,7 +195,10 @@ const (
 	// 500 rows in place of 50, so the published page bound and the bound the
 	// consumer enforces are one number (a documented bound widened; minor bump
 	// before 1.0).
-	PeasantLocalAPIVersion = "0.27.0"
+	// Bumped to 0.28.0 when TurnDetail gained the optional controlKind
+	// annotation naming the harness control record a turn was projected from
+	// (additive = minor bump).
+	PeasantLocalAPIVersion = "0.28.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -293,5 +299,7 @@ const (
 	// (minor bump before 1.0).
 	// Bumped to 0.42.0 when AuthoritativeModelInfo keyed its harness version
 	// harnessVersion instead of version (minor bump before 1.0).
-	TypesVersion = "0.42.0"
+	// Bumped to 0.43.0 when TurnDetail gained the optional controlKind
+	// annotation (additive = minor bump).
+	TypesVersion = "0.43.0"
 )

@@ -3625,6 +3625,7 @@ export const zTurnDetail = z.object({
     agentName: z.string().optional(),
     command: zCommandInvocation.nullish(),
     content: z.string(),
+    controlKind: z.string().nullish(),
     depth: z.int(),
     entryType: zEntryType.optional(),
     hasThinking: z.boolean().optional(),

@@ -247,6 +247,7 @@ export const wireAliasShapes = {
       "agentName": {},
       "command": "CommandInvocation",
       "content": {},
+      "controlKind": {},
       "depth": {},
       "entryType": "EntryType",
       "hasThinking": {},

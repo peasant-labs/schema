@@ -1,0 +1,10 @@
+requiredCaseNames:
+  - absent
+  - present_mode
+  - present_permission_mode
+  - present_attachment
+  - explicit_null_equivalent_to_absent
+  - wire_presence
+  - downgrade_absent_classifies_nothing
+  - claude_compact_boundary_not_control
+  - codex_compacted_not_control

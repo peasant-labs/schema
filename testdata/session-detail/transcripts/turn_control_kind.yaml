@@ -1,0 +1,66 @@
+cases:
+  - name: absent
+    input:
+      turn: '{"role": "system", "content": "Build finished"}'
+    expected: {accepted: true, wirePresent: false}
+    classification: must-pass
+    provenance: {source: requirement, ref: a turn without controlKind is an ordinary turn}
+    mutation: {description: omits the optional controlKind member from a system turn}
+  - name: present_mode
+    input:
+      turn: '{"role": "system", "content": "mode: normal", "controlKind": "mode"}'
+    expected: {accepted: true, controlKind: mode, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a control record turn names the producer kind}
+    mutation: {description: adds the canonical mode control kind}
+  - name: present_permission_mode
+    input:
+      turn: '{"role": "system", "content": "permission mode: auto", "controlKind": "permission-mode"}'
+    expected: {accepted: true, controlKind: permission-mode, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a control record turn names the producer kind}
+    mutation: {description: adds the canonical permission-mode control kind}
+  - name: present_attachment
+    input:
+      turn: '{"role": "system", "content": "environment snapshot", "controlKind": "attachment"}'
+    expected: {accepted: true, controlKind: attachment, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a control record turn names the producer kind}
+    mutation: {description: adds the canonical attachment control kind}
+  - name: explicit_null_equivalent_to_absent
+    input:
+      turn: '{"role": "system", "content": "Build finished", "controlKind": null}'
+    expected: {accepted: true, wirePresent: false}
+    classification: must-pass
+    provenance: {source: boundary, ref: an optional pointer member treats explicit null as absent}
+    mutation: {description: sends an explicit null controlKind}
+  - name: wire_presence
+    input:
+      turn: '{"role": "system", "content": "session title: Peasant session", "controlKind": "custom-title"}'
+    expected: {accepted: true, controlKind: custom-title, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: the wire names controlKind exactly when the producer classified the turn}
+    mutation: {description: emits the key on the wire for a classified turn}
+  - name: downgrade_absent_classifies_nothing
+    input:
+      turn: '{"role": "system", "content": "session title: Peasant session"}'
+    expected: {accepted: true, wirePresent: false}
+    classification: must-pass
+    provenance: {source: requirement, ref: an older producer payload classifies nothing as a control record}
+    mutation: {description: serves a control-like system turn with no producer kind}
+  - name: claude_compact_boundary_not_control
+    input:
+      harness: claude-code
+      turn: '{"role": "system", "content": "Conversation compacted", "controlKind": "compact-boundary"}'
+    expected: {accepted: true, controlKind: compact-boundary, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a compaction notice is accepted as data but producers never emit controlKind for it}
+    mutation: {description: sends a notice kind as client data}
+  - name: codex_compacted_not_control
+    input:
+      harness: codex
+      turn: '{"role": "system", "content": "Context compacted", "controlKind": "compacted"}'
+    expected: {accepted: true, controlKind: compacted, wirePresent: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a compaction notice is accepted as data but producers never emit controlKind for it}
+    mutation: {description: sends a notice kind as client data}
