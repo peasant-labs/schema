@@ -73,6 +73,10 @@ func turnControlKindWire(t *testing.T, in turnControlKindInput) []byte {
 		harness = "claude-code"
 	}
 	detail := map[string]any{
+		// turnCount is the stored wire value for this two-entry shape. The
+		// decoder under test does not read it (only controlKind is decoded), and
+		// the fixture turn may be a system row, so this is a stored-shape value,
+		// not a producer claim about conversation turns.
 		"id": "fixture-session", "startTime": "2020-01-01T00:00:00Z", "endTime": "2020-01-01T00:00:00Z",
 		"durationMins": 0, "totalTokens": 0, "tokensIn": 0, "tokensOut": 0, "turnCount": 2, "toolCallCount": 0,
 		"harness": harness, "outcome": "resolved", "sessionOrigin": "unknown", "turns": []any{root, turn},
