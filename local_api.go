@@ -483,6 +483,15 @@ type TurnDetail struct {
 	// from Role.
 	Command *CommandInvocation `json:"command,omitempty"`
 
+	// ControlKind names the control record this turn was projected from. Its
+	// values are "mode", "permission-mode", "attachment", "agent-name", and
+	// "custom-title". It is producer-owned evidence: a consumer must never infer
+	// it from Role, Content, or any other field, and must treat a turn without
+	// controlKind as an ordinary turn. A compaction notice (Claude
+	// "compact-boundary", Codex "compacted") is a system row and never carries
+	// controlKind.
+	ControlKind *string `json:"controlKind,omitempty"`
+
 	// Enrichment fields — propagated from session_entries.
 	EntryType   EntryType   `json:"entryType,omitempty"`
 	HasThinking bool        `json:"hasThinking,omitempty"`
