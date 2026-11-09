@@ -1,0 +1,65 @@
+cases:
+  - name: local-inline-valid
+    input:
+      mode: local
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"text","text":"look"},{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048}}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: durable local detail accepts an inline image}
+    mutation: {description: carries an ordered text and inline image part on a local turn}
+  - name: local-text-only-valid
+    input:
+      mode: local
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"text","text":"look"}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a text-only ordered list is local detail}
+    mutation: {description: carries only a text part}
+  - name: local-earlier-history-inline-valid
+    input:
+      mode: local
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[],"earlierHistory":[{"state":"uncertain_migrated","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"ref":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","mediaType":"image/jpeg","byteSize":12}}]}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: an earlier-history image part keeps its local shape}
+    mutation: {description: moves the only inline image into an earlier-history partition}
+  - name: published-omitted-valid
+    input:
+      mode: published
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"text","text":"look"},{"type":"image","image":{"omittedReason":"not_published"}}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a published transcript carries the not_published image shape}
+    mutation: {description: replaces the local image with the bounded published shape}
+  - name: published-text-only-valid
+    input:
+      mode: published
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"text","text":"look"}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: published text parts survive}
+    mutation: {description: carries only a text part through publication}
+  - name: local-published-shape-rejected
+    input:
+      mode: local
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"omittedReason":"not_published"}}]}]}'
+    expected: {accepted: false, errorContains: a durable local image was never published}
+    classification: must-fail
+    provenance: {source: boundary, ref: the local mode rejects the publication reason}
+    mutation: {description: puts the published shape on a durable local detail}
+  - name: published-local-ref-rejected
+    input:
+      mode: published
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048,"omittedReason":"not_published"}}]}]}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: publication must not leak local image evidence}
+    mutation: {description: leaves local image fields on a published detail}
+  - name: published-earlier-history-local-ref-rejected
+    input:
+      mode: published
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":0,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[],"earlierHistory":[{"state":"uncertain_migrated","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"ref":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","mediaType":"image/jpeg","byteSize":12}}]}]}]}'
+    expected: {accepted: false, errorContains: 'must say not_published'}
+    classification: must-fail
+    provenance: {source: boundary, ref: publication also strips earlier-history image evidence}
+    mutation: {description: leaves a local image inside an earlier-history partition on a published detail}

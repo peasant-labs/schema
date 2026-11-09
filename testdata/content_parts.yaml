@@ -223,6 +223,94 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: 'part kinds are a closed set'}
     mutation: {description: 'invents a part type'}
+  - name: published-byte-size-only
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","byteSize":12}}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication drops the byte size'}
+    mutation: {description: 'keeps only the byte size on a published image'}
+  - name: published-width-only
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","width":640}}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication drops the pixel width'}
+    mutation: {description: 'keeps only the pixel width on a published image'}
+  - name: published-height-only
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","height":480}}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication drops the pixel height'}
+    mutation: {description: 'keeps only the pixel height on a published image'}
+  - name: local-inline-without-media
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not image/png or image/jpeg'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a recorded local image needs a recorded media type'}
+    mutation: {description: 'drops the media type from an inline image'}
+  - name: local-too-large-with-byte-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","byteSize":20971520,"omittedReason":"too_large"}}'
+    expected: {accepted: false, errorContains: 'a too-large image keeps no bytes'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an oversized image keeps no bytes'}
+    mutation: {description: 'keeps a byte size on a too_large image'}
+  - name: local-unsupported-with-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","omittedReason":"unsupported"}}'
+    expected: {accepted: false, errorContains: 'an unsupported source type is never stored'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an unsupported source type is never stored'}
+    mutation: {description: 'adds a ref to an unsupported image'}
+  - name: local-unsupported-with-byte-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"byteSize":12,"omittedReason":"unsupported"}}'
+    expected: {accepted: false, errorContains: 'an unsupported source type is never stored'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an unsupported source type is never stored'}
+    mutation: {description: 'adds a byte size to an unsupported image'}
+  - name: local-ref-63-hex
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not a lowercase 64-hex'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'the content address is exactly 64 hex characters'}
+    mutation: {description: 'shortens the ref to 63 hex characters'}
+  - name: local-ref-65-hex
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not a lowercase 64-hex'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'the content address is exactly 64 hex characters'}
+    mutation: {description: 'lengthens the ref to 65 hex characters'}
+  - name: local-unsupported-wins-over-too-large
+    input:
+      mode: local
+      part: '{"type":"image","image":{"omittedReason":"unsupported"}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'unsupported wins over too_large for a non-recorded media type'}
+    mutation: {description: 'records only unsupported for an image whose type is not recorded, with no size or ref'}
+  - name: local-too-large-without-media
+    input:
+      mode: local
+      part: '{"type":"image","image":{"omittedReason":"too_large"}}'
+    expected: {accepted: false, errorContains: 'not image/png or image/jpeg'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'too_large implies a recorded png or jpeg media type'}
+    mutation: {description: 'drops the recorded media type from a too_large image'}
   - name: unknown-mode
     input:
       mode: speculative

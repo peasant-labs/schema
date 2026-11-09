@@ -44,11 +44,12 @@ export const wireAliasShapes = {
   "EntryType": {},
   "EvidenceKind": {},
   "Harness": {},
+  "ImageMediaType": {},
   "ImagePart": {
     "fields": {
       "byteSize": {},
       "height": {},
-      "mediaType": {},
+      "mediaType": "ImageMediaType",
       "omittedReason": "OmittedReason",
       "ref": {},
       "width": {}

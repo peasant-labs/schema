@@ -1,0 +1,9 @@
+requiredCaseNames:
+  - local-inline-valid
+  - local-text-only-valid
+  - local-earlier-history-inline-valid
+  - published-omitted-valid
+  - published-text-only-valid
+  - local-published-shape-rejected
+  - published-local-ref-rejected
+  - published-earlier-history-local-ref-rejected

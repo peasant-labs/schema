@@ -1617,6 +1617,14 @@ export interface components {
          * @example local--home-user-projects-myapp
          */
         SchemaHostSlug: Schema.HostSlug;
+        /**
+         * Image Media Type
+         * @description Recorded image media type: image/png or image/jpeg
+         * @example image/png
+         * @example image/jpeg
+         * @enum {string}
+         */
+        SchemaImageMediaType: Schema.ImageMediaType;
         SchemaImagePart: Schema.ImagePart;
         /**
          * Input Modality
@@ -1690,7 +1698,7 @@ export interface components {
         SchemaObservedModelID: Schema.ObservedModelID;
         /**
          * Omitted Reason
-         * @description Why an image part carries no bytes: too_large, unsupported, missing, or not_published
+         * @description Why an image part carries no bytes: unsupported (wins for a non-recorded media type), too_large, missing, or not_published
          * @example too_large
          * @example unsupported
          * @example missing

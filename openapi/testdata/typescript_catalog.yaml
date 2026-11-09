@@ -379,6 +379,10 @@ types:
     disposition: catalog
     component: ImagePart
     reason: public wire or domain contract type
+  - go_name: ImageMediaType
+    disposition: catalog
+    component: ImageMediaType
+    reason: public wire or domain contract type
   - go_name: OmittedReason
     disposition: catalog
     component: OmittedReason
@@ -1389,6 +1393,9 @@ types:
   - {go_name: ContentPartFixtureInput, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentPartFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentPartsFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartDetailFixtureInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartDetailFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartDetailFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: SyncStatus, disposition: catalog, component: SyncStatus, reason: local publishing sign-in and settings contract}
   - {go_name: SyncHoldReason, disposition: catalog, component: SyncHoldReason, reason: local publishing sign-in and settings contract}
   - {go_name: SyncPushCollectives, disposition: catalog, component: SyncPushCollectives, reason: local publishing sign-in and settings contract}

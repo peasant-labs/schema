@@ -1026,6 +1026,15 @@ export const zHostSlug = z.string().regex(/^[a-zA-Z0-9._<>-]+$/);
 export type HostSlug = z.infer<typeof zHostSlug>;
 
 /**
+ * Image Media Type
+ *
+ * Recorded image media type: image/png or image/jpeg
+ */
+export const zImageMediaType = z.enum(['image/png', 'image/jpeg']);
+
+export type ImageMediaType = z.infer<typeof zImageMediaType>;
+
+/**
  * Input Modality
  *
  * Closed session graph value
@@ -1385,7 +1394,7 @@ export type ObservedModelID = z.infer<typeof zObservedModelID>;
 /**
  * Omitted Reason
  *
- * Why an image part carries no bytes: too_large, unsupported, missing, or not_published
+ * Why an image part carries no bytes: unsupported (wins for a non-recorded media type), too_large, missing, or not_published
  */
 export const zOmittedReason = z.enum([
     'too_large',
@@ -1399,7 +1408,7 @@ export type OmittedReason = z.infer<typeof zOmittedReason>;
 export const zImagePart = z.object({
     byteSize: z.int().gte(0).optional(),
     height: z.int().gte(0).optional(),
-    mediaType: z.string().optional(),
+    mediaType: zImageMediaType.optional(),
     omittedReason: zOmittedReason.optional(),
     ref: z.string().length(64).regex(/^[0-9a-f]{64}$/).optional(),
     width: z.int().gte(0).optional()
@@ -3482,7 +3491,44 @@ export const zTurnContentPart = z.object({
     image: zImagePart.optional(),
     text: z.string().optional(),
     type: zTurnPartType
-});
+}).superRefine((part, ctx) => {
+    const issue = (message: string) => ctx.addIssue({ code: "custom", message });
+    if (part.type === "text") {
+      if (part.image !== undefined) issue("a text part must not carry image");
+      return;
+    }
+    if (part.image === undefined) {
+      issue("an image part requires image");
+      return;
+    }
+    if (part.text !== undefined) issue("an image part must not carry text");
+    const image = part.image;
+    if (image.byteSize !== undefined && image.byteSize < 0) issue("byteSize must be nonnegative");
+    if (image.width !== undefined && image.width < 0) issue("width must be nonnegative");
+    if (image.height !== undefined && image.height < 0) issue("height must be nonnegative");
+    if (image.ref !== undefined && !/^[0-9a-f]{64}$/.test(image.ref)) issue("ref must be lowercase 64-hex");
+    if (image.omittedReason === "not_published") {
+      if (image.ref !== undefined || image.mediaType !== undefined || image.byteSize !== undefined || image.width !== undefined || image.height !== undefined) issue("a published image must not carry local fields");
+      return;
+    }
+    if (image.omittedReason === "unsupported") {
+      if (image.mediaType !== undefined) issue("an unsupported image must not carry mediaType");
+      if (image.ref !== undefined || image.byteSize !== undefined) issue("an unsupported image must not carry ref or byteSize");
+      return;
+    }
+    if (image.mediaType !== "image/png" && image.mediaType !== "image/jpeg") issue("a local image requires image/png or image/jpeg");
+    if (image.omittedReason === "too_large") {
+      if (image.ref !== undefined) issue("a too_large image must not carry ref");
+      if (image.byteSize !== undefined) issue("a too_large image must not carry byteSize");
+      return;
+    }
+    if (image.omittedReason === "missing") {
+      if (image.byteSize !== undefined) issue("a missing image must not carry byteSize");
+      return;
+    }
+    if (image.ref === undefined) issue("an inline image requires ref");
+    if (image.byteSize === undefined || image.byteSize === 0) issue("an inline image requires a positive byteSize");
+  });
 
 export type TurnContentPart = z.infer<typeof zTurnContentPart>;
 

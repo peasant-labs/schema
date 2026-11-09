@@ -26,7 +26,10 @@ export const canonicalSessionGraphCapabilityFixtures = {
       "thinking-level-raw-only-seed",
       "thinking-level-root-turn",
       "thinking-level-earlier-nested-turn",
-      "thinking-level-absent-needs-no-token"
+      "thinking-level-absent-needs-no-token",
+      "content-parts-root-text-only",
+      "content-parts-root-image",
+      "content-parts-earlier-nested"
     ],
     "reader": [
       "advertisement-omitted",
@@ -508,6 +511,64 @@ export const canonicalSessionGraphCapabilityFixtures = {
           "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"codex\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\"}]}"
         },
         "expected": {}
+      },
+      {
+        "name": "content-parts-root-text-only",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation content_parts_v1"
+        },
+        "mutation": {
+          "description": "adds one ordered text part to a root turn"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"user\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\",\"contentParts\":[{\"type\":\"text\",\"text\":\"look\"}]}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "content_parts_v1"
+          ]
+        }
+      },
+      {
+        "name": "content-parts-root-image",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation content_parts_v1"
+        },
+        "mutation": {
+          "description": "adds one inline local image part to a root turn"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":1,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[{\"index\":0,\"role\":\"user\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\",\"contentParts\":[{\"type\":\"image\",\"image\":{\"ref\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"mediaType\":\"image/png\",\"byteSize\":2048}}]}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "content_parts_v1"
+          ]
+        }
+      },
+      {
+        "name": "content-parts-earlier-nested",
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "content-capability-negotiation content_parts_v1"
+        },
+        "mutation": {
+          "description": "adds an ordered text part inside an earlier-history partition"
+        },
+        "input": {
+          "detailJSON": "{\"id\":\"fixture-session\",\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"turnCount\":0,\"toolCallCount\":0,\"harness\":\"claude-code\",\"outcome\":\"resolved\",\"sessionOrigin\":\"unknown\",\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"\",\"depth\":0,\"timestamp\":\"2020-01-01T00:00:00Z\",\"contentParts\":[{\"type\":\"text\",\"text\":\"look\"}]}]}]}"
+        },
+        "expected": {
+          "capabilities": [
+            "content_parts_v1",
+            "session_graph_provenance_v1"
+          ]
+        }
       }
     ]
   },

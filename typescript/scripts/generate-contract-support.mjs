@@ -23,6 +23,7 @@ import { applyCollectiveZodRefinements } from "./lib/collective-zod-refinements.
 import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-refinements.mjs";
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
+import { applyContentPartsZodRefinements } from "./lib/content-parts-zod-refinements.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -85,7 +86,8 @@ async function refineRootZodContract() {
   const attemptSource = applyContributionAttemptZodRefinements(retainedSource);
   const source = applyCollectiveZodRefinements(attemptSource, spec);
   const refined = applySessionTeammateZodRefinements(applyThinkingLevelZodRefinements(applyGroupedReadZodRefinements(applyPublicRefZodRefinements(applyPublicationZodRefinements(applyAutoPublishTargetZodRefinements(applyStrictObjectZodRefinements(applyAssociationZodRefinements(source))))))), sessionTeammateBound);
-  await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(refined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));
+  const contentPartsRefined = applyContentPartsZodRefinements(refined);
+  await writeFile(zodPath, applyUnverifiedPullRequestZodRefinements(applyLegacyPullZodRefinements(applyPublicOwnerZodRefinements(contentPartsRefined, publicOwnerSource.withheld_repository_fields), legacyPullSource.anonymous_username)));
 }
 
 // readGeneratorOutput reads a file the preceding openapi-ts step must have

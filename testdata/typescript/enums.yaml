@@ -185,6 +185,12 @@ enums:
       - {name: Text, value: "text"}
       - {name: Image, value: "image"}
     all_values: ["text", "image"]
+  - name: ImageMediaType
+    all_name: AllImageMediaTypes
+    members:
+      - {name: Png, value: "image/png"}
+      - {name: Jpeg, value: "image/jpeg"}
+    all_values: ["image/png", "image/jpeg"]
   - name: OmittedReason
     all_name: AllOmittedReasons
     members:

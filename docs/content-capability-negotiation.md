@@ -261,7 +261,10 @@ no text. An image part is one of two shapes:
   outside the recorded set). `byteSize` is the exact stored size and is
   positive only when bytes are carried; every omitted reason carries zero.
   `width` and `height` are optional pixel dimensions, with zero meaning
-  unknown. `not_published` is not a local reason.
+  unknown. `not_published` is not a local reason. `unsupported` takes
+  precedence over `too_large`: a source media type outside the recorded set is
+  unsupported even when it also exceeds the size limit, and `too_large`
+  therefore always carries a recorded png or jpeg media type.
 - **published:** exactly `{type: "image", omittedReason: "not_published"}`.
   `ref`, `mediaType`, `byteSize`, `width`, and `height` are forbidden. The
   ordered text parts survive publication unchanged; the reader says how many

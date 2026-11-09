@@ -26,5 +26,16 @@ requiredCaseNames:
   - image-part-without-image
   - text-part-with-image
   - image-part-with-text
+  - published-byte-size-only
+  - published-width-only
+  - published-height-only
+  - local-inline-without-media
+  - local-too-large-with-byte-size
+  - local-unsupported-with-ref
+  - local-unsupported-with-byte-size
+  - local-ref-63-hex
+  - local-ref-65-hex
+  - local-unsupported-wins-over-too-large
+  - local-too-large-without-media
   - unknown-part-type
   - unknown-mode

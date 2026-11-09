@@ -34,6 +34,7 @@ import { zDiffLineKind, type DiffLineKind as DiffLineKindContract } from "./cont
 import { zEdgeViolationKind, type EdgeViolationKind as EdgeViolationKindContract } from "./contract/zod.gen.js";
 import { zEntryType, type EntryType as EntryTypeContract } from "./contract/zod.gen.js";
 import { zTurnPartType, type TurnPartType as TurnPartTypeContract } from "./contract/zod.gen.js";
+import { zImageMediaType, type ImageMediaType as ImageMediaTypeContract } from "./contract/zod.gen.js";
 import { zOmittedReason, type OmittedReason as OmittedReasonContract } from "./contract/zod.gen.js";
 import { zFileChangeStatus, type FileChangeStatus as FileChangeStatusContract } from "./contract/zod.gen.js";
 import { zHarness, type Harness as HarnessContract } from "./contract/zod.gen.js";
@@ -534,6 +535,16 @@ export const TurnPartType = Object.freeze({
 export const AllTurnPartTypes = Object.freeze([TurnPartType.Text, TurnPartType.Image]) as readonly TurnPartType[];
 export function isTurnPartType(value: unknown): value is TurnPartType {
   return zTurnPartType.safeParse(value).success;
+}
+
+export type ImageMediaType = ImageMediaTypeContract;
+export const ImageMediaType = Object.freeze({
+  Png: zImageMediaType.parse("image/png"),
+  Jpeg: zImageMediaType.parse("image/jpeg"),
+} as const);
+export const AllImageMediaTypes = Object.freeze([ImageMediaType.Png, ImageMediaType.Jpeg]) as readonly ImageMediaType[];
+export function isImageMediaType(value: unknown): value is ImageMediaType {
+  return zImageMediaType.safeParse(value).success;
 }
 
 export type OmittedReason = OmittedReasonContract;

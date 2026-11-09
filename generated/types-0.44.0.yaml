@@ -3276,6 +3276,16 @@ components:
       pattern: ^[a-zA-Z0-9._<>-]+$
       title: Host Slug
       type: string
+    ImageMediaType:
+      description: 'Recorded image media type: image/png or image/jpeg'
+      enum:
+      - image/png
+      - image/jpeg
+      examples:
+      - image/png
+      - image/jpeg
+      title: Image Media Type
+      type: string
     ImagePart:
       properties:
         byteSize:
@@ -3289,13 +3299,14 @@ components:
           minimum: 0
           type: integer
         mediaType:
+          $ref: '#/components/schemas/ImageMediaType'
           description: Recorded image/png or image/jpeg media type. Absent for an
             unsupported source type or a published transcript.
-          type: string
         omittedReason:
           $ref: '#/components/schemas/OmittedReason'
-          description: 'Why the bytes are absent: too_large, unsupported, missing,
-            or not_published. Omit when local bytes are present.'
+          description: 'Why the bytes are absent: unsupported (wins for a non-recorded
+            media type), too_large, missing, or not_published. Omit when local bytes
+            are present.'
         ref:
           description: Lowercase 64-hex content address of the stored image. Absent
             when the bytes are omitted or the transcript is published.
@@ -4679,8 +4690,8 @@ components:
       title: Observed Model ID
       type: string
     OmittedReason:
-      description: 'Why an image part carries no bytes: too_large, unsupported, missing,
-        or not_published'
+      description: 'Why an image part carries no bytes: unsupported (wins for a non-recorded
+        media type), too_large, missing, or not_published'
       enum:
       - too_large
       - unsupported
