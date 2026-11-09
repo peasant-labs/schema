@@ -21,6 +21,12 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `SessionDetailReadPayload`, `SessionDetailHeaderPayload`, and `TranscriptTurn`
   instead of naming the embedded Go struct, so the emitted schema accepts the
   wire shape those rows describe.
+- Local API 0.30.0 adds `GET /api/v1/quality`. It serves one bounded offset page
+  of `QualitySession` rows beside the library-wide `ProjectAnalytics` summary at
+  the page revision: `page` is one-based (default 1) and `maxItems` is the closed
+  25/50/100 row count (omitted or 0 defaults to 25). The summary stays
+  server-computed over the whole library, so no client receives every stored
+  row. The existing `QualityPayload` WebSocket channel component is unchanged.
 
 ### Changed
 

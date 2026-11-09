@@ -1,4 +1,4 @@
-required_names: [grouped-session-list, grouped-search, grouped-sync, flat-transcript-read, scoped-helper-members, recorded-session-commits, detected-session-pull-requests]
+required_names: [grouped-session-list, grouped-search, grouped-sync, flat-transcript-read, scoped-helper-members, recorded-session-commits, detected-session-pull-requests, quality-page]
 routes:
   cases:
   - name: grouped-session-list
@@ -47,3 +47,9 @@ routes:
     classification: must-pass
     provenance: {source: requirement, ref: "pull requests detected in the session's own calls are display-only evidence"}
     mutation: {description: "declares detected pull requests as a session read that carries no repository state"}
+  - name: quality-page
+    input: {path: /api/v1/quality, operationId: getQualityPage}
+    expected: {parameters: [{name: page, in: query, type: integer, minimum: 1}, {name: maxItems, in: query, type: integer, minimum: 0}], responseRefs: ["#/components/schemas/SchemaQualityPage"], requiredRoot: [items, nextItems, page, perPage, total, revision, summary], nonnullArrays: [items, nextItems]}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the quality read is one offset page beside the library-wide summary"}
+    mutation: {description: "declares the quality page with the summary beside its offset rows"}
