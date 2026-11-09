@@ -4566,6 +4566,27 @@ components:
       - 100
       title: Page Size
       type: integer
+    SchemaPersonalMedians:
+      properties:
+        retryShare:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      type: object
     SchemaProjectHash:
       description: SHA-256 hex digest of the project's origin URL or local path
       examples:
@@ -5111,6 +5132,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -5137,6 +5162,8 @@ components:
           items:
             $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         schemaVersion:
@@ -5164,6 +5191,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:
@@ -6817,6 +6846,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -6843,6 +6876,8 @@ components:
           items:
             $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         schemaVersion:
@@ -6870,6 +6905,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:

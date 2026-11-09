@@ -191,6 +191,8 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 		value = &schema.SessionCommitsResponse{}
 	case "pull-requests":
 		value = &schema.SessionPullRequestsResponse{}
+	case "quality-page":
+		value = &schema.QualityPage{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)
 	}
@@ -223,6 +225,10 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 			return nil, err
 		}
 	case *schema.SessionPullRequestsResponse:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.QualityPage:
 		if err := typed.Validate(); err != nil {
 			return nil, err
 		}

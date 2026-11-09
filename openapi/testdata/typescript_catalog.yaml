@@ -299,6 +299,26 @@ types:
     disposition: catalog
     component: QualitySession
     reason: public wire or domain contract type
+  - {go_name: PersonalMedians, disposition: catalog, component: PersonalMedians, reason: library-wide personal medians baseline}
+  - {go_name: ProjectAnalytics, disposition: catalog, component: ProjectAnalytics, reason: project dashboard analytics bundle}
+  - {go_name: QualityPage, disposition: catalog, component: QualityPage, reason: offset quality page with the analytics summary}
+  - {go_name: WeekCount, disposition: catalog, component: WeekCount, reason: per-week session count bucket}
+  - {go_name: WeekContributors, disposition: catalog, component: WeekContributors, reason: per-week active contributor bucket}
+  - {go_name: ReturningContributorRate, disposition: catalog, component: ReturningContributorRate, reason: returning contributor rate}
+  - {go_name: LongestStreak, disposition: catalog, component: LongestStreak, reason: longest consecutive active-week run}
+  - {go_name: WeekNewContributors, disposition: catalog, component: WeekNewContributors, reason: per-week new contributor bucket}
+  - {go_name: SessionToCommitRate, disposition: catalog, component: SessionToCommitRate, reason: session to commit rate}
+  - {go_name: WeekAvgDuration, disposition: catalog, component: WeekAvgDuration, reason: per-active-week average duration bucket}
+  - {go_name: OutcomeDistribution, disposition: catalog, component: OutcomeDistribution, reason: session outcome tally}
+  - {go_name: MedianP90, disposition: catalog, component: MedianP90, reason: typical value pair}
+  - {go_name: AnalyticsSessionStats, disposition: catalog, component: AnalyticsSessionStats, reason: library analytics typical values}
+  - {go_name: ContributorBreakdown, disposition: catalog, component: ContributorBreakdown, reason: per-contributor tally}
+  - go_name: QualityMedianCase
+    disposition: fixture-only
+    reason: canonical personal-medians fixture case
+  - go_name: QualityMedianSession
+    disposition: fixture-only
+    reason: canonical personal-medians fixture sample row
   - go_name: ReviewSuggestion
     disposition: catalog
     component: ReviewSuggestion

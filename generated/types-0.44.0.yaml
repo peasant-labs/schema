@@ -33,6 +33,22 @@ components:
       - unknown
       title: Actor Origin
       type: string
+    AnalyticsSessionStats:
+      properties:
+        durationMins:
+          $ref: '#/components/schemas/MedianP90'
+        toolCallCount:
+          $ref: '#/components/schemas/MedianP90'
+        totalTokens:
+          $ref: '#/components/schemas/MedianP90'
+        turnCount:
+          $ref: '#/components/schemas/MedianP90'
+      required:
+      - durationMins
+      - totalTokens
+      - turnCount
+      - toolCallCount
+      type: object
     AnnotationAxis:
       description: Subscription dimension for annotation channels
       enum:
@@ -2694,6 +2710,54 @@ components:
         or authority
       maxLength: 4096
       type: string
+    ContributorBreakdown:
+      properties:
+        activeWeeks:
+          type: integer
+        contributorId:
+          type: string
+        firstSeen:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        lastSeen:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        outcomes:
+          $ref: '#/components/schemas/OutcomeDistribution'
+        sessions:
+          type: integer
+        sessionsWithCommit:
+          type: integer
+        totalCommits:
+          type: integer
+        totalDurationMins:
+          type: integer
+        totalTokens:
+          type: integer
+        totalToolCalls:
+          type: integer
+        totalTurns:
+          type: integer
+      required:
+      - contributorId
+      - sessions
+      - activeWeeks
+      - totalTokens
+      - totalDurationMins
+      - totalTurns
+      - totalToolCalls
+      - sessionsWithCommit
+      - totalCommits
+      - outcomes
+      - firstSeen
+      - lastSeen
+      type: object
     CreateAnnotationRequest:
       properties:
         annotatorName:
@@ -4291,6 +4355,27 @@ components:
       required:
       - collectives
       type: object
+    LongestStreak:
+      properties:
+        endWeek:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        startWeek:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        weeks:
+          type: integer
+      required:
+      - weeks
+      - startWeek
+      - endWeek
+      type: object
     MapEdge:
       properties:
         count:
@@ -4540,6 +4625,27 @@ components:
       - structureEdges
       - activityEdges
       type: object
+    MedianP90:
+      properties:
+        count:
+          type: integer
+        median:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        p90:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      required:
+      - count
+      - median
+      - p90
+      type: object
     MessageType:
       description: WebSocket message discriminator
       enum:
@@ -4744,6 +4850,25 @@ components:
       - superseded
       title: Operation Issue Code
       type: string
+    OutcomeDistribution:
+      properties:
+        failed:
+          type: integer
+        partial:
+          type: integer
+        resolved:
+          type: integer
+        total:
+          type: integer
+        unknown:
+          type: integer
+      required:
+      - resolved
+      - partial
+      - failed
+      - unknown
+      - total
+      type: object
     OwnerTranscriptUpdateRequest:
       additionalProperties: false
       properties:
@@ -4830,6 +4955,80 @@ components:
       - 100
       title: Page Size
       type: integer
+    PersonalMedians:
+      properties:
+        retryShare:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      type: object
+    ProjectAnalytics:
+      properties:
+        avgDurationPerActiveWeek:
+          items:
+            $ref: '#/components/schemas/WeekAvgDuration'
+          type: array
+        longestStreak:
+          $ref: '#/components/schemas/LongestStreak'
+        newContributorVelocity:
+          items:
+            $ref: '#/components/schemas/WeekNewContributors'
+          type: array
+        outcomeDistribution:
+          $ref: '#/components/schemas/OutcomeDistribution'
+        perContributorBreakdown:
+          items:
+            $ref: '#/components/schemas/ContributorBreakdown'
+          type: array
+        returningContributorRate:
+          $ref: '#/components/schemas/ReturningContributorRate'
+        sessionStats:
+          $ref: '#/components/schemas/AnalyticsSessionStats'
+        sessionToCommitRate:
+          $ref: '#/components/schemas/SessionToCommitRate'
+        sessionsPerWeek:
+          items:
+            $ref: '#/components/schemas/WeekCount'
+          type: array
+        totalContributors:
+          type: integer
+        totalProjects:
+          type: integer
+        totalSessions:
+          type: integer
+        weeklyActiveContributors:
+          items:
+            $ref: '#/components/schemas/WeekContributors'
+          type: array
+      required:
+      - totalSessions
+      - totalContributors
+      - totalProjects
+      - sessionsPerWeek
+      - weeklyActiveContributors
+      - returningContributorRate
+      - longestStreak
+      - newContributorVelocity
+      - sessionToCommitRate
+      - avgDurationPerActiveWeek
+      - outcomeDistribution
+      - sessionStats
+      - perContributorBreakdown
+      type: object
     ProjectContext:
       properties:
         filePath:
@@ -5730,6 +5929,40 @@ components:
             - integer
           - type: "null"
       type: object
+    QualityPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/QualitySession'
+          type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/QualitySession'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
+          type: string
+        summary:
+          $ref: '#/components/schemas/ProjectAnalytics'
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - items
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
+      - summary
+      type: object
     QualityPayload:
       properties:
         sessions:
@@ -5975,6 +6208,20 @@ components:
       - namespace
       - kind
       - payload
+      type: object
+    ReturningContributorRate:
+      properties:
+        rate:
+          format: double
+          type: number
+        returning:
+          type: integer
+        total:
+          type: integer
+      required:
+      - total
+      - returning
+      - rate
       type: object
     ReviewListPayload:
       properties:
@@ -6489,6 +6736,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/PersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -6515,6 +6766,8 @@ components:
           items:
             $ref: '#/components/schemas/RetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SessionID'
         schemaVersion:
@@ -6542,6 +6795,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/ThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:
@@ -7102,6 +7357,20 @@ components:
       - native_dynamic_workflow
       title: Session Teammate Evidence
       type: string
+    SessionToCommitRate:
+      properties:
+        rate:
+          format: double
+          type: number
+        total:
+          type: integer
+        withCommit:
+          type: integer
+      required:
+      - total
+      - withCommit
+      - rate
+      type: object
     SessionsPayload:
       properties:
         sessions:
@@ -11523,4 +11792,48 @@ components:
       - turnCount
       - steps
       - isCoherent
+      type: object
+    WeekAvgDuration:
+      properties:
+        avgDurationMins:
+          format: double
+          type: number
+        sessions:
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - avgDurationMins
+      - sessions
+      type: object
+    WeekContributors:
+      properties:
+        contributors:
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - contributors
+      type: object
+    WeekCount:
+      properties:
+        count:
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - count
+      type: object
+    WeekNewContributors:
+      properties:
+        newContributors:
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - newContributors
       type: object

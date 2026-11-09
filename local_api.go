@@ -235,6 +235,19 @@ type SessionSummary struct {
 // navigation metadata that is never part of published transcript content.
 type SessionDetailReadPayload struct {
 	SessionDetailPayload
+	// Title is the stored display title of the session, read from the stored
+	// session record rather than reconstructed from the quality rows. It is
+	// omitted when the producer has no stored title, and it never changes the
+	// durable push payload.
+	Title string `json:"title,omitempty"`
+	// Medians is the library-wide personal-medians baseline, cached per
+	// revision. Nil when the library holds no metric sample.
+	Medians *PersonalMedians `json:"medians,omitempty"`
+	// Revision is store_state.revision rendered as a decimal string. It is the
+	// same revision the quality page carries, so a client can drop cached
+	// medians when it changes. It is omitted when a durable payload is read
+	// without the local revision projection.
+	Revision               string                          `json:"revision,omitempty"`
 	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
 	// Teammate is the Claude Code teammate identity this session was spawned
 	// under, present only when the stored parent transcript records spawning
@@ -701,6 +714,154 @@ type QualitySession struct {
 	// Clients derive display labels (e.g. humanLabel, agentLabel) by filtering
 	// on typeId and annotatorKind — no pre-computed string fields needed.
 	EffectiveAnnotations []AnnotationSummary `json:"effectiveAnnotations,omitempty"`
+}
+
+// PersonalMedians is the library-wide baseline the transcript scorecard
+// compares one session against. Every field is optional: a field is absent when
+// its sample yields no value, so the comparison line degrades instead of
+// fabricating a baseline. The YAML tags let the canonical medians fixture carry
+// this exact shape, so the Go aggregate and the browser baseline read one corpus.
+type PersonalMedians struct {
+	// RetryShare is the median retryTokensWasted/totalTokens ratio over the
+	// sessions whose totalTokens is positive.
+	RetryShare *float64 `json:"retryShare,omitempty" yaml:"retryShare,omitempty"`
+	// SpecQualityScore is the median spec quality score over the sessions whose
+	// score is positive.
+	SpecQualityScore *float64 `json:"specQualityScore,omitempty" yaml:"specQualityScore,omitempty"`
+	// WithinSessionReverts is the median revert count over the sessions whose
+	// count is nonnegative.
+	WithinSessionReverts *float64 `json:"withinSessionReverts,omitempty" yaml:"withinSessionReverts,omitempty"`
+}
+
+// ProjectAnalytics is the analytics bundle the project dashboard renders. It is
+// a schema type, not a presentation typedef: the server aggregate, the generated
+// TypeScript type, and the dashboard typedef are one contract with these exact
+// field names.
+type ProjectAnalytics struct {
+	TotalSessions            int                      `json:"totalSessions"`
+	TotalContributors        int                      `json:"totalContributors"`
+	TotalProjects            int                      `json:"totalProjects"`
+	SessionsPerWeek          []WeekCount              `json:"sessionsPerWeek" nullable:"false"`
+	WeeklyActiveContributors []WeekContributors       `json:"weeklyActiveContributors" nullable:"false"`
+	ReturningContributorRate ReturningContributorRate `json:"returningContributorRate"`
+	LongestStreak            LongestStreak            `json:"longestStreak"`
+	NewContributorVelocity   []WeekNewContributors    `json:"newContributorVelocity" nullable:"false"`
+	SessionToCommitRate      SessionToCommitRate      `json:"sessionToCommitRate"`
+	AvgDurationPerActiveWeek []WeekAvgDuration        `json:"avgDurationPerActiveWeek" nullable:"false"`
+	OutcomeDistribution      OutcomeDistribution      `json:"outcomeDistribution"`
+	SessionStats             AnalyticsSessionStats    `json:"sessionStats"`
+	PerContributorBreakdown  []ContributorBreakdown   `json:"perContributorBreakdown" nullable:"false"`
+}
+
+// WeekCount is one bucket of the per-week session-count series. Week is the
+// Monday-of-week UTC date key (YYYY-MM-DD).
+type WeekCount struct {
+	Week  string `json:"week"`
+	Count int    `json:"count"`
+}
+
+// WeekContributors is one bucket of the per-week unique-contributor series.
+type WeekContributors struct {
+	Week         string `json:"week"`
+	Contributors int    `json:"contributors"`
+}
+
+// ReturningContributorRate is the returning-contributor result. A returning
+// contributor is active in at least two distinct weeks; Rate is Returning/Total
+// in [0, 1], and 0 when no contributor exists.
+type ReturningContributorRate struct {
+	Total     int     `json:"total"`
+	Returning int     `json:"returning"`
+	Rate      float64 `json:"rate"`
+}
+
+// LongestStreak is the longest run of consecutive active weeks, with its first
+// and last Monday-of-week keys. Both keys are null when no week is active.
+type LongestStreak struct {
+	Weeks     int     `json:"weeks"`
+	StartWeek *string `json:"startWeek"`
+	EndWeek   *string `json:"endWeek"`
+}
+
+// WeekNewContributors is one bucket of the new-contributor series: the
+// contributors whose first-ever session falls in that week.
+type WeekNewContributors struct {
+	Week            string `json:"week"`
+	NewContributors int    `json:"newContributors"`
+}
+
+// SessionToCommitRate is the session-to-commit result. Rate is WithCommit/Total
+// in [0, 1], and 0 when no session exists.
+type SessionToCommitRate struct {
+	Total      int     `json:"total"`
+	WithCommit int     `json:"withCommit"`
+	Rate       float64 `json:"rate"`
+}
+
+// WeekAvgDuration is one bucket of the per-active-week average-duration series.
+type WeekAvgDuration struct {
+	Week            string  `json:"week"`
+	AvgDurationMins float64 `json:"avgDurationMins"`
+	Sessions        int     `json:"sessions"`
+}
+
+// OutcomeDistribution is the session-outcome tally. Total counts every session,
+// including the ones whose outcome is unknown.
+type OutcomeDistribution struct {
+	Resolved int `json:"resolved"`
+	Partial  int `json:"partial"`
+	Failed   int `json:"failed"`
+	Unknown  int `json:"unknown"`
+	Total    int `json:"total"`
+}
+
+// MedianP90 is one typical-value pair: the sample count, its median, and its
+// ninetieth percentile. Median and P90 are null when the sample is empty.
+type MedianP90 struct {
+	Count  int      `json:"count"`
+	Median *float64 `json:"median"`
+	P90    *float64 `json:"p90"`
+}
+
+// AnalyticsSessionStats is the analytics aggregate over the library. It is not
+// the ingest SessionStats: the name keeps the two distinct in one package.
+type AnalyticsSessionStats struct {
+	DurationMins  MedianP90 `json:"durationMins"`
+	TotalTokens   MedianP90 `json:"totalTokens"`
+	TurnCount     MedianP90 `json:"turnCount"`
+	ToolCallCount MedianP90 `json:"toolCallCount"`
+}
+
+// ContributorBreakdown is one contributor's tally inside the analytics bundle.
+// FirstSeen and LastSeen are day keys (YYYY-MM-DD), null when the contributor
+// has no dated session.
+type ContributorBreakdown struct {
+	ContributorID      string              `json:"contributorId"`
+	Sessions           int                 `json:"sessions"`
+	ActiveWeeks        int                 `json:"activeWeeks"`
+	TotalTokens        int                 `json:"totalTokens"`
+	TotalDurationMins  int                 `json:"totalDurationMins"`
+	TotalTurns         int                 `json:"totalTurns"`
+	TotalToolCalls     int                 `json:"totalToolCalls"`
+	SessionsWithCommit int                 `json:"sessionsWithCommit"`
+	TotalCommits       int                 `json:"totalCommits"`
+	Outcomes           OutcomeDistribution `json:"outcomes"`
+	FirstSeen          *string             `json:"firstSeen"`
+	LastSeen           *string             `json:"lastSeen"`
+}
+
+// QualityPage is the quality read for one offset page of sessions. The summary
+// is the full analytics bundle computed over the library at the page revision;
+// the rows are the requested page, so no surface subscribes to the full library.
+type QualityPage struct {
+	OffsetPage[QualitySession]
+	Summary ProjectAnalytics `json:"summary"`
+}
+
+// Validate checks the common offset-page contract for the quality rows. The
+// summary is produced by the server aggregate, so it carries no page validation.
+func (p QualityPage) Validate() error {
+	return p.OffsetPage.Validate()
 }
 
 // --- Project Familiarity ---

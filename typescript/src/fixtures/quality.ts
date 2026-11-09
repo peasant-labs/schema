@@ -1,4 +1,4 @@
-import type { QualitySession } from "../index.js";
+import type { PersonalMedians, QualitySession } from "../index.js";
 import { canonicalQualityFixtures } from "../internal/generated/quality-fixtures.gen.js";
 
 export const QualityFixtureName = Object.freeze({
@@ -59,9 +59,33 @@ export interface QualitySessionFixture {
   discoveryTurns: number;
 }
 export interface QualityFixtureSet { name: QualityFixtureSetName; cases: QualityFixtureName[]; }
-export interface QualityFixtures { sessions: QualitySessionFixture[]; sets: QualityFixtureSet[]; variations: QualityVariations; }
+
+/** One session in a personal-medians sample; only these four inputs participate. */
+export interface QualityMedianSession {
+  totalTokens: number;
+  retryTokensWasted: number;
+  specQualityScore: number;
+  withinSessionReverts: number;
+}
+
+/** One named personal-medians case: the sample and the exact expected medians. */
+export interface QualityMedianCase {
+  name: string;
+  sessions: QualityMedianSession[];
+  expected: PersonalMedians;
+}
+
+export interface QualityFixtures {
+  sessions: QualitySessionFixture[];
+  sets: QualityFixtureSet[];
+  variations: QualityVariations;
+  medians: QualityMedianCase[];
+}
 
 export function loadQualityFixtures(): QualityFixtures { return structuredClone(canonicalQualityFixtures); }
+
+/** The shared personal-medians corpus: the server aggregate and the browser baseline both read it. */
+export function loadMedianFixtures(): QualityMedianCase[] { return structuredClone(canonicalQualityFixtures.medians); }
 
 export function sessionByName(fixtures: QualityFixtures, name: QualityFixtureName): QualitySessionFixture | undefined {
   const fixture = fixtures.sessions.find((candidate) => candidate.name === name);

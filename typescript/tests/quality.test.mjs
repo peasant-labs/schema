@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
+  loadMedianFixtures,
   loadQualityFixtures,
   qualitySessions,
   qualitySessionsForSet,
@@ -34,6 +35,22 @@ test("quality fixtures expose the complete Go-validated catalog", () => {
   assert.deepEqual(qualitySessionsForSet(fixtures, "project_mix").map((row) => row.id), ["sess-000", "sess-002"]);
   assert.equal(fixtures.variations.tokenRatios.length, 5);
   assert.equal(fixtures.variations.metrics.specQualityScore.length, 7);
+});
+
+test("the personal-medians corpus is exported with every exclusion case", () => {
+  const cases = loadMedianFixtures();
+  assert.deepEqual(cases.map((medianCase) => medianCase.name), [
+    "typical",
+    "zero_token_excluded_from_retry_share",
+    "non_positive_spec_score_excluded",
+    "negative_reverts_excluded",
+    "empty_set_returns_no_medians",
+  ]);
+  const empty = cases.find((medianCase) => medianCase.name === "empty_set_returns_no_medians");
+  assert.deepEqual(empty.sessions, []);
+  assert.deepEqual(empty.expected, {});
+  const typical = cases.find((medianCase) => medianCase.name === "typical");
+  assert.deepEqual(typical.expected, { retryShare: 0.05, specQualityScore: 80, withinSessionReverts: 1 });
 });
 
 test("quality accessors do not expose mutable canonical rows", async (t) => {

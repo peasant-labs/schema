@@ -38,6 +38,7 @@ required_names:
   - teammate-name-control-character
   - teammate-only-in-session
   - teammate-only-in-sync
+  - quality-page
 round_trip:
   cases:
     - name: flat-detail-root
@@ -136,6 +137,12 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "the list summary and the sync summary carry the same recorded teammate"}
       mutation: {description: "supplies one equal teammate identity on both summaries of a sync row"}
+    - name: quality-page
+      input: {kind: quality-page, json: '{"items":[{"id":"q1","date":"2026-11-06","project":"p","totalTokens":280392,"turnCount":47,"outcome":"resolved","specQualityScore":72,"retryTokensWasted":1200,"withinSessionReverts":0}],"nextItems":[],"page":1,"perPage":25,"total":1,"revision":"4213","summary":{"totalSessions":1,"totalContributors":1,"totalProjects":1,"sessionsPerWeek":[{"week":"2026-11-02","count":1}],"weeklyActiveContributors":[{"week":"2026-11-02","contributors":1}],"returningContributorRate":{"total":1,"returning":0,"rate":0},"longestStreak":{"weeks":1,"startWeek":"2026-11-02","endWeek":"2026-11-02"},"newContributorVelocity":[{"week":"2026-11-02","newContributors":1}],"sessionToCommitRate":{"total":1,"withCommit":1,"rate":1},"avgDurationPerActiveWeek":[{"week":"2026-11-02","avgDurationMins":23.4,"sessions":1}],"outcomeDistribution":{"resolved":1,"partial":0,"failed":0,"unknown":0,"total":1},"sessionStats":{"durationMins":{"count":1,"median":18.5,"p90":18.5},"totalTokens":{"count":1,"median":280392,"p90":280392},"turnCount":{"count":1,"median":47,"p90":47},"toolCallCount":{"count":1,"median":0,"p90":0}},"perContributorBreakdown":[{"contributorId":"local","sessions":1,"activeWeeks":1,"totalTokens":280392,"totalDurationMins":23,"totalTurns":47,"totalToolCalls":0,"sessionsWithCommit":1,"totalCommits":1,"outcomes":{"resolved":1,"partial":0,"failed":0,"unknown":0,"total":1},"firstSeen":"2026-11-02","lastSeen":"2026-11-02"}]}}'}
+      expected: {valid: true, requiredKeys: [items, nextItems, page, perPage, total, revision, summary], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "quality rides the page that shows the rows; the summary is the full analytics bundle"}
+      mutation: {description: "carries one quality row and the full ProjectAnalytics summary"}
 validation:
   cases:
     - name: mismatched-sync-count

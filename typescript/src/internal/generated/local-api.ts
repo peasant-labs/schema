@@ -1232,6 +1232,7 @@ export interface components {
          * @enum {integer}
          */
         SchemaPageSize: Schema.PageSize;
+        SchemaPersonalMedians: Schema.PersonalMedians;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
