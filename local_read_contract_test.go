@@ -193,6 +193,16 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 		value = &schema.SessionPullRequestsResponse{}
 	case "quality-page":
 		value = &schema.QualityPage{}
+	case "segment-directory":
+		value = &schema.TranscriptSegmentDirectory{}
+	case "segment":
+		value = &schema.TranscriptSegment{}
+	case "window":
+		value = &schema.TranscriptWindow{}
+	case "detail-header":
+		value = &schema.SessionDetailHeader{}
+	case "detail-header-payload":
+		value = &schema.SessionDetailHeaderPayload{}
 	default:
 		return nil, fmt.Errorf("unknown local read fixture kind %q", input.Kind)
 	}
@@ -229,6 +239,26 @@ func decodeValidateLocal(input localReadInput) ([]byte, error) {
 			return nil, err
 		}
 	case *schema.QualityPage:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.TranscriptSegmentDirectory:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.TranscriptSegment:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.TranscriptWindow:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.SessionDetailHeader:
+		if err := typed.Validate(); err != nil {
+			return nil, err
+		}
+	case *schema.SessionDetailHeaderPayload:
 		if err := typed.Validate(); err != nil {
 			return nil, err
 		}

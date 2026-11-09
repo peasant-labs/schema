@@ -13,7 +13,8 @@ import (
 // BuildPeasantLocalAPISpec builds an OpenAPI 3.1 specification for the local web dashboard API v1.0.
 // It includes REST routes (/health, /sessions, /config/mock, /shutdown) and
 // WebSocket channel message schemas (DashboardPayload, SessionsPayload,
-// SessionDetailPayload, TrendsPayload, QualityPayload) as JSON Schema components.
+// SessionDetailPayload, SessionDetailHeaderPayload, TrendsPayload,
+// QualityPayload) as JSON Schema components.
 func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -187,6 +188,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		{"DashboardPayload", new(schema.DashboardPayload)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
 		{"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"SessionDetailHeaderPayload", new(schema.SessionDetailHeaderPayload)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},

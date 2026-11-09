@@ -146,6 +146,10 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"RelationshipNavigationStatus", new(schema.RelationshipNavigationStatus)}, {"SessionRelationshipNavigation", new(schema.SessionRelationshipNavigation)},
 		{"SessionListItemKind", new(schema.SessionListItemKind)}, {"HelperGroupSummary", new(schema.HelperGroupSummary)},
 		{"HelperContextSummary", new(schema.HelperContextSummary)}, {"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"SessionDetailHeader", new(schema.SessionDetailHeader)}, {"SessionDetailHeaderPayload", new(schema.SessionDetailHeaderPayload)},
+		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)}, {"TranscriptSegmentRef", new(schema.TranscriptSegmentRef)},
+		{"TranscriptSegment", new(schema.TranscriptSegment)}, {"TranscriptTurn", new(schema.TranscriptTurn)},
+		{"TranscriptWindow", new(schema.TranscriptWindow)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
@@ -304,7 +308,7 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 		if err != nil {
 			return nil, fmt.Errorf("marshal shared type %s: %w", t.Name, err)
 		}
-		applyGoRequiredFields(sm, reflect.TypeOf(t.Value))
+		applyGoRequiredFields(sm, reflect.TypeOf(t.Value), t.Name)
 		directSchemas[t.Name] = sm
 	}
 	// Reflection discovers transitive definitions repeatedly. Re-apply every
@@ -368,11 +372,23 @@ func constrainHelperMemberItems(components map[string]map[string]interface{}) er
 	return nil
 }
 
+// expandedEmbeddedRequired names catalog components whose named embedded struct
+// contributes its own required fields to the component's required list. The
+// default is the Go field name of the embedded struct, which keeps a frozen
+// legacy envelope's released requiredness unchanged (LegacyPullAnnotation). A
+// component opts in when its embedding is the wire shape itself rather than a
+// nested object, so the promoted properties are the fields a consumer receives.
+var expandedEmbeddedRequired = map[string]struct{}{
+	"SessionDetailReadPayload":   {},
+	"SessionDetailHeaderPayload": {},
+	"TranscriptTurn":             {},
+}
+
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
 // Types document. API operation documents may intentionally have distinct
 // validation policy; the language binding catalog mirrors the Go wire shape:
 // every exported JSON field without omitempty is present.
-func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.Type) {
+func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.Type, componentName string) {
 	for valueType.Kind() == reflect.Pointer {
 		valueType = valueType.Elem()
 	}
@@ -390,15 +406,17 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 			// The reflector promotes an embedded struct's JSON fields into this
 			// schema's properties but records the Go field name as required. For an
 			// instantiated generic (whose promoted property names are the wire
-			// contract and whose type name is not a property at all), expand the
-			// embedded struct's own required fields. A defined embedded struct keeps
-			// the released single-name behavior so a frozen legacy envelope does not
+			// contract and whose type name is not a property at all), and for a
+			// component that opts into wire-shaped embedding, expand the embedded
+			// struct's own required fields. A defined embedded struct keeps the
+			// released single-name behavior so a frozen legacy envelope does not
 			// drift.
 			embedded := field.Type
 			for embedded.Kind() == reflect.Pointer {
 				embedded = embedded.Elem()
 			}
-			if embedded.Kind() == reflect.Struct && strings.Contains(embedded.Name(), "[") {
+			_, expandEmbedded := expandedEmbeddedRequired[componentName]
+			if embedded.Kind() == reflect.Struct && (expandEmbedded || strings.Contains(embedded.Name(), "[")) {
 				for j := 0; j < embedded.NumField(); j++ {
 					inner := embedded.Field(j)
 					if !inner.IsExported() {

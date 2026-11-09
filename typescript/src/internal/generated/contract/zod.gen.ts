@@ -3190,6 +3190,44 @@ export const zThinkingLevelChange = z.intersection(z.unknown(), z.object({
 
 export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
 
+export const zSessionDetailHeader = z.object({
+    childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
+    durationMins: z.number(),
+    earlierHistory: z.array(zEarlierHistoryState).optional(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string().optional(),
+    outcome: zSessionOutcome.optional(),
+    parentSessionId: zSessionID.nullish(),
+    project: z.string().optional(),
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    rootSessionId: zSessionID.nullish(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.nullish(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailHeader = z.infer<typeof zSessionDetailHeader>;
+
 export const zTimelineSessionRef = z.object({
     harness: zHarness,
     hasCommitBinding: z.boolean(),
@@ -3477,6 +3515,67 @@ export const zSessionRelationshipNavigation = z.object({
 
 export type SessionRelationshipNavigation = z.infer<typeof zSessionRelationshipNavigation>;
 
+export const zSessionDetailHeaderPayload = z.object({
+    childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
+    durationMins: z.number(),
+    earlierHistory: z.array(zEarlierHistoryState).optional(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string().optional(),
+    outcome: zSessionOutcome.optional(),
+    parentSessionId: zSessionID.optional(),
+    project: z.string().optional(),
+    purpose: zSessionPurpose.optional(),
+    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    rootSessionId: zSessionID.optional(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.optional(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    teammate: zSessionTeammate.nullish(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailHeaderPayload = z.infer<typeof zSessionDetailHeaderPayload>;
+
+export const zTranscriptSegmentRef = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991)
+});
+
+export type TranscriptSegmentRef = z.infer<typeof zTranscriptSegmentRef>;
+
+export const zTranscriptSegmentDirectory = z.object({
+    directoryPage: z.int().gte(1).lte(9007199254740991).optional(),
+    directoryPerPage: z.int().gte(1).lte(9007199254740991).optional(),
+    revision: z.string().min(1),
+    segments: z.array(zTranscriptSegmentRef),
+    sessionId: zSessionID,
+    totalSegments: z.int().gte(0).lte(9007199254740991),
+    totalTurns: z.int().gte(0).lte(9007199254740991)
+});
+
+export type TranscriptSegmentDirectory = z.infer<typeof zTranscriptSegmentDirectory>;
+
 /**
  * TranscriptUpdateLicense
  *
@@ -3537,6 +3636,21 @@ export const zTranscriptUpdateRequest = z.object({
 }).strict();
 
 export type TranscriptUpdateRequest = z.infer<typeof zTranscriptUpdateRequest>;
+
+export const zTranscriptWindow = z.object({
+    anchorTurn: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    requestedAnchor: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    segments: z.array(z.int()),
+    sessionId: zSessionID,
+    span: z.int().gte(1).lte(10)
+});
+
+export type TranscriptWindow = z.infer<typeof zTranscriptWindow>;
 
 export const zTrendsPayload = z.object({
     days: z.array(zDayStats).nullable(),
@@ -3724,6 +3838,47 @@ export const zToolCallDetail = z.object({
 
 export type ToolCallDetail = z.infer<typeof zToolCallDetail>;
 
+export const zTranscriptTurn = z.object({
+    agentName: z.string().optional(),
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    command: zCommandInvocation.optional(),
+    content: z.string(),
+    controlKind: z.string().nullish(),
+    depth: z.int(),
+    entryType: zEntryType.optional(),
+    hasThinking: z.boolean().optional(),
+    index: z.int(),
+    observedModel: zObservedModelID.optional(),
+    parentIndex: z.int().nullish(),
+    provenance: zContentProvenance.optional(),
+    role: zRole,
+    sourceEntryRef: zSourceEntryRef.optional(),
+    stopReason: zStopReason.optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    timestamp: z.iso.datetime(),
+    tokensIn: z.int().nullish(),
+    tokensOut: z.int().nullish(),
+    toolCalls: z.array(zToolCallDetail).optional(),
+    truncated: z.boolean(),
+    usage: zUsageDetail.optional()
+});
+
+export type TranscriptTurn = z.infer<typeof zTranscriptTurn>;
+
+export const zTranscriptSegment = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    turns: z.array(zTranscriptTurn)
+});
+
+export type TranscriptSegment = z.infer<typeof zTranscriptSegment>;
+
 export const zTurnDetail = z.object({
     agentName: z.string().optional(),
     command: zCommandInvocation.nullish(),
@@ -3801,13 +3956,13 @@ export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 export const zSessionDetailReadPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
-    durationMins: z.number().optional(),
+    durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
-    endTime: z.iso.datetime().optional(),
+    endTime: z.iso.datetime(),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
-    harness: zHarness.optional(),
-    id: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     medians: zPersonalMedians.nullish(),
     model: z.string().optional(),
@@ -3825,19 +3980,19 @@ export const zSessionDetailReadPayload = z.object({
     scorecard: zSessionScorecard.optional(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime().optional(),
+    startTime: z.iso.datetime(),
     status: z.string().optional(),
     teammate: zSessionTeammate.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
     title: z.string().optional(),
-    tokensIn: z.int().optional(),
-    tokensOut: z.int().optional(),
-    toolCallCount: z.int().optional(),
-    totalTokens: z.int().optional(),
-    turnCount: z.int().optional(),
-    turns: z.array(zTurnDetail).nullish(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    turns: z.array(zTurnDetail).nullable(),
     workingDirectory: z.string().optional()
 });
 

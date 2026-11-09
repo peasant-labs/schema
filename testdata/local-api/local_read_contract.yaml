@@ -39,6 +39,11 @@ required_names:
   - teammate-only-in-session
   - teammate-only-in-sync
   - quality-page
+  - transcript-segment-directory
+  - transcript-segment
+  - transcript-window
+  - session-detail-header
+  - session-detail-header-payload
 round_trip:
   cases:
     - name: flat-detail-root
@@ -143,6 +148,36 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "quality rides the page that shows the rows; the summary is the full analytics bundle"}
       mutation: {description: "carries one quality row and the full ProjectAnalytics summary"}
+    - name: transcript-segment-directory
+      input: {kind: segment-directory, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","totalTurns":55,"totalSegments":2,"segments":[{"index":0,"firstTurn":4,"lastTurn":40,"byteLength":917504},{"index":1,"firstTurn":44,"lastTurn":149,"byteLength":655360}]}' }
+      expected: {valid: true, requiredKeys: [sessionId, revision, totalTurns, totalSegments, segments], forbiddenKeys: [turns, position, page, perPage, directoryPage]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the directory is the transcript's only global index"}
+      mutation: {description: "carries one ref per segment plus the cut's scalars and no per-turn row"}
+    - name: transcript-segment
+      input: {kind: segment, json: '{"index":0,"revision":"4213","firstTurn":4,"lastTurn":21,"byteLength":917504,"hasOlder":false,"hasNewer":true,"turns":[{"index":4,"role":"user","content":"hello","timestamp":"2026-11-09T00:00:00Z","depth":0,"truncated":false,"byteLength":5},{"index":21,"role":"assistant","content":"ok","timestamp":"2026-11-09T00:01:00Z","depth":0,"truncated":false,"byteLength":2}]}' }
+      expected: {valid: true, requiredKeys: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns], forbiddenKeys: [position, page, perPage, TurnDetail]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "one segment of whole turns with the declared range equal to the turns"}
+      mutation: {description: "serves two whole turns in one segment"}
+    - name: transcript-window
+      input: {kind: window, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","requestedAnchor":72,"anchorTurn":72,"span":10,"firstTurn":4,"lastTurn":118,"segments":[0,1],"hasOlder":false,"hasNewer":true}' }
+      expected: {valid: true, requiredKeys: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer], forbiddenKeys: [turns, content, toolCalls, position, page, perPage]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the window is a descriptor only; it names the covering segment run and carries no content"}
+      mutation: {description: "describes an anchored window from turn 4 to 118 over segments zero and one"}
+    - name: session-detail-header
+      input: {kind: detail-header, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":55,"toolCallCount":91,"earlierHistory":["uncertain_migrated"]}' }
+      expected: {valid: true, requiredKeys: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount], forbiddenKeys: [turns, nativeMetadata]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the header is a metadata-only projection, not a replacement for the durable payload"}
+      mutation: {description: "carries session metadata and earlier-history state with no turns"}
+    - name: session-detail-header-payload
+      input: {kind: detail-header-payload, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":55,"toolCallCount":91,"relationshipNavigation":[{"kind":"started_by","status":"unknown"}],"teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}' }
+      expected: {valid: true, requiredKeys: [id, relationshipNavigation, teammate], forbiddenKeys: [turns, nativeMetadata]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the session_detail frame is the header plus local navigation and teammate evidence"}
+      mutation: {description: "carries one unresolved relationship link and one exact teammate identity beside the header"}
 validation:
   cases:
     - name: mismatched-sync-count

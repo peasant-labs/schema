@@ -10207,6 +10207,315 @@
         ],
         "type": "object"
       },
+      "SessionDetailHeader": {
+        "properties": {
+          "childSessions": {
+            "items": {
+              "$ref": "#/components/schemas/ChildSessionRef"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/InterpretationDiagnostics"
+          },
+          "durationMins": {
+            "format": "double",
+            "type": "number"
+          },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/EarlierHistoryState"
+            },
+            "type": "array"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gitBranch": {
+            "type": "string"
+          },
+          "gitRemote": {
+            "type": "string"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/Harness"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SessionOutcome"
+          },
+          "parentSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/RetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionID"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "scorecard": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionScorecard"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sessionOrigin": {
+            "$ref": "#/components/schemas/SessionOrigin"
+          },
+          "source": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/ThinkingLevelChange"
+            },
+            "type": "array"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          },
+          "tokensIn": {
+            "type": "integer"
+          },
+          "tokensOut": {
+            "type": "integer"
+          },
+          "toolCallCount": {
+            "type": "integer"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "type": "integer"
+          },
+          "workingDirectory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount"
+        ],
+        "type": "object"
+      },
+      "SessionDetailHeaderPayload": {
+        "properties": {
+          "childSessions": {
+            "items": {
+              "$ref": "#/components/schemas/ChildSessionRef"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/InterpretationDiagnostics"
+          },
+          "durationMins": {
+            "format": "double",
+            "type": "number"
+          },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/EarlierHistoryState"
+            },
+            "type": "array"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gitBranch": {
+            "type": "string"
+          },
+          "gitRemote": {
+            "type": "string"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/Harness"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SessionOutcome"
+          },
+          "parentSessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "project": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SessionPurpose"
+          },
+          "relationshipNavigation": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationshipNavigation"
+            },
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SessionRelationship"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/RetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "scorecard": {
+            "$ref": "#/components/schemas/SessionScorecard"
+          },
+          "sessionOrigin": {
+            "$ref": "#/components/schemas/SessionOrigin"
+          },
+          "source": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "teammate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionTeammate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/ThinkingLevelChange"
+            },
+            "type": "array"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          },
+          "tokensIn": {
+            "type": "integer"
+          },
+          "tokensOut": {
+            "type": "integer"
+          },
+          "toolCallCount": {
+            "type": "integer"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "type": "integer"
+          },
+          "workingDirectory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount"
+        ],
+        "type": "object"
+      },
       "SessionDetailPayload": {
         "properties": {
           "childSessions": {
@@ -10550,7 +10859,17 @@
           }
         },
         "required": [
-          "SessionDetailPayload"
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount",
+          "turns"
         ],
         "type": "object"
       },
@@ -12508,6 +12827,234 @@
         "title": "Transcript ID",
         "type": "string"
       },
+      "TranscriptSegment": {
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptTurn"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "revision",
+          "firstTurn",
+          "lastTurn",
+          "byteLength",
+          "hasOlder",
+          "hasNewer",
+          "turns"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentDirectory": {
+        "properties": {
+          "directoryPage": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "directoryPerPage": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentRef"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "totalSegments": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "totalTurns",
+          "totalSegments",
+          "segments"
+        ],
+        "type": "object"
+      },
+      "TranscriptSegmentRef": {
+        "properties": {
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "index": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "firstTurn",
+          "lastTurn",
+          "byteLength"
+        ],
+        "type": "object"
+      },
+      "TranscriptTurn": {
+        "properties": {
+          "agentName": {
+            "type": "string"
+          },
+          "byteLength": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "command": {
+            "$ref": "#/components/schemas/CommandInvocation"
+          },
+          "content": {
+            "type": "string"
+          },
+          "controlKind": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "depth": {
+            "type": "integer"
+          },
+          "entryType": {
+            "$ref": "#/components/schemas/EntryType"
+          },
+          "hasThinking": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "observedModel": {
+            "$ref": "#/components/schemas/ObservedModelID"
+          },
+          "parentIndex": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/ContentProvenance"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "sourceEntryRef": {
+            "$ref": "#/components/schemas/SourceEntryRef"
+          },
+          "stopReason": {
+            "$ref": "#/components/schemas/StopReason"
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/ThinkingLevel"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/ThinkingLevelRaw"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "tokensIn": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "tokensOut": {
+            "type": [
+              "null",
+              "integer"
+            ]
+          },
+          "toolCalls": {
+            "items": {
+              "$ref": "#/components/schemas/ToolCallDetail"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageDetail"
+          }
+        },
+        "required": [
+          "index",
+          "role",
+          "content",
+          "timestamp",
+          "depth",
+          "truncated",
+          "byteLength"
+        ],
+        "type": "object"
+      },
       "TranscriptUpdateLicense": {
         "description": "License value for the owner transcript update operation: a canonical menu license, or the empty string to clear. Clearing a license that was actually granted is refused, because a granted Creative Commons license is irrevocable.",
         "enum": [
@@ -12554,6 +13101,67 @@
         ],
         "title": "TranscriptUpdateVisibility",
         "type": "string"
+      },
+      "TranscriptWindow": {
+        "properties": {
+          "anchorTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "firstTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "hasNewer": {
+            "type": "boolean"
+          },
+          "hasOlder": {
+            "type": "boolean"
+          },
+          "lastTurn": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "requestedAnchor": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/SessionID"
+          },
+          "span": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "revision",
+          "requestedAnchor",
+          "anchorTurn",
+          "span",
+          "firstTurn",
+          "lastTurn",
+          "segments",
+          "hasOlder",
+          "hasNewer"
+        ],
+        "type": "object"
       },
       "TrendsPayload": {
         "properties": {

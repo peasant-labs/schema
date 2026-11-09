@@ -7529,7 +7529,17 @@
           }
         },
         "required": [
-          "SessionDetailPayload"
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount",
+          "turns"
         ],
         "type": "object"
       },
@@ -9728,6 +9738,158 @@
         ],
         "type": "object"
       },
+      "SessionDetailHeaderPayload": {
+        "properties": {
+          "childSessions": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaChildSessionRef"
+            },
+            "type": "array"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/SchemaInterpretationDiagnostics"
+          },
+          "durationMins": {
+            "format": "double",
+            "type": "number"
+          },
+          "earlierHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaEarlierHistoryState"
+            },
+            "type": "array"
+          },
+          "endTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "gitBranch": {
+            "type": "string"
+          },
+          "gitRemote": {
+            "type": "string"
+          },
+          "harness": {
+            "$ref": "#/components/schemas/BestiaryHarness"
+          },
+          "id": {
+            "type": "string"
+          },
+          "inputSubmissionCount": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/SchemaSessionOutcome"
+          },
+          "parentSessionId": {
+            "$ref": "#/components/schemas/SchemaSessionID"
+          },
+          "project": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/SchemaSessionPurpose"
+          },
+          "relationshipNavigation": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaSessionRelationshipNavigation"
+            },
+            "type": "array"
+          },
+          "relationships": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaSessionRelationship"
+            },
+            "type": "array"
+          },
+          "retainedUnknown": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaRetainedUnknownRecord"
+            },
+            "type": "array"
+          },
+          "rootSessionId": {
+            "$ref": "#/components/schemas/SchemaSessionID"
+          },
+          "schemaVersion": {
+            "type": "string"
+          },
+          "scorecard": {
+            "$ref": "#/components/schemas/SchemaSessionScorecard"
+          },
+          "sessionOrigin": {
+            "$ref": "#/components/schemas/SchemaSessionOrigin"
+          },
+          "source": {
+            "type": "string"
+          },
+          "startTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "teammate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SchemaSessionTeammate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thinkingLevel": {
+            "$ref": "#/components/schemas/SchemaThinkingLevel"
+          },
+          "thinkingLevelHistory": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaThinkingLevelChange"
+            },
+            "type": "array"
+          },
+          "thinkingLevelRaw": {
+            "$ref": "#/components/schemas/SchemaThinkingLevelRaw"
+          },
+          "tokensIn": {
+            "type": "integer"
+          },
+          "tokensOut": {
+            "type": "integer"
+          },
+          "toolCallCount": {
+            "type": "integer"
+          },
+          "totalTokens": {
+            "type": "integer"
+          },
+          "turnCount": {
+            "type": "integer"
+          },
+          "workingDirectory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount"
+        ],
+        "type": "object"
+      },
       "SessionDetailPayload": {
         "properties": {
           "childSessions": {
@@ -10071,7 +10233,17 @@
           }
         },
         "required": [
-          "SessionDetailPayload"
+          "id",
+          "harness",
+          "startTime",
+          "endTime",
+          "durationMins",
+          "totalTokens",
+          "tokensIn",
+          "tokensOut",
+          "turnCount",
+          "toolCallCount",
+          "turns"
         ],
         "type": "object"
       },

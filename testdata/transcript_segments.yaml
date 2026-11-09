@@ -1,0 +1,415 @@
+required_names:
+  - cut-defers-crossing-entry
+  - cut-user-turn-whole
+  - cut-oversized-turn-alone
+  - segment-minimal
+  - segment-inverted-range
+  - segment-turn-outside-range
+  - segment-range-wider-than-turns
+  - segment-wrong-older-edge
+  - directory-unpaged
+  - directory-empty-session
+  - directory-paged-second-page
+  - directory-non-contiguous-index
+  - directory-total-mismatch
+  - directory-null-segments
+  - window-anchored
+  - window-span-one
+  - window-span-zero
+  - window-span-eleven
+  - window-empty-segments
+  - window-unordered-segments
+  - window-non-contiguous-segments
+  - window-anchor-outside-range
+  - window-uncovered-range
+shape_cases:
+  cases:
+    - name: segment-minimal
+      classification: must-pass
+      provenance: {source: requirement, ref: "one segment's content and its own facts, cut on complete entries"}
+      mutation: {description: "serves two whole turns in one segment with the declared range equal to the turns"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 21
+          byteLength: 917504
+          hasOlder: false
+          hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+            - {index: 21, role: assistant, content: ok, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 2}
+      expected: true
+    - name: segment-inverted-range
+      classification: must-fail
+      provenance: {source: boundary, ref: "a segment covers a closed ascending range"}
+      mutation: {description: "sets firstTurn above lastTurn on an otherwise valid segment"}
+      input:
+        schema: TranscriptSegment
+        payload: &invertedSegment
+          index: 0
+          revision: "4213"
+          firstTurn: 21
+          lastTurn: 4
+          byteLength: 10
+          hasOlder: false
+          hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+      expected: false
+    - name: segment-turn-outside-range
+      classification: must-fail
+      provenance: {source: boundary, ref: "every turn identity is contained by exactly one segment range"}
+      mutation: {description: "serves a turn whose identity lies past the declared lastTurn"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 20
+          byteLength: 10
+          hasOlder: false
+          hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+            - {index: 21, role: assistant, content: ok, timestamp: '2026-11-09T00:01:00Z', depth: 0, truncated: false, byteLength: 2}
+      expected: false
+    - name: segment-range-wider-than-turns
+      classification: must-fail
+      provenance: {source: boundary, ref: "a short segment silently moves every boundary after it"}
+      mutation: {description: "declares the range wider than the turns actually served"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 21
+          byteLength: 5
+          hasOlder: false
+          hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+      expected: false
+    - name: segment-wrong-older-edge
+      classification: must-fail
+      provenance: {source: boundary, ref: "hasOlder is exactly index > 0"}
+      mutation: {description: "draws an older boundary on segment zero"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 4
+          byteLength: 5
+          hasOlder: true
+          hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+      expected: false
+    - name: directory-unpaged
+      classification: must-pass
+      provenance: {source: requirement, ref: "one directory read, one ref per segment, no per-turn row"}
+      mutation: {description: "carries two segment refs and the cut's scalars without paging"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 55
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+            - {index: 1, firstTurn: 44, lastTurn: 149, byteLength: 655360}
+      expected: true
+    - name: directory-empty-session
+      classification: must-pass
+      provenance: {source: requirement, ref: "an empty session is zero segments and carries totalSegments 0"}
+      mutation: {description: "serves an empty non-null ref array for a session with no turns"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 0
+          totalSegments: 0
+          segments: []
+      expected: true
+    - name: directory-paged-second-page
+      classification: must-pass
+      provenance: {source: requirement, ref: "above the 10000-ref cap the read serves one page and keeps the true total"}
+      mutation: {description: "serves refs 10000 and 10001 as directory page 2 with the whole-session total"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 12002
+          totalSegments: 12002
+          directoryPage: 2
+          directoryPerPage: 10000
+          segments:
+            - {index: 10000, firstTurn: 20000, lastTurn: 20001, byteLength: 10}
+            - {index: 10001, firstTurn: 20002, lastTurn: 20003, byteLength: 10}
+      expected: true
+    - name: directory-non-contiguous-index
+      classification: must-fail
+      provenance: {source: boundary, ref: "refs must be contiguous from the page's first ordinal"}
+      mutation: {description: "skips segment ordinal one so a segment is hidden from the viewer"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 55
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 10}
+            - {index: 2, firstTurn: 44, lastTurn: 149, byteLength: 10}
+      expected: false
+    - name: directory-total-mismatch
+      classification: must-fail
+      provenance: {source: boundary, ref: "an unpaged directory must serve every segment"}
+      mutation: {description: "declares two segments while serving one ref"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 55
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 10}
+      expected: false
+    - name: directory-null-segments
+      classification: must-fail
+      provenance: {source: boundary, ref: "an empty read must not be answerable with null"}
+      mutation: {description: "nulls the ref array of an otherwise empty directory"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 0
+          totalSegments: 0
+          segments: null
+      expected: false
+    - name: window-anchored
+      classification: must-pass
+      provenance: {source: requirement, ref: "the descriptor names the contiguous covering segment run and no content"}
+      mutation: {description: "describes a window from turn 4 to 118 covered by segments zero and one"}
+      input:
+        schema: TranscriptWindow
+        payload: &anchoredWindow
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 4
+          lastTurn: 118
+          segments: [0, 1]
+          hasOlder: false
+          hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
+          - {index: 2, firstTurn: 131, lastTurn: 149, byteLength: 400000}
+      expected: true
+    - name: window-span-one
+      classification: must-pass
+      provenance: {source: boundary, ref: "span narrows the window and is accepted from 1 to 10"}
+      mutation: {description: "narrows the anchored window to one assistant turn per side"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 1
+          firstTurn: 71
+          lastTurn: 76
+          segments: [0, 1]
+          hasOlder: true
+          hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 71, byteLength: 917504}
+          - {index: 1, firstTurn: 72, lastTurn: 118, byteLength: 950000}
+      expected: true
+    - name: window-span-zero
+      classification: must-fail
+      provenance: {source: boundary, ref: "span is validated 1..10"}
+      mutation: {description: "sets span to zero on an otherwise valid window"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 0
+          firstTurn: 4
+          lastTurn: 118
+          segments: [0, 1]
+          hasOlder: false
+          hasNewer: true
+      expected: false
+    - name: window-span-eleven
+      classification: must-fail
+      provenance: {source: boundary, ref: "the design value cannot be widened past ten assistant turns per side"}
+      mutation: {description: "sets span to eleven on an otherwise valid window"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 11
+          firstTurn: 4
+          lastTurn: 118
+          segments: [0, 1]
+          hasOlder: false
+          hasNewer: true
+      expected: false
+    - name: window-empty-segments
+      classification: must-fail
+      provenance: {source: boundary, ref: "a window always names at least the segment covering its anchor"}
+      mutation: {description: "empties the covering segment run"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 4
+          lastTurn: 118
+          segments: []
+          hasOlder: false
+          hasNewer: true
+      expected: false
+    - name: window-unordered-segments
+      classification: must-fail
+      provenance: {source: boundary, ref: "the covering run is ordered ascending"}
+      mutation: {description: "lists the covering segments out of order"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 4
+          lastTurn: 118
+          segments: [1, 0]
+          hasOlder: false
+          hasNewer: true
+      expected: false
+    - name: window-non-contiguous-segments
+      classification: must-fail
+      provenance: {source: boundary, ref: "the descriptor must name the contiguous run so the window has no internal gap"}
+      mutation: {description: "skips segment one between the two edges"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 4
+          lastTurn: 149
+          segments: [0, 2]
+          hasOlder: false
+          hasNewer: true
+      expected: false
+    - name: window-anchor-outside-range
+      classification: must-fail
+      provenance: {source: boundary, ref: "the window must contain the user turn it is centred on"}
+      mutation: {description: "places the resolved anchor before the window's first turn"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 76
+          lastTurn: 118
+          segments: [1]
+          hasOlder: true
+          hasNewer: true
+      expected: false
+    - name: window-uncovered-range
+      classification: must-fail
+      provenance: {source: boundary, ref: "the covering run must cover [firstTurn, lastTurn]"}
+      mutation: {description: "starts the window at a turn identity no segment covers"}
+      input:
+        schema: TranscriptWindow
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          requestedAnchor: 72
+          anchorTurn: 72
+          span: 10
+          firstTurn: 41
+          lastTurn: 118
+          segments: [0, 1]
+          hasOlder: true
+          hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
+      expected: false
+cut_cases:
+  - name: cut-defers-crossing-entry
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, entries: [{name: prompt, bytes: 262144}]}
+      - {index: 7, role: assistant, entries: [{name: text, bytes: 524288}, {name: tool-call, bytes: 131072}]}
+      - {index: 11, role: assistant, entries: [{name: tool-result, bytes: 524288}]}
+      - {index: 14, role: user, entries: [{name: prompt, bytes: 131072}]}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 7}
+        - {index: 1, firstTurn: 11, lastTurn: 14}
+      crossing: {turn: 11, entry: tool-result}
+  - name: cut-user-turn-whole
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: assistant, entries: [{name: text, bytes: 524288}]}
+      - {index: 7, role: user, entries: [{name: prompt, bytes: 1048576}]}
+      - {index: 11, role: assistant, entries: [{name: text, bytes: 262144}]}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4}
+        - {index: 1, firstTurn: 7, lastTurn: 7}
+        - {index: 2, firstTurn: 11, lastTurn: 11}
+      crossing: {turn: 7, entry: prompt}
+  - name: cut-oversized-turn-alone
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, entries: [{name: prompt, bytes: 1024}]}
+      - {index: 7, role: assistant, entries: [{name: text, bytes: 4194304}]}
+      - {index: 11, role: user, entries: [{name: prompt, bytes: 2048}]}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4}
+        - {index: 1, firstTurn: 7, lastTurn: 7}
+        - {index: 2, firstTurn: 11, lastTurn: 11}
+      crossing: {turn: 7, entry: text}
+directory_cap:
+  ref_count: 10000
+  per_page: 10000
+  total_segments: 12000
+  pages: [1, 2]
+  last_page_ref_range: [10000, 11999]

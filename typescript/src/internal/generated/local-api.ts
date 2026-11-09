@@ -1695,6 +1695,7 @@ export interface components {
         SchemaVillageUserCollective: Schema.VillageUserCollective;
         SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
+        SessionDetailHeaderPayload: Schema.SessionDetailHeaderPayload;
         SessionDetailPayload: Schema.SessionDetailPayload;
         SessionDetailReadPayload: Schema.SessionDetailReadPayload;
         TrendsPayload: Schema.TrendsPayload;
