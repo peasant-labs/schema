@@ -18235,10 +18235,16 @@
           "agent_total": {
             "type": "integer"
           },
-          "limit": {
-            "type": "integer"
+          "next_items": {
+            "items": {
+              "$ref": "#/components/schemas/VillageTranscriptListRow"
+            },
+            "type": "array"
           },
           "page": {
+            "type": "integer"
+          },
+          "per_page": {
             "type": "integer"
           },
           "total": {
@@ -18253,10 +18259,11 @@
         },
         "required": [
           "transcripts",
+          "next_items",
           "total",
           "agent_total",
           "page",
-          "limit"
+          "per_page"
         ],
         "type": "object"
       },

@@ -5372,8 +5372,9 @@ export type VillageTranscriptListRow = z.infer<typeof zVillageTranscriptListRow>
 
 export const zVillageTranscriptListResponse = z.object({
     agent_total: z.int(),
-    limit: z.int(),
+    next_items: z.array(zVillageTranscriptListRow),
     page: z.int(),
+    per_page: z.int(),
     total: z.int(),
     transcripts: z.array(zVillageTranscriptListRow)
 });

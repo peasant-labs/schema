@@ -7,6 +7,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.36.0 adds `next_items` to the transcript list response: the
+  following page's rows, up to `per_page` of them, so a client can pre-compute
+  the group keys of the next page without a second request. Only an empty
+  `next_items` ends the traversal.
 - Types 0.44.0 adds the transcript read contract: the `TranscriptSegmentDirectory`
   global index with one `TranscriptSegmentRef` per segment and a 10,000-ref page
   cap (`directoryPage`/`directoryPerPage` above it), `TranscriptSegment` cut on
@@ -30,6 +34,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Village API 0.36.0 renames the transcript list response's `limit` to
+  `per_page` and declares the closed `per_page` query (25, 50, or 100; omitted
+  reads 25) beside the grouped view's `limit` on `GET /api/v1/transcripts`. The
+  response echoes the requested `page` and `per_page` and never clamps; a request
+  past the last page returns an empty `transcripts` beside an empty
+  `next_items`. `VillageTranscriptListResponse.Validate` requires both arrays and
+  a positive `per_page`, and applies every row check to both arrays.
 - Local API 0.29.0 and Types 0.44.0 replace the page and set contract with one
   `OffsetPage[T]`: `items`, `nextItems`, `page`, `perPage`, `total`, and a
   decimal `revision`. `LocalSyncSessionPage` embeds it and adds
