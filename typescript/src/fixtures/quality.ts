@@ -80,6 +80,8 @@ export interface QualityFixtures {
   sets: QualityFixtureSet[];
   variations: QualityVariations;
   medians: QualityMedianCase[];
+  /** Closed case inventory for `medians`, read by the Go loader and this package. */
+  requiredMedianNames: string[];
 }
 
 export function loadQualityFixtures(): QualityFixtures { return structuredClone(canonicalQualityFixtures); }

@@ -282,7 +282,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'public null total cannot coerce to zero'}
-      input: {schema: VillageHelperMembersPayload, payload: {members: [], page: 1, perPage: 25, total: null, revision: "4213", nextItems: []}}
+      input: {schema: VillageHelperMembersPayload, payload: {members: [], page: 1, limit: 25, total: null}}
       expected: {valid: false}
     - name: local-unsafe-total
       classification: must-fail

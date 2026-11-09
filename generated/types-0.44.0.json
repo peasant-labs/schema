@@ -4407,6 +4407,8 @@
       "ContributorBreakdown": {
         "properties": {
           "activeWeeks": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "contributorId": {
@@ -4442,24 +4444,38 @@
             "$ref": "#/components/schemas/OutcomeDistribution"
           },
           "sessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "sessionsWithCommit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalCommits": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalDurationMins": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalTokens": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalToolCalls": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -6617,8 +6633,7 @@
           "page",
           "perPage",
           "total",
-          "revision",
-          "totals"
+          "revision"
         ],
         "type": "object"
       },
@@ -6814,6 +6829,8 @@
             ]
           },
           "weeks": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -7186,6 +7203,8 @@
       "MedianP90": {
         "properties": {
           "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "median": {
@@ -7498,18 +7517,28 @@
       "OutcomeDistribution": {
         "properties": {
           "failed": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "partial": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "resolved": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "unknown": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -7740,12 +7769,18 @@
             "type": "array"
           },
           "totalContributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalProjects": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "totalSessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "weeklyActiveContributors": {
@@ -9698,12 +9733,18 @@
         "properties": {
           "rate": {
             "format": "double",
+            "maximum": 1,
+            "minimum": 0,
             "type": "number"
           },
           "returning": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -11781,12 +11822,18 @@
         "properties": {
           "rate": {
             "format": "double",
+            "maximum": 1,
+            "minimum": 0,
             "type": "number"
           },
           "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "withCommit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           }
         },
@@ -19174,9 +19221,12 @@
         "properties": {
           "avgDurationMins": {
             "format": "double",
+            "minimum": 0,
             "type": "number"
           },
           "sessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "week": {
@@ -19193,6 +19243,8 @@
       "WeekContributors": {
         "properties": {
           "contributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "week": {
@@ -19208,6 +19260,8 @@
       "WeekCount": {
         "properties": {
           "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "week": {
@@ -19223,6 +19277,8 @@
       "WeekNewContributors": {
         "properties": {
           "newContributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
             "type": "integer"
           },
           "week": {

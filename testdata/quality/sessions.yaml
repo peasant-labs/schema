@@ -245,7 +245,16 @@ quality_variations:
 # the browser baseline are checked against one shared corpus rather than each
 # restating the rule. A zero-token session contributes no retry share, a
 # non-positive spec score contributes no score, a negative revert count
-# contributes no revert value, and an empty sample returns {}.
+# contributes no revert value, and an empty sample returns {}. An even sample
+# takes the mean of the two middle values (the typical case's 80 and 1), not the
+# lower middle. The required names below are the closed case inventory: the Go
+# loader and the TypeScript test both read this one manifest.
+required_median_names:
+  - "typical"
+  - "zero_token_excluded_from_retry_share"
+  - "non_positive_spec_score_excluded"
+  - "negative_reverts_excluded"
+  - "empty_set_returns_no_medians"
 medians:
   - name: "typical"
     sessions:

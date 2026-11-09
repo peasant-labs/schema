@@ -1,4 +1,4 @@
-required_names: [legacy, grouped, project-options, defaults, zero-default, positive-cap, reject-oversized, children, child-project-refused, child-all-refused, empty-parent, reject-negative, malformed-max, repeated-max, repeated-token, token-with-page, oversized-token, omitted-view-is-home, empty-token-absent, options-filter-refused, unknown-view, unknown-filter, malformed-project, continuation, reject-26, grouped-max-refused, token-4096-alone, options-max-refused]
+required_names: [legacy, grouped, project-options, defaults, zero-default, positive-cap, accept-50, reject-oversized, children, child-project-refused, child-all-refused, empty-parent, reject-negative, malformed-max, repeated-max, repeated-token, token-with-page, oversized-token, omitted-view-is-home, empty-token-absent, options-filter-refused, unknown-view, unknown-filter, malformed-project, continuation, reject-26, grouped-max-refused, token-4096-alone, options-max-refused, reject-page-zero, reject-page-malformed]
 cases:
   - name: legacy
     input: {query: ""}
@@ -36,6 +36,12 @@ cases:
     classification: must-pass
     provenance: {source: boundary, ref: "page maximum"}
     mutation: {description: "use the largest accepted member"}
+  - name: accept-50
+    input: {query: "view=home&maxItems=50"}
+    expected: {valid: true, max_items: 50, page: 1}
+    classification: must-pass
+    provenance: {source: boundary, ref: "page maximum"}
+    mutation: {description: "use the middle accepted member"}
   - name: reject-oversized
     input: {query: "view=home&maxItems=101"}
     expected: {valid: false, error_contains: "outside the closed set"}
@@ -168,3 +174,15 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "metadata-only project picker"}
     mutation: {description: "paging fields are refused on project-options"}
+  - name: reject-page-zero
+    input: {query: "view=home&page=0"}
+    expected: {valid: false, error_contains: "below one"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "one-based page number"}
+    mutation: {description: "page zero is refused rather than clamped"}
+  - name: reject-page-malformed
+    input: {query: "view=home&page=abc"}
+    expected: {valid: false, error_contains: "page is malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "integer page number"}
+    mutation: {description: "a noninteger page number is refused"}

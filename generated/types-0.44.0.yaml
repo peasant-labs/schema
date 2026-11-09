@@ -2713,6 +2713,8 @@ components:
     ContributorBreakdown:
       properties:
         activeWeeks:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         contributorId:
           type: string
@@ -2731,18 +2733,32 @@ components:
         outcomes:
           $ref: '#/components/schemas/OutcomeDistribution'
         sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         sessionsWithCommit:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalCommits:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalDurationMins:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalTokens:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalToolCalls:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - contributorId
@@ -4242,7 +4258,6 @@ components:
       - perPage
       - total
       - revision
-      - totals
       type: object
     LocalSyncSessionRow:
       properties:
@@ -4370,6 +4385,8 @@ components:
             - string
           - type: "null"
         weeks:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - weeks
@@ -4628,6 +4645,8 @@ components:
     MedianP90:
       properties:
         count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         median:
           anyOf:
@@ -4853,14 +4872,24 @@ components:
     OutcomeDistribution:
       properties:
         failed:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         partial:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         resolved:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         unknown:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - resolved
@@ -5005,10 +5034,16 @@ components:
             $ref: '#/components/schemas/WeekCount'
           type: array
         totalContributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalProjects:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         totalSessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         weeklyActiveContributors:
           items:
@@ -6213,10 +6248,16 @@ components:
       properties:
         rate:
           format: double
+          maximum: 1
+          minimum: 0
           type: number
         returning:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - total
@@ -7575,10 +7616,16 @@ components:
       properties:
         rate:
           format: double
+          maximum: 1
+          minimum: 0
           type: number
         total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         withCommit:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
       required:
       - total
@@ -12225,8 +12272,11 @@ components:
       properties:
         avgDurationMins:
           format: double
+          minimum: 0
           type: number
         sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         week:
           type: string
@@ -12238,6 +12288,8 @@ components:
     WeekContributors:
       properties:
         contributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         week:
           type: string
@@ -12248,6 +12300,8 @@ components:
     WeekCount:
       properties:
         count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         week:
           type: string
@@ -12258,6 +12312,8 @@ components:
     WeekNewContributors:
       properties:
         newContributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
           type: integer
         week:
           type: string

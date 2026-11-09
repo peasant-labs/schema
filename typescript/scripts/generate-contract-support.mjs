@@ -417,6 +417,7 @@ function renderQualityFixtures(source) {
       },
     },
     medians: source.medians ?? [],
+    requiredMedianNames: source.required_median_names ?? [],
   };
   return `${header()}import type { QualityFixtures } from "../../fixtures/quality.js";\n\nexport const canonicalQualityFixtures: QualityFixtures = ${JSON.stringify(fixtures, null, 2)};\n`;
 }

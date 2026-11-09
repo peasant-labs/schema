@@ -86,4 +86,14 @@ func TestLoadQualityFixturesMedians(t *testing.T) {
 	if zeroTokens.Expected.RetryShare == nil || *zeroTokens.Expected.RetryShare != 0.1 {
 		t.Fatalf("zero-token retry share median = %v, want 0.1 from the one nonzero-token session", zeroTokens.Expected.RetryShare)
 	}
+	nonPositive, ok := cases["non_positive_spec_score_excluded"]
+	if !ok {
+		t.Fatal("medians corpus is missing the non-positive score sample")
+	}
+	if nonPositive.Expected.SpecQualityScore == nil || *nonPositive.Expected.SpecQualityScore != 60 {
+		t.Fatalf("non-positive score median = %v, want 60 from the single eligible score", nonPositive.Expected.SpecQualityScore)
+	}
+	if nonPositive.Expected.RetryShare == nil || *nonPositive.Expected.RetryShare != 0 {
+		t.Fatalf("non-positive score retry share = %v, want 0 from three sampled sessions with no wasted retries", nonPositive.Expected.RetryShare)
+	}
 }

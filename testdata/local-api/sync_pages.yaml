@@ -1,4 +1,4 @@
-required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next-items, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, outside-ingestion-selection-published-row-visible, outside-ingestion-selection-auto-publish-rejected, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, missing-revision]
+required_names: [empty-end, empty-continuing, missing-totals, short-continuing, full-continuing, overflow-next-items, null-items, missing-next-items, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, outside-ingestion-selection-published-row-visible, outside-ingestion-selection-auto-publish-rejected, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, missing-revision]
 operations:
   - api: local
     method: get
@@ -39,6 +39,12 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "filtered windows can continue without items"}
     mutation: {description: "an empty page still has scanned next-page rows"}
+  - name: missing-totals
+    input: {schema: LocalSyncSessionPage, payload: {items: [], nextItems: [], page: 1, perPage: 25, total: 0, revision: "4213"}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a page answers with six or seven fields"}
+    mutation: {description: "omit the root total rather than fabricate a zero"}
   - name: short-continuing
     input:
       schema: LocalSyncSessionPage
@@ -70,6 +76,21 @@ cases:
     classification: must-pass
     provenance: {source: boundary, ref: "perPage is request-owned"}
     mutation: {description: "a short page of rows can still carry next-page rows"}
+  - name: overflow-next-items
+    input:
+      schema: LocalSyncSessionPage
+      payload:
+        items: []
+        nextItems: [*row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row, *row]
+        page: 1
+        perPage: 25
+        total: 26
+        revision: "4213"
+        totals: {sessions: 26}
+    expected: {valid: false, rejected_by: semantics, error_contains: nextItems}
+    classification: must-fail
+    provenance: {source: boundary, ref: "nextItems carries at most perPage rows"}
+    mutation: {description: "carry twenty-six next-page rows against perPage twenty-five"}
   - name: null-items
     input: {schema: LocalSyncSessionPage, payload: {items: null, nextItems: [], page: 1, perPage: 25, total: 0, revision: "4213", totals: {sessions: 0}}}
     expected: {valid: false, rejected_by: shape, go_rejects: true}

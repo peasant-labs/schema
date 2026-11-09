@@ -11,10 +11,12 @@ import (
 )
 
 // BuildPeasantLocalAPISpec builds an OpenAPI 3.1 specification for the local web dashboard API v1.0.
-// It includes REST routes (/health, /sessions, /config/mock, /shutdown) and
+// It includes REST routes (/health, /sessions, /config/mock, /shutdown),
 // WebSocket channel message schemas (DashboardPayload, SessionsPayload,
 // SessionDetailPayload, SessionDetailHeaderPayload, TrendsPayload,
-// QualityPayload) as JSON Schema components.
+// QualityPayload), and the declared transcript-read payloads
+// (TranscriptSegmentDirectory, TranscriptSegment, TranscriptWindow and their
+// rows) as JSON Schema components.
 func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -178,10 +180,12 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
-	// --- WebSocket channel message schemas (as components, not operations) ---
-	// These are JSON Schema components describing the payload shapes
-	// sent over WebSocket channels.
-	wsPayloads := []struct {
+	// --- WebSocket channel and declared read payload schemas (components) ---
+	// These are JSON Schema components describing payload shapes. The WS entries
+	// are channel bodies; the transcript reads and the flat session page are
+	// declared here so @peasant-labs/schema/local-api can type the payloads the
+	// host serves, even before a route binds them in this document.
+	payloads := []struct {
 		name string
 		val  interface{}
 	}{
@@ -193,10 +197,16 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},
 		{"ServerMessage", new(schema.ServerMessage)},
+		{"LocalSessionPage", new(schema.LocalSessionPage)},
+		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)},
+		{"TranscriptSegmentRef", new(schema.TranscriptSegmentRef)},
+		{"TranscriptSegment", new(schema.TranscriptSegment)},
+		{"TranscriptTurn", new(schema.TranscriptTurn)},
+		{"TranscriptWindow", new(schema.TranscriptWindow)},
 	}
 
 	jsr := r.JSONSchemaReflector()
-	for _, p := range wsPayloads {
+	for _, p := range payloads {
 		s, err := jsr.Reflect(p.val, jsonschema.CollectDefinitions(
 			func(name string, defSchema jsonschema.Schema) {
 				sm, smErr := defSchema.ToSchemaOrBool().ToSimpleMap()

@@ -96,13 +96,14 @@ func (q LocalSyncSessionsQuery) Validate() error {
 }
 
 // EffectivePageSize applies the Home transport's default after validation. An
-// omitted or zero maxItems maps to 25; a non-member value never reaches here.
-func (q LocalSyncSessionsQuery) EffectivePageSize() PageSize {
+// omitted or zero maxItems maps to 25; any other value is re-parsed through the
+// constructor and its error is returned, so an unvalidated non-member can never
+// silently become page size zero.
+func (q LocalSyncSessionsQuery) EffectivePageSize() (PageSize, error) {
 	if q.MaxItems == nil || *q.MaxItems == 0 {
-		return PageSize25
+		return PageSize25, nil
 	}
-	size, _ := NewPageSize(*q.MaxItems)
-	return size
+	return NewPageSize(*q.MaxItems)
 }
 
 // EffectivePage applies the one-based default after validation.
@@ -198,15 +199,19 @@ func (t LocalSyncSessionTotals) Validate() error {
 
 // LocalSyncSessionPage is the concrete offset page for the sync resource, not a
 // second shape: it embeds OffsetPage[LocalSyncSessionRow] and adds the grouped
-// root total.
+// root total. Totals is optional, so a page answers with six or seven fields:
+// a reader that has no root total omits it rather than fabricating a zero.
 type LocalSyncSessionPage struct {
 	OffsetPage[LocalSyncSessionRow]
-	Totals LocalSyncSessionTotals `json:"totals" nullable:"false"`
+	Totals *LocalSyncSessionTotals `json:"totals,omitempty" nullable:"false"`
 }
 
 func (p LocalSyncSessionPage) Validate() error {
 	if err := p.OffsetPage.Validate(); err != nil {
 		return err
+	}
+	if p.Totals == nil {
+		return nil
 	}
 	return p.Totals.Validate()
 }

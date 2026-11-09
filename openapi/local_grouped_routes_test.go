@@ -3,9 +3,7 @@ package openapi_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -24,7 +22,7 @@ type localRouteExpected struct {
 	Parameters []struct {
 		Name, In, Type string
 		Required       bool
-		Enum           []string
+		Enum           []any
 		Minimum        *int
 	} `yaml:"parameters"`
 	ResponseRefs  []string `yaml:"responseRefs"`
@@ -101,12 +99,14 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 					t.Fatalf("parameter %q minimum=%v", expected.Name, shape["minimum"])
 				}
 				if len(expected.Enum) != 0 {
-					got := []string{}
-					for _, v := range shape["enum"].([]any) {
-						got = append(got, fmt.Sprint(v))
+					got := shape["enum"].([]any)
+					if len(got) != len(expected.Enum) {
+						t.Fatalf("parameter %q enum=%v, want %v", expected.Name, got, expected.Enum)
 					}
-					if !reflect.DeepEqual(got, expected.Enum) {
-						t.Fatalf("parameter %q enum=%v", expected.Name, got)
+					for i, want := range expected.Enum {
+						if localRouteJSONValue(t, expected.Name, got[i]) != localRouteJSONValue(t, expected.Name, want) {
+							t.Fatalf("parameter %q enum[%d]=%v (%s), want %v (%s); the wire type differs", expected.Name, i, got[i], localRouteJSONValue(t, expected.Name, got[i]), want, localRouteJSONValue(t, expected.Name, want))
+						}
 					}
 				}
 			}
@@ -177,4 +177,16 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 	if types, ok := legacyWS["type"].([]any); !ok || len(types) == 0 || types[0] != "array" {
 		t.Fatal("legacy WS sessions no longer includes its existing array shape")
 	}
+}
+
+// localRouteJSONValue renders one parameter enum member through encoding/json so
+// the comparison is type-exact: json.Marshal(25) is "25" while json.Marshal("25")
+// is "\"25\"", and fmt.Sprint would render both as 25.
+func localRouteJSONValue(t *testing.T, name string, value any) string {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("parameter %q enum value %v cannot be encoded: %v", name, value, err)
+	}
+	return string(encoded)
 }

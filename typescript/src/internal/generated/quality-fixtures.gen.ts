@@ -473,5 +473,12 @@ export const canonicalQualityFixtures: QualityFixtures = {
       "sessions": [],
       "expected": {}
     }
+  ],
+  "requiredMedianNames": [
+    "typical",
+    "zero_token_excluded_from_retry_share",
+    "non_positive_spec_score_excluded",
+    "negative_reverts_excluded",
+    "empty_set_returns_no_medians"
   ]
 };

@@ -81,6 +81,9 @@ func (p OffsetPage[T]) Validate() error {
 	if !p.PerPage.IsValid() {
 		return fmt.Errorf("offset page validation failed at schema.OffsetPage.Validate: perPage %d is outside the closed set; clients can only request 25, 50, or 100, so map an omitted maximum to 25 before emitting the page", int(p.PerPage))
 	}
+	if len(p.Items) > int(p.PerPage) || len(p.NextItems) > int(p.PerPage) {
+		return fmt.Errorf("offset page validation failed at schema.OffsetPage.Validate: items (%d) or nextItems (%d) exceeds perPage %d; a page larger than its declared size cannot be paged exactly; serve at most perPage rows in either array", len(p.Items), len(p.NextItems), int(p.PerPage))
+	}
 	if p.Total < 0 || int64(p.Total) > maxSafeJSONInteger {
 		return fmt.Errorf("offset page validation failed at schema.OffsetPage.Validate: total %d is outside 0..%d; clients cannot render real page numbers from an out-of-range count; emit the counted total", p.Total, maxSafeJSONInteger)
 	}

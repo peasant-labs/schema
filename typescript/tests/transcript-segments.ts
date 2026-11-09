@@ -9,6 +9,7 @@ import type {
   TranscriptWindow,
   TurnDetail,
 } from "@peasant-labs/schema";
+import type { components as LocalComponents } from "@peasant-labs/schema/local-api";
 
 type Same<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type HasKey<T, K extends PropertyKey> = K extends keyof T ? true : false;
@@ -57,12 +58,28 @@ declare const segment: TranscriptSegment;
 declare const header: SessionDetailHeader;
 declare const headerPayload: SessionDetailHeaderPayload;
 
+// The local API document declares the transcript reads and the flat session
+// page, so a consumer can type them from @peasant-labs/schema/local-api.
+type LocalSchemas = LocalComponents["schemas"];
+const localDirectory: Same<LocalSchemas["TranscriptSegmentDirectory"], TranscriptSegmentDirectory> = true;
+const localRef: Same<LocalSchemas["TranscriptSegmentRef"], TranscriptSegmentRef> = true;
+const localSegment: Same<LocalSchemas["TranscriptSegment"], TranscriptSegment> = true;
+const localTurn: Same<LocalSchemas["TranscriptTurn"], TranscriptTurn> = true;
+const localWindow: Same<LocalSchemas["TranscriptWindow"], TranscriptWindow> = true;
+const localHeaderPayload: Same<LocalSchemas["SessionDetailHeaderPayload"], SessionDetailHeaderPayload> = true;
+
 void [
   window,
   directory,
   segment,
   header,
   headerPayload,
+  localDirectory,
+  localRef,
+  localSegment,
+  localTurn,
+  localWindow,
+  localHeaderPayload,
   windowHasNoTurns,
   windowHasNoContent,
   windowHasNoToolCalls,

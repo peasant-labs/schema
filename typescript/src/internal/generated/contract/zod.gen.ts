@@ -1250,7 +1250,7 @@ export type LocalSyncSessionTotals = z.infer<typeof zLocalSyncSessionTotals>;
 export const zLongestStreak = z.object({
     endWeek: z.string().nullable(),
     startWeek: z.string().nullable(),
-    weeks: z.int()
+    weeks: z.int().gte(0).lte(9007199254740991)
 });
 
 export type LongestStreak = z.infer<typeof zLongestStreak>;
@@ -1277,7 +1277,7 @@ export const zMapNodeKind = z.enum([
 export type MapNodeKind = z.infer<typeof zMapNodeKind>;
 
 export const zMedianP90 = z.object({
-    count: z.int(),
+    count: z.int().gte(0).lte(9007199254740991),
     median: z.number().nullable(),
     p90: z.number().nullable()
 });
@@ -1466,28 +1466,28 @@ export const zLocalContributionTraversalConflict = z.object({
 export type LocalContributionTraversalConflict = z.infer<typeof zLocalContributionTraversalConflict>;
 
 export const zOutcomeDistribution = z.object({
-    failed: z.int(),
-    partial: z.int(),
-    resolved: z.int(),
-    total: z.int(),
-    unknown: z.int()
+    failed: z.int().gte(0).lte(9007199254740991),
+    partial: z.int().gte(0).lte(9007199254740991),
+    resolved: z.int().gte(0).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991),
+    unknown: z.int().gte(0).lte(9007199254740991)
 });
 
 export type OutcomeDistribution = z.infer<typeof zOutcomeDistribution>;
 
 export const zContributorBreakdown = z.object({
-    activeWeeks: z.int(),
+    activeWeeks: z.int().gte(0).lte(9007199254740991),
     contributorId: z.string(),
     firstSeen: z.string().nullable(),
     lastSeen: z.string().nullable(),
     outcomes: zOutcomeDistribution,
-    sessions: z.int(),
-    sessionsWithCommit: z.int(),
-    totalCommits: z.int(),
-    totalDurationMins: z.int(),
-    totalTokens: z.int(),
-    totalToolCalls: z.int(),
-    totalTurns: z.int()
+    sessions: z.int().gte(0).lte(9007199254740991),
+    sessionsWithCommit: z.int().gte(0).lte(9007199254740991),
+    totalCommits: z.int().gte(0).lte(9007199254740991),
+    totalDurationMins: z.int().gte(0).lte(9007199254740991),
+    totalTokens: z.int().gte(0).lte(9007199254740991),
+    totalToolCalls: z.int().gte(0).lte(9007199254740991),
+    totalTurns: z.int().gte(0).lte(9007199254740991)
 });
 
 export type ContributorBreakdown = z.infer<typeof zContributorBreakdown>;
@@ -1920,9 +1920,9 @@ export const zRetainedUnknownRecord = z.object({
 export type RetainedUnknownRecord = z.infer<typeof zRetainedUnknownRecord>;
 
 export const zReturningContributorRate = z.object({
-    rate: z.number(),
-    returning: z.int(),
-    total: z.int()
+    rate: z.number().gte(0).lte(1),
+    returning: z.int().gte(0).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991)
 });
 
 export type ReturningContributorRate = z.infer<typeof zReturningContributorRate>;
@@ -2424,9 +2424,9 @@ export const zSessionTeammate = z.object({
 export type SessionTeammate = z.infer<typeof zSessionTeammate>;
 
 export const zSessionToCommitRate = z.object({
-    rate: z.number(),
-    total: z.int(),
-    withCommit: z.int()
+    rate: z.number().gte(0).lte(1),
+    total: z.int().gte(0).lte(9007199254740991),
+    withCommit: z.int().gte(0).lte(9007199254740991)
 });
 
 export type SessionToCommitRate = z.infer<typeof zSessionToCommitRate>;
@@ -5023,7 +5023,7 @@ export const zLocalSyncSessionPage = z.object({
     perPage: zPageSize,
     revision: z.string().min(1),
     total: z.int().gte(0).lte(9007199254740991),
-    totals: zLocalSyncSessionTotals
+    totals: zLocalSyncSessionTotals.optional()
 });
 
 export type LocalSyncSessionPage = z.infer<typeof zLocalSyncSessionPage>;
@@ -5863,29 +5863,29 @@ export const zFamiliarityPayload = z.object({
 export type FamiliarityPayload = z.infer<typeof zFamiliarityPayload>;
 
 export const zWeekAvgDuration = z.object({
-    avgDurationMins: z.number(),
-    sessions: z.int(),
+    avgDurationMins: z.number().gte(0),
+    sessions: z.int().gte(0).lte(9007199254740991),
     week: z.string()
 });
 
 export type WeekAvgDuration = z.infer<typeof zWeekAvgDuration>;
 
 export const zWeekContributors = z.object({
-    contributors: z.int(),
+    contributors: z.int().gte(0).lte(9007199254740991),
     week: z.string()
 });
 
 export type WeekContributors = z.infer<typeof zWeekContributors>;
 
 export const zWeekCount = z.object({
-    count: z.int(),
+    count: z.int().gte(0).lte(9007199254740991),
     week: z.string()
 });
 
 export type WeekCount = z.infer<typeof zWeekCount>;
 
 export const zWeekNewContributors = z.object({
-    newContributors: z.int(),
+    newContributors: z.int().gte(0).lte(9007199254740991),
     week: z.string()
 });
 
@@ -5901,9 +5901,9 @@ export const zProjectAnalytics = z.object({
     sessionStats: zAnalyticsSessionStats,
     sessionToCommitRate: zSessionToCommitRate,
     sessionsPerWeek: z.array(zWeekCount),
-    totalContributors: z.int(),
-    totalProjects: z.int(),
-    totalSessions: z.int(),
+    totalContributors: z.int().gte(0).lte(9007199254740991),
+    totalProjects: z.int().gte(0).lte(9007199254740991),
+    totalSessions: z.int().gte(0).lte(9007199254740991),
     weeklyActiveContributors: z.array(zWeekContributors)
 });
 

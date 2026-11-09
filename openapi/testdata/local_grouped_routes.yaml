@@ -31,7 +31,7 @@ routes:
     mutation: {description: "returns the embedded read DTO with root detail fields"}
   - name: scoped-helper-members
     input: {path: "/api/v1/session-groups/{groupId}/members", operationId: listLocalHelperGroupMembers}
-    expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: perPage, in: query, type: integer, enum: ["25", "50", "100"]}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, nextItems, page, perPage, total, revision], nonnullArrays: [members, nextItems]}
+    expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: perPage, in: query, type: integer, enum: [25, 50, 100]}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, nextItems, page, perPage, total, revision], nonnullArrays: [members, nextItems]}
     classification: must-pass
     provenance: {source: requirement, ref: "bounded helper member operation"}
     mutation: {description: "requires opaque scope and accepts only paging inputs"}

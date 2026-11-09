@@ -648,6 +648,7 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
+        LocalSessionPage: Schema.LocalSessionPage;
         LocalSyncProjectOption: Schema.LocalSyncProjectOption;
         LocalSyncProjectOptions: Schema.LocalSyncProjectOptions;
         LocalSyncSessionPage: Schema.LocalSyncSessionPage;
@@ -1570,6 +1571,8 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        SchemaTranscriptTurn: Schema.TranscriptTurn;
         SchemaTurnDetail: Schema.TurnDetail;
         /**
          * Type Origin
@@ -1698,6 +1701,11 @@ export interface components {
         SessionDetailHeaderPayload: Schema.SessionDetailHeaderPayload;
         SessionDetailPayload: Schema.SessionDetailPayload;
         SessionDetailReadPayload: Schema.SessionDetailReadPayload;
+        TranscriptSegment: Schema.TranscriptSegment;
+        TranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
+        TranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        TranscriptTurn: Schema.TranscriptTurn;
+        TranscriptWindow: Schema.TranscriptWindow;
         TrendsPayload: Schema.TrendsPayload;
         UICapabilitiesResponse: Schema.UICapabilitiesResponse;
     };

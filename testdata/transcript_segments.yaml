@@ -7,12 +7,17 @@ required_names:
   - segment-turn-outside-range
   - segment-range-wider-than-turns
   - segment-wrong-older-edge
+  - segment-non-decimal-revision
+  - segment-byte-length-mismatch
   - directory-unpaged
   - directory-empty-session
   - directory-paged-second-page
   - directory-non-contiguous-index
   - directory-total-mismatch
   - directory-null-segments
+  - directory-half-paged
+  - directory-paged-below-cap
+  - directory-total-turns-below-segments
   - window-anchored
   - window-span-one
   - window-span-zero
@@ -35,7 +40,7 @@ shape_cases:
           revision: "4213"
           firstTurn: 4
           lastTurn: 21
-          byteLength: 917504
+          byteLength: 7
           hasOlder: false
           hasNewer: true
           turns:
@@ -108,6 +113,40 @@ shape_cases:
           byteLength: 5
           hasOlder: true
           hasNewer: true
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+      expected: false
+    - name: segment-non-decimal-revision
+      classification: must-fail
+      provenance: {source: boundary, ref: "the revision is the store revision rendered as decimal digits"}
+      mutation: {description: "spells the revision with a leading letter"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "r4213"
+          firstTurn: 4
+          lastTurn: 4
+          byteLength: 5
+          hasOlder: false
+          hasNewer: false
+          turns:
+            - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
+      expected: false
+    - name: segment-byte-length-mismatch
+      classification: must-fail
+      provenance: {source: boundary, ref: "the segment byte length is the sum of its turn rows' byteLength values"}
+      mutation: {description: "declares ten bytes while its one turn declares five"}
+      input:
+        schema: TranscriptSegment
+        payload:
+          index: 0
+          revision: "4213"
+          firstTurn: 4
+          lastTurn: 4
+          byteLength: 10
+          hasOlder: false
+          hasNewer: false
           turns:
             - {index: 4, role: user, content: hello, timestamp: '2026-11-09T00:00:00Z', depth: 0, truncated: false, byteLength: 5}
       expected: false
@@ -198,6 +237,53 @@ shape_cases:
           totalSegments: 0
           segments: null
       expected: false
+    - name: directory-half-paged
+      classification: must-fail
+      provenance: {source: requirement, ref: "directoryPage and directoryPerPage are set together"}
+      mutation: {description: "sets the page number without the page size"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 12002
+          totalSegments: 12002
+          directoryPage: 2
+          segments:
+            - {index: 10000, firstTurn: 20000, lastTurn: 20001, byteLength: 10}
+      expected: false
+    - name: directory-paged-below-cap
+      classification: must-fail
+      provenance: {source: boundary, ref: "the page fields exist only above the 10000-ref cap"}
+      mutation: {description: "pages a two-segment directory that fits whole"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 2
+          totalSegments: 2
+          directoryPage: 1
+          directoryPerPage: 10000
+          segments:
+            - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 10}
+            - {index: 1, firstTurn: 44, lastTurn: 149, byteLength: 10}
+      expected: false
+    - name: directory-total-turns-below-segments
+      classification: must-fail
+      provenance: {source: boundary, ref: "every segment holds at least one turn"}
+      mutation: {description: "counts one turn across two segments"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 1
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 10}
+            - {index: 1, firstTurn: 44, lastTurn: 149, byteLength: 10}
+      expected: false
     - name: window-anchored
       classification: must-pass
       provenance: {source: requirement, ref: "the descriptor names the contiguous covering segment run and no content"}
@@ -258,6 +344,9 @@ shape_cases:
           segments: [0, 1]
           hasOlder: false
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
     - name: window-span-eleven
       classification: must-fail
@@ -276,6 +365,9 @@ shape_cases:
           segments: [0, 1]
           hasOlder: false
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
     - name: window-empty-segments
       classification: must-fail
@@ -294,6 +386,9 @@ shape_cases:
           segments: []
           hasOlder: false
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
     - name: window-unordered-segments
       classification: must-fail
@@ -312,6 +407,9 @@ shape_cases:
           segments: [1, 0]
           hasOlder: false
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
     - name: window-non-contiguous-segments
       classification: must-fail
@@ -330,6 +428,10 @@ shape_cases:
           segments: [0, 2]
           hasOlder: false
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
+          - {index: 2, firstTurn: 131, lastTurn: 149, byteLength: 400000}
       expected: false
     - name: window-anchor-outside-range
       classification: must-fail
@@ -348,6 +450,9 @@ shape_cases:
           segments: [1]
           hasOlder: true
           hasNewer: true
+        directoryRefs:
+          - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
+          - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
     - name: window-uncovered-range
       classification: must-fail

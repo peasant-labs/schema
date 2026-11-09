@@ -44,6 +44,9 @@ required_names:
   - transcript-window
   - session-detail-header
   - session-detail-header-payload
+  - detail-read-metadata
+  - detail-read-omitted-metadata
+  - detail-read-empty-medians
 round_trip:
   cases:
     - name: flat-detail-root
@@ -148,6 +151,24 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "quality rides the page that shows the rows; the summary is the full analytics bundle"}
       mutation: {description: "carries one quality row and the full ProjectAnalytics summary"}
+    - name: detail-read-metadata
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"title":"stored title","medians":{"retryShare":0.1,"specQualityScore":80,"withinSessionReverts":2},"revision":"4213"}' }
+      expected: {valid: true, requiredKeys: [id, turns, title, medians, revision], forbiddenKeys: [detail, sessionDetail]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the local read adds a stored title, the personal-medians baseline, and the store revision"}
+      mutation: {description: "carries all three read additions beside the durable detail fields"}
+    - name: detail-read-omitted-metadata
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[]}' }
+      expected: {valid: true, requiredKeys: [id, turns], forbiddenKeys: [detail, sessionDetail, title, medians, revision]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an absent title, baseline, or revision is omitted, never emitted as an empty value"}
+      mutation: {description: "omits all three read additions from an otherwise valid detail read"}
+    - name: detail-read-empty-medians
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"medians":{}}' }
+      expected: {valid: true, requiredKeys: [id, turns, medians], forbiddenKeys: [detail, sessionDetail, title, revision]}
+      classification: must-pass
+      provenance: {source: boundary, ref: "a medians sample with no eligible metric yields an empty object, not a rejection"}
+      mutation: {description: "carries a present medians object with no metric values"}
     - name: transcript-segment-directory
       input: {kind: segment-directory, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","totalTurns":55,"totalSegments":2,"segments":[{"index":0,"firstTurn":4,"lastTurn":40,"byteLength":917504},{"index":1,"firstTurn":44,"lastTurn":149,"byteLength":655360}]}' }
       expected: {valid: true, requiredKeys: [sessionId, revision, totalTurns, totalSegments, segments], forbiddenKeys: [turns, position, page, perPage, directoryPage]}
@@ -155,8 +176,8 @@ round_trip:
       provenance: {source: requirement, ref: "the directory is the transcript's only global index"}
       mutation: {description: "carries one ref per segment plus the cut's scalars and no per-turn row"}
     - name: transcript-segment
-      input: {kind: segment, json: '{"index":0,"revision":"4213","firstTurn":4,"lastTurn":21,"byteLength":917504,"hasOlder":false,"hasNewer":true,"turns":[{"index":4,"role":"user","content":"hello","timestamp":"2026-11-09T00:00:00Z","depth":0,"truncated":false,"byteLength":5},{"index":21,"role":"assistant","content":"ok","timestamp":"2026-11-09T00:01:00Z","depth":0,"truncated":false,"byteLength":2}]}' }
-      expected: {valid: true, requiredKeys: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns], forbiddenKeys: [position, page, perPage, TurnDetail]}
+      input: {kind: segment, json: '{"index":0,"revision":"4213","firstTurn":4,"lastTurn":21,"byteLength":7,"hasOlder":false,"hasNewer":true,"turns":[{"index":4,"role":"user","content":"hello","timestamp":"2026-11-09T00:00:00Z","depth":0,"truncated":false,"byteLength":5},{"index":21,"role":"assistant","content":"ok","timestamp":"2026-11-09T00:01:00Z","depth":0,"truncated":false,"byteLength":2}]}' }
+      expected: {valid: true, requiredKeys: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns], forbiddenKeys: [position, page, perPage]}
       classification: must-pass
       provenance: {source: requirement, ref: "one segment of whole turns with the declared range equal to the turns"}
       mutation: {description: "serves two whole turns in one segment"}

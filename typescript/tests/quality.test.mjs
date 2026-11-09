@@ -38,19 +38,16 @@ test("quality fixtures expose the complete Go-validated catalog", () => {
 });
 
 test("the personal-medians corpus is exported with every exclusion case", () => {
+  const fixtures = loadQualityFixtures();
   const cases = loadMedianFixtures();
-  assert.deepEqual(cases.map((medianCase) => medianCase.name), [
-    "typical",
-    "zero_token_excluded_from_retry_share",
-    "non_positive_spec_score_excluded",
-    "negative_reverts_excluded",
-    "empty_set_returns_no_medians",
-  ]);
+  assert.deepEqual(cases.map((medianCase) => medianCase.name).sort(), [...fixtures.requiredMedianNames].sort());
   const empty = cases.find((medianCase) => medianCase.name === "empty_set_returns_no_medians");
   assert.deepEqual(empty.sessions, []);
   assert.deepEqual(empty.expected, {});
   const typical = cases.find((medianCase) => medianCase.name === "typical");
   assert.deepEqual(typical.expected, { retryShare: 0.05, specQualityScore: 80, withinSessionReverts: 1 });
+  const nonPositive = cases.find((medianCase) => medianCase.name === "non_positive_spec_score_excluded");
+  assert.deepEqual(nonPositive.expected, { retryShare: 0, specQualityScore: 60, withinSessionReverts: 0 });
 });
 
 test("quality accessors do not expose mutable canonical rows", async (t) => {

@@ -1593,6 +1593,37 @@ components:
       - avgTurnsPerSession
       - acceptanceRate
       type: object
+    LocalSessionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionRow'
+          type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionRow'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/SchemaPageSize'
+        revision:
+          minLength: 1
+          type: string
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - items
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
+      type: object
     LocalSyncProjectOption:
       properties:
         projectHash:
@@ -1644,7 +1675,6 @@ components:
       - perPage
       - total
       - revision
-      - totals
       type: object
     LocalSyncSessionsPayload:
       properties:
@@ -6182,6 +6212,100 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
       type: string
+    SchemaTranscriptSegmentRef:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    SchemaTranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/SchemaCommandInvocation'
+        content:
+          type: string
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/SchemaObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/SchemaContentProvenance'
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/SchemaToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/SchemaUsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
+      type: object
     SchemaTurnDetail:
       properties:
         agentName:
@@ -7050,6 +7174,220 @@ components:
       - turnCount
       - toolCallCount
       - turns
+      type: object
+    TranscriptSegment:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
+    TranscriptSegmentDirectory:
+      properties:
+        directoryPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        directoryPerPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - totalTurns
+      - totalSegments
+      - segments
+      type: object
+    TranscriptSegmentRef:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    TranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/SchemaCommandInvocation'
+        content:
+          type: string
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/SchemaObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/SchemaContentProvenance'
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/SchemaToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/SchemaUsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
+      type: object
+    TranscriptWindow:
+      properties:
+        anchorTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        requestedAnchor:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            type: integer
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - requestedAnchor
+      - anchorTurn
+      - span
+      - firstTurn
+      - lastTurn
+      - segments
+      - hasOlder
+      - hasNewer
       type: object
     TrendsPayload:
       properties:

@@ -233,14 +233,18 @@ func decodeTranscriptShape(input transcriptShapeInput) (any, error) {
 		if err := value.Validate(); err != nil {
 			return nil, err
 		}
-		if len(input.DirectoryRefs) > 0 {
-			refs := make([]schema.TranscriptSegmentRef, len(input.DirectoryRefs))
-			for i, ref := range input.DirectoryRefs {
-				refs[i] = ref.toRef()
-			}
-			if err := schema.ValidateTranscriptWindowCoverage(*value, refs); err != nil {
-				return nil, err
-			}
+		// Coverage is part of every window shape case: the descriptor names a
+		// segment run, so a case without the directory it refers to could pass
+		// while naming the wrong run.
+		if len(input.DirectoryRefs) == 0 {
+			return nil, fmt.Errorf("window case %q supplies no directoryRefs; every window must be checked against the directory it covers", input.Schema)
+		}
+		refs := make([]schema.TranscriptSegmentRef, len(input.DirectoryRefs))
+		for i, ref := range input.DirectoryRefs {
+			refs[i] = ref.toRef()
+		}
+		if err := schema.ValidateTranscriptWindowCoverage(*value, refs); err != nil {
+			return nil, err
 		}
 		return value, nil
 	default:
@@ -266,6 +270,8 @@ func TestTranscriptCutExpectations(t *testing.T) {
 				t.Fatal("cut case must declare turns and expected segments")
 			}
 			owner := map[int]int{}
+			segmentTotals := make([]int, len(c.Expected.Segments))
+			segmentFirstTurnBytes := make([]int, len(c.Expected.Segments))
 			for i, segment := range c.Expected.Segments {
 				if segment.Index != i {
 					t.Fatalf("expected segment %d declares index %d; segment ordinals are contiguous from zero", i, segment.Index)
@@ -296,6 +302,16 @@ func TestTranscriptCutExpectations(t *testing.T) {
 				oversized := len(turns) == 1 && turns[0].size() > c.BudgetBytes
 				if !oversized && total > c.BudgetBytes {
 					t.Fatalf("segment %d carries %d bytes above the %d-byte budget without holding one oversized turn", segment.Index, total, c.BudgetBytes)
+				}
+				segmentTotals[i] = total
+				segmentFirstTurnBytes[i] = turns[0].size()
+			}
+			// The cut must be maximal: the first turn of each later segment would
+			// have pushed the previous segment past the budget, which is why it
+			// started a new one. A cut that closed early fails here.
+			for i := 1; i < len(c.Expected.Segments); i++ {
+				if segmentTotals[i-1]+segmentFirstTurnBytes[i] <= c.BudgetBytes {
+					t.Fatalf("segment %d starts at turn %d although %d more bytes would still fit in segment %d (%d + %d <= %d); the cut closed before the budget was reached", i, c.Expected.Segments[i].FirstTurn, segmentFirstTurnBytes[i], i-1, segmentTotals[i-1], segmentFirstTurnBytes[i], c.BudgetBytes)
 				}
 			}
 			if len(owner) != len(c.Turns) {
@@ -371,6 +387,9 @@ func TestTranscriptCutExpectations(t *testing.T) {
 				if err := value.Validate(); err != nil {
 					t.Fatalf("recorded segment %d is not a valid wire segment: %v", segment.Index, err)
 				}
+				if err := schema.ValidateTranscriptSegmentBoundaries(value, len(c.Expected.Segments)); err != nil {
+					t.Fatalf("recorded segment %d boundary flags disagree with the directory: %v", segment.Index, err)
+				}
 				refs = append(refs, schema.TranscriptSegmentRef{Index: segment.Index, FirstTurn: segment.FirstTurn, LastTurn: segment.LastTurn, ByteLength: total})
 			}
 			directory := schema.TranscriptSegmentDirectory{
@@ -393,6 +412,31 @@ func TestTranscriptCutExpectations(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestTranscriptSegmentBoundaries pins the hasNewer rule: a segment alone cannot
+// know the total, so the producer checks both edge flags against the directory's
+// segment count.
+func TestTranscriptSegmentBoundaries(t *testing.T) {
+	total := 3
+	for index := 0; index < total; index++ {
+		segment := schema.TranscriptSegment{Index: index, HasOlder: index > 0, HasNewer: index < total-1}
+		if err := schema.ValidateTranscriptSegmentBoundaries(segment, total); err != nil {
+			t.Fatalf("segment %d of %d is valid: %v", index, total, err)
+		}
+	}
+	wrongNewer := schema.TranscriptSegment{Index: 0, HasOlder: false, HasNewer: false}
+	if err := schema.ValidateTranscriptSegmentBoundaries(wrongNewer, total); err == nil {
+		t.Fatal("segment zero without hasNewer is accepted; the document would claim it is complete")
+	}
+	wrongOlder := schema.TranscriptSegment{Index: 1, HasOlder: false, HasNewer: true}
+	if err := schema.ValidateTranscriptSegmentBoundaries(wrongOlder, total); err == nil {
+		t.Fatal("segment one without hasOlder is accepted; the document would hide the older side")
+	}
+	lastNewer := schema.TranscriptSegment{Index: total - 1, HasOlder: true, HasNewer: true}
+	if err := schema.ValidateTranscriptSegmentBoundaries(lastNewer, total); err == nil {
+		t.Fatal("the last segment with hasNewer is accepted; the document would draw a boundary past its end")
 	}
 }
 

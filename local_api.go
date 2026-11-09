@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"math"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -711,8 +712,8 @@ type TranscriptSegmentRef struct {
 // ranges.
 func (d TranscriptSegmentDirectory) Validate() error {
 	const where = "transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: "
-	if d.Revision == "" {
-		return fmt.Errorf("%srevision is empty; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as a decimal string", where)
+	if !isDecimalRevision(d.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as decimal digits", where, d.Revision)
 	}
 	if d.TotalTurns < 0 || d.TotalSegments < 0 {
 		return fmt.Errorf("%stotalTurns or totalSegments is negative; the read cannot describe a negative corpus; emit non-negative counts", where)
@@ -735,13 +736,21 @@ func (d TranscriptSegmentDirectory) Validate() error {
 		if *d.DirectoryPerPage != MaxTranscriptDirectoryRefs {
 			return fmt.Errorf("%sdirectoryPerPage is %d, not the %d-ref directory cap; the page size is not caller-chosen; use MaxTranscriptDirectoryRefs", where, *d.DirectoryPerPage, MaxTranscriptDirectoryRefs)
 		}
+		if d.TotalSegments <= MaxTranscriptDirectoryRefs {
+			return fmt.Errorf("%sthe directory declares page %d of %d with totalSegments %d; the page fields exist only above the %d-ref cap; serve the whole directory below it or omit directoryPage/directoryPerPage", where, *d.DirectoryPage, *d.DirectoryPerPage, d.TotalSegments, MaxTranscriptDirectoryRefs)
+		}
 		if len(d.Segments) > *d.DirectoryPerPage {
 			return fmt.Errorf("%sserves %d refs on a %d-ref page; the declared page size is exceeded; serve at most directoryPerPage refs", where, len(d.Segments), *d.DirectoryPerPage)
 		}
 		if d.TotalSegments < len(d.Segments) {
 			return fmt.Errorf("%stotalSegments %d is below the %d served refs; the true total cannot be smaller than a page of it; emit the whole-session total", where, d.TotalSegments, len(d.Segments))
 		}
-		start = (*d.DirectoryPage - 1) * *d.DirectoryPerPage
+		page := int64(*d.DirectoryPage)
+		perPage := int64(*d.DirectoryPerPage)
+		if page-1 > int64(maxSafeJSONInteger)/perPage {
+			return fmt.Errorf("%sdirectoryPage %d overflows the page offset at %d refs per page; the read cannot address a page that far out; emit a reachable one-based page", where, *d.DirectoryPage, perPage)
+		}
+		start = int((page - 1) * perPage)
 	} else if d.TotalSegments != len(d.Segments) {
 		return fmt.Errorf("%stotalSegments %d differs from the %d served refs; an unpaged directory must serve every segment; serve the whole directory or set directoryPage/directoryPerPage", where, d.TotalSegments, len(d.Segments))
 	}
@@ -778,26 +787,36 @@ type TranscriptSegment struct {
 	Revision string `json:"revision" minLength:"1"`
 	// FirstTurn and LastTurn are the closed range of sparse turn identities this
 	// segment covers.
-	FirstTurn  int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
-	LastTurn   int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
+	FirstTurn int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
+	LastTurn  int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
+	// ByteLength is the sum of the served turns' ByteLength values: the
+	// pre-bound size of their content plus every toolCalls[].arguments and
+	// toolCalls[].result. It is not the marshalled size of the bounded rows; the
+	// served bytes are at most this total, and the per-turn value is what the
+	// truncation notice names.
 	ByteLength int `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
-	// HasOlder and HasNewer say whether a boundary is drawn on that side. They are
-	// redundant with the directory by design: a segment is renderable alone.
+	// HasOlder and HasNewer say whether a boundary is drawn on that side. HasOlder
+	// is index > 0; HasNewer is index < totalSegments-1. They are redundant with
+	// the directory by design: a segment is renderable alone. A segment cannot
+	// know the total, so the producer checks HasNewer with the directory
+	// (ValidateTranscriptSegmentBoundaries).
 	HasOlder bool             `json:"hasOlder"`
 	HasNewer bool             `json:"hasNewer"`
 	Turns    []TranscriptTurn `json:"turns" nullable:"false"`
 }
 
 // Validate checks that the segment's declared range is the exact range its
-// turns occupy. A segment that declares a range its turns do not cover would
-// silently shift every later boundary, so it is rejected rather than repaired.
+// turns occupy and that its declared byte length is the sum of the turn rows'
+// byte lengths. A segment that declares a range or size its turns do not carry
+// would silently shift every later boundary, so it is rejected rather than
+// repaired.
 func (s TranscriptSegment) Validate() error {
 	const where = "transcript segment validation failed at schema.TranscriptSegment.Validate: "
 	if s.Index < 0 {
 		return fmt.Errorf("%sindex is %d; segment ordinals start at zero; emit the segment's own ordinal", where, s.Index)
 	}
-	if s.Revision == "" {
-		return fmt.Errorf("%srevision is empty; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as a decimal string", where)
+	if !isDecimalRevision(s.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as decimal digits", where, s.Revision)
 	}
 	if s.FirstTurn < 0 || s.LastTurn < s.FirstTurn {
 		return fmt.Errorf("%sdeclares turn range [%d, %d]; a segment covers a closed ascending range; emit firstTurn <= lastTurn", where, s.FirstTurn, s.LastTurn)
@@ -815,6 +834,7 @@ func (s TranscriptSegment) Validate() error {
 		return fmt.Errorf("%sturns is empty; a segment always holds at least one whole turn; omit the segment instead", where)
 	}
 	previous := s.FirstTurn - 1
+	var turnBytes int64
 	for i := range s.Turns {
 		turn := s.Turns[i].Index
 		if turn < s.FirstTurn || turn > s.LastTurn {
@@ -823,10 +843,38 @@ func (s TranscriptSegment) Validate() error {
 		if turn <= previous {
 			return fmt.Errorf("%sturn %d does not follow %d; segment turns must be in ascending identity order; an out-of-order turn cannot be rendered as part of the document", where, turn, previous)
 		}
+		if s.Turns[i].ByteLength < 0 {
+			return fmt.Errorf("%sturn %d declares a negative byteLength; a turn's pre-bound size cannot be negative; emit a non-negative count", where, turn)
+		}
+		turnBytes += int64(s.Turns[i].ByteLength)
 		previous = turn
 	}
 	if s.Turns[0].Index != s.FirstTurn || s.Turns[len(s.Turns)-1].Index != s.LastTurn {
 		return fmt.Errorf("%sdeclares range [%d, %d] but its turns span [%d, %d]; the declared range must be exactly the turns served; correct firstTurn/lastTurn", where, s.FirstTurn, s.LastTurn, s.Turns[0].Index, s.Turns[len(s.Turns)-1].Index)
+	}
+	if int64(s.ByteLength) != turnBytes {
+		return fmt.Errorf("%sdeclares byteLength %d but its turns total %d; the segment's byte length is the sum of its turn rows' byteLength values, so a client sizing a boundary would be told the wrong cost; emit the summed value", where, s.ByteLength, turnBytes)
+	}
+	return nil
+}
+
+// ValidateTranscriptSegmentBoundaries checks a segment's edge flags against the
+// directory's segment count: HasOlder is Index > 0 and HasNewer is
+// Index < totalSegments-1. A segment alone cannot know the total, so the
+// producer calls this with the directory it built.
+func ValidateTranscriptSegmentBoundaries(segment TranscriptSegment, totalSegments int) error {
+	const where = "transcript segment boundary validation failed at schema.ValidateTranscriptSegmentBoundaries: "
+	if totalSegments < 1 {
+		return fmt.Errorf("%stotalSegments is %d; a served segment belongs to at least one segment; pass the directory's segment count", where, totalSegments)
+	}
+	if segment.Index < 0 || segment.Index >= totalSegments {
+		return fmt.Errorf("%ssegment index %d is outside 0..%d; the segment does not belong to this directory; pass the ordinal from the directory the segment was cut under", where, segment.Index, totalSegments-1)
+	}
+	if want := segment.Index > 0; segment.HasOlder != want {
+		return fmt.Errorf("%shasOlder is %v for segment %d of %d; hasOlder is exactly index > 0; a boundary on the wrong side misstates whether the document continues", where, segment.HasOlder, segment.Index, totalSegments)
+	}
+	if want := segment.Index < totalSegments-1; segment.HasNewer != want {
+		return fmt.Errorf("%shasNewer is %v for segment %d of %d; hasNewer is exactly index < totalSegments-1; a boundary on the wrong side misstates whether the document continues", where, segment.HasNewer, segment.Index, totalSegments)
 	}
 	return nil
 }
@@ -838,8 +886,10 @@ type TranscriptTurn struct {
 	TurnDetail
 	// Truncated reports that this turn's own text was bounded by the served-text
 	// bound. ByteLength is the pre-bound size of content plus every
-	// toolCalls[].arguments and toolCalls[].result, so the truncation notice can
-	// name what the full read will return.
+	// toolCalls[].arguments and toolCalls[].result: the size the turn had before
+	// the bound was applied, so the truncation notice can name what the full read
+	// will return. A segment's ByteLength is the sum of these values; the served
+	// bytes of a truncated turn are at most its ByteLength.
 	Truncated  bool `json:"truncated"`
 	ByteLength int  `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
 }
@@ -877,8 +927,8 @@ type TranscriptWindow struct {
 // no refs.
 func (w TranscriptWindow) Validate() error {
 	const where = "transcript window validation failed at schema.TranscriptWindow.Validate: "
-	if w.Revision == "" {
-		return fmt.Errorf("%srevision is empty; a window must name the cut its covering segments belong to; carry the store revision as a decimal string", where)
+	if !isDecimalRevision(w.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a window must name the cut its covering segments belong to; carry the store revision as decimal digits", where, w.Revision)
 	}
 	if w.Span < 1 || w.Span > 10 {
 		return fmt.Errorf("%sspan is %d; the accepted range is 1..10 assistant turns per side; emit a value in that range", where, w.Span)
@@ -1137,9 +1187,9 @@ type PersonalMedians struct {
 // TypeScript type, and the dashboard typedef are one contract with these exact
 // field names.
 type ProjectAnalytics struct {
-	TotalSessions            int                      `json:"totalSessions"`
-	TotalContributors        int                      `json:"totalContributors"`
-	TotalProjects            int                      `json:"totalProjects"`
+	TotalSessions            int                      `json:"totalSessions" minimum:"0" maximum:"9007199254740991"`
+	TotalContributors        int                      `json:"totalContributors" minimum:"0" maximum:"9007199254740991"`
+	TotalProjects            int                      `json:"totalProjects" minimum:"0" maximum:"9007199254740991"`
 	SessionsPerWeek          []WeekCount              `json:"sessionsPerWeek" nullable:"false"`
 	WeeklyActiveContributors []WeekContributors       `json:"weeklyActiveContributors" nullable:"false"`
 	ReturningContributorRate ReturningContributorRate `json:"returningContributorRate"`
@@ -1156,28 +1206,28 @@ type ProjectAnalytics struct {
 // Monday-of-week UTC date key (YYYY-MM-DD).
 type WeekCount struct {
 	Week  string `json:"week"`
-	Count int    `json:"count"`
+	Count int    `json:"count" minimum:"0" maximum:"9007199254740991"`
 }
 
 // WeekContributors is one bucket of the per-week unique-contributor series.
 type WeekContributors struct {
 	Week         string `json:"week"`
-	Contributors int    `json:"contributors"`
+	Contributors int    `json:"contributors" minimum:"0" maximum:"9007199254740991"`
 }
 
 // ReturningContributorRate is the returning-contributor result. A returning
 // contributor is active in at least two distinct weeks; Rate is Returning/Total
 // in [0, 1], and 0 when no contributor exists.
 type ReturningContributorRate struct {
-	Total     int     `json:"total"`
-	Returning int     `json:"returning"`
-	Rate      float64 `json:"rate"`
+	Total     int     `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Returning int     `json:"returning" minimum:"0" maximum:"9007199254740991"`
+	Rate      float64 `json:"rate" minimum:"0" maximum:"1"`
 }
 
 // LongestStreak is the longest run of consecutive active weeks, with its first
 // and last Monday-of-week keys. Both keys are null when no week is active.
 type LongestStreak struct {
-	Weeks     int     `json:"weeks"`
+	Weeks     int     `json:"weeks" minimum:"0" maximum:"9007199254740991"`
 	StartWeek *string `json:"startWeek"`
 	EndWeek   *string `json:"endWeek"`
 }
@@ -1186,38 +1236,38 @@ type LongestStreak struct {
 // contributors whose first-ever session falls in that week.
 type WeekNewContributors struct {
 	Week            string `json:"week"`
-	NewContributors int    `json:"newContributors"`
+	NewContributors int    `json:"newContributors" minimum:"0" maximum:"9007199254740991"`
 }
 
 // SessionToCommitRate is the session-to-commit result. Rate is WithCommit/Total
 // in [0, 1], and 0 when no session exists.
 type SessionToCommitRate struct {
-	Total      int     `json:"total"`
-	WithCommit int     `json:"withCommit"`
-	Rate       float64 `json:"rate"`
+	Total      int     `json:"total" minimum:"0" maximum:"9007199254740991"`
+	WithCommit int     `json:"withCommit" minimum:"0" maximum:"9007199254740991"`
+	Rate       float64 `json:"rate" minimum:"0" maximum:"1"`
 }
 
 // WeekAvgDuration is one bucket of the per-active-week average-duration series.
 type WeekAvgDuration struct {
 	Week            string  `json:"week"`
-	AvgDurationMins float64 `json:"avgDurationMins"`
-	Sessions        int     `json:"sessions"`
+	AvgDurationMins float64 `json:"avgDurationMins" minimum:"0"`
+	Sessions        int     `json:"sessions" minimum:"0" maximum:"9007199254740991"`
 }
 
 // OutcomeDistribution is the session-outcome tally. Total counts every session,
 // including the ones whose outcome is unknown.
 type OutcomeDistribution struct {
-	Resolved int `json:"resolved"`
-	Partial  int `json:"partial"`
-	Failed   int `json:"failed"`
-	Unknown  int `json:"unknown"`
-	Total    int `json:"total"`
+	Resolved int `json:"resolved" minimum:"0" maximum:"9007199254740991"`
+	Partial  int `json:"partial" minimum:"0" maximum:"9007199254740991"`
+	Failed   int `json:"failed" minimum:"0" maximum:"9007199254740991"`
+	Unknown  int `json:"unknown" minimum:"0" maximum:"9007199254740991"`
+	Total    int `json:"total" minimum:"0" maximum:"9007199254740991"`
 }
 
 // MedianP90 is one typical-value pair: the sample count, its median, and its
 // ninetieth percentile. Median and P90 are null when the sample is empty.
 type MedianP90 struct {
-	Count  int      `json:"count"`
+	Count  int      `json:"count" minimum:"0" maximum:"9007199254740991"`
 	Median *float64 `json:"median"`
 	P90    *float64 `json:"p90"`
 }
@@ -1236,17 +1286,63 @@ type AnalyticsSessionStats struct {
 // has no dated session.
 type ContributorBreakdown struct {
 	ContributorID      string              `json:"contributorId"`
-	Sessions           int                 `json:"sessions"`
-	ActiveWeeks        int                 `json:"activeWeeks"`
-	TotalTokens        int                 `json:"totalTokens"`
-	TotalDurationMins  int                 `json:"totalDurationMins"`
-	TotalTurns         int                 `json:"totalTurns"`
-	TotalToolCalls     int                 `json:"totalToolCalls"`
-	SessionsWithCommit int                 `json:"sessionsWithCommit"`
-	TotalCommits       int                 `json:"totalCommits"`
+	Sessions           int                 `json:"sessions" minimum:"0" maximum:"9007199254740991"`
+	ActiveWeeks        int                 `json:"activeWeeks" minimum:"0" maximum:"9007199254740991"`
+	TotalTokens        int                 `json:"totalTokens" minimum:"0" maximum:"9007199254740991"`
+	TotalDurationMins  int                 `json:"totalDurationMins" minimum:"0" maximum:"9007199254740991"`
+	TotalTurns         int                 `json:"totalTurns" minimum:"0" maximum:"9007199254740991"`
+	TotalToolCalls     int                 `json:"totalToolCalls" minimum:"0" maximum:"9007199254740991"`
+	SessionsWithCommit int                 `json:"sessionsWithCommit" minimum:"0" maximum:"9007199254740991"`
+	TotalCommits       int                 `json:"totalCommits" minimum:"0" maximum:"9007199254740991"`
 	Outcomes           OutcomeDistribution `json:"outcomes"`
 	FirstSeen          *string             `json:"firstSeen"`
 	LastSeen           *string             `json:"lastSeen"`
+}
+
+// Validate checks the aggregate's rates and counts. The Types schema bounds the
+// same fields; this is the Go boundary for a producer that constructs the
+// bundle directly, so a negative count or an out-of-range rate never reaches a
+// client.
+func (a ProjectAnalytics) Validate() error {
+	const where = "project analytics validation failed at schema.ProjectAnalytics.Validate: "
+	for _, rate := range []struct {
+		name  string
+		value float64
+	}{
+		{"returningContributorRate.rate", a.ReturningContributorRate.Rate},
+		{"sessionToCommitRate.rate", a.SessionToCommitRate.Rate},
+	} {
+		if math.IsNaN(rate.value) || math.IsInf(rate.value, 0) || rate.value < 0 || rate.value > 1 {
+			return fmt.Errorf("%s%s is %v; a rate is a finite share in [0, 1]; divide the counted part by the counted total", where, rate.name, rate.value)
+		}
+	}
+	for _, count := range []struct {
+		name  string
+		value int
+	}{
+		{"totalSessions", a.TotalSessions},
+		{"totalContributors", a.TotalContributors},
+		{"totalProjects", a.TotalProjects},
+		{"outcomeDistribution.resolved", a.OutcomeDistribution.Resolved},
+		{"outcomeDistribution.partial", a.OutcomeDistribution.Partial},
+		{"outcomeDistribution.failed", a.OutcomeDistribution.Failed},
+		{"outcomeDistribution.unknown", a.OutcomeDistribution.Unknown},
+		{"outcomeDistribution.total", a.OutcomeDistribution.Total},
+		{"sessionStats.durationMins.count", a.SessionStats.DurationMins.Count},
+		{"sessionStats.totalTokens.count", a.SessionStats.TotalTokens.Count},
+		{"sessionStats.turnCount.count", a.SessionStats.TurnCount.Count},
+		{"sessionStats.toolCallCount.count", a.SessionStats.ToolCallCount.Count},
+	} {
+		if count.value < 0 || int64(count.value) > maxSafeJSONInteger {
+			return fmt.Errorf("%s%s is %d; an analytics count is a non-negative safe integer; emit the counted value", where, count.name, count.value)
+		}
+	}
+	for i, contributor := range a.PerContributorBreakdown {
+		if contributor.Sessions < 0 || contributor.ActiveWeeks < 0 || contributor.TotalTokens < 0 || contributor.TotalDurationMins < 0 || contributor.TotalTurns < 0 || contributor.TotalToolCalls < 0 || contributor.SessionsWithCommit < 0 || contributor.TotalCommits < 0 {
+			return fmt.Errorf("%sperContributorBreakdown[%d] carries a negative count; contributors are counted, never subtracted; emit non-negative totals", where, i)
+		}
+	}
+	return nil
 }
 
 // QualityPage is the quality read for one offset page of sessions. The summary
@@ -1257,10 +1353,13 @@ type QualityPage struct {
 	Summary ProjectAnalytics `json:"summary"`
 }
 
-// Validate checks the common offset-page contract for the quality rows. The
-// summary is produced by the server aggregate, so it carries no page validation.
+// Validate checks the common offset-page contract for the quality rows and the
+// analytics summary carried beside them.
 func (p QualityPage) Validate() error {
-	return p.OffsetPage.Validate()
+	if err := p.OffsetPage.Validate(); err != nil {
+		return err
+	}
+	return p.Summary.Validate()
 }
 
 // --- Project Familiarity ---

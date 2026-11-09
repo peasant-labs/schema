@@ -40,10 +40,11 @@ var allQualityFixtureSetNames = []QualityFixtureSetName{
 
 // QualityFixtures is the parsed testdata/quality/sessions.yaml corpus.
 type QualityFixtures struct {
-	Sessions   []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
-	Sets       []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
-	Variations QualityVariations       `json:"variations" yaml:"quality_variations"`
-	Medians    []QualityMedianCase     `json:"medians" yaml:"medians"`
+	Sessions            []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
+	Sets                []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
+	Variations          QualityVariations       `json:"variations" yaml:"quality_variations"`
+	RequiredMedianNames []string                `json:"requiredMedianNames" yaml:"required_median_names"`
+	Medians             []QualityMedianCase     `json:"medians" yaml:"medians"`
 }
 
 // QualityMedianSession is one session in a personal-medians sample. Only these
@@ -61,16 +62,6 @@ type QualityMedianCase struct {
 	Name     string                 `json:"name" yaml:"name"`
 	Sessions []QualityMedianSession `json:"sessions" yaml:"sessions"`
 	Expected PersonalMedians        `json:"expected" yaml:"expected"`
-}
-
-// requiredQualityMedianCaseNames is the closed case inventory. Each name covers
-// one exclusion rule or the empty sample, so a dropped case fails closed.
-var requiredQualityMedianCaseNames = []string{
-	"typical",
-	"zero_token_excluded_from_retry_share",
-	"non_positive_spec_score_excluded",
-	"negative_reverts_excluded",
-	"empty_set_returns_no_medians",
 }
 
 // QualityVariations is the reusable combinatorial input catalog carried by the
@@ -295,12 +286,22 @@ func (f *QualityFixtures) validate() error {
 	return f.Variations.validate()
 }
 
-// validateMedians keeps the personal-medians corpus a closed set: every case is
-// named exactly once, the required cases are all present, and each expected
-// value is a finite number or absent.
+// validateMedians keeps the personal-medians corpus a closed set: the required
+// names come from the fixture document (the same manifest the TypeScript test
+// reads), every case is named exactly once, and each expected value is a finite
+// number or absent.
 func (f *QualityFixtures) validateMedians() error {
-	required := make(map[string]struct{}, len(requiredQualityMedianCaseNames))
-	for _, name := range requiredQualityMedianCaseNames {
+	if len(f.RequiredMedianNames) == 0 {
+		return fmt.Errorf("quality medians corpus has no required_median_names; the case inventory is the manifest the Go loader and the TypeScript test share; name every case")
+	}
+	required := make(map[string]struct{}, len(f.RequiredMedianNames))
+	for _, name := range f.RequiredMedianNames {
+		if strings.TrimSpace(name) == "" {
+			return fmt.Errorf("quality medians corpus has a blank required_median_names entry")
+		}
+		if _, duplicate := required[name]; duplicate {
+			return fmt.Errorf("quality medians corpus repeats required case %q", name)
+		}
 		required[name] = struct{}{}
 	}
 	seen := make(map[string]struct{}, len(f.Medians))
@@ -328,7 +329,7 @@ func (f *QualityFixtures) validateMedians() error {
 			}
 		}
 	}
-	for _, name := range requiredQualityMedianCaseNames {
+	for _, name := range f.RequiredMedianNames {
 		if _, ok := seen[name]; !ok {
 			return fmt.Errorf("quality medians corpus missing case %q", name)
 		}

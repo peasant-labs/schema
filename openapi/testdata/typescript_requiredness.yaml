@@ -197,3 +197,58 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "a detected pull request row always carries its repository identity, address, and detector"}
     mutation: {description: "pins every session pull request field as required and non-null"}
+  - name: local sync session page
+    input:
+      component: LocalSyncSessionPage
+      required: [items, nextItems, page, perPage, total, revision]
+      optional: [totals]
+      nullable: []
+      nonnullable: [items, nextItems, page, perPage, total, revision, totals]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "generic embedding promotes the six offset fields and the page adds an optional root total"}
+    mutation: {description: "contrasts the six required offset fields with the optional totals object"}
+  - name: local flat session page
+    input:
+      component: LocalSessionPage
+      required: [items, nextItems, page, perPage, total, revision]
+      optional: []
+      nullable: []
+      nonnullable: [items, nextItems, page, perPage, total, revision]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the flat page is exactly the six offset fields"}
+    mutation: {description: "pins the flat page as the six offset fields with no root total"}
+  - name: session detail read payload
+    input:
+      component: SessionDetailReadPayload
+      required: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, turns]
+      optional: [title, medians, revision, schemaVersion, teammate]
+      nullable: [medians, teammate, turns]
+      nonnullable: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, title, revision, schemaVersion]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the durable read keeps its turn content and adds three optional local metadata fields"}
+    mutation: {description: "contrasts the required durable metadata and turns with the optional title, medians, and revision"}
+  - name: transcript turn row
+    input:
+      component: TranscriptTurn
+      required: [index, role, content, timestamp, depth, truncated, byteLength]
+      optional: [toolCalls, command, provenance, usage, agentName, controlKind, parentIndex, tokensIn, tokensOut, stopReason]
+      nullable: [controlKind, parentIndex, tokensIn, tokensOut]
+      nonnullable: [index, role, content, timestamp, depth, truncated, byteLength, toolCalls, command, provenance, usage, agentName, stopReason]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "one turn row embeds the single TurnDetail definition plus its read facts"}
+    mutation: {description: "pins the promoted TurnDetail required fields beside truncated and byteLength"}
+  - name: session detail header payload
+    input:
+      component: SessionDetailHeaderPayload
+      required: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount]
+      optional: [relationshipNavigation, teammate, earlierHistory]
+      nullable: [teammate]
+      nonnullable: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount, relationshipNavigation, earlierHistory]
+    expected: true
+    classification: must-pass
+    provenance: {source: requirement, ref: "the metadata-only frame promotes the header fields and adds local navigation and teammate evidence"}
+    mutation: {description: "contrasts the required header metadata with the optional local frame additions"}

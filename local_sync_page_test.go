@@ -68,8 +68,12 @@ func TestLocalSyncPageQueries(t *testing.T) {
 				t.Fatalf("want %q, got %v", c.Expected.ErrorContains, err)
 			}
 			if err == nil && q.Home() {
-				if int(q.EffectivePageSize()) != c.Expected.MaxItems {
-					t.Fatalf("perPage=%d want %d", q.EffectivePageSize(), c.Expected.MaxItems)
+				size, sizeErr := q.EffectivePageSize()
+				if sizeErr != nil {
+					t.Fatalf("effective page size: %v", sizeErr)
+				}
+				if int(size) != c.Expected.MaxItems {
+					t.Fatalf("perPage=%d want %d", size, c.Expected.MaxItems)
 				}
 				if q.EffectivePage() != c.Expected.Page {
 					t.Fatalf("page=%d want %d", q.EffectivePage(), c.Expected.Page)
@@ -80,6 +84,23 @@ func TestLocalSyncPageQueries(t *testing.T) {
 }
 
 func TestSyncPageConcreteCatalogIdentity(t *testing.T) {
+	type pageExpectation struct {
+		name       string
+		properties []string
+		itemRefs   []string
+	}
+	pages := []pageExpectation{
+		{
+			name:       "LocalSyncSessionPage",
+			properties: []string{"items", "nextItems", "page", "perPage", "total", "revision", "totals"},
+			itemRefs:   []string{"LocalSyncSessionRow", "SchemaLocalSyncSessionRow", "SchemaSyncSessionRow"},
+		},
+		{
+			name:       "LocalSessionPage",
+			properties: []string{"items", "nextItems", "page", "perPage", "total", "revision"},
+			itemRefs:   []string{"LocalSessionRow", "SchemaLocalSessionRow"},
+		},
+	}
 	h := newBoundaryHarness(t)
 	for _, document := range []string{"types", "local"} {
 		components := h.documents[document]["components"].(map[string]any)["schemas"].(map[string]any)
@@ -88,33 +109,41 @@ func TestSyncPageConcreteCatalogIdentity(t *testing.T) {
 				t.Fatalf("%s leaks unstable or superseded name %q", document, name)
 			}
 		}
-		page, ok := components["LocalSyncSessionPage"].(map[string]any)
-		if !ok {
-			t.Fatalf("%s lacks concrete page", document)
-		}
-		properties := page["properties"].(map[string]any)
-		for _, name := range []string{"items", "nextItems", "page", "perPage", "total", "revision", "totals"} {
-			if properties[name] == nil {
-				t.Fatalf("%s page lacks %q: %v", document, name, properties)
+		for _, expected := range pages {
+			page, ok := components[expected.name].(map[string]any)
+			if !ok {
+				t.Fatalf("%s lacks concrete page %s", document, expected.name)
 			}
-		}
-		if len(properties) != 7 {
-			t.Fatalf("%s page is not exactly the six offset fields plus totals: %v", document, properties)
-		}
-		items := properties["items"].(map[string]any)
-		if items["type"] != "array" {
-			t.Fatalf("%s items is not a non-null array", document)
-		}
-		ref := items["items"].(map[string]any)["$ref"].(string)
-		if !strings.HasSuffix(ref, "/LocalSyncSessionRow") && !strings.HasSuffix(ref, "/SchemaLocalSyncSessionRow") && !strings.HasSuffix(ref, "/SchemaSyncSessionRow") {
-			t.Fatalf("%s item ref %q", document, ref)
-		}
-		perPage := properties["perPage"].(map[string]any)
-		if ref, ok := perPage["$ref"].(string); ok {
-			perPage = components[strings.TrimPrefix(ref, "#/components/schemas/")].(map[string]any)
-		}
-		if perPage["type"] != "integer" || len(perPage["enum"].([]any)) != 3 {
-			t.Fatalf("%s perPage is not the numeric 25/50/100 enum: %v", document, perPage)
+			properties := page["properties"].(map[string]any)
+			for _, name := range expected.properties {
+				if properties[name] == nil {
+					t.Fatalf("%s %s lacks %q: %v", document, expected.name, name, properties)
+				}
+			}
+			if len(properties) != len(expected.properties) {
+				t.Fatalf("%s %s is not exactly its offset fields plus any declared extra: %v", document, expected.name, properties)
+			}
+			items := properties["items"].(map[string]any)
+			if items["type"] != "array" {
+				t.Fatalf("%s %s items is not a non-null array", document, expected.name)
+			}
+			ref := items["items"].(map[string]any)["$ref"].(string)
+			matched := false
+			for _, want := range expected.itemRefs {
+				if strings.HasSuffix(ref, "/"+want) {
+					matched = true
+				}
+			}
+			if !matched {
+				t.Fatalf("%s %s item ref %q", document, expected.name, ref)
+			}
+			perPage := properties["perPage"].(map[string]any)
+			if ref, ok := perPage["$ref"].(string); ok {
+				perPage = components[strings.TrimPrefix(ref, "#/components/schemas/")].(map[string]any)
+			}
+			if perPage["type"] != "integer" || len(perPage["enum"].([]any)) != 3 {
+				t.Fatalf("%s %s perPage is not the numeric 25/50/100 enum: %v", document, expected.name, perPage)
+			}
 		}
 	}
 	paths := h.documents["local"]["paths"].(map[string]any)

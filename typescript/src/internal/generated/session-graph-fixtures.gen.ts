@@ -4269,10 +4269,8 @@ export const canonicalSessionGraphFixtures = {
             "payload": {
               "members": [],
               "page": 1,
-              "perPage": 25,
-              "total": null,
-              "revision": "4213",
-              "nextItems": []
+              "limit": 25,
+              "total": null
             }
           },
           "expected": {
