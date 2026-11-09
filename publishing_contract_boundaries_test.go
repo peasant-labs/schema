@@ -86,9 +86,9 @@ type boundaryExpected struct {
 var boundaryDecoders = map[string]func([]byte) (any, error){
 	"LocalSyncSessionRow":                      decodeValidated[schema.LocalSyncSessionRow],
 	"LocalSyncSessionPage":                     decodeValidated[schema.LocalSyncSessionPage],
+	"LocalSyncSessionTotals":                   decodeValidated[schema.LocalSyncSessionTotals],
 	"LocalSyncPublicationFilter":               decodeOnly[schema.LocalSyncPublicationFilter],
 	"LocalSyncProjectOptions":                  decodeValidated[schema.LocalSyncProjectOptions],
-	"PageToken":                                decodeOnly[schema.PageToken],
 	"LocalSyncSessionsPayload":                 decodeValidated[schema.LocalSyncSessionsPayload],
 	"LocalSessionRow":                          decodeValidated[schema.LocalSessionRow],
 	"LocalPublicationsResponse":                decodeValidated[schema.LocalPublicationsResponse],

@@ -33,10 +33,12 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"CollectiveFetchSourceResult", new(schema.CollectiveFetchSourceResult)}, {"CollectiveFetchAssociationScopeResult", new(schema.CollectiveFetchAssociationScopeResult)}, {"CollectiveFetchAssociationResults", new(schema.CollectiveFetchAssociationResults)}, {"CollectiveFetchDomainResult", new(schema.CollectiveFetchDomainResult)}, {"CollectiveFetchReport", new(schema.CollectiveFetchReport)},
 		{"CollectiveFetchDomainSummary", new(schema.CollectiveFetchDomainSummary)}, {"CollectiveFetchSummary", new(schema.CollectiveFetchSummary)}, {"CollectiveObservationResponse", new(schema.CollectiveObservationResponse)}, {"LocalContributionHistoryResponse", new(schema.LocalContributionHistoryResponse)}, {"LocalContributionTraversalConflict", new(schema.LocalContributionTraversalConflict)},
 		{"LocalRemoteContributionAttempt", new(schema.LocalRemoteContributionAttempt)},
-		{"PageToken", new(schema.PageToken)},
+		{"PageSize", new(schema.PageSize)},
 		{"LocalSyncPublicationFilter", new(schema.LocalSyncPublicationFilter)},
 		{"LocalSyncSessionRow", new(schema.LocalSyncSessionRow)},
+		{"LocalSyncSessionTotals", new(schema.LocalSyncSessionTotals)},
 		{"LocalSyncSessionPage", new(schema.LocalSyncSessionPage)},
+		{"LocalSessionPage", new(schema.LocalSessionPage)},
 		{"LocalSyncProjectOption", new(schema.LocalSyncProjectOption)},
 		{"LocalSyncProjectOptions", new(schema.LocalSyncProjectOptions)},
 		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
@@ -116,6 +118,11 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"PullSkipGateResponse", new(schema.PullSkipGateResponse)}, {"PullSkipGateResult", new(schema.PullSkipGateResult)},
 		{"PullTranscriptInfo", new(schema.PullTranscriptInfo)}, {"LegacyPullTranscriptInfo", new(schema.LegacyPullTranscriptInfo)}, {"LegacyPullListResponse", new(schema.LegacyPullListResponse)}, {"LegacyPullAnnotation", new(schema.LegacyPullAnnotation)}, {"QualityMetrics", new(schema.QualityMetrics)},
 		{"QualityPayload", new(schema.QualityPayload)}, {"QualitySession", new(schema.QualitySession)},
+		{"PersonalMedians", new(schema.PersonalMedians)}, {"ProjectAnalytics", new(schema.ProjectAnalytics)}, {"QualityPage", new(schema.QualityPage)},
+		{"WeekCount", new(schema.WeekCount)}, {"WeekContributors", new(schema.WeekContributors)}, {"ReturningContributorRate", new(schema.ReturningContributorRate)},
+		{"LongestStreak", new(schema.LongestStreak)}, {"WeekNewContributors", new(schema.WeekNewContributors)}, {"SessionToCommitRate", new(schema.SessionToCommitRate)},
+		{"WeekAvgDuration", new(schema.WeekAvgDuration)}, {"OutcomeDistribution", new(schema.OutcomeDistribution)}, {"MedianP90", new(schema.MedianP90)},
+		{"AnalyticsSessionStats", new(schema.AnalyticsSessionStats)}, {"ContributorBreakdown", new(schema.ContributorBreakdown)},
 		{"ReadAttributionState", new(schema.ReadAttributionState)}, {"ReadStateGrade", new(schema.ReadStateGrade)},
 		{"RedactionInfo", new(schema.RedactionInfo)}, {"ReviewListPayload", new(schema.ReviewListPayload)},
 		{"ReviewSuggestion", new(schema.ReviewSuggestion)}, {"RewriteMethod", new(schema.RewriteMethod)},
@@ -139,6 +146,10 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"RelationshipNavigationStatus", new(schema.RelationshipNavigationStatus)}, {"SessionRelationshipNavigation", new(schema.SessionRelationshipNavigation)},
 		{"SessionListItemKind", new(schema.SessionListItemKind)}, {"HelperGroupSummary", new(schema.HelperGroupSummary)},
 		{"HelperContextSummary", new(schema.HelperContextSummary)}, {"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"SessionDetailHeader", new(schema.SessionDetailHeader)}, {"SessionDetailHeaderPayload", new(schema.SessionDetailHeaderPayload)},
+		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)}, {"TranscriptSegmentRef", new(schema.TranscriptSegmentRef)},
+		{"TranscriptSegment", new(schema.TranscriptSegment)}, {"TranscriptTurn", new(schema.TranscriptTurn)},
+		{"TranscriptWindow", new(schema.TranscriptWindow)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},
 		{"LocalSyncSummary", new(schema.LocalSyncSummary)}, {"LocalSyncSessionsPayload", new(schema.LocalSyncSessionsPayload)},
 		{"LocalSessionRow", new(schema.LocalSessionRow)}, {"LocalSessionListItem", new(schema.LocalSessionListItem)},
@@ -299,7 +310,7 @@ func BuildTypesSpec() (*openapi31.Spec, error) {
 		if err != nil {
 			return nil, fmt.Errorf("marshal shared type %s: %w", t.Name, err)
 		}
-		applyGoRequiredFields(sm, reflect.TypeOf(t.Value))
+		applyGoRequiredFields(sm, reflect.TypeOf(t.Value), t.Name)
 		directSchemas[t.Name] = sm
 	}
 	// Reflection discovers transitive definitions repeatedly. Re-apply every
@@ -363,11 +374,23 @@ func constrainHelperMemberItems(components map[string]map[string]interface{}) er
 	return nil
 }
 
+// expandedEmbeddedRequired names catalog components whose named embedded struct
+// contributes its own required fields to the component's required list. The
+// default is the Go field name of the embedded struct, which keeps a frozen
+// legacy envelope's released requiredness unchanged (LegacyPullAnnotation). A
+// component opts in when its embedding is the wire shape itself rather than a
+// nested object, so the promoted properties are the fields a consumer receives.
+var expandedEmbeddedRequired = map[string]struct{}{
+	"SessionDetailReadPayload":   {},
+	"SessionDetailHeaderPayload": {},
+	"TranscriptTurn":             {},
+}
+
 // applyGoRequiredFields preserves Go's JSON presence contract in the canonical
 // Types document. API operation documents may intentionally have distinct
 // validation policy; the language binding catalog mirrors the Go wire shape:
 // every exported JSON field without omitempty is present.
-func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.Type) {
+func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.Type, componentName string) {
 	for valueType.Kind() == reflect.Pointer {
 		valueType = valueType.Elem()
 	}
@@ -380,6 +403,46 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 		field := valueType.Field(i)
 		if !field.IsExported() {
 			continue
+		}
+		if field.Anonymous {
+			// The reflector promotes an embedded struct's JSON fields into this
+			// schema's properties but records the Go field name as required. For an
+			// instantiated generic (whose promoted property names are the wire
+			// contract and whose type name is not a property at all), and for a
+			// component that opts into wire-shaped embedding, expand the embedded
+			// struct's own required fields. A defined embedded struct keeps the
+			// released single-name behavior so a frozen legacy envelope does not
+			// drift.
+			embedded := field.Type
+			for embedded.Kind() == reflect.Pointer {
+				embedded = embedded.Elem()
+			}
+			_, expandEmbedded := expandedEmbeddedRequired[componentName]
+			if embedded.Kind() == reflect.Struct && (expandEmbedded || strings.Contains(embedded.Name(), "[")) {
+				for j := 0; j < embedded.NumField(); j++ {
+					inner := embedded.Field(j)
+					if !inner.IsExported() {
+						continue
+					}
+					innerTag := inner.Tag.Get("json")
+					innerParts := strings.Split(innerTag, ",")
+					innerName := innerParts[0]
+					if innerName == "-" {
+						continue
+					}
+					if innerName == "" {
+						innerName = inner.Name
+					}
+					innerOptional := false
+					for _, option := range innerParts[1:] {
+						innerOptional = innerOptional || option == "omitempty"
+					}
+					if !innerOptional {
+						required = append(required, innerName)
+					}
+				}
+				continue
+			}
 		}
 		tag := field.Tag.Get("json")
 		parts := strings.Split(tag, ",")

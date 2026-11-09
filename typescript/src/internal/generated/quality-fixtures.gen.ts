@@ -366,5 +366,119 @@ export const canonicalQualityFixtures: QualityFixtures = {
         }
       ]
     }
-  }
+  },
+  "medians": [
+    {
+      "name": "typical",
+      "sessions": [
+        {
+          "totalTokens": 10000,
+          "retryTokensWasted": 500,
+          "specQualityScore": 80,
+          "withinSessionReverts": 1
+        },
+        {
+          "totalTokens": 20000,
+          "retryTokensWasted": 1500,
+          "specQualityScore": 60,
+          "withinSessionReverts": 3
+        },
+        {
+          "totalTokens": 30000,
+          "retryTokensWasted": 1000,
+          "specQualityScore": 100,
+          "withinSessionReverts": 0
+        }
+      ],
+      "expected": {
+        "retryShare": 0.05,
+        "specQualityScore": 80,
+        "withinSessionReverts": 1
+      }
+    },
+    {
+      "name": "zero_token_excluded_from_retry_share",
+      "sessions": [
+        {
+          "totalTokens": 0,
+          "retryTokensWasted": 5000,
+          "specQualityScore": 70,
+          "withinSessionReverts": 0
+        },
+        {
+          "totalTokens": 10000,
+          "retryTokensWasted": 1000,
+          "specQualityScore": 90,
+          "withinSessionReverts": 2
+        }
+      ],
+      "expected": {
+        "retryShare": 0.1,
+        "specQualityScore": 80,
+        "withinSessionReverts": 1
+      }
+    },
+    {
+      "name": "non_positive_spec_score_excluded",
+      "sessions": [
+        {
+          "totalTokens": 1000,
+          "retryTokensWasted": 0,
+          "specQualityScore": 0,
+          "withinSessionReverts": 0
+        },
+        {
+          "totalTokens": 1000,
+          "retryTokensWasted": 0,
+          "specQualityScore": -5,
+          "withinSessionReverts": 0
+        },
+        {
+          "totalTokens": 1000,
+          "retryTokensWasted": 0,
+          "specQualityScore": 60,
+          "withinSessionReverts": 0
+        }
+      ],
+      "expected": {
+        "retryShare": 0,
+        "specQualityScore": 60,
+        "withinSessionReverts": 0
+      }
+    },
+    {
+      "name": "negative_reverts_excluded",
+      "sessions": [
+        {
+          "totalTokens": 1000,
+          "retryTokensWasted": 0,
+          "specQualityScore": 10,
+          "withinSessionReverts": -1
+        },
+        {
+          "totalTokens": 1000,
+          "retryTokensWasted": 0,
+          "specQualityScore": 10,
+          "withinSessionReverts": 2
+        }
+      ],
+      "expected": {
+        "retryShare": 0,
+        "specQualityScore": 10,
+        "withinSessionReverts": 2
+      }
+    },
+    {
+      "name": "empty_set_returns_no_medians",
+      "sessions": [],
+      "expected": {}
+    }
+  ],
+  "requiredMedianNames": [
+    "typical",
+    "zero_token_excluded_from_retry_share",
+    "non_positive_spec_score_excluded",
+    "negative_reverts_excluded",
+    "empty_set_returns_no_medians"
+  ]
 };

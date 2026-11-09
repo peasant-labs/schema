@@ -33,6 +33,22 @@ components:
       - unknown
       title: Actor Origin
       type: string
+    AnalyticsSessionStats:
+      properties:
+        durationMins:
+          $ref: '#/components/schemas/MedianP90'
+        toolCallCount:
+          $ref: '#/components/schemas/MedianP90'
+        totalTokens:
+          $ref: '#/components/schemas/MedianP90'
+        turnCount:
+          $ref: '#/components/schemas/MedianP90'
+      required:
+      - durationMins
+      - totalTokens
+      - turnCount
+      - toolCallCount
+      type: object
     AnnotationAxis:
       description: Subscription dimension for annotation channels
       enum:
@@ -1144,10 +1160,7 @@ components:
           - type: "null"
         turnCount:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -1344,9 +1357,6 @@ components:
         toolCallCount:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            The producer computes it once while indexing and carries it through detail,
-            export, and publication; it is never a raw harness record count.'
           type: integer
       required:
       - turnCount
@@ -2621,11 +2631,7 @@ components:
         thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and
         assistant-only validation before persistence with no invalid side effects
         plus byte-exact preservation of the values, their history order, and their
-        absence through storage, typed migration, rewrite, serving, and pull. content_parts_v1
-        is required iff any main or earlier-history turn carries a non-empty contentParts
-        list, text-only or image-bearing, and guarantees ordered preservation of every
-        part through storage, typed migration, rewrite, serving, and publication,
-        including the published not_published image shape.
+        absence through storage, typed migration, rewrite, serving, and pull.
       title: Content Capability
       type: string
     ContentKind:
@@ -2704,6 +2710,70 @@ components:
         or authority
       maxLength: 4096
       type: string
+    ContributorBreakdown:
+      properties:
+        activeWeeks:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        contributorId:
+          type: string
+        firstSeen:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        lastSeen:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        outcomes:
+          $ref: '#/components/schemas/OutcomeDistribution'
+        sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        sessionsWithCommit:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalCommits:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalDurationMins:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTokens:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalToolCalls:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - contributorId
+      - sessions
+      - activeWeeks
+      - totalTokens
+      - totalDurationMins
+      - totalTurns
+      - totalToolCalls
+      - sessionsWithCommit
+      - totalCommits
+      - outcomes
+      - firstSeen
+      - lastSeen
+      type: object
     CreateAnnotationRequest:
       properties:
         annotatorName:
@@ -2994,7 +3064,6 @@ components:
       - system
       - error
       - result
-      - image
       examples:
       - text
       - tool_use
@@ -3276,53 +3345,6 @@ components:
       pattern: ^[a-zA-Z0-9._<>-]+$
       title: Host Slug
       type: string
-    ImageMediaType:
-      description: 'Recorded image media type: image/png or image/jpeg'
-      enum:
-      - image/png
-      - image/jpeg
-      examples:
-      - image/png
-      - image/jpeg
-      title: Image Media Type
-      type: string
-    ImagePart:
-      properties:
-        byteSize:
-          description: Exact stored byte size. Zero means unset or no bytes, and an
-            explicit zero is accepted as unset; a published transcript never carries
-            a nonzero size.
-          minimum: 0
-          type: integer
-        height:
-          description: Optional recorded pixel height; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero height.
-          minimum: 0
-          type: integer
-        mediaType:
-          $ref: '#/components/schemas/ImageMediaType'
-          description: Recorded image/png or image/jpeg media type. Absent for an
-            unsupported source type or a published transcript.
-        omittedReason:
-          $ref: '#/components/schemas/OmittedReason'
-          description: 'Why the bytes are absent: unsupported (wins for a non-recorded
-            media type), too_large, missing, or not_published. Omit when local bytes
-            are present.'
-        ref:
-          description: Lowercase 64-hex content address of the stored image. Absent
-            when the bytes are omitted or the transcript is published.
-          maxLength: 64
-          minLength: 64
-          pattern: ^[0-9a-f]{64}$
-          type: string
-        width:
-          description: Optional recorded pixel width; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero width.
-          minimum: 0
-          type: integer
-      type: object
     InputModality:
       description: Closed session graph value
       enum:
@@ -3777,10 +3799,6 @@ components:
       type: object
     LocalHelperMembersPayload:
       properties:
-        limit:
-          maximum: 9.007199254740991e+15
-          minimum: 1
-          type: integer
         members:
           items:
             allOf:
@@ -3798,19 +3816,30 @@ components:
               - transcript
               type: object
           type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/LocalSessionListItem'
+          type: array
         page:
           maximum: 9.007199254740991e+15
           minimum: 1
           type: integer
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
+          type: string
         total:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
       required:
       - members
+      - nextItems
       - page
-      - limit
+      - perPage
       - total
+      - revision
       type: object
     LocalOperationDiagnostic:
       properties:
@@ -3989,10 +4018,10 @@ components:
           items:
             $ref: '#/components/schemas/LocalSessionListItem'
           type: array
-        limit:
-          maximum: 9.007199254740991e+15
-          minimum: 1
-          type: integer
+        nextItems:
+          items:
+            $ref: '#/components/schemas/LocalSessionListItem'
+          type: array
         ordinarySessionTotal:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -4001,17 +4030,55 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 1
           type: integer
-        totalItems:
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
+          type: string
+        total:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
       required:
       - items
+      - nextItems
       - page
-      - limit
-      - totalItems
+      - perPage
+      - total
+      - revision
       - ordinarySessionTotal
       - helperThreadTotal
+      type: object
+    LocalSessionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LocalSessionRow'
+          type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/LocalSessionRow'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
+          type: string
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - items
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
       type: object
     LocalSessionRow:
       properties:
@@ -4025,6 +4092,8 @@ components:
           anyOf:
           - $ref: '#/components/schemas/LocalSyncSummary'
           - type: "null"
+        title:
+          type: string
       required:
       - session
       type: object
@@ -4163,14 +4232,32 @@ components:
           items:
             $ref: '#/components/schemas/LocalSyncSessionRow'
           type: array
-        next:
-          description: Opaque continuation; empty starts traversal or marks its end.
-            Not a credential or snapshot token.
-          title: Page Token
+        nextItems:
+          items:
+            $ref: '#/components/schemas/LocalSyncSessionRow'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
           type: string
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totals:
+          $ref: '#/components/schemas/LocalSyncSessionTotals'
       required:
       - items
-      - next
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
       type: object
     LocalSyncSessionRow:
       properties:
@@ -4191,6 +4278,15 @@ components:
       - title
       - preview
       - childCount
+      type: object
+    LocalSyncSessionTotals:
+      properties:
+        sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessions
       type: object
     LocalSyncSessionsPayload:
       properties:
@@ -4241,9 +4337,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
       required:
       - id
@@ -4276,6 +4369,29 @@ components:
           type: array
       required:
       - collectives
+      type: object
+    LongestStreak:
+      properties:
+        endWeek:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        startWeek:
+          anyOf:
+          - type:
+            - "null"
+            - string
+          - type: "null"
+        weeks:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - weeks
+      - startWeek
+      - endWeek
       type: object
     MapEdge:
       properties:
@@ -4526,6 +4642,29 @@ components:
       - structureEdges
       - activityEdges
       type: object
+    MedianP90:
+      properties:
+        count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        median:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        p90:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      required:
+      - count
+      - median
+      - p90
+      type: object
     MessageType:
       description: WebSocket message discriminator
       enum:
@@ -4692,21 +4831,6 @@ components:
       pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
       title: Observed Model ID
       type: string
-    OmittedReason:
-      description: 'Why an image part carries no bytes: unsupported (wins for a non-recorded
-        media type), too_large, missing, or not_published'
-      enum:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      examples:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      title: Omitted Reason
-      type: string
     OperationIssue:
       properties:
         code:
@@ -4745,6 +4869,35 @@ components:
       - superseded
       title: Operation Issue Code
       type: string
+    OutcomeDistribution:
+      properties:
+        failed:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        partial:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        resolved:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        unknown:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - resolved
+      - partial
+      - failed
+      - unknown
+      - total
+      type: object
     OwnerTranscriptUpdateRequest:
       additionalProperties: false
       properties:
@@ -4818,11 +4971,99 @@ components:
       - type: "null"
       description: Omitted preserves, null requests clear, and a canonical license
         replaces
-    PageToken:
-      description: Opaque continuation; empty starts traversal or marks its end. Not
-        a credential or snapshot token.
-      title: Page Token
-      type: string
+    PageSize:
+      description: 'Closed page size set for local list reads: 25, 50, or 100. The
+        value is a number on the wire; an omitted maximum maps to 25 before validation.'
+      enum:
+      - 25
+      - 50
+      - 100
+      examples:
+      - 25
+      - 50
+      - 100
+      title: Page Size
+      type: integer
+    PersonalMedians:
+      properties:
+        retryShare:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      type: object
+    ProjectAnalytics:
+      properties:
+        avgDurationPerActiveWeek:
+          items:
+            $ref: '#/components/schemas/WeekAvgDuration'
+          type: array
+        longestStreak:
+          $ref: '#/components/schemas/LongestStreak'
+        newContributorVelocity:
+          items:
+            $ref: '#/components/schemas/WeekNewContributors'
+          type: array
+        outcomeDistribution:
+          $ref: '#/components/schemas/OutcomeDistribution'
+        perContributorBreakdown:
+          items:
+            $ref: '#/components/schemas/ContributorBreakdown'
+          type: array
+        returningContributorRate:
+          $ref: '#/components/schemas/ReturningContributorRate'
+        sessionStats:
+          $ref: '#/components/schemas/AnalyticsSessionStats'
+        sessionToCommitRate:
+          $ref: '#/components/schemas/SessionToCommitRate'
+        sessionsPerWeek:
+          items:
+            $ref: '#/components/schemas/WeekCount'
+          type: array
+        totalContributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalProjects:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalSessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        weeklyActiveContributors:
+          items:
+            $ref: '#/components/schemas/WeekContributors'
+          type: array
+      required:
+      - totalSessions
+      - totalContributors
+      - totalProjects
+      - sessionsPerWeek
+      - weeklyActiveContributors
+      - returningContributorRate
+      - longestStreak
+      - newContributorVelocity
+      - sessionToCommitRate
+      - avgDurationPerActiveWeek
+      - outcomeDistribution
+      - sessionStats
+      - perContributorBreakdown
+      type: object
     ProjectContext:
       properties:
         filePath:
@@ -5712,10 +5953,7 @@ components:
           - type: "null"
         turnCount:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -5725,6 +5963,40 @@ components:
             - "null"
             - integer
           - type: "null"
+      type: object
+    QualityPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/QualitySession'
+          type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/QualitySession'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/PageSize'
+        revision:
+          minLength: 1
+          type: string
+        summary:
+          $ref: '#/components/schemas/ProjectAnalytics'
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - items
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
+      - summary
       type: object
     QualityPayload:
       properties:
@@ -5788,9 +6060,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         withinSessionReverts:
           type: integer
@@ -5975,6 +6244,26 @@ components:
       - kind
       - payload
       type: object
+    ReturningContributorRate:
+      properties:
+        rate:
+          format: double
+          maximum: 1
+          minimum: 0
+          type: number
+        returning:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - total
+      - returning
+      - rate
+      type: object
     ReviewListPayload:
       properties:
         changes:
@@ -6143,11 +6432,7 @@ components:
               raw-bound, and assistant-only validation before persistence with no
               invalid side effects plus byte-exact preservation of the values, their
               history order, and their absence through storage, typed migration, rewrite,
-              serving, and pull. content_parts_v1 is required iff any main or earlier-history
-              turn carries a non-empty contentParts list, text-only or image-bearing,
-              and guarantees ordered preservation of every part through storage, typed
-              migration, rewrite, serving, and publication, including the published
-              not_published image shape.
+              serving, and pull.
             title: Content Capability
             type: string
           type: array
@@ -6350,6 +6635,210 @@ components:
       required:
       - commits
       type: object
+    SessionDetailHeader:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/ChildSessionRef'
+          type: array
+        diagnostics:
+          $ref: '#/components/schemas/InterpretationDiagnostics'
+        durationMins:
+          format: double
+          type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/EarlierHistoryState'
+          type: array
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/Harness'
+        id:
+          type: string
+        inputSubmissionCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        model:
+          type: string
+        outcome:
+          $ref: '#/components/schemas/SessionOutcome'
+        parentSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        project:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SessionPurpose'
+        relationships:
+          items:
+            $ref: '#/components/schemas/SessionRelationship'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/RetainedUnknownRecord'
+          type: array
+        rootSessionId:
+          anyOf:
+          - $ref: '#/components/schemas/SessionID'
+          - type: "null"
+        schemaVersion:
+          type: string
+        scorecard:
+          anyOf:
+          - $ref: '#/components/schemas/SessionScorecard'
+          - type: "null"
+        sessionOrigin:
+          $ref: '#/components/schemas/SessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        thinkingLevel:
+          $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        workingDirectory:
+          type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      type: object
+    SessionDetailHeaderPayload:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/ChildSessionRef'
+          type: array
+        diagnostics:
+          $ref: '#/components/schemas/InterpretationDiagnostics'
+        durationMins:
+          format: double
+          type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/EarlierHistoryState'
+          type: array
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/Harness'
+        id:
+          type: string
+        inputSubmissionCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        model:
+          type: string
+        outcome:
+          $ref: '#/components/schemas/SessionOutcome'
+        parentSessionId:
+          $ref: '#/components/schemas/SessionID'
+        project:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SessionPurpose'
+        relationshipNavigation:
+          items:
+            $ref: '#/components/schemas/SessionRelationshipNavigation'
+          type: array
+        relationships:
+          items:
+            $ref: '#/components/schemas/SessionRelationship'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/RetainedUnknownRecord'
+          type: array
+        rootSessionId:
+          $ref: '#/components/schemas/SessionID'
+        schemaVersion:
+          type: string
+        scorecard:
+          $ref: '#/components/schemas/SessionScorecard'
+        sessionOrigin:
+          $ref: '#/components/schemas/SessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        teammate:
+          anyOf:
+          - $ref: '#/components/schemas/SessionTeammate'
+          - type: "null"
+        thinkingLevel:
+          $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/ThinkingLevelChange'
+          type: array
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        workingDirectory:
+          type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      type: object
     SessionDetailPayload:
       properties:
         childSessions:
@@ -6440,9 +6929,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -6495,6 +6981,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/PersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -6521,6 +7011,8 @@ components:
           items:
             $ref: '#/components/schemas/RetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SessionID'
         schemaVersion:
@@ -6548,6 +7040,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/ThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:
@@ -6557,9 +7051,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -6570,7 +7061,17 @@ components:
         workingDirectory:
           type: string
       required:
-      - SessionDetailPayload
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
       type: object
     SessionEntry:
       properties:
@@ -7005,9 +7506,6 @@ components:
         toolCallCount:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            The producer computes it once while indexing and carries it through detail,
-            export, and publication; it is never a raw harness record count.'
           type: integer
       required:
       - turnCount
@@ -7070,9 +7568,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
       required:
       - id
@@ -7117,6 +7612,26 @@ components:
       - native_dynamic_workflow
       title: Session Teammate Evidence
       type: string
+    SessionToCommitRate:
+      properties:
+        rate:
+          format: double
+          maximum: 1
+          minimum: 0
+          type: number
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        withCommit:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - total
+      - withCommit
+      - rate
+      type: object
     SessionsPayload:
       properties:
         sessions:
@@ -7820,6 +8335,173 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
       type: string
+    TranscriptSegment:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
+    TranscriptSegmentDirectory:
+      properties:
+        directoryPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        directoryPerPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - totalTurns
+      - totalSegments
+      - segments
+      type: object
+    TranscriptSegmentRef:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    TranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/CommandInvocation'
+        content:
+          type: string
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/EntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/ObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/ContentProvenance'
+        role:
+          $ref: '#/components/schemas/Role'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/StopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/ThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/ThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/ToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/UsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
+      type: object
     TranscriptUpdateLicense:
       description: 'License value for the owner transcript update operation: a canonical
         menu license, or the empty string to clear. Clearing a license that was actually
@@ -7859,6 +8541,53 @@ components:
       - private
       title: TranscriptUpdateVisibility
       type: string
+    TranscriptWindow:
+      properties:
+        anchorTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        requestedAnchor:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            type: integer
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SessionID'
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - requestedAnchor
+      - anchorTurn
+      - span
+      - firstTurn
+      - lastTurn
+      - segments
+      - hasOlder
+      - hasNewer
+      type: object
     TrendsPayload:
       properties:
         days:
@@ -7876,17 +8605,6 @@ components:
       - totalTokens
       - totalSessions
       type: object
-    TurnContentPart:
-      properties:
-        image:
-          $ref: '#/components/schemas/ImagePart'
-        text:
-          type: string
-        type:
-          $ref: '#/components/schemas/TurnPartType'
-      required:
-      - type
-      type: object
     TurnDetail:
       properties:
         agentName:
@@ -7897,10 +8615,6 @@ components:
           - type: "null"
         content:
           type: string
-        contentParts:
-          items:
-            $ref: '#/components/schemas/TurnContentPart'
-          type: array
         controlKind:
           anyOf:
           - type:
@@ -7969,16 +8683,6 @@ components:
       - timestamp
       - depth
       type: object
-    TurnPartType:
-      description: 'Kind of one ordered turn content part: text or image'
-      enum:
-      - text
-      - image
-      examples:
-      - text
-      - image
-      title: Turn Part Type
-      type: string
     TypeOrigin:
       description: 'Who created an annotation type: system (built-in), user (individual),
         or group (shared)'
@@ -9079,10 +9783,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -10763,10 +11464,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -11360,10 +12058,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -11564,9 +12259,6 @@ components:
         title:
           type: string
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
       required:
       - sessionId
@@ -11575,4 +12267,57 @@ components:
       - turnCount
       - steps
       - isCoherent
+      type: object
+    WeekAvgDuration:
+      properties:
+        avgDurationMins:
+          format: double
+          minimum: 0
+          type: number
+        sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - avgDurationMins
+      - sessions
+      type: object
+    WeekContributors:
+      properties:
+        contributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - contributors
+      type: object
+    WeekCount:
+      properties:
+        count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - count
+      type: object
+    WeekNewContributors:
+      properties:
+        newContributors:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        week:
+          type: string
+      required:
+      - week
+      - newContributors
       type: object

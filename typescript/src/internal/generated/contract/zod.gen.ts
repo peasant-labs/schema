@@ -1251,6 +1251,20 @@ export const zLocalSyncPublicationFilter = z.enum([
 
 export type LocalSyncPublicationFilter = z.infer<typeof zLocalSyncPublicationFilter>;
 
+export const zLocalSyncSessionTotals = z.object({
+    sessions: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSyncSessionTotals = z.infer<typeof zLocalSyncSessionTotals>;
+
+export const zLongestStreak = z.object({
+    endWeek: z.string().nullable(),
+    startWeek: z.string().nullable(),
+    weeks: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LongestStreak = z.infer<typeof zLongestStreak>;
+
 export const zMapEdge = z.object({
     count: z.int(),
     from: z.string(),
@@ -1271,6 +1285,23 @@ export const zMapNodeKind = z.enum([
 ]);
 
 export type MapNodeKind = z.infer<typeof zMapNodeKind>;
+
+export const zMedianP90 = z.object({
+    count: z.int().gte(0).lte(9007199254740991),
+    median: z.number().nullable(),
+    p90: z.number().nullable()
+});
+
+export type MedianP90 = z.infer<typeof zMedianP90>;
+
+export const zAnalyticsSessionStats = z.object({
+    durationMins: zMedianP90,
+    toolCallCount: zMedianP90,
+    totalTokens: zMedianP90,
+    turnCount: zMedianP90
+});
+
+export type AnalyticsSessionStats = z.infer<typeof zAnalyticsSessionStats>;
 
 /**
  * Message Type
@@ -1469,6 +1500,33 @@ export const zLocalContributionTraversalConflict = z.object({
 
 export type LocalContributionTraversalConflict = z.infer<typeof zLocalContributionTraversalConflict>;
 
+export const zOutcomeDistribution = z.object({
+    failed: z.int().gte(0).lte(9007199254740991),
+    partial: z.int().gte(0).lte(9007199254740991),
+    resolved: z.int().gte(0).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991),
+    unknown: z.int().gte(0).lte(9007199254740991)
+});
+
+export type OutcomeDistribution = z.infer<typeof zOutcomeDistribution>;
+
+export const zContributorBreakdown = z.object({
+    activeWeeks: z.int().gte(0).lte(9007199254740991),
+    contributorId: z.string(),
+    firstSeen: z.string().nullable(),
+    lastSeen: z.string().nullable(),
+    outcomes: zOutcomeDistribution,
+    sessions: z.int().gte(0).lte(9007199254740991),
+    sessionsWithCommit: z.int().gte(0).lte(9007199254740991),
+    totalCommits: z.int().gte(0).lte(9007199254740991),
+    totalDurationMins: z.int().gte(0).lte(9007199254740991),
+    totalTokens: z.int().gte(0).lte(9007199254740991),
+    totalToolCalls: z.int().gte(0).lte(9007199254740991),
+    totalTurns: z.int().gte(0).lte(9007199254740991)
+});
+
+export type ContributorBreakdown = z.infer<typeof zContributorBreakdown>;
+
 /**
  * Omitted preserves, null requests clear, and a canonical license replaces
  */
@@ -1481,13 +1539,25 @@ export const zOwnerUpdateLicenseIntent = z.enum([
 export type OwnerUpdateLicenseIntent = z.infer<typeof zOwnerUpdateLicenseIntent>;
 
 /**
- * Page Token
+ * Page Size
  *
- * Opaque continuation; empty starts traversal or marks its end. Not a credential or snapshot token.
+ * Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.
  */
-export const zPageToken = z.string();
+export const zPageSize = z.union([
+    z.literal(25),
+    z.literal(50),
+    z.literal(100)
+]);
 
-export type PageToken = z.infer<typeof zPageToken>;
+export type PageSize = z.infer<typeof zPageSize>;
+
+export const zPersonalMedians = z.object({
+    retryShare: z.number().nullish(),
+    specQualityScore: z.number().nullish(),
+    withinSessionReverts: z.number().nullish()
+});
+
+export type PersonalMedians = z.infer<typeof zPersonalMedians>;
 
 /**
  * Project Hash
@@ -1883,6 +1953,14 @@ export const zRetainedUnknownRecord = z.object({
 });
 
 export type RetainedUnknownRecord = z.infer<typeof zRetainedUnknownRecord>;
+
+export const zReturningContributorRate = z.object({
+    rate: z.number().gte(0).lte(1),
+    returning: z.int().gte(0).lte(9007199254740991),
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type ReturningContributorRate = z.infer<typeof zReturningContributorRate>;
 
 export const zReviewSuggestion = z.object({
     daysSince: z.int(),
@@ -2380,6 +2458,14 @@ export const zSessionTeammate = z.object({
 
 export type SessionTeammate = z.infer<typeof zSessionTeammate>;
 
+export const zSessionToCommitRate = z.object({
+    rate: z.number().gte(0).lte(1),
+    total: z.int().gte(0).lte(9007199254740991),
+    withCommit: z.int().gte(0).lte(9007199254740991)
+});
+
+export type SessionToCommitRate = z.infer<typeof zSessionToCommitRate>;
+
 export const zShutdownResponse = z.object({
     status: z.string()
 });
@@ -2705,7 +2791,8 @@ export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
 export const zLocalSessionRow = z.object({
     matches: z.array(zSearchResult).optional(),
     session: zSessionSummary,
-    sync: zLocalSyncSummary.nullish()
+    sync: zLocalSyncSummary.nullish(),
+    title: z.string().optional()
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionRow during grouped read validation: " + reason });
     if (value.session.id === "") fail("session.id is empty; provide the saved transcript identity");
@@ -2742,17 +2829,20 @@ export const zLocalSessionListItem = z.object({
 export type LocalSessionListItem = z.infer<typeof zLocalSessionListItem>;
 
 export const zLocalHelperMembersPayload = z.object({
-    limit: z.int().gte(1).lte(9007199254740991),
     members: z.array(zLocalSessionListItem.and(z.object({
         context: z.null().optional(),
         kind: z.enum(['transcript']).optional(),
         transcript: zLocalSessionRow
     }))),
+    nextItems: z.array(zLocalSessionListItem),
     page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
     total: z.int().gte(0).lte(9007199254740991)
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalHelperMembersPayload during grouped read validation: " + reason });
-    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+    const pageSize = value.perPage;
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
       const ids = new Set<string>();
       const groups = new Set<string>();
       for (const member of value.members) {
@@ -2772,13 +2862,26 @@ export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayloa
 export const zLocalSessionListPayload = z.object({
     helperThreadTotal: z.int().gte(0).lte(9007199254740991),
     items: z.array(zLocalSessionListItem),
-    limit: z.int().gte(1).lte(9007199254740991),
+    nextItems: z.array(zLocalSessionListItem),
     ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
     page: z.int().gte(1).lte(9007199254740991),
-    totalItems: z.int().gte(0).lte(9007199254740991)
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
 });
 
 export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
+
+export const zLocalSessionPage = z.object({
+    items: z.array(zLocalSessionRow),
+    nextItems: z.array(zLocalSessionRow),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSessionPage = z.infer<typeof zLocalSessionPage>;
 
 export const zLocalSyncSessionsPayload = z.object({
     sessions: z.array(zLocalSyncSummary)
@@ -3122,6 +3225,44 @@ export const zThinkingLevelChange = z.intersection(z.unknown(), z.object({
 
 export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
 
+export const zSessionDetailHeader = z.object({
+    childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
+    durationMins: z.number(),
+    earlierHistory: z.array(zEarlierHistoryState).optional(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string().optional(),
+    outcome: zSessionOutcome.optional(),
+    parentSessionId: zSessionID.nullish(),
+    project: z.string().optional(),
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    rootSessionId: zSessionID.nullish(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.nullish(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailHeader = z.infer<typeof zSessionDetailHeader>;
+
 export const zTimelineSessionRef = z.object({
     harness: zHarness,
     hasCommitBinding: z.boolean(),
@@ -3409,6 +3550,67 @@ export const zSessionRelationshipNavigation = z.object({
 
 export type SessionRelationshipNavigation = z.infer<typeof zSessionRelationshipNavigation>;
 
+export const zSessionDetailHeaderPayload = z.object({
+    childSessions: z.array(zChildSessionRef).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
+    durationMins: z.number(),
+    earlierHistory: z.array(zEarlierHistoryState).optional(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string().optional(),
+    outcome: zSessionOutcome.optional(),
+    parentSessionId: zSessionID.optional(),
+    project: z.string().optional(),
+    purpose: zSessionPurpose.optional(),
+    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    rootSessionId: zSessionID.optional(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.optional(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    teammate: zSessionTeammate.nullish(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailHeaderPayload = z.infer<typeof zSessionDetailHeaderPayload>;
+
+export const zTranscriptSegmentRef = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991)
+});
+
+export type TranscriptSegmentRef = z.infer<typeof zTranscriptSegmentRef>;
+
+export const zTranscriptSegmentDirectory = z.object({
+    directoryPage: z.int().gte(1).lte(9007199254740991).optional(),
+    directoryPerPage: z.int().gte(1).lte(9007199254740991).optional(),
+    revision: z.string().min(1),
+    segments: z.array(zTranscriptSegmentRef),
+    sessionId: zSessionID,
+    totalSegments: z.int().gte(0).lte(9007199254740991),
+    totalTurns: z.int().gte(0).lte(9007199254740991)
+});
+
+export type TranscriptSegmentDirectory = z.infer<typeof zTranscriptSegmentDirectory>;
+
 /**
  * TranscriptUpdateLicense
  *
@@ -3469,6 +3671,21 @@ export const zTranscriptUpdateRequest = z.object({
 }).strict();
 
 export type TranscriptUpdateRequest = z.infer<typeof zTranscriptUpdateRequest>;
+
+export const zTranscriptWindow = z.object({
+    anchorTurn: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    requestedAnchor: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    segments: z.array(z.int()),
+    sessionId: zSessionID,
+    span: z.int().gte(1).lte(10)
+});
+
+export type TranscriptWindow = z.infer<typeof zTranscriptWindow>;
 
 export const zTrendsPayload = z.object({
     days: z.array(zDayStats).nullable(),
@@ -3710,6 +3927,48 @@ export const zToolCallDetail = z.object({
 
 export type ToolCallDetail = z.infer<typeof zToolCallDetail>;
 
+export const zTranscriptTurn = z.object({
+    agentName: z.string().optional(),
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    command: zCommandInvocation.optional(),
+    content: z.string(),
+    contentParts: z.array(zTurnContentPart).optional(),
+    controlKind: z.string().nullish(),
+    depth: z.int(),
+    entryType: zEntryType.optional(),
+    hasThinking: z.boolean().optional(),
+    index: z.int(),
+    observedModel: zObservedModelID.optional(),
+    parentIndex: z.int().nullish(),
+    provenance: zContentProvenance.optional(),
+    role: zRole,
+    sourceEntryRef: zSourceEntryRef.optional(),
+    stopReason: zStopReason.optional(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    timestamp: z.iso.datetime(),
+    tokensIn: z.int().nullish(),
+    tokensOut: z.int().nullish(),
+    toolCalls: z.array(zToolCallDetail).optional(),
+    truncated: z.boolean(),
+    usage: zUsageDetail.optional()
+});
+
+export type TranscriptTurn = z.infer<typeof zTranscriptTurn>;
+
+export const zTranscriptSegment = z.object({
+    byteLength: z.int().gte(0).lte(9007199254740991),
+    firstTurn: z.int().gte(0).lte(9007199254740991),
+    hasNewer: z.boolean(),
+    hasOlder: z.boolean(),
+    index: z.int().gte(0).lte(9007199254740991),
+    lastTurn: z.int().gte(0).lte(9007199254740991),
+    revision: z.string().min(1),
+    turns: z.array(zTranscriptTurn)
+});
+
+export type TranscriptSegment = z.infer<typeof zTranscriptSegment>;
+
 export const zTurnDetail = z.object({
     agentName: z.string().optional(),
     command: zCommandInvocation.nullish(),
@@ -3788,14 +4047,15 @@ export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 export const zSessionDetailReadPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
-    durationMins: z.number().optional(),
+    durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
-    endTime: z.iso.datetime().optional(),
+    endTime: z.iso.datetime(),
     gitBranch: z.string().optional(),
     gitRemote: z.string().optional(),
-    harness: zHarness.optional(),
-    id: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    medians: zPersonalMedians.nullish(),
     model: z.string().optional(),
     nativeMetadata: z.array(zNativeMetadataRecord).optional(),
     outcome: zSessionOutcome.optional(),
@@ -3805,23 +4065,25 @@ export const zSessionDetailReadPayload = z.object({
     relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
     relationships: z.array(zSessionRelationship).optional(),
     retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    revision: z.string().optional(),
     rootSessionId: zSessionID.optional(),
     schemaVersion: z.string().optional(),
     scorecard: zSessionScorecard.optional(),
     sessionOrigin: zSessionOrigin.optional(),
     source: z.string().optional(),
-    startTime: z.iso.datetime().optional(),
+    startTime: z.iso.datetime(),
     status: z.string().optional(),
     teammate: zSessionTeammate.nullish(),
     thinkingLevel: zThinkingLevel.optional(),
     thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
     thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    tokensIn: z.int().optional(),
-    tokensOut: z.int().optional(),
-    toolCallCount: z.int().optional(),
-    totalTokens: z.int().optional(),
-    turnCount: z.int().optional(),
-    turns: z.array(zTurnDetail).nullish(),
+    title: z.string().optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    turns: z.array(zTurnDetail).nullable(),
     workingDirectory: z.string().optional()
 });
 
@@ -4847,7 +5109,12 @@ export type LocalSyncSessionRow = z.infer<typeof zLocalSyncSessionRow>;
 
 export const zLocalSyncSessionPage = z.object({
     items: z.array(zLocalSyncSessionRow),
-    next: z.string()
+    nextItems: z.array(zLocalSyncSessionRow),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991),
+    totals: zLocalSyncSessionTotals.optional()
 });
 
 export type LocalSyncSessionPage = z.infer<typeof zLocalSyncSessionPage>;
@@ -5393,7 +5660,8 @@ export const zVillageHelperMembersPayload = z.object({
     total: z.int().gte(0).lte(9007199254740991)
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageHelperMembersPayload during grouped read validation: " + reason });
-    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+    const pageSize = value.limit;
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
       const ids = new Set<string>();
       const groups = new Set<string>();
       for (const member of value.members) {
@@ -5684,3 +5952,62 @@ export const zFamiliarityPayload = z.object({
 });
 
 export type FamiliarityPayload = z.infer<typeof zFamiliarityPayload>;
+
+export const zWeekAvgDuration = z.object({
+    avgDurationMins: z.number().gte(0),
+    sessions: z.int().gte(0).lte(9007199254740991),
+    week: z.string()
+});
+
+export type WeekAvgDuration = z.infer<typeof zWeekAvgDuration>;
+
+export const zWeekContributors = z.object({
+    contributors: z.int().gte(0).lte(9007199254740991),
+    week: z.string()
+});
+
+export type WeekContributors = z.infer<typeof zWeekContributors>;
+
+export const zWeekCount = z.object({
+    count: z.int().gte(0).lte(9007199254740991),
+    week: z.string()
+});
+
+export type WeekCount = z.infer<typeof zWeekCount>;
+
+export const zWeekNewContributors = z.object({
+    newContributors: z.int().gte(0).lte(9007199254740991),
+    week: z.string()
+});
+
+export type WeekNewContributors = z.infer<typeof zWeekNewContributors>;
+
+export const zProjectAnalytics = z.object({
+    avgDurationPerActiveWeek: z.array(zWeekAvgDuration),
+    longestStreak: zLongestStreak,
+    newContributorVelocity: z.array(zWeekNewContributors),
+    outcomeDistribution: zOutcomeDistribution,
+    perContributorBreakdown: z.array(zContributorBreakdown),
+    returningContributorRate: zReturningContributorRate,
+    sessionStats: zAnalyticsSessionStats,
+    sessionToCommitRate: zSessionToCommitRate,
+    sessionsPerWeek: z.array(zWeekCount),
+    totalContributors: z.int().gte(0).lte(9007199254740991),
+    totalProjects: z.int().gte(0).lte(9007199254740991),
+    totalSessions: z.int().gte(0).lte(9007199254740991),
+    weeklyActiveContributors: z.array(zWeekContributors)
+});
+
+export type ProjectAnalytics = z.infer<typeof zProjectAnalytics>;
+
+export const zQualityPage = z.object({
+    items: z.array(zQualitySession),
+    nextItems: z.array(zQualitySession),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    summary: zProjectAnalytics,
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type QualityPage = z.infer<typeof zQualityPage>;

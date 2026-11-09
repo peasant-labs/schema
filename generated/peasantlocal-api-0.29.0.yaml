@@ -471,13 +471,12 @@ paths:
           description: One-based member page
           minimum: 1
           type: integer
-      - description: Maximum members per page
+      - description: 'Members per page: 25, 50, or 100'
         in: query
-        name: limit
+        name: perPage
         schema:
-          description: Maximum members per page
-          minimum: 1
-          type: integer
+          $ref: '#/components/schemas/SchemaPageSize'
+          description: 'Members per page: 25, 50, or 100'
       - in: path
         name: groupId
         required: true
@@ -1058,36 +1057,33 @@ paths:
       - sync
   /api/v1/sync/sessions:
     get:
-      description: 'Omitted view preserves the legacy flat response; view=grouped
-        preserves helper groups and their membership scopes. view=home returns items/next
-        forward pages of stored authoritative roots or general immediate children
-        of parentSessionId, ordered by start time descending then local ID ascending.
-        The saved ingestion selection is not applied as a direct browsing eligibility
-        predicate: it excludes no root, child, or project option that the view''s
-        own eligibility rules admit, and counts and empty states derive from the eligible
-        browsing set the caller''s explicit filters select. Independent origin, index-readiness,
-        publication, project, parent, and account rules still apply before paging,
-        and an explicit publication=auto filter may reflect legitimate hook eligibility,
-        so that filtered view can change with the selection while no unfiltered stored
-        row is added or removed. Only empty next means done: short or empty items
-        may continue. maxItems omitted or zero defaults to 25, positive values clamp
-        to 100; negative, malformed or repeated values return 400. pageToken is opaque
-        and at most 4096 bytes; malformed, unsupported or stale-scope tokens return
-        400 with recovery guidance to discard continuation and restart, never a usable
-        page. A token''s scope is the view, the parent, the root project or publication
-        filter, and the caller''s account; it does not include the page size, which
-        a caller may change independently, or the saved ingestion selection, so changing
-        that selection leaves an in-flight continuation valid. Root project/publication
-        filters apply before paging; child calls reject them. Unknown parents return
-        404 without child IDs. Page hydration is limited to returned IDs and includes
-        stored titles, bounded redaction-safe previews and canonical publication state
-        without audience. Auto filtering may inspect scanned candidate repositories.
-        Paging/filter parameters require view=home and are rejected for other views.
-        view=project-options returns the complete metadata-only stored root project
-        picker, sorted by name then hash, deduplicated by hash and independent of
-        publication/current project filters; no counts, Git summaries or enrichment.
-        Reauthorize every request. Tokens are not credentials or snapshots: a continuation
-        stays valid when publication metadata changes which rows a filter selects.
+      description: 'Omitted view serves the same bounded offset Home page as view=home;
+        view=grouped preserves helper groups and their membership scopes. view=home
+        returns items/nextItems offset pages of stored authoritative roots or general
+        immediate children of parentSessionId, ordered by start time descending then
+        local ID ascending. The saved ingestion selection is not applied as a direct
+        browsing eligibility predicate: it excludes no root, child, or project option
+        that the view''s own eligibility rules admit, and counts and empty states
+        derive from the eligible browsing set the caller''s explicit filters select.
+        Independent origin, index-readiness, publication, project, parent, and account
+        rules still apply before paging, and an explicit publication=auto filter may
+        reflect legitimate hook eligibility, so that filtered view can change with
+        the selection while no unfiltered stored row is added or removed. Only empty
+        nextItems means done: short or empty items may continue. maxItems omitted
+        or zero defaults to 25; only 25, 50, and 100 are accepted, and negative, non-member,
+        malformed or repeated values return 400. page is one-based and omitted defaults
+        to 1. pageToken is retired: an empty value is absent, and a nonempty value
+        returns 400 with recovery guidance to drop the continuation and request a
+        page. Offset paging is not snapshot-stable; a new session can shift rows.
+        Root project/publication filters apply before paging; child calls reject them.
+        Unknown parents return 404 without child IDs. Page hydration is limited to
+        returned IDs and includes stored titles, bounded redaction-safe previews and
+        canonical publication state without audience. Auto filtering may inspect scanned
+        candidate repositories. Paging/filter parameters require view=home or an omitted
+        view and are rejected for grouped and project-options. view=project-options
+        returns the complete metadata-only stored root project picker, sorted by name
+        then hash, deduplicated by hash and independent of publication/current project
+        filters; no counts, Git summaries or enrichment. Reauthorize every request.
         A hydrated row still needs the saved selection for its publication metadata:
         when that metadata cannot be determined the read returns 500 with an actionable
         cause instead of omitting the row or reporting a fabricated flag, while a
@@ -1096,37 +1092,44 @@ paths:
         success.'
       operationId: listSyncSessionsGrouped
       parameters:
-      - description: Omit for legacy flat rows; grouped retains helper groups; home
-          selects forward pages; project-options selects metadata-only root projects
+      - description: Omit for the Home offset page; grouped retains helper groups;
+          home selects forward pages; project-options selects metadata-only root projects
         in: query
         name: view
         schema:
-          description: Omit for legacy flat rows; grouped retains helper groups; home
-            selects forward pages; project-options selects metadata-only root projects
+          description: Omit for the Home offset page; grouped retains helper groups;
+            home selects forward pages; project-options selects metadata-only root
+            projects
           enum:
           - grouped
           - home
           - project-options
           type: string
-      - description: 'Home only: omitted or zero defaults to 25; positive values clamp
-          to 100; negative, malformed or repeated values are rejected'
+      - description: 'Home only: omitted or zero defaults to 25; 25, 50, and 100 are
+          accepted; 26, 101, and negative values are refused'
         in: query
         name: maxItems
         schema:
           default: 25
-          description: 'Home only: omitted or zero defaults to 25; positive values
-            clamp to 100; negative, malformed or repeated values are rejected'
+          description: 'Home only: omitted or zero defaults to 25; 25, 50, and 100
+            are accepted; 26, 101, and negative values are refused'
           minimum: 0
           type: integer
-      - description: 'Home only: opaque continuation, omitted or empty starts; at
-          most 4096 bytes; repeated values are rejected'
+      - description: 'Home only: one-based page number; omitted defaults to 1'
+        in: query
+        name: page
+        schema:
+          description: 'Home only: one-based page number; omitted defaults to 1'
+          minimum: 1
+          type: integer
+      - description: 'Home only: retired continuation; omitted or empty is absent;
+          a nonempty value is refused so an old client can recover'
         in: query
         name: pageToken
         schema:
-          description: 'Home only: opaque continuation, omitted or empty starts; at
-            most 4096 bytes; repeated values are rejected'
+          description: 'Home only: retired continuation; omitted or empty is absent;
+            a nonempty value is refused so an old client can recover'
           maxLength: 4096
-          title: Page Token
           type: string
       - in: query
         name: parentSessionId
@@ -1590,6 +1593,37 @@ components:
       - avgTurnsPerSession
       - acceptanceRate
       type: object
+    LocalSessionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionRow'
+          type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionRow'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/SchemaPageSize'
+        revision:
+          minLength: 1
+          type: string
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - items
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
+      type: object
     LocalSyncProjectOption:
       properties:
         projectHash:
@@ -1615,14 +1649,32 @@ components:
           items:
             $ref: '#/components/schemas/SchemaLocalSyncSessionRow'
           type: array
-        next:
-          description: Opaque continuation; empty starts traversal or marks its end.
-            Not a credential or snapshot token.
-          title: Page Token
+        nextItems:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSyncSessionRow'
+          type: array
+        page:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        perPage:
+          $ref: '#/components/schemas/SchemaPageSize'
+        revision:
+          minLength: 1
           type: string
+        total:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totals:
+          $ref: '#/components/schemas/SchemaLocalSyncSessionTotals'
       required:
       - items
-      - next
+      - nextItems
+      - page
+      - perPage
+      - total
+      - revision
       type: object
     LocalSyncSessionsPayload:
       properties:
@@ -3215,7 +3267,6 @@ components:
       - system
       - error
       - result
-      - image
       examples:
       - text
       - tool_use
@@ -3329,53 +3380,6 @@ components:
       - purpose
       - helperThreadCount
       - memberScope
-      type: object
-    SchemaImageMediaType:
-      description: 'Recorded image media type: image/png or image/jpeg'
-      enum:
-      - image/png
-      - image/jpeg
-      examples:
-      - image/png
-      - image/jpeg
-      title: Image Media Type
-      type: string
-    SchemaImagePart:
-      properties:
-        byteSize:
-          description: Exact stored byte size. Zero means unset or no bytes, and an
-            explicit zero is accepted as unset; a published transcript never carries
-            a nonzero size.
-          minimum: 0
-          type: integer
-        height:
-          description: Optional recorded pixel height; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero height.
-          minimum: 0
-          type: integer
-        mediaType:
-          $ref: '#/components/schemas/SchemaImageMediaType'
-          description: Recorded image/png or image/jpeg media type. Absent for an
-            unsupported source type or a published transcript.
-        omittedReason:
-          $ref: '#/components/schemas/SchemaOmittedReason'
-          description: 'Why the bytes are absent: unsupported (wins for a non-recorded
-            media type), too_large, missing, or not_published. Omit when local bytes
-            are present.'
-        ref:
-          description: Lowercase 64-hex content address of the stored image. Absent
-            when the bytes are omitted or the transcript is published.
-          maxLength: 64
-          minLength: 64
-          pattern: ^[0-9a-f]{64}$
-          type: string
-        width:
-          description: Optional recorded pixel width; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero width.
-          minimum: 0
-          type: integer
       type: object
     SchemaInputModality:
       description: Closed session graph value
@@ -3670,10 +3674,6 @@ components:
       type: object
     SchemaLocalHelperMembersPayload:
       properties:
-        limit:
-          maximum: 9.007199254740991e+15
-          minimum: 1
-          type: integer
         members:
           items:
             allOf:
@@ -3691,19 +3691,30 @@ components:
               - transcript
               type: object
           type: array
+        nextItems:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionListItem'
+          type: array
         page:
           maximum: 9.007199254740991e+15
           minimum: 1
           type: integer
+        perPage:
+          $ref: '#/components/schemas/SchemaPageSize'
+        revision:
+          minLength: 1
+          type: string
         total:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
       required:
       - members
+      - nextItems
       - page
-      - limit
+      - perPage
       - total
+      - revision
       type: object
     SchemaLocalOperationDiagnostic:
       properties:
@@ -3882,10 +3893,10 @@ components:
           items:
             $ref: '#/components/schemas/SchemaLocalSessionListItem'
           type: array
-        limit:
-          maximum: 9.007199254740991e+15
-          minimum: 1
-          type: integer
+        nextItems:
+          items:
+            $ref: '#/components/schemas/SchemaLocalSessionListItem'
+          type: array
         ordinarySessionTotal:
           maximum: 9.007199254740991e+15
           minimum: 0
@@ -3894,15 +3905,22 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 1
           type: integer
-        totalItems:
+        perPage:
+          $ref: '#/components/schemas/SchemaPageSize'
+        revision:
+          minLength: 1
+          type: string
+        total:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
       required:
       - items
+      - nextItems
       - page
-      - limit
-      - totalItems
+      - perPage
+      - total
+      - revision
       - ordinarySessionTotal
       - helperThreadTotal
       type: object
@@ -3918,6 +3936,8 @@ components:
           anyOf:
           - $ref: '#/components/schemas/SchemaLocalSyncSummary'
           - type: "null"
+        title:
+          type: string
       required:
       - session
       type: object
@@ -4051,6 +4071,15 @@ components:
       - preview
       - childCount
       type: object
+    SchemaLocalSyncSessionTotals:
+      properties:
+        sessions:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessions
+      type: object
     SchemaLocalSyncSummary:
       properties:
         durationMs:
@@ -4091,9 +4120,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
       required:
       - id
@@ -4519,21 +4545,6 @@ components:
       pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
       title: Observed Model ID
       type: string
-    SchemaOmittedReason:
-      description: 'Why an image part carries no bytes: unsupported (wins for a non-recorded
-        media type), too_large, missing, or not_published'
-      enum:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      examples:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      title: Omitted Reason
-      type: string
     SchemaOperationIssue:
       properties:
         code:
@@ -4572,6 +4583,40 @@ components:
       - superseded
       title: Operation Issue Code
       type: string
+    SchemaPageSize:
+      description: 'Closed page size set for local list reads: 25, 50, or 100. The
+        value is a number on the wire; an omitted maximum maps to 25 before validation.'
+      enum:
+      - 25
+      - 50
+      - 100
+      examples:
+      - 25
+      - 50
+      - 100
+      title: Page Size
+      type: integer
+    SchemaPersonalMedians:
+      properties:
+        retryShare:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        specQualityScore:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+        withinSessionReverts:
+          anyOf:
+          - type:
+            - "null"
+            - number
+          - type: "null"
+      type: object
     SchemaProjectHash:
       description: SHA-256 hex digest of the project's origin URL or local path
       examples:
@@ -4742,9 +4787,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         withinSessionReverts:
           type: integer
@@ -5120,6 +5162,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -5146,6 +5192,8 @@ components:
           items:
             $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         schemaVersion:
@@ -5173,6 +5221,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:
@@ -5182,9 +5232,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -5195,7 +5242,17 @@ components:
         workingDirectory:
           type: string
       required:
-      - SessionDetailPayload
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
       type: object
     SchemaSessionID:
       description: Unique session identifier (UUID, agent-{hex}, ses_{id}, sess_{id}
@@ -5504,9 +5561,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
       required:
       - id
@@ -6158,16 +6212,99 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
       type: string
-    SchemaTurnContentPart:
+    SchemaTranscriptSegmentRef:
       properties:
-        image:
-          $ref: '#/components/schemas/SchemaImagePart'
-        text:
-          type: string
-        type:
-          $ref: '#/components/schemas/SchemaTurnPartType'
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
       required:
-      - type
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    SchemaTranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/SchemaCommandInvocation'
+        content:
+          type: string
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/SchemaObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/SchemaContentProvenance'
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/SchemaToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/SchemaUsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
       type: object
     SchemaTurnDetail:
       properties:
@@ -6179,10 +6316,6 @@ components:
           - type: "null"
         content:
           type: string
-        contentParts:
-          items:
-            $ref: '#/components/schemas/SchemaTurnContentPart'
-          type: array
         controlKind:
           anyOf:
           - type:
@@ -6251,16 +6384,6 @@ components:
       - timestamp
       - depth
       type: object
-    SchemaTurnPartType:
-      description: 'Kind of one ordered turn content part: text or image'
-      enum:
-      - text
-      - image
-      examples:
-      - text
-      - image
-      title: Turn Part Type
-      type: string
     SchemaTypeOrigin:
       description: 'Who created an annotation type: system (built-in), user (individual),
         or group (shared)'
@@ -6715,6 +6838,109 @@ components:
       required:
       - type
       type: object
+    SessionDetailHeaderPayload:
+      properties:
+        childSessions:
+          items:
+            $ref: '#/components/schemas/SchemaChildSessionRef'
+          type: array
+        diagnostics:
+          $ref: '#/components/schemas/SchemaInterpretationDiagnostics'
+        durationMins:
+          format: double
+          type: number
+        earlierHistory:
+          items:
+            $ref: '#/components/schemas/SchemaEarlierHistoryState'
+          type: array
+        endTime:
+          format: date-time
+          type: string
+        gitBranch:
+          type: string
+        gitRemote:
+          type: string
+        harness:
+          $ref: '#/components/schemas/BestiaryHarness'
+        id:
+          type: string
+        inputSubmissionCount:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        model:
+          type: string
+        outcome:
+          $ref: '#/components/schemas/SchemaSessionOutcome'
+        parentSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        project:
+          type: string
+        purpose:
+          $ref: '#/components/schemas/SchemaSessionPurpose'
+        relationshipNavigation:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationshipNavigation'
+          type: array
+        relationships:
+          items:
+            $ref: '#/components/schemas/SchemaSessionRelationship'
+          type: array
+        retainedUnknown:
+          items:
+            $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
+          type: array
+        rootSessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        schemaVersion:
+          type: string
+        scorecard:
+          $ref: '#/components/schemas/SchemaSessionScorecard'
+        sessionOrigin:
+          $ref: '#/components/schemas/SchemaSessionOrigin'
+        source:
+          type: string
+        startTime:
+          format: date-time
+          type: string
+        status:
+          type: string
+        teammate:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaSessionTeammate'
+          - type: "null"
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelHistory:
+          items:
+            $ref: '#/components/schemas/SchemaThinkingLevelChange'
+          type: array
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        tokensIn:
+          type: integer
+        tokensOut:
+          type: integer
+        toolCallCount:
+          type: integer
+        totalTokens:
+          type: integer
+        turnCount:
+          type: integer
+        workingDirectory:
+          type: string
+      required:
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      type: object
     SessionDetailPayload:
       properties:
         childSessions:
@@ -6805,9 +7031,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -6860,6 +7083,10 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+        medians:
+          anyOf:
+          - $ref: '#/components/schemas/SchemaPersonalMedians'
+          - type: "null"
         model:
           type: string
         nativeMetadata:
@@ -6886,6 +7113,8 @@ components:
           items:
             $ref: '#/components/schemas/SchemaRetainedUnknownRecord'
           type: array
+        revision:
+          type: string
         rootSessionId:
           $ref: '#/components/schemas/SchemaSessionID'
         schemaVersion:
@@ -6913,6 +7142,8 @@ components:
           type: array
         thinkingLevelRaw:
           $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        title:
+          type: string
         tokensIn:
           type: integer
         tokensOut:
@@ -6922,9 +7153,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -6935,7 +7163,231 @@ components:
         workingDirectory:
           type: string
       required:
-      - SessionDetailPayload
+      - id
+      - harness
+      - startTime
+      - endTime
+      - durationMins
+      - totalTokens
+      - tokensIn
+      - tokensOut
+      - turnCount
+      - toolCallCount
+      - turns
+      type: object
+    TranscriptSegment:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/TranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
+    TranscriptSegmentDirectory:
+      properties:
+        directoryPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        directoryPerPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/TranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - totalTurns
+      - totalSegments
+      - segments
+      type: object
+    TranscriptSegmentRef:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    TranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/SchemaCommandInvocation'
+        content:
+          type: string
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/SchemaObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/SchemaContentProvenance'
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/SchemaToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/SchemaUsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
+      type: object
+    TranscriptWindow:
+      properties:
+        anchorTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        requestedAnchor:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            type: integer
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - requestedAnchor
+      - anchorTurn
+      - span
+      - firstTurn
+      - lastTurn
+      - segments
+      - hasOlder
+      - hasNewer
       type: object
     TrendsPayload:
       properties:

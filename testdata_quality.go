@@ -40,9 +40,28 @@ var allQualityFixtureSetNames = []QualityFixtureSetName{
 
 // QualityFixtures is the parsed testdata/quality/sessions.yaml corpus.
 type QualityFixtures struct {
-	Sessions   []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
-	Sets       []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
-	Variations QualityVariations       `json:"variations" yaml:"quality_variations"`
+	Sessions            []QualitySessionFixture `json:"sessions" yaml:"quality_sessions"`
+	Sets                []QualityFixtureSet     `json:"sets" yaml:"quality_fixture_sets"`
+	Variations          QualityVariations       `json:"variations" yaml:"quality_variations"`
+	RequiredMedianNames []string                `json:"requiredMedianNames" yaml:"required_median_names"`
+	Medians             []QualityMedianCase     `json:"medians" yaml:"medians"`
+}
+
+// QualityMedianSession is one session in a personal-medians sample. Only these
+// four metric inputs participate in the baseline.
+type QualityMedianSession struct {
+	TotalTokens          int     `json:"totalTokens" yaml:"totalTokens"`
+	RetryTokensWasted    int     `json:"retryTokensWasted" yaml:"retryTokensWasted"`
+	SpecQualityScore     float64 `json:"specQualityScore" yaml:"specQualityScore"`
+	WithinSessionReverts int     `json:"withinSessionReverts" yaml:"withinSessionReverts"`
+}
+
+// QualityMedianCase is one named personal-medians fixture case: the sessions in
+// the sample and the PersonalMedians the aggregate must return.
+type QualityMedianCase struct {
+	Name     string                 `json:"name" yaml:"name"`
+	Sessions []QualityMedianSession `json:"sessions" yaml:"sessions"`
+	Expected PersonalMedians        `json:"expected" yaml:"expected"`
 }
 
 // QualityVariations is the reusable combinatorial input catalog carried by the
@@ -261,7 +280,61 @@ func (f *QualityFixtures) validate() error {
 			return fmt.Errorf("quality fixture corpus missing set %q", name)
 		}
 	}
+	if err := f.validateMedians(); err != nil {
+		return err
+	}
 	return f.Variations.validate()
+}
+
+// validateMedians keeps the personal-medians corpus a closed set: the required
+// names come from the fixture document (the same manifest the TypeScript test
+// reads), every case is named exactly once, and each expected value is a finite
+// number or absent.
+func (f *QualityFixtures) validateMedians() error {
+	if len(f.RequiredMedianNames) == 0 {
+		return fmt.Errorf("quality medians corpus has no required_median_names; the case inventory is the manifest the Go loader and the TypeScript test share; name every case")
+	}
+	required := make(map[string]struct{}, len(f.RequiredMedianNames))
+	for _, name := range f.RequiredMedianNames {
+		if strings.TrimSpace(name) == "" {
+			return fmt.Errorf("quality medians corpus has a blank required_median_names entry")
+		}
+		if _, duplicate := required[name]; duplicate {
+			return fmt.Errorf("quality medians corpus repeats required case %q", name)
+		}
+		required[name] = struct{}{}
+	}
+	seen := make(map[string]struct{}, len(f.Medians))
+	for _, medianCase := range f.Medians {
+		if strings.TrimSpace(medianCase.Name) == "" {
+			return fmt.Errorf("quality medians corpus has a blank case name")
+		}
+		if _, exists := seen[medianCase.Name]; exists {
+			return fmt.Errorf("quality medians corpus has duplicate case %q", medianCase.Name)
+		}
+		if _, ok := required[medianCase.Name]; !ok {
+			return fmt.Errorf("quality medians corpus has unregistered case %q", medianCase.Name)
+		}
+		seen[medianCase.Name] = struct{}{}
+		if medianCase.Sessions == nil {
+			return fmt.Errorf("quality medians case %q has null sessions; emit [] for the empty sample", medianCase.Name)
+		}
+		for field, value := range map[string]*float64{
+			"retryShare":           medianCase.Expected.RetryShare,
+			"specQualityScore":     medianCase.Expected.SpecQualityScore,
+			"withinSessionReverts": medianCase.Expected.WithinSessionReverts,
+		} {
+			if value != nil && (math.IsNaN(*value) || math.IsInf(*value, 0)) {
+				return fmt.Errorf("quality medians case %q has a non-finite %s", medianCase.Name, field)
+			}
+		}
+	}
+	for _, name := range f.RequiredMedianNames {
+		if _, ok := seen[name]; !ok {
+			return fmt.Errorf("quality medians corpus missing case %q", name)
+		}
+	}
+	return nil
 }
 
 func (v QualityVariations) validate() error {

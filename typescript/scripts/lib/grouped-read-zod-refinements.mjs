@@ -48,7 +48,8 @@ export function applyGroupedReadZodRefinements(source) {
         groups.add(group.groupId);
       }`);
     output = append(output, `z${prefix}HelperMembersPayload`, `
-      if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+      const pageSize = ${prefix === "Local" ? "value.perPage" : "value.limit"};
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
       const ids = new Set<string>();
       const groups = new Set<string>();
       for (const member of value.members) {

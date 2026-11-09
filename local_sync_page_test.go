@@ -2,7 +2,6 @@ package schema_test
 
 import (
 	_ "embed"
-	"encoding/json"
 	"net/url"
 	"strings"
 	"testing"
@@ -25,7 +24,7 @@ type syncPageQueryExpected struct {
 	Valid         bool   `yaml:"valid"`
 	ErrorContains string `yaml:"error_contains"`
 	MaxItems      int    `yaml:"max_items"`
-	Token         string `yaml:"token"`
+	Page          int    `yaml:"page"`
 }
 
 func TestLocalSyncPageQueries(t *testing.T) {
@@ -68,25 +67,40 @@ func TestLocalSyncPageQueries(t *testing.T) {
 			if c.Expected.ErrorContains != "" && (err == nil || !strings.Contains(err.Error(), c.Expected.ErrorContains)) {
 				t.Fatalf("want %q, got %v", c.Expected.ErrorContains, err)
 			}
-			if err == nil && q.View == "home" {
-				request := q.PageRequest()
-				if request.MaxItems != c.Expected.MaxItems {
-					t.Fatalf("MaxItems=%d want %d", request.MaxItems, c.Expected.MaxItems)
+			if err == nil && q.Home() {
+				size, sizeErr := q.EffectivePageSize()
+				if sizeErr != nil {
+					t.Fatalf("effective page size: %v", sizeErr)
 				}
-				if c.Input.TokenBytes == 0 && string(request.Token) != c.Expected.Token {
-					t.Fatalf("token=%q want %q", request.Token, c.Expected.Token)
+				if int(size) != c.Expected.MaxItems {
+					t.Fatalf("perPage=%d want %d", size, c.Expected.MaxItems)
+				}
+				if q.EffectivePage() != c.Expected.Page {
+					t.Fatalf("page=%d want %d", q.EffectivePage(), c.Expected.Page)
 				}
 			}
 		})
 	}
 }
 
-// Assignment in both directions proves the public alias is the real generic
-// instantiation, not an independently declared lookalike response struct.
-var _ schema.LocalSyncSessionPage = schema.Page[schema.LocalSyncSessionRow]{}
-var _ schema.Page[schema.LocalSyncSessionRow] = schema.LocalSyncSessionPage{}
-
 func TestSyncPageConcreteCatalogIdentity(t *testing.T) {
+	type pageExpectation struct {
+		name       string
+		properties []string
+		itemRefs   []string
+	}
+	pages := []pageExpectation{
+		{
+			name:       "LocalSyncSessionPage",
+			properties: []string{"items", "nextItems", "page", "perPage", "total", "revision", "totals"},
+			itemRefs:   []string{"LocalSyncSessionRow", "SchemaLocalSyncSessionRow", "SchemaSyncSessionRow"},
+		},
+		{
+			name:       "LocalSessionPage",
+			properties: []string{"items", "nextItems", "page", "perPage", "total", "revision"},
+			itemRefs:   []string{"LocalSessionRow", "SchemaLocalSessionRow"},
+		},
+	}
 	h := newBoundaryHarness(t)
 	for _, document := range []string{"types", "local"} {
 		components := h.documents[document]["components"].(map[string]any)["schemas"].(map[string]any)
@@ -95,27 +109,41 @@ func TestSyncPageConcreteCatalogIdentity(t *testing.T) {
 				t.Fatalf("%s leaks unstable or superseded name %q", document, name)
 			}
 		}
-		page, ok := components["LocalSyncSessionPage"].(map[string]any)
-		if !ok {
-			t.Fatalf("%s lacks concrete page", document)
-		}
-		properties := page["properties"].(map[string]any)
-		if len(properties) != 2 || properties["items"] == nil || properties["next"] == nil {
-			t.Fatalf("%s page is not exactly items/next: %v", document, properties)
-		}
-		items := properties["items"].(map[string]any)
-		if items["type"] != "array" {
-			t.Fatalf("%s items is not a non-null array", document)
-		}
-		ref := items["items"].(map[string]any)["$ref"].(string)
-		if !strings.HasSuffix(ref, "/LocalSyncSessionRow") && !strings.HasSuffix(ref, "/SchemaLocalSyncSessionRow") {
-			t.Fatalf("%s item ref %q", document, ref)
-		}
-		token := h.documents["types"]["components"].(map[string]any)["schemas"].(map[string]any)["PageToken"]
-		want, _ := json.Marshal(token)
-		got, _ := json.Marshal(properties["next"])
-		if string(got) != string(want) {
-			t.Fatalf("%s next scalar differs from PageToken: %s != %s", document, got, want)
+		for _, expected := range pages {
+			page, ok := components[expected.name].(map[string]any)
+			if !ok {
+				t.Fatalf("%s lacks concrete page %s", document, expected.name)
+			}
+			properties := page["properties"].(map[string]any)
+			for _, name := range expected.properties {
+				if properties[name] == nil {
+					t.Fatalf("%s %s lacks %q: %v", document, expected.name, name, properties)
+				}
+			}
+			if len(properties) != len(expected.properties) {
+				t.Fatalf("%s %s is not exactly its offset fields plus any declared extra: %v", document, expected.name, properties)
+			}
+			items := properties["items"].(map[string]any)
+			if items["type"] != "array" {
+				t.Fatalf("%s %s items is not a non-null array", document, expected.name)
+			}
+			ref := items["items"].(map[string]any)["$ref"].(string)
+			matched := false
+			for _, want := range expected.itemRefs {
+				if strings.HasSuffix(ref, "/"+want) {
+					matched = true
+				}
+			}
+			if !matched {
+				t.Fatalf("%s %s item ref %q", document, expected.name, ref)
+			}
+			perPage := properties["perPage"].(map[string]any)
+			if ref, ok := perPage["$ref"].(string); ok {
+				perPage = components[strings.TrimPrefix(ref, "#/components/schemas/")].(map[string]any)
+			}
+			if perPage["type"] != "integer" || len(perPage["enum"].([]any)) != 3 {
+				t.Fatalf("%s %s perPage is not the numeric 25/50/100 enum: %v", document, expected.name, perPage)
+			}
 		}
 	}
 	paths := h.documents["local"]["paths"].(map[string]any)

@@ -3,7 +3,7 @@ routes:
   cases:
   - name: grouped-session-list
     input: {path: /api/v1/sessions, operationId: listSessions}
-    expected: {parameters: [{name: view, in: query, type: string, enum: [grouped]}], responseRefs: ["#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload"], requiredRoot: [items, page, limit, totalItems, ordinarySessionTotal, helperThreadTotal], nonnullArrays: [items]}
+    expected: {parameters: [{name: view, in: query, type: string, enum: [grouped]}], responseRefs: ["#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload"], requiredRoot: [items, nextItems, page, perPage, total, revision, ordinarySessionTotal, helperThreadTotal], nonnullArrays: [items, nextItems]}
     classification: must-pass
     provenance: {source: requirement, ref: "grouped list is opt-in and legacy flat list remains"}
     mutation: {description: "binds the grouped view alongside the legacy response"}
@@ -16,10 +16,10 @@ routes:
   - name: grouped-sync
     input: {path: /api/v1/sync/sessions, operationId: listSyncSessionsGrouped}
     expected:
-      parameters: [{name: view, in: query, type: string, enum: [grouped, home, project-options]}, {name: maxItems, in: query, type: integer, minimum: 0}, {name: pageToken, in: query, type: string}, {name: parentSessionId, in: query, type: string}, {name: projectHash, in: query, type: string}, {name: publication, in: query, type: string, enum: [all, not-published, published, auto]}]
+      parameters: [{name: view, in: query, type: string, enum: [grouped, home, project-options]}, {name: maxItems, in: query, type: integer, minimum: 0}, {name: page, in: query, type: integer, minimum: 1}, {name: pageToken, in: query, type: string}, {name: parentSessionId, in: query, type: string}, {name: projectHash, in: query, type: string}, {name: publication, in: query, type: string, enum: [all, not-published, published, auto]}]
       responseRefs: ["#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload", "#/components/schemas/LocalSyncSessionPage", "#/components/schemas/LocalSyncProjectOptions"]
       legacyBody: '{"sessions":[{"id":"s1","harness":"codex","projectName":"p","projectHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","hostSlug":"host","startTime":"2026-09-08T00:00:00Z","durationMs":42,"totalTokens":9,"turnCount":5,"model":"m","syncStatus":"new"}]}'
-      groupedBody: '{"items":[],"page":1,"limit":20,"totalItems":0,"ordinarySessionTotal":0,"helperThreadTotal":0}'
+      groupedBody: '{"items":[],"nextItems":[],"page":1,"perPage":25,"total":0,"revision":"0","ordinarySessionTotal":0,"helperThreadTotal":0}'
     classification: must-pass
     provenance: {source: requirement, ref: "sync chooser grouped route"}
     mutation: {description: "binds sync-specific rows to the grouped payload"}
@@ -31,7 +31,7 @@ routes:
     mutation: {description: "returns the embedded read DTO with root detail fields"}
   - name: scoped-helper-members
     input: {path: "/api/v1/session-groups/{groupId}/members", operationId: listLocalHelperGroupMembers}
-    expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: limit, in: query, type: integer, minimum: 1}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, page, limit, total], nonnullArrays: [members]}
+    expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: perPage, in: query, type: integer, enum: [25, 50, 100]}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, nextItems, page, perPage, total, revision], nonnullArrays: [members, nextItems]}
     classification: must-pass
     provenance: {source: requirement, ref: "bounded helper member operation"}
     mutation: {description: "requires opaque scope and accepts only paging inputs"}

@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"math"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -235,6 +236,19 @@ type SessionSummary struct {
 // navigation metadata that is never part of published transcript content.
 type SessionDetailReadPayload struct {
 	SessionDetailPayload
+	// Title is the stored display title of the session, read from the stored
+	// session record rather than reconstructed from the quality rows. It is
+	// omitted when the producer has no stored title, and it never changes the
+	// durable push payload.
+	Title string `json:"title,omitempty"`
+	// Medians is the library-wide personal-medians baseline, cached per
+	// revision. Nil when the library holds no metric sample.
+	Medians *PersonalMedians `json:"medians,omitempty"`
+	// Revision is store_state.revision rendered as a decimal string. It is the
+	// same revision the quality page carries, so a client can drop cached
+	// medians when it changes. It is omitted when a durable payload is read
+	// without the local revision projection.
+	Revision               string                          `json:"revision,omitempty"`
 	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
 	// Teammate is the Claude Code teammate identity this session was spawned
 	// under, present only when the stored parent transcript records spawning
@@ -301,11 +315,17 @@ type LocalSyncSessionsPayload struct {
 
 // LocalSessionRow is one concrete local route row. Sync and Matches retain the
 // existing route-specific data instead of coercing every route into one shape.
+// Title is the stored session title; the search variant omits it because its
+// match rows already carry the matched content.
 type LocalSessionRow struct {
 	Session SessionSummary    `json:"session"`
 	Sync    *LocalSyncSummary `json:"sync,omitempty"`
 	Matches []SearchResult    `json:"matches,omitempty" nullable:"false"`
+	Title   string            `json:"title,omitempty"`
 }
+
+// LocalSessionPage is the flat offset page of concrete route rows.
+type LocalSessionPage = OffsetPage[LocalSessionRow]
 
 // LocalSessionListItem is exactly one transcript row or owner context
 // container, with zero or more collapsed helper groups.
@@ -316,23 +336,29 @@ type LocalSessionListItem struct {
 	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty" nullable:"false"`
 }
 
-// LocalSessionListPayload is the opt-in grouped REST list response.
+// LocalSessionListPayload is the opt-in grouped REST list response. It carries
+// the shared offset page fields plus the grouped-only counts.
 type LocalSessionListPayload struct {
 	Items                []LocalSessionListItem `json:"items" nullable:"false"`
+	NextItems            []LocalSessionListItem `json:"nextItems" nullable:"false"`
 	Page                 int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
-	Limit                int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
-	TotalItems           int                    `json:"totalItems" minimum:"0" maximum:"9007199254740991"`
+	PerPage              PageSize               `json:"perPage"`
+	Total                int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Revision             string                 `json:"revision" minLength:"1"`
 	OrdinarySessionTotal int                    `json:"ordinarySessionTotal" minimum:"0" maximum:"9007199254740991"`
 	HelperThreadTotal    int                    `json:"helperThreadTotal" minimum:"0" maximum:"9007199254740991"`
 }
 
 // LocalHelperMembersPayload is a page of saved helper sessions selected by an
-// opaque scope returned from the originating grouped query.
+// opaque scope returned from the originating grouped query. It carries the same
+// offset fields as every other local list page.
 type LocalHelperMembersPayload struct {
-	Members []LocalSessionListItem `json:"members" nullable:"false"`
-	Page    int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
-	Limit   int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
-	Total   int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Members   []LocalSessionListItem `json:"members" nullable:"false"`
+	NextItems []LocalSessionListItem `json:"nextItems" nullable:"false"`
+	Page      int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
+	PerPage   PageSize               `json:"perPage"`
+	Total     int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Revision  string                 `json:"revision" minLength:"1"`
 }
 
 // Validate checks route-variant identity and count mirrors without deriving
@@ -393,13 +419,18 @@ func (i LocalSessionListItem) Validate() error {
 
 // Validate checks non-null collection and pagination/count boundaries.
 func (p LocalSessionListPayload) Validate() error {
-	if err := validateGroupedPagination(p.Page, p.Limit, p.TotalItems, p.OrdinarySessionTotal, p.HelperThreadTotal); err != nil {
+	if err := validateOffsetPagination(p.Page, p.PerPage, p.Total, p.Revision); err != nil {
 		return err
 	}
-	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
-		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items must be an array and page, limit, and totals must be nonnegative with page/limit at least one; callers cannot page a coherent selected set; initialize items and emit bounded pagination values")
+	if p.Items == nil || p.NextItems == nil || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 || int64(p.OrdinarySessionTotal) > maxSafeJSONInteger || int64(p.HelperThreadTotal) > maxSafeJSONInteger {
+		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items and nextItems must be arrays and both grouped counts must be nonnegative safe integers; callers cannot page a coherent selected set; initialize both arrays and emit bounded counts")
 	}
 	for _, item := range p.Items {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	for _, item := range p.NextItems {
 		if err := item.Validate(); err != nil {
 			return err
 		}
@@ -409,14 +440,14 @@ func (p LocalSessionListPayload) Validate() error {
 
 // Validate checks a typed, non-null member page and every row mirror.
 func (p LocalHelperMembersPayload) Validate() error {
-	if err := validateGroupedPagination(p.Page, p.Limit, p.Total); err != nil {
+	if err := validateOffsetPagination(p.Page, p.PerPage, p.Total, p.Revision); err != nil {
 		return err
 	}
-	if len(p.Members) > p.Limit || len(p.Members) > p.Total {
-		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: member count exceeds limit or direct total; clients cannot page this scope; count direct saved helpers before paging")
+	if len(p.Members) > int(p.PerPage) || len(p.Members) > p.Total {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: member count exceeds perPage or direct total; clients cannot page this scope; count direct saved helpers before paging")
 	}
-	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
-		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members must be an array and page, limit, and total must be valid; callers cannot page the authorized scope; initialize members and emit bounded pagination values")
+	if p.Members == nil || p.NextItems == nil {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members and nextItems must be arrays; callers cannot page the authorized scope; initialize both arrays and emit bounded pagination values")
 	}
 	seen := make(map[string]bool)
 	groups := make(map[string]bool)
@@ -437,6 +468,11 @@ func (p LocalHelperMembersPayload) Validate() error {
 				return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: a groupId appears under multiple members; clients cannot assign its owner; emit each immediate-owner group once")
 			}
 			groups[group.GroupID] = true
+		}
+	}
+	for _, row := range p.NextItems {
+		if err := row.Validate(); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -632,6 +668,454 @@ type ChildSessionRef struct {
 	Project   string    `json:"project,omitempty"`
 }
 
+// --- Transcript reads ---
+
+// MaxTranscriptDirectoryRefs bounds one TranscriptSegmentDirectory read. The
+// directory is the transcript's only global index, so the read is capped: above
+// this many segments the server serves one page of this size and sets
+// directoryPage/directoryPerPage. 10,000 segments is roughly 10 GiB of
+// transcript, so the cap only exists to keep the directory read from becoming
+// the unbounded payload the segment model removes.
+const MaxTranscriptDirectoryRefs = 10000
+
+// TranscriptSegmentDirectory is the transcript's global index: one ref per
+// segment, in segment order, with the cut's scalars and no turn content. It is
+// the only global index on the transcript path, so a client never receives a
+// per-turn row to find its place.
+type TranscriptSegmentDirectory struct {
+	SessionID SessionID `json:"sessionId"`
+	// Revision is the store revision the directory was cut under, as a decimal
+	// string. A segment from a different revision must not be placed beside it.
+	Revision string `json:"revision" minLength:"1"`
+	// TotalTurns is the number of turns the session's main partition holds. It is
+	// a count, never an ordinal: no position is derived from it.
+	TotalTurns int `json:"totalTurns" minimum:"0" maximum:"9007199254740991"`
+	// TotalSegments is the true number of segments, even when this read serves one
+	// page of them.
+	TotalSegments int                    `json:"totalSegments" minimum:"0" maximum:"9007199254740991"`
+	Segments      []TranscriptSegmentRef `json:"segments" nullable:"false"`
+	// DirectoryPage and DirectoryPerPage are set only when TotalSegments exceeds
+	// MaxTranscriptDirectoryRefs; the read then serves one page of refs.
+	DirectoryPage    *int `json:"directoryPage,omitempty" minimum:"1" maximum:"9007199254740991" nullable:"false"`
+	DirectoryPerPage *int `json:"directoryPerPage,omitempty" minimum:"1" maximum:"9007199254740991" nullable:"false"`
+}
+
+// TranscriptSegmentRef is one segment's extent in the directory: its own
+// ordinal and the closed range of sparse turn identities it holds. The ordinal
+// is a segment namespace; firstTurn and lastTurn are turn identities, and no
+// arithmetic converts one into the other.
+type TranscriptSegmentRef struct {
+	Index      int `json:"index" minimum:"0" maximum:"9007199254740991"`
+	FirstTurn  int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
+	LastTurn   int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
+	ByteLength int `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+}
+
+// Validate checks the directory's ordering, extent, and page cap. The refs must
+// be contiguous in segment ordinal, ascending in turn identity, and
+// non-overlapping, because a viewer merges adjacent segments by their declared
+// ranges.
+func (d TranscriptSegmentDirectory) Validate() error {
+	const where = "transcript segment directory validation failed at schema.TranscriptSegmentDirectory.Validate: "
+	if !isDecimalRevision(d.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as decimal digits", where, d.Revision)
+	}
+	if d.TotalTurns < 0 || d.TotalSegments < 0 {
+		return fmt.Errorf("%stotalTurns or totalSegments is negative; the read cannot describe a negative corpus; emit non-negative counts", where)
+	}
+	if d.Segments == nil {
+		return fmt.Errorf("%ssegments is null; an empty session must answer with an empty array; emit a non-null array", where)
+	}
+	if len(d.Segments) > MaxTranscriptDirectoryRefs {
+		return fmt.Errorf("%ssegments holds %d refs, above the %d-ref directory cap; the directory read would become the unbounded payload; serve one page and set directoryPage/directoryPerPage", where, len(d.Segments), MaxTranscriptDirectoryRefs)
+	}
+	paged := d.DirectoryPage != nil || d.DirectoryPerPage != nil
+	start := 0
+	if paged {
+		if d.DirectoryPage == nil || d.DirectoryPerPage == nil {
+			return fmt.Errorf("%sdirectoryPage and directoryPerPage must be set together; a half-specified page cannot be placed in the directory sequence; set both or neither", where)
+		}
+		if *d.DirectoryPage < 1 {
+			return fmt.Errorf("%sdirectoryPage is %d; pages are 1-based; emit a positive page number", where, *d.DirectoryPage)
+		}
+		if *d.DirectoryPerPage != MaxTranscriptDirectoryRefs {
+			return fmt.Errorf("%sdirectoryPerPage is %d, not the %d-ref directory cap; the page size is not caller-chosen; use MaxTranscriptDirectoryRefs", where, *d.DirectoryPerPage, MaxTranscriptDirectoryRefs)
+		}
+		if d.TotalSegments <= MaxTranscriptDirectoryRefs {
+			return fmt.Errorf("%sthe directory declares page %d of %d with totalSegments %d; the page fields exist only above the %d-ref cap; serve the whole directory below it or omit directoryPage/directoryPerPage", where, *d.DirectoryPage, *d.DirectoryPerPage, d.TotalSegments, MaxTranscriptDirectoryRefs)
+		}
+		if len(d.Segments) > *d.DirectoryPerPage {
+			return fmt.Errorf("%sserves %d refs on a %d-ref page; the declared page size is exceeded; serve at most directoryPerPage refs", where, len(d.Segments), *d.DirectoryPerPage)
+		}
+		if d.TotalSegments < len(d.Segments) {
+			return fmt.Errorf("%stotalSegments %d is below the %d served refs; the true total cannot be smaller than a page of it; emit the whole-session total", where, d.TotalSegments, len(d.Segments))
+		}
+		page := int64(*d.DirectoryPage)
+		perPage := int64(*d.DirectoryPerPage)
+		if page-1 > int64(maxSafeJSONInteger)/perPage {
+			return fmt.Errorf("%sdirectoryPage %d overflows the page offset at %d refs per page; the read cannot address a page that far out; emit a reachable one-based page", where, *d.DirectoryPage, perPage)
+		}
+		start = int((page - 1) * perPage)
+	} else if d.TotalSegments != len(d.Segments) {
+		return fmt.Errorf("%stotalSegments %d differs from the %d served refs; an unpaged directory must serve every segment; serve the whole directory or set directoryPage/directoryPerPage", where, d.TotalSegments, len(d.Segments))
+	}
+	if d.TotalTurns < len(d.Segments) {
+		return fmt.Errorf("%stotalTurns %d is below the %d segments; every segment holds at least one turn; emit the whole-session turn count", where, d.TotalTurns, len(d.Segments))
+	}
+	for i, ref := range d.Segments {
+		if ref.Index != start+i {
+			return fmt.Errorf("%ssegment ref %d declares index %d, want %d; refs must be contiguous from the page's first ordinal; a gap would hide a segment from the viewer", where, i, ref.Index, start+i)
+		}
+		if ref.FirstTurn < 0 || ref.LastTurn < ref.FirstTurn {
+			return fmt.Errorf("%ssegment %d declares turn range [%d, %d]; a segment covers a closed ascending range; emit firstTurn <= lastTurn", where, ref.Index, ref.FirstTurn, ref.LastTurn)
+		}
+		if ref.Index >= d.TotalSegments {
+			return fmt.Errorf("%ssegment ref index %d is not below totalSegments %d; a page cannot name an ordinal the session does not have; emit the whole-session total or correct the page", where, ref.Index, d.TotalSegments)
+		}
+		if ref.ByteLength < 0 {
+			return fmt.Errorf("%ssegment %d declares a negative byteLength; served bytes cannot be negative; emit a non-negative count", where, ref.Index)
+		}
+		if i > 0 && ref.FirstTurn <= d.Segments[i-1].LastTurn {
+			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
+		}
+	}
+	return nil
+}
+
+// TranscriptSegment is one segment's turn content and its own facts. It is the
+// transport unit of the transcript: at most the segment budget, or one oversized
+// entry alone, so no response on the transcript path carries more than one
+// segment's turns.
+type TranscriptSegment struct {
+	// Index is the segment ordinal, 0..totalSegments-1. It is not a turn identity.
+	Index    int    `json:"index" minimum:"0" maximum:"9007199254740991"`
+	Revision string `json:"revision" minLength:"1"`
+	// FirstTurn and LastTurn are the closed range of sparse turn identities this
+	// segment covers.
+	FirstTurn int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
+	LastTurn  int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
+	// ByteLength is the sum of the served turns' ByteLength values: the
+	// pre-bound size of their content plus every toolCalls[].arguments and
+	// toolCalls[].result. It is not the marshalled size of the bounded rows; the
+	// served bytes are at most this total, and the per-turn value is what the
+	// truncation notice names.
+	ByteLength int `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+	// HasOlder and HasNewer say whether a boundary is drawn on that side. HasOlder
+	// is index > 0; HasNewer is index < totalSegments-1. They are redundant with
+	// the directory by design: a segment is renderable alone. A segment cannot
+	// know the total, so the producer checks HasNewer with the directory
+	// (ValidateTranscriptSegmentBoundaries).
+	HasOlder bool             `json:"hasOlder"`
+	HasNewer bool             `json:"hasNewer"`
+	Turns    []TranscriptTurn `json:"turns" nullable:"false"`
+}
+
+// Validate checks that the segment's declared range is the exact range its
+// turns occupy and that its declared byte length is the sum of the turn rows'
+// byte lengths. A segment that declares a range or size its turns do not carry
+// would silently shift every later boundary, so it is rejected rather than
+// repaired.
+func (s TranscriptSegment) Validate() error {
+	const where = "transcript segment validation failed at schema.TranscriptSegment.Validate: "
+	if s.Index < 0 {
+		return fmt.Errorf("%sindex is %d; segment ordinals start at zero; emit the segment's own ordinal", where, s.Index)
+	}
+	if !isDecimalRevision(s.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a segment cut under one revision must never be placed beside one cut under another; carry the store revision as decimal digits", where, s.Revision)
+	}
+	if s.FirstTurn < 0 || s.LastTurn < s.FirstTurn {
+		return fmt.Errorf("%sdeclares turn range [%d, %d]; a segment covers a closed ascending range; emit firstTurn <= lastTurn", where, s.FirstTurn, s.LastTurn)
+	}
+	if s.ByteLength < 0 {
+		return fmt.Errorf("%sbyteLength is negative; served bytes cannot be negative; emit a non-negative count", where)
+	}
+	if s.HasOlder != (s.Index > 0) {
+		return fmt.Errorf("%shasOlder is %v for segment %d; hasOlder is exactly index > 0; a boundary on the wrong side misstates whether the document continues", where, s.HasOlder, s.Index)
+	}
+	if s.Turns == nil {
+		return fmt.Errorf("%sturns is null; a segment always holds at least one whole turn; emit a non-null array", where)
+	}
+	if len(s.Turns) == 0 {
+		return fmt.Errorf("%sturns is empty; a segment always holds at least one whole turn; omit the segment instead", where)
+	}
+	previous := s.FirstTurn - 1
+	var turnBytes int64
+	for i := range s.Turns {
+		turn := s.Turns[i].Index
+		if turn < s.FirstTurn || turn > s.LastTurn {
+			return fmt.Errorf("%sturn %d lies outside the declared range [%d, %d]; a turn must belong to exactly one segment range; correct the range or move the turn", where, turn, s.FirstTurn, s.LastTurn)
+		}
+		if turn <= previous {
+			return fmt.Errorf("%sturn %d does not follow %d; segment turns must be in ascending identity order; an out-of-order turn cannot be rendered as part of the document", where, turn, previous)
+		}
+		if s.Turns[i].ByteLength < 0 {
+			return fmt.Errorf("%sturn %d declares a negative byteLength; a turn's pre-bound size cannot be negative; emit a non-negative count", where, turn)
+		}
+		turnBytes += int64(s.Turns[i].ByteLength)
+		previous = turn
+	}
+	if s.Turns[0].Index != s.FirstTurn || s.Turns[len(s.Turns)-1].Index != s.LastTurn {
+		return fmt.Errorf("%sdeclares range [%d, %d] but its turns span [%d, %d]; the declared range must be exactly the turns served; correct firstTurn/lastTurn", where, s.FirstTurn, s.LastTurn, s.Turns[0].Index, s.Turns[len(s.Turns)-1].Index)
+	}
+	if int64(s.ByteLength) != turnBytes {
+		return fmt.Errorf("%sdeclares byteLength %d but its turns total %d; the segment's byte length is the sum of its turn rows' byteLength values, so a client sizing a boundary would be told the wrong cost; emit the summed value", where, s.ByteLength, turnBytes)
+	}
+	return nil
+}
+
+// ValidateTranscriptSegmentBoundaries checks a segment's edge flags against the
+// directory's segment count: HasOlder is Index > 0 and HasNewer is
+// Index < totalSegments-1. A segment alone cannot know the total, so the
+// producer calls this with the directory it built.
+func ValidateTranscriptSegmentBoundaries(segment TranscriptSegment, totalSegments int) error {
+	const where = "transcript segment boundary validation failed at schema.ValidateTranscriptSegmentBoundaries: "
+	if totalSegments < 1 {
+		return fmt.Errorf("%stotalSegments is %d; a served segment belongs to at least one segment; pass the directory's segment count", where, totalSegments)
+	}
+	if segment.Index < 0 || segment.Index >= totalSegments {
+		return fmt.Errorf("%ssegment index %d is outside 0..%d; the segment does not belong to this directory; pass the ordinal from the directory the segment was cut under", where, segment.Index, totalSegments-1)
+	}
+	if want := segment.Index > 0; segment.HasOlder != want {
+		return fmt.Errorf("%shasOlder is %v for segment %d of %d; hasOlder is exactly index > 0; a boundary on the wrong side misstates whether the document continues", where, segment.HasOlder, segment.Index, totalSegments)
+	}
+	if want := segment.Index < totalSegments-1; segment.HasNewer != want {
+		return fmt.Errorf("%shasNewer is %v for segment %d of %d; hasNewer is exactly index < totalSegments-1; a boundary on the wrong side misstates whether the document continues", where, segment.HasNewer, segment.Index, totalSegments)
+	}
+	return nil
+}
+
+// TranscriptTurn is one served turn: the single TurnDetail definition plus the
+// read's own facts. Nothing is copied flat, so a segment and the single-turn
+// continuation read share one projection and one truncation story.
+type TranscriptTurn struct {
+	TurnDetail
+	// Truncated reports that this turn's own text was bounded by the served-text
+	// bound. ByteLength is the pre-bound size of content plus every
+	// toolCalls[].arguments and toolCalls[].result: the size the turn had before
+	// the bound was applied, so the truncation notice can name what the full read
+	// will return. A segment's ByteLength is the sum of these values; the served
+	// bytes of a truncated turn are at most its ByteLength.
+	Truncated  bool `json:"truncated"`
+	ByteLength int  `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+}
+
+// TranscriptWindow is the descriptor of an anchor window: where the window is,
+// never what is in it. It carries no turn content, so a jump can never be the
+// oversized payload. A viewer loads the covering segments through the segment
+// read.
+type TranscriptWindow struct {
+	SessionID SessionID `json:"sessionId"`
+	Revision  string    `json:"revision" minLength:"1"`
+	// RequestedAnchor is the turn identity the caller asked for. It differs from
+	// AnchorTurn when the read snapped to a user turn, and the viewer says so.
+	RequestedAnchor int `json:"requestedAnchor" minimum:"0" maximum:"9007199254740991"`
+	// AnchorTurn is the resolved user turn the window is centred on. It always
+	// lies inside [firstTurn, lastTurn].
+	AnchorTurn int `json:"anchorTurn" minimum:"0" maximum:"9007199254740991"`
+	// Span is the number of assistant turns collected on each side. It is
+	// validated 1..10: the design value narrows a window and cannot widen it past
+	// the design.
+	Span      int `json:"span" minimum:"1" maximum:"10"`
+	FirstTurn int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
+	LastTurn  int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
+	// Segments is the ordered, contiguous run of segment ordinals that covers
+	// [firstTurn, lastTurn]. The viewer loads exactly these.
+	Segments []int `json:"segments" nullable:"false"`
+	HasOlder bool  `json:"hasOlder"`
+	HasNewer bool  `json:"hasNewer"`
+}
+
+// Validate checks the descriptor's own invariants: a positive span within the
+// design bound, an anchor inside the window, and an ascending contiguous segment
+// run. Coverage of [firstTurn, lastTurn] is checked against the directory by
+// ValidateTranscriptWindowCoverage, because the descriptor deliberately carries
+// no refs.
+func (w TranscriptWindow) Validate() error {
+	const where = "transcript window validation failed at schema.TranscriptWindow.Validate: "
+	if !isDecimalRevision(w.Revision) {
+		return fmt.Errorf("%srevision %q is not a decimal string; a window must name the cut its covering segments belong to; carry the store revision as decimal digits", where, w.Revision)
+	}
+	if w.Span < 1 || w.Span > 10 {
+		return fmt.Errorf("%sspan is %d; the accepted range is 1..10 assistant turns per side; emit a value in that range", where, w.Span)
+	}
+	if w.FirstTurn < 0 || w.LastTurn < w.FirstTurn {
+		return fmt.Errorf("%sdeclares turn range [%d, %d]; a window covers a closed ascending range; emit firstTurn <= lastTurn", where, w.FirstTurn, w.LastTurn)
+	}
+	if w.AnchorTurn < w.FirstTurn || w.AnchorTurn > w.LastTurn {
+		return fmt.Errorf("%sanchorTurn %d lies outside [%d, %d]; the window must contain the user turn it is centred on; correct the extent", where, w.AnchorTurn, w.FirstTurn, w.LastTurn)
+	}
+	if w.Segments == nil || len(w.Segments) == 0 {
+		return fmt.Errorf("%ssegments is empty or null; a window always names at least the segment covering its anchor; emit the ordered covering segment run", where)
+	}
+	for i, segment := range w.Segments {
+		if segment < 0 {
+			return fmt.Errorf("%ssegments[%d] is %d; a segment ordinal is non-negative; emit directory ordinals", where, i, segment)
+		}
+		if i > 0 && segment != w.Segments[i-1]+1 {
+			return fmt.Errorf("%ssegments[%d] is %d after %d; the covering run must be contiguous and ascending, or the rendered window would have a gap inside it; emit every segment between the two edges", where, i, segment, w.Segments[i-1])
+		}
+	}
+	return nil
+}
+
+// ValidateTranscriptWindowCoverage checks that the window's segment run is
+// exactly the directory's run from the segment containing firstTurn to the one
+// containing lastTurn. The descriptor carries no refs, so this check needs the
+// directory the window was resolved against.
+func ValidateTranscriptWindowCoverage(window TranscriptWindow, refs []TranscriptSegmentRef) error {
+	const where = "transcript window coverage validation failed at schema.ValidateTranscriptWindowCoverage: "
+	if len(refs) == 0 {
+		return fmt.Errorf("%sthe directory holds no segments; a window cannot cover a turn; build the directory before resolving a window", where)
+	}
+	first, last := -1, -1
+	for _, ref := range refs {
+		if ref.FirstTurn <= window.FirstTurn && window.FirstTurn <= ref.LastTurn {
+			first = ref.Index
+		}
+		if ref.FirstTurn <= window.LastTurn && window.LastTurn <= ref.LastTurn {
+			last = ref.Index
+		}
+	}
+	if first < 0 || last < 0 {
+		return fmt.Errorf("%swindow [%d, %d] is not covered by the directory's segment ranges; a viewer would load no segment for one edge; resolve the window against this directory", where, window.FirstTurn, window.LastTurn)
+	}
+	want := make([]int, 0, last-first+1)
+	for segment := first; segment <= last; segment++ {
+		want = append(want, segment)
+	}
+	if len(want) != len(window.Segments) {
+		return fmt.Errorf("%swindow names %d segments, but covering [%d, %d] takes %d; the viewer would leave part of the window unloaded", where, len(window.Segments), window.FirstTurn, window.LastTurn, len(want))
+	}
+	for i := range want {
+		if window.Segments[i] != want[i] {
+			return fmt.Errorf("%swindow segments[%d] is %d, want %d; the descriptor must name the contiguous run that covers [%d, %d]", where, i, window.Segments[i], want[i], window.FirstTurn, window.LastTurn)
+		}
+	}
+	return nil
+}
+
+// SessionDetailHeader is the metadata-only projection of a session: everything
+// the durable SessionDetailPayload states about the session except its turns.
+// It is a distinct type, not a replacement for the durable payload, so no
+// release window ships "turns: []" to a content-expecting viewer. Turn content
+// lives in TranscriptSegment rows.
+type SessionDetailHeader struct {
+	SchemaVersion        PushContractVersion   `json:"schemaVersion,omitempty"`
+	ID                   string                `json:"id"`
+	Harness              Harness               `json:"harness"`
+	StartTime            time.Time             `json:"startTime"`
+	EndTime              time.Time             `json:"endTime"`
+	DurationMins         float64               `json:"durationMins"`
+	TotalTokens          int                   `json:"totalTokens"`
+	TokensIn             int                   `json:"tokensIn"`
+	TokensOut            int                   `json:"tokensOut"`
+	TurnCount            int                   `json:"turnCount"`
+	InputSubmissionCount *int64                `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount        int                   `json:"toolCallCount"`
+	Source               string                `json:"source,omitempty"`
+	Status               string                `json:"status,omitempty"`
+	Project              string                `json:"project,omitempty"`
+	Model                string                `json:"model,omitempty"`
+	ThinkingLevel        ThinkingLevel         `json:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw     ThinkingLevelRaw      `json:"thinkingLevelRaw,omitempty"`
+	ThinkingLevelHistory []ThinkingLevelChange `json:"thinkingLevelHistory,omitempty"`
+	WorkingDirectory     string                `json:"workingDirectory,omitempty"`
+	GitBranch            string                `json:"gitBranch,omitempty"`
+	GitRemote            string                `json:"gitRemote,omitempty"`
+	ChildSessions        []ChildSessionRef     `json:"childSessions,omitempty"`
+	ParentSessionID      *SessionID            `json:"parentSessionId,omitempty"`
+	RootSessionID        *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose              SessionPurpose        `json:"purpose,omitempty"`
+	Relationships        []SessionRelationship `json:"relationships,omitempty"`
+	// EarlierHistory carries section state only. Turns and the native metadata
+	// that annotates them travel together on the durable read, and neither belongs
+	// on a metadata-only projection: the section's native metadata is validated
+	// against the turns it annotates.
+	EarlierHistory  []EarlierHistoryState      `json:"earlierHistory,omitempty" nullable:"false"`
+	Outcome         SessionOutcome             `json:"outcome,omitempty"`
+	SessionOrigin   SessionOrigin              `json:"sessionOrigin,omitempty"`
+	Scorecard       *SessionScorecard          `json:"scorecard,omitempty"`
+	RetainedUnknown []RetainedUnknownRecord    `json:"retainedUnknown,omitempty" nullable:"false"`
+	Diagnostics     *InterpretationDiagnostics `json:"diagnostics,omitempty" nullable:"false"`
+}
+
+// Validate checks the header's metadata against the same shared rules the
+// durable payload applies where those rules do not need turns.
+func (h SessionDetailHeader) Validate() error {
+	if err := ValidateSessionDetailPayload(h.metadataPayload()); err != nil {
+		return err
+	}
+	for i, state := range h.EarlierHistory {
+		if !state.IsValid() {
+			return fmt.Errorf("session detail header validation failed at schema.SessionDetailHeader.Validate: earlierHistory[%d] state %q is outside the closed set (schema.EarlierHistoryState); consumers cannot explain retained history; use a published state", i, state)
+		}
+	}
+	return nil
+}
+
+// metadataPayload projects the header onto the durable payload's metadata-only
+// shape so one validation rule serves both. Turns, earlier-history turns, and
+// native metadata stay empty: they are not part of the header.
+func (h SessionDetailHeader) metadataPayload() SessionDetailPayload {
+	return SessionDetailPayload{
+		SchemaVersion:        h.SchemaVersion,
+		ID:                   h.ID,
+		Harness:              h.Harness,
+		StartTime:            h.StartTime,
+		EndTime:              h.EndTime,
+		DurationMins:         h.DurationMins,
+		TotalTokens:          h.TotalTokens,
+		TokensIn:             h.TokensIn,
+		TokensOut:            h.TokensOut,
+		TurnCount:            h.TurnCount,
+		InputSubmissionCount: h.InputSubmissionCount,
+		ToolCallCount:        h.ToolCallCount,
+		Source:               h.Source,
+		Status:               h.Status,
+		Project:              h.Project,
+		Model:                h.Model,
+		ThinkingLevel:        h.ThinkingLevel,
+		ThinkingLevelRaw:     h.ThinkingLevelRaw,
+		ThinkingLevelHistory: h.ThinkingLevelHistory,
+		WorkingDirectory:     h.WorkingDirectory,
+		GitBranch:            h.GitBranch,
+		GitRemote:            h.GitRemote,
+		ChildSessions:        h.ChildSessions,
+		ParentSessionID:      h.ParentSessionID,
+		RootSessionID:        h.RootSessionID,
+		Purpose:              h.Purpose,
+		Relationships:        h.Relationships,
+		Outcome:              h.Outcome,
+		SessionOrigin:        h.SessionOrigin,
+		Scorecard:            h.Scorecard,
+		RetainedUnknown:      h.RetainedUnknown,
+		Diagnostics:          h.Diagnostics,
+	}
+}
+
+// SessionDetailHeaderPayload is the session_detail frame body: the metadata
+// header plus the local navigation and teammate evidence the durable push never
+// carries.
+type SessionDetailHeaderPayload struct {
+	SessionDetailHeader
+	RelationshipNavigation []SessionRelationshipNavigation `json:"relationshipNavigation,omitempty"`
+	Teammate               *SessionTeammate                `json:"teammate,omitempty"`
+}
+
+// Validate checks the header, the authorized navigation metadata, and the
+// optional local teammate evidence.
+func (p SessionDetailHeaderPayload) Validate() error {
+	if err := p.SessionDetailHeader.Validate(); err != nil {
+		return err
+	}
+	for _, navigation := range p.RelationshipNavigation {
+		if err := navigation.Validate(); err != nil {
+			return err
+		}
+	}
+	return p.Teammate.Validate()
+}
+
 // --- Trends ---
 
 // DayStats holds aggregated data for a single day in trends.
@@ -684,6 +1168,203 @@ type QualitySession struct {
 	// Clients derive display labels (e.g. humanLabel, agentLabel) by filtering
 	// on typeId and annotatorKind — no pre-computed string fields needed.
 	EffectiveAnnotations []AnnotationSummary `json:"effectiveAnnotations,omitempty"`
+}
+
+// PersonalMedians is the library-wide baseline the transcript scorecard
+// compares one session against. Every field is optional: a field is absent when
+// its sample yields no value, so the comparison line degrades instead of
+// fabricating a baseline. The YAML tags let the canonical medians fixture carry
+// this exact shape, so the Go aggregate and the browser baseline read one corpus.
+type PersonalMedians struct {
+	// RetryShare is the median retryTokensWasted/totalTokens ratio over the
+	// sessions whose totalTokens is positive.
+	RetryShare *float64 `json:"retryShare,omitempty" yaml:"retryShare,omitempty"`
+	// SpecQualityScore is the median spec quality score over the sessions whose
+	// score is positive.
+	SpecQualityScore *float64 `json:"specQualityScore,omitempty" yaml:"specQualityScore,omitempty"`
+	// WithinSessionReverts is the median revert count over the sessions whose
+	// count is nonnegative.
+	WithinSessionReverts *float64 `json:"withinSessionReverts,omitempty" yaml:"withinSessionReverts,omitempty"`
+}
+
+// ProjectAnalytics is the analytics bundle the project dashboard renders. It is
+// a schema type, not a presentation typedef: the server aggregate, the generated
+// TypeScript type, and the dashboard typedef are one contract with these exact
+// field names.
+type ProjectAnalytics struct {
+	TotalSessions            int                      `json:"totalSessions" minimum:"0" maximum:"9007199254740991"`
+	TotalContributors        int                      `json:"totalContributors" minimum:"0" maximum:"9007199254740991"`
+	TotalProjects            int                      `json:"totalProjects" minimum:"0" maximum:"9007199254740991"`
+	SessionsPerWeek          []WeekCount              `json:"sessionsPerWeek" nullable:"false"`
+	WeeklyActiveContributors []WeekContributors       `json:"weeklyActiveContributors" nullable:"false"`
+	ReturningContributorRate ReturningContributorRate `json:"returningContributorRate"`
+	LongestStreak            LongestStreak            `json:"longestStreak"`
+	NewContributorVelocity   []WeekNewContributors    `json:"newContributorVelocity" nullable:"false"`
+	SessionToCommitRate      SessionToCommitRate      `json:"sessionToCommitRate"`
+	AvgDurationPerActiveWeek []WeekAvgDuration        `json:"avgDurationPerActiveWeek" nullable:"false"`
+	OutcomeDistribution      OutcomeDistribution      `json:"outcomeDistribution"`
+	SessionStats             AnalyticsSessionStats    `json:"sessionStats"`
+	PerContributorBreakdown  []ContributorBreakdown   `json:"perContributorBreakdown" nullable:"false"`
+}
+
+// WeekCount is one bucket of the per-week session-count series. Week is the
+// Monday-of-week UTC date key (YYYY-MM-DD).
+type WeekCount struct {
+	Week  string `json:"week"`
+	Count int    `json:"count" minimum:"0" maximum:"9007199254740991"`
+}
+
+// WeekContributors is one bucket of the per-week unique-contributor series.
+type WeekContributors struct {
+	Week         string `json:"week"`
+	Contributors int    `json:"contributors" minimum:"0" maximum:"9007199254740991"`
+}
+
+// ReturningContributorRate is the returning-contributor result. A returning
+// contributor is active in at least two distinct weeks; Rate is Returning/Total
+// in [0, 1], and 0 when no contributor exists.
+type ReturningContributorRate struct {
+	Total     int     `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Returning int     `json:"returning" minimum:"0" maximum:"9007199254740991"`
+	Rate      float64 `json:"rate" minimum:"0" maximum:"1"`
+}
+
+// LongestStreak is the longest run of consecutive active weeks, with its first
+// and last Monday-of-week keys. Both keys are null when no week is active.
+type LongestStreak struct {
+	Weeks     int     `json:"weeks" minimum:"0" maximum:"9007199254740991"`
+	StartWeek *string `json:"startWeek"`
+	EndWeek   *string `json:"endWeek"`
+}
+
+// WeekNewContributors is one bucket of the new-contributor series: the
+// contributors whose first-ever session falls in that week.
+type WeekNewContributors struct {
+	Week            string `json:"week"`
+	NewContributors int    `json:"newContributors" minimum:"0" maximum:"9007199254740991"`
+}
+
+// SessionToCommitRate is the session-to-commit result. Rate is WithCommit/Total
+// in [0, 1], and 0 when no session exists.
+type SessionToCommitRate struct {
+	Total      int     `json:"total" minimum:"0" maximum:"9007199254740991"`
+	WithCommit int     `json:"withCommit" minimum:"0" maximum:"9007199254740991"`
+	Rate       float64 `json:"rate" minimum:"0" maximum:"1"`
+}
+
+// WeekAvgDuration is one bucket of the per-active-week average-duration series.
+type WeekAvgDuration struct {
+	Week            string  `json:"week"`
+	AvgDurationMins float64 `json:"avgDurationMins" minimum:"0"`
+	Sessions        int     `json:"sessions" minimum:"0" maximum:"9007199254740991"`
+}
+
+// OutcomeDistribution is the session-outcome tally. Total counts every session,
+// including the ones whose outcome is unknown.
+type OutcomeDistribution struct {
+	Resolved int `json:"resolved" minimum:"0" maximum:"9007199254740991"`
+	Partial  int `json:"partial" minimum:"0" maximum:"9007199254740991"`
+	Failed   int `json:"failed" minimum:"0" maximum:"9007199254740991"`
+	Unknown  int `json:"unknown" minimum:"0" maximum:"9007199254740991"`
+	Total    int `json:"total" minimum:"0" maximum:"9007199254740991"`
+}
+
+// MedianP90 is one typical-value pair: the sample count, its median, and its
+// ninetieth percentile. Median and P90 are null when the sample is empty.
+type MedianP90 struct {
+	Count  int      `json:"count" minimum:"0" maximum:"9007199254740991"`
+	Median *float64 `json:"median"`
+	P90    *float64 `json:"p90"`
+}
+
+// AnalyticsSessionStats is the analytics aggregate over the library. It is not
+// the ingest SessionStats: the name keeps the two distinct in one package.
+type AnalyticsSessionStats struct {
+	DurationMins  MedianP90 `json:"durationMins"`
+	TotalTokens   MedianP90 `json:"totalTokens"`
+	TurnCount     MedianP90 `json:"turnCount"`
+	ToolCallCount MedianP90 `json:"toolCallCount"`
+}
+
+// ContributorBreakdown is one contributor's tally inside the analytics bundle.
+// FirstSeen and LastSeen are day keys (YYYY-MM-DD), null when the contributor
+// has no dated session.
+type ContributorBreakdown struct {
+	ContributorID      string              `json:"contributorId"`
+	Sessions           int                 `json:"sessions" minimum:"0" maximum:"9007199254740991"`
+	ActiveWeeks        int                 `json:"activeWeeks" minimum:"0" maximum:"9007199254740991"`
+	TotalTokens        int                 `json:"totalTokens" minimum:"0" maximum:"9007199254740991"`
+	TotalDurationMins  int                 `json:"totalDurationMins" minimum:"0" maximum:"9007199254740991"`
+	TotalTurns         int                 `json:"totalTurns" minimum:"0" maximum:"9007199254740991"`
+	TotalToolCalls     int                 `json:"totalToolCalls" minimum:"0" maximum:"9007199254740991"`
+	SessionsWithCommit int                 `json:"sessionsWithCommit" minimum:"0" maximum:"9007199254740991"`
+	TotalCommits       int                 `json:"totalCommits" minimum:"0" maximum:"9007199254740991"`
+	Outcomes           OutcomeDistribution `json:"outcomes"`
+	FirstSeen          *string             `json:"firstSeen"`
+	LastSeen           *string             `json:"lastSeen"`
+}
+
+// Validate checks the aggregate's rates and counts. The Types schema bounds the
+// same fields; this is the Go boundary for a producer that constructs the
+// bundle directly, so a negative count or an out-of-range rate never reaches a
+// client.
+func (a ProjectAnalytics) Validate() error {
+	const where = "project analytics validation failed at schema.ProjectAnalytics.Validate: "
+	for _, rate := range []struct {
+		name  string
+		value float64
+	}{
+		{"returningContributorRate.rate", a.ReturningContributorRate.Rate},
+		{"sessionToCommitRate.rate", a.SessionToCommitRate.Rate},
+	} {
+		if math.IsNaN(rate.value) || math.IsInf(rate.value, 0) || rate.value < 0 || rate.value > 1 {
+			return fmt.Errorf("%s%s is %v; a rate is a finite share in [0, 1]; divide the counted part by the counted total", where, rate.name, rate.value)
+		}
+	}
+	for _, count := range []struct {
+		name  string
+		value int
+	}{
+		{"totalSessions", a.TotalSessions},
+		{"totalContributors", a.TotalContributors},
+		{"totalProjects", a.TotalProjects},
+		{"outcomeDistribution.resolved", a.OutcomeDistribution.Resolved},
+		{"outcomeDistribution.partial", a.OutcomeDistribution.Partial},
+		{"outcomeDistribution.failed", a.OutcomeDistribution.Failed},
+		{"outcomeDistribution.unknown", a.OutcomeDistribution.Unknown},
+		{"outcomeDistribution.total", a.OutcomeDistribution.Total},
+		{"sessionStats.durationMins.count", a.SessionStats.DurationMins.Count},
+		{"sessionStats.totalTokens.count", a.SessionStats.TotalTokens.Count},
+		{"sessionStats.turnCount.count", a.SessionStats.TurnCount.Count},
+		{"sessionStats.toolCallCount.count", a.SessionStats.ToolCallCount.Count},
+	} {
+		if count.value < 0 || int64(count.value) > maxSafeJSONInteger {
+			return fmt.Errorf("%s%s is %d; an analytics count is a non-negative safe integer; emit the counted value", where, count.name, count.value)
+		}
+	}
+	for i, contributor := range a.PerContributorBreakdown {
+		if contributor.Sessions < 0 || contributor.ActiveWeeks < 0 || contributor.TotalTokens < 0 || contributor.TotalDurationMins < 0 || contributor.TotalTurns < 0 || contributor.TotalToolCalls < 0 || contributor.SessionsWithCommit < 0 || contributor.TotalCommits < 0 {
+			return fmt.Errorf("%sperContributorBreakdown[%d] carries a negative count; contributors are counted, never subtracted; emit non-negative totals", where, i)
+		}
+	}
+	return nil
+}
+
+// QualityPage is the quality read for one offset page of sessions. The summary
+// is the full analytics bundle computed over the library at the page revision;
+// the rows are the requested page, so no surface subscribes to the full library.
+type QualityPage struct {
+	OffsetPage[QualitySession]
+	Summary ProjectAnalytics `json:"summary"`
+}
+
+// Validate checks the common offset-page contract for the quality rows and the
+// analytics summary carried beside them.
+func (p QualityPage) Validate() error {
+	if err := p.OffsetPage.Validate(); err != nil {
+		return err
+	}
+	return p.Summary.Validate()
 }
 
 // --- Project Familiarity ---

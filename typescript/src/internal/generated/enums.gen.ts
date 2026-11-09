@@ -15,6 +15,7 @@ import { zCollectiveFetchOutcome, type CollectiveFetchOutcome as CollectiveFetch
 import { zCollectiveObservationSource, type CollectiveObservationSource as CollectiveObservationSourceContract } from "./contract/zod.gen.js";
 import { zCollectiveSourceOutcome, type CollectiveSourceOutcome as CollectiveSourceOutcomeContract } from "./contract/zod.gen.js";
 import { zLocalSyncPublicationFilter, type LocalSyncPublicationFilter as LocalSyncPublicationFilterContract } from "./contract/zod.gen.js";
+import { zPageSize, type PageSize as PageSizeContract } from "./contract/zod.gen.js";
 import { zPublishOperationKind, type PublishOperationKind as PublishOperationKindContract } from "./contract/zod.gen.js";
 import { zVisibilityIntent, type VisibilityIntent as VisibilityIntentContract } from "./contract/zod.gen.js";
 import { zAnnotationAxis, type AnnotationAxis as AnnotationAxisContract } from "./contract/zod.gen.js";
@@ -296,6 +297,17 @@ export const LocalSyncPublicationFilter = Object.freeze({
 export const AllLocalSyncPublicationFilters = Object.freeze([LocalSyncPublicationFilter.All, LocalSyncPublicationFilter.NotPublished, LocalSyncPublicationFilter.Published, LocalSyncPublicationFilter.Auto]) as readonly LocalSyncPublicationFilter[];
 export function isLocalSyncPublicationFilter(value: unknown): value is LocalSyncPublicationFilter {
   return zLocalSyncPublicationFilter.safeParse(value).success;
+}
+
+export type PageSize = PageSizeContract;
+export const PageSize = Object.freeze({
+  P25: zPageSize.parse(25),
+  P50: zPageSize.parse(50),
+  P100: zPageSize.parse(100),
+} as const);
+export const AllPageSizes = Object.freeze([PageSize.P25, PageSize.P50, PageSize.P100]) as readonly PageSize[];
+export function isPageSize(value: unknown): value is PageSize {
+  return zPageSize.safeParse(value).success;
 }
 
 export type PublishOperationKind = PublishOperationKindContract;
