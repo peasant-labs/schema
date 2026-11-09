@@ -1144,7 +1144,10 @@ components:
           - type: "null"
         turnCount:
           anyOf:
-          - type:
+          - description: 'Conversation turns: projected turns whose role is not system.
+              Every count surface reports this same number; it is never a raw harness
+              record count.'
+            type:
             - "null"
             - integer
           - type: "null"
@@ -4224,6 +4227,9 @@ components:
         totalTokens:
           type: integer
         turnCount:
+          description: 'Conversation turns: projected turns whose role is not system.
+            Every count surface reports this same number; it is never a raw harness
+            record count.'
           type: integer
       required:
       - id
@@ -5692,7 +5698,10 @@ components:
           - type: "null"
         turnCount:
           anyOf:
-          - type:
+          - description: 'Conversation turns: projected turns whose role is not system.
+              Every count surface reports this same number; it is never a raw harness
+              record count.'
+            type:
             - "null"
             - integer
           - type: "null"
@@ -11541,6 +11550,9 @@ components:
         title:
           type: string
         turnCount:
+          description: 'Conversation turns: projected turns whose role is not system.
+            Every count surface reports this same number; it is never a raw harness
+            record count.'
           type: integer
       required:
       - sessionId

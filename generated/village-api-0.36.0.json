@@ -8901,6 +8901,7 @@
           "turnCount": {
             "anyOf": [
               {
+                "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
                 "type": [
                   "null",
                   "integer"

@@ -268,7 +268,7 @@ type LocalSyncSummary struct {
 	StartTime            string      `json:"startTime"`
 	DurationMs           int64       `json:"durationMs"`
 	TotalTokens          int         `json:"totalTokens"`
-	TurnCount            int         `json:"turnCount"`
+	TurnCount            int         `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	Model                string      `json:"model"`
 	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	SyncStatus           SyncStatus  `json:"syncStatus"`
@@ -789,7 +789,7 @@ type WalkthroughTrail struct {
 	SessionID  string            `json:"sessionId"`
 	Title      string            `json:"title"`
 	Date       string            `json:"date"`
-	TurnCount  int               `json:"turnCount"`
+	TurnCount  int               `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	Steps      []WalkthroughStep `json:"steps"`
 	IsCoherent bool              `json:"isCoherent"` // true if linear path, false if scattered
 }
