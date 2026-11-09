@@ -11,9 +11,12 @@ import (
 )
 
 // BuildPeasantLocalAPISpec builds an OpenAPI 3.1 specification for the local web dashboard API v1.0.
-// It includes REST routes (/health, /sessions, /config/mock, /shutdown) and
+// It includes REST routes (/health, /sessions, /config/mock, /shutdown),
 // WebSocket channel message schemas (DashboardPayload, SessionsPayload,
-// SessionDetailPayload, TrendsPayload, QualityPayload) as JSON Schema components.
+// SessionDetailPayload, SessionDetailHeaderPayload, TrendsPayload,
+// QualityPayload), and the declared transcript-read payloads
+// (TranscriptSegmentDirectory, TranscriptSegment, TranscriptWindow and their
+// rows) as JSON Schema components.
 func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	r := openapi31.NewReflector()
 	registerHarnessSchema(r)
@@ -101,7 +104,7 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	// Explicit views share the sync resource without changing legacy responses.
 	if err := addLocalOperations(r, []localOperationSpec{{
 		method: http.MethodGet, path: "/api/v1/sync/sessions", id: "listSyncSessionsGrouped", tag: "sync",
-		description:   "Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection is not applied as a direct browsing eligibility predicate: it excludes no root, child, or project option that the view's own eligibility rules admit, and counts and empty states derive from the eligible browsing set the caller's explicit filters select. Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging, and an explicit publication=auto filter may reflect legitimate hook eligibility, so that filtered view can change with the selection while no unfiltered stored row is added or removed. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. A token's scope is the view, the parent, the root project or publication filter, and the caller's account; it does not include the page size, which a caller may change independently, or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots: a continuation stays valid when publication metadata changes which rows a filter selects. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success.",
+		description:   "Omitted view serves the same bounded offset Home page as view=home; view=grouped preserves helper groups and their membership scopes. view=home returns items/nextItems offset pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection is not applied as a direct browsing eligibility predicate: it excludes no root, child, or project option that the view's own eligibility rules admit, and counts and empty states derive from the eligible browsing set the caller's explicit filters select. Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging, and an explicit publication=auto filter may reflect legitimate hook eligibility, so that filtered view can change with the selection while no unfiltered stored row is added or removed. Only empty nextItems means done: short or empty items may continue. maxItems omitted or zero defaults to 25; only 25, 50, and 100 are accepted, and negative, non-member, malformed or repeated values return 400. page is one-based and omitted defaults to 1. pageToken is retired: an empty value is absent, and a nonempty value returns 400 with recovery guidance to drop the continuation and request a page. Offset paging is not snapshot-stable; a new session can shift rows. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home or an omitted view and are rejected for grouped and project-options. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success.",
 		requests:      []interface{}{new(schema.LocalSyncSessionsQuery)},
 		response:      new(schema.LocalSyncSessionPage),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusInternalServerError, http.StatusServiceUnavailable},
@@ -114,10 +117,10 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/session-groups/{groupId}/members",
 		"listLocalHelperGroupMembers", "List authorized saved helper sessions within the originating grouped query scope. The scope names that query, not a selection revision: the saved ingestion selection is not part of it, so changing that selection neither revokes an issued scope nor changes which members the originating rule admits. The originating grouped route's own eligibility and query predicate rules are kept, together with parent and group-scope integrity; this read adds no further browsing bound.", []string{"sessions"},
 		new(struct {
-			GroupID string `path:"groupId"`
-			Scope   string `query:"scope" required:"true" description:"Opaque member scope from the originating grouped response"`
-			Page    int    `query:"page" description:"One-based member page" minimum:"1"`
-			Limit   int    `query:"limit" description:"Maximum members per page" minimum:"1"`
+			GroupID string          `path:"groupId"`
+			Scope   string          `query:"scope" required:"true" description:"Opaque member scope from the originating grouped response"`
+			Page    int             `query:"page" description:"One-based member page" minimum:"1"`
+			PerPage schema.PageSize `query:"perPage" description:"Members per page: 25, 50, or 100"`
 		}), new(schema.LocalHelperMembersPayload)); err != nil {
 		return nil, err
 	}
@@ -177,24 +180,33 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
-	// --- WebSocket channel message schemas (as components, not operations) ---
-	// These are JSON Schema components describing the payload shapes
-	// sent over WebSocket channels.
-	wsPayloads := []struct {
+	// --- WebSocket channel and declared read payload schemas (components) ---
+	// These are JSON Schema components describing payload shapes. The WS entries
+	// are channel bodies; the transcript reads and the flat session page are
+	// declared here so @peasant-labs/schema/local-api can type the payloads the
+	// host serves, even before a route binds them in this document.
+	payloads := []struct {
 		name string
 		val  interface{}
 	}{
 		{"DashboardPayload", new(schema.DashboardPayload)},
 		{"SessionDetailPayload", new(schema.SessionDetailPayload)},
 		{"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
+		{"SessionDetailHeaderPayload", new(schema.SessionDetailHeaderPayload)},
 		{"TrendsPayload", new(schema.TrendsPayload)},
 		{"QualityPayload", new(schema.QualityPayload)},
 		{"ClientMessage", new(schema.ClientMessage)},
 		{"ServerMessage", new(schema.ServerMessage)},
+		{"LocalSessionPage", new(schema.LocalSessionPage)},
+		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)},
+		{"TranscriptSegmentRef", new(schema.TranscriptSegmentRef)},
+		{"TranscriptSegment", new(schema.TranscriptSegment)},
+		{"TranscriptTurn", new(schema.TranscriptTurn)},
+		{"TranscriptWindow", new(schema.TranscriptWindow)},
 	}
 
 	jsr := r.JSONSchemaReflector()
-	for _, p := range wsPayloads {
+	for _, p := range payloads {
 		s, err := jsr.Reflect(p.val, jsonschema.CollectDefinitions(
 			func(name string, defSchema jsonschema.Schema) {
 				sm, smErr := defSchema.ToSchemaOrBool().ToSimpleMap()

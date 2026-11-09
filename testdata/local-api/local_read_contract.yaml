@@ -38,6 +38,15 @@ required_names:
   - teammate-name-control-character
   - teammate-only-in-session
   - teammate-only-in-sync
+  - quality-page
+  - transcript-segment-directory
+  - transcript-segment
+  - transcript-window
+  - session-detail-header
+  - session-detail-header-payload
+  - detail-read-metadata
+  - detail-read-omitted-metadata
+  - detail-read-empty-medians
 round_trip:
   cases:
     - name: flat-detail-root
@@ -77,8 +86,8 @@ round_trip:
       provenance: {source: requirement, ref: "helper-only context uses no fabricated transcript"}
       mutation: {description: "selects only the context_container sum arm"}
     - name: typed-member-array
-      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}},{"kind":"transcript","transcript":{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}}],"page":1,"limit":20,"total":2}' }
-      expected: {valid: true, requiredKeys: [members, page, limit, total], forbiddenKeys: []}
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}},{"kind":"transcript","transcript":{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}}],"nextItems":[],"page":1,"perPage":25,"total":2,"revision":"4213"}' }
+      expected: {valid: true, requiredKeys: [members, nextItems, page, perPage, total, revision], forbiddenKeys: [limit, totalItems]}
       classification: must-pass
       provenance: {source: requirement, ref: "member response retains concrete LocalSessionRow values"}
       mutation: {description: "contains two typed saved helper identities"}
@@ -89,8 +98,8 @@ round_trip:
       provenance: {source: requirement, ref: "the Local API 0.15.0 omitted-view sync response, which adds previouslyPushed to the sync_handler body"}
       mutation: {description: "uses the concrete legacy sessions envelope and complete producer row"}
     - name: grouped-list-values
-      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"p1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0}},"helperGroups":[{"groupId":"hg_p1","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}],"page":1,"limit":2,"totalItems":3,"ordinarySessionTotal":3,"helperThreadTotal":3}' }
-      expected: {valid: true, requiredKeys: [items, page, limit, totalItems, ordinarySessionTotal, helperThreadTotal], forbiddenKeys: [sessions]}
+      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"p1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0}},"helperGroups":[{"groupId":"hg_p1","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}],"nextItems":[],"page":1,"perPage":25,"total":3,"revision":"4213","ordinarySessionTotal":3,"helperThreadTotal":3}' }
+      expected: {valid: true, requiredKeys: [items, nextItems, page, perPage, total, revision, ordinarySessionTotal, helperThreadTotal], forbiddenKeys: [sessions, limit, totalItems]}
       classification: must-pass
       provenance: {source: requirement, ref: "independent grouped totals and nested helper count"}
       mutation: {description: "retains page totals three/three/three and owner helper count two"}
@@ -136,6 +145,60 @@ round_trip:
       classification: must-pass
       provenance: {source: requirement, ref: "the list summary and the sync summary carry the same recorded teammate"}
       mutation: {description: "supplies one equal teammate identity on both summaries of a sync row"}
+    - name: quality-page
+      input: {kind: quality-page, json: '{"items":[{"id":"q1","date":"2026-11-06","project":"p","totalTokens":280392,"turnCount":47,"outcome":"resolved","specQualityScore":72,"retryTokensWasted":1200,"withinSessionReverts":0}],"nextItems":[],"page":1,"perPage":25,"total":1,"revision":"4213","summary":{"totalSessions":1,"totalContributors":1,"totalProjects":1,"sessionsPerWeek":[{"week":"2026-11-02","count":1}],"weeklyActiveContributors":[{"week":"2026-11-02","contributors":1}],"returningContributorRate":{"total":1,"returning":0,"rate":0},"longestStreak":{"weeks":1,"startWeek":"2026-11-02","endWeek":"2026-11-02"},"newContributorVelocity":[{"week":"2026-11-02","newContributors":1}],"sessionToCommitRate":{"total":1,"withCommit":1,"rate":1},"avgDurationPerActiveWeek":[{"week":"2026-11-02","avgDurationMins":23.4,"sessions":1}],"outcomeDistribution":{"resolved":1,"partial":0,"failed":0,"unknown":0,"total":1},"sessionStats":{"durationMins":{"count":1,"median":18.5,"p90":18.5},"totalTokens":{"count":1,"median":280392,"p90":280392},"turnCount":{"count":1,"median":47,"p90":47},"toolCallCount":{"count":1,"median":0,"p90":0}},"perContributorBreakdown":[{"contributorId":"local","sessions":1,"activeWeeks":1,"totalTokens":280392,"totalDurationMins":23,"totalTurns":47,"totalToolCalls":0,"sessionsWithCommit":1,"totalCommits":1,"outcomes":{"resolved":1,"partial":0,"failed":0,"unknown":0,"total":1},"firstSeen":"2026-11-02","lastSeen":"2026-11-02"}]}}'}
+      expected: {valid: true, requiredKeys: [items, nextItems, page, perPage, total, revision, summary], forbiddenKeys: []}
+      classification: must-pass
+      provenance: {source: requirement, ref: "quality rides the page that shows the rows; the summary is the full analytics bundle"}
+      mutation: {description: "carries one quality row and the full ProjectAnalytics summary"}
+    - name: detail-read-metadata
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"title":"stored title","medians":{"retryShare":0.1,"specQualityScore":80,"withinSessionReverts":2},"revision":"4213"}' }
+      expected: {valid: true, requiredKeys: [id, turns, title, medians, revision], forbiddenKeys: [detail, sessionDetail]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the local read adds a stored title, the personal-medians baseline, and the store revision"}
+      mutation: {description: "carries all three read additions beside the durable detail fields"}
+    - name: detail-read-omitted-metadata
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[]}' }
+      expected: {valid: true, requiredKeys: [id, turns], forbiddenKeys: [detail, sessionDetail, title, medians, revision]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an absent title, baseline, or revision is omitted, never emitted as an empty value"}
+      mutation: {description: "omits all three read additions from an otherwise valid detail read"}
+    - name: detail-read-empty-medians
+      input: {kind: detail, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":0,"toolCallCount":0,"turns":[],"medians":{}}' }
+      expected: {valid: true, requiredKeys: [id, turns, medians], forbiddenKeys: [detail, sessionDetail, title, revision]}
+      classification: must-pass
+      provenance: {source: boundary, ref: "a medians sample with no eligible metric yields an empty object, not a rejection"}
+      mutation: {description: "carries a present medians object with no metric values"}
+    - name: transcript-segment-directory
+      input: {kind: segment-directory, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","totalTurns":55,"totalSegments":2,"segments":[{"index":0,"firstTurn":4,"lastTurn":40,"byteLength":917504},{"index":1,"firstTurn":44,"lastTurn":149,"byteLength":655360}]}' }
+      expected: {valid: true, requiredKeys: [sessionId, revision, totalTurns, totalSegments, segments], forbiddenKeys: [turns, position, page, perPage, directoryPage]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the directory is the transcript's only global index"}
+      mutation: {description: "carries one ref per segment plus the cut's scalars and no per-turn row"}
+    - name: transcript-segment
+      input: {kind: segment, json: '{"index":0,"revision":"4213","firstTurn":4,"lastTurn":21,"byteLength":7,"hasOlder":false,"hasNewer":true,"turns":[{"index":4,"role":"user","content":"hello","timestamp":"2026-11-09T00:00:00Z","depth":0,"truncated":false,"byteLength":5},{"index":21,"role":"assistant","content":"ok","timestamp":"2026-11-09T00:01:00Z","depth":0,"truncated":false,"byteLength":2}]}' }
+      expected: {valid: true, requiredKeys: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns], forbiddenKeys: [position, page, perPage]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "one segment of whole turns with the declared range equal to the turns"}
+      mutation: {description: "serves two whole turns in one segment"}
+    - name: transcript-window
+      input: {kind: window, json: '{"sessionId":"ses_3cd91f52effeXd3QAJ54jOyzv5","revision":"4213","requestedAnchor":72,"anchorTurn":72,"span":10,"firstTurn":4,"lastTurn":118,"segments":[0,1],"hasOlder":false,"hasNewer":true}' }
+      expected: {valid: true, requiredKeys: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer], forbiddenKeys: [turns, content, toolCalls, position, page, perPage]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the window is a descriptor only; it names the covering segment run and carries no content"}
+      mutation: {description: "describes an anchored window from turn 4 to 118 over segments zero and one"}
+    - name: session-detail-header
+      input: {kind: detail-header, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":55,"toolCallCount":91,"earlierHistory":["uncertain_migrated"]}' }
+      expected: {valid: true, requiredKeys: [id, harness, startTime, endTime, durationMins, totalTokens, tokensIn, tokensOut, turnCount, toolCallCount], forbiddenKeys: [turns, nativeMetadata]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the header is a metadata-only projection, not a replacement for the durable payload"}
+      mutation: {description: "carries session metadata and earlier-history state with no turns"}
+    - name: session-detail-header-payload
+      input: {kind: detail-header-payload, json: '{"id":"ses_3cd91f52effeXd3QAJ54jOyzv5","harness":"claude-code","startTime":"2026-11-09T00:00:00Z","endTime":"2026-11-09T00:10:00Z","durationMins":10,"totalTokens":100,"tokensIn":60,"tokensOut":40,"turnCount":55,"toolCallCount":91,"relationshipNavigation":[{"kind":"started_by","status":"unknown"}],"teammate":{"team":"review-crew","name":"parser-reviewer","evidence":"native_dynamic_workflow"}}' }
+      expected: {valid: true, requiredKeys: [id, relationshipNavigation, teammate], forbiddenKeys: [turns, nativeMetadata]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the session_detail frame is the header plus local navigation and teammate evidence"}
+      mutation: {description: "carries one unresolved relationship link and one exact teammate identity beside the header"}
 validation:
   cases:
     - name: mismatched-sync-count
@@ -181,13 +244,13 @@ validation:
       provenance: {source: boundary, ref: "route variants are exclusive"}
       mutation: {description: "adds a search match to an otherwise valid sync row"}
     - name: invalid-nested-list-row
-      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":-1,"toolCallCount":0}}}],"page":1,"limit":1,"totalItems":1,"ordinarySessionTotal":1,"helperThreadTotal":0}' }
+      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":-1,"toolCallCount":0}}}],"page":1,"perPage":25,"total":1,"revision":"4213","nextItems":[],"ordinarySessionTotal":1,"helperThreadTotal":0}' }
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: "list validator traverses rows"}
       mutation: {description: "places one negative count inside a grouped list row"}
     - name: invalid-nested-member-row
-      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}}],"page":1,"limit":1,"total":1}' }
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}}],"page":1,"perPage":25,"total":1,"revision":"4213","nextItems":[]}' }
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: "member validator traverses rows"}

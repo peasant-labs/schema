@@ -66,13 +66,13 @@ types:
   - {go_name: VillageGroupViewerRole, disposition: alias, reason: full release compatibility window}
   - {go_name: LocalRemoteContributionAttempt, disposition: catalog, component: LocalRemoteContributionAttempt, reason: retained owner contribution attempt evidence}
   - {go_name: VillageContributionAttemptReconciliation, disposition: runtime-only, reason: result classification for the Go reconciliation helper rather than a serialized response field}
-  - {go_name: PageToken, disposition: catalog, component: PageToken, reason: opaque forward continuation}
-  - {go_name: Page, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
-  - {go_name: PageRequest, disposition: runtime-only, reason: Go-only domain reader input}
-  - {go_name: PageReader, disposition: runtime-only, reason: Go-only domain reader interface}
+  - {go_name: PageSize, disposition: catalog, component: PageSize, reason: schema-owned 25/50/100 page size}
+  - {go_name: OffsetPage, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
   - {go_name: LocalSyncPublicationFilter, disposition: catalog, component: LocalSyncPublicationFilter, reason: root publication filter}
   - {go_name: LocalSyncSessionRow, disposition: catalog, component: LocalSyncSessionRow, reason: hydrated sync row}
+  - {go_name: LocalSyncSessionTotals, disposition: catalog, component: LocalSyncSessionTotals, reason: root session count beside one offset page}
   - {go_name: LocalSyncSessionPage, disposition: catalog, component: LocalSyncSessionPage, reason: concrete generic sync page}
+  - {go_name: LocalSessionPage, disposition: catalog, component: LocalSessionPage, reason: concrete generic flat-session page}
   - {go_name: LocalSyncProjectOption, disposition: catalog, component: LocalSyncProjectOption, reason: stored root project identity}
   - {go_name: LocalSyncProjectOptions, disposition: catalog, component: LocalSyncProjectOptions, reason: complete metadata-only root picker}
   - {go_name: LocalSyncSessionsQuery, disposition: runtime-only, reason: Local operation query parameters rather than a JSON body}
@@ -299,6 +299,26 @@ types:
     disposition: catalog
     component: QualitySession
     reason: public wire or domain contract type
+  - {go_name: PersonalMedians, disposition: catalog, component: PersonalMedians, reason: library-wide personal medians baseline}
+  - {go_name: ProjectAnalytics, disposition: catalog, component: ProjectAnalytics, reason: project dashboard analytics bundle}
+  - {go_name: QualityPage, disposition: catalog, component: QualityPage, reason: offset quality page with the analytics summary}
+  - {go_name: WeekCount, disposition: catalog, component: WeekCount, reason: per-week session count bucket}
+  - {go_name: WeekContributors, disposition: catalog, component: WeekContributors, reason: per-week active contributor bucket}
+  - {go_name: ReturningContributorRate, disposition: catalog, component: ReturningContributorRate, reason: returning contributor rate}
+  - {go_name: LongestStreak, disposition: catalog, component: LongestStreak, reason: longest consecutive active-week run}
+  - {go_name: WeekNewContributors, disposition: catalog, component: WeekNewContributors, reason: per-week new contributor bucket}
+  - {go_name: SessionToCommitRate, disposition: catalog, component: SessionToCommitRate, reason: session to commit rate}
+  - {go_name: WeekAvgDuration, disposition: catalog, component: WeekAvgDuration, reason: per-active-week average duration bucket}
+  - {go_name: OutcomeDistribution, disposition: catalog, component: OutcomeDistribution, reason: session outcome tally}
+  - {go_name: MedianP90, disposition: catalog, component: MedianP90, reason: typical value pair}
+  - {go_name: AnalyticsSessionStats, disposition: catalog, component: AnalyticsSessionStats, reason: library analytics typical values}
+  - {go_name: ContributorBreakdown, disposition: catalog, component: ContributorBreakdown, reason: per-contributor tally}
+  - go_name: QualityMedianCase
+    disposition: fixture-only
+    reason: canonical personal-medians fixture case
+  - go_name: QualityMedianSession
+    disposition: fixture-only
+    reason: canonical personal-medians fixture sample row
   - go_name: ReviewSuggestion
     disposition: catalog
     component: ReviewSuggestion
@@ -1300,6 +1320,13 @@ types:
   - {go_name: HelperGroupSummary, disposition: catalog, component: HelperGroupSummary, reason: public session graph and grouped read contract}
   - {go_name: HelperContextSummary, disposition: catalog, component: HelperContextSummary, reason: public session graph and grouped read contract}
   - {go_name: SessionDetailReadPayload, disposition: catalog, component: SessionDetailReadPayload, reason: public session graph and grouped read contract}
+  - {go_name: SessionDetailHeader, disposition: catalog, component: SessionDetailHeader, reason: "metadata-only session projection, distinct from the durable content payload"}
+  - {go_name: SessionDetailHeaderPayload, disposition: catalog, component: SessionDetailHeaderPayload, reason: "session_detail frame body: metadata header plus local navigation and teammate evidence"}
+  - {go_name: TranscriptSegmentDirectory, disposition: catalog, component: TranscriptSegmentDirectory, reason: "transcript global index: one ref per segment, no per-turn rows, capped at 10000 refs"}
+  - {go_name: TranscriptSegmentRef, disposition: catalog, component: TranscriptSegmentRef, reason: "one segment extent: ordinal plus closed sparse turn-identity range"}
+  - {go_name: TranscriptSegment, disposition: catalog, component: TranscriptSegment, reason: "one segment of turn content and its own facts, cut on complete entries"}
+  - {go_name: TranscriptTurn, disposition: catalog, component: TranscriptTurn, reason: "one served turn: the single TurnDetail definition plus truncated and pre-bound byteLength"}
+  - {go_name: TranscriptWindow, disposition: catalog, component: TranscriptWindow, reason: "anchor window descriptor: extent and covering segment ordinals, no turn content"}
   - {go_name: SessionTeammate, disposition: catalog, component: SessionTeammate, reason: "local teammate identity evidence for a session whose parent transcript records the spawn"}
   - {go_name: SessionTeammateEvidence, disposition: catalog, component: SessionTeammateEvidence, reason: "closed local teammate evidence menu, kept out of the shared session graph evidence set"}
   - go_name: SessionTeammateSchemaProbe

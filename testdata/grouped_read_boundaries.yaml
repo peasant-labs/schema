@@ -100,8 +100,10 @@ cases:
                 session: &localSession {id: g1, harness: codex, startTime: '2026-09-08T00:00:00Z', durationMins: 1, totalTokens: 13, turnCount: 5, toolCallCount: 0, inputSubmissionCount: 1}
               helperGroups: [&nestedGroup {groupId: hg_g1, purpose: helper_review, helperThreadCount: 1, memberScope: scope_g1}]
           page: 1
-          limit: 1
+          perPage: 25
           total: 1
+          revision: "4213"
+          nextItems: []
       expected: {valid: true}
     - name: nested-village-owner
       classification: must-pass
@@ -226,7 +228,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'duplicate saved identity cannot increase direct total'}
-      input: {schema: LocalHelperMembersPayload, payload: {members: [*localG1, *localG1], page: 1, limit: 2, total: 2}}
+      input: {schema: LocalHelperMembersPayload, payload: {members: [*localG1, *localG1], page: 1, perPage: 25, total: 2, revision: "4213", nextItems: []}}
       expected: {valid: false}
     - name: village-duplicate-member
       classification: must-fail
@@ -250,7 +252,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'no matching authorized saved helpers yields an empty page with measured zero total'}
-      input: {schema: LocalHelperMembersPayload, payload: {members: [], page: 2, limit: 1, total: 0}}
+      input: {schema: LocalHelperMembersPayload, payload: {members: [], page: 2, perPage: 25, total: 0, revision: "4213", nextItems: []}}
       expected: {valid: true}
     - name: village-empty-page-zero-total
       classification: must-pass
@@ -274,13 +276,13 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'null total cannot coerce to measured zero'}
-      input: {schema: LocalHelperMembersPayload, payload: {members: [], page: 1, limit: 1, total: null}}
+      input: {schema: LocalHelperMembersPayload, payload: {members: [], page: 1, perPage: 25, total: null, revision: "4213", nextItems: []}}
       expected: {valid: false}
     - name: village-null-total
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'public null total cannot coerce to zero'}
-      input: {schema: VillageHelperMembersPayload, payload: {members: [], page: 1, limit: 1, total: null}}
+      input: {schema: VillageHelperMembersPayload, payload: {members: [], page: 1, limit: 25, total: null}}
       expected: {valid: false}
     - name: local-unsafe-total
       classification: must-fail
@@ -297,8 +299,42 @@ cases:
     - name: local-member-over-limit
       classification: must-fail
       provenance: *requirement
-      mutation: {description: 'two distinct helper rows cannot fit a one-row page'}
-      input: {schema: LocalHelperMembersPayload, payload: {members: [*localG1, {kind: transcript, transcript: {session: {<<: *localSession, id: g2}}}], page: 1, limit: 1, total: 2}}
+      mutation: {description: 'twenty-six distinct helper rows cannot fit a twenty-five-row page'}
+      input:
+        schema: LocalHelperMembersPayload
+        payload:
+          members:
+            - {<<: *localG1, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g2}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g3}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g4}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g5}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g6}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g7}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g8}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g9}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g10}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g11}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g12}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g13}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g14}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g15}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g16}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g17}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g18}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g19}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g20}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g21}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g22}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g23}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g24}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g25}}, helperGroups: []}
+            - {<<: *localG1, transcript: {session: {<<: *localSession, id: g26}}, helperGroups: []}
+          page: 1
+          perPage: 25
+          total: 26
+          revision: "4213"
+          nextItems: []
       expected: {valid: false}
     - name: village-member-over-limit
       classification: must-fail
@@ -423,7 +459,7 @@ cases:
       classification: must-pass
       provenance: *requirement
       mutation: {description: 'P has one direct helper; total saved helper identities includes nested G2 without another top container'}
-      input: {schema: LocalSessionListPayload, payload: {items: [{kind: transcript, transcript: {session: {<<: *localSession, id: p}}, helperGroups: [{groupId: hg_p, purpose: helper_review, helperThreadCount: 1, memberScope: scope_p}]}], page: 1, limit: 1, totalItems: 1, ordinarySessionTotal: 1, helperThreadTotal: 2}}
+      input: {schema: LocalSessionListPayload, payload: {items: [{kind: transcript, transcript: {session: {<<: *localSession, id: p}}, helperGroups: [{groupId: hg_p, purpose: helper_review, helperThreadCount: 1, memberScope: scope_p}]}], page: 1, perPage: 25, total: 1, revision: "4213", nextItems: [], ordinarySessionTotal: 1, helperThreadTotal: 2}}
       expected: {valid: true}
     - name: nested-village-root-counts
       classification: must-pass
@@ -557,7 +593,7 @@ cases:
       classification: must-fail
       provenance: *requirement
       mutation: {description: 'distinct saved members cannot both claim the same immediate-owner group'}
-      input: {schema: LocalHelperMembersPayload, payload: {members: [*localG1, {<<: *localG1, transcript: {session: {<<: *localSession, id: g2}}}], page: 1, limit: 2, total: 2}}
+      input: {schema: LocalHelperMembersPayload, payload: {members: [*localG1, {<<: *localG1, transcript: {session: {<<: *localSession, id: g2}}}], page: 1, perPage: 25, total: 2, revision: "4213", nextItems: []}}
       expected: {valid: false}
     - name: village-group-id-across-members
       classification: must-fail

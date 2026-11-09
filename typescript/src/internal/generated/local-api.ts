@@ -537,7 +537,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Omitted view preserves the legacy flat response; view=grouped preserves helper groups and their membership scopes. view=home returns items/next forward pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection is not applied as a direct browsing eligibility predicate: it excludes no root, child, or project option that the view's own eligibility rules admit, and counts and empty states derive from the eligible browsing set the caller's explicit filters select. Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging, and an explicit publication=auto filter may reflect legitimate hook eligibility, so that filtered view can change with the selection while no unfiltered stored row is added or removed. Only empty next means done: short or empty items may continue. maxItems omitted or zero defaults to 25, positive values clamp to 100; negative, malformed or repeated values return 400. pageToken is opaque and at most 4096 bytes; malformed, unsupported or stale-scope tokens return 400 with recovery guidance to discard continuation and restart, never a usable page. A token's scope is the view, the parent, the root project or publication filter, and the caller's account; it does not include the page size, which a caller may change independently, or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home and are rejected for other views. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. Tokens are not credentials or snapshots: a continuation stays valid when publication metadata changes which rows a filter selects. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success. */
+        /** @description Omitted view serves the same bounded offset Home page as view=home; view=grouped preserves helper groups and their membership scopes. view=home returns items/nextItems offset pages of stored authoritative roots or general immediate children of parentSessionId, ordered by start time descending then local ID ascending. The saved ingestion selection is not applied as a direct browsing eligibility predicate: it excludes no root, child, or project option that the view's own eligibility rules admit, and counts and empty states derive from the eligible browsing set the caller's explicit filters select. Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging, and an explicit publication=auto filter may reflect legitimate hook eligibility, so that filtered view can change with the selection while no unfiltered stored row is added or removed. Only empty nextItems means done: short or empty items may continue. maxItems omitted or zero defaults to 25; only 25, 50, and 100 are accepted, and negative, non-member, malformed or repeated values return 400. page is one-based and omitted defaults to 1. pageToken is retired: an empty value is absent, and a nonempty value returns 400 with recovery guidance to drop the continuation and request a page. Offset paging is not snapshot-stable; a new session can shift rows. Root project/publication filters apply before paging; child calls reject them. Unknown parents return 404 without child IDs. Page hydration is limited to returned IDs and includes stored titles, bounded redaction-safe previews and canonical publication state without audience. Auto filtering may inspect scanned candidate repositories. Paging/filter parameters require view=home or an omitted view and are rejected for grouped and project-options. view=project-options returns the complete metadata-only stored root project picker, sorted by name then hash, deduplicated by hash and independent of publication/current project filters; no counts, Git summaries or enrichment. Reauthorize every request. A hydrated row still needs the saved selection for its publication metadata: when that metadata cannot be determined the read returns 500 with an actionable cause instead of omitting the row or reporting a fabricated flag, while a selection that merely excludes a session neither fails the read nor omits the row. Store failures return 500 and unavailable readers 503, never empty success. */
         get: operations["listSyncSessionsGrouped"];
         put?: never;
         post?: never;
@@ -648,6 +648,7 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
+        LocalSessionPage: Schema.LocalSessionPage;
         LocalSyncProjectOption: Schema.LocalSyncProjectOption;
         LocalSyncProjectOptions: Schema.LocalSyncProjectOptions;
         LocalSyncSessionPage: Schema.LocalSyncSessionPage;
@@ -1135,6 +1136,7 @@ export interface components {
          */
         SchemaLocalSyncPublicationFilter: Schema.LocalSyncPublicationFilter;
         SchemaLocalSyncSessionRow: Schema.LocalSyncSessionRow;
+        SchemaLocalSyncSessionTotals: Schema.LocalSyncSessionTotals;
         SchemaLocalSyncSummary: Schema.LocalSyncSummary;
         SchemaLocalVillageCollective: Schema.LocalVillageCollective;
         SchemaLocalVillageCollectivesResponse: Schema.LocalVillageCollectivesResponse;
@@ -1222,6 +1224,16 @@ export interface components {
          * @enum {string}
          */
         SchemaOperationIssueCode: Schema.OperationIssueCode;
+        /**
+         * Page Size
+         * @description Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.
+         * @example 25
+         * @example 50
+         * @example 100
+         * @enum {integer}
+         */
+        SchemaPageSize: Schema.PageSize;
+        SchemaPersonalMedians: Schema.PersonalMedians;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -1559,6 +1571,8 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        SchemaTranscriptTurn: Schema.TranscriptTurn;
         SchemaTurnDetail: Schema.TurnDetail;
         /**
          * Type Origin
@@ -1684,8 +1698,14 @@ export interface components {
         SchemaVillageUserCollective: Schema.VillageUserCollective;
         SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
+        SessionDetailHeaderPayload: Schema.SessionDetailHeaderPayload;
         SessionDetailPayload: Schema.SessionDetailPayload;
         SessionDetailReadPayload: Schema.SessionDetailReadPayload;
+        TranscriptSegment: Schema.TranscriptSegment;
+        TranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
+        TranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        TranscriptTurn: Schema.TranscriptTurn;
+        TranscriptWindow: Schema.TranscriptWindow;
         TrendsPayload: Schema.TrendsPayload;
         UICapabilitiesResponse: Schema.UICapabilitiesResponse;
     };
@@ -2122,8 +2142,8 @@ export interface operations {
                 scope: string;
                 /** @description One-based member page */
                 page?: number;
-                /** @description Maximum members per page */
-                limit?: number;
+                /** @description Members per page: 25, 50, or 100 */
+                perPage?: components["schemas"]["SchemaPageSize"];
             };
             header?: never;
             path: {
@@ -2657,11 +2677,13 @@ export interface operations {
     listSyncSessionsGrouped: {
         parameters: {
             query?: {
-                /** @description Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects */
+                /** @description Omit for the Home offset page; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects */
                 view?: "grouped" | "home" | "project-options";
-                /** @description Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected */
+                /** @description Home only: omitted or zero defaults to 25; 25, 50, and 100 are accepted; 26, 101, and negative values are refused */
                 maxItems?: number;
-                /** @description Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected */
+                /** @description Home only: one-based page number; omitted defaults to 1 */
+                page?: number;
+                /** @description Home only: retired continuation; omitted or empty is absent; a nonempty value is refused so an old client can recover */
                 pageToken?: string;
                 parentSessionId?: string;
                 projectHash?: components["schemas"]["SchemaProjectHash"];

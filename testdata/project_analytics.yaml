@@ -1,0 +1,54 @@
+# The exact ProjectAnalytics field set. The bundle is a schema type rather than
+# a presentation typedef, so the Go struct, the generated TypeScript type, and
+# the dashboard typedef must all carry these names. Order is the declaration
+# order; membership is the contract.
+types:
+  - name: ProjectAnalytics
+    fields:
+      - totalSessions
+      - totalContributors
+      - totalProjects
+      - sessionsPerWeek
+      - weeklyActiveContributors
+      - returningContributorRate
+      - longestStreak
+      - newContributorVelocity
+      - sessionToCommitRate
+      - avgDurationPerActiveWeek
+      - outcomeDistribution
+      - sessionStats
+      - perContributorBreakdown
+  - name: WeekCount
+    fields: [week, count]
+  - name: WeekContributors
+    fields: [week, contributors]
+  - name: ReturningContributorRate
+    fields: [total, returning, rate]
+  - name: LongestStreak
+    fields: [weeks, startWeek, endWeek]
+  - name: WeekNewContributors
+    fields: [week, newContributors]
+  - name: SessionToCommitRate
+    fields: [total, withCommit, rate]
+  - name: WeekAvgDuration
+    fields: [week, avgDurationMins, sessions]
+  - name: OutcomeDistribution
+    fields: [resolved, partial, failed, unknown, total]
+  - name: MedianP90
+    fields: [count, median, p90]
+  - name: AnalyticsSessionStats
+    fields: [durationMins, totalTokens, turnCount, toolCallCount]
+  - name: ContributorBreakdown
+    fields:
+      - contributorId
+      - sessions
+      - activeWeeks
+      - totalTokens
+      - totalDurationMins
+      - totalTurns
+      - totalToolCalls
+      - sessionsWithCommit
+      - totalCommits
+      - outcomes
+      - firstSeen
+      - lastSeen

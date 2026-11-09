@@ -3194,8 +3194,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -3344,8 +3346,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -3478,8 +3482,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -3560,8 +3566,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -3745,8 +3753,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 2,
-              "total": 2
+              "perPage": 25,
+              "total": 2,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -3996,8 +4006,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4136,8 +4148,10 @@ export const canonicalSessionGraphFixtures = {
             "payload": {
               "members": [],
               "page": 2,
-              "limit": 1,
-              "total": 0
+              "perPage": 25,
+              "total": 0,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4182,8 +4196,10 @@ export const canonicalSessionGraphFixtures = {
             "payload": {
               "members": null,
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4228,8 +4244,10 @@ export const canonicalSessionGraphFixtures = {
             "payload": {
               "members": [],
               "page": 1,
-              "limit": 1,
-              "total": null
+              "perPage": 25,
+              "total": null,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4251,7 +4269,7 @@ export const canonicalSessionGraphFixtures = {
             "payload": {
               "members": [],
               "page": 1,
-              "limit": 1,
+              "limit": 25,
               "total": null
             }
           },
@@ -4298,8 +4316,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 9007199254740992
+              "perPage": 25,
+              "total": 9007199254740992,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4425,7 +4445,7 @@ export const canonicalSessionGraphFixtures = {
             "ref": "immediate-owner grouped read contract"
           },
           "mutation": {
-            "description": "two distinct helper rows cannot fit a one-row page"
+            "description": "twenty-six distinct helper rows cannot fit a twenty-five-row page"
           },
           "input": {
             "schema": "LocalHelperMembersPayload",
@@ -4445,14 +4465,7 @@ export const canonicalSessionGraphFixtures = {
                       "inputSubmissionCount": 1
                     }
                   },
-                  "helperGroups": [
-                    {
-                      "groupId": "hg_g1",
-                      "purpose": "helper_review",
-                      "helperThreadCount": 1,
-                      "memberScope": "scope_g1"
-                    }
-                  ]
+                  "helperGroups": []
                 },
                 {
                   "kind": "transcript",
@@ -4467,12 +4480,399 @@ export const canonicalSessionGraphFixtures = {
                       "toolCallCount": 0,
                       "inputSubmissionCount": 1
                     }
-                  }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g3",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g4",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g5",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g6",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g7",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g8",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g9",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g10",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g11",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g12",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g13",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g14",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g15",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g16",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g17",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g18",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g19",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g20",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g21",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g22",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g23",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g24",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g25",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
+                },
+                {
+                  "kind": "transcript",
+                  "transcript": {
+                    "session": {
+                      "id": "g26",
+                      "harness": "codex",
+                      "startTime": "2026-09-08T00:00:00Z",
+                      "durationMins": 1,
+                      "totalTokens": 13,
+                      "turnCount": 5,
+                      "toolCallCount": 0,
+                      "inputSubmissionCount": 1
+                    }
+                  },
+                  "helperGroups": []
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 2
+              "perPage": 25,
+              "total": 26,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4708,8 +5108,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -4867,8 +5269,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -5017,8 +5421,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -5175,8 +5581,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -5313,8 +5721,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -5676,8 +6086,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "totalItems": 1,
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": [],
               "ordinarySessionTotal": 1,
               "helperThreadTotal": 2
             }
@@ -6057,8 +6469,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 2,
-              "limit": 1,
-              "total": 2
+              "perPage": 25,
+              "total": 2,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -6438,8 +6852,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -6590,8 +7006,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -6660,8 +7078,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 2,
-              "total": 2
+              "perPage": 25,
+              "total": 2,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -6905,8 +7325,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7063,8 +7485,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7238,8 +7662,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7302,8 +7728,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7376,8 +7804,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7450,8 +7880,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7507,8 +7939,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {
@@ -7564,8 +7998,10 @@ export const canonicalSessionGraphFixtures = {
                 }
               ],
               "page": 1,
-              "limit": 1,
-              "total": 1
+              "perPage": 25,
+              "total": 1,
+              "revision": "4213",
+              "nextItems": []
             }
           },
           "expected": {

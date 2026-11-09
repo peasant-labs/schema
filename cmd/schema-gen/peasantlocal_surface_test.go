@@ -36,8 +36,6 @@ const (
 	localAPIAnchorHomeCountsFollowEligibleFilters    localAPIDescriptionAnchor = "home_counts_follow_eligible_filters"
 	localAPIAnchorHomeIndependentBounds              localAPIDescriptionAnchor = "home_independent_bounds"
 	localAPIAnchorUnknownParentOnly404               localAPIDescriptionAnchor = "unknown_parent_only_404"
-	localAPIAnchorTokenScopeExcludesSelection        localAPIDescriptionAnchor = "token_scope_excludes_ingestion_selection"
-	localAPIAnchorTokenScopeExcludesPageSize         localAPIDescriptionAnchor = "token_scope_excludes_page_size"
 	localAPIAnchorMetadataFailsClosed                localAPIDescriptionAnchor = "publication_metadata_fails_closed"
 	localAPIAnchorMemberScopeExcludesSelection       localAPIDescriptionAnchor = "member_scope_excludes_ingestion_selection"
 	localAPIAnchorMemberScopeKeepsRouteEligibility   localAPIDescriptionAnchor = "member_scope_keeps_route_eligibility"
@@ -63,8 +61,6 @@ var allLocalAPIDescriptionAnchors = []localAPIDescriptionAnchor{
 	localAPIAnchorPublicationsNotSelectionFiltered,
 	localAPIAnchorSessionByIDNotSelectionFiltered,
 	localAPIAnchorSummariesReadNotNarrowed,
-	localAPIAnchorTokenScopeExcludesPageSize,
-	localAPIAnchorTokenScopeExcludesSelection,
 	localAPIAnchorTranscriptByIDNotSelectionFiltered,
 	localAPIAnchorUnknownParentOnly404,
 }

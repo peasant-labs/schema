@@ -17,3 +17,8 @@ required_names:
   - pull request attachment
   - update user settings request
   - session pull request row
+  - local sync session page
+  - local flat session page
+  - session detail read payload
+  - transcript turn row
+  - session detail header payload

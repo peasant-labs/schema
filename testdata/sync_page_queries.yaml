@@ -1,11 +1,11 @@
-required_names: [legacy, grouped, project-options, defaults, zero-default, positive-cap, clamp-oversized, children, child-project-refused, child-all-refused, empty-parent, negative-max, malformed-max, repeated-max, repeated-token, token-at-cap, oversized-token, legacy-max-refused, grouped-token-refused, options-filter-refused, unknown-view, unknown-filter, malformed-project, continuation]
+required_names: [legacy, grouped, project-options, defaults, zero-default, positive-cap, accept-50, reject-oversized, children, child-project-refused, child-all-refused, empty-parent, reject-negative, malformed-max, repeated-max, repeated-token, token-with-page, oversized-token, omitted-view-is-home, empty-token-absent, options-filter-refused, unknown-view, unknown-filter, malformed-project, continuation, reject-26, grouped-max-refused, token-4096-alone, options-max-refused, reject-page-zero, reject-page-malformed]
 cases:
   - name: legacy
     input: {query: ""}
-    expected: {valid: true}
+    expected: {valid: true, max_items: 25, page: 1}
     classification: must-pass
-    provenance: {source: requirement, ref: "legacy sync compatibility"}
-    mutation: {description: "omitted view retains flat behavior"}
+    provenance: {source: requirement, ref: "the omitted view serves the Home offset page"}
+    mutation: {description: "an omitted view is Home and defaults to page one of twenty-five rows"}
   - name: grouped
     input: {query: "view=grouped"}
     expected: {valid: true}
@@ -20,31 +20,37 @@ cases:
     mutation: {description: "explicit complete root project projection"}
   - name: defaults
     input: {query: "view=home"}
-    expected: {valid: true, max_items: 25}
+    expected: {valid: true, max_items: 25, page: 1}
     classification: must-pass
     provenance: {source: requirement, ref: "default page maximum"}
-    mutation: {description: "omit maximum and token"}
+    mutation: {description: "omit maximum, page, and token"}
   - name: zero-default
     input: {query: "view=home&maxItems=0&pageToken="}
-    expected: {valid: true, max_items: 25}
+    expected: {valid: true, max_items: 25, page: 1}
     classification: must-pass
     provenance: {source: boundary, ref: "explicit zero default"}
     mutation: {description: "zero and empty token mean the first default page"}
   - name: positive-cap
     input: {query: "view=home&maxItems=100"}
-    expected: {valid: true, max_items: 100}
+    expected: {valid: true, max_items: 100, page: 1}
     classification: must-pass
     provenance: {source: boundary, ref: "page maximum"}
-    mutation: {description: "use exact cap"}
-  - name: clamp-oversized
-    input: {query: "view=home&maxItems=101"}
-    expected: {valid: true, max_items: 100}
+    mutation: {description: "use the largest accepted member"}
+  - name: accept-50
+    input: {query: "view=home&maxItems=50"}
+    expected: {valid: true, max_items: 50, page: 1}
     classification: must-pass
-    provenance: {source: requirement, ref: "positive maxima clamp"}
-    mutation: {description: "oversized positive is capped rather than rejected"}
+    provenance: {source: boundary, ref: "page maximum"}
+    mutation: {description: "use the middle accepted member"}
+  - name: reject-oversized
+    input: {query: "view=home&maxItems=101"}
+    expected: {valid: false, error_contains: "outside the closed set"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "closed page sizes"}
+    mutation: {description: "oversized positive is refused rather than clamped"}
   - name: children
-    input: {query: "view=home&parentSessionId=parent&maxItems=1"}
-    expected: {valid: true, max_items: 1}
+    input: {query: "view=home&parentSessionId=parent&maxItems=25"}
+    expected: {valid: true, max_items: 25, page: 1}
     classification: must-pass
     provenance: {source: requirement, ref: "general child pages"}
     mutation: {description: "request immediate children without root filters"}
@@ -66,7 +72,7 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: "parent ID"}
     mutation: {description: "explicit empty parent"}
-  - name: negative-max
+  - name: reject-negative
     input: {query: "view=home&maxItems=-1"}
     expected: {valid: false, error_contains: negative}
     classification: must-fail
@@ -79,7 +85,7 @@ cases:
     provenance: {source: boundary, ref: "integer maximum"}
     mutation: {description: "noninteger maximum"}
   - name: repeated-max
-    input: {query: "view=home&maxItems=1&maxItems=2"}
+    input: {query: "maxItems=25&maxItems=50"}
     expected: {valid: false, error_contains: repeated}
     classification: must-fail
     provenance: {source: boundary, ref: "unambiguous query"}
@@ -89,31 +95,31 @@ cases:
     expected: {valid: false, error_contains: repeated}
     classification: must-fail
     provenance: {source: boundary, ref: "unambiguous query"}
-    mutation: {description: "repeat continuation"}
-  - name: token-at-cap
-    input: {query: "view=home", token_bytes: 4096}
-    expected: {valid: true, max_items: 25}
-    classification: must-pass
-    provenance: {source: boundary, ref: "4096-byte token cap"}
-    mutation: {description: "exact maximum input length"}
+    mutation: {description: "repeat retired continuation"}
+  - name: token-with-page
+    input: {query: "view=home&page=2&pageToken=opaque-next"}
+    expected: {valid: false, error_contains: retired}
+    classification: must-fail
+    provenance: {source: requirement, ref: "retired continuation"}
+    mutation: {description: "an old client sends a token beside a page number"}
   - name: oversized-token
     input: {query: "view=home", token_bytes: 4097}
     expected: {valid: false, error_contains: "discard continuation and restart"}
     classification: must-fail
     provenance: {source: boundary, ref: "4096-byte token cap"}
     mutation: {description: "exceed token input cap by one byte"}
-  - name: legacy-max-refused
+  - name: omitted-view-is-home
     input: {query: "maxItems=25"}
-    expected: {valid: false, error_contains: "require view=home"}
-    classification: must-fail
-    provenance: {source: requirement, ref: "opt-in paging"}
-    mutation: {description: "do not silently serve a legacy envelope as a page"}
-  - name: grouped-token-refused
-    input: {query: "view=grouped&pageToken="}
-    expected: {valid: false, error_contains: "require view=home"}
-    classification: must-fail
-    provenance: {source: requirement, ref: "opt-in paging"}
-    mutation: {description: "even empty explicit token requires home"}
+    expected: {valid: true, max_items: 25, page: 1}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the omitted view is Home"}
+    mutation: {description: "an omitted view accepts the bounded page maximum"}
+  - name: empty-token-absent
+    input: {query: "maxItems=25&pageToken="}
+    expected: {valid: true, max_items: 25, page: 1}
+    classification: must-pass
+    provenance: {source: boundary, ref: "empty token is absent"}
+    mutation: {description: "an explicit empty token is treated as omitted"}
   - name: options-filter-refused
     input: {query: "view=project-options&publication=published"}
     expected: {valid: false, error_contains: "require view=home"}
@@ -139,8 +145,44 @@ cases:
     provenance: {source: boundary, ref: ProjectHash}
     mutation: {description: "short project hash"}
   - name: continuation
-    input: {query: "view=home&pageToken=opaque-next&maxItems=5&publication=auto&projectHash=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
-    expected: {valid: true, max_items: 5, token: opaque-next}
+    input: {query: "view=home&page=2&maxItems=25"}
+    expected: {valid: true, max_items: 25, page: 2}
     classification: must-pass
-    provenance: {source: requirement, ref: "domain reader continuation"}
-    mutation: {description: "pass opaque token without interpreting domain syntax"}
+    provenance: {source: requirement, ref: "offset continuation by page number"}
+    mutation: {description: "a client requests the second page directly"}
+  - name: reject-26
+    input: {query: "view=home&maxItems=26"}
+    expected: {valid: false, error_contains: "outside the closed set"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "closed page sizes"}
+    mutation: {description: "a non-member value between two members is refused"}
+  - name: grouped-max-refused
+    input: {query: "view=grouped&maxItems=25"}
+    expected: {valid: false, error_contains: "require view=home"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "grouped reads keep their legacy envelope"}
+    mutation: {description: "paging fields are refused on the grouped read"}
+  - name: token-4096-alone
+    input: {query: "view=home", token_bytes: 4096}
+    expected: {valid: false, error_contains: retired}
+    classification: must-fail
+    provenance: {source: boundary, ref: "retired continuation at the byte cap"}
+    mutation: {description: "the byte cap passes and the retired-token refusal answers"}
+  - name: options-max-refused
+    input: {query: "view=project-options&maxItems=25"}
+    expected: {valid: false, error_contains: "require view=home"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "metadata-only project picker"}
+    mutation: {description: "paging fields are refused on project-options"}
+  - name: reject-page-zero
+    input: {query: "view=home&page=0"}
+    expected: {valid: false, error_contains: "below one"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "one-based page number"}
+    mutation: {description: "page zero is refused rather than clamped"}
+  - name: reject-page-malformed
+    input: {query: "view=home&page=abc"}
+    expected: {valid: false, error_contains: "page is malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "integer page number"}
+    mutation: {description: "a noninteger page number is refused"}

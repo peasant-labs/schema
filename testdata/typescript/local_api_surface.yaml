@@ -53,8 +53,6 @@ operations:
       - {name: home_counts_follow_eligible_filters, text: "counts and empty states derive from the eligible browsing set the caller's explicit filters select"}
       - {name: home_independent_bounds, text: "Independent origin, index-readiness, publication, project, parent, and account rules still apply before paging"}
       - {name: unknown_parent_only_404, text: "Unknown parents return 404"}
-      - {name: token_scope_excludes_ingestion_selection, text: "or the saved ingestion selection, so changing that selection leaves an in-flight continuation valid"}
-      - {name: token_scope_excludes_page_size, text: "it does not include the page size, which a caller may change independently"}
       - {name: publication_metadata_fails_closed, text: "when that metadata cannot be determined the read returns 500"}
   - {path: /api/v1/publications, method: get, operation_id: listPublications,
      description_anchors: [{name: publications_not_selection_filtered, text: "This read ignores the saved ingestion and push selection"}]}

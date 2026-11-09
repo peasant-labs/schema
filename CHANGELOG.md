@@ -5,8 +5,35 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Types 0.44.0 adds the transcript read contract: the `TranscriptSegmentDirectory`
+  global index with one `TranscriptSegmentRef` per segment and a 10,000-ref page
+  cap (`directoryPage`/`directoryPerPage` above it), `TranscriptSegment` cut on
+  complete entries, `TranscriptTurn` as the single `TurnDetail` definition plus
+  `truncated` and pre-bound `byteLength`, and the `TranscriptWindow` descriptor
+  that names its contiguous covering segment ordinals without carrying turn
+  content. `SessionDetailHeader` and `SessionDetailHeaderPayload` are the
+  metadata-only projection and its `session_detail` frame; the durable
+  `SessionDetailPayload` keeps its turn content and earlier-history sections. No
+  transcript type carries a page, a perPage, a position, or a per-turn index.
+  The Types and Local API documents also require the promoted fields of
+  `SessionDetailReadPayload`, `SessionDetailHeaderPayload`, and `TranscriptTurn`
+  instead of naming the embedded Go struct, so the emitted schema accepts the
+  wire shape those rows describe.
+
 ### Changed
 
+- Local API 0.29.0 and Types 0.44.0 replace the page and set contract with one
+  `OffsetPage[T]`: `items`, `nextItems`, `page`, `perPage`, `total`, and a
+  decimal `revision`. `LocalSyncSessionPage` embeds it and adds
+  `totals.sessions`; `LocalSessionPage` is the flat page of concrete route rows.
+  `PageSize` is a numeric closed set (25, 50, 100). The grouped
+  `LocalSessionListPayload` and `LocalHelperMembersPayload` carry the same
+  offset fields plus their grouped-only counts, and `LocalSessionRow` gains the
+  optional stored `title`. `Page`, `PageReader`, `PageToken`, and `PageRequest`
+  are deleted; the retired `pageToken` query field stays only to refuse an old
+  client with an actionable 400.
 - Local API 0.28.0, Types 0.43.0, and Village API 0.35.0 add the optional
   `TurnDetail.controlKind` annotation. It names the control record a turn was
   projected from (`mode`, `permission-mode`, `attachment`, `agent-name`,

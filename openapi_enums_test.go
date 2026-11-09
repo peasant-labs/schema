@@ -3,6 +3,7 @@ package schema_test
 import (
 	"bytes"
 	_ "embed"
+	"encoding/json"
 	"io"
 	"reflect"
 	"testing"
@@ -22,12 +23,12 @@ type closedEnumFixtureRow struct {
 	Name      string                    `yaml:"name"`
 	AllName   string                    `yaml:"all_name"`
 	Members   []closedEnumFixtureMember `yaml:"members"`
-	AllValues []string                  `yaml:"all_values"`
+	AllValues []any                     `yaml:"all_values"`
 }
 
 type closedEnumFixtureMember struct {
 	Name  string `yaml:"name"`
-	Value string `yaml:"value"`
+	Value any    `yaml:"value"`
 }
 
 func TestTypesOpenAPIExposesEveryClosedEnum(t *testing.T) {
@@ -58,10 +59,10 @@ func TestTypesOpenAPIExposesEveryClosedEnum(t *testing.T) {
 			t.Errorf("closed enum %s is absent from the Types OpenAPI catalog", enum.Name)
 			continue
 		}
-		actual := schemaEnumStrings(t, enum.Name, component["enum"])
+		actual := schemaEnumJSONValues(t, enum.Name, component["enum"])
 		expected := make([]string, len(enum.Members))
 		for i, member := range enum.Members {
-			expected[i] = member.Value
+			expected[i] = mustJSONValue(t, enum.Name, member.Value)
 		}
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("closed enum %s OpenAPI values=%v, want canonical Go values %v", enum.Name, actual, expected)
@@ -108,23 +109,31 @@ func assertSameStringSet(t *testing.T, label string, left, right []string) {
 	}
 }
 
-func schemaEnumStrings(t *testing.T, name string, raw any) []string {
+// schemaEnumJSONValues renders each OpenAPI enum value through encoding/json.
+// Comparing the JSON text keeps the wire type exact: json.Marshal(25) is "25"
+// while json.Marshal("25") is "\"25\"", so a numeric member can never satisfy a
+// string expectation. fmt.Sprint is refused because it renders both as "25" and
+// would pass while the wire type is wrong.
+func schemaEnumJSONValues(t *testing.T, name string, raw any) []string {
 	t.Helper()
 	switch values := raw.(type) {
 	case []any:
 		out := make([]string, len(values))
 		for i, value := range values {
-			text, ok := value.(string)
-			if !ok {
-				t.Fatalf("closed enum %s value %d has type %T, want string", name, i, value)
-			}
-			out[i] = text
+			out[i] = mustJSONValue(t, name, value)
 		}
 		return out
-	case []string:
-		return values
 	default:
-		t.Fatalf("closed enum %s has OpenAPI enum type %T, want a string list", name, raw)
+		t.Fatalf("closed enum %s has OpenAPI enum type %T, want a value list", name, raw)
 		return nil
 	}
+}
+
+func mustJSONValue(t *testing.T, name string, value any) string {
+	t.Helper()
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("closed enum %s value %v cannot be encoded: %v", name, value, err)
+	}
+	return string(encoded)
 }
