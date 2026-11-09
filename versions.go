@@ -202,7 +202,11 @@ const (
 	// closed PageSize, next-page rows, totals, and a decimal revision, and the
 	// grouped payloads were normalized to the same offset fields (a breaking
 	// envelope change before 1.0 = minor bump).
-	PeasantLocalAPIVersion = "0.29.0"
+	// Bumped to 0.30.0 when the quality read entered the document as one offset
+	// page of QualitySession rows beside the library-wide ProjectAnalytics
+	// summary at the page revision, so no surface subscribes to the full library
+	// (additive operation = minor bump).
+	PeasantLocalAPIVersion = "0.30.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical

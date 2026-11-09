@@ -16,6 +16,7 @@ operations:
   - {path: /api/v1/projects/resolve, method: get, operation_id: resolveProject}
   - {path: /api/v1/projects/summary, method: get, operation_id: listProjectSummaries,
      description_anchors: [{name: eligible_session_count, text: "The sessions count covers every session recorded for a project: the saved ingestion selection never narrows it, and no origin, index-readiness, or account bound applies to it."}]}
+  - {path: /api/v1/quality, method: get, operation_id: getQualityPage}
   - {path: "/api/v1/review/{projectHash}", method: get, operation_id: listReviewChanges}
   - {path: "/api/v1/review/{projectHash}/change", method: get, operation_id: getChangeDetail}
   - {path: "/api/v1/review/{projectHash}/diff", method: get, operation_id: getChangeDiff}

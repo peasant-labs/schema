@@ -184,8 +184,11 @@ func (r LocalSyncSessionRow) Validate() error {
 	return nil
 }
 
-// LocalSyncSessionTotals is the root-session count beside one offset page. It
-// is independent of the page total, which counts the paged roots or children.
+// LocalSyncSessionTotals is the pushable-session count beside one offset page.
+// It counts the same request filter on both branches: the filtered session set
+// on a root page and the same filtered session set (not the paged children) on
+// a child page. It is independent of the page total, which counts the paged
+// roots or children.
 type LocalSyncSessionTotals struct {
 	Sessions int `json:"sessions" minimum:"0" maximum:"9007199254740991"`
 }
