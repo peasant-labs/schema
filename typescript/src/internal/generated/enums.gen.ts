@@ -33,6 +33,8 @@ import { zDecayLevel, type DecayLevel as DecayLevelContract } from "./contract/z
 import { zDiffLineKind, type DiffLineKind as DiffLineKindContract } from "./contract/zod.gen.js";
 import { zEdgeViolationKind, type EdgeViolationKind as EdgeViolationKindContract } from "./contract/zod.gen.js";
 import { zEntryType, type EntryType as EntryTypeContract } from "./contract/zod.gen.js";
+import { zTurnPartType, type TurnPartType as TurnPartTypeContract } from "./contract/zod.gen.js";
+import { zOmittedReason, type OmittedReason as OmittedReasonContract } from "./contract/zod.gen.js";
 import { zFileChangeStatus, type FileChangeStatus as FileChangeStatusContract } from "./contract/zod.gen.js";
 import { zHarness, type Harness as HarnessContract } from "./contract/zod.gen.js";
 import { zInsightKind, type InsightKind as InsightKindContract } from "./contract/zod.gen.js";
@@ -517,10 +519,33 @@ export const EntryType = Object.freeze({
   System: zEntryType.parse("system"),
   Error: zEntryType.parse("error"),
   Result: zEntryType.parse("result"),
+  Image: zEntryType.parse("image"),
 } as const);
-export const AllEntryTypes = Object.freeze([EntryType.Text, EntryType.ToolUse, EntryType.ToolResult, EntryType.Thinking, EntryType.System, EntryType.Error, EntryType.Result]) as readonly EntryType[];
+export const AllEntryTypes = Object.freeze([EntryType.Text, EntryType.ToolUse, EntryType.ToolResult, EntryType.Thinking, EntryType.System, EntryType.Error, EntryType.Result, EntryType.Image]) as readonly EntryType[];
 export function isEntryType(value: unknown): value is EntryType {
   return zEntryType.safeParse(value).success;
+}
+
+export type TurnPartType = TurnPartTypeContract;
+export const TurnPartType = Object.freeze({
+  Text: zTurnPartType.parse("text"),
+  Image: zTurnPartType.parse("image"),
+} as const);
+export const AllTurnPartTypes = Object.freeze([TurnPartType.Text, TurnPartType.Image]) as readonly TurnPartType[];
+export function isTurnPartType(value: unknown): value is TurnPartType {
+  return zTurnPartType.safeParse(value).success;
+}
+
+export type OmittedReason = OmittedReasonContract;
+export const OmittedReason = Object.freeze({
+  TooLarge: zOmittedReason.parse("too_large"),
+  Unsupported: zOmittedReason.parse("unsupported"),
+  Missing: zOmittedReason.parse("missing"),
+  NotPublished: zOmittedReason.parse("not_published"),
+} as const);
+export const AllOmittedReasons = Object.freeze([OmittedReason.TooLarge, OmittedReason.Unsupported, OmittedReason.Missing, OmittedReason.NotPublished]) as readonly OmittedReason[];
+export function isOmittedReason(value: unknown): value is OmittedReason {
+  return zOmittedReason.safeParse(value).success;
 }
 
 export type FileChangeStatus = FileChangeStatusContract;

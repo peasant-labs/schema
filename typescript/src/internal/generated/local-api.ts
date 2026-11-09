@@ -1015,6 +1015,7 @@ export interface components {
         SchemaHealthResponse: Schema.HealthResponse;
         SchemaHelperContextSummary: Schema.HelperContextSummary;
         SchemaHelperGroupSummary: Schema.HelperGroupSummary;
+        SchemaImagePart: Schema.ImagePart;
         /**
          * Input Modality
          * @description Closed session graph value
@@ -1209,6 +1210,16 @@ export interface components {
          * @example provider/Model Family
          */
         SchemaObservedModelID: Schema.ObservedModelID;
+        /**
+         * Omitted Reason
+         * @description Why an image part carries no bytes: too_large, unsupported, missing, or not_published
+         * @example too_large
+         * @example unsupported
+         * @example missing
+         * @example not_published
+         * @enum {string}
+         */
+        SchemaOmittedReason: Schema.OmittedReason;
         SchemaOperationIssue: Schema.OperationIssue;
         /**
          * Operation Issue Code
@@ -1559,7 +1570,16 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
+        /**
+         * Turn Part Type
+         * @description Kind of one ordered turn content part: text or image
+         * @example text
+         * @example image
+         * @enum {string}
+         */
+        SchemaTurnPartType: Schema.TurnPartType;
         /**
          * Type Origin
          * @description Who created an annotation type: system (built-in), user (individual), or group (shared)

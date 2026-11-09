@@ -11,6 +11,7 @@ import type { SessionDetailPayload, TurnDetail } from "./contract/zod.gen.js";
  * discovered list down to the tokens they understand without stringly typing.
  */
 export const KnownContentCapability = Object.freeze({
+  ContentPartsV1: "content_parts_v1",
   DetailedUsageV1: "detailed_usage_v1",
   NativeMetadataV1: "native_metadata_v1",
   ObservedModelV1: "observed_model_v1",
@@ -20,7 +21,7 @@ export const KnownContentCapability = Object.freeze({
   ToolNamespaceV1: "tool_namespace_v1",
 } as const);
 export type KnownContentCapability = (typeof KnownContentCapability)[keyof typeof KnownContentCapability];
-export const AllContentCapabilities = Object.freeze([KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.RetainedUnknownV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ThinkingLevelV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
+export const AllContentCapabilities = Object.freeze([KnownContentCapability.ContentPartsV1, KnownContentCapability.DetailedUsageV1, KnownContentCapability.NativeMetadataV1, KnownContentCapability.ObservedModelV1, KnownContentCapability.RetainedUnknownV1, KnownContentCapability.SessionGraphProvenanceV1, KnownContentCapability.ThinkingLevelV1, KnownContentCapability.ToolNamespaceV1]) as readonly KnownContentCapability[];
 export function isContentCapability(value: unknown): value is KnownContentCapability {
   return typeof value === "string" && (AllContentCapabilities as readonly string[]).includes(value);
 }
@@ -48,6 +49,7 @@ function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<
   for (const turn of turns ?? []) {
     if ((turn.observedModel ?? "") !== "") found.add(KnownContentCapability.ObservedModelV1);
     if ((turn.thinkingLevel ?? "") !== "" || (turn.thinkingLevelRaw ?? "") !== "") found.add(KnownContentCapability.ThinkingLevelV1);
+    if ((turn.contentParts?.length ?? 0) > 0) found.add(KnownContentCapability.ContentPartsV1);
     if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(KnownContentCapability.ToolNamespaceV1);
     if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(KnownContentCapability.DetailedUsageV1);
     if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(KnownContentCapability.SessionGraphProvenanceV1);

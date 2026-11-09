@@ -123,7 +123,10 @@ const (
 	// Bumped to 0.35.0 when TurnDetail gained the optional controlKind
 	// annotation, which this spec carries in its embedded session-detail
 	// components (additive = minor bump).
-	VillageAPIVersion = "0.35.0"
+	// Bumped to 0.36.0 when TurnDetail gained the optional contentParts list
+	// and its ordered text/image part and image-part evidence, together with
+	// the content_parts_v1 content capability (additive = minor bump).
+	VillageAPIVersion = "0.36.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -198,7 +201,11 @@ const (
 	// Bumped to 0.28.0 when TurnDetail gained the optional controlKind
 	// annotation naming the harness control record a turn was projected from
 	// (additive = minor bump).
-	PeasantLocalAPIVersion = "0.28.0"
+	// Bumped to 0.29.0 when TurnDetail gained the optional ordered contentParts
+	// list, its text and image part evidence, the image entry type, and the
+	// content_parts_v1 capability; every turnCount field documents conversation
+	// turns (additive = minor bump).
+	PeasantLocalAPIVersion = "0.29.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -301,5 +308,8 @@ const (
 	// harnessVersion instead of version (minor bump before 1.0).
 	// Bumped to 0.43.0 when TurnDetail gained the optional controlKind
 	// annotation (additive = minor bump).
-	TypesVersion = "0.43.0"
+	// Bumped to 0.44.0 when TurnContentPart, TurnPartType, ImagePart,
+	// OmittedReason, and the image EntryType entered the catalog, and every
+	// turnCount field documented conversation turns (additive = minor bump).
+	TypesVersion = "0.44.0"
 )

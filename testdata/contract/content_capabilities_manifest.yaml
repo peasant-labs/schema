@@ -41,3 +41,8 @@ requiredCaseNames:
   - thinking-level-assistant-evidence-valid
   - thinking-level-user-evidence-invalid
   - thinking-level-noncanonical-evidence-invalid
+  - content-parts-text-requires-capability
+  - content-parts-image-requires-capability
+  - content-parts-earlier-history-requires-capability
+  - content-parts-accumulates-with-observed-model
+  - content-parts-missing-advertisement-refused

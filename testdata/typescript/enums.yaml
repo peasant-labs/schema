@@ -177,7 +177,22 @@ enums:
       - {name: System, value: "system"}
       - {name: Error, value: "error"}
       - {name: Result, value: "result"}
-    all_values: ["text", "tool_use", "tool_result", "thinking", "system", "error", "result"]
+      - {name: Image, value: "image"}
+    all_values: ["text", "tool_use", "tool_result", "thinking", "system", "error", "result", "image"]
+  - name: TurnPartType
+    all_name: AllTurnPartTypes
+    members:
+      - {name: Text, value: "text"}
+      - {name: Image, value: "image"}
+    all_values: ["text", "image"]
+  - name: OmittedReason
+    all_name: AllOmittedReasons
+    members:
+      - {name: TooLarge, value: "too_large"}
+      - {name: Unsupported, value: "unsupported"}
+      - {name: Missing, value: "missing"}
+      - {name: NotPublished, value: "not_published"}
+    all_values: ["too_large", "unsupported", "missing", "not_published"]
   - name: FileChangeStatus
     all_name: AllFileChangeStatuses
     members:

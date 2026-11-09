@@ -5,6 +5,25 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ## [Unreleased]
 
+### Added
+
+- Local API 0.29.0, Types 0.44.0, and Village API 0.36.0 add
+  `TurnDetail.contentParts`, an ordered list of text and image blocks. A text
+  part carries `text`; an image part carries an `ImagePart` with a lowercase
+  64-hex content reference, an `image/png` or `image/jpeg` media type, a byte
+  size, optional pixel dimensions, and a closed omission reason
+  (`too_large`, `unsupported`, `missing`, `not_published`). A published
+  transcript carries only `{type: "image", omittedReason: "not_published"}` and
+  never names bytes, a reference, a media type, a size, or dimensions; ordered
+  text parts survive publication unchanged.
+- The `content_parts_v1` content capability is required whenever any main or
+  earlier-history turn carries a non-empty `contentParts` list, text-only or
+  image-bearing. Validation accepts the local shape on durable detail and
+  either the local or published shape inside a `TranscriptContent` envelope,
+  which carries both a standalone local export and the published wire.
+- `EntryType` gains `image` for a source entry that carries an ordered image
+  block.
+
 ### Changed
 
 - Local API 0.28.0, Types 0.43.0, and Village API 0.35.0 add the optional
@@ -13,6 +32,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `custom-title`); a compaction notice is a system row and never carries it.
   It is producer-owned evidence: a consumer must never infer it from `role`,
   `content`, or any other field.
+- Every `turnCount` wire field now documents conversation turns: projected
+  turns whose role is not `system`. The producer computes the number once while
+  indexing and carries it through detail, export, list, and publication. No
+  raw or record-count field is added; `session_captured_stats.turn_count`
+  remains internal to the producer.
 
 ## [v0.40.0] - 2026-11-03
 

@@ -367,6 +367,25 @@ types:
     disposition: catalog
     component: TurnDetail
     reason: public wire or domain contract type
+  - go_name: TurnContentPart
+    disposition: catalog
+    component: TurnContentPart
+    reason: public wire or domain contract type
+  - go_name: TurnPartType
+    disposition: catalog
+    component: TurnPartType
+    reason: public wire or domain contract type
+  - go_name: ImagePart
+    disposition: catalog
+    component: ImagePart
+    reason: public wire or domain contract type
+  - go_name: OmittedReason
+    disposition: catalog
+    component: OmittedReason
+    reason: public wire or domain contract type
+  - go_name: ImagePartMode
+    disposition: runtime-only
+    reason: validator mode selector, never serialized
   - go_name: WalkthroughStep
     disposition: catalog
     component: WalkthroughStep
@@ -1367,6 +1386,9 @@ types:
   - {go_name: ContentCapabilityProducerInput, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentCapabilityFixtureNames, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentCapabilitySessionGraphFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartFixtureInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: ContentPartsFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: SyncStatus, disposition: catalog, component: SyncStatus, reason: local publishing sign-in and settings contract}
   - {go_name: SyncHoldReason, disposition: catalog, component: SyncHoldReason, reason: local publishing sign-in and settings contract}
   - {go_name: SyncPushCollectives, disposition: catalog, component: SyncPushCollectives, reason: local publishing sign-in and settings contract}

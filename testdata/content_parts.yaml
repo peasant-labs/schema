@@ -1,0 +1,233 @@
+cases:
+  - name: local-inline-png
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048,"width":640,"height":480}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: a local inline image names its content address and size}
+    mutation: {description: 'adds an inline png with a 64-hex ref, size, and dimensions'}
+  - name: local-inline-jpeg
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","mediaType":"image/jpeg","byteSize":12}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'image/jpeg is the second recorded media type'}
+    mutation: {description: 'swaps the media type and omits optional dimensions'}
+  - name: local-too-large-no-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"too_large","width":8000,"height":6000}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'an oversized image keeps metadata but no bytes or ref'}
+    mutation: {description: 'marks a png too_large with no ref and no size'}
+  - name: local-unsupported-no-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"omittedReason":"unsupported"}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'an unsupported source type carries no representable media type'}
+    mutation: {description: 'marks an image unsupported with no ref, media type, or size'}
+  - name: local-missing-with-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","mediaType":"image/jpeg","omittedReason":"missing"}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'a recorded ref may outlive its file'}
+    mutation: {description: 'keeps the ref and media type while marking the file missing'}
+  - name: local-missing-no-ref-zero-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"missing"}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'a missing image may have no recorded ref'}
+    mutation: {description: 'omits the ref and keeps the zero size'}
+  - name: local-text-part
+    input:
+      mode: local
+      part: '{"type":"text","text":"hello"}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'text parts are accepted locally'}
+    mutation: {description: 'carries one ordered text block'}
+  - name: published-omitted-image
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published"}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'a published transcript reports only the omission'}
+    mutation: {description: 'carries the bounded published image shape'}
+  - name: published-text-part
+    input:
+      mode: published
+      part: '{"type":"text","text":"hello"}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'published text parts survive'}
+    mutation: {description: 'carries one ordered text block through publication'}
+  - name: local-inline-without-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'ref is absent with no omission reason'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an accepted local image must resolve its bytes'}
+    mutation: {description: 'removes the ref from an inline image'}
+  - name: local-inline-zero-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png"}}'
+    expected: {accepted: false, errorContains: 'byteSize is zero'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a stored image claims its exact size'}
+    mutation: {description: 'keeps an inline ref but drops the size'}
+  - name: local-non-hex-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz","mediaType":"image/png","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not a lowercase 64-hex'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a content address is the sha256 hex digest'}
+    mutation: {description: 'replaces the ref with 64 non-hex characters'}
+  - name: local-uppercase-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","mediaType":"image/png","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not a lowercase 64-hex'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'the content address is lowercase hexadecimal'}
+    mutation: {description: 'uppercases a valid 64-hex ref'}
+  - name: local-unknown-media-type
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/webp","byteSize":2048}}'
+    expected: {accepted: false, errorContains: 'not image/png or image/jpeg'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'only png and jpeg are recorded media types'}
+    mutation: {description: 'swaps the media type to webp on an inline image'}
+  - name: local-unknown-omitted-reason
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"bogus"}}'
+    expected: {accepted: false, errorContains: 'outside the closed too_large|unsupported|missing|not_published set'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'omission reasons are a closed set'}
+    mutation: {description: 'invents an omission reason'}
+  - name: local-not-published-reason
+    input:
+      mode: local
+      part: '{"type":"image","image":{"omittedReason":"not_published"}}'
+    expected: {accepted: false, errorContains: 'a durable local image was never published'}
+    classification: must-fail
+    provenance: {source: requirement, ref: 'not_published describes only the publication shape'}
+    mutation: {description: 'carries the publication reason on a local image'}
+  - name: local-too-large-with-ref
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","omittedReason":"too_large"}}'
+    expected: {accepted: false, errorContains: 'a too-large image keeps no bytes'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an oversized image is never stored'}
+    mutation: {description: 'adds a ref to a too_large image'}
+  - name: local-unsupported-with-media
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"unsupported"}}'
+    expected: {accepted: false, errorContains: 'an unsupported source type is outside the recorded image/png|image/jpeg set'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an unsupported media type is unrepresentable'}
+    mutation: {description: 'adds a representable media type to an unsupported image'}
+  - name: local-missing-with-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048,"omittedReason":"missing"}}'
+    expected: {accepted: false, errorContains: 'the file is absent so no size can be measured'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a missing file has no measured size'}
+    mutation: {description: 'keeps a byte size on a missing image'}
+  - name: local-negative-size
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":-1}}'
+    expected: {accepted: false, errorContains: 'a size or dimension is negative'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'image metadata is a measurement'}
+    mutation: {description: 'negates the byte size'}
+  - name: published-local-ref
+    input:
+      mode: published
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","omittedReason":"not_published"}}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication must not leak local image evidence'}
+    mutation: {description: 'adds a local ref to the published shape'}
+  - name: published-without-reason
+    input:
+      mode: published
+      part: '{"type":"image","image":{}}'
+    expected: {accepted: false, errorContains: 'must say not_published'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication states the omission deliberately'}
+    mutation: {description: 'carries an empty published image object'}
+  - name: published-too-large-reason
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"too_large"}}'
+    expected: {accepted: false, errorContains: 'must say not_published'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'local omission reasons never describe publication'}
+    mutation: {description: 'carries a local omission reason on the published wire'}
+  - name: published-media-type
+    input:
+      mode: published
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"not_published"}}'
+    expected: {accepted: false, errorContains: 'ref, mediaType, byteSize, width, or height is present'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'publication drops the media type'}
+    mutation: {description: 'keeps the media type on a published image'}
+  - name: image-part-without-image
+    input:
+      mode: local
+      part: '{"type":"image"}'
+    expected: {accepted: false, errorContains: 'type image has no image object'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'an image part carries image evidence'}
+    mutation: {description: 'drops the image object'}
+  - name: text-part-with-image
+    input:
+      mode: local
+      part: '{"type":"text","text":"hello","image":{"omittedReason":"not_published"}}'
+    expected: {accepted: false, errorContains: 'a text part carries an image object'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a part has exactly one renderer'}
+    mutation: {description: 'attaches an image object to a text part'}
+  - name: image-part-with-text
+    input:
+      mode: published
+      part: '{"type":"image","text":"hello","image":{"omittedReason":"not_published"}}'
+    expected: {accepted: false, errorContains: 'type image also carries text'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a part has exactly one renderer'}
+    mutation: {description: 'attaches text to an image part'}
+  - name: unknown-part-type
+    input:
+      mode: local
+      part: '{"type":"video"}'
+    expected: {accepted: false, errorContains: 'outside the closed text|image set'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'part kinds are a closed set'}
+    mutation: {description: 'invents a part type'}
+  - name: unknown-mode
+    input:
+      mode: speculative
+      part: '{"type":"text","text":"hello"}'
+    expected: {accepted: false, errorContains: 'the mode is not local or published'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'a caller selects a real validation shape'}
+    mutation: {description: 'selects an unknown image part mode'}

@@ -1617,6 +1617,7 @@ export interface components {
          * @example local--home-user-projects-myapp
          */
         SchemaHostSlug: Schema.HostSlug;
+        SchemaImagePart: Schema.ImagePart;
         /**
          * Input Modality
          * @description Closed session graph value
@@ -1687,6 +1688,16 @@ export interface components {
          * @example provider/Model Family
          */
         SchemaObservedModelID: Schema.ObservedModelID;
+        /**
+         * Omitted Reason
+         * @description Why an image part carries no bytes: too_large, unsupported, missing, or not_published
+         * @example too_large
+         * @example unsupported
+         * @example missing
+         * @example not_published
+         * @enum {string}
+         */
+        SchemaOmittedReason: Schema.OmittedReason;
         SchemaOwnerTranscriptUpdateRequest: Schema.OwnerTranscriptUpdateRequest;
         SchemaOwnerTranscriptUpdateResponse: Schema.OwnerTranscriptUpdateResponse;
         /** @description Omitted preserves, null requests clear, and a canonical license replaces */
@@ -1918,7 +1929,16 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
+        SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
+        /**
+         * Turn Part Type
+         * @description Kind of one ordered turn content part: text or image
+         * @example text
+         * @example image
+         * @enum {string}
+         */
+        SchemaTurnPartType: Schema.TurnPartType;
         SchemaUnverifiedPullRequest: Schema.UnverifiedPullRequest;
         SchemaUnverifiedPullRequestSource: Schema.UnverifiedPullRequestSource;
         /**

@@ -292,6 +292,7 @@ function visitTurns(turns: readonly TurnDetail[] | null | undefined, found: Set<
   for (const turn of turns ?? []) {
     if ((turn.observedModel ?? "") !== "") found.add(${name}.ObservedModelV1);
     if ((turn.thinkingLevel ?? "") !== "" || (turn.thinkingLevelRaw ?? "") !== "") found.add(${name}.ThinkingLevelV1);
+    if ((turn.contentParts?.length ?? 0) > 0) found.add(${name}.ContentPartsV1);
     if (turn.toolCalls?.some((tool) => tool.namespace !== undefined)) found.add(${name}.ToolNamespaceV1);
     if (turn.usage != null || turn.toolCalls?.some((tool) => tool.usage != null)) found.add(${name}.DetailedUsageV1);
     if (turn.provenance != null || turn.toolCalls?.some((tool) => tool.callProvenance != null || tool.resultProvenance != null)) found.add(${name}.SessionGraphProvenanceV1);

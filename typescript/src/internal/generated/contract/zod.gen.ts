@@ -659,7 +659,7 @@ export type Confidence = z.infer<typeof zConfidence>;
 /**
  * Content Capability
  *
- * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.
+ * Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull. content_parts_v1 is required iff any main or earlier-history turn carries a non-empty contentParts list, text-only or image-bearing, and guarantees ordered preservation of every part through storage, typed migration, rewrite, serving, and publication, including the published not_published image shape.
  */
 export const zContentCapability = z.string();
 
@@ -894,7 +894,8 @@ export const zEntryType = z.enum([
     'thinking',
     'system',
     'error',
-    'result'
+    'result',
+    'image'
 ]);
 
 export type EntryType = z.infer<typeof zEntryType>;
@@ -1380,6 +1381,31 @@ export type NativePiMessageRole = z.infer<typeof zNativePiMessageRole>;
 export const zObservedModelID = z.string().min(1).regex(/^(?:﻿|[^\s])(?:[\s\S]*(?:﻿|[^\s]))?$/).refine((value) => { const edge = (text: string) => text === "\uFEFF" || (!/\s/u.test(text) && text !== "\u0085"); return edge(value.charAt(0)) && edge(value.charAt(value.length - 1)); }, { error: "ObservedModelID must match pattern without edge whitespace" });
 
 export type ObservedModelID = z.infer<typeof zObservedModelID>;
+
+/**
+ * Omitted Reason
+ *
+ * Why an image part carries no bytes: too_large, unsupported, missing, or not_published
+ */
+export const zOmittedReason = z.enum([
+    'too_large',
+    'unsupported',
+    'missing',
+    'not_published'
+]);
+
+export type OmittedReason = z.infer<typeof zOmittedReason>;
+
+export const zImagePart = z.object({
+    byteSize: z.int().gte(0).optional(),
+    height: z.int().gte(0).optional(),
+    mediaType: z.string().optional(),
+    omittedReason: zOmittedReason.optional(),
+    ref: z.string().length(64).regex(/^[0-9a-f]{64}$/).optional(),
+    width: z.int().gte(0).optional()
+});
+
+export type ImagePart = z.infer<typeof zImagePart>;
 
 /**
  * Operation Issue Code
@@ -3444,6 +3470,23 @@ export const zTrendsPayload = z.object({
 export type TrendsPayload = z.infer<typeof zTrendsPayload>;
 
 /**
+ * Turn Part Type
+ *
+ * Kind of one ordered turn content part: text or image
+ */
+export const zTurnPartType = z.enum(['text', 'image']);
+
+export type TurnPartType = z.infer<typeof zTurnPartType>;
+
+export const zTurnContentPart = z.object({
+    image: zImagePart.optional(),
+    text: z.string().optional(),
+    type: zTurnPartType
+});
+
+export type TurnContentPart = z.infer<typeof zTurnContentPart>;
+
+/**
  * Type Origin
  *
  * Who created an annotation type: system (built-in), user (individual), or group (shared)
@@ -3625,6 +3668,7 @@ export const zTurnDetail = z.object({
     agentName: z.string().optional(),
     command: zCommandInvocation.nullish(),
     content: z.string(),
+    contentParts: z.array(zTurnContentPart).optional(),
     controlKind: z.string().nullish(),
     depth: z.int(),
     entryType: zEntryType.optional(),
