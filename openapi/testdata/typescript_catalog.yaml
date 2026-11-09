@@ -66,13 +66,13 @@ types:
   - {go_name: VillageGroupViewerRole, disposition: alias, reason: full release compatibility window}
   - {go_name: LocalRemoteContributionAttempt, disposition: catalog, component: LocalRemoteContributionAttempt, reason: retained owner contribution attempt evidence}
   - {go_name: VillageContributionAttemptReconciliation, disposition: runtime-only, reason: result classification for the Go reconciliation helper rather than a serialized response field}
-  - {go_name: PageToken, disposition: catalog, component: PageToken, reason: opaque forward continuation}
-  - {go_name: Page, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
-  - {go_name: PageRequest, disposition: runtime-only, reason: Go-only domain reader input}
-  - {go_name: PageReader, disposition: runtime-only, reason: Go-only domain reader interface}
+  - {go_name: PageSize, disposition: catalog, component: PageSize, reason: schema-owned 25/50/100 page size}
+  - {go_name: OffsetPage, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
   - {go_name: LocalSyncPublicationFilter, disposition: catalog, component: LocalSyncPublicationFilter, reason: root publication filter}
   - {go_name: LocalSyncSessionRow, disposition: catalog, component: LocalSyncSessionRow, reason: hydrated sync row}
+  - {go_name: LocalSyncSessionTotals, disposition: catalog, component: LocalSyncSessionTotals, reason: root session count beside one offset page}
   - {go_name: LocalSyncSessionPage, disposition: catalog, component: LocalSyncSessionPage, reason: concrete generic sync page}
+  - {go_name: LocalSessionPage, disposition: catalog, component: LocalSessionPage, reason: concrete generic flat-session page}
   - {go_name: LocalSyncProjectOption, disposition: catalog, component: LocalSyncProjectOption, reason: stored root project identity}
   - {go_name: LocalSyncProjectOptions, disposition: catalog, component: LocalSyncProjectOptions, reason: complete metadata-only root picker}
   - {go_name: LocalSyncSessionsQuery, disposition: runtime-only, reason: Local operation query parameters rather than a JSON body}

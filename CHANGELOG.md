@@ -7,6 +7,16 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Local API 0.29.0 and Types 0.44.0 replace the page and set contract with one
+  `OffsetPage[T]`: `items`, `nextItems`, `page`, `perPage`, `total`, and a
+  decimal `revision`. `LocalSyncSessionPage` embeds it and adds
+  `totals.sessions`; `LocalSessionPage` is the flat page of concrete route rows.
+  `PageSize` is a numeric closed set (25, 50, 100). The grouped
+  `LocalSessionListPayload` and `LocalHelperMembersPayload` carry the same
+  offset fields plus their grouped-only counts, and `LocalSessionRow` gains the
+  optional stored `title`. `Page`, `PageReader`, `PageToken`, and `PageRequest`
+  are deleted; the retired `pageToken` query field stays only to refuse an old
+  client with an actionable 400.
 - Local API 0.28.0, Types 0.43.0, and Village API 0.35.0 add the optional
   `TurnDetail.controlKind` annotation. It names the control record a turn was
   projected from (`mode`, `permission-mode`, `attachment`, `agent-name`,

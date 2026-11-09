@@ -27,29 +27,56 @@ func (LocalSyncPublicationFilter) JSONSchema() (jsonschema.Schema, error) {
 	return closedStringEnumSchema("Local Sync Publication Filter", "Root publication filter; auto uses the canonical live hook decision", AllLocalSyncPublicationFilters), nil
 }
 
-// LocalSyncSessionsQuery keeps forward paging opt-in on the existing resource.
-// Validate before applying defaults: explicit root filters are invalid on children.
+// LocalSyncSessionsQuery is the sync resource's query. The omitted view is
+// Home: it serves the same bounded offset page as view=home. An explicit
+// grouped or project-options read keeps its legacy envelope and refuses paging
+// fields. pageToken is retained only so an old client receives an actionable
+// refusal; no reader consumes a token.
 type LocalSyncSessionsQuery struct {
-	View            string                      `query:"view" enum:"grouped,home,project-options" description:"Omit for legacy flat rows; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects"`
-	MaxItems        *int                        `query:"maxItems" nullable:"false" minimum:"0" default:"25" description:"Home only: omitted or zero defaults to 25; positive values clamp to 100; negative, malformed or repeated values are rejected"`
-	PageToken       *PageToken                  `query:"pageToken" nullable:"false" maxLength:"4096" description:"Home only: opaque continuation, omitted or empty starts; at most 4096 bytes; repeated values are rejected"`
+	View            string                      `query:"view" enum:"grouped,home,project-options" description:"Omit for the Home offset page; grouped retains helper groups; home selects forward pages; project-options selects metadata-only root projects"`
+	MaxItems        *int                        `query:"maxItems" nullable:"false" minimum:"0" default:"25" description:"Home only: omitted or zero defaults to 25; 25, 50, and 100 are accepted; 26, 101, and negative values are refused"`
+	Page            *int                        `query:"page" nullable:"false" minimum:"1" description:"Home only: one-based page number; omitted defaults to 1"`
+	PageToken       *string                     `query:"pageToken" nullable:"false" maxLength:"4096" description:"Home only: retired continuation; omitted or empty is absent; a nonempty value is refused so an old client can recover"`
 	ParentSessionID *string                     `query:"parentSessionId" nullable:"false" minLength:"1"`
 	ProjectHash     *ProjectHash                `query:"projectHash" nullable:"false"`
 	Publication     *LocalSyncPublicationFilter `query:"publication" nullable:"false" default:"all" description:"Root publication filter; auto uses the canonical live hook decision. This is an explicit publication filter, not selection scope"`
 }
 
+// Home reports whether the query selects the offset Home read. The omitted view
+// is Home; grouped and project-options are not.
+func (q LocalSyncSessionsQuery) Home() bool { return q.View == "" || q.View == "home" }
+
+// HasPageToken reports whether a non-empty retired continuation was supplied.
+// An empty pageToken is absent, exactly as an omitted one is.
+func (q LocalSyncSessionsQuery) HasPageToken() bool { return q.PageToken != nil && *q.PageToken != "" }
+
 func (q LocalSyncSessionsQuery) Validate() error {
 	if q.View != "" && q.View != "grouped" && q.View != "home" && q.View != "project-options" {
 		return syncPageError("LocalSyncSessionsQuery", "view is unknown; omit it or use grouped, home, or project-options")
 	}
-	if q.View != "home" && (q.MaxItems != nil || q.PageToken != nil || q.ParentSessionID != nil || q.ProjectHash != nil || q.Publication != nil) {
-		return syncPageError("LocalSyncSessionsQuery", "paging or root filters require view=home; remove them for legacy/grouped/project-options reads")
-	}
-	if q.MaxItems != nil && *q.MaxItems < 0 {
-		return syncPageError("LocalSyncSessionsQuery", "maxItems is negative; use zero/default or a positive maximum (clamped to 100)")
-	}
+	// The byte cap is checked before the retired-token refusal so an oversized
+	// old token reports the input bound it broke, not the retirement.
 	if q.PageToken != nil && len(*q.PageToken) > 4096 {
 		return syncPageError("LocalSyncSessionsQuery", "pageToken exceeds 4096 bytes; no page can be used; discard continuation and restart")
+	}
+	if q.HasPageToken() {
+		return syncPageError("LocalSyncSessionsQuery", "pageToken is retired; no reader consumes a continuation token; omit pageToken and request the one-based page instead")
+	}
+	if !q.Home() && (q.MaxItems != nil || q.Page != nil || q.ParentSessionID != nil || q.ProjectHash != nil || q.Publication != nil) {
+		return syncPageError("LocalSyncSessionsQuery", "paging or root filters require view=home or an omitted view; remove them for grouped or project-options reads")
+	}
+	if q.MaxItems != nil {
+		if *q.MaxItems < 0 {
+			return syncPageError("LocalSyncSessionsQuery", "maxItems is negative; use zero/default or one of 25, 50, or 100")
+		}
+		if *q.MaxItems != 0 {
+			if _, err := NewPageSize(*q.MaxItems); err != nil {
+				return syncPageError("LocalSyncSessionsQuery", "maxItems is outside the closed set; use 25, 50, or 100, or omit it for the default of 25")
+			}
+		}
+	}
+	if q.Page != nil && *q.Page < 1 {
+		return syncPageError("LocalSyncSessionsQuery", "page is below one; supply a one-based page number or omit it for the first page")
 	}
 	if q.ParentSessionID != nil {
 		if strings.TrimSpace(*q.ParentSessionID) == "" {
@@ -68,17 +95,22 @@ func (q LocalSyncSessionsQuery) Validate() error {
 	return nil
 }
 
-// PageRequest applies the Home transport's default and cap after validation.
-func (q LocalSyncSessionsQuery) PageRequest() PageRequest {
-	maxItems := 25
-	if q.MaxItems != nil && *q.MaxItems > 0 {
-		maxItems = min(*q.MaxItems, 100)
+// EffectivePageSize applies the Home transport's default after validation. An
+// omitted or zero maxItems maps to 25; a non-member value never reaches here.
+func (q LocalSyncSessionsQuery) EffectivePageSize() PageSize {
+	if q.MaxItems == nil || *q.MaxItems == 0 {
+		return PageSize25
 	}
-	var token PageToken
-	if q.PageToken != nil {
-		token = *q.PageToken
+	size, _ := NewPageSize(*q.MaxItems)
+	return size
+}
+
+// EffectivePage applies the one-based default after validation.
+func (q LocalSyncSessionsQuery) EffectivePage() int {
+	if q.Page == nil {
+		return 1
 	}
-	return PageRequest{MaxItems: maxItems, Token: token}
+	return *q.Page
 }
 
 // ParseLocalSyncSessionsQuery preserves parameter presence and rejects ambiguous
@@ -87,7 +119,7 @@ func ParseLocalSyncSessionsQuery(values url.Values) (LocalSyncSessionsQuery, err
 	var q LocalSyncSessionsQuery
 	for name, entries := range values {
 		switch name {
-		case "view", "maxItems", "pageToken", "parentSessionId", "projectHash", "publication":
+		case "view", "maxItems", "page", "pageToken", "parentSessionId", "projectHash", "publication":
 			if len(entries) != 1 {
 				return q, syncPageError("ParseLocalSyncSessionsQuery", name+" is repeated; supply it once so no page is chosen ambiguously")
 			}
@@ -101,8 +133,15 @@ func ParseLocalSyncSessionsQuery(values url.Values) (LocalSyncSessionsQuery, err
 		}
 		q.MaxItems = &n
 	}
+	if raw, ok := values["page"]; ok {
+		n, err := strconv.Atoi(raw[0])
+		if err != nil {
+			return q, syncPageError("ParseLocalSyncSessionsQuery", "page is malformed; supply a one-based integer, or omit it for the first page")
+		}
+		q.Page = &n
+	}
 	if raw, ok := values["pageToken"]; ok {
-		token := PageToken(raw[0])
+		token := raw[0]
 		q.PageToken = &token
 	}
 	if raw, ok := values["parentSessionId"]; ok {
@@ -144,8 +183,33 @@ func (r LocalSyncSessionRow) Validate() error {
 	return nil
 }
 
-// LocalSyncSessionPage is the concrete wire instantiation, not a second shape.
-type LocalSyncSessionPage = Page[LocalSyncSessionRow]
+// LocalSyncSessionTotals is the root-session count beside one offset page. It
+// is independent of the page total, which counts the paged roots or children.
+type LocalSyncSessionTotals struct {
+	Sessions int `json:"sessions" minimum:"0" maximum:"9007199254740991"`
+}
+
+func (t LocalSyncSessionTotals) Validate() error {
+	if t.Sessions < 0 || int64(t.Sessions) > maxSafeJSONInteger {
+		return syncPageError("LocalSyncSessionTotals", "sessions is outside 0..9007199254740991; clients cannot render the count exactly; emit the counted pushable sessions")
+	}
+	return nil
+}
+
+// LocalSyncSessionPage is the concrete offset page for the sync resource, not a
+// second shape: it embeds OffsetPage[LocalSyncSessionRow] and adds the grouped
+// root total.
+type LocalSyncSessionPage struct {
+	OffsetPage[LocalSyncSessionRow]
+	Totals LocalSyncSessionTotals `json:"totals" nullable:"false"`
+}
+
+func (p LocalSyncSessionPage) Validate() error {
+	if err := p.OffsetPage.Validate(); err != nil {
+		return err
+	}
+	return p.Totals.Validate()
+}
 
 type LocalSyncProjectOption struct {
 	ProjectHash ProjectHash `json:"projectHash"`

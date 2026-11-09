@@ -3,6 +3,7 @@ package openapi_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -102,7 +103,7 @@ func TestLocalGroupedRouteContract(t *testing.T) {
 				if len(expected.Enum) != 0 {
 					got := []string{}
 					for _, v := range shape["enum"].([]any) {
-						got = append(got, v.(string))
+						got = append(got, fmt.Sprint(v))
 					}
 					if !reflect.DeepEqual(got, expected.Enum) {
 						t.Fatalf("parameter %q enum=%v", expected.Name, got)

@@ -3,6 +3,7 @@ package schema_test
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -30,7 +31,9 @@ func TestScryVerdictIsClosed(t *testing.T) {
 	var want []string
 	for _, enum := range loadClosedEnumFixture(t).Enums {
 		if enum.Name == "ScryVerdict" {
-			want = enum.AllValues
+			for _, value := range enum.AllValues {
+				want = append(want, fmt.Sprint(value))
+			}
 		}
 	}
 	if len(want) == 0 {

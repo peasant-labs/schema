@@ -77,8 +77,8 @@ round_trip:
       provenance: {source: requirement, ref: "helper-only context uses no fabricated transcript"}
       mutation: {description: "selects only the context_container sum arm"}
     - name: typed-member-array
-      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}},{"kind":"transcript","transcript":{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}}],"page":1,"limit":20,"total":2}' }
-      expected: {valid: true, requiredKeys: [members, page, limit, total], forbiddenKeys: []}
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"g1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}},{"kind":"transcript","transcript":{"session":{"id":"g2","harness":"codex","startTime":"2026-09-08T00:01:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"toolCallCount":0}}}],"nextItems":[],"page":1,"perPage":25,"total":2,"revision":"4213"}' }
+      expected: {valid: true, requiredKeys: [members, nextItems, page, perPage, total, revision], forbiddenKeys: [limit, totalItems]}
       classification: must-pass
       provenance: {source: requirement, ref: "member response retains concrete LocalSessionRow values"}
       mutation: {description: "contains two typed saved helper identities"}
@@ -89,8 +89,8 @@ round_trip:
       provenance: {source: requirement, ref: "the Local API 0.15.0 omitted-view sync response, which adds previouslyPushed to the sync_handler body"}
       mutation: {description: "uses the concrete legacy sessions envelope and complete producer row"}
     - name: grouped-list-values
-      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"p1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0}},"helperGroups":[{"groupId":"hg_p1","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}],"page":1,"limit":2,"totalItems":3,"ordinarySessionTotal":3,"helperThreadTotal":3}' }
-      expected: {valid: true, requiredKeys: [items, page, limit, totalItems, ordinarySessionTotal, helperThreadTotal], forbiddenKeys: [sessions]}
+      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"p1","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":9,"turnCount":5,"inputSubmissionCount":1,"toolCallCount":0}},"helperGroups":[{"groupId":"hg_p1","purpose":"helper_review","helperThreadCount":2,"memberScope":"scope"}]}],"nextItems":[],"page":1,"perPage":25,"total":3,"revision":"4213","ordinarySessionTotal":3,"helperThreadTotal":3}' }
+      expected: {valid: true, requiredKeys: [items, nextItems, page, perPage, total, revision, ordinarySessionTotal, helperThreadTotal], forbiddenKeys: [sessions, limit, totalItems]}
       classification: must-pass
       provenance: {source: requirement, ref: "independent grouped totals and nested helper count"}
       mutation: {description: "retains page totals three/three/three and owner helper count two"}
@@ -181,13 +181,13 @@ validation:
       provenance: {source: boundary, ref: "route variants are exclusive"}
       mutation: {description: "adds a search match to an otherwise valid sync row"}
     - name: invalid-nested-list-row
-      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":-1,"toolCallCount":0}}}],"page":1,"limit":1,"totalItems":1,"ordinarySessionTotal":1,"helperThreadTotal":0}' }
+      input: {kind: list, json: '{"items":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":-1,"toolCallCount":0}}}],"page":1,"perPage":25,"total":1,"revision":"4213","nextItems":[],"ordinarySessionTotal":1,"helperThreadTotal":0}' }
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: "list validator traverses rows"}
       mutation: {description: "places one negative count inside a grouped list row"}
     - name: invalid-nested-member-row
-      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}}],"page":1,"limit":1,"total":1}' }
+      input: {kind: members, json: '{"members":[{"kind":"transcript","transcript":{"session":{"id":"bad","harness":"codex","startTime":"2026-09-08T00:00:00Z","durationMins":1,"totalTokens":1,"turnCount":1,"inputSubmissionCount":9007199254740992,"toolCallCount":0}}}],"page":1,"perPage":25,"total":1,"revision":"4213","nextItems":[]}' }
       expected: false
       classification: must-fail
       provenance: {source: boundary, ref: "member validator traverses rows"}

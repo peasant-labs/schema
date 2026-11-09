@@ -198,7 +198,11 @@ const (
 	// Bumped to 0.28.0 when TurnDetail gained the optional controlKind
 	// annotation naming the harness control record a turn was projected from
 	// (additive = minor bump).
-	PeasantLocalAPIVersion = "0.28.0"
+	// Bumped to 0.29.0 when the Home sync read moved to one OffsetPage with a
+	// closed PageSize, next-page rows, totals, and a decimal revision, and the
+	// grouped payloads were normalized to the same offset fields (a breaking
+	// envelope change before 1.0 = minor bump).
+	PeasantLocalAPIVersion = "0.29.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -301,5 +305,8 @@ const (
 	// harnessVersion instead of version (minor bump before 1.0).
 	// Bumped to 0.43.0 when TurnDetail gained the optional controlKind
 	// annotation (additive = minor bump).
-	TypesVersion = "0.43.0"
+	// Bumped to 0.44.0 when the page contract became one OffsetPage with a
+	// numeric PageSize, and the local grouped payloads adopted its offset fields
+	// (a breaking envelope change before 1.0 = minor bump).
+	TypesVersion = "0.44.0"
 )

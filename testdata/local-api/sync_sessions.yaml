@@ -34,6 +34,7 @@ operations:
     parameters:
       - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
       - {name: maxItems, in: query, required: false}
+      - {name: page, in: query, required: false}
       - {name: pageToken, in: query, required: false}
       - {name: parentSessionId, in: query, required: false}
       - {name: projectHash, in: query, required: false}

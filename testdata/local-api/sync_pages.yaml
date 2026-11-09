@@ -1,4 +1,4 @@
-required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, outside-ingestion-selection-published-row-visible, outside-ingestion-selection-auto-publish-rejected, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, empty-token]
+required_names: [empty-end, empty-continuing, short-continuing, full-continuing, null-items, missing-next-items, child-row, mismatched-row-id, outside-ingestion-selection-row-visible, outside-ingestion-selection-published-row-visible, outside-ingestion-selection-auto-publish-rejected, audience-on-page, negative-child-count, filter-all, filter-published, filter-not-published, filter-auto, filter-unknown, empty-projects, sorted-projects, null-projects, duplicate-projects, unsorted-projects, malformed-project, missing-revision]
 operations:
   - api: local
     method: get
@@ -9,6 +9,7 @@ operations:
     parameters:
       - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
       - {name: maxItems, in: query, required: false}
+      - {name: page, in: query, required: false}
       - {name: pageToken, in: query, required: false}
       - {name: parentSessionId, in: query, required: false}
       - {name: projectHash, in: query, required: false}
@@ -20,57 +21,67 @@ operations:
     parameters:
       - {name: view, in: query, required: false, enum: [grouped, home, project-options]}
       - {name: maxItems, in: query, required: false}
+      - {name: page, in: query, required: false}
       - {name: pageToken, in: query, required: false}
       - {name: parentSessionId, in: query, required: false}
       - {name: projectHash, in: query, required: false}
       - {name: publication, in: query, required: false, enum: [all, not-published, published, auto]}
 cases:
   - name: empty-end
-    input: {schema: LocalSyncSessionPage, payload: {items: [], next: ""}}
+    input: {schema: LocalSyncSessionPage, payload: {items: [], nextItems: [], page: 1, perPage: 25, total: 0, revision: "4213", totals: {sessions: 0}}}
     expected: {valid: true}
     classification: must-pass
-    provenance: {source: requirement, ref: "only empty Next ends traversal"}
+    provenance: {source: requirement, ref: "only an empty nextItems ends the traversal"}
     mutation: {description: "a completed empty page"}
   - name: empty-continuing
-    input: {schema: LocalSyncSessionPage, payload: {items: [], next: opaque-next}}
+    input: {schema: LocalSyncSessionPage, payload: {items: [], nextItems: [&row {sync: &sync {id: local-a, harness: claude-code, projectName: project, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-10-12T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}, publication: &publication {sessionId: local-a, state: unpublished, autoPublish: true, outsideSelection: false}, title: stored title, preview: redacted preview, childCount: 2}], page: 1, perPage: 25, total: 24, revision: "4213", totals: {sessions: 24}}}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "filtered windows can continue without items"}
-    mutation: {description: "an empty page still has unscanned candidates"}
+    mutation: {description: "an empty page still has scanned next-page rows"}
   - name: short-continuing
     input:
       schema: LocalSyncSessionPage
       payload: &page
-        items:
-          - &row
-            sync: &sync {id: local-a, harness: claude-code, projectName: project, projectHash: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, hostSlug: host, startTime: "2026-10-12T10:00:00Z", durationMs: 1000, totalTokens: 10, turnCount: 2, model: m, syncStatus: new, previouslyPushed: false}
-            publication: &publication {sessionId: local-a, state: unpublished, autoPublish: true, outsideSelection: false}
-            title: stored title
-            preview: redacted preview
-            childCount: 2
-        next: opaque-next
+        items: [*row]
+        nextItems:
+          - {<<: *row, sync: {<<: *sync, id: local-b}, publication: {<<: *publication, sessionId: local-b}}
+        page: 1
+        perPage: 25
+        total: 26
+        revision: "4213"
+        totals: {sessions: 26}
     expected: {valid: true}
     classification: must-pass
-    provenance: {source: requirement, ref: "short pages can continue"}
-    mutation: {description: "one item need not exhaust the traversal"}
+    provenance: {source: requirement, ref: "a short page can continue"}
+    mutation: {description: "one requested row need not exhaust the traversal"}
   - name: full-continuing
-    input: {schema: LocalSyncSessionPage, payload: {items: [*row, {<<: *row, sync: {<<: *sync, id: local-b}, publication: {<<: *publication, sessionId: local-b}}], next: opaque-next}}
+    input:
+      schema: LocalSyncSessionPage
+      payload:
+        items: [*row, {<<: *row, sync: {<<: *sync, id: local-b}, publication: {<<: *publication, sessionId: local-b}}]
+        nextItems: [{<<: *row, sync: {<<: *sync, id: local-c}, publication: {<<: *publication, sessionId: local-c}}]
+        page: 1
+        perPage: 25
+        total: 27
+        revision: "4213"
+        totals: {sessions: 27}
     expected: {valid: true}
     classification: must-pass
-    provenance: {source: boundary, ref: "MaxItems is request-owned"}
-    mutation: {description: "two valid nested items can fill a maximum of two and still continue"}
+    provenance: {source: boundary, ref: "perPage is request-owned"}
+    mutation: {description: "a short page of rows can still carry next-page rows"}
   - name: null-items
-    input: {schema: LocalSyncSessionPage, payload: {items: null, next: ""}}
+    input: {schema: LocalSyncSessionPage, payload: {items: null, nextItems: [], page: 1, perPage: 25, total: 0, revision: "4213", totals: {sessions: 0}}}
     expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
-    provenance: {source: boundary, ref: "Page.Items"}
-    mutation: {description: "replace array with null"}
-  - name: missing-next
-    input: {schema: LocalSyncSessionPage, payload: {items: []}}
-    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    provenance: {source: boundary, ref: "OffsetPage.Items"}
+    mutation: {description: "replace the page array with null"}
+  - name: missing-next-items
+    input: {schema: LocalSyncSessionPage, payload: {items: [], page: 1, perPage: 25, total: 0, revision: "4213", totals: {sessions: 0}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
-    provenance: {source: boundary, ref: "Page.Next presence"}
-    mutation: {description: "omit the required end marker"}
+    provenance: {source: boundary, ref: "OffsetPage.NextItems presence"}
+    mutation: {description: "omit the next-page array"}
   - name: child-row
     input: {schema: LocalSyncSessionRow, payload: {<<: *row, sync: {<<: *sync, parentSessionId: parent-a}}}
     expected: {valid: true}
@@ -181,9 +192,9 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: ProjectHash}
     mutation: {description: "short project hash"}
-  - name: empty-token
-    input: {schema: PageToken, payload: ""}
-    expected: {valid: true}
-    classification: must-pass
-    provenance: {source: boundary, ref: PageToken}
-    mutation: {description: "empty is the start or end marker"}
+  - name: missing-revision
+    input: {schema: LocalSyncSessionPage, payload: {items: [], nextItems: [], page: 1, perPage: 25, total: 0, totals: {sessions: 0}}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: boundary, ref: "OffsetPage.Revision presence"}
+    mutation: {description: "omit the store revision from the page"}

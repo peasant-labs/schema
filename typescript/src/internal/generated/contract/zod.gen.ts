@@ -1241,6 +1241,12 @@ export const zLocalSyncPublicationFilter = z.enum([
 
 export type LocalSyncPublicationFilter = z.infer<typeof zLocalSyncPublicationFilter>;
 
+export const zLocalSyncSessionTotals = z.object({
+    sessions: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSyncSessionTotals = z.infer<typeof zLocalSyncSessionTotals>;
+
 export const zMapEdge = z.object({
     count: z.int(),
     from: z.string(),
@@ -1446,13 +1452,17 @@ export const zOwnerUpdateLicenseIntent = z.enum([
 export type OwnerUpdateLicenseIntent = z.infer<typeof zOwnerUpdateLicenseIntent>;
 
 /**
- * Page Token
+ * Page Size
  *
- * Opaque continuation; empty starts traversal or marks its end. Not a credential or snapshot token.
+ * Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.
  */
-export const zPageToken = z.string();
+export const zPageSize = z.union([
+    z.literal(25),
+    z.literal(50),
+    z.literal(100)
+]);
 
-export type PageToken = z.infer<typeof zPageToken>;
+export type PageSize = z.infer<typeof zPageSize>;
 
 /**
  * Project Hash
@@ -2670,7 +2680,8 @@ export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
 export const zLocalSessionRow = z.object({
     matches: z.array(zSearchResult).optional(),
     session: zSessionSummary,
-    sync: zLocalSyncSummary.nullish()
+    sync: zLocalSyncSummary.nullish(),
+    title: z.string().optional()
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionRow during grouped read validation: " + reason });
     if (value.session.id === "") fail("session.id is empty; provide the saved transcript identity");
@@ -2707,17 +2718,20 @@ export const zLocalSessionListItem = z.object({
 export type LocalSessionListItem = z.infer<typeof zLocalSessionListItem>;
 
 export const zLocalHelperMembersPayload = z.object({
-    limit: z.int().gte(1).lte(9007199254740991),
     members: z.array(zLocalSessionListItem.and(z.object({
         context: z.null().optional(),
         kind: z.enum(['transcript']).optional(),
         transcript: zLocalSessionRow
     }))),
+    nextItems: z.array(zLocalSessionListItem),
     page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
     total: z.int().gte(0).lte(9007199254740991)
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalHelperMembersPayload during grouped read validation: " + reason });
-    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+    const pageSize = value.perPage;
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
       const ids = new Set<string>();
       const groups = new Set<string>();
       for (const member of value.members) {
@@ -2737,13 +2751,26 @@ export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayloa
 export const zLocalSessionListPayload = z.object({
     helperThreadTotal: z.int().gte(0).lte(9007199254740991),
     items: z.array(zLocalSessionListItem),
-    limit: z.int().gte(1).lte(9007199254740991),
+    nextItems: z.array(zLocalSessionListItem),
     ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
     page: z.int().gte(1).lte(9007199254740991),
-    totalItems: z.int().gte(0).lte(9007199254740991)
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
 });
 
 export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
+
+export const zLocalSessionPage = z.object({
+    items: z.array(zLocalSessionRow),
+    nextItems: z.array(zLocalSessionRow),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSessionPage = z.infer<typeof zLocalSessionPage>;
 
 export const zLocalSyncSessionsPayload = z.object({
     sessions: z.array(zLocalSyncSummary)
@@ -4757,7 +4784,12 @@ export type LocalSyncSessionRow = z.infer<typeof zLocalSyncSessionRow>;
 
 export const zLocalSyncSessionPage = z.object({
     items: z.array(zLocalSyncSessionRow),
-    next: z.string()
+    nextItems: z.array(zLocalSyncSessionRow),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991),
+    totals: zLocalSyncSessionTotals
 });
 
 export type LocalSyncSessionPage = z.infer<typeof zLocalSyncSessionPage>;
@@ -5303,7 +5335,8 @@ export const zVillageHelperMembersPayload = z.object({
     total: z.int().gte(0).lte(9007199254740991)
 }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageHelperMembersPayload during grouped read validation: " + reason });
-    if (value.members.length > value.limit || value.members.length > value.total) fail("member count exceeds page limit or direct total; count direct saved helpers before paging");
+    const pageSize = value.limit;
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
       const ids = new Set<string>();
       const groups = new Set<string>();
       for (const member of value.members) {

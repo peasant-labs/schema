@@ -301,11 +301,17 @@ type LocalSyncSessionsPayload struct {
 
 // LocalSessionRow is one concrete local route row. Sync and Matches retain the
 // existing route-specific data instead of coercing every route into one shape.
+// Title is the stored session title; the search variant omits it because its
+// match rows already carry the matched content.
 type LocalSessionRow struct {
 	Session SessionSummary    `json:"session"`
 	Sync    *LocalSyncSummary `json:"sync,omitempty"`
 	Matches []SearchResult    `json:"matches,omitempty" nullable:"false"`
+	Title   string            `json:"title,omitempty"`
 }
+
+// LocalSessionPage is the flat offset page of concrete route rows.
+type LocalSessionPage = OffsetPage[LocalSessionRow]
 
 // LocalSessionListItem is exactly one transcript row or owner context
 // container, with zero or more collapsed helper groups.
@@ -316,23 +322,29 @@ type LocalSessionListItem struct {
 	HelperGroups []HelperGroupSummary  `json:"helperGroups,omitempty" nullable:"false"`
 }
 
-// LocalSessionListPayload is the opt-in grouped REST list response.
+// LocalSessionListPayload is the opt-in grouped REST list response. It carries
+// the shared offset page fields plus the grouped-only counts.
 type LocalSessionListPayload struct {
 	Items                []LocalSessionListItem `json:"items" nullable:"false"`
+	NextItems            []LocalSessionListItem `json:"nextItems" nullable:"false"`
 	Page                 int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
-	Limit                int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
-	TotalItems           int                    `json:"totalItems" minimum:"0" maximum:"9007199254740991"`
+	PerPage              PageSize               `json:"perPage"`
+	Total                int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Revision             string                 `json:"revision" minLength:"1"`
 	OrdinarySessionTotal int                    `json:"ordinarySessionTotal" minimum:"0" maximum:"9007199254740991"`
 	HelperThreadTotal    int                    `json:"helperThreadTotal" minimum:"0" maximum:"9007199254740991"`
 }
 
 // LocalHelperMembersPayload is a page of saved helper sessions selected by an
-// opaque scope returned from the originating grouped query.
+// opaque scope returned from the originating grouped query. It carries the same
+// offset fields as every other local list page.
 type LocalHelperMembersPayload struct {
-	Members []LocalSessionListItem `json:"members" nullable:"false"`
-	Page    int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
-	Limit   int                    `json:"limit" minimum:"1" maximum:"9007199254740991"`
-	Total   int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Members   []LocalSessionListItem `json:"members" nullable:"false"`
+	NextItems []LocalSessionListItem `json:"nextItems" nullable:"false"`
+	Page      int                    `json:"page" minimum:"1" maximum:"9007199254740991"`
+	PerPage   PageSize               `json:"perPage"`
+	Total     int                    `json:"total" minimum:"0" maximum:"9007199254740991"`
+	Revision  string                 `json:"revision" minLength:"1"`
 }
 
 // Validate checks route-variant identity and count mirrors without deriving
@@ -393,13 +405,18 @@ func (i LocalSessionListItem) Validate() error {
 
 // Validate checks non-null collection and pagination/count boundaries.
 func (p LocalSessionListPayload) Validate() error {
-	if err := validateGroupedPagination(p.Page, p.Limit, p.TotalItems, p.OrdinarySessionTotal, p.HelperThreadTotal); err != nil {
+	if err := validateOffsetPagination(p.Page, p.PerPage, p.Total, p.Revision); err != nil {
 		return err
 	}
-	if p.Items == nil || p.Page < 1 || p.Limit < 1 || p.TotalItems < 0 || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 {
-		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items must be an array and page, limit, and totals must be nonnegative with page/limit at least one; callers cannot page a coherent selected set; initialize items and emit bounded pagination values")
+	if p.Items == nil || p.NextItems == nil || p.OrdinarySessionTotal < 0 || p.HelperThreadTotal < 0 || int64(p.OrdinarySessionTotal) > maxSafeJSONInteger || int64(p.HelperThreadTotal) > maxSafeJSONInteger {
+		return fmt.Errorf("local session list validation failed at schema.LocalSessionListPayload.Validate during grouped response construction: items and nextItems must be arrays and both grouped counts must be nonnegative safe integers; callers cannot page a coherent selected set; initialize both arrays and emit bounded counts")
 	}
 	for _, item := range p.Items {
+		if err := item.Validate(); err != nil {
+			return err
+		}
+	}
+	for _, item := range p.NextItems {
 		if err := item.Validate(); err != nil {
 			return err
 		}
@@ -409,14 +426,14 @@ func (p LocalSessionListPayload) Validate() error {
 
 // Validate checks a typed, non-null member page and every row mirror.
 func (p LocalHelperMembersPayload) Validate() error {
-	if err := validateGroupedPagination(p.Page, p.Limit, p.Total); err != nil {
+	if err := validateOffsetPagination(p.Page, p.PerPage, p.Total, p.Revision); err != nil {
 		return err
 	}
-	if len(p.Members) > p.Limit || len(p.Members) > p.Total {
-		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: member count exceeds limit or direct total; clients cannot page this scope; count direct saved helpers before paging")
+	if len(p.Members) > int(p.PerPage) || len(p.Members) > p.Total {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: member count exceeds perPage or direct total; clients cannot page this scope; count direct saved helpers before paging")
 	}
-	if p.Members == nil || p.Page < 1 || p.Limit < 1 || p.Total < 0 {
-		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members must be an array and page, limit, and total must be valid; callers cannot page the authorized scope; initialize members and emit bounded pagination values")
+	if p.Members == nil || p.NextItems == nil {
+		return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during scoped member response construction: members and nextItems must be arrays; callers cannot page the authorized scope; initialize both arrays and emit bounded pagination values")
 	}
 	seen := make(map[string]bool)
 	groups := make(map[string]bool)
@@ -437,6 +454,11 @@ func (p LocalHelperMembersPayload) Validate() error {
 				return fmt.Errorf("local helper members validation failed at schema.LocalHelperMembersPayload.Validate during paging: a groupId appears under multiple members; clients cannot assign its owner; emit each immediate-owner group once")
 			}
 			groups[group.GroupID] = true
+		}
+	}
+	for _, row := range p.NextItems {
+		if err := row.Validate(); err != nil {
+			return err
 		}
 	}
 	return nil

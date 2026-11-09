@@ -132,6 +132,25 @@ func validateGroupedPagination(page, limit int, totals ...int) error {
 	return nil
 }
 
+// validateOffsetPagination checks the shared offset page fields one local list
+// page carries: a one-based page, a closed page size, a nonnegative safe total,
+// and the store revision rendered as decimal digits.
+func validateOffsetPagination(page int, perPage PageSize, total int, revision string) error {
+	if page < 1 || int64(page) > maxSafeJSONInteger {
+		return fmt.Errorf("offset pagination validation failed at schema.validateOffsetPagination during read construction: page %d is outside 1..%d; clients cannot page exactly; emit the one-based page", page, maxSafeJSONInteger)
+	}
+	if !perPage.IsValid() {
+		return fmt.Errorf("offset pagination validation failed at schema.validateOffsetPagination during read construction: perPage %d is outside the closed set; clients can only request 25, 50, or 100; map an omitted maximum to 25 before emitting the page", int(perPage))
+	}
+	if total < 0 || int64(total) > maxSafeJSONInteger {
+		return fmt.Errorf("offset pagination validation failed at schema.validateOffsetPagination during read construction: total %d is outside 0..%d; clients cannot render real page numbers; emit the counted total", total, maxSafeJSONInteger)
+	}
+	if !isDecimalRevision(revision) {
+		return fmt.Errorf("offset pagination validation failed at schema.validateOffsetPagination during read construction: revision %q is not a decimal string; the revision is the integer store revision, not an opaque name; emit store_state.revision", revision)
+	}
+	return nil
+}
+
 type HelperContextSummary struct {
 	GroupID     string                       `json:"groupId" yaml:"groupId"`
 	OwnerStatus RelationshipNavigationStatus `json:"ownerStatus" yaml:"ownerStatus"`

@@ -33,10 +33,12 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"CollectiveFetchSourceResult", new(schema.CollectiveFetchSourceResult)}, {"CollectiveFetchAssociationScopeResult", new(schema.CollectiveFetchAssociationScopeResult)}, {"CollectiveFetchAssociationResults", new(schema.CollectiveFetchAssociationResults)}, {"CollectiveFetchDomainResult", new(schema.CollectiveFetchDomainResult)}, {"CollectiveFetchReport", new(schema.CollectiveFetchReport)},
 		{"CollectiveFetchDomainSummary", new(schema.CollectiveFetchDomainSummary)}, {"CollectiveFetchSummary", new(schema.CollectiveFetchSummary)}, {"CollectiveObservationResponse", new(schema.CollectiveObservationResponse)}, {"LocalContributionHistoryResponse", new(schema.LocalContributionHistoryResponse)}, {"LocalContributionTraversalConflict", new(schema.LocalContributionTraversalConflict)},
 		{"LocalRemoteContributionAttempt", new(schema.LocalRemoteContributionAttempt)},
-		{"PageToken", new(schema.PageToken)},
+		{"PageSize", new(schema.PageSize)},
 		{"LocalSyncPublicationFilter", new(schema.LocalSyncPublicationFilter)},
 		{"LocalSyncSessionRow", new(schema.LocalSyncSessionRow)},
+		{"LocalSyncSessionTotals", new(schema.LocalSyncSessionTotals)},
 		{"LocalSyncSessionPage", new(schema.LocalSyncSessionPage)},
+		{"LocalSessionPage", new(schema.LocalSessionPage)},
 		{"LocalSyncProjectOption", new(schema.LocalSyncProjectOption)},
 		{"LocalSyncProjectOptions", new(schema.LocalSyncProjectOptions)},
 		{"ActivityEdge", new(schema.ActivityEdge)}, {"AnnotationAxis", new(schema.AnnotationAxis)},
@@ -378,6 +380,44 @@ func applyGoRequiredFields(schemaMap map[string]interface{}, valueType reflect.T
 		field := valueType.Field(i)
 		if !field.IsExported() {
 			continue
+		}
+		if field.Anonymous {
+			// The reflector promotes an embedded struct's JSON fields into this
+			// schema's properties but records the Go field name as required. For an
+			// instantiated generic (whose promoted property names are the wire
+			// contract and whose type name is not a property at all), expand the
+			// embedded struct's own required fields. A defined embedded struct keeps
+			// the released single-name behavior so a frozen legacy envelope does not
+			// drift.
+			embedded := field.Type
+			for embedded.Kind() == reflect.Pointer {
+				embedded = embedded.Elem()
+			}
+			if embedded.Kind() == reflect.Struct && strings.Contains(embedded.Name(), "[") {
+				for j := 0; j < embedded.NumField(); j++ {
+					inner := embedded.Field(j)
+					if !inner.IsExported() {
+						continue
+					}
+					innerTag := inner.Tag.Get("json")
+					innerParts := strings.Split(innerTag, ",")
+					innerName := innerParts[0]
+					if innerName == "-" {
+						continue
+					}
+					if innerName == "" {
+						innerName = inner.Name
+					}
+					innerOptional := false
+					for _, option := range innerParts[1:] {
+						innerOptional = innerOptional || option == "omitempty"
+					}
+					if !innerOptional {
+						required = append(required, innerName)
+					}
+				}
+				continue
+			}
 		}
 		tag := field.Tag.Get("json")
 		parts := strings.Split(tag, ",")
