@@ -18,9 +18,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   text parts survive publication unchanged.
 - The `content_parts_v1` content capability is required whenever any main or
   earlier-history turn carries a non-empty `contentParts` list, text-only or
-  image-bearing. Validation accepts the local shape on durable detail and
-  either the local or published shape inside a `TranscriptContent` envelope,
-  which carries both a standalone local export and the published wire.
+  image-bearing. A bare `SessionDetailPayload` is validated with the local image
+  shape. `TranscriptContent` and its raw decoder are publication-only: they
+  accept only the published `{type: "image", omittedReason: "not_published"}`
+  image shape and reject every local field. A standalone local export is a bare
+  `SessionDetailPayload`, so it keeps local image evidence.
 - `EntryType` gains `image` for a source entry that carries an ordered image
   block.
 

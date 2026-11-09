@@ -3508,22 +3508,22 @@ export const zTurnContentPart = z.object({
     if (image.height !== undefined && image.height < 0) issue("height must be nonnegative");
     if (image.ref !== undefined && !/^[0-9a-f]{64}$/.test(image.ref)) issue("ref must be lowercase 64-hex");
     if (image.omittedReason === "not_published") {
-      if (image.ref !== undefined || image.mediaType !== undefined || image.byteSize !== undefined || image.width !== undefined || image.height !== undefined) issue("a published image must not carry local fields");
+      if (image.ref !== undefined || image.mediaType !== undefined || (image.byteSize !== undefined && image.byteSize !== 0) || (image.width !== undefined && image.width !== 0) || (image.height !== undefined && image.height !== 0)) issue("a published image must not carry local fields");
       return;
     }
     if (image.omittedReason === "unsupported") {
       if (image.mediaType !== undefined) issue("an unsupported image must not carry mediaType");
-      if (image.ref !== undefined || image.byteSize !== undefined) issue("an unsupported image must not carry ref or byteSize");
+      if (image.ref !== undefined || (image.byteSize !== undefined && image.byteSize !== 0)) issue("an unsupported image must not carry ref or byteSize");
       return;
     }
     if (image.mediaType !== "image/png" && image.mediaType !== "image/jpeg") issue("a local image requires image/png or image/jpeg");
     if (image.omittedReason === "too_large") {
       if (image.ref !== undefined) issue("a too_large image must not carry ref");
-      if (image.byteSize !== undefined) issue("a too_large image must not carry byteSize");
+      if (image.byteSize !== undefined && image.byteSize !== 0) issue("a too_large image must not carry byteSize");
       return;
     }
     if (image.omittedReason === "missing") {
-      if (image.byteSize !== undefined) issue("a missing image must not carry byteSize");
+      if (image.byteSize !== undefined && image.byteSize !== 0) issue("a missing image must not carry byteSize");
       return;
     }
     if (image.ref === undefined) issue("an inline image requires ref");

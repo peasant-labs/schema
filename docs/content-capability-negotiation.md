@@ -259,9 +259,11 @@ no text. An image part is one of two shapes:
   `too_large` and `unsupported`. `mediaType` is `image/png` or `image/jpeg`,
   required unless the reason is `unsupported` (the unsupported source type is
   outside the recorded set). `byteSize` is the exact stored size and is
-  positive only when bytes are carried; every omitted reason carries zero.
-  `width` and `height` are optional pixel dimensions, with zero meaning
-  unknown. `not_published` is not a local reason. `unsupported` takes
+  positive only when bytes are carried; every omitted reason carries zero, and
+  zero means unset, so an explicit zero carries no information. `width` and
+  `height` are optional pixel dimensions, with zero meaning unset or unknown,
+  and an explicit zero is accepted as unset. `not_published` is not a local
+  reason. `unsupported` takes
   precedence over `too_large`: a source media type outside the recorded set is
   unsupported even when it also exceeds the size limit, and `too_large`
   therefore always carries a recorded png or jpeg media type.
@@ -283,9 +285,11 @@ A server advertising `content_parts_v1` guarantees that it:
 A deployment MUST withhold the token until that production-path preservation
 proof passes, including a field-loss mutation. Missing advertisement requires
 refusal before upload, never stripping or downgrading parts. A standalone local
-export keeps local image evidence and needs no receiver, so the transcript
-envelope accepts either image shape. Requirements accumulate with every other
-token.
+export is a bare `SessionDetailPayload` and keeps local image evidence; it needs
+no receiver. `TranscriptContent`, `ValidateTranscriptContent`, and
+`DecodeTranscriptContentRaw` are publication-only: they accept only the
+published `{type: "image", omittedReason: "not_published"}` image shape and
+reject every local field. Requirements accumulate with every other token.
 
 ### Native metadata byte budgets
 

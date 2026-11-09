@@ -311,6 +311,78 @@ cases:
     classification: must-fail
     provenance: {source: boundary, ref: 'too_large implies a recorded png or jpeg media type'}
     mutation: {description: 'drops the recorded media type from a too_large image'}
+  - name: local-negative-width
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048,"width":-1}}'
+    expected: {accepted: false, errorContains: 'a size or dimension is negative'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'image metadata is a measurement'}
+    mutation: {description: 'negates the pixel width'}
+  - name: local-negative-height
+    input:
+      mode: local
+      part: '{"type":"image","image":{"ref":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mediaType":"image/png","byteSize":2048,"height":-1}}'
+    expected: {accepted: false, errorContains: 'a size or dimension is negative'}
+    classification: must-fail
+    provenance: {source: boundary, ref: 'image metadata is a measurement'}
+    mutation: {description: 'negates the pixel height'}
+  - name: local-too-large-byte-size-zero
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"too_large","byteSize":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero byteSize means unset'}
+    mutation: {description: 'writes an explicit zero byte size on a too_large image'}
+  - name: local-unsupported-byte-size-zero
+    input:
+      mode: local
+      part: '{"type":"image","image":{"omittedReason":"unsupported","byteSize":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero byteSize means unset'}
+    mutation: {description: 'writes an explicit zero byte size on an unsupported image'}
+  - name: local-missing-byte-size-zero
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"missing","byteSize":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero byteSize means unset'}
+    mutation: {description: 'writes an explicit zero byte size on a missing image'}
+  - name: local-too-large-width-zero
+    input:
+      mode: local
+      part: '{"type":"image","image":{"mediaType":"image/png","omittedReason":"too_large","width":0,"height":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero dimensions mean unset'}
+    mutation: {description: 'writes explicit zero dimensions on a too_large image'}
+  - name: published-byte-size-zero
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","byteSize":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero byteSize means unset'}
+    mutation: {description: 'writes an explicit zero byte size on a published image'}
+  - name: published-width-zero
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","width":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero dimensions mean unset'}
+    mutation: {description: 'writes an explicit zero width on a published image'}
+  - name: published-height-zero
+    input:
+      mode: published
+      part: '{"type":"image","image":{"omittedReason":"not_published","height":0}}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: 'zero dimensions mean unset'}
+    mutation: {description: 'writes an explicit zero height on a published image'}
   - name: unknown-mode
     input:
       mode: speculative

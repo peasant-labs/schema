@@ -39,6 +39,22 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: published text parts survive}
     mutation: {description: carries only a text part through publication}
+  - name: local-explicit-zero-fields
+    input:
+      mode: local
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"mediaType":"image/png","omittedReason":"missing","byteSize":0,"width":0,"height":0}}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: zero size and dimensions mean unset}
+    mutation: {description: writes explicit zero size and dimensions on a local missing image}
+  - name: published-explicit-zero-fields
+    input:
+      mode: published
+      detail: '{"id":"fixture-session","harness":"claude-code","startTime":"2020-01-01T00:00:00Z","endTime":"2020-01-01T00:00:00Z","durationMins":0,"totalTokens":0,"tokensIn":0,"tokensOut":0,"turnCount":1,"toolCallCount":0,"outcome":"resolved","sessionOrigin":"unknown","turns":[{"index":0,"role":"user","content":"","depth":0,"timestamp":"2020-01-01T00:00:00Z","contentParts":[{"type":"image","image":{"omittedReason":"not_published","byteSize":0,"width":0,"height":0}}]}]}'
+    expected: {accepted: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: zero size and dimensions mean unset}
+    mutation: {description: writes explicit zero size and dimensions on a published image}
   - name: local-published-shape-rejected
     input:
       mode: local

@@ -4854,12 +4854,12 @@
       "SchemaImagePart": {
         "properties": {
           "byteSize": {
-            "description": "Exact stored byte size. Zero when the bytes are omitted; always zero or absent for a published transcript.",
+            "description": "Exact stored byte size. Zero means unset or no bytes, and an explicit zero is accepted as unset; a published transcript never carries a nonzero size.",
             "minimum": 0,
             "type": "integer"
           },
           "height": {
-            "description": "Optional recorded pixel height; zero means unknown. Absent from a published transcript.",
+            "description": "Optional recorded pixel height; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero height.",
             "minimum": 0,
             "type": "integer"
           },
@@ -4879,7 +4879,7 @@
             "type": "string"
           },
           "width": {
-            "description": "Optional recorded pixel width; zero means unknown. Absent from a published transcript.",
+            "description": "Optional recorded pixel width; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero width.",
             "minimum": 0,
             "type": "integer"
           }

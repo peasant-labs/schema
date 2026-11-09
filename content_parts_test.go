@@ -51,9 +51,17 @@ func TestContentPartDetailFixtures(t *testing.T) {
 				t.Fatalf("decode fixture detail: %v", err)
 			}
 			mode := schema.ImagePartMode(fixtureCase.Input.Mode)
-			err := schema.ValidateSessionDetailPayloadForMode(detail, mode)
+			var err error
+			switch mode {
+			case schema.ImagePartModeLocal:
+				err = schema.ValidateSessionDetailPayload(detail)
+			case schema.ImagePartModePublished:
+				err = schema.ValidatePublishedSessionDetailPayload(detail)
+			default:
+				t.Fatalf("fixture mode %q is not local or published", mode)
+			}
 			if (err == nil) != fixtureCase.Expected.Accepted {
-				t.Fatalf("ValidateSessionDetailPayloadForMode(%q) accepted=%v, want %v; err=%v", mode, err == nil, fixtureCase.Expected.Accepted, err)
+				t.Fatalf("detail validator for mode %q accepted=%v, want %v; err=%v", mode, err == nil, fixtureCase.Expected.Accepted, err)
 			}
 			if fixtureCase.Expected.Accepted && fixtureCase.Classification != testcase.MustPass {
 				t.Fatalf("case classification %q disagrees with an accepted expectation", fixtureCase.Classification)
@@ -64,17 +72,7 @@ func TestContentPartDetailFixtures(t *testing.T) {
 			if err != nil && !strings.Contains(err.Error(), fixtureCase.Expected.ErrorContains) {
 				t.Fatalf("validation error %q does not contain %q", err, fixtureCase.Expected.ErrorContains)
 			}
-			switch mode {
-			case schema.ImagePartModeLocal:
-				localErr := schema.ValidateSessionDetailPayload(detail)
-				if (localErr == nil) != (err == nil) {
-					t.Fatalf("local wrapper outcome %v disagrees with the mode validator outcome %v", localErr == nil, err == nil)
-				}
-			case schema.ImagePartModePublished:
-				publishedErr := schema.ValidatePublishedSessionDetailPayload(detail)
-				if (publishedErr == nil) != (err == nil) {
-					t.Fatalf("published wrapper outcome %v disagrees with the mode validator outcome %v", publishedErr == nil, err == nil)
-				}
+			if mode == schema.ImagePartModePublished {
 				envelopeErr := schema.ValidateTranscriptContent(schema.TranscriptContent{ContractVersion: "1.0.0", Kind: schema.ContentKindSessionDetail, SessionDetail: &detail})
 				if (envelopeErr == nil) != (err == nil) {
 					t.Fatalf("publication envelope outcome %v disagrees with the published detail outcome %v", envelopeErr == nil, err == nil)

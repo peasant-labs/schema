@@ -4,6 +4,8 @@ requiredCaseNames:
   - local-earlier-history-inline-valid
   - published-omitted-valid
   - published-text-only-valid
+  - local-explicit-zero-fields
+  - published-explicit-zero-fields
   - local-published-shape-rejected
   - published-local-ref-rejected
   - published-earlier-history-local-ref-rejected

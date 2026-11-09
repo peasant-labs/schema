@@ -283,21 +283,7 @@ func ValidateUsageDetail(v UsageDetail) error {
 // parts are validated in their local image shape; a published transcript is
 // validated by ValidatePublishedSessionDetailPayload or ValidateTranscriptContent.
 func ValidateSessionDetailPayload(value SessionDetailPayload) error {
-	return ValidateSessionDetailPayloadForMode(value, ImagePartModeLocal)
-}
-
-// ValidateSessionDetailPayloadForMode validates a session detail under the
-// selected content-part image shape. Use ImagePartModeLocal for durable local
-// detail and ImagePartModePublished for detail assembled for publication. The
-// mode is supplied by the caller and is never inferred from the parts.
-func ValidateSessionDetailPayloadForMode(value SessionDetailPayload, mode ImagePartMode) error {
-	if mode != ImagePartModeLocal && mode != ImagePartModePublished {
-		return fmt.Errorf(
-			"session detail validation failed at schema.ValidateSessionDetailPayloadForMode while selecting mode %q: the mode is not local or published, so the accepted content-part shape is undefined; pass ImagePartModeLocal for durable detail or ImagePartModePublished for published detail",
-			mode,
-		)
-	}
-	return validateSessionDetailPayload(value, mode)
+	return validateSessionDetailPayloadForMode(value, ImagePartModeLocal)
 }
 
 // ValidatePublishedSessionDetailPayload validates a session detail assembled for
@@ -305,7 +291,20 @@ func ValidateSessionDetailPayloadForMode(value SessionDetailPayload, mode ImageP
 // local ref, media type, size, or dimensions is refused. Village's typed read
 // and rewrite boundary uses this when it validates a stored published detail.
 func ValidatePublishedSessionDetailPayload(value SessionDetailPayload) error {
-	return ValidateSessionDetailPayloadForMode(value, ImagePartModePublished)
+	return validateSessionDetailPayloadForMode(value, ImagePartModePublished)
+}
+
+// validateSessionDetailPayloadForMode selects the content-part image shape for a
+// session detail. The exported wrappers above are the only callers, so the mode
+// is explicit at each production boundary and never inferred from the parts.
+func validateSessionDetailPayloadForMode(value SessionDetailPayload, mode ImagePartMode) error {
+	if mode != ImagePartModeLocal && mode != ImagePartModePublished {
+		return fmt.Errorf(
+			"session detail validation failed at schema.ValidateSessionDetailPayload while selecting mode %q: the mode is not local or published, so the accepted content-part shape is undefined; pass ImagePartModeLocal for durable detail or ImagePartModePublished for published detail",
+			mode,
+		)
+	}
+	return validateSessionDetailPayload(value, mode)
 }
 
 func validateSessionDetailPayload(value SessionDetailPayload, imageMode ImagePartMode) error {

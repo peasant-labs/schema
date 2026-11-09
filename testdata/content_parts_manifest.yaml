@@ -37,5 +37,14 @@ requiredCaseNames:
   - local-ref-65-hex
   - local-unsupported-wins-over-too-large
   - local-too-large-without-media
+  - local-negative-width
+  - local-negative-height
+  - local-too-large-byte-size-zero
+  - local-unsupported-byte-size-zero
+  - local-missing-byte-size-zero
+  - local-too-large-width-zero
+  - published-byte-size-zero
+  - published-width-zero
+  - published-height-zero
   - unknown-part-type
   - unknown-mode

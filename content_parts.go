@@ -142,13 +142,15 @@ type ImagePart struct {
 	// an unsupported source type, which cannot be represented in this closed
 	// set, and for a published transcript.
 	MediaType ImageMediaType `json:"mediaType,omitempty" description:"Recorded image/png or image/jpeg media type. Absent for an unsupported source type or a published transcript."`
-	// ByteSize is the exact stored byte size. It is zero when no bytes are
-	// carried and always absent from a published transcript.
-	ByteSize int `json:"byteSize,omitempty" minimum:"0" description:"Exact stored byte size. Zero when the bytes are omitted; always zero or absent for a published transcript."`
+	// ByteSize is the exact stored byte size. Zero means unset or no bytes, and
+	// an explicit zero is accepted as unset; a published transcript never
+	// carries a nonzero size.
+	ByteSize int `json:"byteSize,omitempty" minimum:"0" description:"Exact stored byte size. Zero means unset or no bytes, and an explicit zero is accepted as unset; a published transcript never carries a nonzero size."`
 	// Width and Height are the optional recorded pixel dimensions. Zero means
-	// unknown; a published transcript carries neither.
-	Width  int `json:"width,omitempty" minimum:"0" description:"Optional recorded pixel width; zero means unknown. Absent from a published transcript."`
-	Height int `json:"height,omitempty" minimum:"0" description:"Optional recorded pixel height; zero means unknown. Absent from a published transcript."`
+	// unset or unknown, and an explicit zero is accepted as unset; a published
+	// transcript never carries a nonzero dimension.
+	Width  int `json:"width,omitempty" minimum:"0" description:"Optional recorded pixel width; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero width."`
+	Height int `json:"height,omitempty" minimum:"0" description:"Optional recorded pixel height; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero height."`
 	// OmittedReason says why no bytes are carried. The empty value means local
 	// bytes are present. unsupported wins over too_large for a non-recorded
 	// media type.
