@@ -1,4 +1,4 @@
-required_names: [grouped-session-list, grouped-search, grouped-sync, flat-transcript-read, scoped-helper-members, recorded-session-commits, detected-session-pull-requests, quality-page]
+required_names: [grouped-session-list, grouped-search, grouped-sync, flat-transcript-read, transcript-segment-directory, transcript-segment-read, transcript-window-descriptor, scoped-helper-members, recorded-session-commits, detected-session-pull-requests, quality-page]
 routes:
   cases:
   - name: grouped-session-list
@@ -29,6 +29,38 @@ routes:
     classification: must-pass
     provenance: {source: requirement, ref: "flat additive transcript read"}
     mutation: {description: "returns the embedded read DTO with root detail fields"}
+  - name: transcript-segment-directory
+    input: {path: "/api/v1/sessions/{id}/transcript/segments", operationId: getSessionTranscriptSegments}
+    expected:
+      parameters: [{name: page, in: query, type: integer, minimum: 1}, {name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}]
+      responseRefs: ["#/components/schemas/SchemaTranscriptSegmentDirectory"]
+      requiredRoot: [sessionId, revision, totalTurns, totalSegments, segments]
+      nonnullArrays: [segments]
+      forbiddenRoot: [turns]
+    classification: must-pass
+    provenance: {source: requirement, ref: "the directory is the transcript's only global index"}
+    mutation: {description: "declares the paged directory with no turn content"}
+  - name: transcript-segment-read
+    input: {path: "/api/v1/sessions/{id}/transcript/segments/{index}", operationId: getSessionTranscriptSegment}
+    expected:
+      parameters: [{name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}, {name: index, in: path, type: integer, minimum: 0, required: true}]
+      responseRefs: ["#/components/schemas/SchemaTranscriptSegment"]
+      requiredRoot: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns]
+      nonnullArrays: [turns]
+    classification: must-pass
+    provenance: {source: requirement, ref: "one segment's whole turns addressed by its directory ordinal"}
+    mutation: {description: "declares the transport unit that carries one segment's turns"}
+  - name: transcript-window-descriptor
+    input: {path: "/api/v1/sessions/{id}/transcript/window", operationId: getSessionTranscriptWindow}
+    expected:
+      parameters: [{name: anchor, in: query, type: integer, minimum: 0, required: true}, {name: span, in: query, type: integer, minimum: 1}, {name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}]
+      responseRefs: ["#/components/schemas/SchemaTranscriptWindow"]
+      requiredRoot: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer]
+      nonnullArrays: [segments]
+      forbiddenRoot: [turns, content, toolCalls]
+    classification: must-pass
+    provenance: {source: requirement, ref: "the window read answers a descriptor and never turn content"}
+    mutation: {description: "declares the descriptor that names its covering segment run"}
   - name: scoped-helper-members
     input: {path: "/api/v1/session-groups/{groupId}/members", operationId: listLocalHelperGroupMembers}
     expected: {parameters: [{name: scope, in: query, type: string, required: true}, {name: page, in: query, type: integer, minimum: 1}, {name: perPage, in: query, type: integer, enum: [25, 50, 100]}, {name: groupId, in: path, type: string, required: true}], responseRefs: ["#/components/schemas/SchemaLocalHelperMembersPayload"], requiredRoot: [members, nextItems, page, perPage, total, revision], nonnullArrays: [members, nextItems]}

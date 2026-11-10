@@ -217,7 +217,11 @@ const (
 	// list, its text and image part evidence, the image entry type, and the
 	// content_parts_v1 capability; every turnCount field documents conversation
 	// turns (additive = minor bump).
-	PeasantLocalAPIVersion = "0.31.0"
+	// Bumped to 0.32.0 when the transcript segment surface entered the document:
+	// the segment directory, the segment read, and the window descriptor, with
+	// their page, revision, and anchor parameters and their refusal arms
+	// (additive operations = minor bump).
+	PeasantLocalAPIVersion = "0.32.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical

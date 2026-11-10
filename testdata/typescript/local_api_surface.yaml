@@ -45,6 +45,9 @@ operations:
   - {path: "/api/v1/sessions/{id}/pull-requests", method: get, operation_id: getSessionPullRequests}
   - {path: "/api/v1/sessions/{id}/transcript", method: get, operation_id: getSessionTranscript,
      description_anchors: [{name: transcript_by_id_not_selection_filtered, text: "is not refused because that selection would leave it out of a future ingest"}]}
+  - {path: "/api/v1/sessions/{id}/transcript/segments", method: get, operation_id: getSessionTranscriptSegments}
+  - {path: "/api/v1/sessions/{id}/transcript/segments/{index}", method: get, operation_id: getSessionTranscriptSegment}
+  - {path: "/api/v1/sessions/{id}/transcript/window", method: get, operation_id: getSessionTranscriptWindow}
   - {path: /api/v1/shutdown, method: post, operation_id: postShutdown}
   - path: /api/v1/sync/sessions
     method: get
