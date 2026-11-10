@@ -325,7 +325,8 @@ type Harness = bestiary.Harness
 
 const (
 	HarnessClaudeCode = bestiary.HarnessClaudeCode
-	// HarnessGeminiCLI remains available for wire compatibility despite its upstream deprecation.
+	// HarnessGeminiCLI remains available for wire compatibility.
+	// Deprecated: Gemini CLI has been replaced by the Antigravity products.
 	HarnessGeminiCLI    = bestiary.HarnessGeminiCLI
 	HarnessCodex        = bestiary.HarnessCodex
 	HarnessOpenCode     = bestiary.HarnessOpenCode
@@ -342,7 +343,7 @@ const (
 )
 
 // AllHarnesses is the canonical list of harnesses that peasant supports for ingestion.
-// The six layout harnesses are known but not declared; Gemini CLI remains declared, deprecated, and unharvested.
+// The layout harnesses are known but not declared; Gemini CLI remains declared, deprecated, and unharvested.
 var AllHarnesses = []Harness{
 	HarnessClaudeCode, HarnessGeminiCLI, HarnessCodex, HarnessOpenCode, HarnessCursor,
 	HarnessStrike, HarnessPi,

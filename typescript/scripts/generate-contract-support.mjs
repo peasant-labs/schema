@@ -167,6 +167,7 @@ function renderEnums(openapi, catalog) {
       throw new Error(`TypeScript enum generation found ${enumCase.name} drift between Go/OpenAPI (${JSON.stringify(actualValues)}) and testdata/typescript/enums.yaml (${JSON.stringify(expectedValues)}); TypeScript output was not written; update the canonical Go closed set and its fixture together.`);
     }
     if (enumCase.name === "Harness") {
+      // The canonical source shape is var AllHarnesses = []Harness{...}.
       const match = /var\s+AllHarnesses\s*=\s*\[\]Harness\s*\{([^}]*)\}/s.exec(typesSource);
       if (!match) throw new Error("TypeScript enum generation cannot read AllHarnesses from types.go; restore its slice declaration before regenerating.");
       const byName = new Map(members.map((member) => [`Harness${member.name}`, member.value]));

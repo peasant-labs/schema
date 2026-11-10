@@ -1,12 +1,15 @@
 package schema_test
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
-	"gopkg.in/yaml.v3"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase"
@@ -529,7 +532,7 @@ func TestLicense_WireRoundTrip(t *testing.T) {
 	}
 }
 
-//go:embed testdata/contract/harness_display_names.yaml
+//go:embed testdata/harness_display_names.yaml
 var harnessDisplayNamesYAML []byte
 
 func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
@@ -540,15 +543,17 @@ func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
 			Display string `yaml:"display"`
 		} `yaml:"cases"`
 	}
-	if err := yaml.Unmarshal(harnessDisplayNamesYAML, &fixture); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(harnessDisplayNamesYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatal(err)
 	}
-	seen := make(map[string]bool)
+	if len(fixture.Cases) == 0 {
+		t.Fatal("display fixture cases are empty")
+	}
+	var names []string
 	for _, tc := range fixture.Cases {
-		if seen[tc.Name] {
-			t.Fatalf("duplicate display fixture %q", tc.Name)
-		}
-		seen[tc.Name] = true
+		names = append(names, tc.Name)
 		h := schema.Harness(tc.Name)
 		if !h.IsKnown() {
 			t.Errorf("unknown harness %q", h)
@@ -557,14 +562,27 @@ func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
 			t.Errorf("%s: got %q, want %q", h, got, tc.Display)
 		}
 	}
-	for _, name := range fixture.RequiredNames {
-		if !seen[name] {
-			t.Errorf("missing display case %q", name)
-		}
-	}
+	assertUniqueFixtureNames(t, "display cases", names)
+	assertUniqueFixtureNames(t, "display required names", fixture.RequiredNames)
+	assertSameStringSet(t, "display names", names, fixture.RequiredNames)
+	assertSameStringSet(t, "required display names", fixture.RequiredNames, strings.Fields("grok-build devin-desktop cline kiro kiro-cli kiro-crew"))
 	for _, h := range schema.Harnesses() {
 		if schema.HarnessDisplayName(h) == string(h) {
 			t.Errorf("%s has no explicit display name", h)
+		}
+	}
+}
+
+func assertUniqueFixtureNames(t *testing.T, label string, names []string) {
+	t.Helper()
+	sorted := append([]string(nil), names...)
+	sort.Strings(sorted)
+	for i, name := range sorted {
+		if name == "" || strings.TrimSpace(name) != name {
+			t.Fatalf("%s contains invalid name %q", label, name)
+		}
+		if i > 0 && name == sorted[i-1] {
+			t.Fatalf("%s repeats name %q", label, name)
 		}
 	}
 }

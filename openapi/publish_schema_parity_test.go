@@ -4,11 +4,12 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
-	"gopkg.in/yaml.v3"
 	"os"
+	"strings"
 	"testing"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
+	"gopkg.in/yaml.v3"
 
 	"github.com/peasant-labs/schema"
 	specpkg "github.com/peasant-labs/schema/openapi"
@@ -142,6 +143,8 @@ func TestPublishSchema_ExtractedShape(t *testing.T) {
 	}
 }
 
+// Current verdicts use the current schema; the legacy corpus pins frozen behavior.
+//
 //go:embed testdata/current_harness_verdicts.yaml
 var currentHarnessVerdicts []byte
 
@@ -155,7 +158,9 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 			Harness string `yaml:"harness"`
 		} `yaml:"cases"`
 	}
-	if err := yaml.Unmarshal(currentHarnessVerdicts, &fixture); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(currentHarnessVerdicts))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatal(err)
 	}
 	raw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
@@ -163,12 +168,12 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 		t.Fatal(err)
 	}
 	compiled := compileSchema(t, "current.json", raw)
-	seen := make(map[string]bool)
+	if len(fixture.Cases) == 0 {
+		t.Fatal("current publish verdict cases are empty")
+	}
+	var names []string
 	for _, tc := range fixture.Cases {
-		if seen[tc.Name] {
-			t.Fatalf("duplicate case %q", tc.Name)
-		}
-		seen[tc.Name] = true
+		names = append(names, tc.Name)
 		t.Run(tc.Name, func(t *testing.T) {
 			body := []byte(tc.Body)
 			if got := accepts(t, compiled, body); got != tc.Accepts {
@@ -187,9 +192,8 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 			}
 		})
 	}
-	for _, name := range fixture.RequiredNames {
-		if !seen[name] {
-			t.Errorf("missing case %q", name)
-		}
-	}
+	collectUniqueNames(t, "current publish verdicts", "cases", names)
+	collectUniqueNames(t, "current publish verdicts", "required_names", fixture.RequiredNames)
+	assertSameStringSet(t, "current publish verdicts", names, fixture.RequiredNames)
+	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build unknown-harness-current"))
 }

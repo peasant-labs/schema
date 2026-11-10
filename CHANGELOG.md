@@ -7,7 +7,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
-- Recognize additional harness identities in the shared wire contract.
+- Types 0.46.0, Village API 0.38.0, and Local API 0.34.0 recognize six additional harness identities: grok-build, devin-desktop, cline, kiro, kiro-cli, kiro-crew. The prior spec versions and both 0.37.0 request schemas are frozen in the retirement registry.
 - Local API 0.33.0 declares `GET /api/v1/attachments/{ref}`. `ref` is a
   lowercase 64-hex sha256. A matching stored image answers 200 as `image/png`
   or `image/jpeg` with `Cache-Control: public, max-age=31536000, immutable`.
