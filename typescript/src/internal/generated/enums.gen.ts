@@ -593,6 +593,12 @@ export const Harness = Object.freeze({
   Antigravity: zHarness.parse("antigravity"),
   Strike: zHarness.parse("strike"),
   Pi: zHarness.parse("pi"),
+  GrokBuild: zHarness.parse("grok-build"),
+  DevinDesktop: zHarness.parse("devin-desktop"),
+  Cline: zHarness.parse("cline"),
+  Kiro: zHarness.parse("kiro"),
+  KiroCLI: zHarness.parse("kiro-cli"),
+  KiroCrew: zHarness.parse("kiro-crew"),
 } as const);
 /**
  * AllHarnesses is the ingestion-supported subset of Harness, not the full

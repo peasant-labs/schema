@@ -1,0 +1,9 @@
+required_names: [grok-build, unknown-harness-current]
+cases:
+  - name: grok-build
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"grok-build","model":"claude-opus-4-6"}}'
+    accepts: true
+    harness: grok-build
+  - name: unknown-harness-current
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"not-a-harness","model":"claude-opus-4-6"}}'
+    accepts: false

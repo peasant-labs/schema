@@ -5,9 +5,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
+	"gopkg.in/yaml.v3"
 
 	"github.com/peasant-labs/schema"
 	specpkg "github.com/peasant-labs/schema/openapi"
@@ -139,4 +141,59 @@ func TestPublishSchema_ExtractedShape(t *testing.T) {
 			t.Errorf("extracted schema root properties missing PublishRequest field %q", field)
 		}
 	}
+}
+
+// Current verdicts use the current schema; the legacy corpus pins frozen behavior.
+//
+//go:embed testdata/current_harness_verdicts.yaml
+var currentHarnessVerdicts []byte
+
+func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
+	var fixture struct {
+		RequiredNames []string `yaml:"required_names"`
+		Cases         []struct {
+			Name    string `yaml:"name"`
+			Body    string `yaml:"body"`
+			Accepts bool   `yaml:"accepts"`
+			Harness string `yaml:"harness"`
+		} `yaml:"cases"`
+	}
+	decoder := yaml.NewDecoder(bytes.NewReader(currentHarnessVerdicts))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled := compileSchema(t, "current.json", raw)
+	if len(fixture.Cases) == 0 {
+		t.Fatal("current publish verdict cases are empty")
+	}
+	var names []string
+	for _, tc := range fixture.Cases {
+		names = append(names, tc.Name)
+		t.Run(tc.Name, func(t *testing.T) {
+			body := []byte(tc.Body)
+			if got := accepts(t, compiled, body); got != tc.Accepts {
+				var doc any
+				_ = json.Unmarshal(body, &doc)
+				t.Fatalf("accepts = %v, want %v: %v", got, tc.Accepts, compiled.Validate(doc))
+			}
+			if tc.Accepts {
+				var req schema.AuthoritativePublishRequest
+				if err := json.Unmarshal(body, &req); err != nil {
+					t.Fatal(err)
+				}
+				if string(req.Model.Harness) != tc.Harness {
+					t.Errorf("harness = %q, want %q", req.Model.Harness, tc.Harness)
+				}
+			}
+		})
+	}
+	collectUniqueNames(t, "current publish verdicts", "cases", names)
+	collectUniqueNames(t, "current publish verdicts", "required_names", fixture.RequiredNames)
+	assertSameStringSet(t, "current publish verdicts", names, fixture.RequiredNames)
+	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build unknown-harness-current"))
 }
