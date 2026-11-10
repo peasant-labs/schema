@@ -182,7 +182,7 @@ func TestVillagePublicOwnerResponsesKeepAnonymousPeopleAnonymous(t *testing.T) {
 				for i := range orgs {
 					listOrgs[i] = schema.VillageListUserOrganization{OrgLogin: orgs[i]}
 				}
-				err = schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: []schema.VillageTag{}, Owner: person, OwnerOrgs: listOrgs, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}, Page: 1, Limit: 1, Total: 1}.Validate()
+				err = schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: []schema.VillageTag{}, Owner: person, OwnerOrgs: listOrgs, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}, NextItems: []schema.VillageTranscriptListRow{}, Page: 1, PerPage: 25, Total: 1}.Validate()
 			case "metadata":
 				metadataOrgs := make([]schema.VillageMetadataUserOrganization, len(orgs))
 				for i := range orgs {

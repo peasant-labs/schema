@@ -1711,6 +1711,15 @@ export interface components {
         /** @description Omitted preserves, null requests clear, and a canonical license replaces */
         SchemaOwnerUpdateLicenseIntent: Schema.OwnerUpdateLicenseIntent;
         /**
+         * Page Size
+         * @description Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.
+         * @example 25
+         * @example 50
+         * @example 100
+         * @enum {integer}
+         */
+        SchemaPageSize: Schema.PageSize;
+        /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
          * @example a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
@@ -6346,7 +6355,10 @@ export interface operations {
                 /** @description Set to grouped to request helper-group list items; omission preserves the flat response. */
                 view?: components["schemas"]["OpenapiVillageGroupedView"];
                 page?: number;
+                /** @description Grouped-view page size. The flat response is paged with per_page instead. */
                 limit?: number;
+                /** @description Flat-response page size: 25, 50, or 100. Omitted reads 25. The response echoes it as per_page and bounds next_items with it. */
+                per_page?: components["schemas"]["SchemaPageSize"];
                 /** @description Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched. */
                 q?: string;
                 provider?: string;

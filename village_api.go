@@ -696,29 +696,48 @@ type VillageTranscriptListRow struct {
 }
 type VillageTranscriptListResponse struct {
 	Transcripts []VillageTranscriptListRow `json:"transcripts" nullable:"false"`
-	Total       int                        `json:"total"`
-	AgentTotal  int                        `json:"agent_total"`
-	Page        int                        `json:"page"`
-	Limit       int                        `json:"limit"`
+	// NextItems is the following page's rows, up to per_page of them, so a
+	// client can pre-compute the group keys of the next page without a second
+	// request. Only an empty NextItems means the traversal is done.
+	NextItems  []VillageTranscriptListRow `json:"next_items" nullable:"false"`
+	Total      int                        `json:"total"`
+	AgentTotal int                        `json:"agent_total"`
+	Page       int                        `json:"page"`
+	// PerPage is the page size the requested page was read at and the most
+	// rows NextItems can carry. The server echoes the requested page and does
+	// not clamp it.
+	PerPage int `json:"per_page"`
 }
 
 func (r VillageTranscriptListResponse) Validate() error {
-	if r.Transcripts == nil || r.Page < 1 || r.Limit < 1 || r.Total < 0 || r.AgentTotal < 0 {
-		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: transcripts must be initialized, page and limit must be positive, and totals must be nonnegative; clients cannot preserve the existing list envelope; emit [] for an empty page and one-based pagination")
+	if r.Transcripts == nil || r.NextItems == nil || r.Page < 1 || r.PerPage < 1 || r.Total < 0 || r.AgentTotal < 0 {
+		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: transcripts and next_items must be initialized, page and per_page must be positive, and totals must be nonnegative; clients cannot page the list without the echoed size or the continuation rows; emit [] for either array and one-based pagination")
 	}
 	for _, row := range r.Transcripts {
-		if err := validateVillageOwnerOrganizations(row.Owner, len(row.OwnerOrgs), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+		if err := validateVillageTranscriptListRow(row); err != nil {
 			return err
 		}
-		if err := validateAnonymousRepository(row.Owner, row.Transcript.repositoryFieldsPresent(), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+	}
+	for _, row := range r.NextItems {
+		if err := validateVillageTranscriptListRow(row); err != nil {
 			return err
 		}
-		if row.Tags == nil {
-			return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
-		}
-		if err := row.PullRequests.Validate(); err != nil {
-			return err
-		}
+	}
+	return nil
+}
+
+func validateVillageTranscriptListRow(row VillageTranscriptListRow) error {
+	if err := validateVillageOwnerOrganizations(row.Owner, len(row.OwnerOrgs), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+		return err
+	}
+	if err := validateAnonymousRepository(row.Owner, row.Transcript.repositoryFieldsPresent(), "schema.VillageTranscriptListResponse.Validate"); err != nil {
+		return err
+	}
+	if row.Tags == nil {
+		return fmt.Errorf("Village transcript list validation failed at schema.VillageTranscriptListResponse.Validate: a nested tags collection is null; the existing handler initializes parsed tags; emit an empty array when no tags match")
+	}
+	if err := row.PullRequests.Validate(); err != nil {
+		return err
 	}
 	return nil
 }

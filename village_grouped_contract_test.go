@@ -50,8 +50,15 @@ type villageExpected struct {
 type villageCollectionInput struct {
 	Target      string `yaml:"target"`
 	Initialized bool   `yaml:"initialized"`
-	Page        int    `yaml:"page"`
-	Limit       int    `yaml:"limit"`
+	// NextItems initializes the continuation array instead of leaving it null.
+	NextItems bool `yaml:"next_items"`
+	// NextItemsInvalidRepository puts a transcript with a git remote beside an
+	// anonymous owner in the continuation array, which only a row check on
+	// next_items refuses.
+	NextItemsInvalidRepository bool `yaml:"next_items_invalid_repository"`
+	Page                       int  `yaml:"page"`
+	Limit                      int  `yaml:"limit"`
+	PerPage                    int  `yaml:"per_page"`
 }
 type villageGroupedFixtures struct {
 	Rows          testcase.Corpus[villageRowInput, villageExpected]        `yaml:"rows"`
@@ -91,6 +98,23 @@ func loadVillageGroupedFixtures(t *testing.T) villageGroupedFixtures {
 	return f
 }
 
+// villageTranscriptListRow builds one flat transcript list row. A row that
+// keeps a repository identity beside an anonymous owner is refused by the row
+// checks, which is how the continuation array proves it is validated like the
+// page.
+func villageTranscriptListRow(remoteBesideAnonymous bool) schema.VillageTranscriptListRow {
+	row := schema.VillageTranscriptListRow{
+		Tags:         []schema.VillageTag{},
+		Owner:        schema.AnonymousVillageOwner(),
+		PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}},
+	}
+	if remoteBesideAnonymous {
+		remote := "https://github.com/anonymous/project.git"
+		row.Transcript.GitRemote = &remote
+	}
+	return row
+}
+
 func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 	f := loadVillageGroupedFixtures(t)
 	for _, c := range f.Collections.Cases {
@@ -109,9 +133,15 @@ func TestVillageGroupedCollectionsAndPagination(t *testing.T) {
 				}
 				err = p.Validate()
 			} else {
-				p := schema.VillageTranscriptListResponse{Page: c.Input.Page, Limit: c.Input.Limit}
+				p := schema.VillageTranscriptListResponse{Page: c.Input.Page, PerPage: c.Input.PerPage}
 				if c.Input.Initialized {
-					p.Transcripts = []schema.VillageTranscriptListRow{{Tags: []schema.VillageTag{}, Owner: schema.AnonymousVillageOwner(), OwnerOrgs: nil, Shares: nil, Attestations: nil, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}
+					p.Transcripts = []schema.VillageTranscriptListRow{villageTranscriptListRow(false)}
+				}
+				if c.Input.NextItems {
+					p.NextItems = []schema.VillageTranscriptListRow{}
+				}
+				if c.Input.NextItemsInvalidRepository {
+					p.NextItems = []schema.VillageTranscriptListRow{villageTranscriptListRow(true)}
 				}
 				err = p.Validate()
 			}
@@ -176,7 +206,7 @@ func TestVillageExistingTranscriptEnvelopesRoundTripCompleteValues(t *testing.T)
 	listOrgs := []schema.VillageListUserOrganization{{OrgLogin: "org", AvatarURL: &avatar}}
 	metadataOrgs := []schema.VillageMetadataUserOrganization{{OrgLogin: "org", OrgID: 7, AvatarURL: &avatar, Visible: true, FetchedAt: now}}
 	shares := []schema.VillageEnrichedTranscriptShare{{TranscriptID: transcriptID, GroupID: ownerID, GroupName: "group", AcceptanceMode: schema.VillageGroupAcceptanceOpen, Status: schema.VillageShareStatusApproved, SharedAt: now}}
-	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}, PullRequests: schema.VillagePullRequestsSummary{Count: 3, Recent: []schema.VillagePullRequestRef{{Owner: "owner", Name: "repo", Number: 42}, {Owner: "owner", Name: "repo", Number: 45}}}}}, Total: 1, AgentTotal: 0, Page: 1, Limit: 20}
+	list := schema.VillageTranscriptListResponse{Transcripts: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}, PullRequests: schema.VillagePullRequestsSummary{Count: 3, Recent: []schema.VillagePullRequestRef{{Owner: "owner", Name: "repo", Number: 42}, {Owner: "owner", Name: "repo", Number: 45}}}}}, NextItems: []schema.VillageTranscriptListRow{{Transcript: transcript, Tags: tags, Owner: owner, OwnerOrgs: listOrgs, Shares: shares, Attestations: []schema.VillageListTranscriptAttestation{{TranscriptID: transcriptID, OrgLogin: "org", AttestationType: "member", CreatedAt: now}}, PullRequests: schema.VillagePullRequestsSummary{Recent: []schema.VillagePullRequestRef{}}}}, Total: 1, AgentTotal: 0, Page: 1, PerPage: 25}
 	if err := list.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +380,7 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 					t.Errorf("path parameter %s is not required", name)
 				}
 				typ := parameterType(p, components)
-				if name == "page" || name == "limit" || name == "offset" {
+				if name == "page" || name == "limit" || name == "offset" || name == "per_page" {
 					if typ != "integer" {
 						t.Errorf("%s type=%s", name, typ)
 					}
@@ -373,6 +403,20 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 			}
 			if c.Input.Scope && (params["scope"] == nil || params["scope"]["in"] != "query" || params["scope"]["required"] != true || parameterType(params["scope"], components) != "string") {
 				t.Error("missing scope query")
+			}
+			if c.Name == "global-profile-project-search" {
+				perPage := resolveParameterSchema(t, params["per_page"], components)
+				enum, _ := perPage["enum"].([]any)
+				want := []float64{25, 50, 100}
+				if len(enum) != len(want) {
+					t.Errorf("per_page enum=%v, want 25, 50, 100", enum)
+				} else {
+					for i, member := range enum {
+						if member != want[i] {
+							t.Errorf("per_page enum[%d]=%v, want %v", i, member, want[i])
+						}
+					}
+				}
 			}
 			responseSchema := op["responses"].(map[string]any)["200"].(map[string]any)["content"].(map[string]any)["application/json"].(map[string]any)["schema"].(map[string]any)
 			refs := responseRefs(responseSchema)
@@ -400,6 +444,7 @@ func TestVillageGroupedRoutesPreserveLegacyAndSelectedShapes(t *testing.T) {
 	}
 	requireExactProperties(t, components["SchemaVillageGroupedCollectiveDetailResponse"].(map[string]any), []string{"group", "members", "stats", "models", "contributors", "can_read", "your_role", "transcriptList", "pending_members"})
 	requireExactProperties(t, components["SchemaVillageGroupedContributableResponse"].(map[string]any), []string{"group_id", "transcriptList"})
+	requireExactProperties(t, components["SchemaVillageTranscriptListResponse"].(map[string]any), []string{"transcripts", "next_items", "total", "agent_total", "page", "per_page"})
 	requireExactProperties(t, components["SchemaVillageMetadataUserOrganization"].(map[string]any), []string{"org_login", "org_id", "avatar_url", "visible", "fetched_at"})
 	requireExactProperties(t, components["SchemaVillageListUserOrganization"].(map[string]any), []string{"org_login", "avatar_url"})
 	legacyRow := schemaProperties(components["SchemaVillageTranscriptListRow"].(map[string]any))

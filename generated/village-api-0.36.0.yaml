@@ -3785,10 +3785,22 @@ paths:
         name: page
         schema:
           type: integer
-      - in: query
+      - description: Grouped-view page size. The flat response is paged with per_page
+          instead.
+        in: query
         name: limit
         schema:
+          description: Grouped-view page size. The flat response is paged with per_page
+            instead.
           type: integer
+      - description: 'Flat-response page size: 25, 50, or 100. Omitted reads 25. The
+          response echoes it as per_page and bounds next_items with it.'
+        in: query
+        name: per_page
+        schema:
+          $ref: '#/components/schemas/SchemaPageSize'
+          description: 'Flat-response page size: 25, 50, or 100. Omitted reads 25.
+            The response echoes it as per_page and bounds next_items with it.'
       - description: Search text. Matches repository identity only on rows whose repository
           this viewer may see; the withheld repository fields of an anonymous owner's
           transcript are never searched.
@@ -5849,10 +5861,7 @@ components:
           - type: "null"
         turnCount:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -6049,9 +6058,6 @@ components:
         toolCallCount:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            The producer computes it once while indexing and carries it through detail,
-            export, and publication; it is never a raw harness record count.'
           type: integer
       required:
       - turnCount
@@ -6278,7 +6284,6 @@ components:
       - system
       - error
       - result
-      - image
       examples:
       - text
       - tool_use
@@ -6366,53 +6371,6 @@ components:
       pattern: ^[a-zA-Z0-9._<>-]+$
       title: Host Slug
       type: string
-    SchemaImageMediaType:
-      description: 'Recorded image media type: image/png or image/jpeg'
-      enum:
-      - image/png
-      - image/jpeg
-      examples:
-      - image/png
-      - image/jpeg
-      title: Image Media Type
-      type: string
-    SchemaImagePart:
-      properties:
-        byteSize:
-          description: Exact stored byte size. Zero means unset or no bytes, and an
-            explicit zero is accepted as unset; a published transcript never carries
-            a nonzero size.
-          minimum: 0
-          type: integer
-        height:
-          description: Optional recorded pixel height; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero height.
-          minimum: 0
-          type: integer
-        mediaType:
-          $ref: '#/components/schemas/SchemaImageMediaType'
-          description: Recorded image/png or image/jpeg media type. Absent for an
-            unsupported source type or a published transcript.
-        omittedReason:
-          $ref: '#/components/schemas/SchemaOmittedReason'
-          description: 'Why the bytes are absent: unsupported (wins for a non-recorded
-            media type), too_large, missing, or not_published. Omit when local bytes
-            are present.'
-        ref:
-          description: Lowercase 64-hex content address of the stored image. Absent
-            when the bytes are omitted or the transcript is published.
-          maxLength: 64
-          minLength: 64
-          pattern: ^[0-9a-f]{64}$
-          type: string
-        width:
-          description: Optional recorded pixel width; zero means unset or unknown,
-            and an explicit zero is accepted as unset. A published transcript never
-            carries a nonzero width.
-          minimum: 0
-          type: integer
-      type: object
     SchemaInputModality:
       description: Closed session graph value
       enum:
@@ -6690,21 +6648,6 @@ components:
       pattern: "^(?:\uFEFF|[^\\s])(?:[\\s\\S]*(?:\uFEFF|[^\\s]))?$"
       title: Observed Model ID
       type: string
-    SchemaOmittedReason:
-      description: 'Why an image part carries no bytes: unsupported (wins for a non-recorded
-        media type), too_large, missing, or not_published'
-      enum:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      examples:
-      - too_large
-      - unsupported
-      - missing
-      - not_published
-      title: Omitted Reason
-      type: string
     SchemaOwnerTranscriptUpdateRequest:
       additionalProperties: false
       properties:
@@ -6778,6 +6721,19 @@ components:
       - type: "null"
       description: Omitted preserves, null requests clear, and a canonical license
         replaces
+    SchemaPageSize:
+      description: 'Closed page size set for local list reads: 25, 50, or 100. The
+        value is a number on the wire; an omitted maximum maps to 25 before validation.'
+      enum:
+      - 25
+      - 50
+      - 100
+      examples:
+      - 25
+      - 50
+      - 100
+      title: Page Size
+      type: integer
     SchemaProjectHash:
       description: SHA-256 hex digest of the project's origin URL or local path
       examples:
@@ -7350,11 +7306,7 @@ components:
               raw-bound, and assistant-only validation before persistence with no
               invalid side effects plus byte-exact preservation of the values, their
               history order, and their absence through storage, typed migration, rewrite,
-              serving, and pull. content_parts_v1 is required iff any main or earlier-history
-              turn carries a non-empty contentParts list, text-only or image-bearing,
-              and guarantees ordered preservation of every part through storage, typed
-              migration, rewrite, serving, and publication, including the published
-              not_published image shape.
+              serving, and pull.
             title: Content Capability
             type: string
           type: array
@@ -7477,9 +7429,6 @@ components:
         totalTokens:
           type: integer
         turnCount:
-          description: 'Conversation turns: projected turns whose role is not system.
-            Every count surface reports this same number; it is never a raw harness
-            record count.'
           type: integer
         turns:
           items:
@@ -7951,17 +7900,6 @@ components:
       - private
       title: TranscriptUpdateVisibility
       type: string
-    SchemaTurnContentPart:
-      properties:
-        image:
-          $ref: '#/components/schemas/SchemaImagePart'
-        text:
-          type: string
-        type:
-          $ref: '#/components/schemas/SchemaTurnPartType'
-      required:
-      - type
-      type: object
     SchemaTurnDetail:
       properties:
         agentName:
@@ -7972,10 +7910,6 @@ components:
           - type: "null"
         content:
           type: string
-        contentParts:
-          items:
-            $ref: '#/components/schemas/SchemaTurnContentPart'
-          type: array
         controlKind:
           anyOf:
           - type:
@@ -8044,16 +7978,6 @@ components:
       - timestamp
       - depth
       type: object
-    SchemaTurnPartType:
-      description: 'Kind of one ordered turn content part: text or image'
-      enum:
-      - text
-      - image
-      examples:
-      - text
-      - image
-      title: Turn Part Type
-      type: string
     SchemaUnverifiedPullRequest:
       properties:
         number:
@@ -8980,10 +8904,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -10653,10 +10574,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"
@@ -10836,9 +10754,13 @@ components:
       properties:
         agent_total:
           type: integer
-        limit:
-          type: integer
+        next_items:
+          items:
+            $ref: '#/components/schemas/SchemaVillageTranscriptListRow'
+          type: array
         page:
+          type: integer
+        per_page:
           type: integer
         total:
           type: integer
@@ -10848,10 +10770,11 @@ components:
           type: array
       required:
       - transcripts
+      - next_items
       - total
       - agent_total
       - page
-      - limit
+      - per_page
       type: object
     SchemaVillageTranscriptListRow:
       properties:
@@ -11250,10 +11173,7 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count.'
-            type:
+          - type:
             - "null"
             - integer
           - type: "null"

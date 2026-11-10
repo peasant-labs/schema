@@ -7,6 +7,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.36.0 adds `next_items` to the transcript list response: the
+  following page's rows, up to `per_page` of them, so a client can pre-compute
+  the group keys of the next page without a second request. Only an empty
+  `next_items` ends the traversal.
 - Types 0.44.0 adds the transcript read contract: the `TranscriptSegmentDirectory`
   global index with one `TranscriptSegmentRef` per segment and a 10,000-ref page
   cap (`directoryPage`/`directoryPerPage` above it), `TranscriptSegment` cut on
@@ -27,7 +31,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   25/50/100 row count (omitted or 0 defaults to 25). The summary stays
   server-computed over the whole library, so no client receives every stored
   row. The existing `QualityPayload` WebSocket channel component is unchanged.
-- Local API 0.31.0, Types 0.45.0, and Village API 0.36.0 add
+- Local API 0.31.0, Types 0.45.0, and Village API 0.37.0 add
   `TurnDetail.contentParts`, an ordered list of text and image blocks. A text
   part carries `text`; an image part carries an `ImagePart` with a lowercase
   64-hex content reference, an `image/png` or `image/jpeg` media type, a byte
@@ -46,10 +50,18 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `EntryType` gains `image` for a source entry that carries an ordered image
   block, and `ImageMediaType` becomes a typed closed set (`image/png` or
   `image/jpeg`) for `ImagePart.mediaType`.
+
 ### Changed
 
-- Local API 0.29.0 and 0.30.0, Types 0.44.0, and Village API 0.35.0 are retired
-  and byte-frozen.
+- Local API 0.29.0 and 0.30.0, Types 0.44.0, and Village API 0.35.0 and 0.36.0
+  are retired and byte-frozen.
+- Village API 0.36.0 renames the transcript list response's `limit` to
+  `per_page` and declares the closed `per_page` query (25, 50, or 100; omitted
+  reads 25) beside the grouped view's `limit` on `GET /api/v1/transcripts`. The
+  response echoes the requested `page` and `per_page` and never clamps; a request
+  past the last page returns an empty `transcripts` beside an empty
+  `next_items`. `VillageTranscriptListResponse.Validate` requires both arrays and
+  a positive `per_page`, and applies every row check to both arrays.
 - Local API 0.29.0 and Types 0.44.0 replace the page and set contract with one
   `OffsetPage[T]`: `items`, `nextItems`, `page`, `perPage`, `total`, and a
   decimal `revision`. `LocalSyncSessionPage` embeds it and adds
