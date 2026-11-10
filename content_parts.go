@@ -1,10 +1,8 @@
 package schema
 
 import (
-	"encoding/hex"
 	"fmt"
 	"slices"
-	"strings"
 	"unicode/utf8"
 
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -325,11 +323,7 @@ func validateLocalImagePart(part ImagePart) error {
 }
 
 func validImageRef(ref string) bool {
-	if len(ref) != 64 || ref != strings.ToLower(ref) {
-		return false
-	}
-	_, err := hex.DecodeString(ref)
-	return err == nil
+	return ValidateAttachmentRef(ref) == nil
 }
 
 // validateTurnContentPartsAt validates ordered parts for one turn, naming the

@@ -1,0 +1,21 @@
+refs:
+  - lowercase-64-hex
+  - all-zeros
+  - mixed-lowercase-hex
+  - uppercase-hex
+  - one-uppercase-digit
+  - short-63
+  - long-65
+  - non-hex
+  - empty
+  - slash
+  - dot-dot
+  - sha-prefix
+  - embedded-space
+responses:
+  - png
+  - jpeg
+  - malformed
+  - missing-row
+  - missing-file
+  - unknown-outcome

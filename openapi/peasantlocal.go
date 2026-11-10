@@ -167,6 +167,32 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/attachments/{ref} serves one content-addressed image. The
+	// path parameter pattern is schema.AttachmentRefPattern; a test holds the
+	// emitted pattern equal to that constant.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: schema.AttachmentRoutePath,
+		id: schema.AttachmentRouteOperationID, tag: "attachments",
+		description: "Read one stored image by its content address. The path " +
+			"parameter ref is a lowercase 64-hex sha256. A well-formed ref whose " +
+			"row and file exist answers 200 with the stored bytes as image/png or " +
+			"image/jpeg and Cache-Control: public, max-age=31536000, immutable, " +
+			"because the URL is the digest and a successful response never changes. " +
+			"A malformed ref is 400 with JSON error code attachment_ref_malformed; " +
+			"the body does not repeat the rejected ref. A well-formed ref with no " +
+			"row, or a row whose file is missing, is 404 with JSON error code " +
+			"attachment_not_found. This is a local read of bytes already stored on " +
+			"this computer. It is not a publication route.",
+		requests: []interface{}{new(struct {
+			Ref string `path:"ref" pattern:"^[0-9a-f]{64}$" minLength:"64" maxLength:"64" description:"Lowercase 64-hex sha256 content address of the stored image"`
+		})},
+		response:      new(struct{}),
+		errorStatuses: []int{schema.AttachmentRouteStatusMalformed, schema.AttachmentRouteStatusNotFound},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
 	// GET /api/v1/sessions/{id}/commits is the session's recorded commit
 	// binding, the same one the review surfaces read.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/commits",
@@ -531,6 +557,9 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	setResponseOneOf(r.Spec, "/api/v1/sessions", "get", "#/components/schemas/SchemaSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	setResponseOneOf(r.Spec, "/api/v1/search", "get", "#/components/schemas/SearchPayload", "#/components/schemas/SchemaLocalSessionListPayload")
 	setResponseOneOf(r.Spec, "/api/v1/sync/sessions", "get", "#/components/schemas/LocalSyncSessionsPayload", "#/components/schemas/SchemaLocalSessionListPayload", "#/components/schemas/LocalSyncSessionPage", "#/components/schemas/LocalSyncProjectOptions")
+	if err := declareAttachmentImageResponse(r.Spec); err != nil {
+		return nil, err
+	}
 	// Keep the public response component name identical across the Local API and
 	// Types catalogs instead of exposing the reflector's package-prefixed alias.
 	components := r.SpecEns().ComponentsEns().Schemas
@@ -548,6 +577,67 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 	}
 
 	return r.Spec, nil
+}
+
+func declareAttachmentImageResponse(spec *openapi31.Spec) error {
+	item, ok := spec.Paths.MapOfPathItemValues[schema.AttachmentRoutePath]
+	if !ok || item.Get == nil {
+		return fmt.Errorf("local API attachment route missing at openapi.declareAttachmentImageResponse: GET %s was not added, so the image read is not in the document; add the operation before shaping its 200 response", schema.AttachmentRoutePath)
+	}
+	success := item.Get.Responses.MapOfResponseOrReferenceValues[statusText(schema.AttachmentRouteStatusOK)]
+	if success.Response == nil {
+		return fmt.Errorf("local API attachment route missing at openapi.declareAttachmentImageResponse: GET %s has no 200 response, so the image bytes are not declared; add the success response before replacing its content", schema.AttachmentRoutePath)
+	}
+	success.Response.Description = "The stored image bytes, image/png or image/jpeg, with an immutable Cache-Control header."
+	success.Response.Content = map[string]openapi31.MediaType{}
+	for _, media := range schema.AllImageMediaTypes {
+		success.Response.WithContentItem(string(media), openapi31.MediaType{Schema: attachmentBinarySchema(string(media))})
+	}
+	required := true
+	cacheDescription := "A content-addressed image never changes, so a successful response is immutable."
+	success.Response.Headers = map[string]openapi31.HeaderOrReference{
+		"Cache-Control": {Header: &openapi31.Header{
+			Description: &cacheDescription,
+			Required:    &required,
+			Schema: map[string]interface{}{
+				"type":  "string",
+				"const": schema.AttachmentCacheControl,
+			},
+		}},
+	}
+	item.Get.Responses.MapOfResponseOrReferenceValues[statusText(schema.AttachmentRouteStatusOK)] = success
+	if err := setAttachmentRefusal(item.Get, schema.AttachmentRouteStatusMalformed, "The ref is not a lowercase 64-hex sha256. The JSON error code is "+schema.AttachmentRouteCodeMalformed+" and the body does not repeat the rejected ref."); err != nil {
+		return err
+	}
+	if err := setAttachmentRefusal(item.Get, schema.AttachmentRouteStatusNotFound, "No stored row matches the ref, or the row exists and its file is missing. The JSON error code is "+schema.AttachmentRouteCodeNotFound+"."); err != nil {
+		return err
+	}
+	spec.Paths.MapOfPathItemValues[schema.AttachmentRoutePath] = item
+	return nil
+}
+
+func setAttachmentRefusal(operation *openapi31.Operation, status int, description string) error {
+	key := statusText(status)
+	response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
+	if !ok || response.Response == nil {
+		return fmt.Errorf("local API attachment route missing at openapi.setAttachmentRefusal: status %s is not declared, so a caller cannot tell a malformed ref from a missing file; declare the refusal before describing it", key)
+	}
+	response.Response.Description = description
+	operation.Responses.MapOfResponseOrReferenceValues[key] = response
+	return nil
+}
+
+func attachmentBinarySchema(media string) map[string]interface{} {
+	return map[string]interface{}{
+		"type":             "string",
+		"format":           "binary",
+		"contentMediaType": media,
+		"contentEncoding":  "binary",
+	}
+}
+
+func statusText(status int) string {
+	return fmt.Sprintf("%d", status)
 }
 
 func setResponseOneOf(spec *openapi31.Spec, path, method string, refs ...string) {

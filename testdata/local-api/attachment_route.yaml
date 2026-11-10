@@ -1,0 +1,145 @@
+operation:
+  path: /api/v1/attachments/{ref}
+  method: get
+  operation_id: getAttachment
+  parameter: ref
+  pattern: '^[0-9a-f]{64}$'
+  min_length: 64
+  max_length: 64
+  success_status: 200
+  success_media_types: [image/png, image/jpeg]
+  cache_header: Cache-Control
+  cache_control: "public, max-age=31536000, immutable"
+  malformed_status: 400
+  malformed_code: attachment_ref_malformed
+  missing_status: 404
+  missing_code: attachment_not_found
+  description_clauses:
+    - lowercase 64-hex sha256
+    - image/png
+    - image/jpeg
+    - "public, max-age=31536000, immutable"
+    - malformed ref is 400
+    - attachment_ref_malformed
+    - does not repeat the rejected ref
+    - "no row, or a row whose file is missing, is 404"
+    - attachment_not_found
+    - not a publication route
+refs:
+  cases:
+    - name: lowercase-64-hex
+      input: {ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {accepted: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: path parameter is a lowercase 64-hex sha256}
+      mutation: {description: accepts a 64-character lowercase hex digest}
+    - name: all-zeros
+      input: {ref: "0000000000000000000000000000000000000000000000000000000000000000"}
+      expected: {accepted: true}
+      classification: must-pass
+      provenance: {source: boundary, ref: the zero digest is still 64 lowercase hex digits}
+      mutation: {description: uses the all-zero sha256 spelling}
+    - name: mixed-lowercase-hex
+      input: {ref: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      expected: {accepted: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: both digit and a-f ranges are accepted}
+      mutation: {description: mixes digits and lowercase a-f}
+    - name: uppercase-hex
+      input: {ref: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: uppercase hex is a different spelling of the same digest}
+      mutation: {description: uppercases every hex digit}
+    - name: one-uppercase-digit
+      input: {ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaA}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: one uppercase digit is enough to miss the file name}
+      mutation: {description: uppercases the final digit}
+    - name: short-63
+      input: {ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: "a sha256 hex digest is 64 characters, not 63"}
+      mutation: {description: drops the final hex digit}
+    - name: long-65
+      input: {ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: a longer token is not a sha256 digest}
+      mutation: {description: adds one extra hex digit}
+    - name: non-hex
+      input: {ref: gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: a 64-character token outside 0-9a-f is not a digest}
+      mutation: {description: replaces hex digits with g}
+    - name: empty
+      input: {ref: ""}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: an empty path parameter is malformed}
+      mutation: {description: removes the digest}
+    - name: slash
+      input: {ref: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: a slash would escape the attachment directory}
+      mutation: {description: inserts a slash into the digest}
+    - name: dot-dot
+      input: {ref: ../aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: a parent-directory token is not a digest}
+      mutation: {description: prefixes the digest with ../}
+    - name: sha-prefix
+      input: {ref: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: a labelled digest is not the path parameter}
+      mutation: {description: "prefixes the digest with sha256:"}
+    - name: embedded-space
+      input: {ref: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+      expected: {accepted: false, error_contains: not a lowercase 64-hex sha256}
+      classification: must-fail
+      provenance: {source: boundary, ref: whitespace is not a hex digit}
+      mutation: {description: inserts a space into the digest}
+responses:
+  cases:
+    - name: png
+      input: {outcome: png}
+      expected: {accepted: true, status: 200, media_type: image/png, cache_control: "public, max-age=31536000, immutable"}
+      classification: must-pass
+      provenance: {source: requirement, ref: a stored png is 200 image/png with an immutable cache header}
+      mutation: {description: selects the png success outcome}
+    - name: jpeg
+      input: {outcome: jpeg}
+      expected: {accepted: true, status: 200, media_type: image/jpeg, cache_control: "public, max-age=31536000, immutable"}
+      classification: must-pass
+      provenance: {source: requirement, ref: a stored jpeg is 200 image/jpeg with the same cache header}
+      mutation: {description: selects the jpeg success outcome}
+    - name: malformed
+      input: {outcome: malformed}
+      expected: {accepted: true, status: 400, code: attachment_ref_malformed}
+      classification: must-pass
+      provenance: {source: requirement, ref: a malformed ref is 400 and is not treated as missing}
+      mutation: {description: selects the malformed outcome}
+    - name: missing-row
+      input: {outcome: missing_row}
+      expected: {accepted: true, status: 404, code: attachment_not_found}
+      classification: must-pass
+      provenance: {source: requirement, ref: a well-formed ref with no row is 404}
+      mutation: {description: selects a missing row}
+    - name: missing-file
+      input: {outcome: missing_file}
+      expected: {accepted: true, status: 404, code: attachment_not_found}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a row whose file is missing is 404, the same status as a missing row"}
+      mutation: {description: selects a missing file}
+    - name: unknown-outcome
+      input: {outcome: webp}
+      expected: {accepted: false, error_contains: outside the closed}
+      classification: must-fail
+      provenance: {source: boundary, ref: an undeclared outcome has no status}
+      mutation: {description: asks for a webp outcome the route does not declare}

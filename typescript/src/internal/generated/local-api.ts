@@ -35,6 +35,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/attachments/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read one stored image by its content address. The path parameter ref is a lowercase 64-hex sha256. A well-formed ref whose row and file exist answers 200 with the stored bytes as image/png or image/jpeg and Cache-Control: public, max-age=31536000, immutable, because the URL is the digest and a successful response never changes. A malformed ref is 400 with JSON error code attachment_ref_malformed; the body does not repeat the rejected ref. A well-formed ref with no row, or a row whose file is missing, is 404 with JSON error code attachment_not_found. This is a local read of bytes already stored on this computer. It is not a publication route. */
+        get: operations["getAttachment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/config/capabilities": {
         parameters: {
             query?: never;
@@ -1901,6 +1918,50 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lowercase 64-hex sha256 content address of the stored image */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The stored image bytes, image/png or image/jpeg, with an immutable Cache-Control header. */
+            200: {
+                headers: {
+                    /** @description A content-addressed image never changes, so a successful response is immutable. */
+                    "Cache-Control": "public, max-age=31536000, immutable";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                    "image/png": string;
+                };
+            };
+            /** @description The ref is not a lowercase 64-hex sha256. The JSON error code is attachment_ref_malformed and the body does not repeat the rejected ref. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description No stored row matches the ref, or the row exists and its file is missing. The JSON error code is attachment_not_found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
