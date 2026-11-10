@@ -1,0 +1,227 @@
+# The kickstart local setup routes. The status body is configured plus an
+# optional activeSessionId. Every non-GET route declares the shared
+# cross-origin refusal. The tree is the whole forest: no page, cursor, or limit.
+required_names:
+  - status-get
+  - sessions-post
+  - session-get
+  - session-patch
+  - stale-patch-no-overwritten-valid
+  - overwrite-entry-wrong-shape-rejected
+  - tree-get
+  - preview-get
+  - scan-post
+  - commit-post
+  - ws-topic-kickstart
+  - cross-origin-403-per-unsafe-route
+  - status-returns-only-configured
+operations:
+  - api: local
+    method: get
+    path: /api/v1/kickstart/status
+    response: LocalKickstartStatus
+    statuses: ["200"]
+  - api: local
+    method: post
+    path: /api/v1/kickstart/sessions
+    request: LocalKickstartOpenRequest
+    response: LocalKickstartSession
+    statuses: ["200", "400", "403"]
+    error_responses: {"400": OpenapiLocalErrorResponse}
+  - api: local
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}"
+    response: LocalKickstartSession
+    statuses: ["200", "404"]
+    error_responses: {"404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: patch
+    path: "/api/v1/kickstart/sessions/{id}"
+    request: LocalKickstartAnswers
+    response: LocalKickstartPatchResult
+    statuses: ["200", "400", "403", "404"]
+    error_responses: {"400": OpenapiLocalErrorResponse, "404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}/tree"
+    response: LocalKickstartTree
+    statuses: ["200", "404"]
+    error_responses: {"404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview"
+    response: LocalKickstartPreview
+    statuses: ["200", "404"]
+    error_responses: {"404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+      - {name: nodeId, in: path, required: true}
+  - api: local
+    method: post
+    path: "/api/v1/kickstart/sessions/{id}/scan"
+    response: LocalKickstartScan
+    statuses: ["200", "403", "404"]
+    error_responses: {"404": OpenapiLocalErrorResponse}
+    parameters:
+      - {name: id, in: path, required: true}
+  - api: local
+    method: post
+    path: "/api/v1/kickstart/sessions/{id}/commit"
+    response: LocalKickstartCommitted
+    statuses: ["200", "403", "404", "409"]
+    error_responses: {"404": OpenapiLocalErrorResponse, "409": LocalKickstartCommitRefusal}
+    parameters:
+      - {name: id, in: path, required: true}
+cases:
+  - name: status-get
+    input:
+      schema: LocalKickstartStatus
+      payload: &status
+        configured: true
+        activeSessionId: ses-full
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "GET /kickstart/status returns configured and the singular activeSessionId"}
+    mutation: {description: "a configured install with one full-scope session open"}
+  - name: sessions-post
+    input:
+      schema: LocalKickstartOpenRequest
+      payload: {scope: full}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "POST /kickstart/sessions opens or joins one scope"}
+    mutation: {description: "opens the full wizard scope"}
+  - name: session-get
+    input:
+      schema: LocalKickstartSession
+      payload: &session
+        id: ses-full
+        scope: full
+        revision: 2
+        openedAt: "2026-11-10T00:00:00Z"
+        stops:
+          - key: license
+            kind: config
+            title: License
+            visible: true
+            guide: {intro: Choose a license}
+            fields: []
+        conflicts: []
+        connect: {offered: false}
+        scan: {state: idle, done: 0, total: 0}
+        village: {connected: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "GET session is the reconnect snapshot and does not carry the forest"}
+    mutation: {description: "reads the full-scope snapshot"}
+  - name: session-patch
+    input:
+      schema: LocalKickstartPatchResult
+      payload:
+        revision: 3
+        stale: true
+        overwritten:
+          - {key: privacy, previous: "true", revision: 2}
+        view: *session
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a stale patch is applied and reports overwritten fields"}
+    mutation: {description: "replaces privacy after the caller last rendered revision 2"}
+  - name: stale-patch-no-overwritten-valid
+    input:
+      schema: LocalKickstartPatchResult
+      payload:
+        revision: 3
+        stale: true
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a stale request may replace no field when no answered field changed after its revision"}
+    mutation: {description: "applies a stale write that overwrote nothing"}
+  - name: overwrite-entry-wrong-shape-rejected
+    input:
+      schema: LocalKickstartPatchResult
+      payload:
+        revision: 3
+        stale: true
+        overwritten:
+          - {previous: "true", revision: 2}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: key is empty}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an overwritten entry names the field it replaced"}
+    mutation: {description: "omits the overwritten field key"}
+  - name: tree-get
+    input:
+      schema: LocalKickstartTree
+      payload:
+        nodes:
+          - {id: project-1, kind: project, state: all, label: Peasant}
+          - {id: group-1, parentId: project-1, kind: group, state: some, label: src, childCount: 1}
+          - {id: session-1, parentId: group-1, kind: session, state: none, label: "Fix the gate", sessionId: ses-stored, locked: true}
+        total: 3
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "GET tree returns the whole forest and each node's state"}
+    mutation: {description: "returns three rows, one of them locked"}
+  - name: preview-get
+    input:
+      schema: LocalKickstartPreview
+      payload:
+        lines:
+          - {kind: label, text: "Fix the gate"}
+          - {kind: text, text: "The gate failed closed."}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "GET preview returns bounded typed lines"}
+    mutation: {description: "previews one unimported session"}
+  - name: scan-post
+    input:
+      schema: LocalKickstartScan
+      payload: {state: running, phase: reading, done: 1, total: 4}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "POST scan accepts a rescan and returns the scan state"}
+    mutation: {description: "starts a rescan"}
+  - name: commit-post
+    input:
+      schema: LocalKickstartCommitted
+      payload:
+        saved: true
+        configPath: config.yaml
+        ingest: {state: running, new: 1, updated: 0}
+        nextSteps: [config, web-start, village-login, village-push, auto-publish-settings]
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "POST commit returns the finish actions and the ingest state"}
+    mutation: {description: "saves and starts the import"}
+  - name: ws-topic-kickstart
+    input:
+      schema: ChannelTopic
+      payload: kickstart
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "ChannelTopic kickstart"}
+    mutation: {description: "subscribes to the live setup topic"}
+  - name: cross-origin-403-per-unsafe-route
+    input:
+      schema: LocalKickstartOpenRequest
+      payload: {scope: selection}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "every non-GET kickstart route declares 403 with the shared local refusal body"}
+    mutation: {description: "the operations above are the exact unsafe-route refusal manifest"}
+  - name: status-returns-only-configured
+    input:
+      schema: LocalKickstartStatus
+      payload:
+        configured: false
+        sessions: {full: ses-full}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: unknown field}
+    classification: must-fail
+    provenance: {source: requirement, ref: "status has configured and optional activeSessionId, and no other status field"}
+    mutation: {description: "adds a per-scope session directory"}

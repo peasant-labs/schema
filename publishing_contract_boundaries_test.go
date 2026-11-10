@@ -124,6 +124,22 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"ScryCheckResponse":                        decodeScryCheckResponseUnbounded,
 	"ScryHealthResponse":                       decodeValidated[schema.ScryHealthResponse],
 	"VillageTranscriptMetadataResponse":        decodeValidated[schema.VillageTranscriptMetadataResponse],
+	"ChannelTopic":                             decodeChannelTopic,
+	"LocalKickstartStatus":                     decodeValidated[schema.LocalKickstartStatus],
+	"LocalKickstartOpenRequest":                decodeValidated[schema.LocalKickstartOpenRequest],
+	"LocalKickstartSession":                    decodeValidated[schema.LocalKickstartSession],
+	"LocalKickstartPatchResult":                decodeValidated[schema.LocalKickstartPatchResult],
+	"LocalKickstartTree":                       decodeValidated[schema.LocalKickstartTree],
+	"LocalKickstartPreview":                    decodeValidated[schema.LocalKickstartPreview],
+	"LocalKickstartScan":                       decodeValidated[schema.LocalKickstartScan],
+	"LocalKickstartCommitted":                  decodeValidated[schema.LocalKickstartCommitted],
+	"LocalKickstartEvent":                      decodeValidated[schema.LocalKickstartEvent],
+	"LocalKickstartStop":                       decodeValidated[schema.LocalKickstartStop],
+	"LocalKickstartField":                      decodeValidated[schema.LocalKickstartField],
+	"LocalKickstartNode":                       decodeValidated[schema.LocalKickstartNode],
+	"LocalKickstartIngest":                     decodeValidated[schema.LocalKickstartIngest],
+	"LocalKickstartAnswers":                    decodeValidated[schema.LocalKickstartAnswers],
+	"LocalKickstartDiffLine":                   decodeValidated[schema.LocalKickstartDiffLine],
 }
 
 // decodeScryCheckResponseUnbounded checks every response rule except the
@@ -143,6 +159,17 @@ func decodeValidated[T interface{ Validate() error }](raw []byte) (any, error) {
 		return nil, err
 	}
 	return value, value.Validate()
+}
+
+func decodeChannelTopic(raw []byte) (any, error) {
+	var value schema.ChannelTopic
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	if !value.IsValid() {
+		return nil, fmt.Errorf("channel topic %q is outside schema.AllChannelTopics; use a published topic", value)
+	}
+	return value, nil
 }
 
 func decodeOnly[T any](raw []byte) (any, error) {

@@ -10,6 +10,8 @@ corpora:
   - testdata/local-api/village_collectives.yaml
   - testdata/local-api/sync_auth.yaml
   - testdata/local-api/settings.yaml
+  - testdata/local-api/kickstart.yaml
+  - testdata/local-api/kickstart_events.yaml
   - testdata/pulls/transcript_pull_requests.yaml
   - testdata/pulls/personal_stats.yaml
   - testdata/invitations/collective_invitations.yaml

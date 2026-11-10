@@ -16,6 +16,19 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   row whose file is missing, is 404 with JSON error code
   `attachment_not_found`. The route is a local read of bytes already stored on
   this computer. It is not a publication route.
+
+- Local API 0.35.0 and Types 0.47.0 declare the kickstart setup surface.
+  `GET /api/v1/kickstart/status` returns `configured` and, when a full-scope
+  session is open, `activeSessionId`. `POST /api/v1/kickstart/sessions` opens
+  or joins the session for `scope` (`full` or `selection`). `GET` and `PATCH
+  /api/v1/kickstart/sessions/{id}` read and update that snapshot. `GET
+  .../tree` returns the whole forest with each node's server-computed state.
+  `GET .../tree/{nodeId}/preview` returns bounded typed lines. `POST .../scan`
+  and `POST .../commit` rescan and save. Every non-GET route declares the
+  shared cross-origin 403. A stale patch may replace no field, so an empty
+  overwritten list is valid. The `kickstart` WebSocket topic carries
+  `LocalKickstartEvent`. Node state is `none`, `some`, or `all`; `locked` is
+  a boolean, not a fourth state. No kickstart payload is paged.
 - Local API 0.32.0 declares the transcript segment reads. `GET
   /api/v1/sessions/{id}/transcript/segments` serves the
   `TranscriptSegmentDirectory` global index, one ref per segment with the cut's

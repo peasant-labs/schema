@@ -11,6 +11,14 @@ operations:
   - {path: /api/v1/config/mock, method: get, operation_id: getMockConfig}
   - {path: /api/v1/config/capabilities, method: get, operation_id: getUICapabilities}
   - {path: /api/v1/health, method: get, operation_id: getHealth}
+  - {path: /api/v1/kickstart/status, method: get, operation_id: getKickstartStatus}
+  - {path: /api/v1/kickstart/sessions, method: post, operation_id: openKickstartSession}
+  - {path: "/api/v1/kickstart/sessions/{id}", method: get, operation_id: getKickstartSession}
+  - {path: "/api/v1/kickstart/sessions/{id}", method: patch, operation_id: patchKickstartSession}
+  - {path: "/api/v1/kickstart/sessions/{id}/scan", method: post, operation_id: scanKickstartSession}
+  - {path: "/api/v1/kickstart/sessions/{id}/commit", method: post, operation_id: commitKickstartSession}
+  - {path: "/api/v1/kickstart/sessions/{id}/tree", method: get, operation_id: getKickstartTree}
+  - {path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview", method: get, operation_id: getKickstartPreview}
   - {path: "/api/v1/map/{projectHash}", method: get, operation_id: getMapGraph}
   - {path: "/api/v1/map/{projectHash}/node", method: get, operation_id: getMapNodeDetail}
   - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}

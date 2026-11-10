@@ -227,7 +227,14 @@ const (
 	// with 400 for a malformed ref and 404 when the row or file is missing
 	// (additive operation = minor bump).
 	// 0.34.0 adds known harness identities.
-	PeasantLocalAPIVersion = "0.34.0"
+	// Bumped to 0.35.0 on 2026-11-10 when the kickstart setup surface entered
+	// the document: the status, session, tree, preview, scan, and commit
+	// routes, the kickstart topic and message, and their closed sets. The
+	// status body is configured plus an optional activeSessionId. Every
+	// non-GET route declares the shared cross-origin refusal. A stale patch
+	// may replace no field, so an empty overwritten list is valid. No
+	// kickstart payload is paged (additive operations = minor bump).
+	PeasantLocalAPIVersion = "0.35.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -338,5 +345,8 @@ const (
 	// catalog, and every turnCount field documented conversation turns
 	// (additive = minor bump).
 	// 0.46.0 adds known harness identities.
-	TypesVersion = "0.46.0"
+	// Bumped to 0.47.0 on 2026-11-10 when the kickstart session, tree, event,
+	// and closed-set types entered the catalog so the local setup routes and
+	// the language bindings share one definition (additive = minor bump).
+	TypesVersion = "0.47.0"
 )

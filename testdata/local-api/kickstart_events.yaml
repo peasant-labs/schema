@@ -1,0 +1,267 @@
+# Live kickstart topic payloads and the closed-set refusals. One event carries
+# one session id. locked is a boolean, not a fourth node state.
+required_names:
+  - session
+  - answers
+  - conflicts
+  - scan
+  - ingest
+  - closed-committed
+  - closed-expired
+  - one-snapshot-per-session-id
+  - unknown-event-kind-refused
+  - unknown-scope-refused
+  - unknown-stop-kind-refused
+  - unknown-field-kind-refused
+  - unknown-node-kind-refused
+  - unknown-node-state-refused
+  - unknown-scan-state-refused
+  - unknown-ingest-state-refused
+  - unknown-resolution-refused
+  - unknown-diff-line-type-refused
+  - node-state-is-none-some-all
+  - locked-is-a-boolean-not-a-fourth-state
+cases:
+  - name: session
+    input:
+      schema: LocalKickstartEvent
+      payload: &session_event
+        kind: session
+        sessionId: ses-full
+        revision: 2
+        view: &full_view
+          id: ses-full
+          scope: full
+          revision: 2
+          openedAt: "2026-11-10T00:00:00Z"
+          stops:
+            - key: license
+              kind: config
+              title: License
+              visible: true
+              guide: {}
+              fields: []
+          conflicts: []
+          connect: {offered: false}
+          scan: {state: done, done: 4, total: 4}
+          village: {connected: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartEventKind session"}
+    mutation: {description: "pushes the one full-scope snapshot"}
+  - name: answers
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: answers
+        sessionId: ses-selection
+        revision: 3
+        view:
+          id: ses-selection
+          scope: selection
+          revision: 3
+          openedAt: "2026-11-10T00:05:00Z"
+          stops:
+            - key: selection
+              kind: config
+              title: Selection
+              visible: true
+              guide: {}
+              fields: []
+          conflicts: []
+          connect: {offered: false}
+          scan: {state: done, done: 1, total: 1}
+          village: {connected: true, url: "https://village.example", userId: user-1}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartEventKind answers"}
+    mutation: {description: "pushes the selection-scope snapshot after an answer"}
+  - name: conflicts
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: conflicts
+        sessionId: ses-full
+        revision: 4
+        view:
+          id: ses-full
+          scope: full
+          revision: 4
+          openedAt: "2026-11-10T00:00:00Z"
+          stops: []
+          conflicts:
+            - {field: privacy, stop: license, label: Privacy, mine: true, theirs: false}
+          connect: {offered: true, afterStop: license, prompt: Sign in, skip: Not now}
+          scan: {state: done, done: 4, total: 4}
+          village: {connected: false}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartEventKind conflicts"}
+    mutation: {description: "pushes one mine/theirs row"}
+  - name: scan
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: scan
+        sessionId: ses-full
+        revision: 5
+        scan: {state: running, phase: reading, done: 2, total: 4, droppedSelections: 3, droppedLabels: [old-a, old-b, old-c]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartEventKind scan"}
+    mutation: {description: "pushes scan progress without the forest"}
+  - name: ingest
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: ingest
+        sessionId: ses-full
+        revision: 6
+        ingest: {state: busy, note: an import is already running, new: 0, updated: 0}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartEventKind ingest"}
+    mutation: {description: "pushes a busy import"}
+  - name: closed-committed
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: closed
+        sessionId: ses-full
+        revision: 7
+        reason: committed
+        view: *full_view
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartCloseReason committed"}
+    mutation: {description: "ends the session because it was saved"}
+  - name: closed-expired
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: ses-full, revision: 8, reason: expired}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartCloseReason expired"}
+    mutation: {description: "ends the session because it was idle"}
+  - name: one-snapshot-per-session-id
+    input:
+      schema: LocalKickstartEvent
+      payload:
+        kind: session
+        sessionId: ses-full
+        revision: 2
+        view:
+          id: ses-other
+          scope: full
+          revision: 2
+          openedAt: "2026-11-10T00:00:00Z"
+          stops: []
+          conflicts: []
+          connect: {offered: false}
+          scan: {state: idle, done: 0, total: 0}
+          village: {connected: false}
+    expected: {valid: false, rejected_by: semantics, error_contains: one session snapshot}
+    classification: must-fail
+    provenance: {source: requirement, ref: "one event carries one session snapshot"}
+    mutation: {description: "puts a second session id in the view"}
+  - name: unknown-event-kind-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: replaced, sessionId: ses-full, revision: 1}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartEventKind}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartEventKind"}
+    mutation: {description: "uses the deleted replaced reason as a kind"}
+  - name: unknown-scope-refused
+    input:
+      schema: LocalKickstartOpenRequest
+      payload: {scope: kickstart}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartScope}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartScope"}
+    mutation: {description: "uses the informal kickstart label as a scope token"}
+  - name: unknown-stop-kind-refused
+    input:
+      schema: LocalKickstartStop
+      payload: {key: license, kind: wizard, title: License, visible: true, guide: {}, fields: []}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartStopKind}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartStopKind"}
+    mutation: {description: "names a stop layout outside the menu"}
+  - name: unknown-field-kind-refused
+    input:
+      schema: LocalKickstartField
+      payload: {key: theme, kind: slider, label: Theme, value: null}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartFieldKind}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartFieldKind"}
+    mutation: {description: "names a control outside the menu"}
+  - name: unknown-node-kind-refused
+    input:
+      schema: LocalKickstartNode
+      payload: {id: n1, kind: folder, state: none, label: Folder}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartNodeKind}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartNodeKind"}
+    mutation: {description: "names a row kind outside the menu"}
+  - name: unknown-node-state-refused
+    input:
+      schema: LocalKickstartNode
+      payload: {id: n1, kind: session, state: locked, label: Saved}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartNodeState}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartNodeState"}
+    mutation: {description: "uses locked as a state token"}
+  - name: unknown-scan-state-refused
+    input:
+      schema: LocalKickstartScan
+      payload: {state: paused, done: 0, total: 0}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartScanState}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartScanState"}
+    mutation: {description: "names a scan state outside the menu"}
+  - name: unknown-ingest-state-refused
+    input:
+      schema: LocalKickstartIngest
+      payload: {state: queued, new: 0, updated: 0}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartIngestState}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartIngestState"}
+    mutation: {description: "names an ingest state outside the menu"}
+  - name: unknown-resolution-refused
+    input:
+      schema: LocalKickstartAnswers
+      payload: {revision: 2, resolutions: {privacy: keep}}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartResolution}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartResolution"}
+    mutation: {description: "uses page copy as a resolution token"}
+  - name: unknown-diff-line-type-refused
+    input:
+      schema: LocalKickstartDiffLine
+      payload: {type: context, text: unchanged}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: NewLocalKickstartDiffLineType}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartDiffLineType"}
+    mutation: {description: "uses context instead of ctx"}
+  - name: node-state-is-none-some-all
+    input:
+      schema: LocalKickstartTree
+      payload:
+        nodes:
+          - {id: none-row, kind: project, state: none, label: None}
+          - {id: some-row, kind: group, state: some, label: Some}
+          - {id: all-row, kind: branch, state: all, label: All}
+        total: 3
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartNodeState none some all"}
+    mutation: {description: "uses each published node state once"}
+  - name: locked-is-a-boolean-not-a-fourth-state
+    input:
+      schema: LocalKickstartNode
+      payload: {id: n1, kind: session, state: none, label: Saved, locked: locked}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: cannot unmarshal}
+    classification: must-fail
+    provenance: {source: requirement, ref: "locked is a boolean, not a fourth node state"}
+    mutation: {description: "sends locked as a string token"}

@@ -1,0 +1,62 @@
+# Closed-set membership for the kickstart contract. The values are the
+# neutral All* inventory. This file is not a publishing boundary corpus: it
+# has no cases key, so the shared boundary list does not run it.
+required_names:
+  - LocalKickstartScope
+  - LocalKickstartStopKind
+  - LocalKickstartFieldKind
+  - LocalKickstartLineKind
+  - LocalKickstartNodeKind
+  - LocalKickstartNodeState
+  - LocalKickstartScanState
+  - LocalKickstartIngestState
+  - LocalKickstartResolution
+  - LocalKickstartNextStep
+  - LocalKickstartDiffLineType
+  - LocalKickstartEventKind
+  - LocalKickstartCloseReason
+  - LocalKickstartConnectAnswer
+sets:
+  - {name: LocalKickstartScope, values: [full, selection]}
+  - {name: LocalKickstartStopKind, values: [connection, config, review, ingest]}
+  - {name: LocalKickstartFieldKind, values: [toggle, choice, action, tree, notice]}
+  - {name: LocalKickstartLineKind, values: [text, label, before, after, spacer]}
+  - {name: LocalKickstartNodeKind, values: [project, group, branch, session]}
+  - {name: LocalKickstartNodeState, values: [none, some, all]}
+  - {name: LocalKickstartScanState, values: [idle, running, done, error]}
+  - {name: LocalKickstartIngestState, values: [idle, running, busy, failed]}
+  - {name: LocalKickstartResolution, values: [mine, theirs]}
+  - {name: LocalKickstartNextStep, values: [config, web-start, village-login, village-push, auto-publish-settings]}
+  - {name: LocalKickstartDiffLineType, values: [add, del, ctx]}
+  - {name: LocalKickstartEventKind, values: [session, answers, conflicts, scan, ingest, closed]}
+  - {name: LocalKickstartCloseReason, values: [committed, expired]}
+  - {name: LocalKickstartConnectAnswer, values: [accept, skip]}
+status_fields: [configured, activeSessionId]
+forbidden_json_names: [page, perPage, per_page, cursor, nextCursor, next_cursor, limit, nextItems, next_items, reset]
+strict_objects:
+  - LocalKickstartStatus
+  - LocalKickstartOpenRequest
+  - LocalKickstartGuide
+  - LocalKickstartOption
+  - LocalKickstartLine
+  - LocalKickstartSummary
+  - LocalKickstartDiffLine
+  - LocalKickstartHunk
+  - LocalKickstartDiff
+  - LocalKickstartConnect
+  - LocalKickstartField
+  - LocalKickstartStop
+  - LocalKickstartConflict
+  - LocalKickstartScan
+  - LocalKickstartVillage
+  - LocalKickstartIngest
+  - LocalKickstartSession
+  - LocalKickstartNode
+  - LocalKickstartTree
+  - LocalKickstartPreview
+  - LocalKickstartAnswers
+  - LocalKickstartOverwrite
+  - LocalKickstartPatchResult
+  - LocalKickstartCommitted
+  - LocalKickstartCommitRefusal
+  - LocalKickstartEvent
