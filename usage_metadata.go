@@ -210,9 +210,17 @@ type NativeAttachmentRef struct {
 	ToolCallID string `json:"toolCallId,omitempty"`
 }
 type NativeMetadataRecord struct {
-	ID         string               `json:"id"`
-	Kind       NativeMetadataKind   `json:"kind"`
-	Source     NativeSourceRef      `json:"source"`
+	ID     string             `json:"id"`
+	Kind   NativeMetadataKind `json:"kind"`
+	Source NativeSourceRef    `json:"source"`
+	// Attachment-bearing records must travel in the same partition as their
+	// target turn, in a durable read or a segment that includes the turn. Current
+	// segments carry no native metadata. Validation builds the turn map per
+	// partition, so a payload omitting the turn cannot carry its attached record.
+	// A metadata-only session_detail frame therefore carries only session-level
+	// records without attachments. Consumers read attached evidence from the read
+	// carrying the turn. Revisit this rule if a consumer needs evidence for a
+	// turn it has not loaded.
 	Attachment *NativeAttachmentRef `json:"attachment,omitempty"`
 	CustomType string               `json:"customType,omitempty"`
 	Data       json.RawMessage      `json:"data"`
@@ -583,7 +591,8 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 }
 
 // ValidateNativeMetadataRecords validates metadata and its public targets before
-// a producer attaches them to a harness-specific session envelope.
+// a producer attaches them to a harness-specific session envelope. See
+// NativeMetadataRecord.Attachment for the partition-local attachment rule.
 func ValidateNativeMetadataRecords(records []NativeMetadataRecord, targets []TurnDetail) error {
 	state := newDetailValidationState(SessionDetailPayload{Turns: targets, NativeMetadata: records})
 	if err := validateTurnEvidenceAt(targets, "turns", state, ImagePartModeLocal, "schema.ValidateNativeMetadataRecords"); err != nil {

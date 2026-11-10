@@ -63,6 +63,7 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 	}
 	caseassert.RequireMin(t, c.Recursive, 10)
 	caseassert.RequireValid(t, c.Recursive)
+	requireNames(t, c.Recursive.Cases, c.RecursiveRequired)
 	caseassert.RequireMin(t, c.RawDurable, 20)
 	caseassert.RequireValid(t, c.RawDurable)
 	for _, arm := range []struct {
