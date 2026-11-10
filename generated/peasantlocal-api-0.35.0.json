@@ -7323,6 +7323,7 @@
             "type": "string"
           },
           "userId": {
+            "description": "Optional opaque account identifier; may be absent even when connected",
             "type": "string"
           }
         },

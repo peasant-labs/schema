@@ -965,8 +965,8 @@ func (s LocalKickstartScan) Validate() error {
 type LocalKickstartVillage struct {
 	Connected bool   `json:"connected"`
 	URL       string `json:"url,omitempty"`
-	// UserID is an opaque account identifier, as returned by the local authentication service.
-	UserID string `json:"userId,omitempty"`
+	// UserID is an optional opaque account identifier, even when connected.
+	UserID string `json:"userId,omitempty" description:"Optional opaque account identifier; may be absent even when connected"`
 }
 
 // UnmarshalJSON refuses an unknown village field.

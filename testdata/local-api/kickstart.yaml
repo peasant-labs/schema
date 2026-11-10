@@ -13,8 +13,8 @@ required_names:
   - commit-refusal-empty
   - duplicate-next-step-refused
   - empty-patch-refused
-  - dropped-labels-cap
-  - stale-current-write-names-overwrite
+  - scan-dropped-labels-capped
+  - stale-current-write-names-overwrite-rejected
   - stale-patch-empty-overwritten-valid
   - answers-patch-full
   - status-get
@@ -255,22 +255,22 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "kickstart contract"}
     mutation: {description: "stale-patch-empty-overwritten-valid"}
-  - name: stale-current-write-names-overwrite
+  - name: stale-current-write-names-overwrite-rejected
     input:
       schema: LocalKickstartPatchResult
       payload: {revision: 3, stale: false, overwritten: [{key: privacy, previous: true, revision: 2}]}
     expected: {valid: false, rejected_by: semantics, error_contains: "stale is false"}
     classification: must-fail
     provenance: {source: requirement, ref: "kickstart contract"}
-    mutation: {description: "stale-current-write-names-overwrite"}
-  - name: dropped-labels-cap
+    mutation: {description: "stale-current-write-names-overwrite-rejected"}
+  - name: scan-dropped-labels-capped
     input:
       schema: LocalKickstartScan
       payload: {state: done, done: 4, total: 4, droppedLabels: [a,b,c,d]}
     expected: {valid: false, rejected_by: shape, go_rejects: true}
     classification: must-fail
     provenance: {source: requirement, ref: "kickstart contract"}
-    mutation: {description: "dropped-labels-cap"}
+    mutation: {description: "scan-dropped-labels-capped"}
   - name: empty-patch-refused
     input:
       schema: LocalKickstartAnswers

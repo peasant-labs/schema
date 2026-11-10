@@ -1,9 +1,32 @@
 # Live kickstart topic payloads and the closed-set refusals. One event carries
 # one session id. locked is a boolean, not a fourth node state.
 required_names:
+  - event-closed-carries-ingest-refused
+  - event-ingest-with-committed-refused
+  - event-ingest-with-reason-refused
+  - event-ingest-with-view-refused
+  - event-ingest-without-payload-refused
+  - event-scan-with-committed-refused
+  - event-scan-with-reason-refused
+  - event-scan-with-view-refused
+  - event-scan-without-payload-refused
+  - event-conflicts-with-committed-refused
+  - event-conflicts-with-ingest-refused
+  - event-conflicts-with-scan-refused
+  - event-conflicts-with-reason-refused
+  - event-conflicts-without-view-refused
+  - event-answers-with-committed-refused
+  - event-answers-with-ingest-refused
+  - event-answers-with-scan-refused
+  - event-answers-with-reason-refused
+  - event-answers-without-view-refused
+  - event-session-with-committed-refused
+  - event-session-with-ingest-refused
+  - event-session-with-scan-refused
+  - event-session-with-reason-refused
   - event-expired-with-finish-refused
   - event-view-revision-mismatch
-  - event-closed-carries-no-scan
+  - event-closed-carries-no-scan-or-ingest
   - event-ingest-carries-only-ingest
   - event-scan-carries-only-scan
   - event-session-without-view-refused
@@ -313,14 +336,14 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "event kind exclusivity"}
     mutation: {description: "event-ingest-carries-only-ingest"}
-  - name: event-closed-carries-no-scan
+  - name: event-closed-carries-no-scan-or-ingest
     input:
       schema: LocalKickstartEvent
       payload: {kind: closed, sessionId: s, revision: 0, reason: expired, scan: {state: idle, done: 0, total: 0}}
     expected: {valid: false, rejected_by: semantics, error_contains: "closed event does not carry scan"}
     classification: must-fail
     provenance: {source: requirement, ref: "event kind exclusivity"}
-    mutation: {description: "event-closed-carries-no-scan"}
+    mutation: {description: "event-closed-carries-no-scan-or-ingest"}
   - name: event-view-revision-mismatch
     input:
       schema: LocalKickstartEvent
@@ -337,3 +360,187 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "event kind exclusivity"}
     mutation: {description: "event-expired-with-finish-refused"}
+  - name: event-session-with-reason-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: ses-full, revision: 2, view: *full_view, reason: expired}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event session with reason refused"}
+  - name: event-session-with-scan-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: ses-full, revision: 2, view: *full_view, scan: {state: idle, done: 0, total: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event session with scan refused"}
+  - name: event-session-with-ingest-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: ses-full, revision: 2, view: *full_view, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event session with ingest refused"}
+  - name: event-session-with-committed-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: ses-full, revision: 2, view: *full_view, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed belongs only"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event session with committed refused"}
+  - name: event-answers-without-view-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: answers, sessionId: ses-full, revision: 2}
+    expected: {valid: false, rejected_by: semantics, error_contains: "no view"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event answers without view refused"}
+  - name: event-answers-with-reason-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: answers, sessionId: ses-full, revision: 2, view: *full_view, reason: expired}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event answers with reason refused"}
+  - name: event-answers-with-scan-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: answers, sessionId: ses-full, revision: 2, view: *full_view, scan: {state: idle, done: 0, total: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event answers with scan refused"}
+  - name: event-answers-with-ingest-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: answers, sessionId: ses-full, revision: 2, view: *full_view, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event answers with ingest refused"}
+  - name: event-answers-with-committed-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: answers, sessionId: ses-full, revision: 2, view: *full_view, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed belongs only"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event answers with committed refused"}
+  - name: event-conflicts-without-view-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: conflicts, sessionId: ses-full, revision: 2}
+    expected: {valid: false, rejected_by: semantics, error_contains: "no view"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event conflicts without view refused"}
+  - name: event-conflicts-with-reason-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: conflicts, sessionId: ses-full, revision: 2, view: *full_view, reason: expired}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event conflicts with reason refused"}
+  - name: event-conflicts-with-scan-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: conflicts, sessionId: ses-full, revision: 2, view: *full_view, scan: {state: idle, done: 0, total: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event conflicts with scan refused"}
+  - name: event-conflicts-with-ingest-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: conflicts, sessionId: ses-full, revision: 2, view: *full_view, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "carries reason, scan, or ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event conflicts with ingest refused"}
+  - name: event-conflicts-with-committed-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: conflicts, sessionId: ses-full, revision: 2, view: *full_view, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed belongs only"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event conflicts with committed refused"}
+  - name: event-scan-without-payload-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: scan, sessionId: ses-full, revision: 2}
+    expected: {valid: false, rejected_by: semantics, error_contains: "scan event carries only scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event scan without payload refused"}
+  - name: event-scan-with-view-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: scan, sessionId: ses-full, revision: 2, scan: {state: idle, done: 0, total: 0}, view: *full_view}
+    expected: {valid: false, rejected_by: semantics, error_contains: "scan event carries only scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event scan with view refused"}
+  - name: event-scan-with-reason-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: scan, sessionId: ses-full, revision: 2, scan: {state: idle, done: 0, total: 0}, reason: expired}
+    expected: {valid: false, rejected_by: semantics, error_contains: "scan event carries only scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event scan with reason refused"}
+  - name: event-scan-with-committed-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: scan, sessionId: ses-full, revision: 2, scan: {state: idle, done: 0, total: 0}, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed belongs only"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event scan with committed refused"}
+  - name: event-ingest-without-payload-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: ingest, sessionId: ses-full, revision: 2}
+    expected: {valid: false, rejected_by: semantics, error_contains: "ingest event carries only ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event ingest without payload refused"}
+  - name: event-ingest-with-view-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: ingest, sessionId: ses-full, revision: 2, ingest: {state: busy, new: 0, updated: 0}, view: *full_view}
+    expected: {valid: false, rejected_by: semantics, error_contains: "ingest event carries only ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event ingest with view refused"}
+  - name: event-ingest-with-reason-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: ingest, sessionId: ses-full, revision: 2, ingest: {state: busy, new: 0, updated: 0}, reason: expired}
+    expected: {valid: false, rejected_by: semantics, error_contains: "ingest event carries only ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event ingest with reason refused"}
+  - name: event-ingest-with-committed-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: ingest, sessionId: ses-full, revision: 2, ingest: {state: busy, new: 0, updated: 0}, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed belongs only"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event ingest with committed refused"}
+  - name: event-closed-carries-ingest-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: ses-full, revision: 2, reason: expired, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "closed event does not carry scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind payload exclusivity"}
+    mutation: {description: "rejects event closed carries ingest refused"}

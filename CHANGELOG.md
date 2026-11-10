@@ -17,7 +17,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   and `POST .../commit` rescan and save. Every non-GET route declares the
   shared cross-origin 403. A stale patch may replace no field, so an empty
   overwritten list is valid. The `kickstart` WebSocket topic carries
-  `LocalKickstartEvent`. Node state is `none`, `some`, or `all`; `locked` is
+  `LocalKickstartEvent`. Village connection state may omit `userId`, even
+  when connected, matching the local authentication response. Node state is
+  `none`, `some`, or `all`; `locked` is
   a boolean, not a fourth state. No kickstart payload is paged.
 
 - Types 0.46.0, Village API 0.38.0, and Local API 0.34.0 recognize six additional harness identities: grok-build, devin-desktop, cline, kiro, kiro-cli, kiro-crew. The prior spec versions and both 0.37.0 request schemas are frozen in the retirement registry.
