@@ -1,0 +1,8 @@
+required_names: [grok-build, devin-desktop, cline, kiro, kiro-cli, kiro-crew]
+cases:
+  - {name: grok-build, display: Grok Build}
+  - {name: devin-desktop, display: Devin Desktop}
+  - {name: cline, display: Cline}
+  - {name: kiro, display: Kiro}
+  - {name: kiro-cli, display: Kiro CLI}
+  - {name: kiro-crew, display: Kiro Crew}

@@ -130,7 +130,8 @@ const (
 	// Bumped to 0.37.0 when TurnDetail gained the optional contentParts list
 	// and its ordered text/image part and image-part evidence, together with
 	// the content_parts_v1 content capability (additive = minor bump).
-	VillageAPIVersion = "0.37.0"
+	// 0.38.0 adds known harness identities.
+	VillageAPIVersion = "0.38.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -225,7 +226,8 @@ const (
 	// GET /api/v1/attachments/{ref} serves one content-addressed png or jpeg,
 	// with 400 for a malformed ref and 404 when the row or file is missing
 	// (additive operation = minor bump).
-	PeasantLocalAPIVersion = "0.33.0"
+	// 0.34.0 adds known harness identities.
+	PeasantLocalAPIVersion = "0.34.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -335,5 +337,6 @@ const (
 	// OmittedReason, ImageMediaType, and the image EntryType entered the
 	// catalog, and every turnCount field documented conversation turns
 	// (additive = minor bump).
-	TypesVersion = "0.45.0"
+	// 0.46.0 adds known harness identities.
+	TypesVersion = "0.46.0"
 )

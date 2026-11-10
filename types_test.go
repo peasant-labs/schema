@@ -3,6 +3,7 @@ package schema_test
 import (
 	_ "embed"
 	"encoding/json"
+	"gopkg.in/yaml.v3"
 	"regexp"
 	"strings"
 	"testing"
@@ -525,5 +526,45 @@ func TestLicense_WireRoundTrip(t *testing.T) {
 	}
 	if ptiBack.License != schema.LicenseCC0 {
 		t.Errorf("PullTranscriptInfo license round-trip = %q, want %q", ptiBack.License, schema.LicenseCC0)
+	}
+}
+
+//go:embed testdata/contract/harness_display_names.yaml
+var harnessDisplayNamesYAML []byte
+
+func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
+	var fixture struct {
+		RequiredNames []string `yaml:"required_names"`
+		Cases         []struct {
+			Name    string `yaml:"name"`
+			Display string `yaml:"display"`
+		} `yaml:"cases"`
+	}
+	if err := yaml.Unmarshal(harnessDisplayNamesYAML, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	seen := make(map[string]bool)
+	for _, tc := range fixture.Cases {
+		if seen[tc.Name] {
+			t.Fatalf("duplicate display fixture %q", tc.Name)
+		}
+		seen[tc.Name] = true
+		h := schema.Harness(tc.Name)
+		if !h.IsKnown() {
+			t.Errorf("unknown harness %q", h)
+		}
+		if got := schema.HarnessDisplayName(h); got != tc.Display {
+			t.Errorf("%s: got %q, want %q", h, got, tc.Display)
+		}
+	}
+	for _, name := range fixture.RequiredNames {
+		if !seen[name] {
+			t.Errorf("missing display case %q", name)
+		}
+	}
+	for _, h := range schema.Harnesses() {
+		if schema.HarnessDisplayName(h) == string(h) {
+			t.Errorf("%s has no explicit display name", h)
+		}
 	}
 }

@@ -1005,7 +1005,13 @@ export const zHarness = z.enum([
     'cursor',
     'antigravity',
     'strike',
-    'pi'
+    'pi',
+    'grok-build',
+    'devin-desktop',
+    'cline',
+    'kiro',
+    'kiro-cli',
+    'kiro-crew'
 ]);
 
 export type Harness = z.infer<typeof zHarness>;

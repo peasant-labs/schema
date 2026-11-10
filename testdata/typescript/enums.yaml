@@ -225,6 +225,12 @@ enums:
       - {name: Antigravity, value: "antigravity"}
       - {name: Strike, value: "strike"}
       - {name: Pi, value: "pi"}
+      - {name: GrokBuild, value: "grok-build"}
+      - {name: DevinDesktop, value: "devin-desktop"}
+      - {name: Cline, value: "cline"}
+      - {name: Kiro, value: "kiro"}
+      - {name: KiroCLI, value: "kiro-cli"}
+      - {name: KiroCrew, value: "kiro-crew"}
     all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike", "pi"]
   - name: InsightKind
     all_name: AllInsightKinds

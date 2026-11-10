@@ -7,6 +7,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Recognize additional harness identities in the shared wire contract.
+
+
+### Added
+
 - Local API 0.33.0 declares `GET /api/v1/attachments/{ref}`. `ref` is a
   lowercase 64-hex sha256. A matching stored image answers 200 as `image/png`
   or `image/jpeg` with `Cache-Control: public, max-age=31536000, immutable`.

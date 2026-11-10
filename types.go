@@ -324,17 +324,25 @@ func (SessionOutcome) JSONSchema() (jsonschema.Schema, error) {
 type Harness = bestiary.Harness
 
 const (
-	HarnessClaudeCode  = bestiary.HarnessClaudeCode
-	HarnessGeminiCLI   = bestiary.HarnessGeminiCLI
-	HarnessCodex       = bestiary.HarnessCodex
-	HarnessOpenCode    = bestiary.HarnessOpenCode
-	HarnessCursor      = bestiary.HarnessCursor
-	HarnessAntigravity = bestiary.HarnessAntigravity
-	HarnessStrike      = bestiary.HarnessStrike
-	HarnessPi          = bestiary.HarnessPi
+	HarnessClaudeCode = bestiary.HarnessClaudeCode
+	// HarnessGeminiCLI remains available for wire compatibility despite its upstream deprecation.
+	HarnessGeminiCLI    = bestiary.HarnessGeminiCLI
+	HarnessCodex        = bestiary.HarnessCodex
+	HarnessOpenCode     = bestiary.HarnessOpenCode
+	HarnessCursor       = bestiary.HarnessCursor
+	HarnessAntigravity  = bestiary.HarnessAntigravity
+	HarnessStrike       = bestiary.HarnessStrike
+	HarnessPi           = bestiary.HarnessPi
+	HarnessGrokBuild    = bestiary.HarnessGrokBuild
+	HarnessDevinDesktop = bestiary.HarnessDevinDesktop
+	HarnessCline        = bestiary.HarnessCline
+	HarnessKiro         = bestiary.HarnessKiro
+	HarnessKiroCLI      = bestiary.HarnessKiroCLI
+	HarnessKiroCrew     = bestiary.HarnessKiroCrew
 )
 
 // AllHarnesses is the canonical list of harnesses that peasant supports for ingestion.
+// The six layout harnesses are known but not declared; Gemini CLI remains declared, deprecated, and unharvested.
 var AllHarnesses = []Harness{
 	HarnessClaudeCode, HarnessGeminiCLI, HarnessCodex, HarnessOpenCode, HarnessCursor,
 	HarnessStrike, HarnessPi,
@@ -367,6 +375,18 @@ func HarnessDisplayName(h Harness) string {
 		return "Strike"
 	case HarnessPi:
 		return "Pi"
+	case HarnessGrokBuild:
+		return "Grok Build"
+	case HarnessDevinDesktop:
+		return "Devin Desktop"
+	case HarnessCline:
+		return "Cline"
+	case HarnessKiro:
+		return "Kiro"
+	case HarnessKiroCLI:
+		return "Kiro CLI"
+	case HarnessKiroCrew:
+		return "Kiro Crew"
 	}
 	return string(h)
 }

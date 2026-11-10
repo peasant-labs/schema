@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"gopkg.in/yaml.v3"
 	"os"
 	"testing"
 
@@ -137,6 +138,58 @@ func TestPublishSchema_ExtractedShape(t *testing.T) {
 	for _, field := range []string{"identity", "model", "source", "entries", "timestamp"} {
 		if _, ok := props[field]; !ok {
 			t.Errorf("extracted schema root properties missing PublishRequest field %q", field)
+		}
+	}
+}
+
+//go:embed testdata/current_harness_verdicts.yaml
+var currentHarnessVerdicts []byte
+
+func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
+	var fixture struct {
+		RequiredNames []string `yaml:"required_names"`
+		Cases         []struct {
+			Name    string `yaml:"name"`
+			Body    string `yaml:"body"`
+			Accepts bool   `yaml:"accepts"`
+			Harness string `yaml:"harness"`
+		} `yaml:"cases"`
+	}
+	if err := yaml.Unmarshal(currentHarnessVerdicts, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	compiled := compileSchema(t, "current.json", raw)
+	seen := make(map[string]bool)
+	for _, tc := range fixture.Cases {
+		if seen[tc.Name] {
+			t.Fatalf("duplicate case %q", tc.Name)
+		}
+		seen[tc.Name] = true
+		t.Run(tc.Name, func(t *testing.T) {
+			body := []byte(tc.Body)
+			if got := accepts(t, compiled, body); got != tc.Accepts {
+				var doc any
+				_ = json.Unmarshal(body, &doc)
+				t.Fatalf("accepts = %v, want %v: %v", got, tc.Accepts, compiled.Validate(doc))
+			}
+			if tc.Accepts {
+				var req schema.AuthoritativePublishRequest
+				if err := json.Unmarshal(body, &req); err != nil {
+					t.Fatal(err)
+				}
+				if string(req.Model.Harness) != tc.Harness {
+					t.Errorf("harness = %q, want %q", req.Model.Harness, tc.Harness)
+				}
+			}
+		})
+	}
+	for _, name := range fixture.RequiredNames {
+		if !seen[name] {
+			t.Errorf("missing case %q", name)
 		}
 	}
 }

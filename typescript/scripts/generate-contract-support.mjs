@@ -55,6 +55,7 @@ const sessionGraphCapabilitySource = parse(await readFile(join(moduleRoot, "test
 const legacyPullSource = parse(await readFile(join(moduleRoot, "testdata", "pull", "legacy_envelope.yaml"), "utf8"));
 const publicOwnerSource = parse(await readFile(join(moduleRoot, "testdata", "village_public_owner.yaml"), "utf8"));
 const testcaseSource = await readFile(join(moduleRoot, "testcase", "testcase.go"), "utf8");
+const typesSource = await readFile(join(moduleRoot, "types.go"), "utf8");
 
 await mkdir(generatedRoot, { recursive: true });
 const redactionProjection = JSON.parse(execFileSync("go", ["run", "-mod=readonly", "."], {
@@ -164,6 +165,17 @@ function renderEnums(openapi, catalog) {
     const expectedValues = members.map((member) => member.value);
     if (JSON.stringify(actualValues) !== JSON.stringify(expectedValues)) {
       throw new Error(`TypeScript enum generation found ${enumCase.name} drift between Go/OpenAPI (${JSON.stringify(actualValues)}) and testdata/typescript/enums.yaml (${JSON.stringify(expectedValues)}); TypeScript output was not written; update the canonical Go closed set and its fixture together.`);
+    }
+    if (enumCase.name === "Harness") {
+      const match = /var\s+AllHarnesses\s*=\s*\[\]Harness\s*\{([^}]*)\}/s.exec(typesSource);
+      if (!match) throw new Error("TypeScript enum generation cannot read AllHarnesses from types.go; restore its slice declaration before regenerating.");
+      const byName = new Map(members.map((member) => [`Harness${member.name}`, member.value]));
+      const names = match[1].split(",").map((entry) => entry.trim()).filter(Boolean);
+      const values = names.map((name) => {
+        if (!byName.has(name)) throw new Error(`TypeScript enum generation cannot resolve AllHarnesses member ${name} through enums.yaml; fix the Go declaration or enum catalog.`);
+        return byName.get(name);
+      });
+      if (JSON.stringify(values) !== JSON.stringify(enumCase.all_values)) throw new Error(`TypeScript enum generation found AllHarnesses drift: types.go ${JSON.stringify(values)}, enums.yaml ${JSON.stringify(enumCase.all_values)}; restore matching membership and order.`);
     }
     const memberByValue = new Map(members.map((member) => [member.value, member.name]));
     const allMembers = enumCase.all_values.map((value) => {
