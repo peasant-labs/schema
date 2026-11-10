@@ -221,7 +221,11 @@ const (
 	// the segment directory, the segment read, and the window descriptor, with
 	// their page, revision, and anchor parameters and their refusal arms
 	// (additive operations = minor bump).
-	PeasantLocalAPIVersion = "0.32.0"
+	// Bumped to 0.33.0 when the local image read entered the document:
+	// GET /api/v1/attachments/{ref} serves one content-addressed png or jpeg,
+	// with 400 for a malformed ref and 404 when the row or file is missing
+	// (additive operation = minor bump).
+	PeasantLocalAPIVersion = "0.33.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical

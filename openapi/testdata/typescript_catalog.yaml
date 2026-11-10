@@ -1423,6 +1423,14 @@ types:
   - {go_name: ContentPartDetailFixtureInput, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentPartDetailFixtureExpected, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: ContentPartDetailFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteOutcome, disposition: runtime-only, reason: "closed local image-read outcome, not a serialized wire enum"}
+  - {go_name: AttachmentRouteResponse, disposition: runtime-only, reason: "Go decision for the local image read, not a JSON body"}
+  - {go_name: AttachmentRouteOperationFixture, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteRefInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteRefExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteResponseInput, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteResponseExpected, disposition: fixture-only, reason: canonical shared fixture contract}
+  - {go_name: AttachmentRouteFixtures, disposition: fixture-only, reason: canonical shared fixture contract}
   - {go_name: SyncStatus, disposition: catalog, component: SyncStatus, reason: local publishing sign-in and settings contract}
   - {go_name: SyncHoldReason, disposition: catalog, component: SyncHoldReason, reason: local publishing sign-in and settings contract}
   - {go_name: SyncPushCollectives, disposition: catalog, component: SyncPushCollectives, reason: local publishing sign-in and settings contract}

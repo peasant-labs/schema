@@ -7,6 +7,14 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.33.0 declares `GET /api/v1/attachments/{ref}`. `ref` is a
+  lowercase 64-hex sha256. A matching stored image answers 200 as `image/png`
+  or `image/jpeg` with `Cache-Control: public, max-age=31536000, immutable`.
+  A malformed ref is 400 with JSON error code `attachment_ref_malformed`; the
+  body does not repeat the rejected ref. A well-formed ref with no row, or a
+  row whose file is missing, is 404 with JSON error code
+  `attachment_not_found`. The route is a local read of bytes already stored on
+  this computer. It is not a publication route.
 - Local API 0.32.0 declares the transcript segment reads. `GET
   /api/v1/sessions/{id}/transcript/segments` serves the
   `TranscriptSegmentDirectory` global index, one ref per segment with the cut's
@@ -70,6 +78,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Changed
 
+- Local API 0.32.0 is retired and byte-frozen.
 - Local API 0.29.0, 0.30.0, and 0.31.0, Types 0.44.0, and Village API 0.35.0
   and 0.36.0 are retired and byte-frozen.
 - Village API 0.36.0 renames the transcript list response's `limit` to

@@ -1,4 +1,5 @@
 specs:
+  - {name: peasantlocal-api-0.32.0, json_sha256: aa7c08edaff37a640e2dc7bdf518dc3500147ce23070b3cbd58ea005c3fa5c27, yaml_sha256: 96ab88551ae77ad5f398432aebf67511a69bea37a6b79d1c448b93dcfaf7f3b4}
   - {name: peasantlocal-api-0.31.0, json_sha256: 588d84351dd684a69f2a5a344e08e35723e9b89a35404925362ac378b63c361f, yaml_sha256: 0265a38d82b5fef6214de54baef4e1850b134115ef5742acd3efaaad70c86b5e}
   - {name: peasantlocal-api-0.30.0, json_sha256: 968d8952b413dbdbc4a01b4d8ffbdc6b15fffe97eb6ac563ce92e53fcb5481ac, yaml_sha256: 1001b57b5d43552fe7528361c2c8f9c22d9b604753366e45e29cdab39dfc91fa}
   - {name: peasantlocal-api-0.29.0, json_sha256: c8696994a260bdd3614ed84e15280e3880d84a4f0d5203c660d6aad6a3366ffb, yaml_sha256: 27f0e7f2cdf732951c405286a7e0ea55db0765020266c7af2f442666fd3d5758}
