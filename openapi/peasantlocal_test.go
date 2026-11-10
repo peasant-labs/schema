@@ -90,6 +90,7 @@ func TestBuildPeasantLocalAPISpec_RESTRoutes(t *testing.T) {
 		"/api/v1/health",
 		"/api/v1/sessions",
 		"/api/v1/sessions/{id}",
+		"/api/v1/quality",
 		"/api/v1/config/mock",
 		"/api/v1/shutdown",
 	}

@@ -369,6 +369,31 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// GET /api/v1/quality
+	// One bounded page of stored quality rows beside the library-wide analytics
+	// summary at the page revision, so no surface subscribes to the full library.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: "/api/v1/quality", id: "getQualityPage", tag: "quality",
+		description: "Read one bounded page of stored session quality rows beside the " +
+			"library-wide analytics summary at the page revision. The summary is computed " +
+			"over the whole library and the rows are the requested page, so no client " +
+			"receives every stored row. page is one-based and omitted defaults to 1; a " +
+			"request past the last page is served the last page. maxItems is omitted or 0 " +
+			"for the default of 25; only 25, 50, and 100 are accepted, and a negative, " +
+			"non-member, or malformed value returns 400. 500 when the page or its summary " +
+			"cannot be read, and 503 when the configured provider cannot serve the " +
+			"paginated quality read.",
+		requests: []interface{}{new(struct {
+			Page     int `query:"page" description:"One-based page number; omitted defaults to 1" minimum:"1"`
+			MaxItems int `query:"maxItems" default:"25" description:"Rows per page: omitted or 0 uses 25; only 25, 50, and 100 are accepted" minimum:"0"`
+		})},
+		response:      new(schema.QualityPage),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
 	// --- Annotation WebSocket channel payload schema ---
 	// Register AnnotationsPayload as a component so the spec documents
 	// the shape of annotations WebSocket channel messages.

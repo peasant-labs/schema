@@ -21,7 +21,13 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `SessionDetailReadPayload`, `SessionDetailHeaderPayload`, and `TranscriptTurn`
   instead of naming the embedded Go struct, so the emitted schema accepts the
   wire shape those rows describe.
-- Local API 0.30.0, Types 0.45.0, and Village API 0.36.0 add
+- Local API 0.30.0 adds `GET /api/v1/quality`. It serves one bounded offset page
+  of `QualitySession` rows beside the library-wide `ProjectAnalytics` summary at
+  the page revision: `page` is one-based (default 1) and `maxItems` is the closed
+  25/50/100 row count (omitted or 0 defaults to 25). The summary stays
+  server-computed over the whole library, so no client receives every stored
+  row. The existing `QualityPayload` WebSocket channel component is unchanged.
+- Local API 0.31.0, Types 0.45.0, and Village API 0.36.0 add
   `TurnDetail.contentParts`, an ordered list of text and image blocks. A text
   part carries `text`; an image part carries an `ImagePart` with a lowercase
   64-hex content reference, an `image/png` or `image/jpeg` media type, a byte
@@ -40,11 +46,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 - `EntryType` gains `image` for a source entry that carries an ordered image
   block, and `ImageMediaType` becomes a typed closed set (`image/png` or
   `image/jpeg`) for `ImagePart.mediaType`.
-
 ### Changed
 
-- Local API 0.29.0, Types 0.44.0, and Village API 0.35.0 are retired and
-  byte-frozen.
+- Local API 0.29.0 and 0.30.0, Types 0.44.0, and Village API 0.35.0 are retired
+  and byte-frozen.
 - Local API 0.29.0 and Types 0.44.0 replace the page and set contract with one
   `OffsetPage[T]`: `items`, `nextItems`, `page`, `perPage`, `total`, and a
   decimal `revision`. `LocalSyncSessionPage` embeds it and adds

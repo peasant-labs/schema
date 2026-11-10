@@ -70,7 +70,7 @@ types:
   - {go_name: OffsetPage, disposition: runtime-only, reason: uninstantiated Go generic has only explicitly named concrete wire instantiations}
   - {go_name: LocalSyncPublicationFilter, disposition: catalog, component: LocalSyncPublicationFilter, reason: root publication filter}
   - {go_name: LocalSyncSessionRow, disposition: catalog, component: LocalSyncSessionRow, reason: hydrated sync row}
-  - {go_name: LocalSyncSessionTotals, disposition: catalog, component: LocalSyncSessionTotals, reason: root session count beside one offset page}
+  - {go_name: LocalSyncSessionTotals, disposition: catalog, component: LocalSyncSessionTotals, reason: pushable session count beside one offset page}
   - {go_name: LocalSyncSessionPage, disposition: catalog, component: LocalSyncSessionPage, reason: concrete generic sync page}
   - {go_name: LocalSessionPage, disposition: catalog, component: LocalSessionPage, reason: concrete generic flat-session page}
   - {go_name: LocalSyncProjectOption, disposition: catalog, component: LocalSyncProjectOption, reason: stored root project identity}

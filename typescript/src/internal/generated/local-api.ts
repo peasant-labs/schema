@@ -188,6 +188,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read one bounded page of stored session quality rows beside the library-wide analytics summary at the page revision. The summary is computed over the whole library and the rows are the requested page, so no client receives every stored row. page is one-based and omitted defaults to 1; a request past the last page is served the last page. maxItems is omitted or 0 for the default of 25; only 25, 50, and 100 are accepted, and a negative, non-member, or malformed value returns 400. 500 when the page or its summary cannot be read, and 503 when the configured provider cannot serve the paginated quality read. */
+        get: operations["getQualityPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/review/{projectHash}": {
         parameters: {
             query?: never;
@@ -669,6 +686,7 @@ export interface components {
          * @enum {string}
          */
         SchemaActorOrigin: Schema.ActorOrigin;
+        SchemaAnalyticsSessionStats: Schema.AnalyticsSessionStats;
         /**
          * Annotation Axis
          * @description Subscription dimension for annotation channels
@@ -935,6 +953,7 @@ export interface components {
         SchemaContentProvenance: Schema.ContentProvenance;
         /** @description Opaque versioned selected-category traversal token; not cacheRevision or authority */
         SchemaContributionTraversalRevision: Schema.ContributionTraversalRevision;
+        SchemaContributorBreakdown: Schema.ContributorBreakdown;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;
@@ -1149,6 +1168,7 @@ export interface components {
         SchemaLocalSyncSummary: Schema.LocalSyncSummary;
         SchemaLocalVillageCollective: Schema.LocalVillageCollective;
         SchemaLocalVillageCollectivesResponse: Schema.LocalVillageCollectivesResponse;
+        SchemaLongestStreak: Schema.LongestStreak;
         SchemaMapEdge: Schema.MapEdge;
         SchemaMapGraphPayload: Schema.MapGraphPayload;
         SchemaMapNode: Schema.MapNode;
@@ -1163,6 +1183,7 @@ export interface components {
          */
         SchemaMapNodeKind: Schema.MapNodeKind;
         SchemaMapSlice: Schema.MapSlice;
+        SchemaMedianP90: Schema.MedianP90;
         /**
          * Message Type
          * @description WebSocket message discriminator
@@ -1243,6 +1264,7 @@ export interface components {
          * @enum {string}
          */
         SchemaOperationIssueCode: Schema.OperationIssueCode;
+        SchemaOutcomeDistribution: Schema.OutcomeDistribution;
         /**
          * Page Size
          * @description Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.
@@ -1253,6 +1275,7 @@ export interface components {
          */
         SchemaPageSize: Schema.PageSize;
         SchemaPersonalMedians: Schema.PersonalMedians;
+        SchemaProjectAnalytics: Schema.ProjectAnalytics;
         /**
          * Project Hash
          * @description SHA-256 hex digest of the project's origin URL or local path
@@ -1279,6 +1302,7 @@ export interface components {
          * @enum {string}
          */
         SchemaPublicSourceAnchorKind: Schema.PublicSourceAnchorKind;
+        SchemaQualityPage: Schema.QualityPage;
         SchemaQualitySession: Schema.QualitySession;
         /**
          * Read Attribution State
@@ -1324,6 +1348,7 @@ export interface components {
          */
         SchemaRelationshipTargetState: Schema.RelationshipTargetState;
         SchemaRetainedUnknownRecord: Schema.RetainedUnknownRecord;
+        SchemaReturningContributorRate: Schema.ReturningContributorRate;
         SchemaReviewListPayload: Schema.ReviewListPayload;
         /**
          * Rewrite Method
@@ -1439,6 +1464,7 @@ export interface components {
          * @enum {string}
          */
         SchemaSessionTeammateEvidence: Schema.SessionTeammateEvidence;
+        SchemaSessionToCommitRate: Schema.SessionToCommitRate;
         SchemaSessionsPayload: Schema.SessionsPayload;
         SchemaShutdownResponse: Schema.ShutdownResponse;
         /**
@@ -1724,6 +1750,10 @@ export interface components {
          */
         SchemaVillageUUID: Schema.VillageUUID;
         SchemaVillageUserCollective: Schema.VillageUserCollective;
+        SchemaWeekAvgDuration: Schema.WeekAvgDuration;
+        SchemaWeekContributors: Schema.WeekContributors;
+        SchemaWeekCount: Schema.WeekCount;
+        SchemaWeekNewContributors: Schema.WeekNewContributors;
         SearchPayload: Schema.SearchPayload;
         ServerMessage: Schema.ServerMessage;
         SessionDetailHeaderPayload: Schema.SessionDetailHeaderPayload;
@@ -2050,6 +2080,58 @@ export interface operations {
             };
             /** @description Bad Gateway */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getQualityPage: {
+        parameters: {
+            query?: {
+                /** @description One-based page number; omitted defaults to 1 */
+                page?: number;
+                /** @description Rows per page: omitted or 0 uses 25; only 25, 50, and 100 are accepted */
+                maxItems?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaQualityPage"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -471,6 +471,80 @@
         }
       }
     },
+    "/api/v1/quality": {
+      "get": {
+        "tags": [
+          "quality"
+        ],
+        "description": "Read one bounded page of stored session quality rows beside the library-wide analytics summary at the page revision. The summary is computed over the whole library and the rows are the requested page, so no client receives every stored row. page is one-based and omitted defaults to 1; a request past the last page is served the last page. maxItems is omitted or 0 for the default of 25; only 25, 50, and 100 are accepted, and a negative, non-member, or malformed value returns 400. 500 when the page or its summary cannot be read, and 503 when the configured provider cannot serve the paginated quality read.",
+        "operationId": "getQualityPage",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "One-based page number; omitted defaults to 1",
+            "schema": {
+              "description": "One-based page number; omitted defaults to 1",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "name": "maxItems",
+            "in": "query",
+            "description": "Rows per page: omitted or 0 uses 25; only 25, 50, and 100 are accepted",
+            "schema": {
+              "default": 25,
+              "description": "Rows per page: omitted or 0 uses 25; only 25, 50, and 100 are accepted",
+              "minimum": 0,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaQualityPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/review/{projectHash}": {
       "get": {
         "tags": [
@@ -2408,6 +2482,29 @@
         ],
         "title": "Actor Origin",
         "type": "string"
+      },
+      "SchemaAnalyticsSessionStats": {
+        "properties": {
+          "durationMins": {
+            "$ref": "#/components/schemas/SchemaMedianP90"
+          },
+          "toolCallCount": {
+            "$ref": "#/components/schemas/SchemaMedianP90"
+          },
+          "totalTokens": {
+            "$ref": "#/components/schemas/SchemaMedianP90"
+          },
+          "turnCount": {
+            "$ref": "#/components/schemas/SchemaMedianP90"
+          }
+        },
+        "required": [
+          "durationMins",
+          "totalTokens",
+          "turnCount",
+          "toolCallCount"
+        ],
+        "type": "object"
       },
       "SchemaAnnotationAxis": {
         "description": "Subscription dimension for annotation channels",
@@ -4455,6 +4552,97 @@
         "maxLength": 4096,
         "type": "string"
       },
+      "SchemaContributorBreakdown": {
+        "properties": {
+          "activeWeeks": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "contributorId": {
+            "type": "string"
+          },
+          "firstSeen": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastSeen": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcomes": {
+            "$ref": "#/components/schemas/SchemaOutcomeDistribution"
+          },
+          "sessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sessionsWithCommit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalCommits": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalDurationMins": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTokens": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalToolCalls": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalTurns": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contributorId",
+          "sessions",
+          "activeWeeks",
+          "totalTokens",
+          "totalDurationMins",
+          "totalTurns",
+          "totalToolCalls",
+          "sessionsWithCommit",
+          "totalCommits",
+          "outcomes",
+          "firstSeen",
+          "lastSeen"
+        ],
+        "type": "object"
+      },
       "SchemaCreateAnnotationRequest": {
         "properties": {
           "annotatorName": {
@@ -4750,8 +4938,7 @@
           "thinking",
           "system",
           "error",
-          "result",
-          "image"
+          "result"
         ],
         "examples": [
           "text",
@@ -4911,54 +5098,6 @@
           "helperThreadCount",
           "memberScope"
         ],
-        "type": "object"
-      },
-      "SchemaImageMediaType": {
-        "description": "Recorded image media type: image/png or image/jpeg",
-        "enum": [
-          "image/png",
-          "image/jpeg"
-        ],
-        "examples": [
-          "image/png",
-          "image/jpeg"
-        ],
-        "title": "Image Media Type",
-        "type": "string"
-      },
-      "SchemaImagePart": {
-        "properties": {
-          "byteSize": {
-            "description": "Exact stored byte size. Zero means unset or no bytes, and an explicit zero is accepted as unset; a published transcript never carries a nonzero size.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "height": {
-            "description": "Optional recorded pixel height; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero height.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "mediaType": {
-            "$ref": "#/components/schemas/SchemaImageMediaType",
-            "description": "Recorded image/png or image/jpeg media type. Absent for an unsupported source type or a published transcript."
-          },
-          "omittedReason": {
-            "$ref": "#/components/schemas/SchemaOmittedReason",
-            "description": "Why the bytes are absent: unsupported (wins for a non-recorded media type), too_large, missing, or not_published. Omit when local bytes are present."
-          },
-          "ref": {
-            "description": "Lowercase 64-hex content address of the stored image. Absent when the bytes are omitted or the transcript is published.",
-            "maxLength": 64,
-            "minLength": 64,
-            "pattern": "^[0-9a-f]{64}$",
-            "type": "string"
-          },
-          "width": {
-            "description": "Optional recorded pixel width; zero means unset or unknown, and an explicit zero is accepted as unset. A published transcript never carries a nonzero width.",
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
         "type": "object"
       },
       "SchemaInputModality": {
@@ -6012,7 +6151,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           }
         },
@@ -6057,6 +6195,47 @@
         },
         "required": [
           "collectives"
+        ],
+        "type": "object"
+      },
+      "SchemaLongestStreak": {
+        "properties": {
+          "endWeek": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startWeek": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weeks": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "weeks",
+          "startWeek",
+          "endWeek"
         ],
         "type": "object"
       },
@@ -6419,6 +6598,47 @@
         ],
         "type": "object"
       },
+      "SchemaMedianP90": {
+        "properties": {
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "p90": {
+            "anyOf": [
+              {
+                "type": [
+                  "null",
+                  "number"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "count",
+          "median",
+          "p90"
+        ],
+        "type": "object"
+      },
       "SchemaMessageType": {
         "description": "WebSocket message discriminator",
         "enum": [
@@ -6612,23 +6832,6 @@
         "title": "Observed Model ID",
         "type": "string"
       },
-      "SchemaOmittedReason": {
-        "description": "Why an image part carries no bytes: unsupported (wins for a non-recorded media type), too_large, missing, or not_published",
-        "enum": [
-          "too_large",
-          "unsupported",
-          "missing",
-          "not_published"
-        ],
-        "examples": [
-          "too_large",
-          "unsupported",
-          "missing",
-          "not_published"
-        ],
-        "title": "Omitted Reason",
-        "type": "string"
-      },
       "SchemaOperationIssue": {
         "properties": {
           "code": {
@@ -6676,6 +6879,43 @@
         ],
         "title": "Operation Issue Code",
         "type": "string"
+      },
+      "SchemaOutcomeDistribution": {
+        "properties": {
+          "failed": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "partial": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "resolved": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unknown": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "resolved",
+          "partial",
+          "failed",
+          "unknown",
+          "total"
+        ],
+        "type": "object"
       },
       "SchemaPageSize": {
         "description": "Closed page size set for local list reads: 25, 50, or 100. The value is a number on the wire; an omitted maximum maps to 25 before validation.",
@@ -6734,6 +6974,86 @@
             ]
           }
         },
+        "type": "object"
+      },
+      "SchemaProjectAnalytics": {
+        "properties": {
+          "avgDurationPerActiveWeek": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaWeekAvgDuration"
+            },
+            "type": "array"
+          },
+          "longestStreak": {
+            "$ref": "#/components/schemas/SchemaLongestStreak"
+          },
+          "newContributorVelocity": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaWeekNewContributors"
+            },
+            "type": "array"
+          },
+          "outcomeDistribution": {
+            "$ref": "#/components/schemas/SchemaOutcomeDistribution"
+          },
+          "perContributorBreakdown": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaContributorBreakdown"
+            },
+            "type": "array"
+          },
+          "returningContributorRate": {
+            "$ref": "#/components/schemas/SchemaReturningContributorRate"
+          },
+          "sessionStats": {
+            "$ref": "#/components/schemas/SchemaAnalyticsSessionStats"
+          },
+          "sessionToCommitRate": {
+            "$ref": "#/components/schemas/SchemaSessionToCommitRate"
+          },
+          "sessionsPerWeek": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaWeekCount"
+            },
+            "type": "array"
+          },
+          "totalContributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalProjects": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "totalSessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "weeklyActiveContributors": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaWeekContributors"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "totalSessions",
+          "totalContributors",
+          "totalProjects",
+          "sessionsPerWeek",
+          "weeklyActiveContributors",
+          "returningContributorRate",
+          "longestStreak",
+          "newContributorVelocity",
+          "sessionToCommitRate",
+          "avgDurationPerActiveWeek",
+          "outcomeDistribution",
+          "sessionStats",
+          "perContributorBreakdown"
+        ],
         "type": "object"
       },
       "SchemaProjectHash": {
@@ -6910,6 +7230,52 @@
         "title": "Public Source Anchor Kind",
         "type": "string"
       },
+      "SchemaQualityPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaQualitySession"
+            },
+            "type": "array"
+          },
+          "nextItems": {
+            "items": {
+              "$ref": "#/components/schemas/SchemaQualitySession"
+            },
+            "type": "array"
+          },
+          "page": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "perPage": {
+            "$ref": "#/components/schemas/SchemaPageSize"
+          },
+          "revision": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SchemaProjectAnalytics"
+          },
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "nextItems",
+          "page",
+          "perPage",
+          "total",
+          "revision",
+          "summary"
+        ],
+        "type": "object"
+      },
       "SchemaQualitySession": {
         "properties": {
           "date": {
@@ -6983,7 +7349,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           },
           "withinSessionReverts": {
@@ -7207,6 +7572,32 @@
           "namespace",
           "kind",
           "payload"
+        ],
+        "type": "object"
+      },
+      "SchemaReturningContributorRate": {
+        "properties": {
+          "rate": {
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "returning": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "returning",
+          "rate"
         ],
         "type": "object"
       },
@@ -7622,7 +8013,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           },
           "turns": {
@@ -8146,7 +8536,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           }
         },
@@ -8198,6 +8587,32 @@
         ],
         "title": "Session Teammate Evidence",
         "type": "string"
+      },
+      "SchemaSessionToCommitRate": {
+        "properties": {
+          "rate": {
+            "format": "double",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "total": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "withCommit": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "withCommit",
+          "rate"
+        ],
+        "type": "object"
       },
       "SchemaSessionsPayload": {
         "properties": {
@@ -9129,12 +9544,6 @@
           "content": {
             "type": "string"
           },
-          "contentParts": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTurnContentPart"
-            },
-            "type": "array"
-          },
           "controlKind": {
             "type": [
               "null",
@@ -9220,23 +9629,6 @@
         ],
         "type": "object"
       },
-      "SchemaTurnContentPart": {
-        "properties": {
-          "image": {
-            "$ref": "#/components/schemas/SchemaImagePart"
-          },
-          "text": {
-            "type": "string"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SchemaTurnPartType"
-          }
-        },
-        "required": [
-          "type"
-        ],
-        "type": "object"
-      },
       "SchemaTurnDetail": {
         "properties": {
           "agentName": {
@@ -9254,12 +9646,6 @@
           },
           "content": {
             "type": "string"
-          },
-          "contentParts": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTurnContentPart"
-            },
-            "type": "array"
           },
           "controlKind": {
             "anyOf": [
@@ -9389,19 +9775,6 @@
           "depth"
         ],
         "type": "object"
-      },
-      "SchemaTurnPartType": {
-        "description": "Kind of one ordered turn content part: text or image",
-        "enum": [
-          "text",
-          "image"
-        ],
-        "examples": [
-          "text",
-          "image"
-        ],
-        "title": "Turn Part Type",
-        "type": "string"
       },
       "SchemaTypeOrigin": {
         "description": "Who created an annotation type: system (built-in), user (individual), or group (shared)",
@@ -9975,6 +10348,80 @@
         ],
         "type": "object"
       },
+      "SchemaWeekAvgDuration": {
+        "properties": {
+          "avgDurationMins": {
+            "format": "double",
+            "minimum": 0,
+            "type": "number"
+          },
+          "sessions": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "week": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "week",
+          "avgDurationMins",
+          "sessions"
+        ],
+        "type": "object"
+      },
+      "SchemaWeekContributors": {
+        "properties": {
+          "contributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "week": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "week",
+          "contributors"
+        ],
+        "type": "object"
+      },
+      "SchemaWeekCount": {
+        "properties": {
+          "count": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "week": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "week",
+          "count"
+        ],
+        "type": "object"
+      },
+      "SchemaWeekNewContributors": {
+        "properties": {
+          "newContributors": {
+            "maximum": 9007199254740991,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "week": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "week",
+          "newContributors"
+        ],
+        "type": "object"
+      },
       "SearchPayload": {
         "properties": {
           "query": {
@@ -10318,7 +10765,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           },
           "turns": {
@@ -10503,7 +10949,6 @@
             "type": "integer"
           },
           "turnCount": {
-            "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count.",
             "type": "integer"
           },
           "turns": {
@@ -10676,12 +11121,6 @@
           },
           "content": {
             "type": "string"
-          },
-          "contentParts": {
-            "items": {
-              "$ref": "#/components/schemas/SchemaTurnContentPart"
-            },
-            "type": "array"
           },
           "controlKind": {
             "type": [
