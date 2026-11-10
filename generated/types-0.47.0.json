@@ -6105,7 +6105,7 @@
       "LocalKickstartAnswers": {
         "additionalProperties": false,
         "properties": {
-          "connect": {
+          "connectAnswer": {
             "$ref": "#/components/schemas/LocalKickstartConnectAnswer"
           },
           "resolutions": {
@@ -6295,11 +6295,11 @@
         "additionalProperties": false,
         "properties": {
           "newNo": {
-            "minimum": 1,
+            "minimum": 0,
             "type": "integer"
           },
           "oldNo": {
-            "minimum": 1,
+            "minimum": 0,
             "type": "integer"
           },
           "text": {
@@ -6333,6 +6333,9 @@
       "LocalKickstartEvent": {
         "additionalProperties": false,
         "properties": {
+          "committed": {
+            "$ref": "#/components/schemas/LocalKickstartCommitted"
+          },
           "ingest": {
             "$ref": "#/components/schemas/LocalKickstartIngest"
           },
@@ -6695,7 +6698,7 @@
             "type": "string"
           },
           "previous": {
-            "type": "string"
+            "$ref": "#/components/schemas/LocalSettingValue"
           },
           "revision": {
             "minimum": 0,
@@ -6997,15 +7000,10 @@
               "$ref": "#/components/schemas/LocalKickstartNode"
             },
             "type": "array"
-          },
-          "total": {
-            "minimum": 0,
-            "type": "integer"
           }
         },
         "required": [
-          "nodes",
-          "total"
+          "nodes"
         ],
         "type": "object"
       },

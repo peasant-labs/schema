@@ -1202,8 +1202,8 @@ export const zLocalKickstartDiffLineType = z.enum([
 export type LocalKickstartDiffLineType = z.infer<typeof zLocalKickstartDiffLineType>;
 
 export const zLocalKickstartDiffLine = z.object({
-    newNo: z.int().gte(1).optional(),
-    oldNo: z.int().gte(1).optional(),
+    newNo: z.int().gte(0).optional(),
+    oldNo: z.int().gte(0).optional(),
     text: z.string(),
     type: zLocalKickstartDiffLineType
 }).strict();
@@ -1383,14 +1383,6 @@ export const zLocalKickstartOption = z.object({
 
 export type LocalKickstartOption = z.infer<typeof zLocalKickstartOption>;
 
-export const zLocalKickstartOverwrite = z.object({
-    key: z.string().min(1),
-    previous: z.string(),
-    revision: z.int().gte(0)
-}).strict();
-
-export type LocalKickstartOverwrite = z.infer<typeof zLocalKickstartOverwrite>;
-
 export const zLocalKickstartPreview = z.object({
     lines: z.array(zLocalKickstartLine)
 }).strict();
@@ -1477,8 +1469,7 @@ export const zLocalKickstartSummary = z.object({
 export type LocalKickstartSummary = z.infer<typeof zLocalKickstartSummary>;
 
 export const zLocalKickstartTree = z.object({
-    nodes: z.array(zLocalKickstartNode),
-    total: z.int().gte(0)
+    nodes: z.array(zLocalKickstartNode)
 }).strict();
 
 export type LocalKickstartTree = z.infer<typeof zLocalKickstartTree>;
@@ -1555,7 +1546,7 @@ export const zLocalSettingValue = z.union([
 export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
 
 export const zLocalKickstartAnswers = z.object({
-    connect: zLocalKickstartConnectAnswer.optional(),
+    connectAnswer: zLocalKickstartConnectAnswer.optional(),
     resolutions: z.record(z.string(), zLocalKickstartResolution).optional(),
     revision: z.int().gte(0),
     selectedIds: z.array(z.string()).optional(),
@@ -1594,6 +1585,14 @@ export const zLocalKickstartField = z.object({
 
 export type LocalKickstartField = z.infer<typeof zLocalKickstartField>;
 
+export const zLocalKickstartOverwrite = z.object({
+    key: z.string().min(1),
+    previous: zLocalSettingValue,
+    revision: z.int().gte(0)
+}).strict();
+
+export type LocalKickstartOverwrite = z.infer<typeof zLocalKickstartOverwrite>;
+
 export const zLocalKickstartStop = z.object({
     diff: zLocalKickstartDiff.optional(),
     fields: z.array(zLocalKickstartField),
@@ -1623,6 +1622,7 @@ export const zLocalKickstartSession = z.object({
 export type LocalKickstartSession = z.infer<typeof zLocalKickstartSession>;
 
 export const zLocalKickstartEvent = z.object({
+    committed: zLocalKickstartCommitted.optional(),
     ingest: zLocalKickstartIngest.optional(),
     kind: zLocalKickstartEventKind,
     reason: zLocalKickstartCloseReason.optional(),

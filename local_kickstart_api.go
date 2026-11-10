@@ -24,10 +24,6 @@ func newKickstartToken[T ~string](raw, name string, all []T) (T, error) {
 	return value, nil
 }
 
-func kickstartEnumSchema[T ~string](title, description string, all []T) (jsonschema.Schema, error) {
-	return closedStringEnumSchema(title, description, all), nil
-}
-
 func unmarshalKickstartToken[T ~string](data []byte, dest *T, parse func(string) (T, error), where string) error {
 	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
 		return fmt.Errorf("kickstart decode failed at %s: the token is null; send one published string, or omit the field when it is optional", where)
@@ -92,7 +88,7 @@ func NewLocalKickstartScope(raw string) (LocalKickstartScope, error) {
 func (v LocalKickstartScope) IsValid() bool  { return inSet(v, AllLocalKickstartScopes) }
 func (v LocalKickstartScope) String() string { return string(v) }
 func (LocalKickstartScope) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Scope", "Answer set a kickstart session collects: the whole wizard, or the selection page", AllLocalKickstartScopes)
+	return closedStringEnumSchema("Kickstart Scope", "Answer set a kickstart session collects: the whole wizard, or the selection page", AllLocalKickstartScopes), nil
 }
 func (v *LocalKickstartScope) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartScope, "schema.LocalKickstartScope.UnmarshalJSON")
@@ -120,7 +116,7 @@ func NewLocalKickstartStopKind(raw string) (LocalKickstartStopKind, error) {
 func (v LocalKickstartStopKind) IsValid() bool  { return inSet(v, AllLocalKickstartStopKinds) }
 func (v LocalKickstartStopKind) String() string { return string(v) }
 func (LocalKickstartStopKind) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Stop Kind", "Layout of one kickstart stop", AllLocalKickstartStopKinds)
+	return closedStringEnumSchema("Kickstart Stop Kind", "Layout of one kickstart stop", AllLocalKickstartStopKinds), nil
 }
 func (v *LocalKickstartStopKind) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartStopKind, "schema.LocalKickstartStopKind.UnmarshalJSON")
@@ -150,7 +146,7 @@ func NewLocalKickstartFieldKind(raw string) (LocalKickstartFieldKind, error) {
 func (v LocalKickstartFieldKind) IsValid() bool  { return inSet(v, AllLocalKickstartFieldKinds) }
 func (v LocalKickstartFieldKind) String() string { return string(v) }
 func (LocalKickstartFieldKind) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Field Kind", "Control shape of one kickstart field", AllLocalKickstartFieldKinds)
+	return closedStringEnumSchema("Kickstart Field Kind", "Control shape of one kickstart field", AllLocalKickstartFieldKinds), nil
 }
 func (v *LocalKickstartFieldKind) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartFieldKind, "schema.LocalKickstartFieldKind.UnmarshalJSON")
@@ -179,7 +175,7 @@ func NewLocalKickstartLineKind(raw string) (LocalKickstartLineKind, error) {
 func (v LocalKickstartLineKind) IsValid() bool  { return inSet(v, AllLocalKickstartLineKinds) }
 func (v LocalKickstartLineKind) String() string { return string(v) }
 func (LocalKickstartLineKind) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Line Kind", "Typed preview or example line", AllLocalKickstartLineKinds)
+	return closedStringEnumSchema("Kickstart Line Kind", "Typed preview or example line", AllLocalKickstartLineKinds), nil
 }
 func (v *LocalKickstartLineKind) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartLineKind, "schema.LocalKickstartLineKind.UnmarshalJSON")
@@ -206,7 +202,7 @@ func NewLocalKickstartNodeKind(raw string) (LocalKickstartNodeKind, error) {
 func (v LocalKickstartNodeKind) IsValid() bool  { return inSet(v, AllLocalKickstartNodeKinds) }
 func (v LocalKickstartNodeKind) String() string { return string(v) }
 func (LocalKickstartNodeKind) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Node Kind", "Row kind in the selection forest", AllLocalKickstartNodeKinds)
+	return closedStringEnumSchema("Kickstart Node Kind", "Row kind in the selection forest", AllLocalKickstartNodeKinds), nil
 }
 func (v *LocalKickstartNodeKind) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartNodeKind, "schema.LocalKickstartNodeKind.UnmarshalJSON")
@@ -233,7 +229,7 @@ func NewLocalKickstartNodeState(raw string) (LocalKickstartNodeState, error) {
 func (v LocalKickstartNodeState) IsValid() bool  { return inSet(v, AllLocalKickstartNodeStates) }
 func (v LocalKickstartNodeState) String() string { return string(v) }
 func (LocalKickstartNodeState) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Node State", "Server-computed selection of one forest row: none, some, or all. locked is a boolean, not a state", AllLocalKickstartNodeStates)
+	return closedStringEnumSchema("Kickstart Node State", "Server-computed selection of one forest row: none, some, or all. locked is a boolean, not a state", AllLocalKickstartNodeStates), nil
 }
 func (v *LocalKickstartNodeState) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartNodeState, "schema.LocalKickstartNodeState.UnmarshalJSON")
@@ -261,7 +257,7 @@ func NewLocalKickstartScanState(raw string) (LocalKickstartScanState, error) {
 func (v LocalKickstartScanState) IsValid() bool  { return inSet(v, AllLocalKickstartScanStates) }
 func (v LocalKickstartScanState) String() string { return string(v) }
 func (LocalKickstartScanState) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Scan State", "Discovery job state pushed on the kickstart topic", AllLocalKickstartScanStates)
+	return closedStringEnumSchema("Kickstart Scan State", "Discovery job state pushed on the kickstart topic", AllLocalKickstartScanStates), nil
 }
 func (v *LocalKickstartScanState) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartScanState, "schema.LocalKickstartScanState.UnmarshalJSON")
@@ -290,7 +286,7 @@ func NewLocalKickstartIngestState(raw string) (LocalKickstartIngestState, error)
 func (v LocalKickstartIngestState) IsValid() bool  { return inSet(v, AllLocalKickstartIngestStates) }
 func (v LocalKickstartIngestState) String() string { return string(v) }
 func (LocalKickstartIngestState) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Ingest State", "Import state pushed on the kickstart topic", AllLocalKickstartIngestStates)
+	return closedStringEnumSchema("Kickstart Ingest State", "Import state pushed on the kickstart topic", AllLocalKickstartIngestStates), nil
 }
 func (v *LocalKickstartIngestState) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartIngestState, "schema.LocalKickstartIngestState.UnmarshalJSON")
@@ -317,7 +313,7 @@ func NewLocalKickstartResolution(raw string) (LocalKickstartResolution, error) {
 func (v LocalKickstartResolution) IsValid() bool  { return inSet(v, AllLocalKickstartResolutions) }
 func (v LocalKickstartResolution) String() string { return string(v) }
 func (LocalKickstartResolution) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Resolution", "Which side of one conflict row to keep: mine is the draft, theirs is the file", AllLocalKickstartResolutions)
+	return closedStringEnumSchema("Kickstart Resolution", "Which side of one conflict row to keep: mine is the draft, theirs is the file", AllLocalKickstartResolutions), nil
 }
 func (v *LocalKickstartResolution) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartResolution, "schema.LocalKickstartResolution.UnmarshalJSON")
@@ -353,7 +349,7 @@ func NewLocalKickstartNextStep(raw string) (LocalKickstartNextStep, error) {
 func (v LocalKickstartNextStep) IsValid() bool  { return inSet(v, AllLocalKickstartNextSteps) }
 func (v LocalKickstartNextStep) String() string { return string(v) }
 func (LocalKickstartNextStep) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Next Step", "One finish action. auto-publish-settings links to the settings section; it does not install a hook", AllLocalKickstartNextSteps)
+	return closedStringEnumSchema("Kickstart Next Step", "One finish action. auto-publish-settings links to the settings section; it does not install a hook", AllLocalKickstartNextSteps), nil
 }
 func (v *LocalKickstartNextStep) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartNextStep, "schema.LocalKickstartNextStep.UnmarshalJSON")
@@ -380,7 +376,7 @@ func NewLocalKickstartDiffLineType(raw string) (LocalKickstartDiffLineType, erro
 func (v LocalKickstartDiffLineType) IsValid() bool  { return inSet(v, AllLocalKickstartDiffLineTypes) }
 func (v LocalKickstartDiffLineType) String() string { return string(v) }
 func (LocalKickstartDiffLineType) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Diff Line Type", "Structured config-diff line: add, del, or ctx", AllLocalKickstartDiffLineTypes)
+	return closedStringEnumSchema("Kickstart Diff Line Type", "Structured config-diff line: add, del, or ctx", AllLocalKickstartDiffLineTypes), nil
 }
 func (v *LocalKickstartDiffLineType) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartDiffLineType, "schema.LocalKickstartDiffLineType.UnmarshalJSON")
@@ -419,7 +415,7 @@ func NewLocalKickstartEventKind(raw string) (LocalKickstartEventKind, error) {
 func (v LocalKickstartEventKind) IsValid() bool  { return inSet(v, AllLocalKickstartEventKinds) }
 func (v LocalKickstartEventKind) String() string { return string(v) }
 func (LocalKickstartEventKind) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Event Kind", "Live kickstart topic discriminator. One event carries one session id", AllLocalKickstartEventKinds)
+	return closedStringEnumSchema("Kickstart Event Kind", "Live kickstart topic discriminator. One event carries one session id", AllLocalKickstartEventKinds), nil
 }
 func (v *LocalKickstartEventKind) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartEventKind, "schema.LocalKickstartEventKind.UnmarshalJSON")
@@ -445,7 +441,7 @@ func NewLocalKickstartCloseReason(raw string) (LocalKickstartCloseReason, error)
 func (v LocalKickstartCloseReason) IsValid() bool  { return inSet(v, AllLocalKickstartCloseReasons) }
 func (v LocalKickstartCloseReason) String() string { return string(v) }
 func (LocalKickstartCloseReason) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Close Reason", "Why a kickstart session ended: committed or expired", AllLocalKickstartCloseReasons)
+	return closedStringEnumSchema("Kickstart Close Reason", "Why a kickstart session ended: committed or expired", AllLocalKickstartCloseReasons), nil
 }
 func (v *LocalKickstartCloseReason) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartCloseReason, "schema.LocalKickstartCloseReason.UnmarshalJSON")
@@ -471,7 +467,7 @@ func NewLocalKickstartConnectAnswer(raw string) (LocalKickstartConnectAnswer, er
 func (v LocalKickstartConnectAnswer) IsValid() bool  { return inSet(v, AllLocalKickstartConnectAnswers) }
 func (v LocalKickstartConnectAnswer) String() string { return string(v) }
 func (LocalKickstartConnectAnswer) JSONSchema() (jsonschema.Schema, error) {
-	return kickstartEnumSchema("Kickstart Connect Answer", "Boundary offer answer: accept or skip. accept requires village to be connected", AllLocalKickstartConnectAnswers)
+	return closedStringEnumSchema("Kickstart Connect Answer", "Boundary offer answer: accept or skip. accept requires village to be connected", AllLocalKickstartConnectAnswers), nil
 }
 func (v *LocalKickstartConnectAnswer) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartConnectAnswer, "schema.LocalKickstartConnectAnswer.UnmarshalJSON")
@@ -639,8 +635,8 @@ func (s LocalKickstartSummary) Validate() error {
 // omitted on a line that has no number on that side.
 type LocalKickstartDiffLine struct {
 	Type  LocalKickstartDiffLineType `json:"type"`
-	OldNo int                        `json:"oldNo,omitempty" minimum:"1"`
-	NewNo int                        `json:"newNo,omitempty" minimum:"1"`
+	OldNo int                        `json:"oldNo,omitempty" minimum:"0"`
+	NewNo int                        `json:"newNo,omitempty" minimum:"0"`
 	Text  string                     `json:"text"`
 }
 
@@ -655,7 +651,7 @@ func (l *LocalKickstartDiffLine) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks the line type and that a present number is positive.
+// Validate checks the line type and refuses negative numbers; zero denotes an omitted side.
 func (l LocalKickstartDiffLine) Validate() error {
 	if !l.Type.IsValid() {
 		return fmt.Errorf("kickstart diff line validation failed at schema.LocalKickstartDiffLine.Validate: type %q is outside the closed set; emit add, del, or ctx", l.Type)
@@ -922,6 +918,10 @@ func (c LocalKickstartConflict) Validate() error {
 	return nil
 }
 
+// localKickstartDroppedLabelsMax is the maximum number of vanished choices named in a scan.
+// Keep the maxItems tag on DroppedLabels in sync.
+const localKickstartDroppedLabelsMax = 3
+
 // LocalKickstartScan is the discovery job. DroppedLabels names at most three
 // vanished choices; the count is DroppedSelections. Phase is server prose, not
 // a closed set. The forest is not in this object.
@@ -955,8 +955,8 @@ func (s LocalKickstartScan) Validate() error {
 	if s.Done < 0 || s.Total < 0 || s.LockedNodes < 0 || s.DroppedSelections < 0 {
 		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: a count is negative; emit zero or a positive count")
 	}
-	if len(s.DroppedLabels) > 3 {
-		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: droppedLabels has %d entries; name at most three and put the rest in droppedSelections", len(s.DroppedLabels))
+	if len(s.DroppedLabels) > localKickstartDroppedLabelsMax {
+		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: droppedLabels has %d entries; name at most %d and put the rest in droppedSelections", len(s.DroppedLabels), localKickstartDroppedLabelsMax)
 	}
 	return nil
 }
@@ -965,7 +965,8 @@ func (s LocalKickstartScan) Validate() error {
 type LocalKickstartVillage struct {
 	Connected bool   `json:"connected"`
 	URL       string `json:"url,omitempty"`
-	UserID    string `json:"userId,omitempty"`
+	// UserID is an opaque account identifier, as returned by the local authentication service.
+	UserID string `json:"userId,omitempty"`
 }
 
 // UnmarshalJSON refuses an unknown village field.
@@ -979,13 +980,8 @@ func (v *LocalKickstartVillage) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks a connected row names the account.
-func (v LocalKickstartVillage) Validate() error {
-	if v.Connected && strings.TrimSpace(v.UserID) == "" {
-		return fmt.Errorf("kickstart village validation failed at schema.LocalKickstartVillage.Validate: connected is true and userId is empty; emit the account id, or set connected false")
-	}
-	return nil
-}
+// Validate accepts an optional account identifier, matching SyncAuthResponse.
+func (v LocalKickstartVillage) Validate() error { return nil }
 
 // LocalKickstartIngest is the import progress. New and Updated are counts of
 // sessions the import has written, not a page.
@@ -1085,15 +1081,16 @@ func (s LocalKickstartSession) Validate() error {
 // boolean, not a fourth state: a locked row is disabled, and the page does
 // not recompute either fact.
 type LocalKickstartNode struct {
-	ID         string                  `json:"id" minLength:"1"`
-	ParentID   string                  `json:"parentId,omitempty"`
-	Kind       LocalKickstartNodeKind  `json:"kind"`
-	State      LocalKickstartNodeState `json:"state"`
-	Label      string                  `json:"label" minLength:"1"`
-	SessionID  string                  `json:"sessionId,omitempty"`
-	Harness    string                  `json:"harness,omitempty"`
-	ChildCount int                     `json:"childCount,omitempty" minimum:"0"`
-	Locked     bool                    `json:"locked,omitempty"`
+	ID       string                  `json:"id" minLength:"1"`
+	ParentID string                  `json:"parentId,omitempty"`
+	Kind     LocalKickstartNodeKind  `json:"kind"`
+	State    LocalKickstartNodeState `json:"state"`
+	Label    string                  `json:"label" minLength:"1"`
+	// SessionID identifies a stored transcript, not the kickstart session carried by events.
+	SessionID  string `json:"sessionId,omitempty"`
+	Harness    string `json:"harness,omitempty"`
+	ChildCount int    `json:"childCount,omitempty" minimum:"0"`
+	Locked     bool   `json:"locked,omitempty"`
 }
 
 // UnmarshalJSON refuses an unknown node field.
@@ -1128,11 +1125,9 @@ func (n LocalKickstartNode) Validate() error {
 	return nil
 }
 
-// LocalKickstartTree is the whole forest. Total is the number of nodes in
-// Nodes, not a page size. There is no cursor.
+// LocalKickstartTree is the whole forest; its size is len(Nodes). There is no cursor.
 type LocalKickstartTree struct {
 	Nodes []LocalKickstartNode `json:"nodes" nullable:"false"`
-	Total int                  `json:"total" minimum:"0"`
 }
 
 // UnmarshalJSON refuses an unknown tree field, including a page or a cursor.
@@ -1146,13 +1141,10 @@ func (t *LocalKickstartTree) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks every node and that total is the node count.
+// Validate checks every node.
 func (t LocalKickstartTree) Validate() error {
 	if err := requireList(t.Nodes, "schema.LocalKickstartTree.Validate", "nodes"); err != nil {
 		return err
-	}
-	if t.Total != len(t.Nodes) {
-		return fmt.Errorf("kickstart tree validation failed at schema.LocalKickstartTree.Validate: total is %d and nodes has %d rows; total is the node count, not a page size", t.Total, len(t.Nodes))
 	}
 	for i := range t.Nodes {
 		if err := t.Nodes[i].Validate(); err != nil {
@@ -1195,11 +1187,11 @@ func (p LocalKickstartPreview) Validate() error {
 // selected ids, conflict resolutions, or the connect offer. revision is the
 // session revision the caller last rendered.
 type LocalKickstartAnswers struct {
-	Revision    uint64                              `json:"revision" minimum:"0"`
-	Values      map[string]LocalSettingValue        `json:"values,omitempty" nullable:"false"`
-	SelectedIDs []string                            `json:"selectedIds,omitempty" nullable:"false"`
-	Resolutions map[string]LocalKickstartResolution `json:"resolutions,omitempty" nullable:"false"`
-	Connect     LocalKickstartConnectAnswer         `json:"connect,omitempty"`
+	Revision      uint64                              `json:"revision" minimum:"0"`
+	Values        map[string]LocalSettingValue        `json:"values,omitempty" nullable:"false"`
+	SelectedIDs   []string                            `json:"selectedIds,omitempty" nullable:"false"`
+	Resolutions   map[string]LocalKickstartResolution `json:"resolutions,omitempty" nullable:"false"`
+	ConnectAnswer LocalKickstartConnectAnswer         `json:"connectAnswer,omitempty"`
 }
 
 // UnmarshalJSON refuses an unknown answer field.
@@ -1216,6 +1208,9 @@ func (a *LocalKickstartAnswers) UnmarshalJSON(data []byte) error {
 // Validate checks resolutions and the connect token. Field keys stay open:
 // Peasant owns that set and refuses an unknown key.
 func (a LocalKickstartAnswers) Validate() error {
+	if a.Values == nil && a.SelectedIDs == nil && a.Resolutions == nil && a.ConnectAnswer == "" {
+		return fmt.Errorf("kickstart answers validation failed at schema.LocalKickstartAnswers.Validate: no mutation supplied; provide values, selectedIds, resolutions, or connectAnswer")
+	}
 	for key, resolution := range a.Resolutions {
 		if strings.TrimSpace(key) == "" {
 			return fmt.Errorf("kickstart answers validation failed at schema.LocalKickstartAnswers.Validate: a resolution key is empty; name the conflict field")
@@ -1224,8 +1219,8 @@ func (a LocalKickstartAnswers) Validate() error {
 			return fmt.Errorf("kickstart answers validation failed for %q at schema.LocalKickstartAnswers.Validate: resolution %q is outside the closed set; emit mine or theirs", key, resolution)
 		}
 	}
-	if a.Connect != "" && !a.Connect.IsValid() {
-		return fmt.Errorf("kickstart answers validation failed at schema.LocalKickstartAnswers.Validate: connect %q is outside the closed set; emit accept or skip, or omit it", a.Connect)
+	if a.ConnectAnswer != "" && !a.ConnectAnswer.IsValid() {
+		return fmt.Errorf("kickstart answers validation failed at schema.LocalKickstartAnswers.Validate: connectAnswer %q is outside the closed set; emit accept or skip, or omit it", a.ConnectAnswer)
 	}
 	return nil
 }
@@ -1233,9 +1228,9 @@ func (a LocalKickstartAnswers) Validate() error {
 // LocalKickstartOverwrite names one field a stale write replaced, and the
 // revision at which the replaced value was set.
 type LocalKickstartOverwrite struct {
-	Key      string `json:"key" minLength:"1"`
-	Previous string `json:"previous"`
-	Revision uint64 `json:"revision" minimum:"0"`
+	Key      string            `json:"key" minLength:"1"`
+	Previous LocalSettingValue `json:"previous"`
+	Revision uint64            `json:"revision" minimum:"0"`
 }
 
 // UnmarshalJSON refuses an unknown overwrite field.
@@ -1249,11 +1244,15 @@ func (o *LocalKickstartOverwrite) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate checks the field key. Previous is JSON text and may be empty only
-// when the replaced value was an empty string; a missing previous is refused
-// by the required property, and this check refuses a key the page cannot show.
+// Validate checks the field key and the previous JSON value.
 func (o LocalKickstartOverwrite) Validate() error {
-	return requireNonEmpty(o.Key, "schema.LocalKickstartOverwrite.Validate", "key")
+	if err := requireNonEmpty(o.Key, "schema.LocalKickstartOverwrite.Validate", "key"); err != nil {
+		return err
+	}
+	if !json.Valid(o.Previous) {
+		return fmt.Errorf("kickstart overwrite validation failed: previous must be a JSON value")
+	}
+	return nil
 }
 
 // LocalKickstartPatchResult is the PATCH response. A stale write is applied
@@ -1265,6 +1264,18 @@ type LocalKickstartPatchResult struct {
 	Stale       bool                      `json:"stale"`
 	Overwritten []LocalKickstartOverwrite `json:"overwritten,omitempty" nullable:"false"`
 	View        *LocalKickstartSession    `json:"view,omitempty"`
+}
+
+// MarshalJSON preserves a supplied empty overwritten list distinctly from an omitted list.
+func (r LocalKickstartPatchResult) MarshalJSON() ([]byte, error) {
+	type plain LocalKickstartPatchResult
+	if r.Overwritten == nil {
+		return json.Marshal(plain(r))
+	}
+	return json.Marshal(struct {
+		plain
+		Overwritten []LocalKickstartOverwrite `json:"overwritten"`
+	}{plain: plain(r), Overwritten: r.Overwritten})
 }
 
 // UnmarshalJSON refuses an unknown patch-result field.
@@ -1294,6 +1305,9 @@ func (r LocalKickstartPatchResult) Validate() error {
 		}
 	}
 	if r.View != nil {
+		if r.Revision != r.View.Revision {
+			return fmt.Errorf("kickstart patch validation failed: revision differs from view revision")
+		}
 		if err := r.View.Validate(); err != nil {
 			return err
 		}
@@ -1305,6 +1319,7 @@ func (r LocalKickstartPatchResult) Validate() error {
 // closed finish menu. Diagnostics are the selection-conflict lines. The body
 // has no reset control and no hook-install flag.
 type LocalKickstartCommitted struct {
+	// Saved is always true on a successful commit, including when ingest fails.
 	Saved       bool                     `json:"saved"`
 	ConfigPath  string                   `json:"configPath" minLength:"1"`
 	Ingest      LocalKickstartIngest     `json:"ingest"`
@@ -1325,6 +1340,9 @@ func (c *LocalKickstartCommitted) UnmarshalJSON(data []byte) error {
 
 // Validate checks the path, the ingest, and every next step.
 func (c LocalKickstartCommitted) Validate() error {
+	if !c.Saved {
+		return fmt.Errorf("kickstart commit validation failed: saved must be true on success")
+	}
 	if err := requireNonEmpty(c.ConfigPath, "schema.LocalKickstartCommitted.Validate", "configPath"); err != nil {
 		return err
 	}
@@ -1386,6 +1404,7 @@ func (r LocalKickstartCommitRefusal) Validate() error {
 }
 
 // LocalKickstartEvent is the server message data for the kickstart topic.
+// SessionID identifies the kickstart session, not a stored transcript node.
 // One event carries one session id. A view, when present, is that session's
 // snapshot and no other. Subscribe yields one such snapshot per session id;
 // the event itself is that one snapshot, not a map of sessions.
@@ -1397,6 +1416,7 @@ type LocalKickstartEvent struct {
 	View      *LocalKickstartSession    `json:"view,omitempty"`
 	Scan      *LocalKickstartScan       `json:"scan,omitempty"`
 	Ingest    *LocalKickstartIngest     `json:"ingest,omitempty"`
+	Committed *LocalKickstartCommitted  `json:"committed,omitempty"`
 }
 
 // UnmarshalJSON refuses an unknown event field.
@@ -1423,6 +1443,12 @@ func (e LocalKickstartEvent) Validate() error {
 	if e.View != nil && e.View.ID != e.SessionID {
 		return fmt.Errorf("kickstart event validation failed at schema.LocalKickstartEvent.Validate: view id %q does not match sessionId %q; one event carries one session snapshot", e.View.ID, e.SessionID)
 	}
+	if e.View != nil && e.View.Revision != e.Revision {
+		return fmt.Errorf("kickstart event validation failed: revision differs from view revision")
+	}
+	if e.Kind != LocalKickstartEventClosed && e.Committed != nil {
+		return fmt.Errorf("kickstart event validation failed: committed belongs only to a closed event")
+	}
 	switch e.Kind {
 	case LocalKickstartEventSession, LocalKickstartEventAnswers, LocalKickstartEventConflicts:
 		if e.Reason != "" || e.Scan != nil || e.Ingest != nil {
@@ -1448,6 +1474,14 @@ func (e LocalKickstartEvent) Validate() error {
 		}
 		if e.Scan != nil || e.Ingest != nil {
 			return fmt.Errorf("kickstart event validation failed at schema.LocalKickstartEvent.Validate: a closed event does not carry scan or ingest")
+		}
+		if (e.Reason == LocalKickstartClosedCommitted) != (e.Committed != nil) {
+			return fmt.Errorf("kickstart event validation failed: committed finish body is required only for committed closure")
+		}
+		if e.Committed != nil {
+			if err := e.Committed.Validate(); err != nil {
+				return err
+			}
 		}
 		if e.View != nil {
 			return e.View.Validate()

@@ -1,6 +1,12 @@
 # Live kickstart topic payloads and the closed-set refusals. One event carries
 # one session id. locked is a boolean, not a fourth node state.
 required_names:
+  - event-expired-with-finish-refused
+  - event-view-revision-mismatch
+  - event-closed-carries-no-scan
+  - event-ingest-carries-only-ingest
+  - event-scan-carries-only-scan
+  - event-session-without-view-refused
   - session
   - answers
   - conflicts
@@ -8,6 +14,8 @@ required_names:
   - ingest
   - closed-committed
   - closed-expired
+  - closed-committed-carries-finish
+  - closed-committed-without-finish-refused
   - one-snapshot-per-session-id
   - unknown-event-kind-refused
   - unknown-scope-refused
@@ -128,9 +136,10 @@ cases:
       payload:
         kind: closed
         sessionId: ses-full
-        revision: 7
+        revision: 2
         reason: committed
         view: *full_view
+        committed: &finish {saved: true, configPath: /tmp/config.yaml, ingest: {state: busy, new: 0, updated: 0}, nextSteps: []}
     expected: {valid: true}
     classification: must-pass
     provenance: {source: enum, ref: "LocalKickstartCloseReason committed"}
@@ -252,7 +261,6 @@ cases:
           - {id: none-row, kind: project, state: none, label: None}
           - {id: some-row, kind: group, state: some, label: Some}
           - {id: all-row, kind: branch, state: all, label: All}
-        total: 3
     expected: {valid: true}
     classification: must-pass
     provenance: {source: enum, ref: "LocalKickstartNodeState none some all"}
@@ -265,3 +273,67 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "locked is a boolean, not a fourth node state"}
     mutation: {description: "sends locked as a string token"}
+  - name: closed-committed-carries-finish
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: ses-full, revision: 7, reason: committed, committed: *finish}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "subscribers receive the finish body"}
+    mutation: {description: "closes with the finish body"}
+  - name: closed-committed-without-finish-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: ses-full, revision: 7, reason: committed}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed finish body"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "subscribers need the finish body"}
+    mutation: {description: "omits the finish body"}
+  - name: event-session-without-view-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: s, revision: 0}
+    expected: {valid: false, rejected_by: semantics, error_contains: "no view"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-session-without-view-refused"}
+  - name: event-scan-carries-only-scan
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: scan, sessionId: s, revision: 0, scan: {state: idle, done: 0, total: 0}, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "scan event carries only scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-scan-carries-only-scan"}
+  - name: event-ingest-carries-only-ingest
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: ingest, sessionId: s, revision: 0, scan: {state: idle, done: 0, total: 0}, ingest: {state: busy, new: 0, updated: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "ingest event carries only ingest"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-ingest-carries-only-ingest"}
+  - name: event-closed-carries-no-scan
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: s, revision: 0, reason: expired, scan: {state: idle, done: 0, total: 0}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "closed event does not carry scan"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-closed-carries-no-scan"}
+  - name: event-view-revision-mismatch
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: session, sessionId: ses-full, revision: 3, view: *full_view}
+    expected: {valid: false, rejected_by: semantics, error_contains: "revision differs"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-view-revision-mismatch"}
+  - name: event-expired-with-finish-refused
+    input:
+      schema: LocalKickstartEvent
+      payload: {kind: closed, sessionId: s, revision: 0, reason: expired, committed: *finish}
+    expected: {valid: false, rejected_by: semantics, error_contains: "committed finish body"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "event kind exclusivity"}
+    mutation: {description: "event-expired-with-finish-refused"}

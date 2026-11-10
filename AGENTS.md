@@ -47,6 +47,10 @@ category-to-label mapping into a consumer.
 
 **Recorded exception:** `commandpr` uses `mvdan.cc/sh/v3` solely to parse recorded shell commands for shared unverified pull request evidence. It never executes commands, fetches remote state, or changes access; sharing the parser prevents consumer detection rules from drifting.
 
+**Recorded exception:** Kickstart response and view components are closed as well as
+request bodies. Adding a response property is a breaking change to pinned consumers;
+this choice is specific to the kickstart contract and is not a general precedent.
+
 ## Branches and landing
 
 - `develop` is the default and integration branch; `main` is **reserved for

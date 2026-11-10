@@ -3910,7 +3910,7 @@ components:
     LocalKickstartAnswers:
       additionalProperties: false
       properties:
-        connect:
+        connectAnswer:
           $ref: '#/components/schemas/LocalKickstartConnectAnswer'
         resolutions:
           additionalProperties:
@@ -4046,10 +4046,10 @@ components:
       additionalProperties: false
       properties:
         newNo:
-          minimum: 1
+          minimum: 0
           type: integer
         oldNo:
-          minimum: 1
+          minimum: 0
           type: integer
         text:
           type: string
@@ -4074,6 +4074,8 @@ components:
     LocalKickstartEvent:
       additionalProperties: false
       properties:
+        committed:
+          $ref: '#/components/schemas/LocalKickstartCommitted'
         ingest:
           $ref: '#/components/schemas/LocalKickstartIngest'
         kind:
@@ -4348,7 +4350,7 @@ components:
           minLength: 1
           type: string
         previous:
-          type: string
+          $ref: '#/components/schemas/LocalSettingValue'
         revision:
           minimum: 0
           type: integer
@@ -4570,12 +4572,8 @@ components:
           items:
             $ref: '#/components/schemas/LocalKickstartNode'
           type: array
-        total:
-          minimum: 0
-          type: integer
       required:
       - nodes
-      - total
       type: object
     LocalKickstartVillage:
       additionalProperties: false

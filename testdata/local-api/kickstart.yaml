@@ -2,6 +2,21 @@
 # optional activeSessionId. Every non-GET route declares the shared
 # cross-origin refusal. The tree is the whole forest: no page, cursor, or limit.
 required_names:
+  - conflict-missing-theirs
+  - conflict-missing-mine
+  - commit-saved-false-refused
+  - offered-connect-needs-stop
+  - tree-total-refused
+  - session-get-with-review-stop
+  - patch-view-revision-mismatch
+  - commit-refusal-row
+  - commit-refusal-empty
+  - duplicate-next-step-refused
+  - empty-patch-refused
+  - dropped-labels-cap
+  - stale-current-write-names-overwrite
+  - stale-patch-empty-overwritten-valid
+  - answers-patch-full
   - status-get
   - sessions-post
   - session-get
@@ -13,7 +28,7 @@ required_names:
   - scan-post
   - commit-post
   - ws-topic-kickstart
-  - cross-origin-403-per-unsafe-route
+  - open-request-selection-scope
   - status-returns-only-configured
 operations:
   - api: local
@@ -124,10 +139,10 @@ cases:
     input:
       schema: LocalKickstartPatchResult
       payload:
-        revision: 3
+        revision: 2
         stale: true
         overwritten:
-          - {key: privacy, previous: "true", revision: 2}
+          - {key: privacy, previous: true, revision: 2}
         view: *session
     expected: {valid: true}
     classification: must-pass
@@ -150,7 +165,7 @@ cases:
         revision: 3
         stale: true
         overwritten:
-          - {previous: "true", revision: 2}
+          - {previous: true, revision: 2}
     expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: key is empty}
     classification: must-fail
     provenance: {source: requirement, ref: "an overwritten entry names the field it replaced"}
@@ -163,7 +178,6 @@ cases:
           - {id: project-1, kind: project, state: all, label: Peasant}
           - {id: group-1, parentId: project-1, kind: group, state: some, label: src, childCount: 1}
           - {id: session-1, parentId: group-1, kind: session, state: none, label: "Fix the gate", sessionId: ses-stored, locked: true}
-        total: 3
     expected: {valid: true}
     classification: must-pass
     provenance: {source: requirement, ref: "GET tree returns the whole forest and each node's state"}
@@ -207,14 +221,14 @@ cases:
     classification: must-pass
     provenance: {source: enum, ref: "ChannelTopic kickstart"}
     mutation: {description: "subscribes to the live setup topic"}
-  - name: cross-origin-403-per-unsafe-route
+  - name: open-request-selection-scope
     input:
       schema: LocalKickstartOpenRequest
       payload: {scope: selection}
     expected: {valid: true}
     classification: must-pass
-    provenance: {source: requirement, ref: "every non-GET kickstart route declares 403 with the shared local refusal body"}
-    mutation: {description: "the operations above are the exact unsafe-route refusal manifest"}
+    provenance: {source: requirement, ref: "open a selection scope"}
+    mutation: {description: "opens the selection scope"}
   - name: status-returns-only-configured
     input:
       schema: LocalKickstartStatus
@@ -225,3 +239,123 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "status has configured and optional activeSessionId, and no other status field"}
     mutation: {description: "adds a per-scope session directory"}
+  - name: answers-patch-full
+    input:
+      schema: LocalKickstartAnswers
+      payload: {revision: 2, values: {privacy: true}, selectedIds: [a], resolutions: {privacy: mine}, connectAnswer: skip}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "answers-patch-full"}
+  - name: stale-patch-empty-overwritten-valid
+    input:
+      schema: LocalKickstartPatchResult
+      payload: {revision: 3, stale: true, overwritten: []}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "stale-patch-empty-overwritten-valid"}
+  - name: stale-current-write-names-overwrite
+    input:
+      schema: LocalKickstartPatchResult
+      payload: {revision: 3, stale: false, overwritten: [{key: privacy, previous: true, revision: 2}]}
+    expected: {valid: false, rejected_by: semantics, error_contains: "stale is false"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "stale-current-write-names-overwrite"}
+  - name: dropped-labels-cap
+    input:
+      schema: LocalKickstartScan
+      payload: {state: done, done: 4, total: 4, droppedLabels: [a,b,c,d]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "dropped-labels-cap"}
+  - name: empty-patch-refused
+    input:
+      schema: LocalKickstartAnswers
+      payload: {revision: 2}
+    expected: {valid: false, rejected_by: semantics, error_contains: "no mutation"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "empty-patch-refused"}
+  - name: duplicate-next-step-refused
+    input:
+      schema: LocalKickstartCommitted
+      payload: {saved: true, configPath: config.yaml, ingest: {state: busy, new: 0, updated: 0}, nextSteps: [config, config]}
+    expected: {valid: false, rejected_by: semantics, error_contains: "repeated"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "duplicate-next-step-refused"}
+  - name: commit-refusal-empty
+    input:
+      schema: LocalKickstartCommitRefusal
+      payload: {error: conflict, conflicts: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: "conflicts is empty"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "commit-refusal-empty"}
+  - name: commit-refusal-row
+    input:
+      schema: LocalKickstartCommitRefusal
+      payload: {error: conflict, conflicts: [{field: privacy, stop: privacy, label: Privacy, mine: true, theirs: false}]}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "commit-refusal-row"}
+  - name: patch-view-revision-mismatch
+    input:
+      schema: LocalKickstartPatchResult
+      payload: {revision: 3, stale: false, view: *session}
+    expected: {valid: false, rejected_by: semantics, error_contains: "revision differs"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "patch-view-revision-mismatch"}
+  - name: session-get-with-review-stop
+    input:
+      schema: LocalKickstartSession
+      payload: {id: ses-review, scope: full, revision: 2, openedAt: "2026-11-10T00:00:00Z", stops: [{key: review, kind: review, title: Review, visible: true, guide: {}, fields: [{key: privacy, kind: choice, label: Privacy, value: true, options: [{value: yes, label: Yes}], example: [{kind: text, text: example}]}], summary: {values: [privacy], effects: [local]}, diff: {file: config.yaml, hunks: [{header: "-1 +1", lines: [{type: del, oldNo: 1, text: old}, {type: add, newNo: 1, text: new}, {type: ctx, oldNo: 2, newNo: 2, text: common}]}]}}], conflicts: [], connect: {offered: false}, scan: {state: idle, done: 0, total: 0}, village: {connected: true}}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "session-get-with-review-stop"}
+  - name: tree-total-refused
+    input:
+      schema: LocalKickstartTree
+      payload: {nodes: [], total: 0}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "tree-total-refused"}
+  - name: offered-connect-needs-stop
+    input:
+      schema: LocalKickstartSession
+      payload: {id: ses-full, scope: full, revision: 2, openedAt: now, stops: [], conflicts: [], connect: {offered: true}, scan: {state: idle, done: 0, total: 0}, village: {connected: false}}
+    expected: {valid: false, rejected_by: semantics, error_contains: "afterStop is empty"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "offered-connect-needs-stop"}
+  - name: commit-saved-false-refused
+    input:
+      schema: LocalKickstartCommitted
+      payload: {saved: false, configPath: config.yaml, ingest: {state: busy, new: 0, updated: 0}, nextSteps: []}
+    expected: {valid: false, rejected_by: semantics, error_contains: "saved must be true"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart contract"}
+    mutation: {description: "commit-saved-false-refused"}
+  - name: conflict-missing-mine
+    input:
+      schema: LocalKickstartCommitRefusal
+      payload: {error: conflict, conflicts: [{field: privacy, stop: privacy, label: Privacy, theirs: false}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "conflict rows require both sides"}
+    mutation: {description: "conflict-missing-mine"}
+  - name: conflict-missing-theirs
+    input:
+      schema: LocalKickstartCommitRefusal
+      payload: {error: conflict, conflicts: [{field: privacy, stop: privacy, label: Privacy, mine: true}]}
+    expected: {valid: false, rejected_by: shape, go_rejects: true}
+    classification: must-fail
+    provenance: {source: requirement, ref: "conflict rows require both sides"}
+    mutation: {description: "conflict-missing-theirs"}

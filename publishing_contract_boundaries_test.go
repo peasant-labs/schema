@@ -133,6 +133,7 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"LocalKickstartPreview":                    decodeValidated[schema.LocalKickstartPreview],
 	"LocalKickstartScan":                       decodeValidated[schema.LocalKickstartScan],
 	"LocalKickstartCommitted":                  decodeValidated[schema.LocalKickstartCommitted],
+	"LocalKickstartCommitRefusal":              decodeValidated[schema.LocalKickstartCommitRefusal],
 	"LocalKickstartEvent":                      decodeValidated[schema.LocalKickstartEvent],
 	"LocalKickstartStop":                       decodeValidated[schema.LocalKickstartStop],
 	"LocalKickstartField":                      decodeValidated[schema.LocalKickstartField],
