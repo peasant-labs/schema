@@ -583,7 +583,16 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 }
 
 // ValidateNativeMetadataRecords validates metadata and its public targets before
-// a producer attaches them to a harness-specific session envelope.
+// a producer attaches them to a harness-specific session envelope. The
+// kind/source/attachment matrix requires every attachment-bearing native
+// metadata record to travel in the same partition as its target turn, in a
+// durable read or a segment that includes the turn. Current segments carry no
+// native metadata. Validation builds the turn map per partition, so a payload
+// that omits the turn cannot carry a record attached to it. A metadata-only
+// session_detail frame therefore carries only session-level records without
+// attachments. Consumers must read attached evidence from the read carrying the
+// turn. Revisit this rule only when a consumer needs evidence for a turn it has
+// not loaded.
 func ValidateNativeMetadataRecords(records []NativeMetadataRecord, targets []TurnDetail) error {
 	state := newDetailValidationState(SessionDetailPayload{Turns: targets, NativeMetadata: records})
 	if err := validateTurnEvidenceAt(targets, "turns", state, ImagePartModeLocal, "schema.ValidateNativeMetadataRecords"); err != nil {

@@ -1533,6 +1533,53 @@ export const canonicalSessionGraphFixtures = {
   "recursive": {
     "cases": [
       {
+        "name": "attachment-turn-present",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_pi_attachment\",\"harness\":\"pi\",\"turnCount\":1,\"turns\":[{\"index\":0,\"role\":\"system\",\"content\":\"message\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"sourceEntryRef\":\"e_message\"}],\"nativeMetadata\":[{\"id\":\"m_message\",\"kind\":\"pi.custommessage.details\",\"source\":{\"entryRef\":\"e_message\",\"sourceType\":\"pi.custom_message\"},\"attachment\":{\"turnIndex\":0},\"customType\":\"extension\",\"data\":{}}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "partition-attachment"
+        },
+        "mutation": {
+          "description": "target turn and its attached metadata share a partition"
+        }
+      },
+      {
+        "name": "attachment-turn-absent",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_pi_attachment\",\"harness\":\"pi\",\"turnCount\":0,\"turns\":[],\"nativeMetadata\":[{\"id\":\"m_message\",\"kind\":\"pi.custommessage.details\",\"source\":{\"entryRef\":\"e_message\",\"sourceType\":\"pi.custom_message\"},\"attachment\":{\"turnIndex\":0},\"customType\":\"extension\",\"data\":{}}]}"
+        },
+        "expected": {
+          "errorContains": "attachment target"
+        },
+        "classification": "must-fail",
+        "provenance": {
+          "source": "requirement",
+          "ref": "partition-attachment"
+        },
+        "mutation": {
+          "description": "the payload omits the attached record target turn"
+        }
+      },
+      {
+        "name": "metadata-only-session-level",
+        "input": {
+          "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_pi_metadata\",\"harness\":\"pi\",\"turnCount\":0,\"turns\":[],\"nativeMetadata\":[{\"id\":\"m_custom\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"e_custom\",\"sourceType\":\"pi.custom\"},\"customType\":\"extension\",\"data\":{}}]}"
+        },
+        "expected": {},
+        "classification": "must-pass",
+        "provenance": {
+          "source": "requirement",
+          "ref": "partition-attachment"
+        },
+        "mutation": {
+          "description": "metadata-only payload carries unattached session-level evidence"
+        }
+      },
+      {
         "name": "recursive-valid-pi-earlier-evidence",
         "input": {
           "rawJSON": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_pi\",\"harness\":\"pi\",\"turnCount\":0,\"turns\":[],\"earlierHistory\":[{\"state\":\"uncertain_migrated\",\"turns\":[{\"index\":0,\"role\":\"assistant\",\"content\":\"kept\",\"timestamp\":\"2026-09-08T00:00:00Z\",\"depth\":0,\"entryType\":\"text\",\"observedModel\":\"model/x\",\"sourceEntryRef\":\"e_old\",\"usage\":{\"ownerId\":\"u_old\",\"sourceEntryRef\":\"e_old\",\"scope\":\"assistant\",\"completeness\":\"unknown\"}}],\"nativeMetadata\":[{\"id\":\"m_old\",\"kind\":\"pi.custom.data\",\"source\":{\"entryRef\":\"native_old\",\"sourceType\":\"pi.custom\"},\"customType\":\"extension\",\"data\":{}}]}]}"
@@ -1699,6 +1746,9 @@ export const canonicalSessionGraphFixtures = {
     ]
   },
   "recursive_required_names": [
+    "attachment-turn-present",
+    "attachment-turn-absent",
+    "metadata-only-session-level",
     "recursive-valid-pi-earlier-evidence",
     "recursive-duplicate-main-earlier-ref",
     "recursive-duplicate-folded-ref",
