@@ -7,6 +7,23 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.32.0 declares the transcript segment reads. `GET
+  /api/v1/sessions/{id}/transcript/segments` serves the
+  `TranscriptSegmentDirectory` global index, one ref per segment with the cut's
+  revision and scalars and no turn content; above 10,000 segments it serves one
+  page and sets `directoryPage`/`directoryPerPage` while keeping the true
+  `totalSegments`, and a `page` past the last page is clamped to it. `GET
+  /api/v1/sessions/{id}/transcript/segments/{index}` serves one
+  `TranscriptSegment` whose turns are cut on complete entries and addressed by
+  the segment's directory ordinal, with 400 for a non-ordinal, 404 for an index
+  past the directory, and 409 for a stale revision or a store read shorter than
+  the declared range. `GET /api/v1/sessions/{id}/transcript/window` resolves a
+  non-negative `anchor` turn identity to a `TranscriptWindow` descriptor naming
+  the contiguous covering segment run and carrying no turn content, with `span`
+  bounded to 1..10 assistant turns per side (default 10) and 404 when the
+  session has no user turn. All three accept the optional `revision` query and
+  answer 409 with both revisions when it is stale. The existing saved-file
+  download at `GET /api/v1/sessions/{id}/transcript` is unchanged.
 - Village API 0.36.0 adds `next_items` to the transcript list response: the
   following page's rows, up to `per_page` of them, so a client can pre-compute
   the group keys of the next page without a second request. Only an empty
@@ -53,8 +70,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Changed
 
-- Local API 0.29.0 and 0.30.0, Types 0.44.0, and Village API 0.35.0 and 0.36.0
-  are retired and byte-frozen.
+- Local API 0.29.0, 0.30.0, and 0.31.0, Types 0.44.0, and Village API 0.35.0
+  and 0.36.0 are retired and byte-frozen.
 - Village API 0.36.0 renames the transcript list response's `limit` to
   `per_page` and declares the closed `per_page` query (25, 50, or 100; omitted
   reads 25) beside the grouped view's `limit` on `GET /api/v1/transcripts`. The

@@ -67,6 +67,106 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		}), new(schema.SessionDetailReadPayload)); err != nil {
 		return nil, err
 	}
+	// GET /api/v1/sessions/{id}/transcript/segments is the transcript's only
+	// global index: one ref per segment, never a row per turn.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments",
+		id: "getSessionTranscriptSegments", tag: "sessions",
+		description: "Read the transcript segment directory by session ID: the " +
+			"transcript's only global index, one ref per segment with the cut's " +
+			"revision and scalars and no turn content. Each ref names its segment " +
+			"ordinal and the closed range of sparse turn identities it covers; the " +
+			"segment read serves those turns. A session of zero segments answers an " +
+			"empty segments array with totalSegments 0. Above 10,000 segments the " +
+			"read serves one page of 10,000 refs, keeps the true totalSegments, and " +
+			"sets directoryPage and directoryPerPage; page is one-based, omitted " +
+			"defaults to 1, and a request past the last page is served the last " +
+			"page. The directory is cut under the store revision it reports; a " +
+			"segment cut under another revision must not be placed beside it. " +
+			"revision is optional and the current revision is served when it is " +
+			"omitted. The saved ingestion selection never narrows this stored read.",
+		requests: []interface{}{new(struct {
+			ID       string `path:"id"`
+			Page     int    `query:"page" description:"One-based directory page; omitted defaults to 1" minimum:"1"`
+			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+		})},
+		response:      new(schema.TranscriptSegmentDirectory),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
+	// GET /api/v1/sessions/{id}/transcript/segments/{index} reads one segment's
+	// whole turns. The directory declares the range; this read returns exactly
+	// that range or refuses, because a short segment moves every later boundary.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/segments/{index}",
+		id: "getSessionTranscriptSegment", tag: "sessions",
+		description: "Read one transcript segment by its directory ordinal. The " +
+			"segment is cut on complete entries and whole turns, so every turn it " +
+			"serves is whole and its firstTurn and lastTurn are exactly the range " +
+			"the directory declared. Each turn row embeds the shared turn detail " +
+			"beside truncated and the pre-bound byteLength. hasOlder and hasNewer " +
+			"say whether the transcript continues on that side. revision is " +
+			"optional and the current revision is served when it is omitted. A " +
+			"non-numeric or negative index is a 400, an index at or past " +
+			"totalSegments is a 404 naming the directory's segment count, and a " +
+			"stale revision is a 409 naming both revisions. When the store returns " +
+			"fewer turns than the directory declared, the read answers 409 with the " +
+			"declared and returned ranges and the re-index command rather than " +
+			"serving a short segment. The saved ingestion selection never narrows " +
+			"this stored read.",
+		requests: []interface{}{new(struct {
+			ID       string `path:"id"`
+			Index    int    `path:"index" description:"Segment ordinal from the directory read" minimum:"0"`
+			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+		})},
+		response:      new(schema.TranscriptSegment),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
+	// GET /api/v1/sessions/{id}/transcript/window resolves an anchor turn to a
+	// contiguous window and answers a descriptor only. Turn content stays in the
+	// segment read, so a window response cannot grow with the transcript.
+	if err := addLocalOperations(r, []localOperationSpec{{
+		method: http.MethodGet, path: "/api/v1/sessions/{id}/transcript/window",
+		id: "getSessionTranscriptWindow", tag: "sessions",
+		description: "Resolve a turn identity to a contiguous transcript window " +
+			"and answer a descriptor that names where the window is, never what is " +
+			"in it. anchor is a non-negative turn identity: when the turn there is " +
+			"a user turn it is the anchor, otherwise the read snaps to the nearest " +
+			"lower user turn, or the nearest higher one when none is lower, and " +
+			"requestedAnchor and anchorTurn report both. span is the number of " +
+			"assistant turns collected on each side, 1..10, and omitted defaults to " +
+			"the design value 10; the parameter narrows a window and cannot widen " +
+			"it. The window is the contiguous range from the first collected turn " +
+			"to the last, so every interleaved user, system, and subagent turn is " +
+			"included. segments is the ordered contiguous run of segment ordinals " +
+			"that covers the range; the viewer loads exactly those through the " +
+			"segment read. hasOlder and hasNewer are true only when the transcript " +
+			"continues past that edge. revision is optional and the current " +
+			"revision is served when it is omitted. A missing, non-numeric, or " +
+			"negative anchor and a span outside 1..10 are 400; a session with no " +
+			"user turn is a 404, because a window requires one; a stale revision is " +
+			"a 409 naming both revisions. The saved ingestion selection never " +
+			"narrows this stored read.",
+		requests: []interface{}{new(struct {
+			ID       string `path:"id"`
+			Anchor   int    `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`
+			Span     int    `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`
+			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+		})},
+		response:      new(schema.TranscriptWindow),
+		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		errorResponse: new(LocalErrorResponse),
+	}}); err != nil {
+		return nil, err
+	}
+
 	// GET /api/v1/sessions/{id}/commits is the session's recorded commit
 	// binding, the same one the review surfaces read.
 	if err := addRESTOp(r, http.MethodGet, "/api/v1/sessions/{id}/commits",
