@@ -63,6 +63,7 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 	}
 	caseassert.RequireMin(t, c.Recursive, 10)
 	caseassert.RequireValid(t, c.Recursive)
+	requireNames(t, c.Recursive.Cases, c.RecursiveRequired)
 	caseassert.RequireMin(t, c.RawDurable, 20)
 	caseassert.RequireValid(t, c.RawDurable)
 	for _, arm := range []struct {
@@ -89,38 +90,6 @@ func TestSessionGraphRecursiveAndRawBoundaries(t *testing.T) {
 			})
 		}
 	}
-}
-
-func TestAttachmentRequiresItsPartitionTurn(t *testing.T) {
-	c, err := LoadSessionGraphFixtures()
-	if err != nil {
-		t.Fatal(err)
-	}
-	caseassert.RequireValid(t, c.Recursive)
-	byName := make(map[string]testcase.Case[SessionGraphRawInput, SessionGraphFixtureExpected])
-	for _, fixture := range c.Recursive.Cases {
-		byName[fixture.Name] = fixture
-	}
-	check := func(name string, wantError bool) {
-		t.Helper()
-		fixture, ok := byName[name]
-		if !ok {
-			t.Fatalf("required attachment fixture %q missing", name)
-		}
-		raw := completeRawDetailFixture(t, fixture.Input.RawJSON)
-		_, err := DecodeSessionDetailPayloadRaw(raw)
-		if wantError {
-			if err == nil || !strings.Contains(err.Error(), "attachment target") {
-				t.Fatalf("%s: expected attachment-target validation error, got %v", name, err)
-			}
-		} else if err != nil {
-			t.Fatalf("%s: unexpected error: %v", name, err)
-		}
-	}
-	check("attachment-turn-present", false)
-	check("attachment-turn-absent", true)
-	check("recursive-native-wrong-partition-attachment", true)
-	check("metadata-only-session-level", false)
 }
 
 func TestSessionGraphNativeAggregateBudget(t *testing.T) {
