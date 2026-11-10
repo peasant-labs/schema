@@ -123,7 +123,11 @@ const (
 	// Bumped to 0.35.0 when TurnDetail gained the optional controlKind
 	// annotation, which this spec carries in its embedded session-detail
 	// components (additive = minor bump).
-	VillageAPIVersion = "0.35.0"
+	// Bumped to 0.36.0 when the transcript list response adopted the numbered
+	// page: per_page replaces limit and next_items carries the following
+	// page's rows, and the list route declares the closed per_page query
+	// (a wire field renamed before 1.0 = minor bump).
+	VillageAPIVersion = "0.36.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git

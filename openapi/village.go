@@ -484,7 +484,8 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	transcriptListQuery := new(struct {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
 		Page     int                  `query:"page"`
-		Limit    int                  `query:"limit"`
+		Limit    int                  `query:"limit" description:"Grouped-view page size. The flat response is paged with per_page instead."`
+		PerPage  schema.PageSize      `query:"per_page" description:"Flat-response page size: 25, 50, or 100. Omitted reads 25. The response echoes it as per_page and bounds next_items with it."`
 		Query    string               `query:"q" description:"Search text. Matches repository identity only on rows whose repository this viewer may see; the withheld repository fields of an anonymous owner's transcript are never searched."`
 		Provider string               `query:"provider"`
 		Owner    string               `query:"owner" description:"Username filter. Matches only owners this viewer may see as a profile; an owner shown as anonymous never matches."`
