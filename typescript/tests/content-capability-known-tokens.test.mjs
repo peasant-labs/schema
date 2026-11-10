@@ -10,7 +10,7 @@ import * as schema from "../dist/index.js";
 //
 //   1. the strongly typed, CLOSED known-token inventory (KnownContentCapability
 //      / AllContentCapabilities / isContentCapability) exposes exactly the Go
-//      inventory, and its first token equals "observed_model_v1"; and
+//      inventory in canonical order, whose first token is "content_parts_v1"; and
 //   2. the discovery wire stays OPEN — a SchemaVersionResponse carrying unknown
 //      future tokens (and duplicates) still parses, and the typed guard filters
 //      the parsed list down to only the tokens this release understands.
@@ -47,6 +47,7 @@ function baseResponse(contentCapabilities) {
 
 test("the typed closed inventory equals the Go known-token set", () => {
   assert.equal(schema.KnownContentCapability.ObservedModelV1, "observed_model_v1");
+  assert.equal(schema.AllContentCapabilities[0], "content_parts_v1");
   assert.deepEqual([...schema.AllContentCapabilities], known.all_values);
   for (const member of known.members) {
     assert.equal(schema.KnownContentCapability[member.name], member.value, `KnownContentCapability.${member.name} must equal ${member.value}`);

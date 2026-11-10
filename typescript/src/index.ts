@@ -69,13 +69,21 @@ function scanRawJson(text: string, policy: RawJsonPathPolicy): RawJsonScanner {
 }
 
 export function parseSessionDetailPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
+  return parseSessionDetailPayloadForMode(value, "local");
+}
+
+function parsePublishedSessionDetailPayloadValue(value: unknown): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
+  return parseSessionDetailPayloadForMode(value, "published");
+}
+
+function parseSessionDetailPayloadForMode(value: unknown, mode: "local" | "published"): import("./internal/generated/contract/zod.gen.js").SessionDetailPayload {
   rejectWireAliases(value, "SessionDetailPayload");
   rejectExplicitNullEvidence(value);
   validateRawGraphValue(value);
   const normalized = structuredClone(value);
   normalizeEmptyOptionalPublicRefs(normalized);
   const payload = zSessionDetailPayload.parse(normalized);
-  validateSessionDetail(payload);
+  validateSessionDetail(payload, mode);
   return payload;
 }
 
@@ -125,10 +133,13 @@ export function parseTranscriptContentText(text: string): import("./internal/gen
   const raw: unknown = JSON.parse(text);
   if (!isRecord(raw)) return zTranscriptContent.parse(raw);
   rejectWireAliases(raw, "TranscriptContent");
-  const normalizedEnvelope = {...raw, sessionDetail: parseSessionDetailPayloadValue(raw.sessionDetail)};
+  // TranscriptContent is publication-only: peasant builds it for push, while a
+  // standalone local export is a bare SessionDetailPayload. Decode its detail
+  // with the published image shape so a local ref or size cannot leak through.
+  const normalizedEnvelope = {...raw, sessionDetail: parsePublishedSessionDetailPayloadValue(raw.sessionDetail)};
   const content = zTranscriptContent.parse(normalizedEnvelope);
   if (content.sessionDetail === undefined || content.sessionDetail === null) failSemantic("sessionDetail is required");
-  parseSessionDetailPayloadValue(content.sessionDetail);
+  parsePublishedSessionDetailPayloadValue(content.sessionDetail);
   return content;
 }
 
@@ -211,17 +222,32 @@ class RawJsonScanner {
 function pointerMatches(pattern: string, path: string): boolean { const expected = pattern.split("/"); const actual = path.split("/"); return expected.length === actual.length && expected.every((part, index) => part === "*" || part === actual[index]); }
 
 type Detail = import("./internal/generated/contract/zod.gen.js").SessionDetailPayload;
-function validateSessionDetail(payload: Detail): void {
+function validateSessionDetail(payload: Detail, mode: "local" | "published"): void {
   validateRetainedUnknown(payload);
   validateRelationships(payload);
+  validateContentParts(payload.turns ?? [], mode);
   const state = newDetailState(payload);
   const turns = validateTurnEvidence(payload.turns ?? [], state);
   validateMetadataRecords(payload.nativeMetadata ?? [], turns, state);
   for (const section of payload.earlierHistory ?? []) {
+    validateContentParts(section.turns ?? [], mode);
     const earlierTurns = validateTurnEvidence(section.turns ?? [], state);
     validateMetadataRecords(section.nativeMetadata ?? [], earlierTurns, state);
   }
   if (state.nativeCount > 0 && String(payload.harness) !== "pi") failSemantic("Pi native metadata requires harness pi across every history partition");
+}
+
+function validateContentParts(turns: NonNullable<Detail["turns"]>, mode: "local" | "published"): void {
+  for (const turn of turns) for (const part of turn.contentParts ?? []) {
+    if (part.type === "text") {
+      if (part.text !== undefined && !validUnicode(part.text)) failSemantic("content part text is not valid Unicode");
+      continue;
+    }
+    if (part.image === undefined) continue; // the part-level schema already refuses this
+    const reason = part.image.omittedReason;
+    if (mode === "local" && reason === "not_published") failSemantic("durable local detail must not carry the not_published image reason");
+    if (mode === "published" && reason !== "not_published") failSemantic("a published detail must carry the not_published image reason on every image part");
+  }
 }
 
 function validateRetainedUnknown(payload: Detail): void {

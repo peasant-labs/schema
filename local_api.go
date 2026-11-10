@@ -196,7 +196,7 @@ type SessionSummary struct {
 	StartTime            time.Time `json:"startTime"`
 	DurationMins         float64   `json:"durationMins"`
 	TotalTokens          int       `json:"totalTokens"`
-	TurnCount            int       `json:"turnCount"`
+	TurnCount            int       `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int       `json:"toolCallCount"`
 	Project              string    `json:"project,omitempty"`
@@ -282,7 +282,7 @@ type LocalSyncSummary struct {
 	StartTime            string      `json:"startTime"`
 	DurationMs           int64       `json:"durationMs"`
 	TotalTokens          int         `json:"totalTokens"`
-	TurnCount            int         `json:"turnCount"`
+	TurnCount            int         `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	Model                string      `json:"model"`
 	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	SyncStatus           SyncStatus  `json:"syncStatus"`
@@ -487,14 +487,19 @@ type SessionsPayload struct {
 
 // TurnDetail is a turn with full content for the detail view.
 type TurnDetail struct {
-	Index       int              `json:"index"`
-	Role        Role             `json:"role"`
-	Content     string           `json:"content"`
-	ToolCalls   []ToolCallDetail `json:"toolCalls,omitempty"`
-	Timestamp   time.Time        `json:"timestamp"`
-	Depth       int              `json:"depth"`
-	ParentIndex *int             `json:"parentIndex,omitempty"`
-	AgentName   string           `json:"agentName,omitempty"`
+	Index   int    `json:"index"`
+	Role    Role   `json:"role"`
+	Content string `json:"content"`
+	// ContentParts preserves the ordered text and image blocks of a turn. It is
+	// additional evidence, never a replacement: Content remains the concatenated
+	// text fallback and ToolCalls remains tool evidence. Parts stay in source
+	// order, and an image-only turn keeps its carrier turn with empty Content.
+	ContentParts []TurnContentPart `json:"contentParts,omitempty" nullable:"false"`
+	ToolCalls    []ToolCallDetail  `json:"toolCalls,omitempty"`
+	Timestamp    time.Time         `json:"timestamp"`
+	Depth        int               `json:"depth"`
+	ParentIndex  *int              `json:"parentIndex,omitempty"`
+	AgentName    string            `json:"agentName,omitempty"`
 	// ObservedModel is the exact model identifier observed while producing this
 	// assistant or subagent turn. It is optional source evidence: when present it
 	// uses valid UTF-8 with no leading or trailing Unicode whitespace, while accepted
@@ -578,7 +583,7 @@ type SessionDetailPayload struct {
 	TotalTokens          int                 `json:"totalTokens"`
 	TokensIn             int                 `json:"tokensIn"`
 	TokensOut            int                 `json:"tokensOut"`
-	TurnCount            int                 `json:"turnCount"`
+	TurnCount            int                 `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int                 `json:"toolCallCount"`
 	Turns                []TurnDetail        `json:"turns"`
@@ -1142,7 +1147,7 @@ type QualitySession struct {
 	TotalTokens     int     `json:"totalTokens"`
 	InputTokens     int     `json:"inputTokens"`
 	OutputTokens    int     `json:"outputTokens"`
-	TurnCount       int     `json:"turnCount"`
+	TurnCount       int     `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	ToolCalls       int     `json:"toolCalls"`
 	DurationMinutes float64 `json:"durationMinutes"`
 	// v2 fields -- zero-valued until implemented.
@@ -1465,7 +1470,7 @@ type WalkthroughTrail struct {
 	SessionID  string            `json:"sessionId"`
 	Title      string            `json:"title"`
 	Date       string            `json:"date"`
-	TurnCount  int               `json:"turnCount"`
+	TurnCount  int               `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	Steps      []WalkthroughStep `json:"steps"`
 	IsCoherent bool              `json:"isCoherent"` // true if linear path, false if scattered
 }

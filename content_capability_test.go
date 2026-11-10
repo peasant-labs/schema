@@ -90,8 +90,38 @@ func TestRequiredContentCapabilitiesSessionGraph(t *testing.T) {
 	}
 }
 
+func contentCapabilityTurns(input []contentCapabilityTurn) []schema.TurnDetail {
+	turns := make([]schema.TurnDetail, len(input))
+	for i, turn := range input {
+		turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel), ThinkingLevel: turn.ThinkingLevel, ThinkingLevelRaw: turn.ThinkingLevelRaw}
+		if turn.Usage {
+			turns[i].Usage = &schema.UsageDetail{}
+		}
+		turns[i].ContentParts = contentCapabilityParts(turn.ContentParts)
+		for _, tool := range turn.Tools {
+			value := schema.ToolCallDetail{Namespace: tool.Namespace}
+			if tool.Usage {
+				value.Usage = &schema.UsageDetail{}
+			}
+			turns[i].ToolCalls = append(turns[i].ToolCalls, value)
+		}
+	}
+	return turns
+}
+
+func contentCapabilityParts(kind string) []schema.TurnContentPart {
+	switch kind {
+	case "text":
+		return []schema.TurnContentPart{{Type: schema.TurnPartTypeText, Text: "block"}}
+	case "image":
+		return []schema.TurnContentPart{{Type: schema.TurnPartTypeImage, Image: &schema.ImagePart{Ref: strings.Repeat("a", 64), MediaType: schema.ImageMediaTypePNG, ByteSize: 12}}}
+	default:
+		return nil
+	}
+}
+
 func TestContentCapabilityInventoryIsCanonical(t *testing.T) {
-	want := []schema.ContentCapability{schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilityRetainedUnknownV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityThinkingLevelV1, schema.ContentCapabilityToolNamespaceV1}
+	want := []schema.ContentCapability{schema.ContentCapabilityContentPartsV1, schema.ContentCapabilityDetailedUsageV1, schema.ContentCapabilityNativeMetadataV1, schema.ContentCapabilityObservedModelV1, schema.ContentCapabilityRetainedUnknownV1, schema.ContentCapabilitySessionGraphProvenanceV1, schema.ContentCapabilityThinkingLevelV1, schema.ContentCapabilityToolNamespaceV1}
 	if !slices.Equal(schema.AllContentCapabilities, want) {
 		t.Fatalf("AllContentCapabilities=%v, want exact canonical inventory %v", schema.AllContentCapabilities, want)
 	}
@@ -159,6 +189,7 @@ type contentCapabilityInput struct {
 	Advertised     []schema.ContentCapability `yaml:"advertised,omitempty"`
 	Required       []schema.ContentCapability `yaml:"required,omitempty"`
 	Turns          []contentCapabilityTurn    `yaml:"turns,omitempty"`
+	EarlierHistory []contentCapabilityTurn    `yaml:"earlierHistory,omitempty"`
 	SessionModel   string                     `yaml:"sessionModel,omitempty"`
 	Role           schema.Role                `yaml:"role,omitempty"`
 	ObservedModel  string                     `yaml:"observedModel,omitempty"`
@@ -176,7 +207,9 @@ type contentCapabilityTurn struct {
 	Usage            bool                    `yaml:"usage,omitempty"`
 	ThinkingLevel    schema.ThinkingLevel    `yaml:"thinkingLevel,omitempty"`
 	ThinkingLevelRaw schema.ThinkingLevelRaw `yaml:"thinkingLevelRaw,omitempty"`
-	Tools            []contentCapabilityTool `yaml:"tools,omitempty"`
+	// ContentParts is text or image; each builds one ordered part of that kind.
+	ContentParts string                  `yaml:"contentParts,omitempty"`
+	Tools        []contentCapabilityTool `yaml:"tools,omitempty"`
 }
 
 type contentCapabilityTool struct {
@@ -212,21 +245,16 @@ func TestContentCapabilityContractFixtures(t *testing.T) {
 					err = fmt.Errorf("required capabilities are missing")
 				}
 			case "scan":
-				turns := make([]schema.TurnDetail, len(fixtureCase.Input.Turns))
-				for i, turn := range fixtureCase.Input.Turns {
-					turns[i] = schema.TurnDetail{Role: turn.Role, Depth: turn.Depth, ObservedModel: schema.ObservedModelID(turn.ObservedModel), ThinkingLevel: turn.ThinkingLevel, ThinkingLevelRaw: turn.ThinkingLevelRaw}
-					if turn.Usage {
-						turns[i].Usage = &schema.UsageDetail{}
-					}
-					for _, tool := range turn.Tools {
-						value := schema.ToolCallDetail{Namespace: tool.Namespace}
-						if tool.Usage {
-							value.Usage = &schema.UsageDetail{}
-						}
-						turns[i].ToolCalls = append(turns[i].ToolCalls, value)
-					}
+				payload := schema.SessionDetailPayload{
+					Model:                fixtureCase.Input.SessionModel,
+					ThinkingLevel:        fixtureCase.Input.ThinkingLevel,
+					ThinkingLevelRaw:     fixtureCase.Input.ThinkingLevelRaw,
+					ThinkingLevelHistory: fixtureCase.Input.ThinkingLevelHistory,
+					Turns:                contentCapabilityTurns(fixtureCase.Input.Turns),
 				}
-				payload := schema.SessionDetailPayload{Model: fixtureCase.Input.SessionModel, ThinkingLevel: fixtureCase.Input.ThinkingLevel, ThinkingLevelRaw: fixtureCase.Input.ThinkingLevelRaw, ThinkingLevelHistory: fixtureCase.Input.ThinkingLevelHistory, Turns: turns}
+				for _, section := range fixtureCase.Input.EarlierHistory {
+					payload.EarlierHistory = append(payload.EarlierHistory, schema.EarlierHistorySection{Turns: contentCapabilityTurns([]contentCapabilityTurn{section})})
+				}
 				if fixtureCase.Input.NativeMetadata {
 					payload.NativeMetadata = []schema.NativeMetadataRecord{{}}
 				}

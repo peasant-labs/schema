@@ -127,7 +127,10 @@ const (
 	// page: per_page replaces limit and next_items carries the following
 	// page's rows, and the list route declares the closed per_page query
 	// (a wire field renamed before 1.0 = minor bump).
-	VillageAPIVersion = "0.36.0"
+	// Bumped to 0.37.0 when TurnDetail gained the optional contentParts list
+	// and its ordered text/image part and image-part evidence, together with
+	// the content_parts_v1 content capability (additive = minor bump).
+	VillageAPIVersion = "0.37.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -210,7 +213,11 @@ const (
 	// page of QualitySession rows beside the library-wide ProjectAnalytics
 	// summary at the page revision, so no surface subscribes to the full library
 	// (additive operation = minor bump).
-	PeasantLocalAPIVersion = "0.30.0"
+	// Bumped to 0.31.0 when TurnDetail gained the optional ordered contentParts
+	// list, its text and image part evidence, the image entry type, and the
+	// content_parts_v1 capability; every turnCount field documents conversation
+	// turns (additive = minor bump).
+	PeasantLocalAPIVersion = "0.31.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -316,5 +323,9 @@ const (
 	// Bumped to 0.44.0 when the page contract became one OffsetPage with a
 	// numeric PageSize, and the local grouped payloads adopted its offset fields
 	// (a breaking envelope change before 1.0 = minor bump).
-	TypesVersion = "0.44.0"
+	// Bumped to 0.45.0 when TurnContentPart, TurnPartType, ImagePart,
+	// OmittedReason, ImageMediaType, and the image EntryType entered the
+	// catalog, and every turnCount field documented conversation turns
+	// (additive = minor bump).
+	TypesVersion = "0.45.0"
 )

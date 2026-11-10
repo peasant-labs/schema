@@ -44,6 +44,17 @@ export const wireAliasShapes = {
   "EntryType": {},
   "EvidenceKind": {},
   "Harness": {},
+  "ImageMediaType": {},
+  "ImagePart": {
+    "fields": {
+      "byteSize": {},
+      "height": {},
+      "mediaType": "ImageMediaType",
+      "omittedReason": "OmittedReason",
+      "ref": {},
+      "width": {}
+    }
+  },
   "InputModality": {},
   "InterpretationDiagnostics": {
     "fields": {
@@ -77,6 +88,7 @@ export const wireAliasShapes = {
     }
   },
   "ObservedModelID": {},
+  "OmittedReason": {},
   "PublicRevisionRef": {},
   "PublicSourceAnchor": {
     "fields": {
@@ -242,11 +254,21 @@ export const wireAliasShapes = {
       "sessionDetail": "SessionDetailPayload"
     }
   },
+  "TurnContentPart": {
+    "fields": {
+      "image": "ImagePart",
+      "text": {},
+      "type": "TurnPartType"
+    }
+  },
   "TurnDetail": {
     "fields": {
       "agentName": {},
       "command": "CommandInvocation",
       "content": {},
+      "contentParts": {
+        "items": "TurnContentPart"
+      },
       "controlKind": {},
       "depth": {},
       "entryType": "EntryType",
@@ -269,6 +291,7 @@ export const wireAliasShapes = {
       "usage": "UsageDetail"
     }
   },
+  "TurnPartType": {},
   "UsageCompleteness": {},
   "UsageDetail": {
     "fields": {

@@ -279,7 +279,39 @@ func ValidateUsageDetail(v UsageDetail) error {
 	return nil
 }
 
+// ValidateSessionDetailPayload validates durable local session detail. Content
+// parts are validated in their local image shape; a published transcript is
+// validated by ValidatePublishedSessionDetailPayload or ValidateTranscriptContent.
 func ValidateSessionDetailPayload(value SessionDetailPayload) error {
+	return validateSessionDetailPayloadForMode(value, ImagePartModeLocal)
+}
+
+// ValidatePublishedSessionDetailPayload validates a session detail assembled for
+// publication. Ordered image parts must carry only the not_published shape; a
+// local ref, media type, size, or dimensions is refused. Village's typed read
+// and rewrite boundary uses this when it validates a stored published detail.
+func ValidatePublishedSessionDetailPayload(value SessionDetailPayload) error {
+	return validateSessionDetailPayloadForMode(value, ImagePartModePublished)
+}
+
+// validateSessionDetailPayloadForMode selects the content-part image shape for a
+// session detail. The exported wrappers above are the only callers, so the mode
+// is explicit at each production boundary and never inferred from the parts.
+func validateSessionDetailPayloadForMode(value SessionDetailPayload, mode ImagePartMode) error {
+	if mode != ImagePartModeLocal && mode != ImagePartModePublished {
+		return fmt.Errorf(
+			"session detail validation failed at schema.ValidateSessionDetailPayload while selecting mode %q: the mode is not local or published, so the accepted content-part shape is undefined; pass ImagePartModeLocal for durable detail or ImagePartModePublished for published detail",
+			mode,
+		)
+	}
+	return validateSessionDetailPayload(value, mode)
+}
+
+func validateSessionDetailPayload(value SessionDetailPayload, imageMode ImagePartMode) error {
+	validatorName := "schema.ValidateSessionDetailPayload"
+	if imageMode == ImagePartModePublished {
+		validatorName = "schema.ValidatePublishedSessionDetailPayload"
+	}
 	if err := ValidateRetainedUnknown(value); err != nil {
 		return err
 	}
@@ -321,7 +353,7 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 		return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: parentSessionId disagrees with durable started_by relationship; consumers could navigate to the wrong parent; derive the legacy field from the durable relationship")
 	}
 	state := newDetailValidationState(value)
-	if err := validateTurnEvidenceAt(value.Turns, "turns", state); err != nil {
+	if err := validateTurnEvidenceAt(value.Turns, "turns", state, imageMode, validatorName); err != nil {
 		return err
 	}
 	if err := validateNativeMetadataRecordsAt(value.NativeMetadata, value.Turns, "nativeMetadata", state); err != nil {
@@ -333,7 +365,7 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: earlierHistory[%d] has an invalid state or null turns; retained history cannot be reconstructed; use a published state and a non-null turn array", i)
 		}
 		path := fmt.Sprintf("earlierHistory[%d]", i)
-		if err := validateTurnEvidenceAt(section.Turns, path+".turns", state); err != nil {
+		if err := validateTurnEvidenceAt(section.Turns, path+".turns", state, imageMode, validatorName); err != nil {
 			return err
 		}
 		if err := validateNativeMetadataRecordsAt(section.NativeMetadata, section.Turns, path+".nativeMetadata", state); err != nil {
@@ -347,7 +379,7 @@ func ValidateSessionDetailPayload(value SessionDetailPayload) error {
 }
 
 func validateTurnEvidence(turns []TurnDetail) error {
-	return validateTurnEvidenceAt(turns, "turns", newDetailValidationState(SessionDetailPayload{Turns: turns}))
+	return validateTurnEvidenceAt(turns, "turns", newDetailValidationState(SessionDetailPayload{Turns: turns}), ImagePartModeLocal, "schema.ValidateSessionDetailPayload")
 }
 
 type detailValidationState struct {
@@ -385,11 +417,14 @@ func projectedTurn(t *TurnDetail) bool {
 	return false
 }
 
-func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValidationState) error {
+func validateTurnEvidenceAt(turns []TurnDetail, path string, state *detailValidationState, imageMode ImagePartMode, validatorName string) error {
 	turnIndexes := map[int]bool{}
 	for i := range turns {
 		t := &turns[i]
 		if err := ValidateObservedModelEvidence(t.Role, t.ObservedModel); err != nil {
+			return err
+		}
+		if err := validateTurnContentPartsAt(t.ContentParts, imageMode, validatorName, path, i); err != nil {
 			return err
 		}
 		if err := ValidateThinkingLevelEvidence(t.Role, t.ThinkingLevel, t.ThinkingLevelRaw); err != nil {
@@ -510,7 +545,15 @@ func ValidateTranscriptContent(v TranscriptContent) error {
 	if !v.Kind.IsValid() || v.SessionDetail == nil {
 		return fmt.Errorf("transcript content validation failed at schema.ValidateTranscriptContent: kind is unsupported or sessionDetail is absent; the envelope cannot be consumed; send kind session_detail with its payload")
 	}
-	return ValidateSessionDetailPayload(*v.SessionDetail)
+	// TranscriptContent is publication-only: peasant builds it for push, while a
+	// standalone local export is a bare SessionDetailPayload. Validate the
+	// detail with the published image shape.
+	if err := ValidatePublishedSessionDetailPayload(*v.SessionDetail); err != nil {
+		// Format with %v, not %w: a public envelope rejection must not expose an
+		// underlying scanner or retained-evidence error chain.
+		return fmt.Errorf("transcript content validation failed at schema.ValidateTranscriptContent while validating the published session detail with schema.ValidatePublishedSessionDetailPayload: %v", err)
+	}
+	return nil
 }
 
 func ValidateNativeMetadata(v SessionDetailPayload) error {
@@ -522,14 +565,14 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 		return fmt.Errorf("native metadata validation failed at schema.ValidateNativeMetadata: pi metadata is attached to harness %q; consumers would misattribute evidence; emit it only for harness pi", v.Harness)
 	}
 	state := newDetailValidationState(v)
-	if err := validateTurnEvidenceAt(v.Turns, "turns", state); err != nil {
+	if err := validateTurnEvidenceAt(v.Turns, "turns", state, ImagePartModeLocal, "schema.ValidateNativeMetadata"); err != nil {
 		return err
 	}
 	if err := validateNativeMetadataRecordsAt(v.NativeMetadata, v.Turns, "nativeMetadata", state); err != nil {
 		return err
 	}
 	for i := range v.EarlierHistory {
-		if err := validateTurnEvidenceAt(v.EarlierHistory[i].Turns, fmt.Sprintf("earlierHistory[%d].turns", i), state); err != nil {
+		if err := validateTurnEvidenceAt(v.EarlierHistory[i].Turns, fmt.Sprintf("earlierHistory[%d].turns", i), state, ImagePartModeLocal, "schema.ValidateNativeMetadata"); err != nil {
 			return err
 		}
 		if err := validateNativeMetadataRecordsAt(v.EarlierHistory[i].NativeMetadata, v.EarlierHistory[i].Turns, fmt.Sprintf("earlierHistory[%d].nativeMetadata", i), state); err != nil {
@@ -543,7 +586,7 @@ func ValidateNativeMetadata(v SessionDetailPayload) error {
 // a producer attaches them to a harness-specific session envelope.
 func ValidateNativeMetadataRecords(records []NativeMetadataRecord, targets []TurnDetail) error {
 	state := newDetailValidationState(SessionDetailPayload{Turns: targets, NativeMetadata: records})
-	if err := validateTurnEvidenceAt(targets, "turns", state); err != nil {
+	if err := validateTurnEvidenceAt(targets, "turns", state, ImagePartModeLocal, "schema.ValidateNativeMetadataRecords"); err != nil {
 		return err
 	}
 	return validateNativeMetadataRecordsAt(records, targets, "nativeMetadata", state)

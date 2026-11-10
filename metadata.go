@@ -163,7 +163,12 @@ type ProjectContext struct {
 
 // SessionStats holds aggregate metrics extracted from transcript data.
 type SessionStats struct {
-	TurnCount            int    `json:"turnCount"`
+	// TurnCount is conversation turns: projected turns whose role is not
+	// system. The producer computes it once while indexing and carries it
+	// through detail, export, and publication, so every count surface reports
+	// the same number. It is never the raw harness record count
+	// (session_captured_stats.turn_count).
+	TurnCount            int    `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. The producer computes it once while indexing and carries it through detail, export, and publication; it is never a raw harness record count."`
 	InputSubmissionCount *int64 `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int    `json:"toolCallCount"`
 	SubagentCount        int    `json:"subagentCount"`

@@ -521,7 +521,7 @@ type VillageTranscript struct {
 	HarnessVersion  *string                     `json:"harness_version"`
 	SessionStart    *time.Time                  `json:"session_start"`
 	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count"`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	TokenCount      *int32                      `json:"token_count"`
 	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
 	SchemaVersion   string                      `json:"schema_version"`
@@ -788,7 +788,7 @@ type VillageCollectiveTranscript struct {
 	HarnessVersion  *string                     `json:"harness_version"`
 	SessionStart    *time.Time                  `json:"session_start"`
 	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count"`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	TokenCount      *int32                      `json:"token_count"`
 	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
 	SchemaVersion   string                      `json:"schema_version"`
@@ -959,7 +959,7 @@ type VillageUserCollectiveShare struct {
 	ModelName       *string                     `json:"model_name"`
 	Visibility      VillageTranscriptVisibility `json:"visibility"`
 	PublishedAt     time.Time                   `json:"published_at"`
-	TurnCount       *int32                      `json:"turn_count"`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	TokensIn        *int64                      `json:"tokens_in"`
 	TokensOut       *int64                      `json:"tokens_out"`
 	Owner           VillagePublicOwner          `json:"owner"`

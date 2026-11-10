@@ -76,9 +76,9 @@ entry reference by itself does not require this token.
 Requirement derivation uses the durable `SessionDetailPayload`, never read-only
 navigation metadata or a caller flag. It traverses every main turn at every
 depth, every earlier-history partition, and every folded call and result. The
-same traversal continues to derive `detailed_usage_v1`, `native_metadata_v1`,
-`observed_model_v1`, and `tool_namespace_v1`; required tokens are returned once
-in lexicographic order.
+same traversal continues to derive `content_parts_v1`, `detailed_usage_v1`,
+`native_metadata_v1`, `observed_model_v1`, and `tool_namespace_v1`; required
+tokens are returned once in lexicographic order.
 
 An offline scan validates and derives requirements without contacting a
 receiver. It does not establish remote support. Before an actual publication,
@@ -240,6 +240,56 @@ A deployment MUST withhold the token until its production-path preservation
 proof passes, including a field-loss mutation. Missing advertisement requires
 refusal before upload, never stripping or downgrading the level. Requirements
 accumulate with every other token.
+
+### `content_parts_v1`
+
+A publication requires `content_parts_v1` when any main or earlier-history turn
+carries a non-empty `contentParts` list. The list is ordered source evidence,
+not a copy of the text: `content` remains the concatenated text fallback and
+`toolCalls` remains tool evidence. A text-only list requires the token too,
+because an older server would drop the ordered block structure.
+
+Each part is `{type, text?, image?}`. `type` is `text` or `image`. A text part
+carries `text` and no image object. An image part carries an image object and
+no text. An image part is one of two shapes:
+
+- **local:** `{ref?, mediaType?, byteSize?, width?, height?, omittedReason?}`.
+  `ref` is the lowercase 64-hex content address of the stored bytes, required
+  when `omittedReason` is absent, optional for `missing`, and forbidden for
+  `too_large` and `unsupported`. `mediaType` is `image/png` or `image/jpeg`,
+  required unless the reason is `unsupported` (the unsupported source type is
+  outside the recorded set). `byteSize` is the exact stored size and is
+  positive only when bytes are carried; every omitted reason carries zero, and
+  zero means unset, so an explicit zero carries no information. `width` and
+  `height` are optional pixel dimensions, with zero meaning unset or unknown,
+  and an explicit zero is accepted as unset. `not_published` is not a local
+  reason. `unsupported` takes
+  precedence over `too_large`: a source media type outside the recorded set is
+  unsupported even when it also exceeds the size limit, and `too_large`
+  therefore always carries a recorded png or jpeg media type.
+- **published:** exactly `{type: "image", omittedReason: "not_published"}`.
+  `ref`, `mediaType`, `byteSize`, `width`, and `height` are forbidden. The
+  ordered text parts survive publication unchanged; the reader says how many
+  images were omitted and issues no attachment request.
+
+A server advertising `content_parts_v1` guarantees that it:
+
+1. validates part kinds, the single-renderer rule, the local image rules, and
+   the published shape before persistence;
+2. creates no database, blob, or other persistence side effects for invalid
+   parts; and
+3. preserves every accepted part, its order, and its absence through storage,
+   typed migration, rewrite, serving, and publication, including the
+   `not_published` image shape as a count only.
+
+A deployment MUST withhold the token until that production-path preservation
+proof passes, including a field-loss mutation. Missing advertisement requires
+refusal before upload, never stripping or downgrading parts. A standalone local
+export is a bare `SessionDetailPayload` and keeps local image evidence; it needs
+no receiver. `TranscriptContent`, `ValidateTranscriptContent`, and
+`DecodeTranscriptContentRaw` are publication-only: they accept only the
+published `{type: "image", omittedReason: "not_published"}` image shape and
+reject every local field. Requirements accumulate with every other token.
 
 ### Native metadata byte budgets
 

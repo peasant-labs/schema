@@ -31,9 +31,30 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   25/50/100 row count (omitted or 0 defaults to 25). The summary stays
   server-computed over the whole library, so no client receives every stored
   row. The existing `QualityPayload` WebSocket channel component is unchanged.
+- Local API 0.31.0, Types 0.45.0, and Village API 0.37.0 add
+  `TurnDetail.contentParts`, an ordered list of text and image blocks. A text
+  part carries `text`; an image part carries an `ImagePart` with a lowercase
+  64-hex content reference, an `image/png` or `image/jpeg` media type, a byte
+  size, optional pixel dimensions, and a closed omission reason
+  (`too_large`, `unsupported`, `missing`, `not_published`). A published
+  transcript carries only `{type: "image", omittedReason: "not_published"}` and
+  never names bytes, a reference, a media type, a size, or dimensions; ordered
+  text parts survive publication unchanged.
+- The `content_parts_v1` content capability is required whenever any main or
+  earlier-history turn carries a non-empty `contentParts` list, text-only or
+  image-bearing. A bare `SessionDetailPayload` is validated with the local image
+  shape. `TranscriptContent` and its raw decoder are publication-only: they
+  accept only the published `{type: "image", omittedReason: "not_published"}`
+  image shape and reject every local field. A standalone local export is a bare
+  `SessionDetailPayload`, so it keeps local image evidence.
+- `EntryType` gains `image` for a source entry that carries an ordered image
+  block, and `ImageMediaType` becomes a typed closed set (`image/png` or
+  `image/jpeg`) for `ImagePart.mediaType`.
 
 ### Changed
 
+- Local API 0.29.0 and 0.30.0, Types 0.44.0, and Village API 0.35.0 and 0.36.0
+  are retired and byte-frozen.
 - Village API 0.36.0 renames the transcript list response's `limit` to
   `per_page` and declares the closed `per_page` query (25, 50, or 100; omitted
   reads 25) beside the grouped view's `limit` on `GET /api/v1/transcripts`. The
@@ -57,6 +78,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `custom-title`); a compaction notice is a system row and never carries it.
   It is producer-owned evidence: a consumer must never infer it from `role`,
   `content`, or any other field.
+- Every `turnCount` wire field now documents conversation turns: projected
+  turns whose role is not `system`. The producer computes the number once while
+  indexing and carries it through detail, export, list, and publication. No
+  raw or record-count field is added; `session_captured_stats.turn_count`
+  remains internal to the producer.
 
 ## [v0.40.0] - 2026-11-03
 

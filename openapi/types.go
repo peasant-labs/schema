@@ -260,6 +260,8 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"AutoPublishRule", new(schema.AutoPublishRule)}, {"AutoPublishInstallRequest", new(schema.AutoPublishInstallRequest)},
 		{"AutoPublishRemovalResponse", new(schema.AutoPublishRemovalResponse)},
 		{"TimelineSessionRef", new(schema.TimelineSessionRef)}, {"TurnDetail", new(schema.TurnDetail)},
+		{"TurnContentPart", new(schema.TurnContentPart)}, {"TurnPartType", new(schema.TurnPartType)},
+		{"ImagePart", new(schema.ImagePart)}, {"ImageMediaType", new(schema.ImageMediaType)}, {"OmittedReason", new(schema.OmittedReason)},
 		{"TypeOrigin", new(schema.TypeOrigin)},
 		{"UnifiedMetadata", new(schema.UnifiedMetadata)}, {"UnusualSignal", new(schema.UnusualSignal)},
 		{"ValueDomain", new(schema.ValueDomain)}, {"ValueDomainKind", new(schema.ValueDomainKind)},

@@ -32,10 +32,15 @@ const (
 	// preservation of thinkingLevel/thinkingLevelRaw (and their absence) on the
 	// session detail and every turn.
 	ContentCapabilityThinkingLevelV1 ContentCapability = "thinking_level_v1"
+	// ContentCapabilityContentPartsV1 guarantees validated, ordered
+	// preservation of TurnDetail.contentParts through storage, typed migration,
+	// rewrite, serving, and publication, including the published
+	// not_published image shape.
+	ContentCapabilityContentPartsV1 ContentCapability = "content_parts_v1"
 )
 
 // AllContentCapabilities is the canonical closed capability inventory.
-var AllContentCapabilities = []ContentCapability{ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilityRetainedUnknownV1, ContentCapabilitySessionGraphProvenanceV1, ContentCapabilityThinkingLevelV1, ContentCapabilityToolNamespaceV1}
+var AllContentCapabilities = []ContentCapability{ContentCapabilityContentPartsV1, ContentCapabilityDetailedUsageV1, ContentCapabilityNativeMetadataV1, ContentCapabilityObservedModelV1, ContentCapabilityRetainedUnknownV1, ContentCapabilitySessionGraphProvenanceV1, ContentCapabilityThinkingLevelV1, ContentCapabilityToolNamespaceV1}
 
 // IsValid reports whether c belongs to the closed capability inventory.
 func (c ContentCapability) IsValid() bool { return slices.Contains(AllContentCapabilities, c) }
@@ -54,7 +59,7 @@ func (ContentCapability) JSONSchema() (jsonschema.Schema, error) {
 	var s jsonschema.Schema
 	s.AddType(jsonschema.String)
 	s.WithTitle("Content Capability")
-	s.WithDescription("Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull.")
+	s.WithDescription("Opaque, forward-open revision token in the deployment-specific content-capability set. Clients use exact set membership, never parse _v1 as Semantic Versioning or infer ranges, ignore unknown tokens, and tolerate duplicate or unordered input. Servers emit only their pinned known inventory, reject duplicates, and serialize lexicographically; token meanings are immutable. observed_model_v1 is required iff any root or nested assistant turn has observedModel, not for session model alone, and guarantees assistant-only value validation before persistence with no invalid DB/blob side effects plus byte-exact accepted observedModel strings through storage, typed migration, rewrite, serving, and pull; JSON whitespace and key order are excluded. thinking_level_v1 is required iff the session detail carries thinkingLevel, thinkingLevelRaw, or a non-empty thinkingLevelHistory, or any main or earlier-history turn carries thinkingLevel or thinkingLevelRaw, and guarantees canonical, raw-bound, and assistant-only validation before persistence with no invalid side effects plus byte-exact preservation of the values, their history order, and their absence through storage, typed migration, rewrite, serving, and pull. content_parts_v1 is required iff any main or earlier-history turn carries a non-empty contentParts list, text-only or image-bearing, and guarantees ordered preservation of every part through storage, typed migration, rewrite, serving, and publication, including the published not_published image shape.")
 	return s, nil
 }
 
@@ -109,7 +114,8 @@ func MissingContentCapabilities(advertised, required []ContentCapability) []Cont
 // subagent turn, requires observed_model_v1. A thinkingLevel, thinkingLevelRaw,
 // or non-empty thinkingLevelHistory on the detail, or a thinkingLevel or
 // thinkingLevelRaw on any main or earlier-history turn, requires
-// thinking_level_v1.
+// thinking_level_v1. A non-empty ContentParts list on any main or
+// earlier-history turn, text-only or image-bearing, requires content_parts_v1.
 func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapability {
 	required := make([]ContentCapability, 0, len(AllContentCapabilities))
 	if len(payload.RetainedUnknown) > 0 || payload.Diagnostics != nil {
@@ -126,6 +132,9 @@ func RequiredContentCapabilities(payload SessionDetailPayload) []ContentCapabili
 			}
 			if turn.ThinkingLevel != "" || turn.ThinkingLevelRaw != "" {
 				required = append(required, ContentCapabilityThinkingLevelV1)
+			}
+			if len(turn.ContentParts) > 0 {
+				required = append(required, ContentCapabilityContentPartsV1)
 			}
 			if turn.Usage != nil {
 				required = append(required, ContentCapabilityDetailedUsageV1)

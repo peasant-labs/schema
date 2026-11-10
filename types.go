@@ -630,13 +630,16 @@ const (
 	EntryTypeSystem     EntryType = "system"
 	EntryTypeError      EntryType = "error"
 	EntryTypeResult     EntryType = "result"
+	// EntryTypeImage is a source entry that carries an ordered image block.
+	EntryTypeImage EntryType = "image"
 )
 
 // IsValid returns true if the entry type is one of the known variants.
 func (e EntryType) IsValid() bool {
 	switch e {
 	case EntryTypeText, EntryTypeToolUse, EntryTypeToolResult,
-		EntryTypeThinking, EntryTypeSystem, EntryTypeError, EntryTypeResult:
+		EntryTypeThinking, EntryTypeSystem, EntryTypeError, EntryTypeResult,
+		EntryTypeImage:
 		return true
 	}
 	return false
@@ -648,6 +651,7 @@ func (e EntryType) String() string { return string(e) }
 var AllEntryTypes = []EntryType{
 	EntryTypeText, EntryTypeToolUse, EntryTypeToolResult,
 	EntryTypeThinking, EntryTypeSystem, EntryTypeError, EntryTypeResult,
+	EntryTypeImage,
 }
 
 // JSONSchema implements jsonschema.Exposer.
@@ -656,7 +660,7 @@ func (EntryType) JSONSchema() (jsonschema.Schema, error) {
 	s.AddType(jsonschema.String)
 	s.WithTitle("Entry Type")
 	s.WithDescription("Classification of a single entry within an agent session transcript")
-	s.WithEnum("text", "tool_use", "tool_result", "thinking", "system", "error", "result")
+	s.WithEnum("text", "tool_use", "tool_result", "thinking", "system", "error", "result", "image")
 	s.WithExamples("text", "tool_use", "tool_result")
 	return s, nil
 }

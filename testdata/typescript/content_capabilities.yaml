@@ -18,6 +18,7 @@ known:
   go_type: ContentCapability
   go_all_var: AllContentCapabilities
   members:
+    - {name: ContentPartsV1, go_const: ContentCapabilityContentPartsV1, value: "content_parts_v1"}
     - {name: DetailedUsageV1, go_const: ContentCapabilityDetailedUsageV1, value: "detailed_usage_v1"}
     - {name: NativeMetadataV1, go_const: ContentCapabilityNativeMetadataV1, value: "native_metadata_v1"}
     - {name: ObservedModelV1, go_const: ContentCapabilityObservedModelV1, value: "observed_model_v1"}
@@ -25,7 +26,7 @@ known:
     - {name: SessionGraphProvenanceV1, go_const: ContentCapabilitySessionGraphProvenanceV1, value: "session_graph_provenance_v1"}
     - {name: ThinkingLevelV1, go_const: ContentCapabilityThinkingLevelV1, value: "thinking_level_v1"}
     - {name: ToolNamespaceV1, go_const: ContentCapabilityToolNamespaceV1, value: "tool_namespace_v1"}
-  all_values: ["detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "retained_unknown_v1", "session_graph_provenance_v1", "thinking_level_v1", "tool_namespace_v1"]
+  all_values: ["content_parts_v1", "detailed_usage_v1", "native_metadata_v1", "observed_model_v1", "retained_unknown_v1", "session_graph_provenance_v1", "thinking_level_v1", "tool_namespace_v1"]
 # Discovery cases prove the open wire and the typed guard simultaneously: every
 # advertised list (including unknown future and duplicate tokens) parses, and
 # guarding/filtering it against the closed inventory yields only known tokens.
@@ -54,3 +55,6 @@ discovery:
   - name: thinking_level_with_unknown_and_duplicate
     advertised: ["thinking_level_v1", "future_v2", "thinking_level_v1", "observed_model_v1"]
     knownFiltered: ["thinking_level_v1", "observed_model_v1"]
+  - name: content_parts_with_unknown_and_duplicate
+    advertised: ["content_parts_v1", "future_v2", "content_parts_v1", "observed_model_v1"]
+    knownFiltered: ["content_parts_v1", "observed_model_v1"]

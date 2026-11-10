@@ -16,7 +16,7 @@ package schema
 // JSON tags use camelCase to match the backend data contract (QualitySession) field names.
 type QualityMetrics struct {
 	// Basic session counts
-	TurnCount            *int            `json:"turnCount,omitempty"`
+	TurnCount            *int            `json:"turnCount,omitempty" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
 	SubagentCount        *int            `json:"subagentCount,omitempty"`
 	TotalTokens          *int            `json:"totalTokens,omitempty"`
 	InputTokens          *int            `json:"inputTokens,omitempty"`
