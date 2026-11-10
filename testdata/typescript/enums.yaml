@@ -140,7 +140,8 @@ enums:
       - {name: Quality, value: "quality"}
       - {name: Annotations, value: "annotations"}
       - {name: ProjectFamiliarity, value: "project_familiarity"}
-    all_values: ["dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity"]
+      - {name: Kickstart, value: "kickstart"}
+    all_values: ["dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "kickstart"]
   - name: Confidence
     all_name: AllConfidences
     members:
@@ -282,7 +283,8 @@ enums:
       - {name: ProjectFamiliarity, value: "project_familiarity"}
       - {name: Connected, value: "connected"}
       - {name: Error, value: "error"}
-    all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error"]
+      - {name: Kickstart, value: "kickstart"}
+    all_values: ["subscribe", "unsubscribe", "dashboard", "sessions", "session_detail", "trends", "quality", "annotations", "project_familiarity", "connected", "error", "kickstart"]
   - name: ReadAttributionState
     all_name: AllReadAttributionStates
     members:
@@ -741,6 +743,113 @@ enums:
       - {name: Choice, value: "choice"}
       - {name: Structured, value: "structured"}
     all_values: ["boolean", "integer", "string", "string_list", "choice", "structured"]
+  - name: LocalKickstartScope
+    all_name: AllLocalKickstartScopes
+    members:
+      - {name: Full, value: "full"}
+      - {name: Selection, value: "selection"}
+    all_values: ["full", "selection"]
+  - name: LocalKickstartStopKind
+    all_name: AllLocalKickstartStopKinds
+    members:
+      - {name: Connection, value: "connection"}
+      - {name: Config, value: "config"}
+      - {name: Review, value: "review"}
+      - {name: Ingest, value: "ingest"}
+    all_values: ["connection", "config", "review", "ingest"]
+  - name: LocalKickstartFieldKind
+    all_name: AllLocalKickstartFieldKinds
+    members:
+      - {name: Toggle, value: "toggle"}
+      - {name: Choice, value: "choice"}
+      - {name: Action, value: "action"}
+      - {name: Tree, value: "tree"}
+      - {name: Notice, value: "notice"}
+    all_values: ["toggle", "choice", "action", "tree", "notice"]
+  - name: LocalKickstartLineKind
+    all_name: AllLocalKickstartLineKinds
+    members:
+      - {name: Text, value: "text"}
+      - {name: Label, value: "label"}
+      - {name: Before, value: "before"}
+      - {name: After, value: "after"}
+      - {name: Spacer, value: "spacer"}
+    all_values: ["text", "label", "before", "after", "spacer"]
+  - name: LocalKickstartNodeKind
+    all_name: AllLocalKickstartNodeKinds
+    members:
+      - {name: Project, value: "project"}
+      - {name: Group, value: "group"}
+      - {name: Branch, value: "branch"}
+      - {name: Session, value: "session"}
+    all_values: ["project", "group", "branch", "session"]
+  - name: LocalKickstartNodeState
+    all_name: AllLocalKickstartNodeStates
+    members:
+      - {name: None, value: "none"}
+      - {name: Some, value: "some"}
+      - {name: All, value: "all"}
+    all_values: ["none", "some", "all"]
+  - name: LocalKickstartScanState
+    all_name: AllLocalKickstartScanStates
+    members:
+      - {name: Idle, value: "idle"}
+      - {name: Running, value: "running"}
+      - {name: Done, value: "done"}
+      - {name: Error, value: "error"}
+    all_values: ["idle", "running", "done", "error"]
+  - name: LocalKickstartIngestState
+    all_name: AllLocalKickstartIngestStates
+    members:
+      - {name: Idle, value: "idle"}
+      - {name: Running, value: "running"}
+      - {name: Busy, value: "busy"}
+      - {name: Failed, value: "failed"}
+    all_values: ["idle", "running", "busy", "failed"]
+  - name: LocalKickstartResolution
+    all_name: AllLocalKickstartResolutions
+    members:
+      - {name: Mine, value: "mine"}
+      - {name: Theirs, value: "theirs"}
+    all_values: ["mine", "theirs"]
+  - name: LocalKickstartNextStep
+    all_name: AllLocalKickstartNextSteps
+    members:
+      - {name: Config, value: "config"}
+      - {name: WebStart, value: "web-start"}
+      - {name: VillageLogin, value: "village-login"}
+      - {name: VillagePush, value: "village-push"}
+      - {name: AutoPublish, value: "auto-publish-settings"}
+    all_values: ["config", "web-start", "village-login", "village-push", "auto-publish-settings"]
+  - name: LocalKickstartDiffLineType
+    all_name: AllLocalKickstartDiffLineTypes
+    members:
+      - {name: Add, value: "add"}
+      - {name: Del, value: "del"}
+      - {name: Ctx, value: "ctx"}
+    all_values: ["add", "del", "ctx"]
+  - name: LocalKickstartEventKind
+    all_name: AllLocalKickstartEventKinds
+    members:
+      - {name: Session, value: "session"}
+      - {name: Answers, value: "answers"}
+      - {name: Conflicts, value: "conflicts"}
+      - {name: Scan, value: "scan"}
+      - {name: Ingest, value: "ingest"}
+      - {name: Closed, value: "closed"}
+    all_values: ["session", "answers", "conflicts", "scan", "ingest", "closed"]
+  - name: LocalKickstartCloseReason
+    all_name: AllLocalKickstartCloseReasons
+    members:
+      - {name: Committed, value: "committed"}
+      - {name: Expired, value: "expired"}
+    all_values: ["committed", "expired"]
+  - name: LocalKickstartConnectAnswer
+    all_name: AllLocalKickstartConnectAnswers
+    members:
+      - {name: Accept, value: "accept"}
+      - {name: Skip, value: "skip"}
+    all_values: ["accept", "skip"]
   - name: AutoPublishEvent
     all_name: AllAutoPublishEvents
     members:

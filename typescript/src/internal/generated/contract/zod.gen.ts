@@ -470,7 +470,8 @@ export const zChannelTopic = z.enum([
     'trends',
     'quality',
     'annotations',
-    'project_familiarity'
+    'project_familiarity',
+    'kickstart'
 ]);
 
 export type ChannelTopic = z.infer<typeof zChannelTopic>;
@@ -1161,6 +1162,327 @@ export const zLocalContributionEvidenceKind = z.enum([
 export type LocalContributionEvidenceKind = z.infer<typeof zLocalContributionEvidenceKind>;
 
 /**
+ * Kickstart Close Reason
+ *
+ * Why a kickstart session ended: committed or expired
+ */
+export const zLocalKickstartCloseReason = z.enum(['committed', 'expired']);
+
+export type LocalKickstartCloseReason = z.infer<typeof zLocalKickstartCloseReason>;
+
+export const zLocalKickstartConnect = z.object({
+    afterStop: z.string().optional(),
+    offered: z.boolean(),
+    prompt: z.string().optional(),
+    skip: z.string().optional()
+}).strict();
+
+export type LocalKickstartConnect = z.infer<typeof zLocalKickstartConnect>;
+
+/**
+ * Kickstart Connect Answer
+ *
+ * Boundary offer answer: accept or skip. accept requires village to be connected
+ */
+export const zLocalKickstartConnectAnswer = z.enum(['accept', 'skip']);
+
+export type LocalKickstartConnectAnswer = z.infer<typeof zLocalKickstartConnectAnswer>;
+
+/**
+ * Kickstart Diff Line Type
+ *
+ * Structured config-diff line: add, del, or ctx
+ */
+export const zLocalKickstartDiffLineType = z.enum([
+    'add',
+    'del',
+    'ctx'
+]);
+
+export type LocalKickstartDiffLineType = z.infer<typeof zLocalKickstartDiffLineType>;
+
+export const zLocalKickstartDiffLine = z.object({
+    newNo: z.int().gte(0).optional(),
+    oldNo: z.int().gte(0).optional(),
+    text: z.string(),
+    type: zLocalKickstartDiffLineType
+}).strict();
+
+export type LocalKickstartDiffLine = z.infer<typeof zLocalKickstartDiffLine>;
+
+/**
+ * Kickstart Event Kind
+ *
+ * Live kickstart topic discriminator. One event carries one session id
+ */
+export const zLocalKickstartEventKind = z.enum([
+    'session',
+    'answers',
+    'conflicts',
+    'scan',
+    'ingest',
+    'closed'
+]);
+
+export type LocalKickstartEventKind = z.infer<typeof zLocalKickstartEventKind>;
+
+/**
+ * Kickstart Field Kind
+ *
+ * Control shape of one kickstart field
+ */
+export const zLocalKickstartFieldKind = z.enum([
+    'toggle',
+    'choice',
+    'action',
+    'tree',
+    'notice'
+]);
+
+export type LocalKickstartFieldKind = z.infer<typeof zLocalKickstartFieldKind>;
+
+export const zLocalKickstartGuide = z.object({
+    hints: z.array(z.string()).optional(),
+    intro: z.string().optional()
+}).strict();
+
+export type LocalKickstartGuide = z.infer<typeof zLocalKickstartGuide>;
+
+export const zLocalKickstartHunk = z.object({
+    header: z.string().min(1),
+    lines: z.array(zLocalKickstartDiffLine)
+}).strict();
+
+export type LocalKickstartHunk = z.infer<typeof zLocalKickstartHunk>;
+
+export const zLocalKickstartDiff = z.object({
+    file: z.string().min(1),
+    hunks: z.array(zLocalKickstartHunk),
+    truncated: z.boolean().optional()
+}).strict();
+
+export type LocalKickstartDiff = z.infer<typeof zLocalKickstartDiff>;
+
+/**
+ * Kickstart Ingest State
+ *
+ * Import state pushed on the kickstart topic
+ */
+export const zLocalKickstartIngestState = z.enum([
+    'idle',
+    'running',
+    'busy',
+    'failed'
+]);
+
+export type LocalKickstartIngestState = z.infer<typeof zLocalKickstartIngestState>;
+
+export const zLocalKickstartIngest = z.object({
+    error: z.string().optional(),
+    new: z.int().gte(0),
+    note: z.string().optional(),
+    state: zLocalKickstartIngestState,
+    updated: z.int().gte(0)
+}).strict();
+
+export type LocalKickstartIngest = z.infer<typeof zLocalKickstartIngest>;
+
+/**
+ * Kickstart Line Kind
+ *
+ * Typed preview or example line
+ */
+export const zLocalKickstartLineKind = z.enum([
+    'text',
+    'label',
+    'before',
+    'after',
+    'spacer'
+]);
+
+export type LocalKickstartLineKind = z.infer<typeof zLocalKickstartLineKind>;
+
+export const zLocalKickstartLine = z.object({
+    kind: zLocalKickstartLineKind,
+    text: z.string()
+}).strict();
+
+export type LocalKickstartLine = z.infer<typeof zLocalKickstartLine>;
+
+/**
+ * Kickstart Next Step
+ *
+ * One finish action. auto-publish-settings links to the settings section; it does not install a hook
+ */
+export const zLocalKickstartNextStep = z.enum([
+    'config',
+    'web-start',
+    'village-login',
+    'village-push',
+    'auto-publish-settings'
+]);
+
+export type LocalKickstartNextStep = z.infer<typeof zLocalKickstartNextStep>;
+
+export const zLocalKickstartCommitted = z.object({
+    configPath: z.string().min(1),
+    diagnostics: z.array(z.string()).optional(),
+    ingest: zLocalKickstartIngest,
+    nextSteps: z.array(zLocalKickstartNextStep),
+    saved: z.boolean()
+}).strict();
+
+export type LocalKickstartCommitted = z.infer<typeof zLocalKickstartCommitted>;
+
+/**
+ * Kickstart Node Kind
+ *
+ * Row kind in the selection forest
+ */
+export const zLocalKickstartNodeKind = z.enum([
+    'project',
+    'group',
+    'branch',
+    'session'
+]);
+
+export type LocalKickstartNodeKind = z.infer<typeof zLocalKickstartNodeKind>;
+
+/**
+ * Kickstart Node State
+ *
+ * Server-computed selection of one forest row: none, some, or all. locked is a boolean, not a state
+ */
+export const zLocalKickstartNodeState = z.enum([
+    'none',
+    'some',
+    'all'
+]);
+
+export type LocalKickstartNodeState = z.infer<typeof zLocalKickstartNodeState>;
+
+export const zLocalKickstartNode = z.object({
+    childCount: z.int().gte(0).optional(),
+    harness: z.string().optional(),
+    id: z.string().min(1),
+    kind: zLocalKickstartNodeKind,
+    label: z.string().min(1),
+    locked: z.boolean().optional(),
+    parentId: z.string().optional(),
+    sessionId: z.string().optional(),
+    state: zLocalKickstartNodeState
+}).strict();
+
+export type LocalKickstartNode = z.infer<typeof zLocalKickstartNode>;
+
+export const zLocalKickstartOption = z.object({
+    description: z.string().optional(),
+    label: z.string(),
+    value: z.string()
+}).strict();
+
+export type LocalKickstartOption = z.infer<typeof zLocalKickstartOption>;
+
+export const zLocalKickstartPreview = z.object({
+    lines: z.array(zLocalKickstartLine)
+}).strict();
+
+export type LocalKickstartPreview = z.infer<typeof zLocalKickstartPreview>;
+
+/**
+ * Kickstart Resolution
+ *
+ * Which side of one conflict row to keep: mine is the draft, theirs is the file
+ */
+export const zLocalKickstartResolution = z.enum(['mine', 'theirs']);
+
+export type LocalKickstartResolution = z.infer<typeof zLocalKickstartResolution>;
+
+/**
+ * Kickstart Scan State
+ *
+ * Discovery job state pushed on the kickstart topic
+ */
+export const zLocalKickstartScanState = z.enum([
+    'idle',
+    'running',
+    'done',
+    'error'
+]);
+
+export type LocalKickstartScanState = z.infer<typeof zLocalKickstartScanState>;
+
+export const zLocalKickstartScan = z.object({
+    done: z.int().gte(0),
+    droppedLabels: z.array(z.string()).max(3).optional(),
+    droppedSelections: z.int().gte(0).optional(),
+    error: z.string().optional(),
+    lockedNodes: z.int().gte(0).optional(),
+    phase: z.string().optional(),
+    state: zLocalKickstartScanState,
+    total: z.int().gte(0)
+}).strict();
+
+export type LocalKickstartScan = z.infer<typeof zLocalKickstartScan>;
+
+/**
+ * Kickstart Scope
+ *
+ * Answer set a kickstart session collects: the whole wizard, or the selection page
+ */
+export const zLocalKickstartScope = z.enum(['full', 'selection']);
+
+export type LocalKickstartScope = z.infer<typeof zLocalKickstartScope>;
+
+export const zLocalKickstartOpenRequest = z.object({
+    scope: zLocalKickstartScope
+}).strict();
+
+export type LocalKickstartOpenRequest = z.infer<typeof zLocalKickstartOpenRequest>;
+
+export const zLocalKickstartStatus = z.object({
+    activeSessionId: z.string().optional(),
+    configured: z.boolean()
+}).strict();
+
+export type LocalKickstartStatus = z.infer<typeof zLocalKickstartStatus>;
+
+/**
+ * Kickstart Stop Kind
+ *
+ * Layout of one kickstart stop
+ */
+export const zLocalKickstartStopKind = z.enum([
+    'connection',
+    'config',
+    'review',
+    'ingest'
+]);
+
+export type LocalKickstartStopKind = z.infer<typeof zLocalKickstartStopKind>;
+
+export const zLocalKickstartSummary = z.object({
+    effects: z.array(z.string()),
+    values: z.array(z.string())
+}).strict();
+
+export type LocalKickstartSummary = z.infer<typeof zLocalKickstartSummary>;
+
+export const zLocalKickstartTree = z.object({
+    nodes: z.array(zLocalKickstartNode)
+}).strict();
+
+export type LocalKickstartTree = z.infer<typeof zLocalKickstartTree>;
+
+export const zLocalKickstartVillage = z.object({
+    connected: z.boolean(),
+    url: z.string().optional(),
+    userId: z.string().optional()
+}).strict();
+
+export type LocalKickstartVillage = z.infer<typeof zLocalKickstartVillage>;
+
+/**
  * Local Operation Diagnostic Outcome
  *
  * Failure or uncertain remote effect, never successful contribution
@@ -1222,6 +1544,104 @@ export const zLocalSettingValue = z.union([
 ]).nullable();
 
 export type LocalSettingValue = z.infer<typeof zLocalSettingValue>;
+
+export const zLocalKickstartAnswers = z.object({
+    connectAnswer: zLocalKickstartConnectAnswer.optional(),
+    resolutions: z.record(z.string(), zLocalKickstartResolution).optional(),
+    revision: z.int().gte(0),
+    selectedIds: z.array(z.string()).optional(),
+    values: z.record(z.string(), zLocalSettingValue).optional()
+}).strict();
+
+export type LocalKickstartAnswers = z.infer<typeof zLocalKickstartAnswers>;
+
+export const zLocalKickstartConflict = z.object({
+    field: z.string().min(1),
+    label: z.string().min(1),
+    mine: zLocalSettingValue,
+    stop: z.string().min(1),
+    theirs: zLocalSettingValue
+}).strict();
+
+export type LocalKickstartConflict = z.infer<typeof zLocalKickstartConflict>;
+
+export const zLocalKickstartCommitRefusal = z.object({
+    conflicts: z.array(zLocalKickstartConflict),
+    error: z.string().min(1)
+}).strict();
+
+export type LocalKickstartCommitRefusal = z.infer<typeof zLocalKickstartCommitRefusal>;
+
+export const zLocalKickstartField = z.object({
+    description: z.string().optional(),
+    example: z.array(zLocalKickstartLine).optional(),
+    key: z.string().min(1),
+    kind: zLocalKickstartFieldKind,
+    label: z.string().min(1),
+    options: z.array(zLocalKickstartOption).optional(),
+    refusal: zLocalSettingRefusal.optional(),
+    value: zLocalSettingValue
+}).strict();
+
+export type LocalKickstartField = z.infer<typeof zLocalKickstartField>;
+
+export const zLocalKickstartOverwrite = z.object({
+    key: z.string().min(1),
+    previous: zLocalSettingValue,
+    revision: z.int().gte(0)
+}).strict();
+
+export type LocalKickstartOverwrite = z.infer<typeof zLocalKickstartOverwrite>;
+
+export const zLocalKickstartStop = z.object({
+    diff: zLocalKickstartDiff.optional(),
+    fields: z.array(zLocalKickstartField),
+    guide: zLocalKickstartGuide,
+    hiddenBecause: z.string().optional(),
+    key: z.string().min(1),
+    kind: zLocalKickstartStopKind,
+    summary: zLocalKickstartSummary.optional(),
+    title: z.string().min(1),
+    visible: z.boolean()
+}).strict();
+
+export type LocalKickstartStop = z.infer<typeof zLocalKickstartStop>;
+
+export const zLocalKickstartSession = z.object({
+    conflicts: z.array(zLocalKickstartConflict),
+    connect: zLocalKickstartConnect,
+    id: z.string().min(1),
+    openedAt: z.string().min(1),
+    revision: z.int().gte(0),
+    scan: zLocalKickstartScan,
+    scope: zLocalKickstartScope,
+    stops: z.array(zLocalKickstartStop),
+    village: zLocalKickstartVillage
+}).strict();
+
+export type LocalKickstartSession = z.infer<typeof zLocalKickstartSession>;
+
+export const zLocalKickstartEvent = z.object({
+    committed: zLocalKickstartCommitted.optional(),
+    ingest: zLocalKickstartIngest.optional(),
+    kind: zLocalKickstartEventKind,
+    reason: zLocalKickstartCloseReason.optional(),
+    revision: z.int().gte(0),
+    scan: zLocalKickstartScan.optional(),
+    sessionId: z.string().min(1),
+    view: zLocalKickstartSession.optional()
+}).strict();
+
+export type LocalKickstartEvent = z.infer<typeof zLocalKickstartEvent>;
+
+export const zLocalKickstartPatchResult = z.object({
+    overwritten: z.array(zLocalKickstartOverwrite).optional(),
+    revision: z.int().gte(0),
+    stale: z.boolean(),
+    view: zLocalKickstartSession.optional()
+}).strict();
+
+export type LocalKickstartPatchResult = z.infer<typeof zLocalKickstartPatchResult>;
 
 export const zLocalSetting = z.object({
     description: z.string().optional(),
@@ -1325,7 +1745,8 @@ export const zMessageType = z.enum([
     'annotations',
     'project_familiarity',
     'connected',
-    'error'
+    'error',
+    'kickstart'
 ]);
 
 export type MessageType = z.infer<typeof zMessageType>;

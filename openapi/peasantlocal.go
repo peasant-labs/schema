@@ -14,7 +14,7 @@ import (
 // It includes REST routes (/health, /sessions, /config/mock, /shutdown),
 // WebSocket channel message schemas (DashboardPayload, SessionsPayload,
 // SessionDetailPayload, SessionDetailHeaderPayload, TrendsPayload,
-// QualityPayload), and the declared transcript-read payloads
+// QualityPayload, LocalKickstartEvent), and the declared transcript-read payloads
 // (TranscriptSegmentDirectory, TranscriptSegment, TranscriptWindow and their
 // rows) as JSON Schema components.
 func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
@@ -520,6 +520,12 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 
+	// Kickstart setup: eight routes, each unsafe method declaring the shared
+	// cross-origin refusal, plus the live-topic payload.
+	if err := addKickstartOperations(r); err != nil {
+		return nil, err
+	}
+
 	// --- Annotation WebSocket channel payload schema ---
 	// Register AnnotationsPayload as a component so the spec documents
 	// the shape of annotations WebSocket channel messages.
@@ -539,6 +545,17 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 		return nil, err
 	}
 	if err := addComponentSchema(r, "LocalSyncProjectOption", new(schema.LocalSyncProjectOption)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "LocalKickstartEvent", new(schema.LocalKickstartEvent)); err != nil {
+		return nil, err
+	}
+	// The event's closed sets are not operation roots, so the reflector does
+	// not emit them. Register them so the topic payload's refs resolve.
+	if err := addComponentSchema(r, "LocalKickstartEventKind", new(schema.LocalKickstartEventKind)); err != nil {
+		return nil, err
+	}
+	if err := addComponentSchema(r, "LocalKickstartCloseReason", new(schema.LocalKickstartCloseReason)); err != nil {
 		return nil, err
 	}
 

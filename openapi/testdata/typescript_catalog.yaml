@@ -1480,3 +1480,43 @@ types:
   - {go_name: AutoPublishRule, disposition: catalog, component: AutoPublishRule, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishInstallRequest, disposition: catalog, component: AutoPublishInstallRequest, reason: local publishing sign-in and settings contract}
   - {go_name: AutoPublishRuleKind, disposition: catalog, component: AutoPublishRuleKind, reason: local publishing sign-in and settings contract}
+  - {go_name: LocalKickstartScope, disposition: catalog, component: LocalKickstartScope, reason: kickstart answer-set token}
+  - {go_name: LocalKickstartStopKind, disposition: catalog, component: LocalKickstartStopKind, reason: kickstart stop layout token}
+  - {go_name: LocalKickstartFieldKind, disposition: catalog, component: LocalKickstartFieldKind, reason: kickstart field control token}
+  - {go_name: LocalKickstartLineKind, disposition: catalog, component: LocalKickstartLineKind, reason: kickstart typed line token}
+  - {go_name: LocalKickstartNodeKind, disposition: catalog, component: LocalKickstartNodeKind, reason: kickstart forest row kind}
+  - {go_name: LocalKickstartNodeState, disposition: catalog, component: LocalKickstartNodeState, reason: kickstart forest row state}
+  - {go_name: LocalKickstartScanState, disposition: catalog, component: LocalKickstartScanState, reason: kickstart discovery job state}
+  - {go_name: LocalKickstartIngestState, disposition: catalog, component: LocalKickstartIngestState, reason: kickstart import state}
+  - {go_name: LocalKickstartResolution, disposition: catalog, component: LocalKickstartResolution, reason: kickstart conflict side}
+  - {go_name: LocalKickstartNextStep, disposition: catalog, component: LocalKickstartNextStep, reason: kickstart finish action}
+  - {go_name: LocalKickstartDiffLineType, disposition: catalog, component: LocalKickstartDiffLineType, reason: kickstart structured diff line}
+  - {go_name: LocalKickstartEventKind, disposition: catalog, component: LocalKickstartEventKind, reason: kickstart live topic discriminator}
+  - {go_name: LocalKickstartCloseReason, disposition: catalog, component: LocalKickstartCloseReason, reason: kickstart session end reason}
+  - {go_name: LocalKickstartConnectAnswer, disposition: catalog, component: LocalKickstartConnectAnswer, reason: kickstart boundary offer answer}
+  - {go_name: LocalKickstartStatus, disposition: catalog, component: LocalKickstartStatus, reason: kickstart redirect hook}
+  - {go_name: LocalKickstartOpenRequest, disposition: catalog, component: LocalKickstartOpenRequest, reason: kickstart session open body}
+  - {go_name: LocalKickstartGuide, disposition: catalog, component: LocalKickstartGuide, reason: kickstart stop intro and hints}
+  - {go_name: LocalKickstartOption, disposition: catalog, component: LocalKickstartOption, reason: kickstart choice option}
+  - {go_name: LocalKickstartLine, disposition: catalog, component: LocalKickstartLine, reason: kickstart typed line}
+  - {go_name: LocalKickstartSummary, disposition: catalog, component: LocalKickstartSummary, reason: kickstart review explanation}
+  - {go_name: LocalKickstartDiffLine, disposition: catalog, component: LocalKickstartDiffLine, reason: kickstart structured diff line}
+  - {go_name: LocalKickstartHunk, disposition: catalog, component: LocalKickstartHunk, reason: kickstart structured diff hunk}
+  - {go_name: LocalKickstartDiff, disposition: catalog, component: LocalKickstartDiff, reason: kickstart structured config diff}
+  - {go_name: LocalKickstartConnect, disposition: catalog, component: LocalKickstartConnect, reason: kickstart boundary offer}
+  - {go_name: LocalKickstartField, disposition: catalog, component: LocalKickstartField, reason: kickstart answerable control}
+  - {go_name: LocalKickstartStop, disposition: catalog, component: LocalKickstartStop, reason: kickstart wizard stop}
+  - {go_name: LocalKickstartConflict, disposition: catalog, component: LocalKickstartConflict, reason: kickstart mine and theirs row}
+  - {go_name: LocalKickstartScan, disposition: catalog, component: LocalKickstartScan, reason: kickstart discovery progress}
+  - {go_name: LocalKickstartVillage, disposition: catalog, component: LocalKickstartVillage, reason: kickstart sign-in fact}
+  - {go_name: LocalKickstartIngest, disposition: catalog, component: LocalKickstartIngest, reason: kickstart import progress}
+  - {go_name: LocalKickstartSession, disposition: catalog, component: LocalKickstartSession, reason: kickstart session snapshot}
+  - {go_name: LocalKickstartNode, disposition: catalog, component: LocalKickstartNode, reason: kickstart forest row}
+  - {go_name: LocalKickstartTree, disposition: catalog, component: LocalKickstartTree, reason: kickstart whole forest}
+  - {go_name: LocalKickstartPreview, disposition: catalog, component: LocalKickstartPreview, reason: kickstart bounded preview}
+  - {go_name: LocalKickstartAnswers, disposition: catalog, component: LocalKickstartAnswers, reason: kickstart patch body}
+  - {go_name: LocalKickstartOverwrite, disposition: catalog, component: LocalKickstartOverwrite, reason: kickstart stale-write notice}
+  - {go_name: LocalKickstartPatchResult, disposition: catalog, component: LocalKickstartPatchResult, reason: kickstart patch result}
+  - {go_name: LocalKickstartCommitted, disposition: catalog, component: LocalKickstartCommitted, reason: kickstart commit success}
+  - {go_name: LocalKickstartCommitRefusal, disposition: catalog, component: LocalKickstartCommitRefusal, reason: kickstart commit conflict refusal}
+  - {go_name: LocalKickstartEvent, disposition: catalog, component: LocalKickstartEvent, reason: kickstart live topic payload}

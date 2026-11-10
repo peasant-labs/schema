@@ -17,6 +17,10 @@ write_operations:
   - {method: put, path: "/api/v1/settings/auto-publish/{id}", operation_id: saveAutoPublishRule}
   - {method: post, path: "/api/v1/settings/auto-publish/{id}/install", operation_id: installAutoPublishHooks}
   - {method: delete, path: "/api/v1/settings/auto-publish/{id}", operation_id: deleteAutoPublishRule}
+  - {method: post, path: /api/v1/kickstart/sessions, operation_id: openKickstartSession}
+  - {method: patch, path: "/api/v1/kickstart/sessions/{id}", operation_id: patchKickstartSession}
+  - {method: post, path: "/api/v1/kickstart/sessions/{id}/scan", operation_id: scanKickstartSession}
+  - {method: post, path: "/api/v1/kickstart/sessions/{id}/commit", operation_id: commitKickstartSession}
 refusal:
   status: "403"
   component: OpenapiLocalErrorResponse

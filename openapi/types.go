@@ -254,6 +254,26 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"LocalSettingKind", new(schema.LocalSettingKind)}, {"LocalSettingValue", new(schema.LocalSettingValue)},
 		{"LocalSetting", new(schema.LocalSetting)}, {"LocalSettingUpdateRequest", new(schema.LocalSettingUpdateRequest)},
 		{"LocalSettingRefusal", new(schema.LocalSettingRefusal)}, {"LocalSettingsResponse", new(schema.LocalSettingsResponse)},
+		{"LocalKickstartScope", new(schema.LocalKickstartScope)}, {"LocalKickstartStopKind", new(schema.LocalKickstartStopKind)},
+		{"LocalKickstartFieldKind", new(schema.LocalKickstartFieldKind)}, {"LocalKickstartLineKind", new(schema.LocalKickstartLineKind)},
+		{"LocalKickstartNodeKind", new(schema.LocalKickstartNodeKind)}, {"LocalKickstartNodeState", new(schema.LocalKickstartNodeState)},
+		{"LocalKickstartScanState", new(schema.LocalKickstartScanState)}, {"LocalKickstartIngestState", new(schema.LocalKickstartIngestState)},
+		{"LocalKickstartResolution", new(schema.LocalKickstartResolution)}, {"LocalKickstartNextStep", new(schema.LocalKickstartNextStep)},
+		{"LocalKickstartDiffLineType", new(schema.LocalKickstartDiffLineType)}, {"LocalKickstartEventKind", new(schema.LocalKickstartEventKind)},
+		{"LocalKickstartCloseReason", new(schema.LocalKickstartCloseReason)}, {"LocalKickstartConnectAnswer", new(schema.LocalKickstartConnectAnswer)},
+		{"LocalKickstartStatus", new(schema.LocalKickstartStatus)}, {"LocalKickstartOpenRequest", new(schema.LocalKickstartOpenRequest)},
+		{"LocalKickstartGuide", new(schema.LocalKickstartGuide)}, {"LocalKickstartOption", new(schema.LocalKickstartOption)},
+		{"LocalKickstartLine", new(schema.LocalKickstartLine)}, {"LocalKickstartSummary", new(schema.LocalKickstartSummary)},
+		{"LocalKickstartDiffLine", new(schema.LocalKickstartDiffLine)}, {"LocalKickstartHunk", new(schema.LocalKickstartHunk)},
+		{"LocalKickstartDiff", new(schema.LocalKickstartDiff)}, {"LocalKickstartConnect", new(schema.LocalKickstartConnect)},
+		{"LocalKickstartField", new(schema.LocalKickstartField)}, {"LocalKickstartStop", new(schema.LocalKickstartStop)},
+		{"LocalKickstartConflict", new(schema.LocalKickstartConflict)}, {"LocalKickstartScan", new(schema.LocalKickstartScan)},
+		{"LocalKickstartVillage", new(schema.LocalKickstartVillage)}, {"LocalKickstartIngest", new(schema.LocalKickstartIngest)},
+		{"LocalKickstartSession", new(schema.LocalKickstartSession)}, {"LocalKickstartNode", new(schema.LocalKickstartNode)},
+		{"LocalKickstartTree", new(schema.LocalKickstartTree)}, {"LocalKickstartPreview", new(schema.LocalKickstartPreview)},
+		{"LocalKickstartAnswers", new(schema.LocalKickstartAnswers)}, {"LocalKickstartOverwrite", new(schema.LocalKickstartOverwrite)},
+		{"LocalKickstartPatchResult", new(schema.LocalKickstartPatchResult)}, {"LocalKickstartCommitted", new(schema.LocalKickstartCommitted)},
+		{"LocalKickstartCommitRefusal", new(schema.LocalKickstartCommitRefusal)}, {"LocalKickstartEvent", new(schema.LocalKickstartEvent)},
 		{"AutoPublishEvent", new(schema.AutoPublishEvent)}, {"AutoPublishHookStatus", new(schema.AutoPublishHookStatus)},
 		{"AutoPublishHookRemedy", new(schema.AutoPublishHookRemedy)}, {"AutoPublishHook", new(schema.AutoPublishHook)},
 		{"AutoPublishRepository", new(schema.AutoPublishRepository)}, {"AutoPublishRuleKind", new(schema.AutoPublishRuleKind)}, {"AutoPublishRuleRequest", new(schema.AutoPublishRuleRequest)},
@@ -598,8 +618,10 @@ func addRESTOp(r *openapi31.Reflector, method, path, opID, desc string, tags []s
 // this catalog is intentionally open so a producer can add a field without
 // breaking every consumer. Only a request body whose whole purpose is to say
 // exactly what changed belongs here, where an unrecognized field means the
-// caller asked for something the server will silently drop.
-var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "AuthoritativeClientInfo", "ScryCheckRequest", "ScryTranscriptRecord", "ScryCheckResponse", "ScryHealthResponse", "VillageTranscriptIntegrity", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation", "SyncPushRequest", "SyncPushCollectives", "LocalSettingUpdateRequest", "AutoPublishRuleRequest", "AutoPublishInstallRequest"}
+// caller asked for something the server will silently drop. Kickstart is an
+// explicit exception: its views are closed, so additive response fields are
+// breaking changes for consumers pinned to this contract.
+var strictComponents = []string{"TranscriptUpdateRequest", "AuthoritativePublishRequest", "AuthoritativeSessionIdentity", "AuthoritativeModelInfo", "AuthoritativeTimestampInfo", "AuthoritativeSourceInfo", "AuthoritativeCommitInfo", "AuthoritativeGitContext", "AuthoritativeProjectContext", "AuthoritativeSessionStats", "AuthoritativeQualityMetrics", "AuthoritativeSessionEntry", "AuthoritativeSubagentRef", "AuthoritativeDiagnosticEntry", "AuthoritativeDiagnosticsInfo", "AuthoritativeClientInfo", "ScryCheckRequest", "ScryTranscriptRecord", "ScryCheckResponse", "ScryHealthResponse", "VillageTranscriptIntegrity", "CanonicalPublishGitContext", "CanonicalPublishReplacement", "CanonicalPublishOperation", "PublishLicenseOperation", "PublishAssociationOperation", "PublishAppliedState", "PublishNormalizedValues", "AuthoritativePublishResponse", "PublishedAssociation", "OwnerTranscriptUpdateRequest", "OwnerTranscriptUpdateResponse", "UICapabilitiesResponse", "PublicSourceAnchor", "SessionRelationship", "ContentProvenance", "EarlierHistorySection", "SessionRelationshipNavigation", "SyncPushRequest", "SyncPushCollectives", "LocalSettingUpdateRequest", "AutoPublishRuleRequest", "AutoPublishInstallRequest", "LocalKickstartStatus", "LocalKickstartOpenRequest", "LocalKickstartGuide", "LocalKickstartOption", "LocalKickstartLine", "LocalKickstartSummary", "LocalKickstartDiffLine", "LocalKickstartHunk", "LocalKickstartDiff", "LocalKickstartConnect", "LocalKickstartField", "LocalKickstartStop", "LocalKickstartConflict", "LocalKickstartScan", "LocalKickstartVillage", "LocalKickstartIngest", "LocalKickstartSession", "LocalKickstartNode", "LocalKickstartTree", "LocalKickstartPreview", "LocalKickstartAnswers", "LocalKickstartOverwrite", "LocalKickstartPatchResult", "LocalKickstartCommitted", "LocalKickstartCommitRefusal", "LocalKickstartEvent"}
 
 var strictNullableProperties = map[string]map[string]struct{}{
 	"AuthoritativeTimestampInfo":    {"ingested": {}},

@@ -103,6 +103,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/kickstart/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Open or join the live session for scope. full is the wizard and selection is the selection page. The same scope returns the same id and revision; the other scope returns a different session and leaves the first untouched. The response is the reconnect snapshot, so the page needs no second read. A scope other than full or selection is 400 and changes nothing. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["openKickstartSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kickstart/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read one session snapshot for reconnect. The forest is not in this body; load it from the tree route. 404 when no session has this id. */
+        get: operations["getKickstartSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Apply one stop's answers, the tree's selected ids, conflict resolutions, or the connect offer. revision is the session revision the caller last rendered. A stale write is applied and reported in the body; it is not a separate status. A stale result may carry no overwritten entries when no answered field changed after that revision. 400 when the body is not valid, and 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        patch: operations["patchKickstartSession"];
+        trace?: never;
+    };
+    "/api/v1/kickstart/sessions/{id}/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Recompute, merge, swap the configuration, write retention, and start the import. 409 returns the mine/theirs rows and writes nothing. The success body carries the finish actions and the ingest state; it does not install a hook and has no reset control. 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["commitKickstartSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kickstart/sessions/{id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Rescan the filesystem for one session. Progress is pushed on the kickstart topic; this response is the scan state at accept. The forest is not in the response. 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        post: operations["scanKickstartSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kickstart/sessions/{id}/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the whole selection forest for one session. Each node carries the server-computed state. locked is a boolean, not a fourth state. The response has no page, cursor, or limit. 404 when no session has this id. */
+        get: operations["getKickstartTree"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the bounded typed preview lines for one forest row. 404 when the session or the row does not exist. */
+        get: operations["getKickstartPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kickstart/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the first-run redirect hook. configured is the only status flag. activeSessionId, when present, is the one full-scope session id; it is omitted when that session is not open. The response is not a session directory and has no per-scope map. */
+        get: operations["getKickstartStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/map/{projectHash}": {
         parameters: {
             query?: never;
@@ -733,6 +853,27 @@ export interface components {
         BestiaryHarness: Schema.Harness;
         ClientMessage: Schema.ClientMessage;
         DashboardPayload: Schema.DashboardPayload;
+        /**
+         * Kickstart Close Reason
+         * @description Why a kickstart session ended: committed or expired
+         * @example committed
+         * @example expired
+         * @enum {string}
+         */
+        LocalKickstartCloseReason: Schema.LocalKickstartCloseReason;
+        LocalKickstartEvent: Schema.LocalKickstartEvent;
+        /**
+         * Kickstart Event Kind
+         * @description Live kickstart topic discriminator. One event carries one session id
+         * @example session
+         * @example answers
+         * @example conflicts
+         * @example scan
+         * @example ingest
+         * @example closed
+         * @enum {string}
+         */
+        LocalKickstartEventKind: Schema.LocalKickstartEventKind;
         LocalSessionPage: Schema.LocalSessionPage;
         LocalSyncProjectOption: Schema.LocalSyncProjectOption;
         LocalSyncProjectOptions: Schema.LocalSyncProjectOptions;
@@ -872,6 +1013,7 @@ export interface components {
          * @example quality
          * @example annotations
          * @example project_familiarity
+         * @example kickstart
          * @enum {string}
          */
         SchemaChannelTopic: Schema.ChannelTopic;
@@ -1175,6 +1317,146 @@ export interface components {
         SchemaLocalContributionHistoryResponse: Schema.LocalContributionHistoryResponse;
         SchemaLocalContributionTraversalConflict: Schema.LocalContributionTraversalConflict;
         SchemaLocalHelperMembersPayload: Schema.LocalHelperMembersPayload;
+        SchemaLocalKickstartAnswers: Schema.LocalKickstartAnswers;
+        SchemaLocalKickstartCommitRefusal: Schema.LocalKickstartCommitRefusal;
+        SchemaLocalKickstartCommitted: Schema.LocalKickstartCommitted;
+        SchemaLocalKickstartConflict: Schema.LocalKickstartConflict;
+        SchemaLocalKickstartConnect: Schema.LocalKickstartConnect;
+        /**
+         * Kickstart Connect Answer
+         * @description Boundary offer answer: accept or skip. accept requires village to be connected
+         * @example accept
+         * @example skip
+         * @enum {string}
+         */
+        SchemaLocalKickstartConnectAnswer: Schema.LocalKickstartConnectAnswer;
+        SchemaLocalKickstartDiff: Schema.LocalKickstartDiff;
+        SchemaLocalKickstartDiffLine: Schema.LocalKickstartDiffLine;
+        /**
+         * Kickstart Diff Line Type
+         * @description Structured config-diff line: add, del, or ctx
+         * @example add
+         * @example del
+         * @example ctx
+         * @enum {string}
+         */
+        SchemaLocalKickstartDiffLineType: Schema.LocalKickstartDiffLineType;
+        SchemaLocalKickstartField: Schema.LocalKickstartField;
+        /**
+         * Kickstart Field Kind
+         * @description Control shape of one kickstart field
+         * @example toggle
+         * @example choice
+         * @example action
+         * @example tree
+         * @example notice
+         * @enum {string}
+         */
+        SchemaLocalKickstartFieldKind: Schema.LocalKickstartFieldKind;
+        SchemaLocalKickstartGuide: Schema.LocalKickstartGuide;
+        SchemaLocalKickstartHunk: Schema.LocalKickstartHunk;
+        SchemaLocalKickstartIngest: Schema.LocalKickstartIngest;
+        /**
+         * Kickstart Ingest State
+         * @description Import state pushed on the kickstart topic
+         * @example idle
+         * @example running
+         * @example busy
+         * @example failed
+         * @enum {string}
+         */
+        SchemaLocalKickstartIngestState: Schema.LocalKickstartIngestState;
+        SchemaLocalKickstartLine: Schema.LocalKickstartLine;
+        /**
+         * Kickstart Line Kind
+         * @description Typed preview or example line
+         * @example text
+         * @example label
+         * @example before
+         * @example after
+         * @example spacer
+         * @enum {string}
+         */
+        SchemaLocalKickstartLineKind: Schema.LocalKickstartLineKind;
+        /**
+         * Kickstart Next Step
+         * @description One finish action. auto-publish-settings links to the settings section; it does not install a hook
+         * @example config
+         * @example web-start
+         * @example village-login
+         * @example village-push
+         * @example auto-publish-settings
+         * @enum {string}
+         */
+        SchemaLocalKickstartNextStep: Schema.LocalKickstartNextStep;
+        SchemaLocalKickstartNode: Schema.LocalKickstartNode;
+        /**
+         * Kickstart Node Kind
+         * @description Row kind in the selection forest
+         * @example project
+         * @example group
+         * @example branch
+         * @example session
+         * @enum {string}
+         */
+        SchemaLocalKickstartNodeKind: Schema.LocalKickstartNodeKind;
+        /**
+         * Kickstart Node State
+         * @description Server-computed selection of one forest row: none, some, or all. locked is a boolean, not a state
+         * @example none
+         * @example some
+         * @example all
+         * @enum {string}
+         */
+        SchemaLocalKickstartNodeState: Schema.LocalKickstartNodeState;
+        SchemaLocalKickstartOpenRequest: Schema.LocalKickstartOpenRequest;
+        SchemaLocalKickstartOption: Schema.LocalKickstartOption;
+        SchemaLocalKickstartOverwrite: Schema.LocalKickstartOverwrite;
+        SchemaLocalKickstartPatchResult: Schema.LocalKickstartPatchResult;
+        SchemaLocalKickstartPreview: Schema.LocalKickstartPreview;
+        /**
+         * Kickstart Resolution
+         * @description Which side of one conflict row to keep: mine is the draft, theirs is the file
+         * @example mine
+         * @example theirs
+         * @enum {string}
+         */
+        SchemaLocalKickstartResolution: Schema.LocalKickstartResolution;
+        SchemaLocalKickstartScan: Schema.LocalKickstartScan;
+        /**
+         * Kickstart Scan State
+         * @description Discovery job state pushed on the kickstart topic
+         * @example idle
+         * @example running
+         * @example done
+         * @example error
+         * @enum {string}
+         */
+        SchemaLocalKickstartScanState: Schema.LocalKickstartScanState;
+        /**
+         * Kickstart Scope
+         * @description Answer set a kickstart session collects: the whole wizard, or the selection page
+         * @example full
+         * @example selection
+         * @enum {string}
+         */
+        SchemaLocalKickstartScope: Schema.LocalKickstartScope;
+        SchemaLocalKickstartSession: Schema.LocalKickstartSession;
+        SchemaLocalKickstartStatus: Schema.LocalKickstartStatus;
+        SchemaLocalKickstartStop: Schema.LocalKickstartStop;
+        /**
+         * Kickstart Stop Kind
+         * @description Layout of one kickstart stop
+         * @example connection
+         * @example config
+         * @example review
+         * @example ingest
+         * @enum {string}
+         */
+        SchemaLocalKickstartStopKind: Schema.LocalKickstartStopKind;
+        SchemaLocalKickstartSummary: Schema.LocalKickstartSummary;
+        SchemaLocalKickstartTree: Schema.LocalKickstartTree;
+        SchemaLocalKickstartVillage: Schema.LocalKickstartVillage;
         SchemaLocalOperationDiagnostic: Schema.LocalOperationDiagnostic;
         /**
          * Local Operation Diagnostic Outcome
@@ -1266,6 +1548,7 @@ export interface components {
          * @example project_familiarity
          * @example connected
          * @example error
+         * @example kickstart
          * @enum {string}
          */
         SchemaMessageType: Schema.MessageType;
@@ -2027,6 +2310,311 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaHealthResponse"];
+                };
+            };
+        };
+    };
+    openKickstartSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaLocalKickstartOpenRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartSession"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getKickstartSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartSession"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    patchKickstartSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaLocalKickstartAnswers"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartPatchResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    commitKickstartSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartCommitted"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartCommitRefusal"];
+                };
+            };
+        };
+    };
+    scanKickstartSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartScan"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getKickstartTree: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartTree"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getKickstartPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Kickstart session id */
+                id: string;
+                /** @description Forest row id */
+                nodeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartPreview"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    getKickstartStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartStatus"];
                 };
             };
         };

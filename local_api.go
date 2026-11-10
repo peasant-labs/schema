@@ -1580,6 +1580,7 @@ const (
 	MsgProjectFamiliarity MessageType = "project_familiarity"
 	MsgConnected          MessageType = "connected"
 	MsgError              MessageType = "error"
+	MsgKickstart          MessageType = "kickstart"
 )
 
 // AllMessageTypes is the canonical list of WebSocket message discriminators.
@@ -1595,6 +1596,7 @@ var AllMessageTypes = []MessageType{
 	MsgProjectFamiliarity,
 	MsgConnected,
 	MsgError,
+	MsgKickstart,
 }
 
 // IsValid reports whether m is a defined WebSocket message discriminator.
@@ -1630,6 +1632,7 @@ const (
 	TopicQuality            ChannelTopic = "quality"
 	TopicAnnotations        ChannelTopic = "annotations"
 	TopicProjectFamiliarity ChannelTopic = "project_familiarity"
+	TopicKickstart          ChannelTopic = "kickstart"
 )
 
 // AllChannelTopics is the canonical list of subscribable WebSocket topics.
@@ -1641,6 +1644,7 @@ var AllChannelTopics = []ChannelTopic{
 	TopicQuality,
 	TopicAnnotations,
 	TopicProjectFamiliarity,
+	TopicKickstart,
 }
 
 // IsValid reports whether t is a defined WebSocket channel topic.

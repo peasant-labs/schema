@@ -7,7 +7,23 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.35.0 and Types 0.47.0 declare the kickstart setup surface.
+  `GET /api/v1/kickstart/status` returns `configured` and, when a full-scope
+  session is open, `activeSessionId`. `POST /api/v1/kickstart/sessions` opens
+  or joins the session for `scope` (`full` or `selection`). `GET` and `PATCH
+  /api/v1/kickstart/sessions/{id}` read and update that snapshot. `GET
+  .../tree` returns the whole forest with each node's server-computed state.
+  `GET .../tree/{nodeId}/preview` returns bounded typed lines. `POST .../scan`
+  and `POST .../commit` rescan and save. Every non-GET route declares the
+  shared cross-origin 403. A stale patch may replace no field, so an empty
+  overwritten list is valid. The `kickstart` WebSocket topic carries
+  `LocalKickstartEvent`. Village connection state may omit `userId`, even
+  when connected, matching the local authentication response. Node state is
+  `none`, `some`, or `all`; `locked` is
+  a boolean, not a fourth state. No kickstart payload is paged.
+
 - Types 0.46.0, Village API 0.38.0, and Local API 0.34.0 recognize six additional harness identities: grok-build, devin-desktop, cline, kiro, kiro-cli, kiro-crew. The prior spec versions and both 0.37.0 request schemas are frozen in the retirement registry.
+
 - Local API 0.33.0 declares `GET /api/v1/attachments/{ref}`. `ref` is a
   lowercase 64-hex sha256. A matching stored image answers 200 as `image/png`
   or `image/jpeg` with `Cache-Control: public, max-age=31536000, immutable`.
@@ -16,6 +32,7 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   row whose file is missing, is 404 with JSON error code
   `attachment_not_found`. The route is a local read of bytes already stored on
   this computer. It is not a publication route.
+
 - Local API 0.32.0 declares the transcript segment reads. `GET
   /api/v1/sessions/{id}/transcript/segments` serves the
   `TranscriptSegmentDirectory` global index, one ref per segment with the cut's

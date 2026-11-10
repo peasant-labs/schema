@@ -107,6 +107,20 @@ import { zSyncLogoutStatus, type SyncLogoutStatus as SyncLogoutStatusContract } 
 import { zLocalPublicationState, type LocalPublicationState as LocalPublicationStateContract } from "./contract/zod.gen.js";
 import { zLocalCollectiveSuggestionReason, type LocalCollectiveSuggestionReason as LocalCollectiveSuggestionReasonContract } from "./contract/zod.gen.js";
 import { zLocalSettingKind, type LocalSettingKind as LocalSettingKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartScope, type LocalKickstartScope as LocalKickstartScopeContract } from "./contract/zod.gen.js";
+import { zLocalKickstartStopKind, type LocalKickstartStopKind as LocalKickstartStopKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartFieldKind, type LocalKickstartFieldKind as LocalKickstartFieldKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartLineKind, type LocalKickstartLineKind as LocalKickstartLineKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartNodeKind, type LocalKickstartNodeKind as LocalKickstartNodeKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartNodeState, type LocalKickstartNodeState as LocalKickstartNodeStateContract } from "./contract/zod.gen.js";
+import { zLocalKickstartScanState, type LocalKickstartScanState as LocalKickstartScanStateContract } from "./contract/zod.gen.js";
+import { zLocalKickstartIngestState, type LocalKickstartIngestState as LocalKickstartIngestStateContract } from "./contract/zod.gen.js";
+import { zLocalKickstartResolution, type LocalKickstartResolution as LocalKickstartResolutionContract } from "./contract/zod.gen.js";
+import { zLocalKickstartNextStep, type LocalKickstartNextStep as LocalKickstartNextStepContract } from "./contract/zod.gen.js";
+import { zLocalKickstartDiffLineType, type LocalKickstartDiffLineType as LocalKickstartDiffLineTypeContract } from "./contract/zod.gen.js";
+import { zLocalKickstartEventKind, type LocalKickstartEventKind as LocalKickstartEventKindContract } from "./contract/zod.gen.js";
+import { zLocalKickstartCloseReason, type LocalKickstartCloseReason as LocalKickstartCloseReasonContract } from "./contract/zod.gen.js";
+import { zLocalKickstartConnectAnswer, type LocalKickstartConnectAnswer as LocalKickstartConnectAnswerContract } from "./contract/zod.gen.js";
 import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
@@ -464,8 +478,9 @@ export const ChannelTopic = Object.freeze({
   Quality: zChannelTopic.parse("quality"),
   Annotations: zChannelTopic.parse("annotations"),
   ProjectFamiliarity: zChannelTopic.parse("project_familiarity"),
+  Kickstart: zChannelTopic.parse("kickstart"),
 } as const);
-export const AllChannelTopics = Object.freeze([ChannelTopic.Dashboard, ChannelTopic.Sessions, ChannelTopic.SessionDetail, ChannelTopic.Trends, ChannelTopic.Quality, ChannelTopic.Annotations, ChannelTopic.ProjectFamiliarity]) as readonly ChannelTopic[];
+export const AllChannelTopics = Object.freeze([ChannelTopic.Dashboard, ChannelTopic.Sessions, ChannelTopic.SessionDetail, ChannelTopic.Trends, ChannelTopic.Quality, ChannelTopic.Annotations, ChannelTopic.ProjectFamiliarity, ChannelTopic.Kickstart]) as readonly ChannelTopic[];
 export function isChannelTopic(value: unknown): value is ChannelTopic {
   return zChannelTopic.safeParse(value).success;
 }
@@ -679,8 +694,9 @@ export const MessageType = Object.freeze({
   ProjectFamiliarity: zMessageType.parse("project_familiarity"),
   Connected: zMessageType.parse("connected"),
   Error: zMessageType.parse("error"),
+  Kickstart: zMessageType.parse("kickstart"),
 } as const);
-export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error]) as readonly MessageType[];
+export const AllMessageTypes = Object.freeze([MessageType.Subscribe, MessageType.Unsubscribe, MessageType.Dashboard, MessageType.Sessions, MessageType.SessionDetail, MessageType.Trends, MessageType.Quality, MessageType.Annotations, MessageType.ProjectFamiliarity, MessageType.Connected, MessageType.Error, MessageType.Kickstart]) as readonly MessageType[];
 export function isMessageType(value: unknown): value is MessageType {
   return zMessageType.safeParse(value).success;
 }
@@ -1406,6 +1422,169 @@ export const LocalSettingKind = Object.freeze({
 export const AllLocalSettingKinds = Object.freeze([LocalSettingKind.Boolean, LocalSettingKind.Integer, LocalSettingKind.String, LocalSettingKind.StringList, LocalSettingKind.Choice, LocalSettingKind.Structured]) as readonly LocalSettingKind[];
 export function isLocalSettingKind(value: unknown): value is LocalSettingKind {
   return zLocalSettingKind.safeParse(value).success;
+}
+
+export type LocalKickstartScope = LocalKickstartScopeContract;
+export const LocalKickstartScope = Object.freeze({
+  Full: zLocalKickstartScope.parse("full"),
+  Selection: zLocalKickstartScope.parse("selection"),
+} as const);
+export const AllLocalKickstartScopes = Object.freeze([LocalKickstartScope.Full, LocalKickstartScope.Selection]) as readonly LocalKickstartScope[];
+export function isLocalKickstartScope(value: unknown): value is LocalKickstartScope {
+  return zLocalKickstartScope.safeParse(value).success;
+}
+
+export type LocalKickstartStopKind = LocalKickstartStopKindContract;
+export const LocalKickstartStopKind = Object.freeze({
+  Connection: zLocalKickstartStopKind.parse("connection"),
+  Config: zLocalKickstartStopKind.parse("config"),
+  Review: zLocalKickstartStopKind.parse("review"),
+  Ingest: zLocalKickstartStopKind.parse("ingest"),
+} as const);
+export const AllLocalKickstartStopKinds = Object.freeze([LocalKickstartStopKind.Connection, LocalKickstartStopKind.Config, LocalKickstartStopKind.Review, LocalKickstartStopKind.Ingest]) as readonly LocalKickstartStopKind[];
+export function isLocalKickstartStopKind(value: unknown): value is LocalKickstartStopKind {
+  return zLocalKickstartStopKind.safeParse(value).success;
+}
+
+export type LocalKickstartFieldKind = LocalKickstartFieldKindContract;
+export const LocalKickstartFieldKind = Object.freeze({
+  Toggle: zLocalKickstartFieldKind.parse("toggle"),
+  Choice: zLocalKickstartFieldKind.parse("choice"),
+  Action: zLocalKickstartFieldKind.parse("action"),
+  Tree: zLocalKickstartFieldKind.parse("tree"),
+  Notice: zLocalKickstartFieldKind.parse("notice"),
+} as const);
+export const AllLocalKickstartFieldKinds = Object.freeze([LocalKickstartFieldKind.Toggle, LocalKickstartFieldKind.Choice, LocalKickstartFieldKind.Action, LocalKickstartFieldKind.Tree, LocalKickstartFieldKind.Notice]) as readonly LocalKickstartFieldKind[];
+export function isLocalKickstartFieldKind(value: unknown): value is LocalKickstartFieldKind {
+  return zLocalKickstartFieldKind.safeParse(value).success;
+}
+
+export type LocalKickstartLineKind = LocalKickstartLineKindContract;
+export const LocalKickstartLineKind = Object.freeze({
+  Text: zLocalKickstartLineKind.parse("text"),
+  Label: zLocalKickstartLineKind.parse("label"),
+  Before: zLocalKickstartLineKind.parse("before"),
+  After: zLocalKickstartLineKind.parse("after"),
+  Spacer: zLocalKickstartLineKind.parse("spacer"),
+} as const);
+export const AllLocalKickstartLineKinds = Object.freeze([LocalKickstartLineKind.Text, LocalKickstartLineKind.Label, LocalKickstartLineKind.Before, LocalKickstartLineKind.After, LocalKickstartLineKind.Spacer]) as readonly LocalKickstartLineKind[];
+export function isLocalKickstartLineKind(value: unknown): value is LocalKickstartLineKind {
+  return zLocalKickstartLineKind.safeParse(value).success;
+}
+
+export type LocalKickstartNodeKind = LocalKickstartNodeKindContract;
+export const LocalKickstartNodeKind = Object.freeze({
+  Project: zLocalKickstartNodeKind.parse("project"),
+  Group: zLocalKickstartNodeKind.parse("group"),
+  Branch: zLocalKickstartNodeKind.parse("branch"),
+  Session: zLocalKickstartNodeKind.parse("session"),
+} as const);
+export const AllLocalKickstartNodeKinds = Object.freeze([LocalKickstartNodeKind.Project, LocalKickstartNodeKind.Group, LocalKickstartNodeKind.Branch, LocalKickstartNodeKind.Session]) as readonly LocalKickstartNodeKind[];
+export function isLocalKickstartNodeKind(value: unknown): value is LocalKickstartNodeKind {
+  return zLocalKickstartNodeKind.safeParse(value).success;
+}
+
+export type LocalKickstartNodeState = LocalKickstartNodeStateContract;
+export const LocalKickstartNodeState = Object.freeze({
+  None: zLocalKickstartNodeState.parse("none"),
+  Some: zLocalKickstartNodeState.parse("some"),
+  All: zLocalKickstartNodeState.parse("all"),
+} as const);
+export const AllLocalKickstartNodeStates = Object.freeze([LocalKickstartNodeState.None, LocalKickstartNodeState.Some, LocalKickstartNodeState.All]) as readonly LocalKickstartNodeState[];
+export function isLocalKickstartNodeState(value: unknown): value is LocalKickstartNodeState {
+  return zLocalKickstartNodeState.safeParse(value).success;
+}
+
+export type LocalKickstartScanState = LocalKickstartScanStateContract;
+export const LocalKickstartScanState = Object.freeze({
+  Idle: zLocalKickstartScanState.parse("idle"),
+  Running: zLocalKickstartScanState.parse("running"),
+  Done: zLocalKickstartScanState.parse("done"),
+  Error: zLocalKickstartScanState.parse("error"),
+} as const);
+export const AllLocalKickstartScanStates = Object.freeze([LocalKickstartScanState.Idle, LocalKickstartScanState.Running, LocalKickstartScanState.Done, LocalKickstartScanState.Error]) as readonly LocalKickstartScanState[];
+export function isLocalKickstartScanState(value: unknown): value is LocalKickstartScanState {
+  return zLocalKickstartScanState.safeParse(value).success;
+}
+
+export type LocalKickstartIngestState = LocalKickstartIngestStateContract;
+export const LocalKickstartIngestState = Object.freeze({
+  Idle: zLocalKickstartIngestState.parse("idle"),
+  Running: zLocalKickstartIngestState.parse("running"),
+  Busy: zLocalKickstartIngestState.parse("busy"),
+  Failed: zLocalKickstartIngestState.parse("failed"),
+} as const);
+export const AllLocalKickstartIngestStates = Object.freeze([LocalKickstartIngestState.Idle, LocalKickstartIngestState.Running, LocalKickstartIngestState.Busy, LocalKickstartIngestState.Failed]) as readonly LocalKickstartIngestState[];
+export function isLocalKickstartIngestState(value: unknown): value is LocalKickstartIngestState {
+  return zLocalKickstartIngestState.safeParse(value).success;
+}
+
+export type LocalKickstartResolution = LocalKickstartResolutionContract;
+export const LocalKickstartResolution = Object.freeze({
+  Mine: zLocalKickstartResolution.parse("mine"),
+  Theirs: zLocalKickstartResolution.parse("theirs"),
+} as const);
+export const AllLocalKickstartResolutions = Object.freeze([LocalKickstartResolution.Mine, LocalKickstartResolution.Theirs]) as readonly LocalKickstartResolution[];
+export function isLocalKickstartResolution(value: unknown): value is LocalKickstartResolution {
+  return zLocalKickstartResolution.safeParse(value).success;
+}
+
+export type LocalKickstartNextStep = LocalKickstartNextStepContract;
+export const LocalKickstartNextStep = Object.freeze({
+  Config: zLocalKickstartNextStep.parse("config"),
+  WebStart: zLocalKickstartNextStep.parse("web-start"),
+  VillageLogin: zLocalKickstartNextStep.parse("village-login"),
+  VillagePush: zLocalKickstartNextStep.parse("village-push"),
+  AutoPublish: zLocalKickstartNextStep.parse("auto-publish-settings"),
+} as const);
+export const AllLocalKickstartNextSteps = Object.freeze([LocalKickstartNextStep.Config, LocalKickstartNextStep.WebStart, LocalKickstartNextStep.VillageLogin, LocalKickstartNextStep.VillagePush, LocalKickstartNextStep.AutoPublish]) as readonly LocalKickstartNextStep[];
+export function isLocalKickstartNextStep(value: unknown): value is LocalKickstartNextStep {
+  return zLocalKickstartNextStep.safeParse(value).success;
+}
+
+export type LocalKickstartDiffLineType = LocalKickstartDiffLineTypeContract;
+export const LocalKickstartDiffLineType = Object.freeze({
+  Add: zLocalKickstartDiffLineType.parse("add"),
+  Del: zLocalKickstartDiffLineType.parse("del"),
+  Ctx: zLocalKickstartDiffLineType.parse("ctx"),
+} as const);
+export const AllLocalKickstartDiffLineTypes = Object.freeze([LocalKickstartDiffLineType.Add, LocalKickstartDiffLineType.Del, LocalKickstartDiffLineType.Ctx]) as readonly LocalKickstartDiffLineType[];
+export function isLocalKickstartDiffLineType(value: unknown): value is LocalKickstartDiffLineType {
+  return zLocalKickstartDiffLineType.safeParse(value).success;
+}
+
+export type LocalKickstartEventKind = LocalKickstartEventKindContract;
+export const LocalKickstartEventKind = Object.freeze({
+  Session: zLocalKickstartEventKind.parse("session"),
+  Answers: zLocalKickstartEventKind.parse("answers"),
+  Conflicts: zLocalKickstartEventKind.parse("conflicts"),
+  Scan: zLocalKickstartEventKind.parse("scan"),
+  Ingest: zLocalKickstartEventKind.parse("ingest"),
+  Closed: zLocalKickstartEventKind.parse("closed"),
+} as const);
+export const AllLocalKickstartEventKinds = Object.freeze([LocalKickstartEventKind.Session, LocalKickstartEventKind.Answers, LocalKickstartEventKind.Conflicts, LocalKickstartEventKind.Scan, LocalKickstartEventKind.Ingest, LocalKickstartEventKind.Closed]) as readonly LocalKickstartEventKind[];
+export function isLocalKickstartEventKind(value: unknown): value is LocalKickstartEventKind {
+  return zLocalKickstartEventKind.safeParse(value).success;
+}
+
+export type LocalKickstartCloseReason = LocalKickstartCloseReasonContract;
+export const LocalKickstartCloseReason = Object.freeze({
+  Committed: zLocalKickstartCloseReason.parse("committed"),
+  Expired: zLocalKickstartCloseReason.parse("expired"),
+} as const);
+export const AllLocalKickstartCloseReasons = Object.freeze([LocalKickstartCloseReason.Committed, LocalKickstartCloseReason.Expired]) as readonly LocalKickstartCloseReason[];
+export function isLocalKickstartCloseReason(value: unknown): value is LocalKickstartCloseReason {
+  return zLocalKickstartCloseReason.safeParse(value).success;
+}
+
+export type LocalKickstartConnectAnswer = LocalKickstartConnectAnswerContract;
+export const LocalKickstartConnectAnswer = Object.freeze({
+  Accept: zLocalKickstartConnectAnswer.parse("accept"),
+  Skip: zLocalKickstartConnectAnswer.parse("skip"),
+} as const);
+export const AllLocalKickstartConnectAnswers = Object.freeze([LocalKickstartConnectAnswer.Accept, LocalKickstartConnectAnswer.Skip]) as readonly LocalKickstartConnectAnswer[];
+export function isLocalKickstartConnectAnswer(value: unknown): value is LocalKickstartConnectAnswer {
+  return zLocalKickstartConnectAnswer.safeParse(value).success;
 }
 
 export type AutoPublishEvent = AutoPublishEventContract;
