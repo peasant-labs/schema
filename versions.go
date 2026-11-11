@@ -258,7 +258,14 @@ const (
 	// turnCount was re-documented in folded-turn units (additive = minor bump).
 	// Bumped to 0.38.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	PeasantLocalAPIVersion = "0.38.0"
+	// Bumped to 0.39.0 on 2026-11-12 when the local owner and claim contract
+	// entered the document: the local owner status read, the claim and decline
+	// controls, the typed claim prompt state and claim result, the bounded claim
+	// log with ownership counts, the role-neutral artifact identity projection
+	// and adapter version on local read rows, and the local annotation row
+	// envelope. No Village route, publish type, or pull-manifest field changes
+	// (additive = minor bump).
+	PeasantLocalAPIVersion = "0.39.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -380,5 +387,9 @@ const (
 	// re-documented folded-turn turnCount fields (additive = minor bump).
 	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
 	// antigravity-cli and antigravity-ide identities (additive = minor bump).
-	TypesVersion = "0.50.0"
+	// Bumped to 0.51.0 on 2026-11-12 when the local owner, claim source, claim
+	// entry, claim request and result, prompt state and prompt status, ownership
+	// counts, artifact identity kind and projection, and local annotation row
+	// entered the catalog (additive = minor bump).
+	TypesVersion = "0.51.0"
 )

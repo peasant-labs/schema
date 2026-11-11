@@ -1134,6 +1134,33 @@ export const zLicense = z.enum([
 export type License = z.infer<typeof zLicense>;
 
 /**
+ * Local Artifact Identity Kind
+ *
+ * Whose artifact a local read describes: this data directory's local owner, the Village account that claimed it, a foreign pull-manifest owner, or an owner that is projected but withheld
+ */
+export const zLocalArtifactIdentityKind = z.enum([
+    'local',
+    'village',
+    'foreign',
+    'unknown'
+]);
+
+export type LocalArtifactIdentityKind = z.infer<typeof zLocalArtifactIdentityKind>;
+
+/**
+ * Local Claim Source
+ *
+ * Why one claim entry exists: an explicit command, the sign-in prompt, or an automatic claim of newly stored sessions
+ */
+export const zLocalClaimSource = z.enum([
+    'manual',
+    'sign_in_prompt',
+    'automatic'
+]);
+
+export type LocalClaimSource = z.infer<typeof zLocalClaimSource>;
+
+/**
  * Local Collective Suggestion Reason
  *
  * Why the local server suggests a collective for a session
@@ -1547,6 +1574,48 @@ export type LocalKickstartVillage = z.infer<typeof zLocalKickstartVillage>;
 export const zLocalOperationDiagnosticOutcome = z.enum(['failed', 'uncertain']);
 
 export type LocalOperationDiagnosticOutcome = z.infer<typeof zLocalOperationDiagnosticOutcome>;
+
+export const zLocalOwner = z.object({
+    createdAt: z.iso.datetime(),
+    id: z.string().min(1).max(64)
+});
+
+export type LocalOwner = z.infer<typeof zLocalOwner>;
+
+export const zLocalOwnerClaimRequest = z.object({
+    all: z.boolean()
+});
+
+export type LocalOwnerClaimRequest = z.infer<typeof zLocalOwnerClaimRequest>;
+
+export const zLocalOwnerOwnershipCounts = z.object({
+    claimed: z.int().gte(0),
+    total: z.int().gte(0),
+    unclaimed: z.int().gte(0)
+});
+
+export type LocalOwnerOwnershipCounts = z.infer<typeof zLocalOwnerOwnershipCounts>;
+
+export const zLocalOwnerOwnership = z.object({
+    annotations: zLocalOwnerOwnershipCounts,
+    sessions: zLocalOwnerOwnershipCounts
+});
+
+export type LocalOwnerOwnership = z.infer<typeof zLocalOwnerOwnership>;
+
+/**
+ * Local Owner Prompt State
+ *
+ * The server-computed claim prompt state: no account selected, due, declined, or completed for one local owner plus account scope
+ */
+export const zLocalOwnerPromptState = z.enum([
+    'not_applicable',
+    'due',
+    'declined',
+    'completed'
+]);
+
+export type LocalOwnerPromptState = z.infer<typeof zLocalOwnerPromptState>;
 
 export const zLocalPublicationAttemptFailure = z.object({
     attemptedAt: z.iso.datetime(),
@@ -3012,37 +3081,6 @@ export const zAuthoritativeSessionIdentity = z.object({
 
 export type AuthoritativeSessionIdentity = z.infer<typeof zAuthoritativeSessionIdentity>;
 
-export const zSessionSummary = z.object({
-    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
-    durationMins: z.number(),
-    harness: zHarness,
-    id: z.string(),
-    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
-    outcome: z.string().optional(),
-    parentSessionId: z.string().nullish(),
-    parentUnresolved: z.boolean().optional(),
-    preview: z.string().optional(),
-    project: z.string().optional(),
-    projectHash: zProjectHash.optional(),
-    purpose: zSessionPurpose.optional(),
-    relationships: z.array(zSessionRelationship).optional(),
-    rootSessionId: zSessionID.nullish(),
-    sessionOrigin: zSessionOrigin.optional(),
-    startTime: z.iso.datetime(),
-    teammate: zSessionTeammate.nullish(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int()
-});
-
-export type SessionSummary = z.infer<typeof zSessionSummary>;
-
-export const zSessionsPayload = z.object({
-    sessions: z.array(zSessionSummary).nullable()
-});
-
-export type SessionsPayload = z.infer<typeof zSessionsPayload>;
-
 /**
  * Source Format
  *
@@ -3251,130 +3289,6 @@ export const zSyncStatus = z.enum([
 ]);
 
 export type SyncStatus = z.infer<typeof zSyncStatus>;
-
-export const zLocalSyncSummary = z.object({
-    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
-    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
-    harness: zHarness,
-    holdReason: zSyncHoldReason.optional(),
-    hostSlug: z.string(),
-    id: z.string(),
-    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
-    model: z.string(),
-    parentSessionId: z.string().optional(),
-    parentUnresolved: z.boolean().optional(),
-    previouslyPushed: z.boolean(),
-    projectHash: zProjectHash,
-    projectName: z.string(),
-    startTime: z.string(),
-    syncStatus: zSyncStatus,
-    teammate: zSessionTeammate.nullish(),
-    totalTokens: z.int(),
-    turnCount: z.int()
-});
-
-export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
-
-export const zLocalSessionRow = z.object({
-    matches: z.array(zSearchResult).optional(),
-    session: zSessionSummary,
-    sync: zLocalSyncSummary.nullish(),
-    title: z.string().optional()
-}).superRefine((value, context) => {
-    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionRow during grouped read validation: " + reason });
-    if (value.session.id === "") fail("session.id is empty; provide the saved transcript identity");
-    if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
-    if (value.sync) {
-      const s = value.session, v = value.sync;
-      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || v.conversationTurnCount !== s.conversationTurnCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
-      const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
-        if (left == null || right == null) return left == null && right == null;
-        return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
-      };
-      if (!sameTeammate(s.teammate, v.teammate)) fail("sync teammate disagrees with the session teammate; the list and the sync chooser would show different identities for one transcript, so derive both from the same evidence read");
-    }
-    if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");
-  });
-
-export type LocalSessionRow = z.infer<typeof zLocalSessionRow>;
-
-export const zLocalSessionListItem = z.object({
-    context: zHelperContextSummary.nullish(),
-    helperGroups: z.array(zHelperGroupSummary).optional(),
-    kind: zSessionListItemKind,
-    transcript: zLocalSessionRow.nullish()
-}).superRefine((value, context) => {
-    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionListItem during grouped read validation: " + reason });
-    if ((value.kind === "transcript") !== (value.transcript != null) || (value.kind === "context_container") !== (value.context != null)) fail("kind must select exactly one matching transcript/context arm; omit the other arm");
-      const groups = new Set<string>();
-      for (const group of value.helperGroups ?? []) {
-        if (groups.has(group.groupId)) fail("duplicate groupId prevents independent paging; emit each immediate group once");
-        groups.add(group.groupId);
-      }
-  });
-
-export type LocalSessionListItem = z.infer<typeof zLocalSessionListItem>;
-
-export const zLocalHelperMembersPayload = z.object({
-    members: z.array(zLocalSessionListItem.and(z.object({
-        context: z.null().optional(),
-        kind: z.enum(['transcript']).optional(),
-        transcript: zLocalSessionRow
-    }))),
-    nextItems: z.array(zLocalSessionListItem),
-    page: z.int().gte(1).lte(9007199254740991),
-    perPage: zPageSize,
-    revision: z.string().min(1),
-    total: z.int().gte(0).lte(9007199254740991)
-}).superRefine((value, context) => {
-    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalHelperMembersPayload during grouped read validation: " + reason });
-    const pageSize = value.perPage;
-      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
-      const ids = new Set<string>();
-      const groups = new Set<string>();
-      for (const member of value.members) {
-        if (member.kind !== "transcript" || member.transcript == null || member.context != null) { fail("members must be transcript items, never context containers; preserve nested groups on the item"); continue; }
-        const id = member.transcript.session.id;
-        if (ids.has(id)) fail("duplicate member identity would double count a saved helper; emit each transcript once");
-        ids.add(id);
-        for (const group of member.helperGroups ?? []) {
-          if (groups.has(group.groupId)) fail("groupId appears under multiple members; emit each immediate-owner group once");
-          groups.add(group.groupId);
-        }
-      }
-  });
-
-export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayload>;
-
-export const zLocalSessionListPayload = z.object({
-    helperThreadTotal: z.int().gte(0).lte(9007199254740991),
-    items: z.array(zLocalSessionListItem),
-    nextItems: z.array(zLocalSessionListItem),
-    ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
-    page: z.int().gte(1).lte(9007199254740991),
-    perPage: zPageSize,
-    revision: z.string().min(1),
-    total: z.int().gte(0).lte(9007199254740991)
-});
-
-export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
-
-export const zLocalSessionPage = z.object({
-    items: z.array(zLocalSessionRow),
-    nextItems: z.array(zLocalSessionRow),
-    page: z.int().gte(1).lte(9007199254740991),
-    perPage: zPageSize,
-    revision: z.string().min(1),
-    total: z.int().gte(0).lte(9007199254740991)
-});
-
-export type LocalSessionPage = z.infer<typeof zLocalSessionPage>;
-
-export const zLocalSyncSessionsPayload = z.object({
-    sessions: z.array(zLocalSyncSummary)
-});
-
-export type LocalSyncSessionsPayload = z.infer<typeof zLocalSyncSessionsPayload>;
 
 /**
  * Target Kind
@@ -4537,52 +4451,6 @@ export const zSessionDetailPayload = z.object({
 
 export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 
-export const zSessionDetailReadPayload = z.object({
-    childSessions: z.array(zChildSessionRef).optional(),
-    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
-    diagnostics: zInterpretationDiagnostics.optional(),
-    durationMins: z.number(),
-    earlierHistory: z.array(zEarlierHistorySection).optional(),
-    endTime: z.iso.datetime(),
-    gitBranch: z.string().optional(),
-    gitRemote: z.string().optional(),
-    harness: zHarness,
-    id: z.string(),
-    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
-    medians: zPersonalMedians.nullish(),
-    model: z.string().optional(),
-    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
-    outcome: zSessionOutcome.optional(),
-    parentSessionId: zSessionID.optional(),
-    project: z.string().optional(),
-    purpose: zSessionPurpose.optional(),
-    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
-    relationships: z.array(zSessionRelationship).optional(),
-    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
-    revision: z.string().optional(),
-    rootSessionId: zSessionID.optional(),
-    schemaVersion: z.string().optional(),
-    scorecard: zSessionScorecard.optional(),
-    sessionOrigin: zSessionOrigin.optional(),
-    source: z.string().optional(),
-    startTime: z.iso.datetime(),
-    status: z.string().optional(),
-    teammate: zSessionTeammate.nullish(),
-    thinkingLevel: zThinkingLevel.optional(),
-    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
-    thinkingLevelRaw: zThinkingLevelRaw.optional(),
-    title: z.string().optional(),
-    tokensIn: z.int(),
-    tokensOut: z.int(),
-    toolCallCount: z.int(),
-    totalTokens: z.int(),
-    turnCount: z.int(),
-    turns: z.array(zTurnDetail).nullable(),
-    workingDirectory: z.string().optional()
-});
-
-export type SessionDetailReadPayload = z.infer<typeof zSessionDetailReadPayload>;
-
 export const zTranscriptContent = z.object({
     contractVersion: z.string(),
     kind: zContentKind,
@@ -5488,6 +5356,58 @@ export const zCollectiveObservationResponse = z.object({
 
 export type CollectiveObservationResponse = z.infer<typeof zCollectiveObservationResponse>;
 
+export const zLocalArtifactIdentity = z.object({
+    claimId: z.string().min(1).max(64).optional(),
+    kind: zLocalArtifactIdentityKind,
+    localOwnerId: z.string().min(1).max(64).optional(),
+    username: z.string().min(1).optional(),
+    villageUrl: z.string().max(1024).optional(),
+    villageUserId: zVillageUUID.optional()
+});
+
+export type LocalArtifactIdentity = z.infer<typeof zLocalArtifactIdentity>;
+
+export const zLocalAnnotationRow = z.object({
+    annotatorKind: zAnnotatorKind,
+    annotatorName: z.string(),
+    author: zLocalArtifactIdentity.optional(),
+    confidence: z.number().nullish(),
+    contentHash: z.string().nullish(),
+    createdAt: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    id: z.string(),
+    isPrimary: z.boolean(),
+    owner: zLocalArtifactIdentity.optional(),
+    provenance: zProvenance.optional(),
+    reason: z.string().nullish(),
+    supersededBy: z.string().nullish(),
+    targetAnnotationId: z.string().nullish(),
+    targetAssociationId: zAssociationID.optional(),
+    targetContentHash: z.string().nullish(),
+    targetEntryEndIndex: z.int().nullish(),
+    targetEntryIndex: z.int().nullish(),
+    targetFilePath: z.string().nullish(),
+    targetKind: zTargetKind,
+    targetProjectHash: zProjectHash.optional(),
+    targetSessionId: z.string().nullish(),
+    typeId: z.string(),
+    typeName: z.string(),
+    value: z.string()
+});
+
+export type LocalAnnotationRow = z.infer<typeof zLocalAnnotationRow>;
+
+export const zLocalClaimEntry = z.object({
+    claimedAt: z.iso.datetime(),
+    id: z.string().min(1).max(64),
+    localOwnerId: z.string().min(1).max(64),
+    source: zLocalClaimSource,
+    userId: zVillageUUID,
+    username: z.string().min(1),
+    villageUrl: z.string().max(1024)
+});
+
+export type LocalClaimEntry = z.infer<typeof zLocalClaimEntry>;
+
 export const zLocalConfirmedContributionReceipt = z.object({
     collectiveId: zVillageUUID.nullish(),
     confirmedAt: z.iso.datetime().refine((value) => new RegExp("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$").test(value) && !new RegExp("^0001-01-01T00:00:00(\\.0+)?Z$").test(value), { message: "Collective timestamp requires nonzero UTC RFC3339 with explicit seconds and at most nine fractional digits; unsupported precision loses evidence, so correct the source timestamp ending in Z before retrying" }).regex(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,9})?Z$/),
@@ -5511,6 +5431,34 @@ export const zLocalOperationDiagnostic = z.object({
 }).superRefine((value, ctx) => { const issue = collectiveContractIssue("LocalOperationDiagnostic", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
 export type LocalOperationDiagnostic = z.infer<typeof zLocalOperationDiagnostic>;
+
+export const zLocalOwnerClaimPrompt = z.object({
+    account: zCollectiveObservationScope.optional(),
+    decidedAt: z.iso.datetime().optional(),
+    state: zLocalOwnerPromptState
+});
+
+export type LocalOwnerClaimPrompt = z.infer<typeof zLocalOwnerClaimPrompt>;
+
+export const zLocalOwnerStatus = z.object({
+    claims: z.array(zLocalClaimEntry),
+    nextBefore: z.string().min(1).max(64).optional(),
+    owner: zLocalOwner,
+    ownership: zLocalOwnerOwnership,
+    prompt: zLocalOwnerClaimPrompt,
+    totalClaims: z.int().gte(0)
+});
+
+export type LocalOwnerStatus = z.infer<typeof zLocalOwnerStatus>;
+
+export const zLocalOwnerClaimResult = z.object({
+    alreadyClaimed: z.int().gte(0),
+    claimId: z.string().min(1).max(64).optional(),
+    claimed: z.int().gte(0),
+    status: zLocalOwnerStatus
+});
+
+export type LocalOwnerClaimResult = z.infer<typeof zLocalOwnerClaimResult>;
 
 export const zLocalPublicationAudienceMember = z.object({
     collectiveId: zVillageUUID,
@@ -5595,6 +5543,31 @@ export const zLocalSettingsResponse = z.object({
 
 export type LocalSettingsResponse = z.infer<typeof zLocalSettingsResponse>;
 
+export const zLocalSyncSummary = z.object({
+    adapterVersion: z.int().gte(1).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
+    durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
+    harness: zHarness,
+    holdReason: zSyncHoldReason.optional(),
+    hostSlug: z.string(),
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    model: z.string(),
+    owner: zLocalArtifactIdentity.optional(),
+    parentSessionId: z.string().optional(),
+    parentUnresolved: z.boolean().optional(),
+    previouslyPushed: z.boolean(),
+    projectHash: zProjectHash,
+    projectName: z.string(),
+    startTime: z.string(),
+    syncStatus: zSyncStatus,
+    teammate: zSessionTeammate.nullish(),
+    totalTokens: z.int(),
+    turnCount: z.int()
+});
+
+export type LocalSyncSummary = z.infer<typeof zLocalSyncSummary>;
+
 export const zLocalSyncSessionRow = z.object({
     childCount: z.int().gte(0),
     preview: z.string(),
@@ -5616,6 +5589,188 @@ export const zLocalSyncSessionPage = z.object({
 });
 
 export type LocalSyncSessionPage = z.infer<typeof zLocalSyncSessionPage>;
+
+export const zLocalSyncSessionsPayload = z.object({
+    sessions: z.array(zLocalSyncSummary)
+});
+
+export type LocalSyncSessionsPayload = z.infer<typeof zLocalSyncSessionsPayload>;
+
+export const zSessionDetailReadPayload = z.object({
+    adapterVersion: z.int().gte(1).optional(),
+    childSessions: z.array(zChildSessionRef).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
+    diagnostics: zInterpretationDiagnostics.optional(),
+    durationMins: z.number(),
+    earlierHistory: z.array(zEarlierHistorySection).optional(),
+    endTime: z.iso.datetime(),
+    gitBranch: z.string().optional(),
+    gitRemote: z.string().optional(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    medians: zPersonalMedians.nullish(),
+    model: z.string().optional(),
+    nativeMetadata: z.array(zNativeMetadataRecord).optional(),
+    outcome: zSessionOutcome.optional(),
+    owner: zLocalArtifactIdentity.optional(),
+    parentSessionId: zSessionID.optional(),
+    project: z.string().optional(),
+    purpose: zSessionPurpose.optional(),
+    relationshipNavigation: z.array(zSessionRelationshipNavigation).optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    retainedUnknown: z.array(zRetainedUnknownRecord).optional(),
+    revision: z.string().optional(),
+    rootSessionId: zSessionID.optional(),
+    schemaVersion: z.string().optional(),
+    scorecard: zSessionScorecard.optional(),
+    sessionOrigin: zSessionOrigin.optional(),
+    source: z.string().optional(),
+    startTime: z.iso.datetime(),
+    status: z.string().optional(),
+    teammate: zSessionTeammate.nullish(),
+    thinkingLevel: zThinkingLevel.optional(),
+    thinkingLevelHistory: z.array(zThinkingLevelChange).optional(),
+    thinkingLevelRaw: zThinkingLevelRaw.optional(),
+    title: z.string().optional(),
+    tokensIn: z.int(),
+    tokensOut: z.int(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int(),
+    turns: z.array(zTurnDetail).nullable(),
+    workingDirectory: z.string().optional()
+});
+
+export type SessionDetailReadPayload = z.infer<typeof zSessionDetailReadPayload>;
+
+export const zSessionSummary = z.object({
+    adapterVersion: z.int().gte(1).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
+    durationMins: z.number(),
+    harness: zHarness,
+    id: z.string(),
+    inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
+    outcome: z.string().optional(),
+    owner: zLocalArtifactIdentity.optional(),
+    parentSessionId: z.string().nullish(),
+    parentUnresolved: z.boolean().optional(),
+    preview: z.string().optional(),
+    project: z.string().optional(),
+    projectHash: zProjectHash.optional(),
+    purpose: zSessionPurpose.optional(),
+    relationships: z.array(zSessionRelationship).optional(),
+    rootSessionId: zSessionID.nullish(),
+    sessionOrigin: zSessionOrigin.optional(),
+    startTime: z.iso.datetime(),
+    teammate: zSessionTeammate.nullish(),
+    toolCallCount: z.int(),
+    totalTokens: z.int(),
+    turnCount: z.int()
+});
+
+export type SessionSummary = z.infer<typeof zSessionSummary>;
+
+export const zLocalSessionRow = z.object({
+    matches: z.array(zSearchResult).optional(),
+    session: zSessionSummary,
+    sync: zLocalSyncSummary.nullish(),
+    title: z.string().optional()
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionRow during grouped read validation: " + reason });
+    if (value.session.id === "") fail("session.id is empty; provide the saved transcript identity");
+    if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
+    if (value.sync) {
+      const s = value.session, v = value.sync;
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || v.conversationTurnCount !== s.conversationTurnCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
+        if (left == null || right == null) return left == null && right == null;
+        return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
+      };
+      if (!sameTeammate(s.teammate, v.teammate)) fail("sync teammate disagrees with the session teammate; the list and the sync chooser would show different identities for one transcript, so derive both from the same evidence read");
+    }
+    if (value.matches?.some(match => match.sessionId !== value.session.id)) fail("search match belongs to another session; retain only this transcript's evidence");
+  });
+
+export type LocalSessionRow = z.infer<typeof zLocalSessionRow>;
+
+export const zLocalSessionListItem = z.object({
+    context: zHelperContextSummary.nullish(),
+    helperGroups: z.array(zHelperGroupSummary).optional(),
+    kind: zSessionListItemKind,
+    transcript: zLocalSessionRow.nullish()
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalSessionListItem during grouped read validation: " + reason });
+    if ((value.kind === "transcript") !== (value.transcript != null) || (value.kind === "context_container") !== (value.context != null)) fail("kind must select exactly one matching transcript/context arm; omit the other arm");
+      const groups = new Set<string>();
+      for (const group of value.helperGroups ?? []) {
+        if (groups.has(group.groupId)) fail("duplicate groupId prevents independent paging; emit each immediate group once");
+        groups.add(group.groupId);
+      }
+  });
+
+export type LocalSessionListItem = z.infer<typeof zLocalSessionListItem>;
+
+export const zLocalHelperMembersPayload = z.object({
+    members: z.array(zLocalSessionListItem.and(z.object({
+        context: z.null().optional(),
+        kind: z.enum(['transcript']).optional(),
+        transcript: zLocalSessionRow
+    }))),
+    nextItems: z.array(zLocalSessionListItem),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
+}).superRefine((value, context) => {
+    const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zLocalHelperMembersPayload during grouped read validation: " + reason });
+    const pageSize = value.perPage;
+      if (value.members.length > pageSize || value.members.length > value.total) fail("member count exceeds page size or direct total; count direct saved helpers before paging");
+      const ids = new Set<string>();
+      const groups = new Set<string>();
+      for (const member of value.members) {
+        if (member.kind !== "transcript" || member.transcript == null || member.context != null) { fail("members must be transcript items, never context containers; preserve nested groups on the item"); continue; }
+        const id = member.transcript.session.id;
+        if (ids.has(id)) fail("duplicate member identity would double count a saved helper; emit each transcript once");
+        ids.add(id);
+        for (const group of member.helperGroups ?? []) {
+          if (groups.has(group.groupId)) fail("groupId appears under multiple members; emit each immediate-owner group once");
+          groups.add(group.groupId);
+        }
+      }
+  });
+
+export type LocalHelperMembersPayload = z.infer<typeof zLocalHelperMembersPayload>;
+
+export const zLocalSessionListPayload = z.object({
+    helperThreadTotal: z.int().gte(0).lte(9007199254740991),
+    items: z.array(zLocalSessionListItem),
+    nextItems: z.array(zLocalSessionListItem),
+    ordinarySessionTotal: z.int().gte(0).lte(9007199254740991),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSessionListPayload = z.infer<typeof zLocalSessionListPayload>;
+
+export const zLocalSessionPage = z.object({
+    items: z.array(zLocalSessionRow),
+    nextItems: z.array(zLocalSessionRow),
+    page: z.int().gte(1).lte(9007199254740991),
+    perPage: zPageSize,
+    revision: z.string().min(1),
+    total: z.int().gte(0).lte(9007199254740991)
+});
+
+export type LocalSessionPage = z.infer<typeof zLocalSessionPage>;
+
+export const zSessionsPayload = z.object({
+    sessions: z.array(zSessionSummary).nullable()
+});
+
+export type SessionsPayload = z.infer<typeof zSessionsPayload>;
 
 export const zSyncPushCollectives = z.object({
     add: z.array(zVillageUUID).optional(),

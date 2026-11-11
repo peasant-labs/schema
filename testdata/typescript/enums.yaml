@@ -593,6 +593,29 @@ enums:
     members:
       - {name: NativeDynamicWorkflow, value: "native_dynamic_workflow"}
     all_values: ["native_dynamic_workflow"]
+  - name: LocalArtifactIdentityKind
+    all_name: AllLocalArtifactIdentityKinds
+    members:
+      - {name: Local, value: "local"}
+      - {name: Village, value: "village"}
+      - {name: Foreign, value: "foreign"}
+      - {name: Unknown, value: "unknown"}
+    all_values: ["local", "village", "foreign", "unknown"]
+  - name: LocalClaimSource
+    all_name: AllLocalClaimSources
+    members:
+      - {name: Manual, value: "manual"}
+      - {name: SignInPrompt, value: "sign_in_prompt"}
+      - {name: Automatic, value: "automatic"}
+    all_values: ["manual", "sign_in_prompt", "automatic"]
+  - name: LocalOwnerPromptState
+    all_name: AllLocalOwnerPromptStates
+    members:
+      - {name: NotApplicable, value: "not_applicable"}
+      - {name: Due, value: "due"}
+      - {name: Declined, value: "declined"}
+      - {name: Completed, value: "completed"}
+    all_values: ["not_applicable", "due", "declined", "completed"]
   - name: SessionPurpose
     all_name: AllSessionPurposes
     members:
