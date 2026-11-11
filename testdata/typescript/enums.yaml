@@ -217,6 +217,7 @@ enums:
     all_values: ["M", "A", "D", "R"]
   - name: Harness
     all_name: AllHarnesses
+    go_all_var: AllHarnesses
     members:
       - {name: ClaudeCode, value: "claude-code"}
       - {name: GeminiCLI, value: "gemini-cli"}
