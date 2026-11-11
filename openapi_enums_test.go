@@ -22,6 +22,7 @@ type closedEnumFixture struct {
 type closedEnumFixtureRow struct {
 	Name      string                    `yaml:"name"`
 	AllName   string                    `yaml:"all_name"`
+	GoAllVar  string                    `yaml:"go_all_var"`
 	Members   []closedEnumFixtureMember `yaml:"members"`
 	AllValues []any                     `yaml:"all_values"`
 }

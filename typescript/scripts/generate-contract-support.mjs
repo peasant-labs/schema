@@ -166,17 +166,10 @@ function renderEnums(openapi, catalog) {
     if (JSON.stringify(actualValues) !== JSON.stringify(expectedValues)) {
       throw new Error(`TypeScript enum generation found ${enumCase.name} drift between Go/OpenAPI (${JSON.stringify(actualValues)}) and testdata/typescript/enums.yaml (${JSON.stringify(expectedValues)}); TypeScript output was not written; update the canonical Go closed set and its fixture together.`);
     }
-    if (enumCase.name === "Harness") {
-      // The canonical source shape is var AllHarnesses = []Harness{...}.
-      const match = /var\s+AllHarnesses\s*=\s*\[\]Harness\s*\{([^}]*)\}/s.exec(typesSource);
-      if (!match) throw new Error("TypeScript enum generation cannot read AllHarnesses from types.go; restore its slice declaration before regenerating.");
-      const byName = new Map(members.map((member) => [`Harness${member.name}`, member.value]));
-      const names = match[1].split(",").map((entry) => entry.trim()).filter(Boolean);
-      const values = names.map((name) => {
-        if (!byName.has(name)) throw new Error(`TypeScript enum generation cannot resolve AllHarnesses member ${name} through enums.yaml; fix the Go declaration or enum catalog.`);
-        return byName.get(name);
-      });
-      if (JSON.stringify(values) !== JSON.stringify(enumCase.all_values)) throw new Error(`TypeScript enum generation found AllHarnesses drift: types.go ${JSON.stringify(values)}, enums.yaml ${JSON.stringify(enumCase.all_values)}; restore matching membership and order.`);
+    if (enumCase.go_all_var !== undefined) {
+      if (enumCase.go_all_var !== enumCase.all_name) throw new Error(`TypeScript enum generation found inconsistent go_all_var and all_name for ${enumCase.name} in enums.yaml; use the canonical Go inventory name for both.`);
+      const byName = new Map(members.map((member) => [`${enumCase.name}${member.name}`, member.value]));
+      validateGoInventory(typesSource, "types.go", enumCase.name, enumCase.go_all_var, byName, enumCase.all_values, "enums.yaml");
     }
     const memberByValue = new Map(members.map((member) => [member.value, member.name]));
     const allMembers = enumCase.all_values.map((value) => {
@@ -199,6 +192,26 @@ function renderEnums(openapi, catalog) {
     blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }
   return `${header()}${imports.join("\n")}\n\n${blocks.join("\n\n")}\n`;
+}
+
+// Accepted Go source shape: var AllName = []Type{TypeMember, ...}.
+function validateGoInventory(source, sourceName, goType, goAllVar, goValues, allValues, fixtureName) {
+  const allPattern = new RegExp(`var\\s+${goAllVar}\\s*=\\s*\\[\\]${goType}\\s*\\{([^}]*)\\}`, "s");
+  const allMatch = allPattern.exec(source);
+  if (allMatch === null) {
+    throw new Error(`TypeScript generation could not find "var ${goAllVar} = []${goType}{...}" in ${sourceName}; the inventory order cannot be trusted; restore the slice declaration before regenerating.`);
+  }
+  const goOrder = allMatch[1].split(",").map((entry) => entry.trim()).filter(Boolean);
+  const goOrderedValues = goOrder.map((goConst) => {
+    const value = goValues.get(goConst);
+    if (value === undefined) {
+      throw new Error(`TypeScript generation cannot resolve ${goAllVar} member ${goConst} in ${sourceName}; fix the Go declaration or ${fixtureName} before regenerating.`);
+    }
+    return value;
+  });
+  if (JSON.stringify(goOrderedValues) !== JSON.stringify(allValues)) {
+    throw new Error(`TypeScript generation found drift between Go ${goAllVar} (${JSON.stringify(goOrderedValues)}) and ${fixtureName} all_values (${JSON.stringify(allValues)}); TypeScript output was not written; update the canonical Go closed set and its manifest together.`);
+  }
 }
 
 // renderContentCapabilities generates the strongly typed, CLOSED known-token
@@ -235,22 +248,7 @@ function renderContentCapabilities(source, catalog) {
   if (goValues.size === 0) {
     throw new Error(`TypeScript content-capability generation found no "<Name> ${goType} = \"...\"" const declarations in content_capability.go; the closed inventory would be empty; keep the canonical Go consts in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
   }
-  const allPattern = new RegExp(`var\\s+${goAllVar}\\s*=\\s*\\[\\]${goType}\\{([^}]*)\\}`, "s");
-  const allMatch = allPattern.exec(source);
-  if (allMatch === null) {
-    throw new Error(`TypeScript content-capability generation could not find "var ${goAllVar} = []${goType}{...}" in content_capability.go; the token order cannot be trusted; keep the canonical Go slice in the expected declaration form or update typescript/scripts/generate-contract-support.mjs.`);
-  }
-  const goOrder = allMatch[1].split(",").map((entry) => entry.trim()).filter((entry) => entry.length > 0);
-  const goOrderedValues = goOrder.map((goConst) => {
-    const value = goValues.get(goConst);
-    if (value === undefined) {
-      throw new Error(`TypeScript content-capability generation found ${goAllVar} member ${goConst} in content_capability.go without a matching "${goConst} ${goType} = \"...\"" const; add the const or remove the unsupported member.`);
-    }
-    return value;
-  });
-  if (JSON.stringify(goOrderedValues) !== JSON.stringify(allValues)) {
-    throw new Error(`TypeScript content-capability generation found drift between Go ${goAllVar} (${JSON.stringify(goOrderedValues)}) and content_capabilities.yaml all_values (${JSON.stringify(allValues)}); TypeScript output was not written; update the canonical Go closed set and its manifest together.`);
-  }
+  validateGoInventory(source, "content_capability.go", goType, goAllVar, goValues, allValues, "content_capabilities.yaml");
 
   const renderedMembers = members.map((member) => {
     if (typeof member?.name !== "string" || typeof member?.value !== "string" || typeof member?.go_const !== "string") {
