@@ -26,8 +26,13 @@ on:
     branches: [develop]
 
 concurrency:
+  # A body edit must queue behind the running push run instead of cancelling
+  # it: an edit on an open release PR otherwise cancels the in-progress tests
+  # while the edited run skips them (tests only run on
+  # opened/reopened/synchronize), and an edit after merge can cancel the tag
+  # job in the same group.
   group: release-pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event.action != 'edited' }}
 
 permissions:
   contents: read
