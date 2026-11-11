@@ -607,6 +607,18 @@ export const LocalRoute = Object.freeze({
    */
   GetKickstartStatus: routeMember(HttpMethod.Get, "/api/v1/kickstart/status", "getKickstartStatus"),
   /**
+   * `GET /api/v1/local-owner` (operationId `getLocalOwnerStatus`).
+   */
+  GetLocalOwnerStatus: routeMember(HttpMethod.Get, "/api/v1/local-owner", "getLocalOwnerStatus"),
+  /**
+   * `POST /api/v1/local-owner/claim` (operationId `claimLocalOwner`).
+   */
+  ClaimLocalOwner: routeMember(HttpMethod.Post, "/api/v1/local-owner/claim", "claimLocalOwner"),
+  /**
+   * `POST /api/v1/local-owner/decline` (operationId `declineLocalOwnerPrompt`).
+   */
+  DeclineLocalOwnerPrompt: routeMember(HttpMethod.Post, "/api/v1/local-owner/decline", "declineLocalOwnerPrompt"),
+  /**
    * `GET /api/v1/map/{projectHash}` (operationId `getMapGraph`).
    */
   GetMapGraph: routeMember(HttpMethod.Get, "/api/v1/map/{projectHash}", "getMapGraph"),
@@ -780,6 +792,9 @@ export const ALL_LOCAL_ROUTES = Object.freeze([
   LocalRoute.GetKickstartTree,
   LocalRoute.GetKickstartPreview,
   LocalRoute.GetKickstartStatus,
+  LocalRoute.GetLocalOwnerStatus,
+  LocalRoute.ClaimLocalOwner,
+  LocalRoute.DeclineLocalOwnerPrompt,
   LocalRoute.GetMapGraph,
   LocalRoute.GetMapNodeDetail,
   LocalRoute.ListProjectTasks,

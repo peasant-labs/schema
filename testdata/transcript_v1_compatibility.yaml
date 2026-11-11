@@ -1,4 +1,4 @@
-localDocumentSHA256: 198cdb18265efc5f5d38b4ab1ca93adc3f964e2ea82852ecd3c7eaa9dfcc9c63
+localDocumentSHA256: d88d337b46c4a7d476ded2eb20f3481422a21ee12baeb9a94630bc070227e5e8
 refMembers: [index, firstTurn, lastTurn, byteLength, conversationTurns]
 turnMembers: [index, role, content, contentParts, toolCalls, timestamp, depth, parentIndex, agentName, observedModel, thinkingLevel, thinkingLevelRaw, sourceEntryRef, provenance, usage, command, controlKind, entryType, hasThinking, stopReason, tokensIn, tokensOut]
 cases:

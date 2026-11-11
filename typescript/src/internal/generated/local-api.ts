@@ -25,7 +25,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description List annotations for a session. */
+        /** @description List annotations for a session, each with the optional local owner and author projections kept distinct from the shared annotation summary. */
         get: operations["listAnnotations"];
         put?: never;
         /** @description Create a new annotation. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
@@ -218,6 +218,57 @@ export interface paths {
         get: operations["getKickstartStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/local-owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read this data directory's one permanent local owner, the most recent claim entries, the full claim total, the claim prompt state, and the ownership counts. Entries are newest first: claimedAt descending, then insertion order descending. nextBefore names the last returned entry and is present exactly when an older entry exists, found by reading one row past the page; a page shorter than 100 never carries it. Pass before=<nextBefore> to read the next older page. This is a local read: it needs no Village login and makes no network call. claims is [] when this directory has no claims. */
+        get: operations["getLocalOwnerStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/local-owner/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Claim local sessions and annotations for the signed-in Village account. all=false claims only unclaimed artifacts; all=true claims every local session and annotation. An explicit claim always appends one entry and never rewrites an earlier one, including when it moves nothing, and returns its claimId. An automatic claim reuses this account's automatic entry only while that entry is the newest in the whole log for this local owner; otherwise it appends one. Pulled transcripts and annotations are never claimed. The answer is the recomputed status plus what this action claimed. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
+        post: operations["claimLocalOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/local-owner/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Decline the claim prompt for the signed-in Village account. A decline writes no claim entry; it records only that the prompt was dismissed so the product does not ask again for the same local owner plus account scope. The claim control stays available. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
+        post: operations["declineLocalOwnerPrompt"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1289,6 +1340,28 @@ export interface components {
          */
         SchemaInsightProvenance: Schema.InsightProvenance;
         SchemaInterpretationDiagnostics: Schema.InterpretationDiagnostics;
+        SchemaLocalAnnotationRow: Schema.LocalAnnotationRow;
+        SchemaLocalArtifactIdentity: Schema.LocalArtifactIdentity;
+        /**
+         * Local Artifact Identity Kind
+         * @description Whose artifact a local read describes: this data directory's local owner, the Village account that claimed it, a foreign pull-manifest owner, or an owner that is projected but withheld
+         * @example local
+         * @example village
+         * @example foreign
+         * @example unknown
+         * @enum {string}
+         */
+        SchemaLocalArtifactIdentityKind: Schema.LocalArtifactIdentityKind;
+        SchemaLocalClaimEntry: Schema.LocalClaimEntry;
+        /**
+         * Local Claim Source
+         * @description Why one claim entry exists: an explicit command, the sign-in prompt, or an automatic claim of sessions first stored by this harvest
+         * @example manual
+         * @example sign_in_prompt
+         * @example automatic
+         * @enum {string}
+         */
+        SchemaLocalClaimSource: Schema.LocalClaimSource;
         SchemaLocalCollectiveSuggestion: Schema.LocalCollectiveSuggestion;
         /**
          * Local Collective Suggestion Reason
@@ -1504,6 +1577,23 @@ export interface components {
          * @enum {string}
          */
         SchemaLocalOperationDiagnosticOutcome: Schema.LocalOperationDiagnosticOutcome;
+        SchemaLocalOwner: Schema.LocalOwner;
+        SchemaLocalOwnerClaimPrompt: Schema.LocalOwnerClaimPrompt;
+        SchemaLocalOwnerClaimRequest: Schema.LocalOwnerClaimRequest;
+        SchemaLocalOwnerClaimResult: Schema.LocalOwnerClaimResult;
+        SchemaLocalOwnerOwnership: Schema.LocalOwnerOwnership;
+        SchemaLocalOwnerOwnershipCounts: Schema.LocalOwnerOwnershipCounts;
+        /**
+         * Local Owner Prompt State
+         * @description The server-computed claim prompt state: no account selected, due, declined, or completed for one local owner plus account scope
+         * @example not_applicable
+         * @example due
+         * @example declined
+         * @example completed
+         * @enum {string}
+         */
+        SchemaLocalOwnerPromptState: Schema.LocalOwnerPromptState;
+        SchemaLocalOwnerStatus: Schema.LocalOwnerStatus;
         SchemaLocalPublication: Schema.LocalPublication;
         SchemaLocalPublicationAttemptFailure: Schema.LocalPublicationAttemptFailure;
         SchemaLocalPublicationAudienceMember: Schema.LocalPublicationAudienceMember;
@@ -2210,7 +2300,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": null | components["schemas"]["SchemaAnnotationSummary"][];
+                    "application/json": null | components["schemas"]["SchemaLocalAnnotationRow"][];
                 };
             };
         };
@@ -2851,6 +2941,145 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+        };
+    };
+    getLocalOwnerStatus: {
+        parameters: {
+            query?: {
+                /** @description Older-page cursor: the nextBefore value from the previous status read. Omit for the most recent page. */
+                before?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalOwnerStatus"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    claimLocalOwner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchemaLocalOwnerClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalOwnerClaimResult"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+        };
+    };
+    declineLocalOwnerPrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalOwnerStatus"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };

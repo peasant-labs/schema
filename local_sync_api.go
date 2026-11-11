@@ -81,6 +81,12 @@ func (s LocalSyncSummary) Validate() error {
 	if err := s.Teammate.Validate(); err != nil {
 		return err
 	}
+	if err := s.Owner.Validate(); err != nil {
+		return err
+	}
+	if err := validateArtifactAdapterVersion(s.AdapterVersion, "schema.LocalSyncSummary.adapterVersion"); err != nil {
+		return err
+	}
 	if err := ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSyncSummary.inputSubmissionCount"); err != nil {
 		return err
 	}

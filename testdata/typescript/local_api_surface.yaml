@@ -19,6 +19,9 @@ operations:
   - {path: "/api/v1/kickstart/sessions/{id}/commit", method: post, operation_id: commitKickstartSession}
   - {path: "/api/v1/kickstart/sessions/{id}/tree", method: get, operation_id: getKickstartTree}
   - {path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview", method: get, operation_id: getKickstartPreview}
+  - {path: /api/v1/local-owner, method: get, operation_id: getLocalOwnerStatus}
+  - {path: /api/v1/local-owner/claim, method: post, operation_id: claimLocalOwner}
+  - {path: /api/v1/local-owner/decline, method: post, operation_id: declineLocalOwnerPrompt}
   - {path: "/api/v1/map/{projectHash}", method: get, operation_id: getMapGraph}
   - {path: "/api/v1/map/{projectHash}/node", method: get, operation_id: getMapNodeDetail}
   - {path: "/api/v1/map/{projectHash}/tasks", method: get, operation_id: listProjectTasks}
