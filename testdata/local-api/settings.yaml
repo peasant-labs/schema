@@ -103,8 +103,8 @@ operations:
     method: get
     path: /api/v1/settings
     response: LocalSettingsResponse
-    statuses: ["200", "500", "503"]
-    error_responses: {"500": OpenapiLocalErrorResponse, "503": OpenapiLocalErrorResponse}
+    statuses: ["200", "403", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "500": OpenapiLocalErrorResponse, "503": OpenapiLocalErrorResponse}
   - api: local
     method: patch
     path: /api/v1/settings

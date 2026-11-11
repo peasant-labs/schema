@@ -394,7 +394,7 @@
             }
           },
           "403": {
-            "description": "The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local.",
+            "description": "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local.",
             "content": {
               "application/json": {
                 "schema": {
@@ -734,7 +734,7 @@
             }
           },
           "403": {
-            "description": "The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local.",
+            "description": "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local.",
             "content": {
               "application/json": {
                 "schema": {
@@ -817,7 +817,7 @@
             }
           },
           "403": {
-            "description": "The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local.",
+            "description": "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local.",
             "content": {
               "application/json": {
                 "schema": {
@@ -878,7 +878,7 @@
             }
           },
           "403": {
-            "description": "The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local.",
+            "description": "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2069,7 +2069,7 @@
         "tags": [
           "settings"
         ],
-        "description": "Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing.",
+        "description": "Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address.",
         "operationId": "getSettings",
         "responses": {
           "200": {
@@ -2078,6 +2078,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SchemaLocalSettingsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenapiLocalErrorResponse"
                 }
               }
             }

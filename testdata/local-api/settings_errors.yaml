@@ -2,8 +2,10 @@
 # They are plain tokens the server documents, not a closed set: the settings
 # routes keep the shared local error body, whose code is an open string.
 # local_kickstart_errors_test.go holds the generated Local API document to this
-# file. The settings update (PATCH) answers with LocalSettingRefusal, which has
-# no code, and is pinned by settings.yaml.
+# file. The 403 in other_statuses is the host refusal every read can meet; its
+# body and code are pinned by host_refusal.yaml. The settings update (PATCH)
+# answers with LocalSettingRefusal, which has no code, and is pinned by
+# settings.yaml.
 required_routes:
   - getSettings
 body: OpenapiLocalErrorResponse
@@ -14,4 +16,4 @@ routes:
     errors:
       "500": [settings_unreadable, settings_auto_publish_unreadable, settings_value_not_applied, publishing_contract_breach]
       "503": [settings_unavailable, auto_publish_unavailable]
-    other_statuses: []
+    other_statuses: ["403"]

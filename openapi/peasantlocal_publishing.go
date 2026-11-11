@@ -71,6 +71,7 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 			method: http.MethodGet, path: "/api/v1/settings", id: "getSettings", tag: "settings",
 			description:   "Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing.",
 			response:      new(schema.LocalSettingsResponse),
+			hostRefusal:   true,
 			errorStatuses: []int{http.StatusInternalServerError, http.StatusServiceUnavailable},
 			errorResponse: new(LocalErrorResponse),
 			errorCodes: map[int][]string{

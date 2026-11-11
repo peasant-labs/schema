@@ -587,7 +587,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing. */
+        /** @description Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address. */
         get: operations["getSettings"];
         put?: never;
         post?: never;
@@ -2431,7 +2431,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartSession"];
                 };
             };
-            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            /** @description Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2707,7 +2707,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartTree"];
                 };
             };
-            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            /** @description Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2768,7 +2768,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartPreview"];
                 };
             };
-            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            /** @description Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2824,7 +2824,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartStatus"];
                 };
             };
-            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            /** @description Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3570,6 +3570,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalSettingsResponse"];
+                };
+            };
+            /** @description Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
             /** @description The settings could not be read. The JSON error code is one of: settings_unreadable, settings_auto_publish_unreadable, settings_value_not_applied, publishing_contract_breach. */

@@ -699,10 +699,22 @@ type LocalErrorResponse struct {
 // from its own pages before the handler runs, so nothing changes.
 const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin."
 
-// localHostRefusal states the refusal a declared local read can meet. The
-// server refuses a request whose Host header does not name a loopback address
-// before the handler runs, so nothing is served.
-const localHostRefusal = "Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address."
+// localHostRefusalCode and localHostRefusalReason are the one statement of the
+// refusal a declared local read can meet: the server refuses a request whose
+// Host header does not name a loopback address before the handler runs, so
+// nothing is served. The operation description and the 403 response
+// description both build from them, so the token is spelled once.
+const (
+	localHostRefusalCode   = "request_host_not_local"
+	localHostRefusalReason = "the request's Host header does not name a loopback address"
+)
+
+// localHostRefusal is the sentence a declared local read adds to its
+// operation description.
+const localHostRefusal = "Returns 403 with a JSON error whose code is " + localHostRefusalCode + ", and serves nothing, when " + localHostRefusalReason + "."
+
+// localHostRefusalResponse is the description of that 403 response.
+const localHostRefusalResponse = "Refused, and nothing was served, because " + localHostRefusalReason + ". The JSON error code is " + localHostRefusalCode + "."
 
 // localOperationSpec is one Local API operation. Every operation whose method
 // changes state declares the shared 403 refusal. Other refusals are declared
@@ -873,7 +885,7 @@ func describeHostRefusal(spec *openapi31.Spec, op localOperationSpec) error {
 	if !ok || response.Response == nil {
 		return fmt.Errorf("%s: status %s is not declared, so the host refusal cannot be described; declare the 403 first", where, key)
 	}
-	response.Response.Description = "The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local."
+	response.Response.Description = localHostRefusalResponse
 	operation.Responses.MapOfResponseOrReferenceValues[key] = response
 	return nil
 }

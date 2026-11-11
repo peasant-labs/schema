@@ -8,8 +8,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 ### Added
 
 - Local API 0.36.0 and Types 0.48.0 declare the failures the kickstart routes
-  answer. Every kickstart route now declares `500` and `503`; `GET
-  /api/v1/kickstart/status` declares only those two. `POST .../sessions` declares
+  answer. Every kickstart route now declares `500` and `503`, and every read
+  also declares the host `403` below; `GET /api/v1/kickstart/status` declares
+  only those. `POST .../sessions` declares
   `400` for a missing or malformed body or a scope outside `full` and
   `selection`. `PATCH .../sessions/{id}` declares `400` for a refused answer,
   including an answer to a hidden field (`kickstart_field_hidden`). `POST
@@ -23,8 +24,9 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   with `isLocalKickstartErrorCode`). Each code answers one status, which Go
   reads as `LocalKickstartErrorCode.HTTPStatus()` (0 for a value outside the
   set). The four kickstart reads also declare the host refusal, `403` with
-  code `request_host_not_local`. The kickstart `403` on writes and the
-  `409` bodies are unchanged. `LocalKickstartScan` gains the
+  code `request_host_not_local`, which the server sends when the request's
+  Host header does not name a loopback address. The kickstart `403` on writes
+  and the `409` bodies are unchanged. `LocalKickstartScan` gains the
   optional `notice`, which says which harness folders a finished scan could
   not read and holds at least one non-space character; the server no longer
   puts that text in `phase`. The most vanished
@@ -35,7 +37,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   take the configuration lock because another save holds it. It changes
   nothing and carries the same `LocalSettingRefusal` (`key` and `error`) as
   the `400` and `500`; that body has no `code`, so the status is the signal.
-  `GET /api/v1/settings` declares `500` and `503` with the shared local error
+  `GET /api/v1/settings` declares the same host `403` (`request_host_not_local`),
+  and `500` and `503` with the shared local error
   body, and the status descriptions list the codes (`settings_unreadable`,
   `settings_auto_publish_unreadable`, `settings_value_not_applied`,
   `publishing_contract_breach`, `settings_unavailable`,

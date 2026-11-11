@@ -289,8 +289,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: The request's Host header does not name a loopback address,
-            so nothing was served. The JSON error code is request_host_not_local.
+          description: Refused, and nothing was served, because the request's Host
+            header does not name a loopback address. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -553,8 +553,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: The request's Host header does not name a loopback address,
-            so nothing was served. The JSON error code is request_host_not_local.
+          description: Refused, and nothing was served, because the request's Host
+            header does not name a loopback address. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -613,8 +613,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: The request's Host header does not name a loopback address,
-            so nothing was served. The JSON error code is request_host_not_local.
+          description: Refused, and nothing was served, because the request's Host
+            header does not name a loopback address. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -660,8 +660,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: The request's Host header does not name a loopback address,
-            so nothing was served. The JSON error code is request_host_not_local.
+          description: Refused, and nothing was served, because the request's Host
+            header does not name a loopback address. The JSON error code is request_host_not_local.
         "500":
           content:
             application/json:
@@ -1523,7 +1523,9 @@ paths:
         file, a setting, or the auto-publish rules cannot be read, or a saved value
         has not been applied; 503 when this server runs without a configuration file,
         or without the session store the auto-publish rules need. A refused read changes
-        nothing.
+        nothing. Returns 403 with a JSON error whose code is request_host_not_local,
+        and serves nothing, when the request's Host header does not name a loopback
+        address.
       operationId: getSettings
       responses:
         "200":
@@ -1532,6 +1534,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalSettingsResponse'
           description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: Refused, and nothing was served, because the request's Host
+            header does not name a loopback address. The JSON error code is request_host_not_local.
         "500":
           content:
             application/json:

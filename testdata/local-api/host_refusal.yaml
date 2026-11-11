@@ -1,0 +1,26 @@
+# The refusal every declared local read can meet. The server refuses a request
+# whose Host header does not name a loopback address before the handler runs,
+# so nothing is served. The refusal is a 403 with the shared local error body,
+# and its code is the token below. This file states the token independently of
+# the generator: changing the token in the Go source fails the Go and
+# TypeScript suites until this file changes too.
+#
+# read_operations is the exact set of GET operations that declare it. A GET
+# operation outside the set that declares the 403, or one in the set that
+# stops declaring it, fails the tests. State-changing routes declare the fuller
+# cross-origin refusal pinned by cross_origin_writes.yaml.
+status: "403"
+component: OpenapiLocalErrorResponse
+code: request_host_not_local
+required_operations:
+  - getKickstartStatus
+  - getKickstartSession
+  - getKickstartTree
+  - getKickstartPreview
+  - getSettings
+read_operations:
+  - {method: get, path: /api/v1/kickstart/status, operation_id: getKickstartStatus}
+  - {method: get, path: "/api/v1/kickstart/sessions/{id}", operation_id: getKickstartSession}
+  - {method: get, path: "/api/v1/kickstart/sessions/{id}/tree", operation_id: getKickstartTree}
+  - {method: get, path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview", operation_id: getKickstartPreview}
+  - {method: get, path: /api/v1/settings, operation_id: getSettings}
