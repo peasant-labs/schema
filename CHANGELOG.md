@@ -20,10 +20,14 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   `code`) in place of the shared local error body, and `code` is one of the
   new closed `LocalKickstartErrorCode` set (`AllLocalKickstartErrorCodes`,
   `NewLocalKickstartErrorCode`, `IsValid`, and the TypeScript `LocalKickstartErrorCode`
-  with `isLocalKickstartErrorCode`). Each code answers one status. The
-  kickstart `403` and `409` bodies are unchanged. `LocalKickstartScan` gains the
+  with `isLocalKickstartErrorCode`). Each code answers one status, which Go
+  reads as `LocalKickstartErrorCode.HTTPStatus()` (0 for a value outside the
+  set). The four kickstart reads also declare the host refusal, `403` with
+  code `request_host_not_local`. The kickstart `403` on writes and the
+  `409` bodies are unchanged. `LocalKickstartScan` gains the
   optional `notice`, which says which harness folders a finished scan could
-  not read; the server no longer puts that text in `phase`. The most vanished
+  not read and holds at least one non-space character; the server no longer
+  puts that text in `phase`. The most vanished
   choices a scan names is now the exported `LocalKickstartDroppedLabelsMax`
   (3) in Go and TypeScript, equal to the `maxItems` of `droppedLabels`. The
   prior 0.35.0 and 0.47.0 specs stay frozen in the retirement registry.
@@ -31,6 +35,11 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   take the configuration lock because another save holds it. It changes
   nothing and carries the same `LocalSettingRefusal` (`key` and `error`) as
   the `400` and `500`; that body has no `code`, so the status is the signal.
+  `GET /api/v1/settings` declares `500` and `503` with the shared local error
+  body, and the status descriptions list the codes (`settings_unreadable`,
+  `settings_auto_publish_unreadable`, `settings_value_not_applied`,
+  `publishing_contract_breach`, `settings_unavailable`,
+  `auto_publish_unavailable`).
 
 - Local API 0.35.0 and Types 0.47.0 declare the kickstart setup surface.
   `GET /api/v1/kickstart/status` returns `configured` and, when a full-scope

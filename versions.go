@@ -239,8 +239,9 @@ const (
 	// LocalKickstartErrorResponse envelope in place of the shared error body,
 	// and the scan state gained the declared notice for a partial scan.
 	// The settings update also declared 503 for a configuration file that
-	// another save holds (additive statuses and field on a closed response =
-	// minor bump).
+	// another save holds, the settings read declared its 500 and 503, and the
+	// four kickstart reads declared the host refusal (additive statuses and
+	// field on a closed response = minor bump).
 	PeasantLocalAPIVersion = "0.36.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").

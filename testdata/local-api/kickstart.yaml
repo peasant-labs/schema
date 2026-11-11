@@ -41,13 +41,14 @@ required_names:
   - error-code-unknown-refused
   - scan-partial-notice
   - scan-notice-whitespace-refused
+  - scan-notice-empty-refused
 operations:
   - api: local
     method: get
     path: /api/v1/kickstart/status
     response: LocalKickstartStatus
-    statuses: ["200", "500", "503"]
-    error_responses: {"500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
+    statuses: ["200", "403", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
   - api: local
     method: post
     path: /api/v1/kickstart/sessions
@@ -59,8 +60,8 @@ operations:
     method: get
     path: "/api/v1/kickstart/sessions/{id}"
     response: LocalKickstartSession
-    statuses: ["200", "404", "500", "503"]
-    error_responses: {"404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
@@ -76,16 +77,16 @@ operations:
     method: get
     path: "/api/v1/kickstart/sessions/{id}/tree"
     response: LocalKickstartTree
-    statuses: ["200", "404", "500", "503"]
-    error_responses: {"404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
     method: get
     path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview"
     response: LocalKickstartPreview
-    statuses: ["200", "404", "500", "503"]
-    error_responses: {"404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
       - {name: nodeId, in: path, required: true}
@@ -455,7 +456,15 @@ cases:
     input:
       schema: LocalKickstartScan
       payload: {state: done, done: 4, total: 4, notice: "   "}
-    expected: {valid: false, rejected_by: semantics, error_contains: "notice is only whitespace"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "notice is only whitespace"}
     classification: must-fail
-    provenance: {source: requirement, ref: "a notice that says nothing cannot be shown"}
+    provenance: {source: requirement, ref: "a notice that says nothing cannot be shown, in the schema and in Go"}
     mutation: {description: "a notice made only of spaces"}
+  - name: scan-notice-empty-refused
+    input:
+      schema: LocalKickstartScan
+      payload: {state: done, done: 4, total: 4, notice: ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an empty notice is an absent notice: the schema refuses the empty string, and Go reads it as absent because the field is omitted when empty"}
+    mutation: {description: "an explicit empty notice"}

@@ -19,18 +19,28 @@ import (
 //go:embed testdata/local-api/kickstart_errors.yaml
 var kickstartErrorsYAML []byte
 
+//go:embed testdata/local-api/settings_errors.yaml
+var settingsErrorsYAML []byte
+
 type kickstartErrorsFixture struct {
-	RequiredRoutes []string              `yaml:"required_routes"`
-	Routes         []kickstartErrorRoute `yaml:"routes"`
-	CodeStatus     map[string]int        `yaml:"code_status"`
+	RequiredRoutes []string          `yaml:"required_routes"`
+	Routes         []localErrorRoute `yaml:"routes"`
+	CodeStatus     map[string]int    `yaml:"code_status"`
 }
 
-type kickstartErrorRoute struct {
+// localErrorRoute is one operation's error statuses and the codes each carries.
+type localErrorRoute struct {
 	OperationID   string              `yaml:"operation_id"`
 	Method        string              `yaml:"method"`
 	Path          string              `yaml:"path"`
 	Errors        map[string][]string `yaml:"errors"`
 	OtherStatuses []string            `yaml:"other_statuses"`
+}
+
+type settingsErrorsFixture struct {
+	RequiredRoutes []string          `yaml:"required_routes"`
+	Body           string            `yaml:"body"`
+	Routes         []localErrorRoute `yaml:"routes"`
 }
 
 func loadKickstartErrors(t *testing.T) kickstartErrorsFixture {
@@ -47,9 +57,27 @@ func loadKickstartErrors(t *testing.T) kickstartErrorsFixture {
 	return fixture
 }
 
+func buildLocalDocument(t *testing.T) map[string]any {
+	t.Helper()
+	spec, err := openapi.BuildPeasantLocalAPISpec()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var document map[string]any
+	if err := json.Unmarshal(raw, &document); err != nil {
+		t.Fatal(err)
+	}
+	return document
+}
+
 // The closed code set, the status each code answers with, and the routes are
-// three views of one fact. Each is pinned independently so none can drift from
-// the others.
+// three views of one fact. The fixture states the code-to-status pairs
+// independently of the unexported table behind HTTPStatus, and the test holds
+// the two equal in both directions.
 func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 	fixture := loadKickstartErrors(t)
 	set := make([]string, 0, len(schema.AllLocalKickstartErrorCodes))
@@ -62,6 +90,15 @@ func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 	}
 	requireSameSet(t, "kickstart error codes and the fixture's code_status", set, declared)
 
+	for _, code := range schema.AllLocalKickstartErrorCodes {
+		if got, want := code.HTTPStatus(), fixture.CodeStatus[code.String()]; got != want {
+			t.Errorf("%s.HTTPStatus() = %d, fixture pins %d", code, got, want)
+		}
+	}
+	if got := schema.LocalKickstartErrorCode("kickstart_made_up").HTTPStatus(); got != 0 {
+		t.Errorf("a code outside the closed set has HTTPStatus %d, want 0: it has no status to write", got)
+	}
+
 	used := map[string]bool{}
 	for _, route := range fixture.Routes {
 		for status, codes := range route.Errors {
@@ -70,11 +107,13 @@ func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 				t.Fatalf("%s names status %q, which is not a number", route.OperationID, status)
 			}
 			for _, code := range codes {
-				if _, err := schema.NewLocalKickstartErrorCode(code); err != nil {
+				parsed, err := schema.NewLocalKickstartErrorCode(code)
+				if err != nil {
 					t.Errorf("%s status %s names code %q outside the closed set: %v", route.OperationID, status, code, err)
+					continue
 				}
-				if got := fixture.CodeStatus[code]; got != want {
-					t.Errorf("%s answers %q with %d, but the code is pinned to %d; one code answers one status", route.OperationID, code, want, got)
+				if got := parsed.HTTPStatus(); got != want {
+					t.Errorf("%s answers %q with %d, but the code answers %d; one code answers one status", route.OperationID, code, want, got)
 				}
 				used[code] = true
 			}
@@ -89,18 +128,7 @@ func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 
 func TestKickstartRoutesDeclareTheirErrorStatusesAndCodes(t *testing.T) {
 	fixture := loadKickstartErrors(t)
-	spec, err := openapi.BuildPeasantLocalAPISpec()
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := json.Marshal(spec)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var document map[string]any
-	if err := json.Unmarshal(raw, &document); err != nil {
-		t.Fatal(err)
-	}
+	document := buildLocalDocument(t)
 
 	names := make([]string, 0, len(fixture.Routes))
 	pinned := map[string]bool{}
@@ -129,43 +157,79 @@ func TestKickstartRoutesDeclareTheirErrorStatusesAndCodes(t *testing.T) {
 
 	for _, route := range fixture.Routes {
 		t.Run(route.OperationID, func(t *testing.T) {
-			item, _ := document["paths"].(map[string]any)[route.Path].(map[string]any)
-			operation, ok := item[route.Method].(map[string]any)
-			if !ok {
-				t.Fatalf("%s %s is not declared", route.Method, route.Path)
-			}
-			if got := fmt.Sprint(operation["operationId"]); got != route.OperationID {
-				t.Fatalf("operationId = %s, want %s", got, route.OperationID)
-			}
-			responses, _ := operation["responses"].(map[string]any)
-			var failures []string
-			for status := range responses {
-				if !strings.HasPrefix(status, "2") {
-					failures = append(failures, status)
-				}
-			}
-			var want []string
-			for status := range route.Errors {
-				want = append(want, status)
-			}
-			want = append(want, route.OtherStatuses...)
-			requireSameSet(t, route.OperationID+" non-2xx statuses", want, failures)
-
-			for status, codes := range route.Errors {
-				response, _ := responses[status].(map[string]any)
-				body := mediaSchema(t, route.OperationID+" "+status, response)
-				ref, _ := body["$ref"].(string)
-				name := strings.TrimPrefix(ref, "#/components/schemas/")
-				if name != "LocalKickstartErrorResponse" && name != "SchemaLocalKickstartErrorResponse" {
-					t.Errorf("%s status %s body references %q, want the closed LocalKickstartErrorResponse", route.OperationID, status, ref)
-				}
-				description, _ := response["description"].(string)
-				listed := description[strings.LastIndex(description, "one of: ")+len("one of: "):]
-				if got := strings.Split(strings.TrimSuffix(listed, "."), ", "); !reflect.DeepEqual(got, codes) {
-					t.Errorf("%s status %s describes codes %v, fixture wants %v", route.OperationID, status, got, codes)
-				}
-			}
+			requireRouteDeclaresErrors(t, document, route, "LocalKickstartErrorResponse")
 		})
+	}
+}
+
+// The local settings read declares the failures peasant sends. Its codes are
+// plain documented tokens, not a closed set, so the fixture is their record.
+func TestSettingsReadDeclaresItsErrorStatusesAndCodes(t *testing.T) {
+	var fixture settingsErrorsFixture
+	decoder := yaml.NewDecoder(bytes.NewReader(settingsErrorsYAML))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&fixture); err != nil {
+		t.Fatalf("decode settings error fixture: %v", err)
+	}
+	document := buildLocalDocument(t)
+	names := make([]string, 0, len(fixture.Routes))
+	for _, route := range fixture.Routes {
+		names = append(names, route.OperationID)
+	}
+	requireExactNames(t, fixture.RequiredRoutes, names)
+	for _, route := range fixture.Routes {
+		t.Run(route.OperationID, func(t *testing.T) {
+			requireRouteDeclaresErrors(t, document, route, fixture.Body)
+		})
+	}
+}
+
+// requireRouteDeclaresErrors holds one operation of the generated Local API
+// document to its fixture row: the exact non-2xx statuses, the body component
+// of each coded status, and the codes its description lists.
+func requireRouteDeclaresErrors(t *testing.T, document map[string]any, route localErrorRoute, bodyComponent string) {
+	t.Helper()
+	item, _ := document["paths"].(map[string]any)[route.Path].(map[string]any)
+	operation, ok := item[route.Method].(map[string]any)
+	if !ok {
+		t.Fatalf("%s %s is not declared", route.Method, route.Path)
+	}
+	if got := fmt.Sprint(operation["operationId"]); got != route.OperationID {
+		t.Fatalf("operationId = %s, want %s", got, route.OperationID)
+	}
+	responses, _ := operation["responses"].(map[string]any)
+	var failures []string
+	for status := range responses {
+		if !strings.HasPrefix(status, "2") {
+			failures = append(failures, status)
+		}
+	}
+	var want []string
+	for status := range route.Errors {
+		want = append(want, status)
+	}
+	want = append(want, route.OtherStatuses...)
+	requireSameSet(t, route.OperationID+" non-2xx statuses", want, failures)
+
+	const marker = "one of: "
+	for status, codes := range route.Errors {
+		response, _ := responses[status].(map[string]any)
+		body := mediaSchema(t, route.OperationID+" "+status, response)
+		ref, _ := body["$ref"].(string)
+		name := strings.TrimPrefix(ref, "#/components/schemas/")
+		if name != bodyComponent && name != "Schema"+bodyComponent {
+			t.Errorf("%s status %s body references %q, want %s", route.OperationID, status, ref, bodyComponent)
+		}
+		description, _ := response["description"].(string)
+		at := strings.LastIndex(description, marker)
+		if at < 0 {
+			t.Errorf("%s status %s description %q does not list its codes after %q; the generator states the codes there and the test reads them from it", route.OperationID, status, description, marker)
+			continue
+		}
+		listed := strings.Split(strings.TrimSuffix(description[at+len(marker):], "."), ", ")
+		if !reflect.DeepEqual(listed, codes) {
+			t.Errorf("%s status %s describes codes %v, fixture wants %v", route.OperationID, status, listed, codes)
+		}
 	}
 }
 
@@ -229,17 +293,29 @@ func TestKickstartDroppedLabelsMaxIsTheDeclaredBound(t *testing.T) {
 	}
 }
 
-// The partial-scan notice is its own declared field, never smuggled into phase.
+// The partial-scan notice is its own declared field beside phase: both are
+// declared, and a scan that carries both keeps each in its own field, so the
+// notice is never read out of phase.
 func TestKickstartScanDeclaresTheNoticeBesidePhase(t *testing.T) {
 	fixture := loadKickstartSetFixture(t)
 	names := jsonNames(reflect.TypeOf(schema.LocalKickstartScan{}))
-	found := false
-	for _, name := range names {
-		if name == fixture.ScanNoticeField {
-			found = true
+	for _, want := range []string{"phase", fixture.ScanNoticeField} {
+		found := false
+		for _, name := range names {
+			if name == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("LocalKickstartScan JSON fields %v do not include %q", names, want)
 		}
 	}
-	if !found {
-		t.Fatalf("LocalKickstartScan JSON fields %v do not include the notice field %q", names, fixture.ScanNoticeField)
+	var scan schema.LocalKickstartScan
+	body := fmt.Sprintf(`{"state":"done","phase":"reading","done":1,"total":1,%q:"Pi could not be read"}`, fixture.ScanNoticeField)
+	if err := json.Unmarshal([]byte(body), &scan); err != nil {
+		t.Fatalf("decode a scan with both phase and notice: %v", err)
+	}
+	if scan.Phase != "reading" || scan.Notice != "Pi could not be read" {
+		t.Fatalf("scan read phase=%q notice=%q, want each field to hold only its own text", scan.Phase, scan.Notice)
 	}
 }

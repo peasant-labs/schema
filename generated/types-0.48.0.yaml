@@ -4495,6 +4495,11 @@ components:
           minimum: 0
           type: integer
         notice:
+          description: Server prose naming the harness folders a finished scan could
+            not read. The server sets it when a scan finishes after skipping a configured
+            harness, and omits it when every configured harness was read. It never
+            travels in phase. When present it holds at least one non-space character.
+          pattern: \S
           type: string
         phase:
           type: string

@@ -544,7 +544,9 @@ const (
 	// LocalKickstartErrorPreviewUnreadable: the session's transcript could not be read for the preview.
 	LocalKickstartErrorPreviewUnreadable LocalKickstartErrorCode = "kickstart_preview_unreadable"
 	// LocalKickstartErrorContractBreach: the answer the server built breaks this contract, so it was not sent. The token is the
-	// local server's shared contract-breach code and is not prefixed kickstart_.
+	// local server's shared contract-breach code and is not prefixed kickstart_, so it keeps one spelling across local code sets.
+	// A second local code set that needs it declares its own constant by conversion from this one,
+	// for example MyCode(schema.LocalKickstartErrorContractBreach), and never retypes the string.
 	LocalKickstartErrorContractBreach LocalKickstartErrorCode = "publishing_contract_breach"
 
 	// 503: the setup service cannot take the request now.
@@ -590,10 +592,54 @@ var AllLocalKickstartErrorCodes = []LocalKickstartErrorCode{
 	LocalKickstartErrorConfigChanging,
 }
 
+// localKickstartErrorStatuses is the one table of the HTTP status each code
+// answers with. The grouping in the const block above follows it, HTTPStatus
+// reads it, and the generated Local API document derives each route's error
+// statuses from it, so a code can be declared under one status only. The fixture
+// testdata/local-api/kickstart_errors.yaml states the same pairs independently,
+// and a test holds the two equal.
+var localKickstartErrorStatuses = map[LocalKickstartErrorCode]int{
+	LocalKickstartErrorBodyMissing:         400,
+	LocalKickstartErrorBodyInvalid:         400,
+	LocalKickstartErrorScopeInvalid:        400,
+	LocalKickstartErrorAnswersInvalid:      400,
+	LocalKickstartErrorSessionCommitting:   400,
+	LocalKickstartErrorRevisionAhead:       400,
+	LocalKickstartErrorAnswerRefused:       400,
+	LocalKickstartErrorScanNotDone:         400,
+	LocalKickstartErrorFieldUnknown:        400,
+	LocalKickstartErrorFieldOutOfScope:     400,
+	LocalKickstartErrorFieldHidden:         400,
+	LocalKickstartErrorTreeAnswerShape:     400,
+	LocalKickstartErrorConnectOutOfScope:   400,
+	LocalKickstartErrorConnectNotConnected: 400,
+	LocalKickstartErrorConnectUnknown:      400,
+	LocalKickstartErrorCommitRefused:       400,
+	LocalKickstartErrorSessionNotFound:     404,
+	LocalKickstartErrorPreviewRowNotFound:  404,
+	LocalKickstartErrorFailed:              500,
+	LocalKickstartErrorStatusUnreadable:    500,
+	LocalKickstartErrorConfigUnreadable:    500,
+	LocalKickstartErrorConfigUnwritable:    500,
+	LocalKickstartErrorSessionUnbuildable:  500,
+	LocalKickstartErrorAnswerUnencodable:   500,
+	LocalKickstartErrorPreviewUnreadable:   500,
+	LocalKickstartErrorContractBreach:      500,
+	LocalKickstartErrorUnavailable:         503,
+	LocalKickstartErrorConfigBusy:          503,
+	LocalKickstartErrorConfigChanging:      503,
+}
+
 // NewLocalKickstartErrorCode refuses a token outside the menu.
 func NewLocalKickstartErrorCode(raw string) (LocalKickstartErrorCode, error) {
 	return newKickstartToken(raw, "LocalKickstartErrorCode", AllLocalKickstartErrorCodes)
 }
+
+// HTTPStatus is the HTTP status the code answers with, whichever route raises
+// it: 400, 404, 500, or 503. A value outside the closed set has no status and
+// returns 0, which is not a valid status to write, so a caller that builds a
+// code from untrusted input parses it with NewLocalKickstartErrorCode first.
+func (v LocalKickstartErrorCode) HTTPStatus() int { return localKickstartErrorStatuses[v] }
 
 func (v LocalKickstartErrorCode) IsValid() bool  { return inSet(v, AllLocalKickstartErrorCodes) }
 func (v LocalKickstartErrorCode) String() string { return string(v) }
@@ -1066,7 +1112,7 @@ const LocalKickstartDroppedLabelsMax = 3
 type LocalKickstartScan struct {
 	State             LocalKickstartScanState `json:"state"`
 	Phase             string                  `json:"phase,omitempty"`
-	Notice            string                  `json:"notice,omitempty"`
+	Notice            string                  `json:"notice,omitempty" pattern:"\\S" description:"Server prose naming the harness folders a finished scan could not read. The server sets it when a scan finishes after skipping a configured harness, and omits it when every configured harness was read. It never travels in phase. When present it holds at least one non-space character."`
 	Done              int                     `json:"done" minimum:"0"`
 	Total             int                     `json:"total" minimum:"0"`
 	Error             string                  `json:"error,omitempty"`

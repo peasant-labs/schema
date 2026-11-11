@@ -266,6 +266,8 @@ paths:
       description: Read one session snapshot for reconnect. The forest is not in this
         body; load it from the tree route. 404 when no session has this id, 500 when
         the snapshot cannot be built, and 503 when the setup service is unavailable.
+        Returns 403 with a JSON error whose code is request_host_not_local, and serves
+        nothing, when the request's Host header does not name a loopback address.
       operationId: getKickstartSession
       parameters:
       - description: Kickstart session id
@@ -282,6 +284,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalKickstartSession'
           description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: The request's Host header does not name a loopback address,
+            so nothing was served. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -520,7 +529,9 @@ paths:
       description: Read the whole selection forest for one session. Each node carries
         the server-computed state. locked is a boolean, not a fourth state. The response
         has no page, cursor, or limit. 404 when no session has this id, 500 when the
-        forest cannot be built, and 503 when the setup service is unavailable.
+        forest cannot be built, and 503 when the setup service is unavailable. Returns
+        403 with a JSON error whose code is request_host_not_local, and serves nothing,
+        when the request's Host header does not name a loopback address.
       operationId: getKickstartTree
       parameters:
       - description: Kickstart session id
@@ -537,6 +548,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalKickstartTree'
           description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: The request's Host header does not name a loopback address,
+            so nothing was served. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -564,7 +582,9 @@ paths:
     get:
       description: Read the bounded typed preview lines for one forest row. 404 when
         the session or the row does not exist, 500 when the session's transcript cannot
-        be read, and 503 when the setup service is unavailable.
+        be read, and 503 when the setup service is unavailable. Returns 403 with a
+        JSON error whose code is request_host_not_local, and serves nothing, when
+        the request's Host header does not name a loopback address.
       operationId: getKickstartPreview
       parameters:
       - description: Kickstart session id
@@ -588,6 +608,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalKickstartPreview'
           description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: The request's Host header does not name a loopback address,
+            so nothing was served. The JSON error code is request_host_not_local.
         "404":
           content:
             application/json:
@@ -617,7 +644,9 @@ paths:
         flag. activeSessionId, when present, is the one full-scope session id; it
         is omitted when that session is not open. The response is not a session directory
         and has no per-scope map. 500 when the configuration file cannot be inspected,
-        and 503 when the setup service is unavailable.
+        and 503 when the setup service is unavailable. Returns 403 with a JSON error
+        whose code is request_host_not_local, and serves nothing, when the request's
+        Host header does not name a loopback address.
       operationId: getKickstartStatus
       responses:
         "200":
@@ -626,6 +655,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalKickstartStatus'
           description: OK
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: The request's Host header does not name a loopback address,
+            so nothing was served. The JSON error code is request_host_not_local.
         "500":
           content:
             application/json:
@@ -1483,7 +1519,11 @@ paths:
       description: Read every setting the local settings page shows, with each key's
         kind, its value in the configuration file (null when unset), the effective
         value that applies, and metadata, and every auto-publish rule with the recorded
-        repositories it matches and their hook state per event.
+        repositories it matches and their hook state per event. 500 when the configuration
+        file, a setting, or the auto-publish rules cannot be read, or a saved value
+        has not been applied; 503 when this server runs without a configuration file,
+        or without the session store the auto-publish rules need. A refused read changes
+        nothing.
       operationId: getSettings
       responses:
         "200":
@@ -1492,6 +1532,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/SchemaLocalSettingsResponse'
           description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: 'The settings could not be read. The JSON error code is one
+            of: settings_unreadable, settings_auto_publish_unreadable, settings_value_not_applied,
+            publishing_contract_breach.'
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenapiLocalErrorResponse'
+          description: 'The settings cannot be served now. The JSON error code is
+            one of: settings_unavailable, auto_publish_unavailable.'
       tags:
       - settings
     patch:
@@ -5240,6 +5295,11 @@ components:
           minimum: 0
           type: integer
         notice:
+          description: Server prose naming the harness folders a finished scan could
+            not read. The server sets it when a scan finishes after skipping a configured
+            harness, and omits it when every configured harness was read. It never
+            travels in phase. When present it holds at least one non-space character.
+          pattern: \S
           type: string
         phase:
           type: string

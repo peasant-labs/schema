@@ -1464,7 +1464,7 @@ export const zLocalKickstartScan = z.object({
     droppedSelections: z.int().gte(0).optional(),
     error: z.string().optional(),
     lockedNodes: z.int().gte(0).optional(),
-    notice: z.string().optional(),
+    notice: z.string().regex(/\S/).optional(),
     phase: z.string().optional(),
     state: zLocalKickstartScanState,
     total: z.int().gte(0)

@@ -127,7 +127,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read one session snapshot for reconnect. The forest is not in this body; load it from the tree route. 404 when no session has this id, 500 when the snapshot cannot be built, and 503 when the setup service is unavailable. */
+        /** @description Read one session snapshot for reconnect. The forest is not in this body; load it from the tree route. 404 when no session has this id, 500 when the snapshot cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address. */
         get: operations["getKickstartSession"];
         put?: never;
         post?: never;
@@ -179,7 +179,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the whole selection forest for one session. Each node carries the server-computed state. locked is a boolean, not a fourth state. The response has no page, cursor, or limit. 404 when no session has this id, 500 when the forest cannot be built, and 503 when the setup service is unavailable. */
+        /** @description Read the whole selection forest for one session. Each node carries the server-computed state. locked is a boolean, not a fourth state. The response has no page, cursor, or limit. 404 when no session has this id, 500 when the forest cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address. */
         get: operations["getKickstartTree"];
         put?: never;
         post?: never;
@@ -196,7 +196,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the bounded typed preview lines for one forest row. 404 when the session or the row does not exist, 500 when the session's transcript cannot be read, and 503 when the setup service is unavailable. */
+        /** @description Read the bounded typed preview lines for one forest row. 404 when the session or the row does not exist, 500 when the session's transcript cannot be read, and 503 when the setup service is unavailable. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address. */
         get: operations["getKickstartPreview"];
         put?: never;
         post?: never;
@@ -213,7 +213,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the first-run redirect hook. configured is the only status flag. activeSessionId, when present, is the one full-scope session id; it is omitted when that session is not open. The response is not a session directory and has no per-scope map. 500 when the configuration file cannot be inspected, and 503 when the setup service is unavailable. */
+        /** @description Read the first-run redirect hook. configured is the only status flag. activeSessionId, when present, is the one full-scope session id; it is omitted when that session is not open. The response is not a session directory and has no per-scope map. 500 when the configuration file cannot be inspected, and 503 when the setup service is unavailable. Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address. */
         get: operations["getKickstartStatus"];
         put?: never;
         post?: never;
@@ -587,7 +587,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. */
+        /** @description Read every setting the local settings page shows, with each key's kind, its value in the configuration file (null when unset), the effective value that applies, and metadata, and every auto-publish rule with the recorded repositories it matches and their hook state per event. 500 when the configuration file, a setting, or the auto-publish rules cannot be read, or a saved value has not been applied; 503 when this server runs without a configuration file, or without the session store the auto-publish rules need. A refused read changes nothing. */
         get: operations["getSettings"];
         put?: never;
         post?: never;
@@ -2431,6 +2431,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartSession"];
                 };
             };
+            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
             /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
@@ -2698,6 +2707,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartTree"];
                 };
             };
+            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
             /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
@@ -2750,6 +2768,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartPreview"];
                 };
             };
+            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
             /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found, kickstart_preview_row_not_found. */
             404: {
                 headers: {
@@ -2795,6 +2822,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalKickstartStatus"];
+                };
+            };
+            /** @description The request's Host header does not name a loopback address, so nothing was served. The JSON error code is request_host_not_local. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
             /** @description The server could not finish the request. The JSON error code is one of: kickstart_status_unreadable, publishing_contract_breach. */
@@ -3534,6 +3570,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalSettingsResponse"];
+                };
+            };
+            /** @description The settings could not be read. The JSON error code is one of: settings_unreadable, settings_auto_publish_unreadable, settings_value_not_applied, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description The settings cannot be served now. The JSON error code is one of: settings_unavailable, auto_publish_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
         };

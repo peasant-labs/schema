@@ -11,7 +11,9 @@ import * as localApi from "../dist/local-api.js";
 // generated Local API document. This suite holds the TypeScript binding to the
 // same two fixture files, so neither language can drift from the other:
 // the codes a client parses, the statuses a route declares, the exported
-// dropped-label bound, and the declared scan notice.
+// dropped-label bound, and the declared scan notice. The error body, the scan
+// bound and the notice shapes are replayed from the shared corpus in
+// testdata/local-api/kickstart.yaml, so they are not repeated here.
 
 const errors = parse(await readFile(new URL("../../testdata/local-api/kickstart_errors.yaml", import.meta.url), "utf8"));
 const sets = parse(await readFile(new URL("../../testdata/local-api/kickstart_sets.yaml", import.meta.url), "utf8"));
@@ -47,7 +49,10 @@ for (const route of errors.routes) {
     for (const [status, codes] of Object.entries(route.errors)) {
       const response = operation.responses[status];
       assert.match(response.content["application/json"].schema.$ref, /LocalKickstartErrorResponse$/, `${route.operation_id} ${status} body`);
-      const listed = response.description.slice(response.description.lastIndexOf("one of: ") + "one of: ".length).replace(/\.$/, "").split(", ");
+      const marker = "one of: ";
+      const at = response.description.lastIndexOf(marker);
+      assert.notEqual(at, -1, `${route.operation_id} ${status} description ${JSON.stringify(response.description)} does not list its codes after ${JSON.stringify(marker)}; the generator states the codes there and this test reads them from it`);
+      const listed = response.description.slice(at + marker.length).replace(/\.$/, "").split(", ");
       assert.deepEqual(listed, codes, `${route.operation_id} ${status} described codes`);
       for (const code of codes) {
         assert.equal(errors.code_status[code], Number(status), `${code} is pinned to ${errors.code_status[code]} but ${route.operation_id} answers it with ${status}`);
@@ -55,15 +60,6 @@ for (const route of errors.routes) {
     }
   });
 }
-
-test("the error body parses a published code and refuses anything else", () => {
-  const ok = { error: "No setup session has this id.", code: "kickstart_session_not_found" };
-  assert.equal(schema.zLocalKickstartErrorResponse.safeParse(ok).success, true);
-  assert.equal(schema.zLocalKickstartErrorResponse.safeParse({ ...ok, code: "kickstart_made_up" }).success, false);
-  assert.equal(schema.zLocalKickstartErrorResponse.safeParse({ error: ok.error }).success, false);
-  assert.equal(schema.zLocalKickstartErrorResponse.safeParse({ ...ok, error: "" }).success, false);
-  assert.equal(schema.zLocalKickstartErrorResponse.safeParse({ ...ok, detail: "extra" }).success, false);
-});
 
 test("the dropped-label bound is exported once and the scan schema enforces the same number", () => {
   assert.equal(schema.LocalKickstartDroppedLabelsMax, sets.dropped_labels_max);

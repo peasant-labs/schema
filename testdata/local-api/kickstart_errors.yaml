@@ -7,12 +7,15 @@
 # errors maps a status to the codes it can carry, each answered with the closed
 # LocalKickstartErrorResponse body. other_statuses are declared with another
 # body: 403 is the shared cross-origin refusal that every non-GET route
-# declares, and the commit 409 is LocalKickstartCommitRefusal, which carries the
-# mine/theirs rows and no code.
+# declares, and a GET declares the host-only 403 (code request_host_not_local),
+# the one refusal a read can meet. The commit 409 is LocalKickstartCommitRefusal,
+# which carries the mine/theirs rows and no code.
 #
 # code_status states the one status each code answers with, whichever route
-# raised it. A code that answered two statuses would make the token ambiguous,
-# so the tests refuse it.
+# raised it. It is the independent record of the unexported table behind
+# LocalKickstartErrorCode.HTTPStatus: a test holds the two equal in both
+# directions, and the generated document derives each route's statuses from
+# HTTPStatus, so a code cannot be declared under a status it does not answer.
 required_routes:
   - getKickstartStatus
   - openKickstartSession
@@ -29,7 +32,7 @@ routes:
     errors:
       "500": [kickstart_status_unreadable, publishing_contract_breach]
       "503": [kickstart_unavailable]
-    other_statuses: []
+    other_statuses: ["403"]
   - operation_id: openKickstartSession
     method: post
     path: /api/v1/kickstart/sessions
@@ -45,7 +48,7 @@ routes:
       "404": [kickstart_session_not_found]
       "500": [kickstart_failed, publishing_contract_breach]
       "503": [kickstart_unavailable]
-    other_statuses: []
+    other_statuses: ["403"]
   - operation_id: patchKickstartSession
     method: patch
     path: "/api/v1/kickstart/sessions/{id}"
@@ -76,7 +79,7 @@ routes:
       "404": [kickstart_session_not_found]
       "500": [kickstart_failed, publishing_contract_breach]
       "503": [kickstart_unavailable]
-    other_statuses: []
+    other_statuses: ["403"]
   - operation_id: getKickstartPreview
     method: get
     path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview"
@@ -84,7 +87,7 @@ routes:
       "404": [kickstart_session_not_found, kickstart_preview_row_not_found]
       "500": [kickstart_preview_unreadable, publishing_contract_breach]
       "503": [kickstart_unavailable]
-    other_statuses: []
+    other_statuses: ["403"]
   - operation_id: scanKickstartSession
     method: post
     path: "/api/v1/kickstart/sessions/{id}/scan"
