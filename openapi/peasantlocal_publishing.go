@@ -74,11 +74,11 @@ func addLocalPublishingOperations(r *openapi31.Reflector) error {
 		},
 		{
 			method: http.MethodPatch, path: "/api/v1/settings", id: "updateSetting", tag: "settings",
-			description:   "Change one editable setting. The body names one key and its new value, which must match the key's kind; null unsets the key so the default applies. The response is the setting as saved, with its metadata. A refused update changes nothing and returns the key and the reason: 400 for an unknown or read-only key, a value of the wrong kind, or a configuration the value would make invalid, and 500 when the configuration file cannot be read or written.",
+			description:   "Change one editable setting. The body names one key and its new value, which must match the key's kind; null unsets the key so the default applies. The response is the setting as saved, with its metadata. A refused update changes nothing and returns the key and the reason: 400 for an unknown or read-only key, a value of the wrong kind, or a configuration the value would make invalid, 500 when the configuration file cannot be read or written, and 503 when another save holds the configuration file, so this update could not take its lock. A 503 changes nothing and carries the same key and reason; send the update again once the other save has finished.",
 			requests:      []interface{}{new(schema.LocalSettingUpdateRequest)},
 			response:      new(schema.LocalSetting),
 			requiredBody:  true,
-			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError},
+			errorStatuses: []int{http.StatusBadRequest, http.StatusInternalServerError, http.StatusServiceUnavailable},
 			errorResponse: new(schema.LocalSettingRefusal),
 		},
 		{

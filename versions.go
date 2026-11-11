@@ -237,8 +237,10 @@ const (
 	// Bumped to 0.36.0 on 2026-11-11 when every kickstart route declared the
 	// non-2xx statuses the server answers, each with the closed
 	// LocalKickstartErrorResponse envelope in place of the shared error body,
-	// and the scan state gained the declared notice for a partial scan
-	// (additive statuses and field on a closed response = minor bump).
+	// and the scan state gained the declared notice for a partial scan.
+	// The settings update also declared 503 for a configuration file that
+	// another save holds (additive statuses and field on a closed response =
+	// minor bump).
 	PeasantLocalAPIVersion = "0.36.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").

@@ -38,6 +38,7 @@ required_names:
   - update-empty-key-rejected
   - update-unknown-field-rejected
   - refusal-valid
+  - refusal-config-busy-valid
   - refusal-empty-error-rejected
   - refusal-empty-key-rejected
   - rule-request-valid
@@ -109,8 +110,8 @@ operations:
     path: /api/v1/settings
     request: LocalSettingUpdateRequest
     response: LocalSetting
-    statuses: ["200", "400", "403", "500"]
-    error_responses: {"400": LocalSettingRefusal, "500": LocalSettingRefusal, "403": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "403", "500", "503"]
+    error_responses: {"400": LocalSettingRefusal, "500": LocalSettingRefusal, "503": LocalSettingRefusal, "403": OpenapiLocalErrorResponse}
   - api: local
     method: put
     path: "/api/v1/settings/auto-publish/{id}"
@@ -451,6 +452,15 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "a refused update returns the key and the reason"}
     mutation: {description: "refuses a read-only key"}
+  - name: refusal-config-busy-valid
+    input:
+      schema: LocalSettingRefusal
+      payload:
+        {key: push.concurrency, error: "The configuration file is held by another save, so push.concurrency was not changed. Wait for it to finish, then retry."}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a settings update answers 503 with the key and the reason when another save holds the configuration file"}
+    mutation: {description: "refuses an update while the configuration lock is busy"}
   - name: refusal-empty-error-rejected
     input:
       schema: LocalSettingRefusal

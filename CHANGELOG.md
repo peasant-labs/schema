@@ -27,6 +27,10 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   choices a scan names is now the exported `LocalKickstartDroppedLabelsMax`
   (3) in Go and TypeScript, equal to the `maxItems` of `droppedLabels`. The
   prior 0.35.0 and 0.47.0 specs stay frozen in the retirement registry.
+  `PATCH /api/v1/settings` also declares `503` for an update that could not
+  take the configuration lock because another save holds it. It changes
+  nothing and carries the same `LocalSettingRefusal` (`key` and `error`) as
+  the `400` and `500`; that body has no `code`, so the status is the signal.
 
 - Local API 0.35.0 and Types 0.47.0 declare the kickstart setup surface.
   `GET /api/v1/kickstart/status` returns `configured` and, when a full-scope
