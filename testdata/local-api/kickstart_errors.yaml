@@ -1,0 +1,135 @@
+# Every non-2xx status each kickstart route answers, with the closed error
+# codes that status carries. This is the independent record of what the
+# kickstart server writes: the generated Local API document, the closed
+# LocalKickstartErrorCode set, and both language bindings are checked against
+# it. It is not a publishing boundary corpus: it has no cases key.
+#
+# errors maps a status to the codes it can carry, each answered with the closed
+# LocalKickstartErrorResponse body. other_statuses are declared with another
+# body: 403 is the shared cross-origin refusal that every non-GET route
+# declares, and the commit 409 is LocalKickstartCommitRefusal, which carries the
+# mine/theirs rows and no code.
+#
+# code_status states the one status each code answers with, whichever route
+# raised it. A code that answered two statuses would make the token ambiguous,
+# so the tests refuse it.
+required_routes:
+  - getKickstartStatus
+  - openKickstartSession
+  - getKickstartSession
+  - patchKickstartSession
+  - getKickstartTree
+  - getKickstartPreview
+  - scanKickstartSession
+  - commitKickstartSession
+routes:
+  - operation_id: getKickstartStatus
+    method: get
+    path: /api/v1/kickstart/status
+    errors:
+      "500": [kickstart_status_unreadable, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: []
+  - operation_id: openKickstartSession
+    method: post
+    path: /api/v1/kickstart/sessions
+    errors:
+      "400": [kickstart_body_missing, kickstart_body_invalid, kickstart_scope_invalid]
+      "500": [kickstart_config_unreadable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: ["403"]
+  - operation_id: getKickstartSession
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}"
+    errors:
+      "404": [kickstart_session_not_found]
+      "500": [kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: []
+  - operation_id: patchKickstartSession
+    method: patch
+    path: "/api/v1/kickstart/sessions/{id}"
+    errors:
+      "400":
+        - kickstart_body_missing
+        - kickstart_body_invalid
+        - kickstart_answers_invalid
+        - kickstart_session_committing
+        - kickstart_revision_ahead
+        - kickstart_answer_refused
+        - kickstart_scan_not_done
+        - kickstart_field_unknown
+        - kickstart_field_out_of_scope
+        - kickstart_field_hidden
+        - kickstart_tree_answer_shape
+        - kickstart_connect_out_of_scope
+        - kickstart_connect_not_connected
+        - kickstart_connect_unknown
+      "404": [kickstart_session_not_found]
+      "500": [kickstart_answer_unencodable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: ["403"]
+  - operation_id: getKickstartTree
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}/tree"
+    errors:
+      "404": [kickstart_session_not_found]
+      "500": [kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: []
+  - operation_id: getKickstartPreview
+    method: get
+    path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview"
+    errors:
+      "404": [kickstart_session_not_found, kickstart_preview_row_not_found]
+      "500": [kickstart_preview_unreadable, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: []
+  - operation_id: scanKickstartSession
+    method: post
+    path: "/api/v1/kickstart/sessions/{id}/scan"
+    errors:
+      "400": [kickstart_session_committing]
+      "404": [kickstart_session_not_found]
+      "500": [kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable]
+    other_statuses: ["403"]
+  - operation_id: commitKickstartSession
+    method: post
+    path: "/api/v1/kickstart/sessions/{id}/commit"
+    errors:
+      "400": [kickstart_session_committing, kickstart_commit_refused]
+      "404": [kickstart_session_not_found]
+      "500": [kickstart_config_unreadable, kickstart_config_unwritable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach]
+      "503": [kickstart_unavailable, kickstart_config_busy, kickstart_config_changing]
+    other_statuses: ["403", "409"]
+code_status:
+  kickstart_body_missing: 400
+  kickstart_body_invalid: 400
+  kickstart_scope_invalid: 400
+  kickstart_answers_invalid: 400
+  kickstart_session_committing: 400
+  kickstart_revision_ahead: 400
+  kickstart_answer_refused: 400
+  kickstart_scan_not_done: 400
+  kickstart_field_unknown: 400
+  kickstart_field_out_of_scope: 400
+  kickstart_field_hidden: 400
+  kickstart_tree_answer_shape: 400
+  kickstart_connect_out_of_scope: 400
+  kickstart_connect_not_connected: 400
+  kickstart_connect_unknown: 400
+  kickstart_commit_refused: 400
+  kickstart_session_not_found: 404
+  kickstart_preview_row_not_found: 404
+  kickstart_failed: 500
+  kickstart_status_unreadable: 500
+  kickstart_config_unreadable: 500
+  kickstart_config_unwritable: 500
+  kickstart_session_unbuildable: 500
+  kickstart_answer_unencodable: 500
+  kickstart_preview_unreadable: 500
+  publishing_contract_breach: 500
+  kickstart_unavailable: 503
+  kickstart_config_busy: 503
+  kickstart_config_changing: 503

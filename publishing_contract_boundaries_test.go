@@ -141,6 +141,8 @@ var boundaryDecoders = map[string]func([]byte) (any, error){
 	"LocalKickstartIngest":                     decodeValidated[schema.LocalKickstartIngest],
 	"LocalKickstartAnswers":                    decodeValidated[schema.LocalKickstartAnswers],
 	"LocalKickstartDiffLine":                   decodeValidated[schema.LocalKickstartDiffLine],
+	"LocalKickstartErrorResponse":              decodeValidated[schema.LocalKickstartErrorResponse],
+	"LocalKickstartErrorCode":                  decodeKickstartErrorCode,
 }
 
 // decodeScryCheckResponseUnbounded checks every response rule except the
@@ -169,6 +171,17 @@ func decodeChannelTopic(raw []byte) (any, error) {
 	}
 	if !value.IsValid() {
 		return nil, fmt.Errorf("channel topic %q is outside schema.AllChannelTopics; use a published topic", value)
+	}
+	return value, nil
+}
+
+func decodeKickstartErrorCode(raw []byte) (any, error) {
+	var value schema.LocalKickstartErrorCode
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return nil, err
+	}
+	if !value.IsValid() {
+		return nil, fmt.Errorf("kickstart error code %q is outside schema.AllLocalKickstartErrorCodes; use a published code", value)
 	}
 	return value, nil
 }

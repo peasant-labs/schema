@@ -473,6 +473,137 @@ func (v *LocalKickstartConnectAnswer) UnmarshalJSON(data []byte) error {
 	return unmarshalKickstartToken(data, v, NewLocalKickstartConnectAnswer, "schema.LocalKickstartConnectAnswer.UnmarshalJSON")
 }
 
+// LocalKickstartErrorCode is the machine-readable reason a kickstart route
+// refused a request or could not finish it. Every non-2xx body a kickstart
+// route writes beyond the cross-origin 403 and the commit 409 carries exactly
+// one of these in LocalKickstartErrorResponse.Code. The set is closed: a
+// client parses the token with NewLocalKickstartErrorCode and never compares
+// strings.
+//
+// Each token answers with one HTTP status, whichever route raised it. The
+// grouping below follows that status.
+type LocalKickstartErrorCode string
+
+const (
+	// 400: the request was refused and nothing was changed.
+
+	// LocalKickstartErrorBodyMissing: the open or patch request has no body.
+	LocalKickstartErrorBodyMissing LocalKickstartErrorCode = "kickstart_body_missing"
+	// LocalKickstartErrorBodyInvalid: the body is not one JSON object of the declared shape.
+	LocalKickstartErrorBodyInvalid LocalKickstartErrorCode = "kickstart_body_invalid"
+	// LocalKickstartErrorScopeInvalid: the scope is neither full nor selection.
+	LocalKickstartErrorScopeInvalid LocalKickstartErrorCode = "kickstart_scope_invalid"
+	// LocalKickstartErrorAnswersInvalid: the patch body carries no mutation or a malformed one.
+	LocalKickstartErrorAnswersInvalid LocalKickstartErrorCode = "kickstart_answers_invalid"
+	// LocalKickstartErrorSessionCommitting: the session is being saved, so a patch, rescan, or second save was not applied.
+	LocalKickstartErrorSessionCommitting LocalKickstartErrorCode = "kickstart_session_committing"
+	// LocalKickstartErrorRevisionAhead: the patch revision is ahead of the session.
+	LocalKickstartErrorRevisionAhead LocalKickstartErrorCode = "kickstart_revision_ahead"
+	// LocalKickstartErrorAnswerRefused: the field refused the answer.
+	LocalKickstartErrorAnswerRefused LocalKickstartErrorCode = "kickstart_answer_refused"
+	// LocalKickstartErrorScanNotDone: the tree answer arrived before the discovery scan finished.
+	LocalKickstartErrorScanNotDone LocalKickstartErrorCode = "kickstart_scan_not_done"
+	// LocalKickstartErrorFieldUnknown: the key names no setup field.
+	LocalKickstartErrorFieldUnknown LocalKickstartErrorCode = "kickstart_field_unknown"
+	// LocalKickstartErrorFieldOutOfScope: the field is not part of this scope's stops.
+	LocalKickstartErrorFieldOutOfScope LocalKickstartErrorCode = "kickstart_field_out_of_scope"
+	// LocalKickstartErrorFieldHidden: the field is hidden in the session's current view, so an answer to it is refused.
+	LocalKickstartErrorFieldHidden LocalKickstartErrorCode = "kickstart_field_hidden"
+	// LocalKickstartErrorTreeAnswerShape: the tree is answered with selectedIds, never with a value.
+	LocalKickstartErrorTreeAnswerShape LocalKickstartErrorCode = "kickstart_tree_answer_shape"
+	// LocalKickstartErrorConnectOutOfScope: this scope has no connect offer to answer.
+	LocalKickstartErrorConnectOutOfScope LocalKickstartErrorCode = "kickstart_connect_out_of_scope"
+	// LocalKickstartErrorConnectNotConnected: accept was sent while this computer is not signed in to village.
+	LocalKickstartErrorConnectNotConnected LocalKickstartErrorCode = "kickstart_connect_not_connected"
+	// LocalKickstartErrorConnectUnknown: the connect answer is neither accept nor skip.
+	LocalKickstartErrorConnectUnknown LocalKickstartErrorCode = "kickstart_connect_unknown"
+	// LocalKickstartErrorCommitRefused: the save was refused because an answer is not acceptable, for example a scan that has not finished.
+	LocalKickstartErrorCommitRefused LocalKickstartErrorCode = "kickstart_commit_refused"
+
+	// 404: nothing matches.
+
+	// LocalKickstartErrorSessionNotFound: no live session has the id.
+	LocalKickstartErrorSessionNotFound LocalKickstartErrorCode = "kickstart_session_not_found"
+	// LocalKickstartErrorPreviewRowNotFound: the session's forest holds no such row.
+	LocalKickstartErrorPreviewRowNotFound LocalKickstartErrorCode = "kickstart_preview_row_not_found"
+
+	// 500: the server could not finish.
+
+	// LocalKickstartErrorFailed: a defect the server has no narrower token for.
+	LocalKickstartErrorFailed LocalKickstartErrorCode = "kickstart_failed"
+	// LocalKickstartErrorStatusUnreadable: the status route could not inspect the configuration file.
+	LocalKickstartErrorStatusUnreadable LocalKickstartErrorCode = "kickstart_status_unreadable"
+	// LocalKickstartErrorConfigUnreadable: the configuration file could not be read.
+	LocalKickstartErrorConfigUnreadable LocalKickstartErrorCode = "kickstart_config_unreadable"
+	// LocalKickstartErrorConfigUnwritable: the configuration file could not be written; the previous file is unchanged.
+	LocalKickstartErrorConfigUnwritable LocalKickstartErrorCode = "kickstart_config_unwritable"
+	// LocalKickstartErrorSessionUnbuildable: the session's draft could not be built or rebuilt.
+	LocalKickstartErrorSessionUnbuildable LocalKickstartErrorCode = "kickstart_session_unbuildable"
+	// LocalKickstartErrorAnswerUnencodable: an accepted tree answer could not be encoded.
+	LocalKickstartErrorAnswerUnencodable LocalKickstartErrorCode = "kickstart_answer_unencodable"
+	// LocalKickstartErrorPreviewUnreadable: the session's transcript could not be read for the preview.
+	LocalKickstartErrorPreviewUnreadable LocalKickstartErrorCode = "kickstart_preview_unreadable"
+	// LocalKickstartErrorContractBreach: the answer the server built breaks this contract, so it was not sent. The token is the
+	// local server's shared contract-breach code and is not prefixed kickstart_.
+	LocalKickstartErrorContractBreach LocalKickstartErrorCode = "publishing_contract_breach"
+
+	// 503: the setup service cannot take the request now.
+
+	// LocalKickstartErrorUnavailable: the server was started without a configuration file or without an import to start.
+	LocalKickstartErrorUnavailable LocalKickstartErrorCode = "kickstart_unavailable"
+	// LocalKickstartErrorConfigBusy: another change holds the configuration file.
+	LocalKickstartErrorConfigBusy LocalKickstartErrorCode = "kickstart_config_busy"
+	// LocalKickstartErrorConfigChanging: the configuration file kept changing during the save.
+	LocalKickstartErrorConfigChanging LocalKickstartErrorCode = "kickstart_config_changing"
+)
+
+// AllLocalKickstartErrorCodes is the canonical kickstart error-code menu.
+var AllLocalKickstartErrorCodes = []LocalKickstartErrorCode{
+	LocalKickstartErrorBodyMissing,
+	LocalKickstartErrorBodyInvalid,
+	LocalKickstartErrorScopeInvalid,
+	LocalKickstartErrorAnswersInvalid,
+	LocalKickstartErrorSessionCommitting,
+	LocalKickstartErrorRevisionAhead,
+	LocalKickstartErrorAnswerRefused,
+	LocalKickstartErrorScanNotDone,
+	LocalKickstartErrorFieldUnknown,
+	LocalKickstartErrorFieldOutOfScope,
+	LocalKickstartErrorFieldHidden,
+	LocalKickstartErrorTreeAnswerShape,
+	LocalKickstartErrorConnectOutOfScope,
+	LocalKickstartErrorConnectNotConnected,
+	LocalKickstartErrorConnectUnknown,
+	LocalKickstartErrorCommitRefused,
+	LocalKickstartErrorSessionNotFound,
+	LocalKickstartErrorPreviewRowNotFound,
+	LocalKickstartErrorFailed,
+	LocalKickstartErrorStatusUnreadable,
+	LocalKickstartErrorConfigUnreadable,
+	LocalKickstartErrorConfigUnwritable,
+	LocalKickstartErrorSessionUnbuildable,
+	LocalKickstartErrorAnswerUnencodable,
+	LocalKickstartErrorPreviewUnreadable,
+	LocalKickstartErrorContractBreach,
+	LocalKickstartErrorUnavailable,
+	LocalKickstartErrorConfigBusy,
+	LocalKickstartErrorConfigChanging,
+}
+
+// NewLocalKickstartErrorCode refuses a token outside the menu.
+func NewLocalKickstartErrorCode(raw string) (LocalKickstartErrorCode, error) {
+	return newKickstartToken(raw, "LocalKickstartErrorCode", AllLocalKickstartErrorCodes)
+}
+
+func (v LocalKickstartErrorCode) IsValid() bool  { return inSet(v, AllLocalKickstartErrorCodes) }
+func (v LocalKickstartErrorCode) String() string { return string(v) }
+func (LocalKickstartErrorCode) JSONSchema() (jsonschema.Schema, error) {
+	return closedStringEnumSchema("Kickstart Error Code", "Machine-readable reason a kickstart route refused a request or could not finish it. Each token answers with one HTTP status", AllLocalKickstartErrorCodes), nil
+}
+func (v *LocalKickstartErrorCode) UnmarshalJSON(data []byte) error {
+	return unmarshalKickstartToken(data, v, NewLocalKickstartErrorCode, "schema.LocalKickstartErrorCode.UnmarshalJSON")
+}
+
 // LocalKickstartStatus is the first-run redirect hook. configured is the only
 // status flag. activeSessionId, when present, is the one full-scope session
 // id, not a directory and not a per-scope map.
@@ -918,16 +1049,24 @@ func (c LocalKickstartConflict) Validate() error {
 	return nil
 }
 
-// localKickstartDroppedLabelsMax is the maximum number of vanished choices named in a scan.
-// Keep the maxItems tag on DroppedLabels in sync.
-const localKickstartDroppedLabelsMax = 3
+// LocalKickstartDroppedLabelsMax is the most vanished choices a scan names in
+// DroppedLabels. DroppedSelections carries the full count, so a consumer that
+// lists the labels reads the rest from the difference and never restates this
+// number. The maxItems tag on LocalKickstartScan.DroppedLabels is this value,
+// and a test keeps the two equal.
+const LocalKickstartDroppedLabelsMax = 3
 
-// LocalKickstartScan is the discovery job. DroppedLabels names at most three
-// vanished choices; the count is DroppedSelections. Phase is server prose, not
-// a closed set. The forest is not in this object.
+// LocalKickstartScan is the discovery job. DroppedLabels names at most
+// LocalKickstartDroppedLabelsMax vanished choices; the count is
+// DroppedSelections. Phase is server prose for the step a running scan is on,
+// not a closed set. Notice is separate server prose: it says which harness
+// folders a finished scan could not read, so a scan that listed fewer sessions
+// than expected explains itself, and it never travels in Phase. The forest is
+// not in this object.
 type LocalKickstartScan struct {
 	State             LocalKickstartScanState `json:"state"`
 	Phase             string                  `json:"phase,omitempty"`
+	Notice            string                  `json:"notice,omitempty"`
 	Done              int                     `json:"done" minimum:"0"`
 	Total             int                     `json:"total" minimum:"0"`
 	Error             string                  `json:"error,omitempty"`
@@ -955,8 +1094,11 @@ func (s LocalKickstartScan) Validate() error {
 	if s.Done < 0 || s.Total < 0 || s.LockedNodes < 0 || s.DroppedSelections < 0 {
 		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: a count is negative; emit zero or a positive count")
 	}
-	if len(s.DroppedLabels) > localKickstartDroppedLabelsMax {
-		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: droppedLabels has %d entries; name at most %d and put the rest in droppedSelections", len(s.DroppedLabels), localKickstartDroppedLabelsMax)
+	if len(s.DroppedLabels) > LocalKickstartDroppedLabelsMax {
+		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: droppedLabels has %d entries; name at most %d and put the rest in droppedSelections", len(s.DroppedLabels), LocalKickstartDroppedLabelsMax)
+	}
+	if s.Notice != "" && strings.TrimSpace(s.Notice) == "" {
+		return fmt.Errorf("kickstart scan validation failed at schema.LocalKickstartScan.Validate: notice is only whitespace; omit it, or say which harness folder could not be read")
 	}
 	return nil
 }
@@ -1399,6 +1541,39 @@ func (r LocalKickstartCommitRefusal) Validate() error {
 		if err := r.Conflicts[i].Validate(); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// LocalKickstartErrorResponse is the body of every non-2xx kickstart answer
+// except the cross-origin 403 and the commit 409. Error is prose that names
+// what went wrong and how to recover; a client shows it and decides nothing
+// from it. Code is the closed token a client branches on. Unlike the shared
+// local error body, the code is always present and always one of
+// AllLocalKickstartErrorCodes.
+type LocalKickstartErrorResponse struct {
+	Error string                  `json:"error" minLength:"1"`
+	Code  LocalKickstartErrorCode `json:"code"`
+}
+
+// UnmarshalJSON refuses an unknown error field.
+func (r *LocalKickstartErrorResponse) UnmarshalJSON(data []byte) error {
+	type plain LocalKickstartErrorResponse
+	var decoded plain
+	if err := unmarshalStrict(data, &decoded, "schema.LocalKickstartErrorResponse.UnmarshalJSON"); err != nil {
+		return err
+	}
+	*r = LocalKickstartErrorResponse(decoded)
+	return nil
+}
+
+// Validate checks the prose is present and the code belongs to the closed set.
+func (r LocalKickstartErrorResponse) Validate() error {
+	if err := requireNonEmpty(r.Error, "schema.LocalKickstartErrorResponse.Validate", "error"); err != nil {
+		return err
+	}
+	if !r.Code.IsValid() {
+		return fmt.Errorf("kickstart error validation failed at schema.LocalKickstartErrorResponse.Validate: code %q is outside the closed set; emit a member of schema.AllLocalKickstartErrorCodes", r.Code)
 	}
 	return nil
 }

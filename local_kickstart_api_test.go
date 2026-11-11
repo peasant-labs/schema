@@ -20,6 +20,11 @@ type kickstartSetFixture struct {
 	StatusFields       []string          `yaml:"status_fields"`
 	ForbiddenJSONNames []string          `yaml:"forbidden_json_names"`
 	StrictObjects      []string          `yaml:"strict_objects"`
+	// DroppedLabelsMax is the exported bound on a scan's dropped labels. The
+	// number itself is the contract, so this is its one stated value.
+	DroppedLabelsMax int `yaml:"dropped_labels_max"`
+	// ScanNoticeField is the declared field a partial scan reports through.
+	ScanNoticeField string `yaml:"scan_notice_field"`
 }
 
 type kickstartSetRow struct {
@@ -116,8 +121,8 @@ func loadKickstartSetFixture(t *testing.T) kickstartSetFixture {
 	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatalf("decode kickstart set fixture: %v", err)
 	}
-	if len(fixture.Sets) == 0 || len(fixture.StatusFields) == 0 || len(fixture.ForbiddenJSONNames) == 0 || len(fixture.StrictObjects) == 0 {
-		t.Fatal("kickstart set fixture is missing sets, status fields, forbidden names, or strict objects")
+	if len(fixture.Sets) == 0 || len(fixture.StatusFields) == 0 || len(fixture.ForbiddenJSONNames) == 0 || len(fixture.StrictObjects) == 0 || fixture.DroppedLabelsMax == 0 || fixture.ScanNoticeField == "" {
+		t.Fatal("kickstart set fixture is missing sets, status fields, forbidden names, strict objects, the dropped-labels bound, or the scan notice field")
 	}
 	return fixture
 }
@@ -213,6 +218,11 @@ func kickstartInventory(name string) ([]string, func(string) error, bool) {
 			_, err := schema.NewLocalKickstartConnectAnswer(raw)
 			return err
 		}, true
+	case "LocalKickstartErrorCode":
+		return stringTokens(schema.AllLocalKickstartErrorCodes), func(raw string) error {
+			_, err := schema.NewLocalKickstartErrorCode(raw)
+			return err
+		}, true
 	default:
 		return nil, nil, false
 	}
@@ -272,6 +282,8 @@ func kickstartStruct(name string) (any, bool) {
 		return schema.LocalKickstartCommitRefusal{}, true
 	case "LocalKickstartEvent":
 		return schema.LocalKickstartEvent{}, true
+	case "LocalKickstartErrorResponse":
+		return schema.LocalKickstartErrorResponse{}, true
 	default:
 		return nil, false
 	}

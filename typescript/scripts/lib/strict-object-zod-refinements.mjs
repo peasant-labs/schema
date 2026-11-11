@@ -92,6 +92,7 @@ export const STRICT_OBJECTS = [
   "zLocalKickstartCommitted",
   "zLocalKickstartCommitRefusal",
   "zLocalKickstartEvent",
+  "zLocalKickstartErrorResponse",
 ];
 
 export function applyStrictObjectZodRefinements(source) {

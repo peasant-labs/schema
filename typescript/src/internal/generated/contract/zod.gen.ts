@@ -1211,6 +1211,52 @@ export const zLocalKickstartDiffLine = z.object({
 export type LocalKickstartDiffLine = z.infer<typeof zLocalKickstartDiffLine>;
 
 /**
+ * Kickstart Error Code
+ *
+ * Machine-readable reason a kickstart route refused a request or could not finish it. Each token answers with one HTTP status
+ */
+export const zLocalKickstartErrorCode = z.enum([
+    'kickstart_body_missing',
+    'kickstart_body_invalid',
+    'kickstart_scope_invalid',
+    'kickstart_answers_invalid',
+    'kickstart_session_committing',
+    'kickstart_revision_ahead',
+    'kickstart_answer_refused',
+    'kickstart_scan_not_done',
+    'kickstart_field_unknown',
+    'kickstart_field_out_of_scope',
+    'kickstart_field_hidden',
+    'kickstart_tree_answer_shape',
+    'kickstart_connect_out_of_scope',
+    'kickstart_connect_not_connected',
+    'kickstart_connect_unknown',
+    'kickstart_commit_refused',
+    'kickstart_session_not_found',
+    'kickstart_preview_row_not_found',
+    'kickstart_failed',
+    'kickstart_status_unreadable',
+    'kickstart_config_unreadable',
+    'kickstart_config_unwritable',
+    'kickstart_session_unbuildable',
+    'kickstart_answer_unencodable',
+    'kickstart_preview_unreadable',
+    'publishing_contract_breach',
+    'kickstart_unavailable',
+    'kickstart_config_busy',
+    'kickstart_config_changing'
+]);
+
+export type LocalKickstartErrorCode = z.infer<typeof zLocalKickstartErrorCode>;
+
+export const zLocalKickstartErrorResponse = z.object({
+    code: zLocalKickstartErrorCode,
+    error: z.string().min(1)
+}).strict();
+
+export type LocalKickstartErrorResponse = z.infer<typeof zLocalKickstartErrorResponse>;
+
+/**
  * Kickstart Event Kind
  *
  * Live kickstart topic discriminator. One event carries one session id
@@ -1418,6 +1464,7 @@ export const zLocalKickstartScan = z.object({
     droppedSelections: z.int().gte(0).optional(),
     error: z.string().optional(),
     lockedNodes: z.int().gte(0).optional(),
+    notice: z.string().optional(),
     phase: z.string().optional(),
     state: zLocalKickstartScanState,
     total: z.int().gte(0)

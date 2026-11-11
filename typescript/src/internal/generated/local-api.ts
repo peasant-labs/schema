@@ -112,7 +112,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Open or join the live session for scope. full is the wizard and selection is the selection page. The same scope returns the same id and revision; the other scope returns a different session and leaves the first untouched. The response is the reconnect snapshot, so the page needs no second read. A scope other than full or selection is 400 and changes nothing. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Open or join the live session for scope. full is the wizard and selection is the selection page. The same scope returns the same id and revision; the other scope returns a different session and leaves the first untouched. The response is the reconnect snapshot, so the page needs no second read. A scope other than full or selection, and a body that is missing or not the declared shape, is 400 and changes nothing. 500 when the configuration file cannot be read or the first draft cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["openKickstartSession"];
         delete?: never;
         options?: never;
@@ -127,14 +127,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read one session snapshot for reconnect. The forest is not in this body; load it from the tree route. 404 when no session has this id. */
+        /** @description Read one session snapshot for reconnect. The forest is not in this body; load it from the tree route. 404 when no session has this id, 500 when the snapshot cannot be built, and 503 when the setup service is unavailable. */
         get: operations["getKickstartSession"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Apply one stop's answers, the tree's selected ids, conflict resolutions, or the connect offer. revision is the session revision the caller last rendered. A stale write is applied and reported in the body; it is not a separate status. A stale result may carry no overwritten entries when no answered field changed after that revision. 400 when the body is not valid, and 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Apply one stop's answers, the tree's selected ids, conflict resolutions, or the connect offer. revision is the session revision the caller last rendered. A stale write is applied and reported in the body; it is not a separate status. A stale result may carry no overwritten entries when no answered field changed after that revision. 400 when the body is not valid, when the session is being saved, or when an answer is refused: an unknown field, a field outside this scope, a field hidden in the current view, or a value the field does not accept. Nothing is changed on a 400. 404 when no session has this id, 500 when the answer cannot be applied because of a server defect, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         patch: operations["patchKickstartSession"];
         trace?: never;
     };
@@ -147,7 +147,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Recompute, merge, swap the configuration, write retention, and start the import. 409 returns the mine/theirs rows and writes nothing. The success body carries the finish actions and the ingest state; it does not install a hook and has no reset control. 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Recompute, merge, swap the configuration, write retention, and start the import. 409 returns the mine/theirs rows and writes nothing. The success body carries the finish actions and the ingest state; it does not install a hook and has no reset control. 400 when the save is refused, for example because an answer is not acceptable or the session is already being saved; nothing is written. 404 when no session has this id. 500 when the configuration file cannot be read or written, and the previous file is unchanged. 503 when another change holds the configuration file, when it kept changing, or when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["commitKickstartSession"];
         delete?: never;
         options?: never;
@@ -164,7 +164,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rescan the filesystem for one session. Progress is pushed on the kickstart topic; this response is the scan state at accept. The forest is not in the response. 404 when no session has this id. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Rescan the filesystem for one session. Progress is pushed on the kickstart topic; this response is the scan state at accept. The forest is not in the response. 400 when the session is being saved, 404 when no session has this id, 500 when the scan state cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
         post: operations["scanKickstartSession"];
         delete?: never;
         options?: never;
@@ -179,7 +179,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the whole selection forest for one session. Each node carries the server-computed state. locked is a boolean, not a fourth state. The response has no page, cursor, or limit. 404 when no session has this id. */
+        /** @description Read the whole selection forest for one session. Each node carries the server-computed state. locked is a boolean, not a fourth state. The response has no page, cursor, or limit. 404 when no session has this id, 500 when the forest cannot be built, and 503 when the setup service is unavailable. */
         get: operations["getKickstartTree"];
         put?: never;
         post?: never;
@@ -196,7 +196,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the bounded typed preview lines for one forest row. 404 when the session or the row does not exist. */
+        /** @description Read the bounded typed preview lines for one forest row. 404 when the session or the row does not exist, 500 when the session's transcript cannot be read, and 503 when the setup service is unavailable. */
         get: operations["getKickstartPreview"];
         put?: never;
         post?: never;
@@ -213,7 +213,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read the first-run redirect hook. configured is the only status flag. activeSessionId, when present, is the one full-scope session id; it is omitted when that session is not open. The response is not a session directory and has no per-scope map. */
+        /** @description Read the first-run redirect hook. configured is the only status flag. activeSessionId, when present, is the one full-scope session id; it is omitted when that session is not open. The response is not a session directory and has no per-scope map. 500 when the configuration file cannot be inspected, and 503 when the setup service is unavailable. */
         get: operations["getKickstartStatus"];
         put?: never;
         post?: never;
@@ -1341,6 +1341,42 @@ export interface components {
          * @enum {string}
          */
         SchemaLocalKickstartDiffLineType: Schema.LocalKickstartDiffLineType;
+        /**
+         * Kickstart Error Code
+         * @description Machine-readable reason a kickstart route refused a request or could not finish it. Each token answers with one HTTP status
+         * @example kickstart_body_missing
+         * @example kickstart_body_invalid
+         * @example kickstart_scope_invalid
+         * @example kickstart_answers_invalid
+         * @example kickstart_session_committing
+         * @example kickstart_revision_ahead
+         * @example kickstart_answer_refused
+         * @example kickstart_scan_not_done
+         * @example kickstart_field_unknown
+         * @example kickstart_field_out_of_scope
+         * @example kickstart_field_hidden
+         * @example kickstart_tree_answer_shape
+         * @example kickstart_connect_out_of_scope
+         * @example kickstart_connect_not_connected
+         * @example kickstart_connect_unknown
+         * @example kickstart_commit_refused
+         * @example kickstart_session_not_found
+         * @example kickstart_preview_row_not_found
+         * @example kickstart_failed
+         * @example kickstart_status_unreadable
+         * @example kickstart_config_unreadable
+         * @example kickstart_config_unwritable
+         * @example kickstart_session_unbuildable
+         * @example kickstart_answer_unencodable
+         * @example kickstart_preview_unreadable
+         * @example publishing_contract_breach
+         * @example kickstart_unavailable
+         * @example kickstart_config_busy
+         * @example kickstart_config_changing
+         * @enum {string}
+         */
+        SchemaLocalKickstartErrorCode: Schema.LocalKickstartErrorCode;
+        SchemaLocalKickstartErrorResponse: Schema.LocalKickstartErrorResponse;
         SchemaLocalKickstartField: Schema.LocalKickstartField;
         /**
          * Kickstart Field Kind
@@ -2336,13 +2372,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartSession"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request was refused and nothing was changed. The JSON error code is one of: kickstart_body_missing, kickstart_body_invalid, kickstart_scope_invalid. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -2352,6 +2388,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_config_unreadable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2377,13 +2431,31 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartSession"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2413,13 +2485,13 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartPatchResult"];
                 };
             };
-            /** @description Bad Request */
+            /** @description The request was refused and nothing was changed. The JSON error code is one of: kickstart_body_missing, kickstart_body_invalid, kickstart_answers_invalid, kickstart_session_committing, kickstart_revision_ahead, kickstart_answer_refused, kickstart_scan_not_done, kickstart_field_unknown, kickstart_field_out_of_scope, kickstart_field_hidden, kickstart_tree_answer_shape, kickstart_connect_out_of_scope, kickstart_connect_not_connected, kickstart_connect_unknown. */
             400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
             /** @description Forbidden */
@@ -2431,13 +2503,31 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_answer_unencodable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2463,6 +2553,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartCommitted"];
                 };
             };
+            /** @description The request was refused and nothing was changed. The JSON error code is one of: kickstart_session_committing, kickstart_commit_refused. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
             /** @description Forbidden */
             403: {
                 headers: {
@@ -2472,13 +2571,13 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
             /** @description Conflict */
@@ -2488,6 +2587,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalKickstartCommitRefusal"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_config_unreadable, kickstart_config_unwritable, kickstart_session_unbuildable, kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable, kickstart_config_busy, kickstart_config_changing. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2513,6 +2630,15 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartScan"];
                 };
             };
+            /** @description The request was refused and nothing was changed. The JSON error code is one of: kickstart_session_committing. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
             /** @description Forbidden */
             403: {
                 headers: {
@@ -2522,13 +2648,31 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2554,13 +2698,31 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartTree"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_failed, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2588,13 +2750,31 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartPreview"];
                 };
             };
-            /** @description Not Found */
+            /** @description No session or forest row matches. The JSON error code is one of: kickstart_session_not_found, kickstart_preview_row_not_found. */
             404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_preview_unreadable, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };
@@ -2615,6 +2795,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaLocalKickstartStatus"];
+                };
+            };
+            /** @description The server could not finish the request. The JSON error code is one of: kickstart_status_unreadable, publishing_contract_breach. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
+                };
+            };
+            /** @description The setup service cannot take the request now. The JSON error code is one of: kickstart_unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
         };

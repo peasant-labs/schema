@@ -7,6 +7,27 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Local API 0.36.0 and Types 0.48.0 declare the failures the kickstart routes
+  answer. Every kickstart route now declares `500` and `503`; `GET
+  /api/v1/kickstart/status` declares only those two. `POST .../sessions` declares
+  `400` for a missing or malformed body or a scope outside `full` and
+  `selection`. `PATCH .../sessions/{id}` declares `400` for a refused answer,
+  including an answer to a hidden field (`kickstart_field_hidden`). `POST
+  .../scan` declares `400` when the session is being saved. `POST .../commit`
+  declares `400` for a refused save, and `503` when another change holds the
+  configuration file or it kept changing. The 404 and 409 stay. Each of these
+  statuses carries the new closed `LocalKickstartErrorResponse` (`error` and
+  `code`) in place of the shared local error body, and `code` is one of the
+  new closed `LocalKickstartErrorCode` set (`AllLocalKickstartErrorCodes`,
+  `NewLocalKickstartErrorCode`, `IsValid`, and the TypeScript `LocalKickstartErrorCode`
+  with `isLocalKickstartErrorCode`). Each code answers one status. The
+  kickstart `403` and `409` bodies are unchanged. `LocalKickstartScan` gains the
+  optional `notice`, which says which harness folders a finished scan could
+  not read; the server no longer puts that text in `phase`. The most vanished
+  choices a scan names is now the exported `LocalKickstartDroppedLabelsMax`
+  (3) in Go and TypeScript, equal to the `maxItems` of `droppedLabels`. The
+  prior 0.35.0 and 0.47.0 specs stay frozen in the retirement registry.
+
 - Local API 0.35.0 and Types 0.47.0 declare the kickstart setup surface.
   `GET /api/v1/kickstart/status` returns `configured` and, when a full-scope
   session is open, `activeSessionId`. `POST /api/v1/kickstart/sessions` opens

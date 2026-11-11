@@ -16,6 +16,7 @@ required_names:
   - LocalKickstartEventKind
   - LocalKickstartCloseReason
   - LocalKickstartConnectAnswer
+  - LocalKickstartErrorCode
 sets:
   - {name: LocalKickstartScope, values: [full, selection]}
   - {name: LocalKickstartStopKind, values: [connection, config, review, ingest]}
@@ -31,7 +32,43 @@ sets:
   - {name: LocalKickstartEventKind, values: [session, answers, conflicts, scan, ingest, closed]}
   - {name: LocalKickstartCloseReason, values: [committed, expired]}
   - {name: LocalKickstartConnectAnswer, values: [accept, skip]}
+  - name: LocalKickstartErrorCode
+    values:
+      - kickstart_body_missing
+      - kickstart_body_invalid
+      - kickstart_scope_invalid
+      - kickstart_answers_invalid
+      - kickstart_session_committing
+      - kickstart_revision_ahead
+      - kickstart_answer_refused
+      - kickstart_scan_not_done
+      - kickstart_field_unknown
+      - kickstart_field_out_of_scope
+      - kickstart_field_hidden
+      - kickstart_tree_answer_shape
+      - kickstart_connect_out_of_scope
+      - kickstart_connect_not_connected
+      - kickstart_connect_unknown
+      - kickstart_commit_refused
+      - kickstart_session_not_found
+      - kickstart_preview_row_not_found
+      - kickstart_failed
+      - kickstart_status_unreadable
+      - kickstart_config_unreadable
+      - kickstart_config_unwritable
+      - kickstart_session_unbuildable
+      - kickstart_answer_unencodable
+      - kickstart_preview_unreadable
+      - publishing_contract_breach
+      - kickstart_unavailable
+      - kickstart_config_busy
+      - kickstart_config_changing
 status_fields: [configured, activeSessionId]
+# The most vanished choices a scan names. The number itself is the contract: the
+# exported schema constant, the struct tag, and the generated maxItems all equal it.
+dropped_labels_max: 3
+# A scan that could not read a harness folder says so here, never in phase.
+scan_notice_field: notice
 forbidden_json_names: [page, perPage, per_page, cursor, nextCursor, next_cursor, limit, nextItems, next_items, reset]
 strict_objects:
   - LocalKickstartStatus
@@ -60,3 +97,4 @@ strict_objects:
   - LocalKickstartCommitted
   - LocalKickstartCommitRefusal
   - LocalKickstartEvent
+  - LocalKickstartErrorResponse

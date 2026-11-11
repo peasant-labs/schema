@@ -714,6 +714,11 @@ type localOperationSpec struct {
 	errorStatuses      []int
 	errorResponse      interface{}
 	alternateResponses map[int]interface{}
+	// errorCodes, when set, names the closed codes each declared error status
+	// can carry. It must cover exactly the statuses in errorStatuses. The
+	// document then states the codes in that status's response description, so
+	// a status and its codes are declared in one place.
+	errorCodes map[int][]schema.LocalKickstartErrorCode
 }
 
 func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec) error {
@@ -748,6 +753,9 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 		oc.SetTags(op.tag)
 		if err := r.AddOperation(oc); err != nil {
 			return fmt.Errorf("add Local API operation %s %s: %w", op.method, op.path, err)
+		}
+		if err := describeErrorCodes(r.Spec, op); err != nil {
+			return err
 		}
 		if op.requiredBody {
 			if err := requireRequestBody(r.Spec, op.method, op.path); err != nil {
