@@ -32,6 +32,8 @@ const generatedRoot = join(packageRoot, "src", "internal", "generated");
 const versionsSource = await readFile(join(moduleRoot, "versions.go"), "utf8");
 const localAPISource = await readFile(join(moduleRoot, "local_api.go"), "utf8");
 const sessionTeammateBound = Number(requiredMatch(localAPISource, /SessionTeammateMaxIdentityRunes\s*=\s*(\d+)/, "SessionTeammateMaxIdentityRunes", "local_api.go"));
+const kickstartSource = await readFile(join(moduleRoot, "local_kickstart_api.go"), "utf8");
+const localKickstartDroppedLabelsMax = Number(requiredMatch(kickstartSource, /^const LocalKickstartDroppedLabelsMax = (\d+)$/m, "LocalKickstartDroppedLabelsMax", "local_kickstart_api.go"));
 const metadataSource = await readFile(join(moduleRoot, "metadata.go"), "utf8");
 const usageMetadataSource = await readFile(join(moduleRoot, "usage_metadata.go"), "utf8");
 const maxNativeMetadataStringBytes = Number(requiredMatch(usageMetadataSource, /^const maxNativeMetadataStringBytes = (\d+)$/m, "maxNativeMetadataStringBytes", "usage_metadata.go"));
@@ -65,6 +67,7 @@ const redactionProjection = JSON.parse(execFileSync("go", ["run", "-mod=readonly
 await writeFile(join(generatedRoot, "redaction-categories.gen.ts"), renderRedactionCategories(redactionProjection));
 await refineRootZodContract();
 await writeFile(join(generatedRoot, "versions.gen.ts"), renderVersions(versions));
+await writeFile(join(generatedRoot, "kickstart-limits.gen.ts"), `${header()}export const LocalKickstartDroppedLabelsMax = ${localKickstartDroppedLabelsMax} as const;\n`);
 await writeFile(join(generatedRoot, "metadata-limits.gen.ts"), `${header()}export const maxNativeMetadataStringBytes = ${maxNativeMetadataStringBytes} as const;\n`);
 await writeFile(join(generatedRoot, "enums.gen.ts"), renderEnums(spec, enumCatalog));
 await writeFile(join(generatedRoot, "collective-compatibility.gen.ts"), renderCollectiveCompatibility(await readFile(join(moduleRoot, "collective_compatibility.go"), "utf8"), enumCatalog));
