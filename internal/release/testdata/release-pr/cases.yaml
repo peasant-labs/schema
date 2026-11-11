@@ -1,0 +1,24 @@
+# release-PR concurrency cases: a minimal workflow shape (trigger types +
+# concurrency block) validated by checkReleasePRWorkflow. An `accept` case must
+# validate with no error; a `reject` case must return an error whose message
+# contains EVERY `wantContains` substring (the substrings name the offending
+# field / required fix).
+accept:
+  - name: edited trigger with edited-exempting concurrency validates
+    workflow: valid.yml
+
+reject:
+  # the regression: a literal true lets a body edit cancel the in-progress
+  # tests (the edited run skips them) and lets an edit after merge cancel tag
+  - name: literal true cancels in-progress runs on edit
+    workflow: cancel-true.yml
+    wantContains: ["concurrency.cancel-in-progress is true"]
+  - name: missing cancel-in-progress
+    workflow: missing-cancel.yml
+    wantContains: ["missing concurrency.cancel-in-progress"]
+  - name: expression that does not exempt edited
+    workflow: wrong-expr.yml
+    wantContains: ["must exempt edited"]
+  - name: pull_request trigger missing edited
+    workflow: missing-edited.yml
+    wantContains: ["missing edited"]
