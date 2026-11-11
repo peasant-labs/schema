@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"io"
 	"reflect"
 	"testing"
@@ -44,6 +45,9 @@ func TestTypesOpenAPIExposesEveryClosedEnum(t *testing.T) {
 	}
 	fixtureNames := make([]string, 0, len(fixture.Enums))
 	for _, enum := range fixture.Enums {
+		if err := validateEnumInventoryBinding(enum); err != nil {
+			t.Error(err)
+		}
 		fixtureNames = append(fixtureNames, enum.Name)
 	}
 	openAPIEnumNames := make([]string, 0)
@@ -69,6 +73,33 @@ func TestTypesOpenAPIExposesEveryClosedEnum(t *testing.T) {
 			t.Errorf("closed enum %s OpenAPI values=%v, want canonical Go values %v", enum.Name, actual, expected)
 		}
 	}
+}
+
+func validateEnumInventoryBinding(enum closedEnumFixtureRow) error {
+	if len(enum.AllValues) < len(enum.Members) && enum.GoAllVar == "" {
+		return fmt.Errorf("closed enum %s has a subset inventory without go_all_var", enum.Name)
+	}
+	if enum.GoAllVar != "" && enum.GoAllVar != enum.AllName {
+		return fmt.Errorf("closed enum %s go_all_var must match all_name", enum.Name)
+	}
+	return nil
+}
+
+func TestSubsetEnumRequiresGoInventoryBinding(t *testing.T) {
+	fixture := loadClosedEnumFixture(t)
+	for _, enum := range fixture.Enums {
+		if enum.Name == "Harness" {
+			if len(enum.AllValues) >= len(enum.Members) || enum.GoAllVar == "" {
+				t.Fatal("Harness fixture must be a subset with a Go inventory binding")
+			}
+			enum.GoAllVar = ""
+			if err := validateEnumInventoryBinding(enum); err == nil {
+				t.Fatal("missing Go inventory binding accepted for a subset enum")
+			}
+			return
+		}
+	}
+	t.Fatal("Harness fixture missing")
 }
 
 func loadClosedEnumFixture(t *testing.T) closedEnumFixture {

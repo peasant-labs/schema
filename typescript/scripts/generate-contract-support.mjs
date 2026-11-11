@@ -166,6 +166,9 @@ function renderEnums(openapi, catalog) {
     if (JSON.stringify(actualValues) !== JSON.stringify(expectedValues)) {
       throw new Error(`TypeScript enum generation found ${enumCase.name} drift between Go/OpenAPI (${JSON.stringify(actualValues)}) and testdata/typescript/enums.yaml (${JSON.stringify(expectedValues)}); TypeScript output was not written; update the canonical Go closed set and its fixture together.`);
     }
+    if (enumCase.all_values.length < members.length && enumCase.go_all_var === undefined) {
+      throw new Error(`TypeScript enum generation found a subset inventory for ${enumCase.name} without go_all_var in enums.yaml; Go order cannot be verified; declare the canonical Go inventory before regenerating.`);
+    }
     if (enumCase.go_all_var !== undefined) {
       if (enumCase.go_all_var !== enumCase.all_name) throw new Error(`TypeScript enum generation found inconsistent go_all_var and all_name for ${enumCase.name} in enums.yaml; use the canonical Go inventory name for both.`);
       const byName = new Map(members.map((member) => [`${enumCase.name}${member.name}`, member.value]));
