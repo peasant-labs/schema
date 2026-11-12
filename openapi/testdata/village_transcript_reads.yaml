@@ -4,6 +4,8 @@
 # transcript-segment-read, transcript-window-descriptor) under Village's
 # /api/v1/transcripts/{id}/... path. statuses is the exact set of declared
 # response statuses; errorRef is the body every error status carries.
+# reachableComponents names nested components the Village-to-Local comparison
+# must reach from the response component; every reachable component is compared.
 required_names: [village-transcript-segment-directory, village-transcript-segment-read, village-transcript-window-descriptor]
 routes:
   cases:
@@ -16,6 +18,7 @@ routes:
       requiredRoot: [sessionId, revision, totalTurns, totalSegments, segments, totalConversationTurns]
       nonnullArrays: [segments]
       forbiddenRoot: [turns]
+      reachableComponents: [TranscriptSegmentRef, ConversationTurnSpan, SessionID]
       statuses: [200, 400, 404, 409, 500]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass
@@ -29,6 +32,7 @@ routes:
       responseRef: "#/components/schemas/SchemaTranscriptSegment"
       requiredRoot: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns]
       nonnullArrays: [turns]
+      reachableComponents: [TranscriptTurn, TurnContentPart, ImagePart, ToolCallDetail, UsageDetail, Role, EntryType]
       statuses: [200, 400, 404, 409, 500]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass
@@ -43,6 +47,7 @@ routes:
       requiredRoot: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer]
       nonnullArrays: [segments]
       forbiddenRoot: [turns, content, toolCalls]
+      reachableComponents: [SessionID]
       statuses: [200, 400, 404, 409, 500]
       errorRef: "#/components/schemas/SchemaVillageErrorResponse"
     classification: must-pass

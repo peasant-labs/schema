@@ -34,6 +34,10 @@ type villageTranscriptReadExpected struct {
 	RequiredRoot  []string `yaml:"requiredRoot"`
 	ForbiddenRoot []string `yaml:"forbiddenRoot"`
 	NonnullArrays []string `yaml:"nonnullArrays"`
+	// ReachableComponents are nested components, named without the Schema
+	// prefix, that the Village-to-Local comparison must reach from the
+	// response component. It is a required subset, not the whole closure.
+	ReachableComponents []string `yaml:"reachableComponents"`
 	Statuses      []int    `yaml:"statuses"`
 	ErrorRef      string   `yaml:"errorRef"`
 }
@@ -46,8 +50,9 @@ type villageTranscriptReadFixtures struct {
 // TestVillageTranscriptReadsAreDeclared holds the Village API's directory,
 // segment and window reads to the fixture: path, operation id, tag, ordered
 // parameters, the response component and the exact status set. It also holds
-// each response component equal to the one the Local API declares, so the two
-// servers cannot serve different shapes under one type name.
+// each response component, and every component reachable from it through
+// references, equal to the one the Local API declares, so the two servers
+// cannot serve different shapes under one type name.
 func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 	data, err := os.ReadFile("testdata/village_transcript_reads.yaml")
 	if err != nil {
@@ -171,19 +176,107 @@ func TestVillageTranscriptReadsAreDeclared(t *testing.T) {
 					t.Fatalf("%s is not a non-null array", root)
 				}
 			}
-			// The two specs name a nested component with or without the Schema
-			// prefix, so the prefix is dropped from references before comparing.
-			unprefixed := func(value any) []byte {
-				encoded, _ := json.Marshal(value)
-				return bytes.ReplaceAll(encoded, []byte(`"#/components/schemas/Schema`), []byte(`"#/components/schemas/`))
+			// Nested components are only references inside the response
+			// component, so every component reachable from it is compared.
+			reached := requireSameComponentClosure(t, name, components, localComponents)
+			for _, required := range c.Expected.ReachableComponents {
+				if !slices.Contains(reached, required) {
+					t.Fatalf("the comparison from %s reached %v and not %s; it did not follow the reference chain", name, reached, required)
+				}
 			}
-			villageJSON := unprefixed(component)
-			localJSON := unprefixed(localComponents[name])
-			if !bytes.Equal(villageJSON, localJSON) {
-				t.Fatalf("component %s differs between the Village and Local specs:\nvillage %s\nlocal   %s", name, villageJSON, localJSON)
+			if len(c.Expected.ReachableComponents) == 0 {
+				t.Fatal("the case names no reachableComponents; name the nested components the comparison must reach")
 			}
 		})
 	}
+}
+
+const componentRefPrefix = "#/components/schemas/"
+
+// unprefixedComponentName drops the Schema prefix one of the two specs puts on
+// a component name, so the same type has the same name in both.
+func unprefixedComponentName(name string) string {
+	return strings.TrimPrefix(name, "Schema")
+}
+
+// componentWithUnprefixedRefs encodes a component with every reference
+// rewritten to the unprefixed name, and returns the names it references as the
+// document spells them.
+func componentWithUnprefixedRefs(t *testing.T, component any) ([]byte, []string) {
+	t.Helper()
+	var refs []string
+	var rewrite func(value any) any
+	rewrite = func(value any) any {
+		switch typed := value.(type) {
+		case map[string]any:
+			out := make(map[string]any, len(typed))
+			for key, member := range typed {
+				if ref, ok := member.(string); ok && key == "$ref" && strings.HasPrefix(ref, componentRefPrefix) {
+					target := strings.TrimPrefix(ref, componentRefPrefix)
+					refs = append(refs, target)
+					out[key] = componentRefPrefix + unprefixedComponentName(target)
+					continue
+				}
+				out[key] = rewrite(member)
+			}
+			return out
+		case []any:
+			out := make([]any, len(typed))
+			for i, member := range typed {
+				out[i] = rewrite(member)
+			}
+			return out
+		default:
+			return value
+		}
+	}
+	encoded, err := json.Marshal(rewrite(component))
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(refs)
+	return encoded, slices.Compact(refs)
+}
+
+// requireSameComponentClosure compares the named Village component, and every
+// component reachable from it through references, with the Local component of
+// the same unprefixed name. It returns the unprefixed names it compared.
+func requireSameComponentClosure(t *testing.T, root string, village, local map[string]any) []string {
+	t.Helper()
+	localByName := make(map[string]any, len(local))
+	for name, component := range local {
+		localByName[unprefixedComponentName(name)] = component
+	}
+	seen := map[string]bool{}
+	queue := []string{root}
+	for len(queue) > 0 {
+		name := queue[0]
+		queue = queue[1:]
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		villageComponent, ok := village[name]
+		if !ok {
+			t.Fatalf("component %s, reachable from %s, does not resolve in the Village spec", name, root)
+		}
+		localComponent, ok := localByName[unprefixedComponentName(name)]
+		if !ok {
+			t.Fatalf("component %s, reachable from %s in the Village spec, is not declared by the Local spec", name, root)
+		}
+		villageJSON, refs := componentWithUnprefixedRefs(t, villageComponent)
+		localJSON, _ := componentWithUnprefixedRefs(t, localComponent)
+		if !bytes.Equal(villageJSON, localJSON) {
+			t.Fatalf("component %s, reachable from %s, differs between the Village and Local specs:\nvillage %s\nlocal   %s", name, root, villageJSON, localJSON)
+		}
+		queue = append(queue, refs...)
+	}
+	reached := make([]string, 0, len(seen))
+	for name := range seen {
+		reached = append(reached, unprefixedComponentName(name))
+	}
+	slices.Sort(reached)
+	return reached
 }
 
 func builtSpecDocument[T any](t *testing.T, build func() (T, error)) map[string]any {
