@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
 )
@@ -18,35 +17,6 @@ func configReadError(path, rev string, err error) error {
 		return fmt.Errorf("cannot read release config %q: %v. Create .github/release-intent.yaml or fix the path", path, err)
 	}
 	return fmt.Errorf("cannot read release config %q at %q: %v. Confirm the revision carries the config file", path, rev, err)
-}
-
-// configInvalid maps any config content failure to exit 2 with the closed
-// config-invalid code. A typed contract error passes through unchanged; a
-// plain decode failure is wrapped with the same code so every invalid config
-// exits 2 with a typed line, while an unreadable file stays exit 1.
-func configInvalid(subcommand, where string, err error) error {
-	var ie *intent.Error
-	if errors.As(err, &ie) {
-		return rejectAs(subcommand, err)
-	}
-	return rejectAs(subcommand, &intent.Error{
-		Code:  intent.ErrConfigInvalid,
-		What:  "release config is invalid: " + firstLine(err.Error()),
-		Why:   "the release config is strict YAML with a fixed key set and required fields",
-		Where: where + ", checked by release-intent " + subcommand,
-		When:  "loading the release config before any check",
-		Means: "no check can run without the repo's contract",
-		Fix:   "fix the file or pass a readable path",
-	})
-}
-
-func firstLine(s string) string {
-	for i, r := range s {
-		if r == '\n' {
-			return s[:i]
-		}
-	}
-	return s
 }
 
 // runCheckConfig implements: release-intent check-config --config F. An
@@ -66,12 +36,23 @@ func runCheckConfig(args []string) error {
 			return usageErr("unknown flag %q for check-config: expected --config F (got %q; usage: release-intent check-config [--config F])", args[i], args[i])
 		}
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return configReadError(path, "", err)
-	}
-	if _, err := intent.ParseConfig(data); err != nil {
-		return configInvalid("check-config", "release config "+strconvQuote(path), err)
+	if _, err := loadConfig("check-config", path, ""); err != nil {
+		return err
 	}
 	return emitLines([]string{"ok=true"})
+}
+
+// loadConfig reads one working-tree release config through the contract
+// package: a read failure stays a plain error for exit 1, a parse failure is
+// the typed config-invalid rejection for exit 2.
+func loadConfig(subcommand, path, rev string) (intent.Config, error) {
+	cfg, err := intent.LoadConfig(path)
+	if err != nil {
+		var ie *intent.Error
+		if errors.As(err, &ie) {
+			return intent.Config{}, rejectAs(subcommand, err)
+		}
+		return intent.Config{}, configReadError(path, rev, err)
+	}
+	return cfg, nil
 }

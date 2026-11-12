@@ -181,6 +181,22 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 		dir := writeWorkflowsSetup(t, false)
 		replace["SETUP"] = dir
 		return dir, replace
+	case "current-same":
+		dir := setupCurrentBranch(t, "same")
+		replace["SETUP"] = dir
+		return dir, replace
+	case "current-clean-tip":
+		dir := setupCurrentBranch(t, "clean-tip")
+		replace["SETUP"] = dir
+		return dir, replace
+	case "current-differs":
+		dir := setupCurrentBranch(t, "differs")
+		replace["SETUP"] = dir
+		return dir, replace
+	case "current-conflict":
+		dir := setupCurrentBranch(t, "conflict")
+		replace["SETUP"] = dir
+		return dir, replace
 	case "workflows-violation", "policy-only":
 		dir := writeWorkflowsSetup(t, setup == "workflows-violation")
 		replace["SETUP"] = dir
@@ -189,6 +205,59 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 		t.Fatalf("unknown process setup %q", setup)
 		return "", nil
 	}
+}
+
+// setupCurrentBranch builds a temp repo with an open release branch named
+// "release" holding the freshly written content: seed tagged v0.1.0, one
+// pending minor, content written then committed on the release branch while
+// the tip stays bare. The variant then moves one side: same leaves both
+// sides; clean-tip lands a docs commit on the tip; differs lands another
+// releasing commit on the tip; conflict edits the changelog on both sides so
+// the tip no longer merges onto the release branch cleanly.
+func setupCurrentBranch(t *testing.T, variant string) string {
+	t.Helper()
+	dir := newBareRepo(t)
+	writeFile(t, dir, ".github/release-intent.yaml", checkTitleTestConfig)
+	writeFile(t, dir, "CHANGELOG.md", "# changelog\n")
+	writeFile(t, dir, "package.json", "{\"version\": \"0.1.0\"}\n")
+	runGit(t, dir, "add", ".")
+	runGit(t, dir, "commit", "-q", "-m", "feat(init)[minor]: seed")
+	runGit(t, dir, "tag", "v0.1.0")
+	writeFile(t, dir, "work.txt", "more\n")
+	runGit(t, dir, "add", "work.txt")
+	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: add facet")
+	if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {
+		t.Fatalf("setup release-pr --write exit = %d, want 0\nstdout: %q", exit, stdout)
+	}
+	runGit(t, dir, "checkout", "-q", "-b", "release")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-q", "-m", "release content")
+	runGit(t, dir, "checkout", "-q", "master")
+	switch variant {
+	case "same":
+	case "clean-tip":
+		writeFile(t, dir, "docs.txt", "words\n")
+		runGit(t, dir, "add", "docs.txt")
+		runGit(t, dir, "commit", "-q", "-m", "docs(readme): touch docs")
+	case "differs":
+		writeFile(t, dir, "later.txt", "later\n")
+		runGit(t, dir, "add", "later.txt")
+		runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: later facet")
+	case "conflict":
+		// Both sides edit the same untracked-by-content file, so the content
+		// matches but the tip no longer merges onto the release branch.
+		runGit(t, dir, "checkout", "-q", "release")
+		writeFile(t, dir, "shared.txt", "release side\n")
+		runGit(t, dir, "add", "shared.txt")
+		runGit(t, dir, "commit", "-q", "-m", "docs(shared): release side")
+		runGit(t, dir, "checkout", "-q", "master")
+		writeFile(t, dir, "shared.txt", "tip side\n")
+		runGit(t, dir, "add", "shared.txt")
+		runGit(t, dir, "commit", "-q", "-m", "docs(shared): tip side")
+	default:
+		t.Fatalf("unknown current variant %q", variant)
+	}
+	return dir
 }
 
 // writeWorkflowsSetup writes a minimal policy plus workflows dir. With queue

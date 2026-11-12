@@ -20,10 +20,14 @@ const fairtradeShapedPackageJSON = `{"name": "fairtrade",
 }
 `
 
+// TestWriteReleaseContent_OnlyVersionLineChanges proves writeReleaseContent
+// splices only the protected version value: the fairtrade-shaped package.json
+// below is deliberately hostile to whole-file rewrites (unsorted keys, scripts
+// with shell operators the JSON escaper would mangle, and the protected field
+// in the middle). It runs in the repo dir (t.Chdir, restored automatically)
+// because writeReleaseContent resolves repo-relative paths like the binary
+// does when run from the repository root.
 func TestWriteReleaseContent_OnlyVersionLineChanges(t *testing.T) {
-	// No t.Parallel: the test changes the process-global working directory
-	// because writeReleaseContent resolves repo-relative paths like the binary
-	// does when run from the repository root.
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
@@ -44,14 +48,7 @@ func TestWriteReleaseContent_OnlyVersionLineChanges(t *testing.T) {
 		Section:   "## 0.2.0\n",
 		Versions:  map[string]string{"package.json": "0.2.1"},
 	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	defer func() {
-		if err := os.Chdir("/"); err != nil {
-			t.Fatalf("chdir back: %v", err)
-		}
-	}()
+	t.Chdir(dir)
 	if err := writeReleaseContent(cfg, content); err != nil {
 		t.Fatalf("writeReleaseContent: %v", err)
 	}

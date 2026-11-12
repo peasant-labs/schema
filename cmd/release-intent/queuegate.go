@@ -53,13 +53,9 @@ func runQueueGate(args []string) error {
 	if err != nil {
 		return rejectAs("queue-gate", err)
 	}
-	cfgData, err := os.ReadFile(DefaultConfigPath)
+	cfg, err := loadConfig("queue-gate", DefaultConfigPath, "")
 	if err != nil {
-		return configReadError(DefaultConfigPath, "", err)
-	}
-	cfg, err := intent.ParseConfig(cfgData)
-	if err != nil {
-		return configInvalid("queue-gate", "release config "+DefaultConfigPath, err)
+		return err
 	}
 	current, err := queueCurrent(cfg)
 	if err != nil {

@@ -5,6 +5,7 @@ required_names:
   - fresh-no-section
   - stale-new-releasing
   - older-fresh-newer-stale
+  - rejected-later-minor-writes-full
   - check-stale
   - read-error
   - stale-rebuild-single-section
@@ -46,7 +47,13 @@ cases:
       expected: {exit: 0, action: "open-pr", fresh: "false"}
       classification: must-pass
       provenance: {source: requirement, ref: "a newer stale candidate never tags, whatever came before"}
-      mutation: {description: "Stacks a fresh release, a new pending subject and a stale rebuild."}
+      mutation: {description: "Leaves the older fresh release untagged and hand-builds the newer release stale."}
+    - name: rejected-later-minor-writes-full
+      input: {style: "bare", scenario: "rejected-later-minor-writes-full"}
+      expected: {exit: 0, lines: ["fresh=true", "push=true", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a rejected candidate plus a later minor writes the full set"}
+      mutation: {description: "Lands a minor after a fresh release without touching the changelog."}
     - name: check-stale
       input: {style: "bare", scenario: "check-stale-tree"}
       expected: {exit: 2, lines: ["fresh=false", "error=release-content-stale"]}

@@ -96,6 +96,13 @@ func TestGitRunner_RejectsLeadingDashArgs(t *testing.T) {
 			}, c.Input.Arg, c.Expected.Refusal)
 		})
 	}
+	// runGit itself refuses a leading-dash dynamic arg before exec, on a path
+	// the method loop above never reaches (git show with a hostile rev).
+	g := realGitRunner(t, t.TempDir())
+	out, err := g.(*execGit).runGit(context.Background(), gitShow, []string{"--end-of-options"}, "-e:CHANGELOG.md")
+	if err == nil || !strings.Contains(err.Error(), "begins with") {
+		t.Fatalf("runGit with a leading-dash path: out=%q err=%v, want the dash refusal", string(out), err)
+	}
 }
 
 func assertDashRefusal(t *testing.T, call func() error, arg, want string) {
@@ -202,10 +209,15 @@ func TestGitRunner_TagsResolveAnnotatedAndLightweight(t *testing.T) {
 	if len(tags) != 2 {
 		t.Fatalf("Tags = %v, want exactly v0.1.0 and v0.2.0 in one git call", tags)
 	}
-	for tag, sha := range tags {
-		if len(sha) != 40 {
-			t.Fatalf("tag %q resolved to %q, want a 40-char peeled commit", tag, sha)
-		}
+	// Assert the peeled commits, not the tag objects: an annotated tag's own
+	// object id is also 40 hex chars, so a length check cannot tell them
+	// apart. Ignoring the peeled value resolves the annotated tag to its tag
+	// object, which is not on the first-parent chain.
+	if tags["v0.2.0"] != gitRev(t, dir, "HEAD") {
+		t.Fatalf("annotated tag v0.2.0 resolved to %q, want the HEAD commit %q", tags["v0.2.0"], gitRev(t, dir, "HEAD"))
+	}
+	if tags["v0.1.0"] != gitRev(t, dir, "HEAD~1") {
+		t.Fatalf("lightweight tag v0.1.0 resolved to %q, want the seed commit %q", tags["v0.1.0"], gitRev(t, dir, "HEAD~1"))
 	}
 }
 
@@ -419,40 +431,4 @@ func hermeticGitEnv(t *testing.T) []string {
 		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t",
 		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
 	)
-}
-
-func TestDebugChangedPaths(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not on PATH")
-	}
-	dir := initIntentRepo(t)
-	runGit(t, dir, "mv", "protected.txt", "renamed.txt")
-	runGit(t, dir, "commit", "-q", "-m", "rename protected")
-	base := gitRev(t, dir, "HEAD~1")
-	head := gitRev(t, dir, "HEAD")
-	t.Logf("base=%s head=%s", base, head)
-	cmd := exec.Command("git", "log", "--oneline", "-3")
-	cmd.Dir = dir
-	cmd.Env = hermeticGitEnv(t)
-	out, _ := cmd.CombinedOutput()
-	t.Logf("log:\n%s", out)
-	r, _ := newExecGitIn(dir)
-	mb, paths, err := r.ChangedPaths(context.Background(), base, head)
-	t.Logf("mb=%q paths=%v err=%v", mb, paths, err)
-}
-
-func TestDebugDashDirect(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not on PATH")
-	}
-	dir := t.TempDir()
-	g, err := newExecGitIn(dir)
-	if err != nil {
-		t.Fatalf("newExecGitIn: %v", err)
-	}
-	out, err := g.(*execGit).runGit(context.Background(), gitShow, []string{"--end-of-options"}, "-e:CHANGELOG.md")
-	t.Logf("out=%q err=%v (%T)", string(out), err, err)
-	if err == nil || !strings.Contains(err.Error(), "begins with") {
-		t.Fatalf("no refusal: out=%q err=%v", string(out), err)
-	}
 }

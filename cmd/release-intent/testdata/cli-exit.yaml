@@ -36,6 +36,11 @@ required_names:
   - plan-empty-release-plans
   - release-pr-write-accept
   - release-pr-write-empty
+  - release-pr-write-current-same
+  - release-pr-write-current-clean-tip
+  - release-pr-write-current-differs
+  - release-pr-write-current-conflict
+  - release-pr-write-current-unreadable
   - release-pr-needs-write-or-check
 
 cases:
@@ -276,6 +281,36 @@ cases:
       sibling: release-pr-write-accept
       provenance: {source: boundary, ref: "release-pr needs exactly one of --write or --check"}
       mutation: {description: "Omits both --write and --check."}
+    - name: release-pr-write-current-same
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write", "--current", "release"], stdin: "", setup: "current-same"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=false", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a release branch holding the content is not rebuilt"}
+      mutation: {description: "Writes with --current pointing at the release branch at the tip."}
+    - name: release-pr-write-current-clean-tip
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write", "--current", "release"], stdin: "", setup: "current-clean-tip"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=false", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a clean tip commit over the content still needs no rebuild"}
+      mutation: {description: "Lands a docs commit on the tip, which changes no release content."}
+    - name: release-pr-write-current-differs
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write", "--current", "release"], stdin: "", setup: "current-differs"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=true", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "changed release content on the tip rebuilds the release branch"}
+      mutation: {description: "Lands another releasing commit on the tip after the release branch."}
+    - name: release-pr-write-current-conflict
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write", "--current", "release"], stdin: "", setup: "current-conflict"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=true", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a release branch the tip no longer merges onto rebuilds"}
+      mutation: {description: "Edits the same content-free file on the tip and the release branch."}
+    - name: release-pr-write-current-unreadable
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write", "--current", "does-not-exist"], stdin: "", setup: "current-same"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=true", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an unreadable release branch never reads as up to date"}
+      mutation: {description: "Points --current at a ref that does not exist; the decided result is push=true."}
     - name: plan-empty-release-plans
       input: {argv: ["plan", "--branch", "HEAD", "--mode", "tag"], stdin: "", setup: "git-empty-release"}
       expected: {exit: 0, stdout: ["action=open-pr", "range_base=v0.1.0", "version_base=v0.1.0", "candidate=", "candidate_fresh=", "level=patch", "breaking=false", "version=0.1.1", "tag=v0.1.1", "error="]}

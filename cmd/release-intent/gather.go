@@ -33,11 +33,7 @@ func Gather(ctx context.Context, r GitRunner, branch, configPath, floor string, 
 	if err != nil {
 		return intent.Facts{}, intent.Config{}, fmt.Errorf("plan: cannot find the commit adding %q on %q: %w", configPath, branch, err)
 	}
-	intentCommits := make([]intent.Commit, 0, len(commits))
-	for _, c := range commits {
-		intentCommits = append(intentCommits, intent.Commit{SHA: c.SHA, Subject: c.Subject, ChangesChangelog: c.ChangesChangelog, Date: c.Date})
-	}
-	base := intent.Facts{Branch: branch, Commits: intentCommits, Tags: tags, Epoch: epoch, Floor: floor, Mode: mode, Verdict: verdict, Fresh: map[string]bool{}}
+	base := intent.Facts{Branch: branch, Commits: commits, Tags: tags, Epoch: epoch, Floor: floor, Mode: mode, Verdict: verdict, Fresh: map[string]bool{}}
 	// Find the candidate with a first pass that carries no freshness, then
 	// record freshness for it through Generate. Plan only reads the entry for
 	// the commit it picks, so one entry suffices.
@@ -86,7 +82,7 @@ func baseRevForRange(shas []string, tags map[string]string, rangeBaseTag, epoch 
 // what Generate produces for the candidate's own sub-range, which the planner
 // reports in Before. Any unreadable input is an error (exit 1, no
 // candidate_fresh), never stale.
-func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits []Commit, tags map[string]string, dec intent.Decision, epoch string) (bool, error) {
+func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits []intent.Commit, tags map[string]string, dec intent.Decision, epoch string) (bool, error) {
 	shas := make([]string, 0, len(commits))
 	for _, c := range commits {
 		shas = append(shas, c.SHA)
@@ -108,24 +104,11 @@ func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits
 	if err != nil {
 		return false, fmt.Errorf("plan: cannot render the expected release content for the freshness comparison: %w. A read error is never reported as stale", err)
 	}
-	gotChangelog, err := r.ReadFile(ctx, dec.Candidate, cfg.Changelog)
+	got, err := fileContent(func(path string) ([]byte, error) {
+		return r.ReadFile(ctx, dec.Candidate, path)
+	}, cfg, content)
 	if err != nil {
-		return false, fmt.Errorf("plan: cannot read changelog %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, dec.Candidate, err)
-	}
-	got := intent.Content{Changelog: string(gotChangelog), Versions: map[string]string{}}
-	for _, vf := range cfg.VersionFiles {
-		if _, ok := content.Versions[vf.Path]; !ok {
-			continue
-		}
-		data, err := r.ReadFile(ctx, dec.Candidate, vf.Path)
-		if err != nil {
-			return false, fmt.Errorf("plan: cannot read version file %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", vf.Path, dec.Candidate, err)
-		}
-		val, corrupt := versionFieldValue(data, vf.Field)
-		if corrupt {
-			val = ""
-		}
-		got.Versions[vf.Path] = val
+		return false, fmt.Errorf("plan: cannot assemble the candidate content for the freshness comparison: %w. A read error is never reported as stale", err)
 	}
 	if err := intent.CompareContent(content, got); err != nil {
 		return false, nil
