@@ -1,0 +1,12 @@
+# Queue policy for the fault sample: a write step after a pre-tag step with no status function.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: merge-gate, workflow: ci.yml, job: merge-gate, aggregator: true }
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  release_job:
+    workflow: release-batch.yml
+    job: release
+    branch: automation/release
+    pre_tag_steps: [verify-contract, verify-freeze]

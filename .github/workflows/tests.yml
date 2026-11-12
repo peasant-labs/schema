@@ -32,6 +32,10 @@ on:
       - "typescript/**"
       - "testcase/testdata/**"
       - "testdata/**"
+      # The merge-queue workflow policy corpus (YAML fixtures with a
+      # required-name manifest): a fixture-only edit must re-run this gate
+      # to catch a dropped or stray sample.
+      - "internal/release/testdata/workflow_queue/**"
       - "README.md"
       - "TESTING.md"
       - "CONTRIBUTING.md"
@@ -61,6 +65,10 @@ on:
       - "typescript/**"
       - "testcase/testdata/**"
       - "testdata/**"
+      # The merge-queue workflow policy corpus (YAML fixtures with a
+      # required-name manifest): a fixture-only edit must re-run this gate
+      # to catch a dropped or stray sample.
+      - "internal/release/testdata/workflow_queue/**"
       - "README.md"
       - "TESTING.md"
       - "CONTRIBUTING.md"

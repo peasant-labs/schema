@@ -1,0 +1,9 @@
+# Queue policy with a single required context: the guard workflow owns the
+# merge_group trigger the queue build needs.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  bot_jobs:
+    - { workflow: vendor.yml, job: update, branch: automation/vendor }

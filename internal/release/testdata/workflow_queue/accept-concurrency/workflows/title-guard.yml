@@ -1,0 +1,17 @@
+name: Title guard
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  merge_group:
+concurrency:
+  group: title-guard-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  title-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Check title
+        run: release-intent check-title --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --author ${{ github.event.pull_request.user.login }}

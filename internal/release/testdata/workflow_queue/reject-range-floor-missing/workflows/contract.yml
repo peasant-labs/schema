@@ -1,0 +1,9 @@
+name: Contract
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: release-intent check-contract --until ${{ github.sha }}

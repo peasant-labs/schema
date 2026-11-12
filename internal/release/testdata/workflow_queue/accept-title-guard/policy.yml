@@ -1,0 +1,8 @@
+# Queue policy for the guard sample: the title-guard context is marked.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  bot_jobs:
+    - { workflow: vendor.yml, job: update, branch: automation/vendor }
