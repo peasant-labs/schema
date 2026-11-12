@@ -88,7 +88,7 @@ func TestKickstartErrorCodeSetMatchesFixtureStatuses(t *testing.T) {
 	for code := range fixture.CodeStatus {
 		declared = append(declared, code)
 	}
-	requireSameSet(t, "kickstart error codes and the fixture's code_status", set, declared)
+	requireSameSet(t, "kickstart error codes", declared, set)
 
 	for _, code := range schema.AllLocalKickstartErrorCodes {
 		if got, want := code.HTTPStatus(), fixture.CodeStatus[code.String()]; got != want {
@@ -153,7 +153,7 @@ func TestKickstartRoutesDeclareTheirErrorStatusesAndCodes(t *testing.T) {
 	for key := range pinned {
 		pinnedKeys = append(pinnedKeys, key)
 	}
-	requireSameSet(t, "kickstart operations in the Local API document and the error fixture", declared, pinnedKeys)
+	requireSameSet(t, "kickstart operations in the Local API document", pinnedKeys, declared)
 
 	for _, route := range fixture.Routes {
 		t.Run(route.OperationID, func(t *testing.T) {

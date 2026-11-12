@@ -28,11 +28,13 @@ type writeOperationIdentity struct {
 }
 
 type crossOriginRefusal struct {
-	Status            string   `yaml:"status"`
-	Component         string   `yaml:"component"`
-	Required          []string `yaml:"required"`
-	Properties        []string `yaml:"properties"`
-	DescriptionAnchor string   `yaml:"description_anchor"`
+	Status              string   `yaml:"status"`
+	Component           string   `yaml:"component"`
+	Required            []string `yaml:"required"`
+	Properties          []string `yaml:"properties"`
+	Codes               []string `yaml:"codes"`
+	OperationSentence   string   `yaml:"operation_sentence"`
+	ResponseDescription string   `yaml:"response_description"`
 }
 
 // writeSurface maps "method path" to the declared operation.
@@ -53,6 +55,14 @@ func loadCrossOriginWrites(t *testing.T) crossOriginWritesFixture {
 	}
 	if len(fixture.WriteOperations) == 0 {
 		t.Fatal("cross-origin write fixture names no write operation")
+	}
+	if len(fixture.Refusal.Codes) == 0 {
+		t.Fatal("cross-origin write fixture names no refusal code")
+	}
+	for _, code := range fixture.Refusal.Codes {
+		if !strings.Contains(fixture.Refusal.OperationSentence, code) || !strings.Contains(fixture.Refusal.ResponseDescription, code) {
+			t.Fatalf("cross-origin write fixture lists the code %q, but its operation sentence or response description does not name it; state each code in both", code)
+		}
 	}
 	return fixture
 }
@@ -88,7 +98,9 @@ func declaredWriteSurface(t *testing.T, refusal crossOriginRefusal) (writeSurfac
 			media, _ := content["application/json"].(map[string]any)
 			schemaMap, _ := media["schema"].(map[string]any)
 			description, _ := operation["description"].(string)
-			refused := schemaMap["$ref"] == "#/components/schemas/"+refusal.Component && strings.Contains(description, refusal.DescriptionAnchor)
+			refused := schemaMap["$ref"] == "#/components/schemas/"+refusal.Component &&
+				strings.HasSuffix(description, " "+refusal.OperationSentence) &&
+				response["description"] == refusal.ResponseDescription
 			surface[method+" "+path] = declaredWrite{operationID: fmt.Sprint(operation["operationId"]), refused: refused}
 		}
 	}

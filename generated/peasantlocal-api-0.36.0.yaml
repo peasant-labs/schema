@@ -62,8 +62,10 @@ paths:
       - annotations
     post:
       description: 'Create a new annotation. Returns 403 with a JSON error, and changes
-        nothing, when the request did not come from this local server: its Host header
-        does not name a loopback address, or a browser sent it from another origin.'
+        nothing, when the request did not come from this local server: the request''s
+        Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
       operationId: createAnnotation
       requestBody:
         content:
@@ -82,7 +84,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - annotations
   /api/v1/attachments/{ref}:
@@ -214,8 +220,10 @@ paths:
         declared shape, is 400 and changes nothing. 500 when the configuration file
         cannot be read or the first draft cannot be built, and 503 when the setup
         service is unavailable. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
+        when the request did not come from this local server: the request''s Host
+        header does not name a loopback address (code request_host_not_local), or
+        a browser sent it from another origin or from a page this server did not serve
+        (code request_origin_not_local).'
       operationId: openKickstartSession
       requestBody:
         content:
@@ -243,7 +251,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "500":
           content:
             application/json:
@@ -326,8 +338,9 @@ paths:
         session has this id, 500 when the answer cannot be applied because of a server
         defect, and 503 when the setup service is unavailable. Returns 403 with a
         JSON error, and changes nothing, when the request did not come from this local
-        server: its Host header does not name a loopback address, or a browser sent
-        it from another origin.'
+        server: the request''s Host header does not name a loopback address (code
+        request_host_not_local), or a browser sent it from another origin or from
+        a page this server did not serve (code request_origin_not_local).'
       operationId: patchKickstartSession
       parameters:
       - description: Kickstart session id
@@ -366,7 +379,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -402,8 +419,10 @@ paths:
         file cannot be read or written, and the previous file is unchanged. 503 when
         another change holds the configuration file, when it kept changing, or when
         the setup service is unavailable. Returns 403 with a JSON error, and changes
-        nothing, when the request did not come from this local server: its Host header
-        does not name a loopback address, or a browser sent it from another origin.'
+        nothing, when the request did not come from this local server: the request''s
+        Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
       operationId: commitKickstartSession
       parameters:
       - description: Kickstart session id
@@ -432,7 +451,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -470,8 +493,10 @@ paths:
         not in the response. 400 when the session is being saved, 404 when no session
         has this id, 500 when the scan state cannot be built, and 503 when the setup
         service is unavailable. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
+        when the request did not come from this local server: the request''s Host
+        header does not name a loopback address (code request_host_not_local), or
+        a browser sent it from another origin or from a page this server did not serve
+        (code request_origin_not_local).'
       operationId: scanKickstartSession
       parameters:
       - description: Kickstart session id
@@ -500,7 +525,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -1569,8 +1598,9 @@ paths:
         not take its lock. A 503 changes nothing and carries the same key and reason;
         send the update again once the other save has finished. Returns 403 with a
         JSON error, and changes nothing, when the request did not come from this local
-        server: its Host header does not name a loopback address, or a browser sent
-        it from another origin.'
+        server: the request''s Host header does not name a loopback address (code
+        request_host_not_local), or a browser sent it from another origin or from
+        a page this server did not serve (code request_origin_not_local).'
       operationId: updateSetting
       requestBody:
         content:
@@ -1596,7 +1626,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "500":
           content:
             application/json:
@@ -1619,8 +1653,9 @@ paths:
         event. Paused rules grant no publishing consent. Separately installed terminal
         hooks keep their independent consent. 404 when no rule has this identifier.
         Returns 403 with a JSON error, and changes nothing, when the request did not
-        come from this local server: its Host header does not name a loopback address,
-        or a browser sent it from another origin.'
+        come from this local server: the request''s Host header does not name a loopback
+        address (code request_host_not_local), or a browser sent it from another origin
+        or from a page this server did not serve (code request_origin_not_local).'
       operationId: deleteAutoPublishRule
       parameters:
       - description: Auto-publish rule identifier
@@ -1643,7 +1678,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -1663,8 +1702,9 @@ paths:
         installs in one repository at a time. 400 when the rule is invalid, for example
         a match pattern the server cannot read for its kind. Returns 403 with a JSON
         error, and changes nothing, when the request did not come from this local
-        server: its Host header does not name a loopback address, or a browser sent
-        it from another origin.'
+        server: the request''s Host header does not name a loopback address (code
+        request_host_not_local), or a browser sent it from another origin or from
+        a page this server did not serve (code request_origin_not_local).'
       operationId: saveAutoPublishRule
       parameters:
       - description: Auto-publish rule identifier
@@ -1699,7 +1739,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - settings
   /api/v1/settings/auto-publish/{id}/install:
@@ -1713,8 +1757,9 @@ paths:
         400 when the path is not a recorded repository the rule matches, so nothing
         is installed in an unrecorded repository; 404 when no rule has this identifier.
         Returns 403 with a JSON error, and changes nothing, when the request did not
-        come from this local server: its Host header does not name a loopback address,
-        or a browser sent it from another origin.'
+        come from this local server: the request''s Host header does not name a loopback
+        address (code request_host_not_local), or a browser sent it from another origin
+        or from a page this server did not serve (code request_origin_not_local).'
       operationId: installAutoPublishHooks
       parameters:
       - description: Auto-publish rule identifier
@@ -1749,7 +1794,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -1762,8 +1811,9 @@ paths:
     post:
       description: 'Gracefully shutdown the server (localhost only). Returns 403 with
         a JSON error, and changes nothing, when the request did not come from this
-        local server: its Host header does not name a loopback address, or a browser
-        sent it from another origin.'
+        local server: the request''s Host header does not name a loopback address
+        (code request_host_not_local), or a browser sent it from another origin or
+        from a page this server did not serve (code request_origin_not_local).'
       operationId: postShutdown
       responses:
         "200":
@@ -1782,7 +1832,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - lifecycle
   /api/v1/sync/auth:
@@ -1805,8 +1859,9 @@ paths:
         means the sign-in started; poll getSyncAuth until it reports authenticated.
         already_authenticated means nothing started. Returns 403 with a JSON error,
         and changes nothing, when the request did not come from this local server:
-        its Host header does not name a loopback address, or a browser sent it from
-        another origin.'
+        the request''s Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
       operationId: syncLogin
       responses:
         "200":
@@ -1820,7 +1875,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - sync
   /api/v1/sync/logout:
@@ -1829,8 +1888,9 @@ paths:
         credential. This route changes local state only. Logging out a computer that
         holds no credential returns already_logged_out. Returns 403 with a JSON error,
         and changes nothing, when the request did not come from this local server:
-        its Host header does not name a loopback address, or a browser sent it from
-        another origin.'
+        the request''s Host header does not name a loopback address (code request_host_not_local),
+        or a browser sent it from another origin or from a page this server did not
+        serve (code request_origin_not_local).'
       operationId: syncLogout
       responses:
         "200":
@@ -1844,7 +1904,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - sync
   /api/v1/sync/push:
@@ -1861,8 +1925,10 @@ paths:
         Village had for it and makes the session an error; a later step the server
         did not run after a failure is not_attempted. The counts tally sessions by
         status after every step ran. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
+        when the request did not come from this local server: the request''s Host
+        header does not name a loopback address (code request_host_not_local), or
+        a browser sent it from another origin or from a page this server did not serve
+        (code request_origin_not_local).'
       operationId: pushSyncSessions
       requestBody:
         content:
@@ -1882,7 +1948,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
       tags:
       - sync
   /api/v1/sync/redactions:
@@ -2088,8 +2158,9 @@ paths:
       description: 'Idempotently remove an explicit tracking preference using saved
         identity offline. No remote mutation or publication consent change. Returns
         403 with a JSON error, and changes nothing, when the request did not come
-        from this local server: its Host header does not name a loopback address,
-        or a browser sent it from another origin.'
+        from this local server: the request''s Host header does not name a loopback
+        address (code request_host_not_local), or a browser sent it from another origin
+        or from a page this server did not serve (code request_origin_not_local).'
       operationId: untrackCollectiveObservation
       parameters:
       - in: path
@@ -2121,7 +2192,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -2153,8 +2228,9 @@ paths:
         tracking. No body; tracking grants no membership or publication consent. Verification
         failure writes no preference; unavailable resources use privacy-safe 404.
         Returns 403 with a JSON error, and changes nothing, when the request did not
-        come from this local server: its Host header does not name a loopback address,
-        or a browser sent it from another origin.'
+        come from this local server: the request''s Host header does not name a loopback
+        address (code request_host_not_local), or a browser sent it from another origin
+        or from a page this server did not serve (code request_origin_not_local).'
       operationId: trackCollectiveObservation
       parameters:
       - in: path
@@ -2186,7 +2262,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "404":
           content:
             application/json:
@@ -2222,8 +2302,10 @@ paths:
         precedence: persistence > auth > deadline/cancellation > remote/contract >
         superseded. 200 only complete; initial auth failure commits nothing. No detached
         job or refresh alias. Returns 403 with a JSON error, and changes nothing,
-        when the request did not come from this local server: its Host header does
-        not name a loopback address, or a browser sent it from another origin.'
+        when the request did not come from this local server: the request''s Host
+        header does not name a loopback address (code request_host_not_local), or
+        a browser sent it from another origin or from a page this server did not serve
+        (code request_origin_not_local).'
       operationId: fetchCollectiveObservations
       responses:
         "200":
@@ -2245,7 +2327,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OpenapiLocalErrorResponse'
-          description: Forbidden
+          description: Refused, and nothing was changed, because the request did not
+            come from this local server. The JSON error code is request_host_not_local
+            when the request's Host header does not name a loopback address, and request_origin_not_local
+            when a browser sent it from another origin or from a page this server
+            did not serve.
         "409":
           content:
             application/json:

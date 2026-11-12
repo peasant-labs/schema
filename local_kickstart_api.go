@@ -475,10 +475,10 @@ func (v *LocalKickstartConnectAnswer) UnmarshalJSON(data []byte) error {
 
 // LocalKickstartErrorCode is the machine-readable reason a kickstart route
 // refused a request or could not finish it. Every non-2xx body a kickstart
-// route writes beyond the shared 403 refusal (host or origin) and the commit 409 carries exactly
-// one of these in LocalKickstartErrorResponse.Code. The set is closed: a
-// client parses the token with NewLocalKickstartErrorCode and never compares
-// strings.
+// route writes beyond the shared 403 refusal (host or origin) and the commit
+// 409 carries exactly one of these in LocalKickstartErrorResponse.Code. The
+// set is closed: a client parses the token with NewLocalKickstartErrorCode
+// and never compares strings.
 //
 // Each token answers with one HTTP status, whichever route raised it. The
 // grouping below follows that status.
@@ -1592,11 +1592,11 @@ func (r LocalKickstartCommitRefusal) Validate() error {
 }
 
 // LocalKickstartErrorResponse is the body of every non-2xx kickstart answer
-// except the shared 403 refusal (host or origin) and the commit 409. Error is prose that names
-// what went wrong and how to recover; a client shows it and decides nothing
-// from it. Code is the closed token a client branches on. Unlike the shared
-// local error body, the code is always present and always one of
-// AllLocalKickstartErrorCodes.
+// except the shared 403 refusal (host or origin) and the commit 409. Error is
+// prose that names what went wrong and how to recover; a client shows it and
+// decides nothing from it. Code is the closed token a client branches on.
+// Unlike the shared local error body, the code is always present and always
+// one of AllLocalKickstartErrorCodes.
 type LocalKickstartErrorResponse struct {
 	Error string                  `json:"error" minLength:"1"`
 	Code  LocalKickstartErrorCode `json:"code"`

@@ -694,23 +694,33 @@ type LocalErrorResponse struct {
 	Code  string `json:"code,omitempty"`
 }
 
-// localWriteRefusal states the cross-origin refusal every declared local write
-// route shares. The server refuses a state-changing request that did not come
-// from its own pages before the handler runs, so nothing changes.
-const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin."
-
-// localHostRefusalCode and localHostRefusalReason are the one statement of the
-// refusal a declared local read can meet: the server refuses a request whose
-// Host header does not name a loopback address before the handler runs, so
-// nothing is served. The operation description and the 403 response
-// description both build from them, so the token is spelled once.
+// The refusals a local request can meet before any handler runs. Each has one
+// JSON error code and one reason, and every description below builds from
+// these four constants, so a token or a reason is spelled once.
 const (
-	localHostRefusalCode   = "request_host_not_local"
-	localHostRefusalReason = "the request's Host header does not name a loopback address"
+	localHostRefusalCode     = "request_host_not_local"
+	localHostRefusalReason   = "the request's Host header does not name a loopback address"
+	localOriginRefusalCode   = "request_origin_not_local"
+	localOriginRefusalReason = "a browser sent it from another origin or from a page this server did not serve"
 )
 
+// localWriteRefusal states the refusal every declared local write route
+// shares. The server refuses a state-changing request that did not come from
+// its own pages before the handler runs, so nothing changes. Either reason
+// refuses it, each with its own code.
+const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: " +
+	localHostRefusalReason + " (code " + localHostRefusalCode + "), or " +
+	localOriginRefusalReason + " (code " + localOriginRefusalCode + ")."
+
+// localWriteRefusalResponse is the description of that 403 response.
+const localWriteRefusalResponse = "Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is " +
+	localHostRefusalCode + " when " + localHostRefusalReason + ", and " +
+	localOriginRefusalCode + " when " + localOriginRefusalReason + "."
+
 // localHostRefusal is the sentence a declared local read adds to its
-// operation description.
+// operation description. A read meets only the host refusal: it changes
+// nothing, and a browser does not let a page from another origin read its
+// response.
 const localHostRefusal = "Returns 403 with a JSON error whose code is " + localHostRefusalCode + ", and serves nothing, when " + localHostRefusalReason + "."
 
 // localHostRefusalResponse is the description of that 403 response.
@@ -792,7 +802,7 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 		if err := describeErrorCodes(r.Spec, op); err != nil {
 			return err
 		}
-		if err := describeHostRefusal(r.Spec, op); err != nil {
+		if err := describeRefusal(r.Spec, op); err != nil {
 			return err
 		}
 		if op.requiredBody {
@@ -845,7 +855,7 @@ func describeErrorCodes(spec *openapi31.Spec, op localOperationSpec) error {
 		return nil
 	}
 	where := fmt.Sprintf("local API operation %s %s at openapi.describeErrorCodes", op.method, op.path)
-	item, ok := spec.Paths.MapOfPathItemValues[op.path]
+	item, ok := declaredPathItem(spec, op.path)
 	if !ok {
 		return fmt.Errorf("%s: the path is not in the document, so its error statuses cannot be described; add the operation before describing it", where)
 	}
@@ -869,25 +879,42 @@ func describeErrorCodes(spec *openapi31.Spec, op localOperationSpec) error {
 	return nil
 }
 
-// describeHostRefusal states, on the 403 of a read that declares the host
-// refusal, the reason and the code the server answers with.
-func describeHostRefusal(spec *openapi31.Spec, op localOperationSpec) error {
-	if !op.hostRefusal {
+// describeRefusal states, on the 403 of a write route or of a read that
+// declares the host refusal, the reason and the codes the server answers with.
+func describeRefusal(spec *openapi31.Spec, op localOperationSpec) error {
+	var description string
+	switch {
+	case op.method != http.MethodGet:
+		description = localWriteRefusalResponse
+	case op.hostRefusal:
+		description = localHostRefusalResponse
+	default:
 		return nil
 	}
-	where := fmt.Sprintf("local API operation %s %s at openapi.describeHostRefusal", op.method, op.path)
-	operation := pathOperation(spec.Paths.MapOfPathItemValues[op.path], op.method)
+	where := fmt.Sprintf("local API operation %s %s at openapi.describeRefusal", op.method, op.path)
+	item, _ := declaredPathItem(spec, op.path)
+	operation := pathOperation(item, op.method)
 	if operation == nil {
-		return fmt.Errorf("%s: the path has no %s operation, so its host refusal cannot be described", where, op.method)
+		return fmt.Errorf("%s: the path has no %s operation, so its refusal cannot be described", where, op.method)
 	}
 	key := statusText(http.StatusForbidden)
 	response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
 	if !ok || response.Response == nil {
-		return fmt.Errorf("%s: status %s is not declared, so the host refusal cannot be described; declare the 403 first", where, key)
+		return fmt.Errorf("%s: status %s is not declared, so the refusal cannot be described; declare the 403 first", where, key)
 	}
-	response.Response.Description = localHostRefusalResponse
+	response.Response.Description = description
 	operation.Responses.MapOfResponseOrReferenceValues[key] = response
 	return nil
+}
+
+// declaredPathItem returns the path item the document declares for path, and
+// whether it declares one. A document that has declared no path yet has none.
+func declaredPathItem(spec *openapi31.Spec, path string) (openapi31.PathItem, bool) {
+	if spec == nil || spec.Paths == nil {
+		return openapi31.PathItem{}, false
+	}
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	return item, ok
 }
 
 func pathOperation(item openapi31.PathItem, method string) *openapi31.Operation {

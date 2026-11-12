@@ -12,6 +12,10 @@
 status: "403"
 component: OpenapiLocalErrorResponse
 code: request_host_not_local
+# The exact sentence every read operation description ends with, and the exact
+# description of its 403 response.
+operation_sentence: "Returns 403 with a JSON error whose code is request_host_not_local, and serves nothing, when the request's Host header does not name a loopback address."
+response_description: "Refused, and nothing was served, because the request's Host header does not name a loopback address. The JSON error code is request_host_not_local."
 required_operations:
   - getKickstartStatus
   - getKickstartSession

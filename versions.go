@@ -240,8 +240,9 @@ const (
 	// and the scan state gained the declared notice for a partial scan.
 	// The settings update also declared 503 for a configuration file that
 	// another save holds, the settings read declared its 500 and 503, and the
-	// four kickstart reads and the settings read declared the host refusal
-	// (additive statuses and field on a closed response = minor bump).
+	// four kickstart reads and the settings read declared the host refusal,
+	// and the 403 on every write names both of its codes (additive statuses,
+	// descriptions and a field on a closed response = minor bump).
 	PeasantLocalAPIVersion = "0.36.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").

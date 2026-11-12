@@ -26,4 +26,9 @@ refusal:
   component: OpenapiLocalErrorResponse
   required: [error]
   properties: [error, code]
-  description_anchor: did not come from this local server
+  # The two codes the shared body carries on this refusal, one per reason.
+  codes: [request_host_not_local, request_origin_not_local]
+  # The exact sentence every write operation description ends with, and the
+  # exact description of its 403 response. Both name both codes.
+  operation_sentence: "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local)."
+  response_description: "Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve."

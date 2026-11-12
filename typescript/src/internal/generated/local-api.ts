@@ -27,7 +27,7 @@ export interface paths {
         /** @description List annotations for a session. */
         get: operations["listAnnotations"];
         put?: never;
-        /** @description Create a new annotation. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Create a new annotation. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["createAnnotation"];
         delete?: never;
         options?: never;
@@ -112,7 +112,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Open or join the live session for scope. full is the wizard and selection is the selection page. The same scope returns the same id and revision; the other scope returns a different session and leaves the first untouched. The response is the reconnect snapshot, so the page needs no second read. A scope other than full or selection, and a body that is missing or not the declared shape, is 400 and changes nothing. 500 when the configuration file cannot be read or the first draft cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Open or join the live session for scope. full is the wizard and selection is the selection page. The same scope returns the same id and revision; the other scope returns a different session and leaves the first untouched. The response is the reconnect snapshot, so the page needs no second read. A scope other than full or selection, and a body that is missing or not the declared shape, is 400 and changes nothing. 500 when the configuration file cannot be read or the first draft cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["openKickstartSession"];
         delete?: never;
         options?: never;
@@ -134,7 +134,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Apply one stop's answers, the tree's selected ids, conflict resolutions, or the connect offer. revision is the session revision the caller last rendered. A stale write is applied and reported in the body; it is not a separate status. A stale result may carry no overwritten entries when no answered field changed after that revision. 400 when the body is not valid, when the session is being saved, or when an answer is refused: an unknown field, a field outside this scope, a field hidden in the current view, or a value the field does not accept. Nothing is changed on a 400. 404 when no session has this id, 500 when the answer cannot be applied because of a server defect, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Apply one stop's answers, the tree's selected ids, conflict resolutions, or the connect offer. revision is the session revision the caller last rendered. A stale write is applied and reported in the body; it is not a separate status. A stale result may carry no overwritten entries when no answered field changed after that revision. 400 when the body is not valid, when the session is being saved, or when an answer is refused: an unknown field, a field outside this scope, a field hidden in the current view, or a value the field does not accept. Nothing is changed on a 400. 404 when no session has this id, 500 when the answer cannot be applied because of a server defect, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         patch: operations["patchKickstartSession"];
         trace?: never;
     };
@@ -147,7 +147,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Recompute, merge, swap the configuration, write retention, and start the import. 409 returns the mine/theirs rows and writes nothing. The success body carries the finish actions and the ingest state; it does not install a hook and has no reset control. 400 when the save is refused, for example because an answer is not acceptable or the session is already being saved; nothing is written. 404 when no session has this id. 500 when the configuration file cannot be read or written, and the previous file is unchanged. 503 when another change holds the configuration file, when it kept changing, or when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Recompute, merge, swap the configuration, write retention, and start the import. 409 returns the mine/theirs rows and writes nothing. The success body carries the finish actions and the ingest state; it does not install a hook and has no reset control. 400 when the save is refused, for example because an answer is not acceptable or the session is already being saved; nothing is written. 404 when no session has this id. 500 when the configuration file cannot be read or written, and the previous file is unchanged. 503 when another change holds the configuration file, when it kept changing, or when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["commitKickstartSession"];
         delete?: never;
         options?: never;
@@ -164,7 +164,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Rescan the filesystem for one session. Progress is pushed on the kickstart topic; this response is the scan state at accept. The forest is not in the response. 400 when the session is being saved, 404 when no session has this id, 500 when the scan state cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Rescan the filesystem for one session. Progress is pushed on the kickstart topic; this response is the scan state at accept. The forest is not in the response. 400 when the session is being saved, 404 when no session has this id, 500 when the scan state cannot be built, and 503 when the setup service is unavailable. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["scanKickstartSession"];
         delete?: never;
         options?: never;
@@ -594,7 +594,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Change one editable setting. The body names one key and its new value, which must match the key's kind; null unsets the key so the default applies. The response is the setting as saved, with its metadata. A refused update changes nothing and returns the key and the reason: 400 for an unknown or read-only key, a value of the wrong kind, or a configuration the value would make invalid, 500 when the configuration file cannot be read or written, and 503 when another save holds the configuration file, so this update could not take its lock. A 503 changes nothing and carries the same key and reason; send the update again once the other save has finished. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Change one editable setting. The body names one key and its new value, which must match the key's kind; null unsets the key so the default applies. The response is the setting as saved, with its metadata. A refused update changes nothing and returns the key and the reason: 400 for an unknown or read-only key, a value of the wrong kind, or a configuration the value would make invalid, 500 when the configuration file cannot be read or written, and 503 when another save holds the configuration file, so this update could not take its lock. A 503 changes nothing and carries the same key and reason; send the update again once the other save has finished. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         patch: operations["updateSetting"];
         trace?: never;
     };
@@ -606,10 +606,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Create or replace one auto-publish rule. Supply either kind and match for an explicit pattern, or sessionId alone to resolve a stored session to its current Git repository and save an escaped exact-folder rule. The target modes are mutually exclusive. A session without a resolvable existing directory is refused before saving, without remote or process-directory fallback. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Create or replace one auto-publish rule. Supply either kind and match for an explicit pattern, or sessionId alone to resolve a stored session to its current Git repository and save an escaped exact-folder rule. The target modes are mutually exclusive. A session without a resolvable existing directory is refused before saving, without remote or process-directory fallback. Saving a rule installs nothing: the response lists the recorded repositories the rule matches and each one's hook state per event, and installAutoPublishHooks installs in one repository at a time. 400 when the rule is invalid, for example a match pattern the server cannot read for its kind. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         put: operations["saveAutoPublishRule"];
         post?: never;
-        /** @description Remove one auto-publish rule. The response reports the hooks of the repositories it matched as they are. Hook files are retained, but rule-required hooks stop publishing unless another active rule covers the repository and event. Paused rules grant no publishing consent. Separately installed terminal hooks keep their independent consent. 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Remove one auto-publish rule. The response reports the hooks of the repositories it matched as they are. Hook files are retained, but rule-required hooks stop publishing unless another active rule covers the repository and event. Paused rules grant no publishing consent. Separately installed terminal hooks keep their independent consent. 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         delete: operations["deleteAutoPublishRule"];
         options?: never;
         head?: never;
@@ -625,7 +625,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Installed hooks require an active auto-publish rule for that repository and event each time they run; removing or pausing the last binding stops publication without removing the hook files. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Install the rule's hooks, one per rule event, in one recorded repository the rule matches. Installed hooks require an active auto-publish rule for that repository and event each time they run; removing or pausing the last binding stops publication without removing the hook files. Events are independent: the response reports each event's hook, and a blocked hook carries the remedy, because Peasant never overwrites a hook it does not manage. 400 when the path is not a recorded repository the rule matches, so nothing is installed in an unrecorded repository; 404 when no rule has this identifier. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["installAutoPublishHooks"];
         delete?: never;
         options?: never;
@@ -642,7 +642,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Gracefully shutdown the server (localhost only). Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Gracefully shutdown the server (localhost only). Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["postShutdown"];
         delete?: never;
         options?: never;
@@ -676,7 +676,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Start the Village sign-in in the browser and return at once. pending means the sign-in started; poll getSyncAuth until it reports authenticated. already_authenticated means nothing started. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Start the Village sign-in in the browser and return at once. pending means the sign-in started; poll getSyncAuth until it reports authenticated. already_authenticated means nothing started. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["syncLogin"];
         delete?: never;
         options?: never;
@@ -693,7 +693,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description End this computer's Village sign-in by removing its stored Village credential. This route changes local state only. Logging out a computer that holds no credential returns already_logged_out. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description End this computer's Village sign-in by removing its stored Village credential. This route changes local state only. Logging out a computer that holds no credential returns already_logged_out. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["syncLogout"];
         delete?: never;
         options?: never;
@@ -710,7 +710,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran, the content step first; its status describes the content, so a push that only changes collectives reports skipped with a skipped content step. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error; a later step the server did not run after a failure is not_attempted. The counts tally sessions by status after every step ran. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Publish or update local sessions to Village and change who can read them. Publishing is collectives only: collectives.add shares each transcript with a collective, collectives.remove takes it back, and a collective named in neither keeps its access. The request carries no visibility and no license, unknown fields are refused, and the server applies no default license to a publish that names collectives. Each session result lists its steps in the order they ran, the content step first; its status describes the content, so a push that only changes collectives reports skipped with a skipped content step. A skipped step says why and is not a failure. A failed step keeps what Village had for it and makes the session an error; a later step the server did not run after a failure is not_attempted. The counts tally sessions by status after every step ran. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["pushSyncSessions"];
         delete?: never;
         options?: never;
@@ -778,7 +778,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Synchronously fetch metadata only, with no request body. Complete catalog/history install independently; complete association sets install per transcript. Never transfer bodies, publish, join or alter consent. Typed reports on non-2xx preserve every committed effect and prior completion date. Status precedence: persistence > auth > deadline/cancellation > remote/contract > superseded. 200 only complete; initial auth failure commits nothing. No detached job or refresh alias. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Synchronously fetch metadata only, with no request body. Complete catalog/history install independently; complete association sets install per transcript. Never transfer bodies, publish, join or alter consent. Typed reports on non-2xx preserve every committed effect and prior completion date. Status precedence: persistence > auth > deadline/cancellation > remote/contract > superseded. 200 only complete; initial auth failure commits nothing. No detached job or refresh alias. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         post: operations["fetchCollectiveObservations"];
         delete?: never;
         options?: never;
@@ -794,10 +794,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Verify selected collective visibility online before storing explicit tracking. No body; tracking grants no membership or publication consent. Verification failure writes no preference; unavailable resources use privacy-safe 404. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Verify selected collective visibility online before storing explicit tracking. No body; tracking grants no membership or publication consent. Verification failure writes no preference; unavailable resources use privacy-safe 404. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         put: operations["trackCollectiveObservation"];
         post?: never;
-        /** @description Idempotently remove an explicit tracking preference using saved identity offline. No remote mutation or publication consent change. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin. */
+        /** @description Idempotently remove an explicit tracking preference using saved identity offline. No remote mutation or publication consent change. Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: the request's Host header does not name a loopback address (code request_host_not_local), or a browser sent it from another origin or from a page this server did not serve (code request_origin_not_local). */
         delete: operations["untrackCollectiveObservation"];
         options?: never;
         head?: never;
@@ -2235,7 +2235,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaCreateAnnotationResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2381,7 +2381,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2503,7 +2503,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2571,7 +2571,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -2648,7 +2648,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalKickstartErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3632,7 +3632,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaLocalSettingRefusal"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3695,7 +3695,7 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3727,7 +3727,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaAutoPublishRemovalResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3781,7 +3781,7 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3819,7 +3819,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaShutdownResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3868,7 +3868,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaSyncLoginResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3897,7 +3897,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaSyncLogoutResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -3930,7 +3930,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaSyncPushResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4109,7 +4109,7 @@ export interface operations {
                     "application/json": components["schemas"]["SchemaCollectiveFetchReport"] | components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4194,7 +4194,7 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4279,7 +4279,7 @@ export interface operations {
                     "application/json": components["schemas"]["OpenapiLocalErrorResponse"];
                 };
             };
-            /** @description Forbidden */
+            /** @description Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is request_host_not_local when the request's Host header does not name a loopback address, and request_origin_not_local when a browser sent it from another origin or from a page this server did not serve. */
             403: {
                 headers: {
                     [name: string]: unknown;

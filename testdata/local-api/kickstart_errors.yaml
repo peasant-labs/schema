@@ -7,9 +7,9 @@
 # errors maps a status to the codes it can carry, each answered with the closed
 # LocalKickstartErrorResponse body. other_statuses are declared with another
 # body: 403 is the shared cross-origin refusal that every non-GET route
-# declares, and a GET declares the host-only 403 (code request_host_not_local),
-# the one refusal a read can meet. The commit 409 is LocalKickstartCommitRefusal,
-# which carries the mine/theirs rows and no code.
+# declares, and a GET declares the host-only 403, the one refusal a read can
+# meet; host_refusal.yaml pins its body and code. The commit 409 is
+# LocalKickstartCommitRefusal, which carries the mine/theirs rows and no code.
 #
 # code_status states the one status each code answers with, whichever route
 # raised it. It is the independent record of the unexported table behind
