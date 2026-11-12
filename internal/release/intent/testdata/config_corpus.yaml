@@ -10,6 +10,7 @@ required_names:
   - empty-changelog
   - version-file-missing-field
   - bad-bot-kind
+  - duplicate-bot-branch
   - empty-branch-value
   - two-documents
 cases:
@@ -160,6 +161,21 @@ cases:
     sibling: full-config
     provenance: {source: requirement, ref: "config: the bot PR kinds are closed"}
     mutation: {description: "named a bot kind outside the closed set"}
+  - name: duplicate-bot-branch
+    input:
+      document: |
+        releases: true
+        tag_prefix: v
+        automation_author: peasant-labs-releaser[bot]
+        changelog: CHANGELOG.md
+        bot_branches:
+          release: automation/release
+          vendor-hash: automation/release
+    expected: {code: "config-invalid"}
+    classification: must-fail
+    sibling: full-config
+    provenance: {source: requirement, ref: "config: one branch belongs to one bot PR"}
+    mutation: {description: "listed the release branch for two bot kinds"}
   - name: empty-branch-value
     input:
       document: |
