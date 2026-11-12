@@ -241,36 +241,68 @@ func flagValue(run, flag string) (string, bool) {
 	return "", false
 }
 
-// shellWords splits a run line into shell words, keeping quoted spans whole
-// with their quotes intact so the checker can tell quoted from bare.
+// shellWords is the checker's one shell-word splitter. It splits a run line
+// on unquoted whitespace and keeps three spans whole: a single-quoted span, a
+// double-quoted span, and an unquoted GitHub expression (${{ ... }}), which
+// may hold spaces. Quotes stay in the word so a caller can tell quoted from
+// bare; bareWord strips them where the bare value is needed.
 func shellWords(s string) []string {
 	var out []string
 	var cur strings.Builder
-	var quote rune
+	var quote byte
 	flush := func() {
 		if cur.Len() > 0 {
 			out = append(out, cur.String())
 			cur.Reset()
 		}
 	}
-	for _, r := range s {
+	for i := 0; i < len(s); i++ {
+		ch := s[i]
 		switch {
 		case quote != 0:
-			cur.WriteRune(r)
-			if r == quote {
+			cur.WriteByte(ch)
+			if ch == quote {
 				quote = 0
 			}
-		case r == '"' || r == '\'':
-			quote = r
-			cur.WriteRune(r)
-		case r == ' ' || r == '\t' || r == '\n':
+		case ch == '"' || ch == '\'':
+			quote = ch
+			cur.WriteByte(ch)
+		case strings.HasPrefix(s[i:], "${{"):
+			end := strings.Index(s[i:], "}}")
+			if end < 0 {
+				cur.WriteString(s[i:])
+				i = len(s)
+				break
+			}
+			cur.WriteString(s[i : i+end+2])
+			i += end + 1
+		case ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r':
 			flush()
 		default:
-			cur.WriteRune(r)
+			cur.WriteByte(ch)
 		}
 	}
 	flush()
 	return out
+}
+
+// bareWord returns a shell word with its delimiting quotes removed, the value
+// the shell would pass to the command (expansions left as written).
+func bareWord(word string) string {
+	var out strings.Builder
+	var quote byte
+	for i := 0; i < len(word); i++ {
+		ch := word[i]
+		switch {
+		case quote != 0 && ch == quote:
+			quote = 0
+		case quote == 0 && (ch == '"' || ch == '\''):
+			quote = ch
+		default:
+			out.WriteByte(ch)
+		}
+	}
+	return out.String()
 }
 
 // allowedPush maps one policy job to the branch it may push: the release job
@@ -331,62 +363,29 @@ func pushTarget(refspec string) (string, bool) {
 	return dst, true
 }
 
-// splitPushArgs splits a git push command line into its refspec operands,
-// skipping flags and the remote name. GitHub expression spans (${{ }}) may
-// contain spaces; they are glued back together before splitting so a dynamic
-// refspec stays one operand.
+// splitPushArgs splits a git push command line into its bare refspec
+// operands, skipping flags and the remote name. Quoted spans and GitHub
+// expression spans stay one operand each.
 func splitPushArgs(rest string) []string {
-	fields := glueExpressions(strings.Fields(rest))
 	var out []string
 	skipValue := map[string]bool{"--repo": true, "--remote": true}
 	remoteSkipped := false
-	for i := 0; i < len(fields); i++ {
-		f := fields[i]
-		if skipValue[f] {
+	words := shellWords(rest)
+	for i := 0; i < len(words); i++ {
+		w := bareWord(words[i])
+		if skipValue[w] {
 			i++
 			continue
 		}
-		if strings.HasPrefix(f, "-") {
+		if strings.HasPrefix(w, "-") {
 			continue
 		}
 		if !remoteSkipped {
 			remoteSkipped = true
 			continue
 		}
-		out = append(out, f)
+		out = append(out, w)
 	}
-	return out
-}
-
-// glueExpressions joins field-split tokens back into whole ${{ }} spans.
-func glueExpressions(fields []string) []string {
-	var out []string
-	var cur strings.Builder
-	depth := 0
-	flush := func() {
-		if s := strings.TrimSpace(cur.String()); s != "" {
-			out = append(out, s)
-		}
-		cur.Reset()
-	}
-	for _, f := range fields {
-		opens := strings.Count(f, "${{")
-		closes := strings.Count(f, "}}")
-		if depth == 0 && opens == 0 && closes == 0 && cur.Len() == 0 {
-			out = append(out, f)
-			continue
-		}
-		if cur.Len() > 0 {
-			cur.WriteByte(' ')
-		}
-		cur.WriteString(f)
-		depth += opens - closes
-		if depth <= 0 {
-			depth = 0
-			flush()
-		}
-	}
-	flush()
 	return out
 }
 
@@ -405,8 +404,6 @@ var (
 	shellSegments = regexp.MustCompile(`\|\||&&|[|;&]`)
 	// prCreateHead extracts the --head branch of a gh pr create command.
 	prCreateHead = regexp.MustCompile(`\bgh\s+pr\s+create\b(.*?)(?:\|\||&&|;|$)`)
-	// prHeadFlag extracts a --head value.
-	prHeadFlag = regexp.MustCompile(`--head\s+(\S+)`)
 )
 
 // gitPushSites returns every git push in the run text: branch targets, tag
@@ -444,45 +441,25 @@ func prHeadTarget(run string) (string, bool) {
 	if segment == nil {
 		return "", false
 	}
-	h := prHeadFlag.FindStringSubmatch(segment[1])
-	if h == nil {
+	head, ok := flagValue(segment[1], "head")
+	if !ok {
 		return "", false
 	}
-	return h[1], true
+	return bareWord(head), true
 }
 
 // prTargets returns the (verb, target) pairs for gh pr merge, close, and
 // edit invocations in the run text: the first positional argument after the
 // verb, or "" when the command names none (a number, a URL, or a flag-only
-// call). Quoted spans stay one token, and flag values are skipped.
+// call). Quoted spans stay one word, and flag values are skipped.
 func prTargets(run string) [][2]string {
 	var out [][2]string
 	for _, m := range prMergeClose.FindAllStringSubmatch(run, -1) {
 		verb, rest := m[1], m[2]
 		target := ""
-		var cur strings.Builder
-		var tokens []string
-		inQuotes := false
-		for _, r := range rest {
-			switch {
-			case r == '"':
-				inQuotes = !inQuotes
-			case r == ' ' || r == '\t':
-				if inQuotes {
-					cur.WriteRune(r)
-				} else if cur.Len() > 0 {
-					tokens = append(tokens, cur.String())
-					cur.Reset()
-				}
-			default:
-				cur.WriteRune(r)
-			}
-		}
-		if cur.Len() > 0 {
-			tokens = append(tokens, cur.String())
-		}
 		skipNext := false
-		for _, tok := range tokens {
+		for _, word := range shellWords(rest) {
+			tok := bareWord(word)
 			if skipNext {
 				skipNext = false
 				continue
@@ -491,7 +468,7 @@ func prTargets(run string) [][2]string {
 				skipNext = prValueFlags[tok]
 				continue
 			}
-			target = strings.Trim(tok, `"`)
+			target = tok
 			break
 		}
 		out = append(out, [2]string{verb, target})
@@ -504,7 +481,8 @@ func prTargets(run string) [][2]string {
 // pushes its kind's branch, and tag publishes live only in the release job's
 // tag step. Every other push is reported: a branch push to any other branch
 // (including the default branch), an unresolvable push, a tag push outside
-// the tag step, a gh release creation outside the tag step, a gh pr merge
+// the tag step, a gh release creation outside the tag step (except the
+// tag-triggered publish, see tagPublishFault), a gh pr merge
 // outside an arm/hold step, a gh pr close or edit outside the release job, and
 // a gh pr create without --head or with a head that is not the job's branch.
 func (c *queueChecker) checkNoPush() {
@@ -525,7 +503,7 @@ func (c *queueChecker) checkNoPush() {
 			job := jobNode(doc, jobName)
 			branch, listed := byFile[name][jobName]
 			for _, step := range stepsOf(job) {
-				c.checkPushStep(name, jobName, step, branch, listed, name == releaseFile && jobName == releaseJob)
+				c.checkPushStep(doc, name, jobName, step, branch, listed, name == releaseFile && jobName == releaseJob)
 			}
 		}
 	})
@@ -534,7 +512,7 @@ func (c *queueChecker) checkNoPush() {
 // checkPushStep applies the push allowlist to one step. listed tells whether
 // the policy lists this (file, job); branch is its branch when listed;
 // isReleaseJob tells whether this is the release job of the release workflow.
-func (c *queueChecker) checkPushStep(workflow, job string, step *yaml.Node, branch string, listed, isReleaseJob bool) {
+func (c *queueChecker) checkPushStep(doc *yaml.Node, workflow, job string, step *yaml.Node, branch string, listed, isReleaseJob bool) {
 	run := stepRunText(step)
 	id := stepID(step)
 	for _, site := range gitPushSites(run) {
@@ -591,10 +569,180 @@ func (c *queueChecker) checkPushStep(workflow, job string, step *yaml.Node, bran
 		c.emit(QueueRuleNoPush, workflow, id,
 			"a step edits a PR outside the release job during merge-queue policy validation. Only the release job edits the release PR; a bot job updates its own PR by pushing its branch")
 	}
-	if strings.Contains(run, "gh release create") && !(isReleaseJob && isTagStep(step)) {
-		c.emit(QueueRuleNoPush, workflow, id,
-			"a step creates a GitHub Release outside the release job's tag step during merge-queue policy validation. Releases are published only by the release tag step")
+	if releaseCreate.MatchString(run) && !(isReleaseJob && isTagStep(step)) {
+		if fault := c.tagPublishFault(doc, jobNode(doc, job), step, run); fault != "" {
+			c.emit(QueueRuleNoPush, workflow, id,
+				"a step creates a GitHub Release outside the release job's tag step during merge-queue policy validation: "+fault+". A Release is created only by the release tag step, or by a workflow that runs only on a pushed release tag, writes no ref and no PR, and passes --verify-tag so it can never create a tag")
+		}
 	}
+}
+
+// releaseCreate matches a gh release create invocation.
+var releaseCreate = regexp.MustCompile(`\bgh\s+release\s+create\b`)
+
+// tagPublishFault says why a gh release create in this workflow is not the
+// allowed tag-triggered publish, or "" when it is. The publish is allowed
+// only when all three hold: the workflow's one trigger is push: tags: with
+// every pattern starting with the release config's tag prefix, so it runs
+// only for a release tag that already exists; no step pushes a ref, writes
+// refs/tags/, or writes a PR; and every create in the step passes
+// --verify-tag, so gh refuses to create a missing tag, and names the
+// triggering tag as its tag argument (see triggeringTag). Such a workflow can
+// publish a Release for the pushed tag and nothing else; gh release edit
+// needs no further condition there.
+func (c *queueChecker) tagPublishFault(doc, job, step *yaml.Node, run string) string {
+	if fault := tagOnlyTriggerFault(doc, c.cfg.TagPrefix); fault != "" {
+		return fault
+	}
+	for _, jobName := range jobNames(doc) {
+		for _, step := range stepsOf(jobNode(doc, jobName)) {
+			text := stepRunText(step)
+			if refOrPRWrite.MatchString(text) {
+				return "the tag-triggered workflow also pushes a ref or writes a PR (job " + strconv.Quote(jobName) + ")"
+			}
+		}
+	}
+	for _, words := range releaseCreateCommands(run) {
+		verified := false
+		for _, w := range words {
+			if w == "--verify-tag" {
+				verified = true
+			}
+		}
+		if !verified {
+			return "the create does not pass --verify-tag, so it would create the tag when it is missing"
+		}
+		tag := releaseCreateTag(words)
+		if !triggeringTag(tag, step, job, doc) {
+			return "the create targets " + strconv.Quote(tag) + ", which is not the triggering tag. Pass \"$GITHUB_REF_NAME\", ${{ github.ref_name }}, or an env variable mapped from ${{ github.ref_name }} as the tag argument"
+		}
+	}
+	return ""
+}
+
+// releaseCreateValueFlags are the gh release create flags that take a value,
+// so the word after one is not the tag argument.
+var releaseCreateValueFlags = map[string]bool{
+	"--title": true, "-t": true, "--notes": true, "-n": true, "--notes-file": true, "-F": true,
+	"--target": true, "--repo": true, "-R": true, "--discussion-category": true,
+	"--notes-start-tag": true,
+}
+
+// releaseCreateTag returns the tag argument of one gh release create command,
+// its first positional word with quotes kept, or "" when it names none.
+func releaseCreateTag(words []string) string {
+	for i := 0; i < len(words); i++ {
+		w := words[i]
+		if strings.HasPrefix(w, "-") {
+			if releaseCreateValueFlags[w] {
+				i++
+			}
+			continue
+		}
+		return w
+	}
+	return ""
+}
+
+// refNameExpression matches the GitHub expression for the triggering ref's
+// short name, alone.
+var refNameExpression = regexp.MustCompile(`^\$\{\{\s*github\.ref_name\s*\}\}$`)
+
+// triggeringTag reports whether a create's tag argument is the tag that
+// triggered the workflow: ${{ github.ref_name }}, the runner's
+// $GITHUB_REF_NAME, or an env variable the step, the job, or the workflow
+// maps from ${{ github.ref_name }}, quoted or bare. A single-quoted shell
+// variable never expands, so it does not count; any literal or other
+// variable is rejected.
+func triggeringTag(word string, step, job, doc *yaml.Node) bool {
+	bare := bareWord(word)
+	if refNameExpression.MatchString(bare) {
+		return true
+	}
+	if strings.Contains(word, "'") {
+		return false
+	}
+	name, ok := strings.CutPrefix(bare, "$")
+	if !ok {
+		return false
+	}
+	if inner, braced := strings.CutPrefix(name, "{"); braced {
+		name, ok = strings.CutSuffix(inner, "}")
+		if !ok {
+			return false
+		}
+	}
+	if !shellName.MatchString(name) {
+		return false
+	}
+	for _, scope := range []*yaml.Node{step, job, doc} {
+		if scope == nil {
+			continue
+		}
+		if v := envValue(scope, name); v != "" {
+			return refNameExpression.MatchString(strings.TrimSpace(v))
+		}
+	}
+	return name == "GITHUB_REF_NAME"
+}
+
+// shellName matches a plain shell variable name.
+var shellName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// refOrPRWrite matches a run line that pushes a ref, writes a tag ref, or
+// writes a PR.
+var refOrPRWrite = regexp.MustCompile(`\bgit\s+push\b|refs/tags/|\bgit\s+tag\b|\bgh\s+pr\s+(create|edit|close|merge)\b`)
+
+// tagOnlyTriggerFault says why the workflow's on: is not exactly push: tags:
+// with every pattern under the tag prefix, or "" when it is.
+func tagOnlyTriggerFault(doc *yaml.Node, prefix string) string {
+	on := mappingValue(doc, "on")
+	if on == nil || on.Kind != yaml.MappingNode || len(on.Content) != 2 || on.Content[0].Value != "push" {
+		return "the workflow's only trigger is not push: tags:"
+	}
+	push := on.Content[1]
+	if push.Kind != yaml.MappingNode || len(push.Content) != 2 || push.Content[0].Value != "tags" {
+		return "the workflow's push trigger is not limited to tags: alone"
+	}
+	var patterns []string
+	switch tags := push.Content[1]; tags.Kind {
+	case yaml.ScalarNode:
+		patterns = []string{tags.Value}
+	case yaml.SequenceNode:
+		for _, item := range tags.Content {
+			patterns = append(patterns, item.Value)
+		}
+	}
+	if len(patterns) == 0 {
+		return "the workflow's push: tags: names no pattern"
+	}
+	if prefix == "" {
+		return "the release config sets no tag_prefix to hold the tag patterns to"
+	}
+	for _, pattern := range patterns {
+		if !strings.HasPrefix(pattern, prefix) {
+			return "the tag pattern " + strconv.Quote(pattern) + " does not start with the release config's tag_prefix " + strconv.Quote(prefix)
+		}
+	}
+	return ""
+}
+
+// releaseCreateCommands returns the shell words of every gh release create
+// command in the run text. A command runs to the end of its line, with
+// backslash continuations joined, or to the next shell separator.
+func releaseCreateCommands(run string) [][]string {
+	joined := strings.ReplaceAll(strings.ReplaceAll(run, "\\\r\n", " "), "\\\n", " ")
+	var out [][]string
+	for _, line := range strings.Split(joined, "\n") {
+		for _, loc := range releaseCreate.FindAllStringIndex(line, -1) {
+			rest := line[loc[1]:]
+			if sep := shellSegments.FindStringIndex(rest); sep != nil {
+				rest = rest[:sep[0]]
+			}
+			out = append(out, shellWords(rest))
+		}
+	}
+	return out
 }
 
 // releaseWorkflow returns the release workflow file, or "" when the policy

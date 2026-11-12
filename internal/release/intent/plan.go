@@ -285,8 +285,8 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		Breaking:       breaking,
 		Version:        version,
 		Tag:            tag,
-		Before:         BeforeCandidate{Pending: beforePending, Version: beforeVersion, Tag: beforeTag, Date: beforeDate},
-		Full:           BeforeCandidate{Pending: fullPending, Version: fullVersion, Tag: fullTag, Date: fullDate},
+		Before:         PendingSet{Pending: beforePending, Version: beforeVersion, Tag: beforeTag, Date: beforeDate},
+		Full:           PendingSet{Pending: fullPending, Version: fullVersion, Tag: fullTag, Date: fullDate},
 		Date:           date,
 	}, nil
 }

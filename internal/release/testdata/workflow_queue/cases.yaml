@@ -26,6 +26,7 @@ required_names:
   - accept-no-release-job
   - accept-cut-release-arm
   - accept-vendor-hash-arm-close
+  - accept-tag-publish
   - reject-required-contexts-missing-file
   - reject-required-contexts-missing-job
   - reject-merge-group-missing
@@ -53,6 +54,10 @@ required_names:
   - reject-no-push-dup-kind
   - reject-no-push-unknown-kind
   - reject-no-push-tag-outside
+  - reject-tag-publish-no-verify-tag
+  - reject-tag-publish-branch-push
+  - reject-tag-publish-extra-trigger
+  - reject-tag-publish-other-tag
   - reject-cut-release-trigger
   - reject-cut-release-level
   - reject-cut-release-no-tagmode
@@ -202,6 +207,14 @@ cases:
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
     mutation: { description: "vendor-hash arms and closes its own PR" }
+
+  - name: accept-tag-publish
+    input: { overlay: "accept-tag-publish" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "add a publish workflow that runs only on a pushed release tag, writes no ref, and creates the Release with --verify-tag" }
 
   - name: reject-required-contexts-missing-file
     input: { overlay: "reject-required-contexts-missing-file" }
@@ -417,7 +430,39 @@ cases:
     sibling: accept-no-default-branch-push
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
-    mutation: { description: "publish a release from a tag-triggered workflow outside the release job" }
+    mutation: { description: "create a release from a branch-triggered workflow outside the release job" }
+
+  - name: reject-tag-publish-no-verify-tag
+    input: { overlay: "reject-tag-publish-no-verify-tag" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step", "does not pass --verify-tag"] }
+    sibling: accept-tag-publish
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "drop --verify-tag from the tag-triggered create, so it could create a missing tag" }
+
+  - name: reject-tag-publish-branch-push
+    input: { overlay: "reject-tag-publish-branch-push" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step", "also pushes a ref or writes a PR"] }
+    sibling: accept-tag-publish
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "push the default branch from the tag-triggered publish workflow" }
+
+  - name: reject-tag-publish-extra-trigger
+    input: { overlay: "reject-tag-publish-extra-trigger" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step", "only trigger is not push: tags:"] }
+    sibling: accept-tag-publish
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "trigger the publish workflow on workflow_dispatch as well as on tags" }
+
+  - name: reject-tag-publish-other-tag
+    input: { overlay: "reject-tag-publish-other-tag" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step", "is not the triggering tag"] }
+    sibling: accept-tag-publish
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "create the Release for a variable that is not mapped from the triggering tag" }
 
   - name: reject-cut-release-trigger
     input: { overlay: "reject-cut-release-trigger" }

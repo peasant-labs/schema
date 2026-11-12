@@ -1,0 +1,70 @@
+# Cases for the checker's one shell-word splitter. words is the split with
+# quotes kept; bare is the same words with delimiting quotes removed, the
+# form the push and PR rules read. push_refspecs is what a git push command
+# line with these arguments resolves to: flags are skipped, the first other
+# word is the remote, and the rest are refspecs.
+#
+# required_names is the manifest: every case must be listed and every listed
+# case must exist.
+required_names:
+  - plain-words
+  - double-quoted-span
+  - single-quoted-span
+  - unquoted-expression
+  - quoted-expression
+  - expression-inside-word
+  - unterminated-expression
+  - newline-and-tab
+  - quoted-refspec
+  - push-flags-skipped
+cases:
+  - name: plain-words
+    input: "origin HEAD:automation/release"
+    words: ["origin", "HEAD:automation/release"]
+    bare: ["origin", "HEAD:automation/release"]
+    push_refspecs: ["HEAD:automation/release"]
+  - name: double-quoted-span
+    input: '--title "a b" x'
+    words: ["--title", '"a b"', "x"]
+    bare: ["--title", "a b", "x"]
+    push_refspecs: ["x"]
+  - name: single-quoted-span
+    input: "--match 'v* x' y"
+    words: ["--match", "'v* x'", "y"]
+    bare: ["--match", "v* x", "y"]
+    push_refspecs: ["y"]
+  - name: unquoted-expression
+    input: "origin ${{ steps.plan.outputs.branch }}"
+    words: ["origin", "${{ steps.plan.outputs.branch }}"]
+    bare: ["origin", "${{ steps.plan.outputs.branch }}"]
+    push_refspecs: ["${{ steps.plan.outputs.branch }}"]
+  - name: quoted-expression
+    input: '--floor "${{ vars.RELEASE_BATCH_FLOOR }}" next'
+    words: ["--floor", '"${{ vars.RELEASE_BATCH_FLOOR }}"', "next"]
+    bare: ["--floor", "${{ vars.RELEASE_BATCH_FLOOR }}", "next"]
+    push_refspecs: ["next"]
+  - name: expression-inside-word
+    input: "origin HEAD:refs/heads/${{ env.BRANCH }} tail"
+    words: ["origin", "HEAD:refs/heads/${{ env.BRANCH }}", "tail"]
+    bare: ["origin", "HEAD:refs/heads/${{ env.BRANCH }}", "tail"]
+    push_refspecs: ["HEAD:refs/heads/${{ env.BRANCH }}", "tail"]
+  - name: unterminated-expression
+    input: "origin ${{ never closed"
+    words: ["origin", "${{ never closed"]
+    bare: ["origin", "${{ never closed"]
+    push_refspecs: ["${{ never closed"]
+  - name: newline-and-tab
+    input: "a\tb\nc"
+    words: ["a", "b", "c"]
+    bare: ["a", "b", "c"]
+    push_refspecs: ["b", "c"]
+  - name: quoted-refspec
+    input: 'origin "HEAD:automation/release"'
+    words: ["origin", '"HEAD:automation/release"']
+    bare: ["origin", "HEAD:automation/release"]
+    push_refspecs: ["HEAD:automation/release"]
+  - name: push-flags-skipped
+    input: "--force-with-lease --repo o/r origin HEAD:automation/cut-release"
+    words: ["--force-with-lease", "--repo", "o/r", "origin", "HEAD:automation/cut-release"]
+    bare: ["--force-with-lease", "--repo", "o/r", "origin", "HEAD:automation/cut-release"]
+    push_refspecs: ["HEAD:automation/cut-release"]

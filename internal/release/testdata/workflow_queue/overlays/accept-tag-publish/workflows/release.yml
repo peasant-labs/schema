@@ -1,0 +1,103 @@
+name: Release
+
+# Tag-triggered publish: runs once for a release tag the release job already
+# pushed, behind the guard and gate jobs, and publishes the GitHub Release and
+# the package for that tag.
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  guard:
+    name: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.ref_name }}
+    outputs:
+      kind: ${{ steps.parse.outputs.kind }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Parse + classify the tag
+        id: parse
+        run: go run ./cmd/release-guard parse-tag "$TAG"
+
+  contract-gates:
+    name: contract gates
+    needs: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Determine prior release tag
+        id: prior
+        run: |
+          set -euo pipefail
+          prior="$(git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' "${TAG}^" 2>/dev/null || true)"
+          echo "base_ref=${prior}" >> "$GITHUB_OUTPUT"
+      - name: Run contract gates
+        run: make gates BASE_REF="${{ steps.prior.outputs.base_ref }}"
+
+  release:
+    name: publish GitHub Release
+    needs: [guard, contract-gates]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+      - name: Create the GitHub Release with the specs as assets
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [ "${{ needs.guard.outputs.kind }}" = "rc" ]; then
+            prerelease_flag="--prerelease"
+          fi
+          assets=(generated/*.json generated/*.yaml)
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "$TAG" \
+            --generate-notes \
+            $prerelease_flag \
+            "${assets[@]}"
+          echo "::notice::published GitHub Release $TAG with ${#assets[@]} contract assets"
+      - name: Mark the Release as latest
+        if: needs.guard.outputs.kind == 'final'
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --latest
+
+  npm-publish:
+    name: publish npm package
+    needs: [guard, contract-gates]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Publish the package
+        run: pnpm --dir typescript publish --access public --no-git-checks

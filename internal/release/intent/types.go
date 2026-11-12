@@ -381,12 +381,13 @@ type Facts struct {
 	Fresh   map[string]bool   `yaml:"fresh"`
 }
 
-// BeforeCandidate is the sub-range a candidate release commit was built
-// from: the releasing subjects older than the candidate, the version and tag
-// they compute, and the committer date of their newest commit for a dated
-// heading. The freshness check renders exactly this set, so the caller never
-// re-plans a sub-range.
-type BeforeCandidate struct {
+// PendingSet is one set of releasing subjects with what it computes: the
+// subjects, the version and tag they produce, and the committer date of their
+// newest commit for a dated heading. A Decision carries two: Before, the
+// subjects older than the candidate release commit (the freshness check
+// renders exactly this set, so the caller never re-plans a sub-range), and
+// Full, the whole range.
+type PendingSet struct {
 	Pending []Title `yaml:"pending"`
 	Version SemVer  `yaml:"version"`
 	Tag     string  `yaml:"tag"`
@@ -402,19 +403,19 @@ type BeforeCandidate struct {
 // release-pr write path renders Full. Date is the committer date of the
 // newest commit in Pending, for the dated heading of the set being rendered.
 type Decision struct {
-	Action         Action          `yaml:"action"`
-	RangeBase      string          `yaml:"range_base"`
-	VersionBase    string          `yaml:"version_base"`
-	Candidate      string          `yaml:"candidate"`
-	CandidateFresh Freshness       `yaml:"candidate_fresh"`
-	Pending        []Title         `yaml:"pending"`
-	Level          Level           `yaml:"level"`
-	Breaking       bool            `yaml:"breaking"`
-	Version        SemVer          `yaml:"version"`
-	Tag            string          `yaml:"tag"`
-	Before         BeforeCandidate `yaml:"before"`
-	Full           BeforeCandidate `yaml:"full"`
-	Date           string          `yaml:"date"`
+	Action         Action     `yaml:"action"`
+	RangeBase      string     `yaml:"range_base"`
+	VersionBase    string     `yaml:"version_base"`
+	Candidate      string     `yaml:"candidate"`
+	CandidateFresh Freshness  `yaml:"candidate_fresh"`
+	Pending        []Title    `yaml:"pending"`
+	Level          Level      `yaml:"level"`
+	Breaking       bool       `yaml:"breaking"`
+	Version        SemVer     `yaml:"version"`
+	Tag            string     `yaml:"tag"`
+	Before         PendingSet `yaml:"before"`
+	Full           PendingSet `yaml:"full"`
+	Date           string     `yaml:"date"`
 }
 
 // ContentInput is what the release-content generator renders.
