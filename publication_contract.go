@@ -517,7 +517,7 @@ func encodeReplacement(v CanonicalPublishReplacement) []byte {
 		e.optionalInt64(65, v.Stats.InputSubmissionCount)
 	}
 	if v.Stats.ConversationTurnCount != nil {
-		e.optionalInt64(66, v.Stats.ConversationTurnCount)
+		e.optionalInt64(68, v.Stats.ConversationTurnCount)
 	}
 	if v.Quality == nil {
 		writeFrame(&e.Buffer, 29, nil)
