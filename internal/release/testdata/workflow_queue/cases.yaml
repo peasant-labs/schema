@@ -42,11 +42,12 @@ required_names:
   - reject-release-actions-push-no-push-test
   - reject-release-actions-arm-no-gate
   - reject-release-actions-disjunction
-  - reject-release-actions-tagmode-ne
+  - reject-token-mint-tagmode-ne
   - reject-title-guard-no-entry
   - reject-title-guard-job-if
   - reject-title-guard-event-action
   - reject-range-floor-missing
+  - reject-range-floor-unquoted
   - reject-no-push-cross-push
   - reject-no-push-cross-branch
   - reject-no-push-dup-kind
@@ -330,8 +331,8 @@ cases:
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "spread the push gate across a disjunction with always()" }
 
-  - name: reject-release-actions-tagmode-ne
-    input: { overlay: "reject-release-actions-tagmode-ne" }
+  - name: reject-token-mint-tagmode-ne
+    input: { overlay: "reject-token-mint-tagmode-ne" }
     expected: { rule: "token-mint-ref-check", want_contains: ["without a tag-mode gate"] }
     sibling: accept-token-mint
     classification: must-fail
@@ -364,11 +365,19 @@ cases:
 
   - name: reject-range-floor-missing
     input: { overlay: "reject-range-floor-missing" }
-    expected: { rule: "range-readers-take-the-floor", want_contains: ["without the floor"] }
+    expected: { rule: "range-readers-take-the-floor", want_contains: ["without a quoted --floor"] }
     sibling: accept-range-floor
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy range-readers-take-the-floor" }
     mutation: { description: "drop the floor from a range reader so it keeps parsing a bad subject" }
+
+  - name: reject-range-floor-unquoted
+    input: { overlay: "reject-range-floor-unquoted" }
+    expected: { rule: "range-readers-take-the-floor", want_contains: ["without a quoted --floor"] }
+    sibling: accept-release-actions
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy range-readers-take-the-floor" }
+    mutation: { description: "pass the floor unquoted so an unset variable eats the flag" }
 
   - name: reject-no-push-cross-push
     input: { overlay: "reject-no-push-cross-push" }

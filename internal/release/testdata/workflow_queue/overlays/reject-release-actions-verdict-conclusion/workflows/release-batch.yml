@@ -21,7 +21,7 @@ jobs:
           ref: 71e687cef7eede9a63659be98ce9adac3c563398
           path: schema-tool
       - id: plan
-        run: nix develop -c release-intent plan --branch develop --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent plan --branch develop --mode "${{ vars.RELEASE_BATCH_MODE }}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: mint
         if: vars.RELEASE_BATCH_MODE == 'tag'
         uses: actions/create-github-app-token@v2
@@ -30,13 +30,13 @@ jobs:
           private-key: ${{ secrets.RELEASER_APP_KEY }}
       - id: verify-contract
         if: steps.plan.outputs.action == 'verify'
-        run: nix develop -c release-intent check-contract --until ${{ steps.plan.outputs.candidate }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent check-contract --until ${{ steps.plan.outputs.candidate }} --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: verify-freeze
         if: "!cancelled() && steps.plan.outputs.action == 'verify'"
         run: nix develop -c schema-gen freeze --check
       - id: verdict
         if: "!cancelled() && steps.plan.outputs.action == 'verify'"
-        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.conclusion == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.conclusion == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --mode "${{ vars.RELEASE_BATCH_MODE }}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: tag
         if: "!cancelled() && steps.verdict.outputs.action == 'tag'"
         env:
@@ -44,17 +44,17 @@ jobs:
         run: git push origin ${{ steps.verdict.outputs.candidate }}:refs/tags/${{ steps.verdict.outputs.tag }}
       - id: decide
         if: "!cancelled()"
-        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --mode "${{ vars.RELEASE_BATCH_MODE }}" --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: contract-tip
         if: "!cancelled() && steps.decide.outputs.action == 'open-pr'"
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
-        run: nix develop -c release-intent check-contract --until ${{ github.sha }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent check-contract --until ${{ github.sha }} --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: write
         if: "!cancelled() && steps.decide.outputs.action == 'open-pr'"
         env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
-        run: nix develop -c release-intent release-pr --branch develop --current automation/release --write --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+        run: nix develop -c release-intent release-pr --branch develop --current automation/release --write --floor "${{ vars.RELEASE_BATCH_FLOOR }}"
       - id: push
         if: "!cancelled() && steps.decide.outputs.action == 'open-pr' && steps.write.outputs.push == 'true'"
         env:

@@ -157,27 +157,120 @@ func eventRead(scalar string) string {
 
 // checkRangeFloor (range-readers-take-the-floor) requires every workflow step
 // that reads a commit range (plan, release-pr, freeze-plan, check-contract
-// --until) to pass --floor from the RELEASE_BATCH_FLOOR repository variable. A
-// subject the tool cannot parse stops every range reader at the same commit;
-// a reader without the floor would keep parsing it and keep the release
-// stopped.
+// --until) to pass --floor in its quoted form, and every plan step to pass
+// --mode quoted too: --floor "${{ vars.RELEASE_BATCH_FLOOR }}", --mode
+// "${{ vars.RELEASE_BATCH_MODE }}", or the same values through env
+// (--floor "$FLOOR" with FLOOR mapped from the variable). An unquoted
+// expansion vanishes when the variable is unset -- the normal state, set only
+// for recovery -- turning the flag into a missing value or swallowing the
+// next flag, so the job fails closed red on every run.
 func (c *queueChecker) checkRangeFloor() {
 	c.eachDoc(QueueRuleRangeFloor, func(name string, doc *yaml.Node) {
 		for _, jobName := range jobNames(doc) {
-			for _, step := range stepsOf(jobNode(doc, jobName)) {
+			job := jobNode(doc, jobName)
+			for _, step := range stepsOf(job) {
 				run := stepRunText(step)
 				readsRange := rangeReader.MatchString(run) ||
 					(strings.Contains(run, "check-contract") && strings.Contains(run, "--until"))
 				if !readsRange {
 					continue
 				}
-				if !strings.Contains(run, "--floor") || !strings.Contains(run, "RELEASE_BATCH_FLOOR") {
-					c.emit(QueueRuleRangeFloor, name, jobName,
-						"a step reads a commit range without the floor during merge-queue policy validation. Pass --floor ${{ vars.RELEASE_BATCH_FLOOR }} so an unparsable subject leaves parsing everywhere at once")
+				c.checkQuotedFlag(name, job, jobName, step, run, "floor", "RELEASE_BATCH_FLOOR")
+				if planRunner.MatchString(run) {
+					c.checkQuotedFlag(name, job, jobName, step, run, "mode", "RELEASE_BATCH_MODE")
 				}
 			}
 		}
 	})
+}
+
+// checkQuotedFlag requires one range-reader argument in its quoted form: the
+// flag followed by "${{ vars.VAR }}" directly, or by "$ENV" with ENV mapped
+// from the variable in the step or job env.
+func (c *queueChecker) checkQuotedFlag(name string, job *yaml.Node, jobName string, step *yaml.Node, run, flag, variable string) {
+	value, ok := flagValue(run, flag)
+	if !ok || !c.quotedVariable(step, job, value, variable) {
+		c.emit(QueueRuleRangeFloor, name, stepID(step),
+			"a step reads a commit range without a quoted --"+flag+" during merge-queue policy validation. Pass --"+flag+" \"${{ vars."+variable+" }}\" (or --"+flag+" \"$VAR\" with VAR mapped from the variable in env): an unquoted expansion vanishes when the variable is unset and the flag eats the next argument")
+	}
+}
+
+// quotedVariable reports whether value carries the variable: the double-quoted
+// ${{ vars.VAR }} form directly, or a double-quoted $ENV mapped from the
+// variable in the step or job env. Single quotes and bare words never expand.
+func (c *queueChecker) quotedVariable(step, job *yaml.Node, value, variable string) bool {
+	if len(value) >= 2 && strings.HasPrefix(value, `"`) && strings.HasSuffix(value, `"`) {
+		inner := value[1 : len(value)-1]
+		if strings.Contains(inner, "vars."+variable) {
+			return true
+		}
+		if strings.HasPrefix(inner, "$") {
+			if v := envValue(step, inner[1:]); strings.Contains(v, "vars."+variable) {
+				return true
+			}
+			if v := envValue(job, inner[1:]); strings.Contains(v, "vars."+variable) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// envValue returns the value of the named env entry on a step or job, or "".
+func envValue(node *yaml.Node, name string) string {
+	if env := mappingValue(node, "env"); env != nil {
+		if v := mappingValue(env, name); v != nil {
+			return v.Value
+		}
+	}
+	return ""
+}
+
+// flagValue returns the shell word following --flag in the run line, keeping
+// quoted spans whole, or false when the flag is absent or valueless.
+func flagValue(run, flag string) (string, bool) {
+	words := shellWords(run)
+	for i, w := range words {
+		if w == "--"+flag && i+1 < len(words) {
+			return words[i+1], true
+		}
+		if rest, ok := strings.CutPrefix(w, "--"+flag+"="); ok {
+			return rest, true
+		}
+	}
+	return "", false
+}
+
+// shellWords splits a run line into shell words, keeping quoted spans whole
+// with their quotes intact so the checker can tell quoted from bare.
+func shellWords(s string) []string {
+	var out []string
+	var cur strings.Builder
+	var quote rune
+	flush := func() {
+		if cur.Len() > 0 {
+			out = append(out, cur.String())
+			cur.Reset()
+		}
+	}
+	for _, r := range s {
+		switch {
+		case quote != 0:
+			cur.WriteRune(r)
+			if r == quote {
+				quote = 0
+			}
+		case r == '"' || r == '\'':
+			quote = r
+			cur.WriteRune(r)
+		case r == ' ' || r == '\t' || r == '\n':
+			flush()
+		default:
+			cur.WriteRune(r)
+		}
+	}
+	flush()
+	return out
 }
 
 // allowedPush maps one policy job to the branch it may push: the release job
@@ -364,7 +457,7 @@ func prHeadTarget(run string) (string, bool) {
 // call). Quoted spans stay one token, and flag values are skipped.
 func prTargets(run string) [][2]string {
 	var out [][2]string
-	for _, m := range prMergeCloseEdit.FindAllStringSubmatch(run, -1) {
+	for _, m := range prMergeClose.FindAllStringSubmatch(run, -1) {
 		verb, rest := m[1], m[2]
 		target := ""
 		var cur strings.Builder
@@ -518,9 +611,9 @@ var (
 	prCreate = regexp.MustCompile(`\bgh\s+pr\s+create\b`)
 	// prEdit matches a gh pr edit invocation.
 	prEdit = regexp.MustCompile(`\bgh\s+pr\s+edit\b`)
-	// prMergeCloseEdit matches a gh pr merge, close, or edit invocation and
-	// captures the verb and the rest of the shell segment.
-	prMergeCloseEdit = regexp.MustCompile(`\bgh\s+pr\s+(merge|close|edit)\b([\s\S]*?)(?:\|\||&&|;|$)`)
+	// prMergeClose matches a gh pr merge or close invocation and captures the
+	// verb and the rest of the shell segment.
+	prMergeClose = regexp.MustCompile(`\bgh\s+pr\s+(merge|close)\b([\s\S]*?)(?:\|\||&&|;|$)`)
 	// prValueFlags take a value, so the token after one is not the command's
 	// positional target.
 	prValueFlags = map[string]bool{
