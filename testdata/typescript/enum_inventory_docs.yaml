@@ -1,0 +1,57 @@
+required_names:
+  - harness-catalog-doc-remains-unchanged
+  - another-subset-uses-generic-doc
+  - complete-inventory-has-no-subset-doc
+  - subset-doc-cannot-close-comment
+cases:
+  - name: harness-catalog-doc-remains-unchanged
+    classification: must-pass
+    provenance: {source: requirement, ref: AllHarnesses}
+    mutation: {description: Preserve the Harness documentation verbatim from the enum catalog.}
+    input: {catalog_enum: Harness}
+    expected: |
+      /**
+       * AllHarnesses is the declared subset of Harness, not the full
+       * known set. It includes archived Gemini CLI, which has no harvester. Each
+       * Peasant build's adapter registry owns which harnesses it can harvest. Every
+       * Harness member remains individually valid and accepted by isHarness.
+       */
+  - name: another-subset-uses-generic-doc
+    classification: must-pass
+    provenance: {source: boundary, ref: enum subset inventory}
+    mutation: {description: Add an unrelated subset with no harness-specific documentation.}
+    input:
+      enum:
+        name: Example
+        all_name: AllExamples
+        members: [{name: First, value: first}, {name: Second, value: second}]
+        all_values: [first]
+    expected: |
+      /**
+       * AllExamples is a subset of Example, not the full
+       * known set. Every Example member remains individually valid and accepted by isExample.
+       */
+  - name: complete-inventory-has-no-subset-doc
+    classification: must-pass
+    provenance: {source: boundary, ref: enum full inventory}
+    mutation: {description: A complete inventory must not gain a subset comment.}
+    input:
+      enum:
+        name: Example
+        all_name: AllExamples
+        members: [{name: First, value: first}]
+        all_values: [first]
+        subset_doc: This text must not be rendered for a complete inventory.
+    expected: ""
+  - name: subset-doc-cannot-close-comment
+    classification: must-fail
+    provenance: {source: boundary, ref: enum subset documentation}
+    mutation: {description: Put a comment terminator in the subset documentation.}
+    input:
+      enum:
+        name: Example
+        all_name: AllExamples
+        members: [{name: First, value: first}, {name: Second, value: second}]
+        all_values: [first]
+        subset_doc: "*/"
+    expected: "invalid subset_doc for Example"
