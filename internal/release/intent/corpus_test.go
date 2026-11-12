@@ -30,7 +30,11 @@ type corpusCase[I any, E any] struct {
 	Input          I      `yaml:"input"`
 	Expected       E      `yaml:"expected"`
 	Classification string `yaml:"classification"`
-	Provenance     struct {
+	// Sibling names the accept case a must-fail row is one fault away
+	// from: the suite proves the sibling exists, passes, and stays passing,
+	// so the reject fails for the named fault and not an unrelated error.
+	Sibling    string `yaml:"sibling"`
+	Provenance struct {
 		Source string `yaml:"source"`
 		Ref    string `yaml:"ref"`
 	} `yaml:"provenance"`
@@ -74,6 +78,26 @@ func loadNamedCorpus[I any, E any](t *testing.T, data []byte) namedCorpus[I, E] 
 		}
 		if strings.TrimSpace(cse.Mutation.Description) == "" {
 			t.Fatalf("case %q: mutation description is empty", cse.Name)
+		}
+	}
+	classOf := make(map[string]string, len(c.Cases))
+	for _, cse := range c.Cases {
+		classOf[cse.Name] = cse.Classification
+	}
+	for _, cse := range c.Cases {
+		if cse.Classification == "must-fail" {
+			if strings.TrimSpace(cse.Sibling) == "" {
+				t.Fatalf("case %q: a reject case must name its accept sibling", cse.Name)
+			}
+			siblingClass, ok := classOf[cse.Sibling]
+			if !ok {
+				t.Fatalf("case %q: sibling %q is not in the corpus", cse.Name, cse.Sibling)
+			}
+			if siblingClass != "must-pass" {
+				t.Fatalf("case %q: sibling %q is %s, want must-pass", cse.Name, cse.Sibling, siblingClass)
+			}
+		} else if strings.TrimSpace(cse.Sibling) != "" {
+			t.Fatalf("case %q: an accept case names no sibling", cse.Name)
 		}
 	}
 	want := append([]string(nil), c.RequiredNames...)

@@ -1,9 +1,5 @@
 package intent
 
-// botKinds lists the bot PR kinds in a fixed order so classification is
-// deterministic when a branch is ever listed twice.
-var botKinds = []PRKind{PRKindRelease, PRKindVendorHash, PRKindCutRelease}
-
 // ClassifyPR reports which bot PR, if any, a head branch belongs to. Only a
 // PR by the automation author on that kind's listed branch counts: any other
 // author, any unlisted branch, and any empty input is an ordinary PR. The
@@ -14,7 +10,7 @@ func ClassifyPR(cfg Config, author, headBranch string) PRKind {
 		return PRKindOrdinary
 	}
 	for _, kind := range botKinds {
-		if branch, ok := cfg.BotBranches[string(kind)]; ok && branch != "" && headBranch == branch {
+		if branch, ok := cfg.BotBranches[kind]; ok && branch != "" && headBranch == branch {
 			return kind
 		}
 	}

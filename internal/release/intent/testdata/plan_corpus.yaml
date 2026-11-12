@@ -27,6 +27,9 @@ required_names:
   - prefixed-non-release-tag-ignored
   - rc-above-final-ignored
   - verdict-taggable-no-candidate
+  - fresh-candidate-later-subject-taggable
+  - fresh-candidate-later-subject-verify
+  - commits-after-fresh-candidate
   - stale-candidate-close-pr-when-empty
   - plan-only-with-fresh-candidate
 cases:
@@ -79,6 +82,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "fresh"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
@@ -109,6 +118,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "fresh"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
@@ -139,6 +154,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "fresh"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
@@ -197,6 +218,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "stale"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
@@ -227,6 +254,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "unknown"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
@@ -241,6 +274,7 @@ cases:
     input:
       config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
       facts:
+        branch: "develop"
         commits:
           - {sha: "x11", subject: "feat(x): no bracket (#14)", changes_changelog: false}
           - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
@@ -262,7 +296,9 @@ cases:
       version: ""
       tag: ""
       code: "missing-bump"
+      fix_contains: "RELEASE_BATCH_FLOOR"
     classification: must-fail
+    sibling: floor-drops-bad-subject
     provenance: {source: requirement, ref: "planner: one bad subject fails the whole plan"}
     mutation: {description: "a landed subject the grammar rejects"}
   - name: no-final-tag
@@ -291,6 +327,7 @@ cases:
       tag: ""
       code: "no-final-tag"
     classification: must-fail
+    sibling: tag-mode-off-gives-none
     provenance: {source: requirement, ref: "planner: arithmetic needs a base"}
     mutation: {description: "a repository with no release tag at all"}
   - name: no-final-tag-on-chain
@@ -319,6 +356,7 @@ cases:
       tag: ""
       code: "no-final-tag"
     classification: must-fail
+    sibling: version-base-off-chain
     provenance: {source: requirement, ref: "planner: the range base is the newest final tag on the chain"}
     mutation: {description: "a version base off the chain with no chained tag"}
   - name: version-base-off-chain
@@ -376,6 +414,7 @@ cases:
       tag: ""
       code: "epoch-missing"
     classification: must-fail
+    sibling: tag-mode-off-gives-none
     provenance: {source: requirement, ref: "planner: the epoch must name a chain commit"}
     mutation: {description: "an epoch that names nothing on the branch"}
   - name: floor-not-on-chain
@@ -404,6 +443,7 @@ cases:
       tag: ""
       code: "floor-not-on-chain"
     classification: must-fail
+    sibling: floor-at-base-ignored
     provenance: {source: requirement, ref: "planner: the floor must name a chain commit"}
     mutation: {description: "a floor that names nothing on the branch"}
   - name: floor-drops-subjects
@@ -606,6 +646,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r22"
       candidate_fresh: "fresh"
+      before:
+        pending:
+          - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 21}
+        version: "0.1.1"
+        tag: "v0.1.1"
+        date: ""
       pending:
         - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 21}
       level: "patch"
@@ -672,7 +718,9 @@ cases:
       version: ""
       tag: ""
       code: "missing-bump"
+      fix_contains: "RELEASE_BATCH_FLOOR"
     classification: must-fail
+    sibling: epoch-commit-parsed
     provenance: {source: requirement, ref: "planner: the epoch commit itself is parsed"}
     mutation: {description: "an epoch commit the grammar rejects"}
   - name: prefixed-non-release-tag-ignored
@@ -733,6 +781,120 @@ cases:
     classification: must-pass
     provenance: {source: requirement, ref: "planner: only final tags base arithmetic"}
     mutation: {description: "a release candidate above the highest final tag"}
+  - name: fresh-candidate-later-subject-taggable
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "lat", subject: "feat(x)[minor]: later (#15)", changes_changelog: false, date: "2026-11-13"}
+          - {sha: "r11", subject: "release[minor]: v0.1.1 (#14)", changes_changelog: true, date: "2026-11-12"}
+          - {sha: "f11", subject: "fix[patch]: one (#11)", changes_changelog: false, date: "2026-11-11"}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r11": true}
+    expected:
+      action: "tag"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      before:
+        pending:
+          - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+        version: "0.1.1"
+        tag: "v0.1.1"
+        date: "2026-11-11"
+      date: "2026-11-11"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: verify and tag judge the subjects older than the candidate"}
+    mutation: {description: "a later minor landing after a fresh release commit"}
+  - name: fresh-candidate-later-subject-verify
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "lat", subject: "feat(x)[minor]: later (#15)", changes_changelog: false, date: "2026-11-13"}
+          - {sha: "r11", subject: "release[minor]: v0.1.1 (#14)", changes_changelog: true, date: "2026-11-12"}
+          - {sha: "f11", subject: "fix[patch]: one (#11)", changes_changelog: false, date: "2026-11-11"}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {"r11": true}
+    expected:
+      action: "verify"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      before:
+        pending:
+          - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+        version: "0.1.1"
+        tag: "v0.1.1"
+        date: "2026-11-11"
+      date: "2026-11-11"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: verify and tag judge the subjects older than the candidate"}
+    mutation: {description: "a later minor awaiting its pre-tag report"}
+  - name: commits-after-fresh-candidate
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "m13", subject: "feat(x)[minor]: later (#13)", changes_changelog: false, date: "2026-11-13"}
+          - {sha: "r12", subject: "release[patch]: v0.1.1 (#12)", changes_changelog: true, date: "2026-11-12"}
+          - {sha: "f11", subject: "fix[patch]: one (#11)", changes_changelog: false, date: "2026-11-11"}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r12": true}
+    expected:
+      action: "tag"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r12"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      before:
+        pending:
+          - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 11}
+        version: "0.1.1"
+        tag: "v0.1.1"
+        date: "2026-11-11"
+      date: "2026-11-11"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: the tag comes from the subjects the candidate covers"}
+    mutation: {description: "a releasing subject queued behind a fresh release commit"}
   - name: verdict-taggable-no-candidate
     input:
       config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
@@ -810,6 +972,12 @@ cases:
       version_base: "v0.1.0"
       candidate: "r11"
       candidate_fresh: "fresh"
+      before:
+        pending:
+          - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+        version: "0.2.0"
+        tag: "v0.2.0"
+        date: ""
       pending:
         - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
       level: "minor"
