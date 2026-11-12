@@ -46,7 +46,7 @@ cases:
       expected: {exit: 0, action: "open-pr", fresh: "false"}
       classification: must-pass
       provenance: {source: requirement, ref: "a newer stale candidate never tags, whatever came before"}
-      mutation: {description: "Stacks a fresh release, a new pending subject and a stale rebuild."}
+      mutation: {description: "Leaves the older fresh release untagged and hand-builds the newer release stale."}
     - name: check-stale
       input: {style: "bare", scenario: "check-stale-tree"}
       expected: {exit: 2, lines: ["fresh=false", "error=release-content-stale"]}

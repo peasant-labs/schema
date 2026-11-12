@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/peasant-labs/schema/internal/release/intent"
 	"github.com/peasant-labs/schema/testcase"
 	"gopkg.in/yaml.v3"
 )
@@ -57,7 +58,7 @@ func loadCheckTitleFixtures(t *testing.T) checkTitleFixtures {
 // the git dependency, never checkTitle: every method returns the scripted
 // outcome for the scenario under test.
 type mockGitRunner struct {
-	firstParent func(ctx context.Context, ref, changelog string) ([]Commit, error)
+	firstParent func(ctx context.Context, ref, changelog string) ([]intent.Commit, error)
 	tags        func(ctx context.Context, prefix string) (map[string]string, error)
 	firstAdding func(ctx context.Context, branch, path string) (string, error)
 	changed     func(ctx context.Context, base, head string) (string, []string, error)
@@ -65,7 +66,7 @@ type mockGitRunner struct {
 	mergeTree   func(ctx context.Context, tip, current string) error
 }
 
-func (m *mockGitRunner) FirstParent(ctx context.Context, ref, changelog string) ([]Commit, error) {
+func (m *mockGitRunner) FirstParent(ctx context.Context, ref, changelog string) ([]intent.Commit, error) {
 	return m.firstParent(ctx, ref, changelog)
 }
 func (m *mockGitRunner) Tags(ctx context.Context, prefix string) (map[string]string, error) {
@@ -125,10 +126,17 @@ func TestCheckTitleTempRepos(t *testing.T) {
 			var base, head string
 			var runner GitRunner
 			if c.Input.Setup == "mock-base-failure" {
+				// The base config blob read fails (a failed on-demand fetch,
+				// not an absent file) while the head config reads fine.
+				// checkTitle must fail closed: a base read error is never the
+				// adopting PR.
 				fetchErr := &BlobReadError{Rev: "base", Path: DefaultConfigPath, Err: fmt.Errorf("simulated on-demand fetch failure")}
 				runner = &mockGitRunner{
 					readFile: func(ctx context.Context, rev, path string) ([]byte, error) {
-						return nil, fetchErr
+						if rev == "base" {
+							return nil, fetchErr
+						}
+						return []byte(checkTitleTestConfig), nil
 					},
 				}
 				base, head = "base", "head"

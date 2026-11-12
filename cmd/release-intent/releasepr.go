@@ -129,26 +129,10 @@ func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, fa
 // error means fresh. A typed stale-content rejection means stale. Any other
 // error is a failed read for exit 1.
 func checkWorkingTree(cfg intent.Config, content intent.Content) error {
-	got := intent.Content{Versions: map[string]string{}}
-	for _, vf := range cfg.VersionFiles {
-		if _, ok := content.Versions[vf.Path]; !ok {
-			continue
-		}
-		data, err := os.ReadFile(vf.Path)
-		if err != nil {
-			return fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", vf.Path, err)
-		}
-		val, corrupt := versionFieldValue(data, vf.Field)
-		if corrupt {
-			val = ""
-		}
-		got.Versions[vf.Path] = val
-	}
-	changelog, err := os.ReadFile(cfg.Changelog)
+	got, err := fileContent(os.ReadFile, cfg, content)
 	if err != nil {
-		return fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", cfg.Changelog, err)
+		return fmt.Errorf("release-pr --check: cannot assemble the working-tree content for comparison: %w. Run from the repository root with the release PR checked out", err)
 	}
-	got.Changelog = string(changelog)
 	return intent.CompareContent(content, got)
 }
 
@@ -156,26 +140,12 @@ func checkWorkingTree(cfg intent.Config, content intent.Content) error {
 // differences rebuild, and a release branch the tip no longer merges onto
 // cleanly rebuilds even when the content matches.
 func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, tip, current string, content intent.Content) (bool, error) {
-	got := intent.Content{Versions: map[string]string{}}
-	for _, vf := range cfg.VersionFiles {
-		if _, ok := content.Versions[vf.Path]; !ok {
-			continue
-		}
-		data, err := runner.ReadFile(ctx, current, vf.Path)
-		if err != nil {
-			return true, nil
-		}
-		val, corrupt := versionFieldValue(data, vf.Field)
-		if corrupt {
-			val = ""
-		}
-		got.Versions[vf.Path] = val
-	}
-	changelog, err := runner.ReadFile(ctx, current, cfg.Changelog)
+	got, err := fileContent(func(path string) ([]byte, error) {
+		return runner.ReadFile(ctx, current, path)
+	}, cfg, content)
 	if err != nil {
 		return true, nil
 	}
-	got.Changelog = string(changelog)
 	if err := intent.CompareContent(content, got); err != nil {
 		return true, nil
 	}

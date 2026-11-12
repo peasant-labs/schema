@@ -57,13 +57,10 @@ func runCheckWorkflows(args []string) error {
 	}
 	var cfg intent.Config
 	if policy.Queue != nil {
-		cfgData, err := os.ReadFile(DefaultConfigPath)
+		var err error
+		cfg, err = loadConfig("check-workflows", DefaultConfigPath, "")
 		if err != nil {
-			return configReadError(DefaultConfigPath, "", err)
-		}
-		cfg, err = intent.ParseConfig(cfgData)
-		if err != nil {
-			return rejectAs("check-workflows", err)
+			return err
 		}
 	}
 	diagnostics, required := release.CheckWorkflows(policy, cfg, dir)

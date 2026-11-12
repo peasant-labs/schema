@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -78,7 +79,10 @@ func newFreshRepo(t *testing.T, style string) string {
 	writeFile(t, dir, "package.json", "{\"version\": \"0.1.0\"}\n")
 	runGit(t, dir, "add", ".")
 	runGitDated(t, dir, "2020-01-01T00:00:00Z", "commit", "-q", "-m", "feat(init)[minor]: seed")
-	runGit(t, dir, "tag", "v0.1.0")
+	// Annotated, like the fairtrade and schema release tags: the plan path
+	// must run on the tag shape with a tag object between the name and the
+	// commit.
+	runGit(t, dir, "tag", "-a", "v0.1.0", "-m", "release 0.1.0")
 	return dir
 }
 
@@ -93,6 +97,18 @@ func freshCommitRelease(t *testing.T, dir, date, subject string) {
 	t.Helper()
 	runGit(t, dir, "add", "-A")
 	runGitDated(t, dir, date, "commit", "-q", "-m", subject)
+}
+
+func gitTagPointsAt(t *testing.T, dir, rev string) string {
+	t.Helper()
+	cmd := exec.Command("git", "tag", "--points-at", rev)
+	cmd.Dir = dir
+	cmd.Env = hermeticGitEnv(t)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("git tag --points-at %q: %v", rev, err)
+	}
+	return strings.TrimSpace(string(out))
 }
 
 func planOutput(t *testing.T, dir string, extra ...string) (int, map[string]string, string) {
@@ -155,23 +171,29 @@ func TestFreshness(t *testing.T) {
 				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {
 					t.Fatalf("%s: release-pr --write exit = %d, want 0\nstdout: %q", c.Name, exit, stdout)
 				}
+				// The older release commit is fresh but stays untagged, so it
+				// is a candidate, never the range base.
 				freshCommitRelease(t, dir, "2020-01-03T00:00:00Z", "release[patch]: cut it")
-				runGit(t, dir, "tag", "v0.1.1")
+				older := gitRev(t, dir, "HEAD")
+				// A new pending subject, then a hand-built stale release: its
+				// bytes do not match the generator, so the newer candidate is
+				// stale.
 				writeFile(t, dir, "later.txt", "later\n")
 				runGit(t, dir, "add", "later.txt")
 				runGitDated(t, dir, "2020-01-04T00:00:00Z", "commit", "-q", "-m", "feat(graph)[patch]: later facet")
-				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {
-					t.Fatalf("%s: second release-pr --write exit = %d, want 0\nstdout: %q", c.Name, exit, stdout)
-				}
-				writeFile(t, dir, "newest.txt", "newest\n")
-				runGit(t, dir, "add", "newest.txt")
-				runGitDated(t, dir, "2020-01-05T00:00:00Z", "commit", "-q", "-m", "feat(graph)[patch]: newest facet")
-				freshCommitRelease(t, dir, "2020-01-06T00:00:00Z", "release[patch]: cut again")
-				writeFile(t, dir, "final.txt", "final\n")
-				runGit(t, dir, "add", "final.txt")
-				runGitDated(t, dir, "2020-01-07T00:00:00Z", "commit", "-q", "-m", "feat(graph)[patch]: final facet")
+				writeFile(t, dir, "CHANGELOG.md", "# changelog\n\n## 0.1.1\n\n- hand-written entry\n")
+				writeFile(t, dir, "package.json", "{\"version\": \"0.1.1\"}\n")
+				runGit(t, dir, "add", "-A")
+				runGitDated(t, dir, "2020-01-05T00:00:00Z", "commit", "-q", "-m", "release[patch]: cut again")
+				newer := gitRev(t, dir, "HEAD")
 				exit, got, _ := planOutput(t, dir)
 				assertFreshRow(t, c.Name, c.Expected, exit, got)
+				if got["candidate"] != newer {
+					t.Fatalf("%s: candidate = %q, want the newer stale release %q", c.Name, got["candidate"], newer)
+				}
+				if out := gitTagPointsAt(t, dir, older); out != "" {
+					t.Fatalf("%s: older release commit carries tags %q, want none", c.Name, out)
+				}
 			case "freshness-read-error":
 				freshCommitPending(t, dir)
 				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {

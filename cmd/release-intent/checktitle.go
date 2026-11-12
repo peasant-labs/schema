@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -112,7 +113,7 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 	}
 	cfg, err := intent.ParseConfig(cfgData)
 	if err != nil {
-		return fmt.Errorf("check-title: the base release config %w", err)
+		return rejectAs("check-title", err)
 	}
 	tags, err := runner.Tags(ctx, cfg.TagPrefix)
 	if err != nil {
@@ -199,15 +200,11 @@ func readProtectedField(ctx context.Context, runner GitRunner, rev, path, field 
 func protectedFieldError(path string) error {
 	return &intent.Error{
 		Code:  intent.ErrProtectedPath,
-		What:  "version file " + strconvQuote(path) + " does not parse as JSON",
+		What:  "version file " + strconv.Quote(path) + " does not parse as JSON",
 		Why:   "the protected field cannot be compared when the file does not parse, so the PR fails closed",
 		Where: "PR change, checked by release-intent check-title",
 		When:  "pull_request opened, edited, synchronize, reopened, or the merge-group build",
 		Means: "the title-guard check is red, so the merge queue will not accept this PR",
 		Fix:   "fix the JSON in " + path + " or drop the edit",
 	}
-}
-
-func strconvQuote(s string) string {
-	return "\"" + strings.ReplaceAll(s, "\"", "\\\"") + "\""
 }

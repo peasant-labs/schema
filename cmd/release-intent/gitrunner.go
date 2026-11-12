@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 // GitRunner is the release-intent git seam: read-only history and file queries
@@ -12,7 +14,7 @@ import (
 // never a shell.
 type GitRunner interface {
 	// FirstParent returns first-parent commits from ref, newest first.
-	FirstParent(ctx context.Context, ref string, changelog string) ([]Commit, error)
+	FirstParent(ctx context.Context, ref string, changelog string) ([]intent.Commit, error)
 	// Tags returns tag name to peeled commit for tags with the given prefix in
 	// one git call.
 	Tags(ctx context.Context, prefix string) (map[string]string, error)
@@ -30,16 +32,6 @@ type GitRunner interface {
 	// error means the merge tree was written; a conflict or a read failure
 	// returns an error.
 	MergeTree(ctx context.Context, tip, current string) error
-}
-
-// Commit is one first-parent commit: its SHA, its subject line, whether it
-// changes the changelog file, and its commit date as YYYY-MM-DD for dated
-// changelog headings.
-type Commit struct {
-	SHA              string
-	Subject          string
-	ChangesChangelog bool
-	Date             string
 }
 
 // gitSubcommand is the typed closed allowlist of git subcommands the runner
@@ -128,7 +120,7 @@ func (g *execGit) runGit(ctx context.Context, sub gitSubcommand, fixedFlags []st
 // FirstParent lists every first-parent commit newest first. The changelog set
 // comes from a second call so an empty commit is still listed: history
 // simplification on the first call would drop it.
-func (g *execGit) FirstParent(ctx context.Context, ref string, changelog string) ([]Commit, error) {
+func (g *execGit) FirstParent(ctx context.Context, ref string, changelog string) ([]intent.Commit, error) {
 	// Format: SHA, subject, committer date. Use NUL separators that subjects
 	// cannot contain unescaped; the date is %cs (committer date short
 	// YYYY-MM-DD) for dated changelog headings.
@@ -153,8 +145,8 @@ func (g *execGit) FirstParent(ctx context.Context, ref string, changelog string)
 	return commits, nil
 }
 
-func parseLogCommits(out string) []Commit {
-	var commits []Commit
+func parseLogCommits(out string) []intent.Commit {
+	var commits []intent.Commit
 	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
@@ -163,7 +155,7 @@ func parseLogCommits(out string) []Commit {
 		if len(parts) < 2 {
 			continue
 		}
-		c := Commit{SHA: strings.TrimSpace(parts[0]), Subject: parts[1]}
+		c := intent.Commit{SHA: strings.TrimSpace(parts[0]), Subject: parts[1]}
 		if len(parts) == 3 {
 			c.Date = strings.TrimSpace(parts[2])
 		}
