@@ -1197,6 +1197,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcripts/{id}/segments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read the transcript's segment directory: one ref per segment, each a bounded run of whole turns, and no turn content. It is the same directory type the local dashboard API serves, cut by the shared rule (schema.CutTranscriptSegments with schema.TranscriptSegmentBudgetBytes), so the same turns give the same refs on every server. sessionId is the published session's id. The directory is paged: page is one-based and omitted defaults to 1, and totalSegments counts every page. revision is optional and the current revision is served when it is omitted; a stale revision is a 409 naming both revisions, and a segment cut under another revision must not be placed beside this directory. A non-numeric or non-positive page is a 400. Access follows getTranscriptContent: a transcript this viewer may not read is a 404. */
+        get: operations["getTranscriptSegments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/segments/{index}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Read one transcript segment by its directory ordinal. Every turn it serves is whole, and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. A segment that cannot be served whole is refused with 409, never served short. Access and the repository-identity rule follow getTranscriptContent: a transcript this viewer may not read is a 404. */
+        get: operations["getTranscriptSegment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcripts/{id}/share": {
         parameters: {
             query?: never;
@@ -1226,6 +1260,23 @@ export interface paths {
         post?: never;
         /** @description Withdraw one owned transcript from one collective and return a status receipt. */
         delete: operations["unshareTranscriptFromGroup"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcripts/{id}/window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. The rule is the shared one (schema.ResolveTranscriptWindow). anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through getTranscriptSegment. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a transcript with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. Access follows getTranscriptContent: a transcript this viewer may not read is a 404. */
+        get: operations["getTranscriptWindow"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1552,6 +1603,7 @@ export interface components {
          */
         SchemaContentOwnership: Schema.ContentOwnership;
         SchemaContentProvenance: Schema.ContentProvenance;
+        SchemaConversationTurnSpan: Schema.ConversationTurnSpan;
         /**
          * Delivery Origin
          * @description Closed session graph value
@@ -1938,6 +1990,10 @@ export interface components {
          * @example 99d59925-36bc-424c-a789-8be54d9702ba
          */
         SchemaTranscriptID: Schema.TranscriptID;
+        SchemaTranscriptSegment: Schema.TranscriptSegment;
+        SchemaTranscriptSegmentDirectory: Schema.TranscriptSegmentDirectory;
+        SchemaTranscriptSegmentRef: Schema.TranscriptSegmentRef;
+        SchemaTranscriptTurn: Schema.TranscriptTurn;
         /**
          * TranscriptUpdateVisibility
          * @description Visibility values accepted by the owner transcript update operation. Organization-scoped visibility is deferred and is deliberately not offered here.
@@ -1946,6 +2002,7 @@ export interface components {
          * @enum {string}
          */
         SchemaTranscriptUpdateVisibility: Schema.TranscriptUpdateVisibility;
+        SchemaTranscriptWindow: Schema.TranscriptWindow;
         SchemaTurnContentPart: Schema.TurnContentPart;
         SchemaTurnDetail: Schema.TurnDetail;
         /**
@@ -6716,6 +6773,134 @@ export interface operations {
             };
         };
     };
+    getTranscriptSegments: {
+        parameters: {
+            query?: {
+                /** @description One-based directory page; omitted defaults to 1 */
+                page?: number;
+                /** @description Revision to read; omitted serves the current revision */
+                revision?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptSegmentDirectory"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getTranscriptSegment: {
+        parameters: {
+            query?: {
+                /** @description Revision to read; omitted serves the current revision */
+                revision?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+                /** @description Segment ordinal from the directory read */
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptSegment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
     shareTranscriptWithGroups: {
         parameters: {
             query?: never;
@@ -6849,6 +7034,72 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+        };
+    };
+    getTranscriptWindow: {
+        parameters: {
+            query: {
+                /** @description Turn identity to centre the window on */
+                anchor: number;
+                /** @description Assistant turns collected on each side, 1..10; omitted defaults to 10 */
+                span?: number;
+                /** @description Revision to read; omitted serves the current revision */
+                revision?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Transcript identifier */
+                id: components["schemas"]["SchemaTranscriptID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaTranscriptWindow"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchemaVillageErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

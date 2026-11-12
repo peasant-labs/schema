@@ -135,7 +135,9 @@ const (
 	// gained the optional conversationTurnCount and the village rows gained
 	// displayed_turn_count, the segment directory gained totalConversationTurns
 	// and the ref gained conversationTurns, and every turnCount was re-documented
-	// in folded-turn units (additive = minor bump).
+	// in folded-turn units (additive = minor bump). The same version declares
+	// the segmented transcript reads getTranscriptSegments, getTranscriptSegment
+	// and getTranscriptWindow with the existing transcript types.
 	VillageAPIVersion = "0.39.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops

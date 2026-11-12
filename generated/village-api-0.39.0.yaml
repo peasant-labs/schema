@@ -4145,6 +4145,143 @@ paths:
           description: Internal Server Error
       tags:
       - pull-requests
+  /api/v1/transcripts/{id}/segments:
+    get:
+      description: 'Read the transcript''s segment directory: one ref per segment,
+        each a bounded run of whole turns, and no turn content. It is the same directory
+        type the local dashboard API serves, cut by the shared rule (schema.CutTranscriptSegments
+        with schema.TranscriptSegmentBudgetBytes), so the same turns give the same
+        refs on every server. sessionId is the published session''s id. The directory
+        is paged: page is one-based and omitted defaults to 1, and totalSegments counts
+        every page. revision is optional and the current revision is served when it
+        is omitted; a stale revision is a 409 naming both revisions, and a segment
+        cut under another revision must not be placed beside this directory. A non-numeric
+        or non-positive page is a 400. Access follows getTranscriptContent: a transcript
+        this viewer may not read is a 404.'
+      operationId: getTranscriptSegments
+      parameters:
+      - description: One-based directory page; omitted defaults to 1
+        in: query
+        name: page
+        schema:
+          description: One-based directory page; omitted defaults to 1
+          minimum: 1
+          type: integer
+      - description: Revision to read; omitted serves the current revision
+        in: query
+        name: revision
+        schema:
+          description: Revision to read; omitted serves the current revision
+          type: string
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaTranscriptSegmentDirectory'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
+  /api/v1/transcripts/{id}/segments/{index}:
+    get:
+      description: 'Read one transcript segment by its directory ordinal. Every turn
+        it serves is whole, and its firstTurn and lastTurn are exactly the range the
+        directory declared. Each turn row embeds the shared turn detail beside truncated
+        and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript
+        continues on that side. revision is optional and the current revision is served
+        when it is omitted. A non-numeric or negative index is a 400, an index at
+        or past totalSegments is a 404 naming the directory''s segment count, and
+        a stale revision is a 409 naming both revisions. A segment that cannot be
+        served whole is refused with 409, never served short. Access and the repository-identity
+        rule follow getTranscriptContent: a transcript this viewer may not read is
+        a 404.'
+      operationId: getTranscriptSegment
+      parameters:
+      - description: Revision to read; omitted serves the current revision
+        in: query
+        name: revision
+        schema:
+          description: Revision to read; omitted serves the current revision
+          type: string
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      - description: Segment ordinal from the directory read
+        in: path
+        name: index
+        required: true
+        schema:
+          description: Segment ordinal from the directory read
+          minimum: 0
+          type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaTranscriptSegment'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
   /api/v1/transcripts/{id}/share:
     post:
       description: Offer one owned transcript to one or more collectives. The response
@@ -4267,6 +4404,90 @@ paths:
           description: Not Found
       tags:
       - contributions
+  /api/v1/transcripts/{id}/window:
+    get:
+      description: 'Resolve a turn identity to a contiguous transcript window and
+        answer a descriptor that names where the window is, never what is in it. The
+        rule is the shared one (schema.ResolveTranscriptWindow). anchor is a non-negative
+        turn identity: when the turn there is a user turn it is the anchor, otherwise
+        the read snaps to the nearest lower user turn, or the nearest higher one when
+        none is lower, and requestedAnchor and anchorTurn report both. span is the
+        number of assistant turns collected on each side, 1..10, and omitted defaults
+        to the design value 10; the parameter narrows a window and cannot widen it.
+        segments is the ordered contiguous run of segment ordinals that covers the
+        range; the viewer loads exactly those through getTranscriptSegment. revision
+        is optional and the current revision is served when it is omitted. A missing,
+        non-numeric, or negative anchor and a span outside 1..10 are 400; a transcript
+        with no user turn is a 404, because a window requires one; a stale revision
+        is a 409 naming both revisions. Access follows getTranscriptContent: a transcript
+        this viewer may not read is a 404.'
+      operationId: getTranscriptWindow
+      parameters:
+      - description: Turn identity to centre the window on
+        in: query
+        name: anchor
+        required: true
+        schema:
+          description: Turn identity to centre the window on
+          minimum: 0
+          type: integer
+      - description: Assistant turns collected on each side, 1..10; omitted defaults
+          to 10
+        in: query
+        name: span
+        schema:
+          default: 10
+          description: Assistant turns collected on each side, 1..10; omitted defaults
+            to 10
+          maximum: 10
+          minimum: 1
+          type: integer
+      - description: Revision to read; omitted serves the current revision
+        in: query
+        name: revision
+        schema:
+          description: Revision to read; omitted serves the current revision
+          type: string
+      - description: Transcript identifier
+        in: path
+        name: id
+        required: true
+        schema:
+          $ref: '#/components/schemas/SchemaTranscriptID'
+          description: Transcript identifier
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaTranscriptWindow'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Bad Request
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Not Found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Conflict
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchemaVillageErrorResponse'
+          description: Internal Server Error
+      tags:
+      - transcripts
   /api/v1/transcripts/publish:
     post:
       description: Publish exact transcript bytes with typed JSON metadata. Capability
@@ -6213,6 +6434,20 @@ components:
       - evidence
       - inputModality
       type: object
+    SchemaConversationTurnSpan:
+      properties:
+        before:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        count:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - before
+      - count
+      type: object
     SchemaDeliveryOrigin:
       description: Closed session graph value
       enum:
@@ -7979,6 +8214,183 @@ components:
       pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       title: Transcript ID
       type: string
+    SchemaTranscriptSegment:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        turns:
+          items:
+            $ref: '#/components/schemas/SchemaTranscriptTurn'
+          type: array
+      required:
+      - index
+      - revision
+      - firstTurn
+      - lastTurn
+      - byteLength
+      - hasOlder
+      - hasNewer
+      - turns
+      type: object
+    SchemaTranscriptSegmentDirectory:
+      properties:
+        directoryPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        directoryPerPage:
+          maximum: 9.007199254740991e+15
+          minimum: 1
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            $ref: '#/components/schemas/SchemaTranscriptSegmentRef'
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        totalConversationTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalSegments:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        totalTurns:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - totalTurns
+      - totalSegments
+      - segments
+      type: object
+    SchemaTranscriptSegmentRef:
+      properties:
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        conversationTurns:
+          $ref: '#/components/schemas/SchemaConversationTurnSpan'
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        index:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+      required:
+      - index
+      - firstTurn
+      - lastTurn
+      - byteLength
+      type: object
+    SchemaTranscriptTurn:
+      properties:
+        agentName:
+          type: string
+        byteLength:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        command:
+          $ref: '#/components/schemas/SchemaCommandInvocation'
+        content:
+          type: string
+        contentParts:
+          items:
+            $ref: '#/components/schemas/SchemaTurnContentPart'
+          type: array
+        controlKind:
+          type:
+          - "null"
+          - string
+        depth:
+          type: integer
+        entryType:
+          $ref: '#/components/schemas/SchemaEntryType'
+        hasThinking:
+          type: boolean
+        index:
+          type: integer
+        observedModel:
+          $ref: '#/components/schemas/SchemaObservedModelID'
+        parentIndex:
+          type:
+          - "null"
+          - integer
+        provenance:
+          $ref: '#/components/schemas/SchemaContentProvenance'
+        role:
+          $ref: '#/components/schemas/SchemaRole'
+        sourceEntryRef:
+          $ref: '#/components/schemas/SchemaSourceEntryRef'
+        stopReason:
+          $ref: '#/components/schemas/SchemaStopReason'
+        thinkingLevel:
+          $ref: '#/components/schemas/SchemaThinkingLevel'
+        thinkingLevelRaw:
+          $ref: '#/components/schemas/SchemaThinkingLevelRaw'
+        timestamp:
+          format: date-time
+          type: string
+        tokensIn:
+          type:
+          - "null"
+          - integer
+        tokensOut:
+          type:
+          - "null"
+          - integer
+        toolCalls:
+          items:
+            $ref: '#/components/schemas/SchemaToolCallDetail'
+          type: array
+        truncated:
+          type: boolean
+        usage:
+          $ref: '#/components/schemas/SchemaUsageDetail'
+      required:
+      - index
+      - role
+      - content
+      - timestamp
+      - depth
+      - truncated
+      - byteLength
+      type: object
     SchemaTranscriptUpdateVisibility:
       description: Visibility values accepted by the owner transcript update operation.
         Organization-scoped visibility is deferred and is deliberately not offered
@@ -7991,6 +8403,53 @@ components:
       - private
       title: TranscriptUpdateVisibility
       type: string
+    SchemaTranscriptWindow:
+      properties:
+        anchorTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        firstTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        hasNewer:
+          type: boolean
+        hasOlder:
+          type: boolean
+        lastTurn:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        requestedAnchor:
+          maximum: 9.007199254740991e+15
+          minimum: 0
+          type: integer
+        revision:
+          minLength: 1
+          type: string
+        segments:
+          items:
+            type: integer
+          type: array
+        sessionId:
+          $ref: '#/components/schemas/SchemaSessionID'
+        span:
+          maximum: 10
+          minimum: 1
+          type: integer
+      required:
+      - sessionId
+      - revision
+      - requestedAnchor
+      - anchorTurn
+      - span
+      - firstTurn
+      - lastTurn
+      - segments
+      - hasOlder
+      - hasNewer
+      type: object
     SchemaTurnContentPart:
       properties:
         image:

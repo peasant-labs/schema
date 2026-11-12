@@ -481,6 +481,27 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	transcriptPath := new(struct {
 		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
 	})
+	// The segmented transcript reads. Their parameters, meaning and response
+	// types are the ones the local dashboard API serves; only the path differs,
+	// because the resource here is already the transcript. The span bounds
+	// restate schema.TranscriptWindowSpan{Minimum,Maximum,Default}; a test
+	// holds them equal.
+	transcriptSegmentsQuery := new(struct {
+		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		Page     int                 `query:"page" description:"One-based directory page; omitted defaults to 1" minimum:"1"`
+		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+	})
+	transcriptSegmentQuery := new(struct {
+		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		Index    int                 `path:"index" description:"Segment ordinal from the directory read" minimum:"0"`
+		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+	})
+	transcriptWindowQuery := new(struct {
+		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		Anchor   int                 `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`
+		Span     int                 `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`
+		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+	})
 	transcriptListQuery := new(struct {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`
 		Page     int                  `query:"page"`
@@ -551,6 +572,24 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 			description: "Get the durable transcript content envelope. This response never includes authorized relationship navigation. When the transcript's owner is anonymous to this viewer, sessionDetail is served without its repository identity: project, workingDirectory, gitBranch, gitRemote and every childSessions[].project are absent. Text inside the conversation is content and is not covered.",
 			requests:    []interface{}{transcriptPath}, response: new(schema.TranscriptContent),
 			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments", id: "getTranscriptSegments", tag: "transcripts",
+			description: "Read the transcript's segment directory: one ref per segment, each a bounded run of whole turns, and no turn content. It is the same directory type the local dashboard API serves, cut by the shared rule (schema.CutTranscriptSegments with schema.TranscriptSegmentBudgetBytes), so the same turns give the same refs on every server. sessionId is the published session's id. The directory is paged: page is one-based and omitted defaults to 1, and totalSegments counts every page. revision is optional and the current revision is served when it is omitted; a stale revision is a 409 naming both revisions, and a segment cut under another revision must not be placed beside this directory. A non-numeric or non-positive page is a 400. Access follows getTranscriptContent: a transcript this viewer may not read is a 404.",
+			requests:    []interface{}{transcriptSegmentsQuery}, response: new(schema.TranscriptSegmentDirectory),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}/segments/{index}", id: "getTranscriptSegment", tag: "transcripts",
+			description: "Read one transcript segment by its directory ordinal. Every turn it serves is whole, and its firstTurn and lastTurn are exactly the range the directory declared. Each turn row embeds the shared turn detail beside truncated and the pre-bound byteLength. hasOlder and hasNewer say whether the transcript continues on that side. revision is optional and the current revision is served when it is omitted. A non-numeric or negative index is a 400, an index at or past totalSegments is a 404 naming the directory's segment count, and a stale revision is a 409 naming both revisions. A segment that cannot be served whole is refused with 409, never served short. Access and the repository-identity rule follow getTranscriptContent: a transcript this viewer may not read is a 404.",
+			requests:    []interface{}{transcriptSegmentQuery}, response: new(schema.TranscriptSegment),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError},
+		},
+		{
+			method: http.MethodGet, path: "/api/v1/transcripts/{id}/window", id: "getTranscriptWindow", tag: "transcripts",
+			description: "Resolve a turn identity to a contiguous transcript window and answer a descriptor that names where the window is, never what is in it. The rule is the shared one (schema.ResolveTranscriptWindow). anchor is a non-negative turn identity: when the turn there is a user turn it is the anchor, otherwise the read snaps to the nearest lower user turn, or the nearest higher one when none is lower, and requestedAnchor and anchorTurn report both. span is the number of assistant turns collected on each side, 1..10, and omitted defaults to the design value 10; the parameter narrows a window and cannot widen it. segments is the ordered contiguous run of segment ordinals that covers the range; the viewer loads exactly those through getTranscriptSegment. revision is optional and the current revision is served when it is omitted. A missing, non-numeric, or negative anchor and a span outside 1..10 are 400; a transcript with no user turn is a 404, because a window requires one; a stale revision is a 409 naming both revisions. Access follows getTranscriptContent: a transcript this viewer may not read is a 404.",
+			requests:    []interface{}{transcriptWindowQuery}, response: new(schema.TranscriptWindow),
+			errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError},
 		},
 		{
 			method: http.MethodGet, path: "/api/v1/transcript-groups/{groupId}/members", id: "listTranscriptGroupMembers", tag: "transcripts",
