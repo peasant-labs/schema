@@ -9,7 +9,7 @@ export function applyGroupedReadZodRefinements(source) {
     if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
     if (value.sync) {
       const s = value.session, v = value.sync;
-      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || v.conversationTurnCount !== s.conversationTurnCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
       const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
         if (left == null || right == null) return left == null && right == null;
         return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
@@ -35,9 +35,10 @@ export function applyGroupedReadZodRefinements(source) {
     };
     for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    const turnCounts = ["conversation_turn_count", "displayed_turn_count"];
+    check(value.collective, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
     check(value.pending, [...graph, "parent_transcript_id", "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.myShare, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);`);
   for (const prefix of ["Local", "Village"]) {
     output = append(output, `z${prefix}SessionListItem`, `

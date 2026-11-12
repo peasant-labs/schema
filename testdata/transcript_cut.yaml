@@ -1,0 +1,252 @@
+# Cut cases for CutTranscriptSegments and TranscriptTurnByteLength. Every
+# server that serves the segmented transcript reads must produce these refs
+# from these turns, byte length for byte length; a changed literal here is a
+# moved segment boundary on every server.
+#
+# A turn states its text one of three ways: contentBytes (that many "x" bytes),
+# content (a literal string) or contentHex (raw bytes, for text that is not
+# valid UTF-8). argumentsBytes and resultBytes build one tool call per pair,
+# each of that many "x" bytes; toolCalls states literal arguments and results.
+# entryType is text when omitted. JSON size of plain ASCII is its bytes + 2.
+#
+# contractBudgetBytes is the budget every server cuts with; the test holds
+# schema.TranscriptSegmentBudgetBytes equal to it. It is a contract value:
+# changing it moves the segment boundaries of every transcript on every server.
+contractBudgetBytes: 1048576
+cases:
+  # The next turn would push the segment past the budget, so it is deferred to
+  # the next segment instead of being appended. JSON size is content bytes + 2.
+  - name: cut-defers-crossing-entry
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, contentBytes: 262144}
+      - {index: 7, role: assistant, contentBytes: 524288}
+      - {index: 11, role: assistant, contentBytes: 524288}
+      - {index: 14, role: user, contentBytes: 131072}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 7, byteLength: 786436, conversationTurns: {before: 0, count: 2}}
+        - {index: 1, firstTurn: 11, lastTurn: 14, byteLength: 655364, conversationTurns: {before: 2, count: 2}}
+      crossingTurn: 11
+  # A user turn never spans two segments: it is appended whole or deferred
+  # whole. Here the assistant turn alone fills the first segment.
+  - name: cut-user-turn-whole
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: assistant, contentBytes: 524288}
+      - {index: 7, role: user, contentBytes: 1048576}
+      - {index: 11, role: assistant, contentBytes: 262144}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4, byteLength: 524290, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 7, lastTurn: 7, byteLength: 1048578, conversationTurns: {before: 1, count: 1}}
+        - {index: 2, firstTurn: 11, lastTurn: 11, byteLength: 262146, conversationTurns: {before: 2, count: 1}}
+      crossingTurn: 7
+  # A turn larger than the budget is appended to an empty segment, so the next
+  # iteration always closes it: it ends up alone.
+  - name: cut-oversized-turn-alone
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, contentBytes: 1024}
+      - {index: 7, role: assistant, contentBytes: 4194304}
+      - {index: 11, role: user, contentBytes: 2048}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4, byteLength: 1026, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 7, lastTurn: 7, byteLength: 4194306, conversationTurns: {before: 1, count: 1}}
+        - {index: 2, firstTurn: 11, lastTurn: 11, byteLength: 2050, conversationTurns: {before: 2, count: 1}}
+      crossingTurn: 7
+  # A turn at exactly the budget is allowed and is not an overflow.
+  - name: cut-exact-budget-turn
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, contentBytes: 1048574}
+      - {index: 7, role: assistant, contentBytes: 2}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4, byteLength: 1048576, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 7, lastTurn: 7, byteLength: 4, conversationTurns: {before: 1, count: 1}}
+      crossingTurn: 7
+  - name: cut-single-turn
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, contentBytes: 4096}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4, byteLength: 4098, conversationTurns: {before: 0, count: 1}}
+  - name: cut-empty-session
+    budgetBytes: 1048576
+    turns: []
+    expected:
+      segments: []
+  # The segment's byteLength is the sum of its turns' pre-bound sizes, including
+  # tool-call arguments and results, which are each JSON-encoded with quotes.
+  - name: cut-includes-tool-call-bytes
+    budgetBytes: 1048576
+    turns:
+      - {index: 4, role: user, contentBytes: 8}
+      - {index: 7, role: assistant, contentBytes: 16, argumentsBytes: [1048576], resultBytes: [1048576]}
+      - {index: 11, role: user, contentBytes: 8}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 4, lastTurn: 4, byteLength: 10, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 7, lastTurn: 7, byteLength: 2097174, conversationTurns: {before: 1, count: 1}}
+        - {index: 2, firstTurn: 11, lastTurn: 11, byteLength: 10, conversationTurns: {before: 2, count: 1}}
+      crossingTurn: 7
+  # Positions count only conversation turns: system rows, tool rows, a
+  # tool-only reply and a thinking-only reply are cut and measured like any
+  # turn but move no position. Each turn is 10 bytes; three fit the budget.
+  - name: cut-positions-skip-uncounted-rows
+    budgetBytes: 30
+    turns:
+      - {index: 0, role: user, contentBytes: 8}
+      - {index: 4, role: system, contentBytes: 8, entryType: system}
+      - {index: 8, role: assistant, contentBytes: 8}
+      - {index: 12, role: assistant, contentBytes: 8, entryType: tool_use}
+      - {index: 16, role: tool, contentBytes: 8, entryType: tool_result}
+      - {index: 20, role: assistant, contentBytes: 8}
+      - {index: 24, role: user, contentBytes: 8}
+      - {index: 28, role: assistant, contentBytes: 8, entryType: thinking}
+      - {index: 32, role: system, contentBytes: 8}
+    expected:
+      uncountedSegments: 2
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 8, byteLength: 30, conversationTurns: {before: 0, count: 2}}
+        - {index: 1, firstTurn: 12, lastTurn: 20, byteLength: 30, conversationTurns: {before: 2, count: 1}}
+        - {index: 2, firstTurn: 24, lastTurn: 32, byteLength: 30, conversationTurns: {before: 3, count: 1}}
+  # A segment holding exactly one conversation turn among uncounted rows.
+  - name: cut-positions-single-conversation-turn
+    budgetBytes: 30
+    turns:
+      - {index: 0, role: user, contentBytes: 8}
+      - {index: 4, role: assistant, contentBytes: 8}
+      - {index: 8, role: user, contentBytes: 8}
+      - {index: 12, role: system, contentBytes: 8, entryType: system}
+      - {index: 16, role: assistant, contentBytes: 8}
+      - {index: 20, role: tool, contentBytes: 8, entryType: tool_result}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 8, byteLength: 30, conversationTurns: {before: 0, count: 3}}
+        - {index: 1, firstTurn: 12, lastTurn: 20, byteLength: 30, conversationTurns: {before: 3, count: 1}}
+  # A last segment with no conversation turn still states a span: its count is
+  # 0 and its before is the whole session's count.
+  - name: cut-positions-no-conversation-turns-segment
+    budgetBytes: 20
+    turns:
+      - {index: 0, role: user, contentBytes: 8}
+      - {index: 4, role: assistant, contentBytes: 8}
+      - {index: 8, role: system, contentBytes: 8, entryType: system}
+      - {index: 12, role: tool, contentBytes: 8, entryType: tool_result}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 4, byteLength: 20, conversationTurns: {before: 0, count: 2}}
+        - {index: 1, firstTurn: 8, lastTurn: 12, byteLength: 20, conversationTurns: {before: 2, count: 0}}
+  # A middle segment with no conversation turn leaves the next segment's before
+  # where the previous one ended.
+  - name: cut-positions-zero-count-middle-segment
+    budgetBytes: 20
+    turns:
+      - {index: 0, role: user, contentBytes: 8}
+      - {index: 4, role: assistant, contentBytes: 8}
+      - {index: 8, role: assistant, contentBytes: 8, entryType: tool_use}
+      - {index: 12, role: tool, contentBytes: 8, entryType: tool_result}
+      - {index: 16, role: user, contentBytes: 8}
+      - {index: 20, role: assistant, contentBytes: 8}
+    expected:
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 4, byteLength: 20, conversationTurns: {before: 0, count: 2}}
+        - {index: 1, firstTurn: 8, lastTurn: 12, byteLength: 20, conversationTurns: {before: 2, count: 0}}
+        - {index: 2, firstTurn: 16, lastTurn: 20, byteLength: 20, conversationTurns: {before: 2, count: 2}}
+  # The byte-length rows cover every term of the measure. Their literals were
+  # recorded from the cut each server ran before the rule was shared; they must
+  # not change. turnByteLengths lists TranscriptTurnByteLength per turn.
+  #
+  # Quotes, control characters and a backslash are escaped; <, > and & are
+  # written as \u003c, \u003e and \u0026; U+2028 is written as \u2028.
+  - name: byte-length-json-escaping
+    budgetBytes: 1048576
+    turns:
+      - {index: 0, role: user, content: "say \"hi\"\n\ttab \\ <b>&</b> \u2028 \x01"}
+    expected:
+      turnByteLengths: [70]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 70, conversationTurns: {before: 0, count: 1}}
+  # Multi-byte text is counted in UTF-8 bytes, not characters.
+  - name: byte-length-multibyte
+    budgetBytes: 1048576
+    turns:
+      - {index: 0, role: user, content: "h\u00e9llo \u65e5\u672c\u8a9e \U0001F389"}
+    expected:
+      turnByteLengths: [23]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 23, conversationTurns: {before: 0, count: 1}}
+  # Each invalid byte is carried as the six bytes \ufffd. The text is the five
+  # bytes f o 0xff o 0xc3.
+  - name: byte-length-invalid-utf8
+    budgetBytes: 1048576
+    turns:
+      - {index: 0, role: assistant, contentHex: "666fff6fc3"}
+    expected:
+      turnByteLengths: [17]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 17, conversationTurns: {before: 0, count: 1}}
+  # Text parts are counted beside content, each as its own JSON string.
+  - name: byte-length-text-parts
+    budgetBytes: 1048576
+    turns:
+      - index: 0
+        role: user
+        content: "first second"
+        parts:
+          - {type: text, text: "first"}
+          - {type: text, text: "sec\"ond\u00e9"}
+    expected:
+      turnByteLengths: [33]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 33, conversationTurns: {before: 0, count: 1}}
+  # An image part costs the JSON size of its metadata object. An image part
+  # with no metadata costs nothing.
+  - name: byte-length-image-part
+    budgetBytes: 1048576
+    turns:
+      - index: 0
+        role: user
+        entryType: image
+        content: "look"
+        parts:
+          - {type: text, text: "look"}
+          - {type: image, image: {ref: abababababababababababababababababababababababababababababababab, mediaType: image/png, byteSize: 20480, width: 640, height: 480}}
+          - {type: image, image: {mediaType: image/jpeg, byteSize: 9000000, omittedReason: too_large}}
+          - {type: image}
+    expected:
+      turnByteLengths: [225]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 225, conversationTurns: {before: 0, count: 1}}
+  # Tool arguments and results are each a JSON string, so the quotes inside the
+  # arguments are escaped and an empty result still costs its two quotes.
+  - name: byte-length-tool-arguments-and-result
+    budgetBytes: 1048576
+    turns:
+      - index: 0
+        role: assistant
+        content: "run"
+        toolCalls:
+          - {arguments: "{\"command\":\"echo \\\"hi\\\" > out.txt\"}", result: "hi\nline <2>\n"}
+          - {arguments: "{}", result: ""}
+    expected:
+      turnByteLengths: [87]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 87, conversationTurns: {before: 0, count: 1}}
+  # The measure decides the boundary: the escaped turn is 70 bytes against 30
+  # raw bytes, so a second copy does not fit a 139-byte budget.
+  - name: cut-boundary-follows-escaped-size
+    budgetBytes: 139
+    turns:
+      - {index: 0, role: user, content: "say \"hi\"\n\ttab \\ <b>&</b> \u2028 \x01"}
+      - {index: 3, role: assistant, content: "say \"hi\"\n\ttab \\ <b>&</b> \u2028 \x01"}
+    expected:
+      turnByteLengths: [70, 70]
+      segments:
+        - {index: 0, firstTurn: 0, lastTurn: 0, byteLength: 70, conversationTurns: {before: 0, count: 1}}
+        - {index: 1, firstTurn: 3, lastTurn: 3, byteLength: 70, conversationTurns: {before: 1, count: 1}}
+      crossingTurn: 3

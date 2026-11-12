@@ -1,0 +1,58 @@
+# Window descriptor cases over the sparse 55-turn session. The extent is ten
+# assistant turns per side plus the anchor and every interleaved user or system
+# turn; it is not a turn-count cap. segments is the run of segment ordinals that
+# covers the window when the session is cut under the contract budget (64 KiB
+# of content per turn, so fifteen turns fill a segment); a changed budget or a
+# moved boundary fails the row that names it.
+cases:
+  - name: window-ten-assistants-each-side
+    anchor: 72
+    span: 10
+    expected: {anchorTurn: 72, firstTurn: 39, lastTurn: 103, hasOlder: true, hasNewer: true, segments: [0, 1, 2]}
+  - name: window-span-one
+    anchor: 72
+    span: 1
+    expected: {anchorTurn: 72, firstTurn: 71, lastTurn: 76, hasOlder: true, hasNewer: true, segments: [1]}
+  - name: window-snaps-lower-user-turn
+    anchor: 74
+    span: 1
+    expected: {anchorTurn: 72, firstTurn: 71, lastTurn: 76, hasOlder: true, hasNewer: true, segments: [1]}
+  - name: window-snaps-higher-before-first-user
+    anchor: 0
+    span: 1
+    expected: {anchorTurn: 4, firstTurn: 4, lastTurn: 7, hasOlder: false, hasNewer: true, segments: [0]}
+  - name: window-at-transcript-end
+    anchor: 149
+    span: 10
+    expected: {anchorTurn: 140, firstTurn: 112, lastTurn: 149, hasOlder: true, hasNewer: false, segments: [2, 3]}
+  - name: window-near-first-user-turn
+    anchor: 4
+    span: 10
+    expected: {anchorTurn: 4, firstTurn: 4, lastTurn: 37, hasOlder: false, hasNewer: true, segments: [0]}
+  # A caller may narrow the span: three assistant turns per side of turn 72.
+  - name: window-span-narrowed
+    anchor: 72
+    span: 3
+    expected: {anchorTurn: 72, firstTurn: 67, lastTurn: 84, hasOlder: true, hasNewer: true, segments: [1]}
+  # No user turn anywhere: the resolver reports ErrTranscriptWindowNoUserTurn
+  # and names the session and the requested anchor.
+  - name: window-no-user-turn
+    anchor: 4
+    span: 10
+    turns:
+      - {index: 4, role: assistant, toolCalls: 0}
+      - {index: 7, role: system, toolCalls: 0}
+    expected: {error: no-user-turn}
+  # A span outside the accepted range is refused by the window's own validator.
+  - name: window-span-above-maximum
+    anchor: 72
+    span: 11
+    expected: {error: span-out-of-range}
+  - name: window-span-below-minimum
+    anchor: 72
+    span: 0
+    expected: {error: span-out-of-range}
+# Cases whose window must be covered by more than one segment, so a resolver
+# that names only the anchor's segment cannot pass.
+crossesSegmentBoundary:
+  - window-ten-assistants-each-side

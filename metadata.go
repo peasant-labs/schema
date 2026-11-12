@@ -163,18 +163,18 @@ type ProjectContext struct {
 
 // SessionStats holds aggregate metrics extracted from transcript data.
 type SessionStats struct {
-	// TurnCount is conversation turns: projected turns whose role is not
-	// system. The producer computes it once while indexing and carries it
-	// through detail, export, and publication, so every count surface reports
-	// the same number. It is never the raw harness record count
-	// (session_captured_stats.turn_count).
-	TurnCount            int    `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. The producer computes it once while indexing and carries it through detail, export, and publication; it is never a raw harness record count."`
+	TurnCount            int    `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64 `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	ToolCallCount        int    `json:"toolCallCount"`
-	SubagentCount        int    `json:"subagentCount"`
-	DurationMs           int64  `json:"durationMs"`
-	TokensIn             int    `json:"tokensIn"`
-	TokensOut            int    `json:"tokensOut"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64 `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount         int    `json:"toolCallCount"`
+	SubagentCount         int    `json:"subagentCount"`
+	DurationMs            int64  `json:"durationMs"`
+	TokensIn              int    `json:"tokensIn"`
+	TokensOut             int    `json:"tokensOut"`
 	// ACP-aligned token breakdown (optional — not all providers report these).
 	ThoughtTokens     *int `json:"thoughtTokens,omitempty"`     // Reasoning/thinking tokens
 	CachedReadTokens  *int `json:"cachedReadTokens,omitempty"`  // Prompt cache hits
@@ -216,7 +216,12 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 		var stats map[string]json.RawMessage
 		if err := json.Unmarshal(statsRaw, &stats); err == nil {
 			if count, exists := stats["inputSubmissionCount"]; exists {
-				if err := validateRawInputSubmissionCount(count, "metadata.stats.inputSubmissionCount"); err != nil {
+				if err := validateRawSafeCount(count, inputSubmissionCountLabel, "metadata.stats.inputSubmissionCount"); err != nil {
+					return err
+				}
+			}
+			if count, exists := stats["conversationTurnCount"]; exists {
+				if err := validateRawSafeCount(count, conversationTurnCountLabel, "metadata.stats.conversationTurnCount"); err != nil {
 					return err
 				}
 			}
@@ -245,6 +250,9 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := ValidateInputSubmissionCount(next.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if err := ValidateConversationTurnCount(next.Stats.ConversationTurnCount, "metadata.stats.conversationTurnCount"); err != nil {
 		return err
 	}
 	if next.RootSessionID != nil {
@@ -280,6 +288,9 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 	if err := ValidateInputSubmissionCount(m.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
 		return nil, err
 	}
+	if err := ValidateConversationTurnCount(m.Stats.ConversationTurnCount, "metadata.stats.conversationTurnCount"); err != nil {
+		return nil, err
+	}
 	if m.RootSessionID != nil {
 		if _, err := NewSessionID(string(*m.RootSessionID)); err != nil {
 			return nil, fmt.Errorf("metadata graph validation failed at schema.UnifiedMetadata.MarshalJSON: rootSessionId is malformed; durable identity cannot be serialized; provide a canonical session identifier: %w", err)
@@ -301,11 +312,29 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(alias(m))
 }
 
+// Prose names of the optional counts, used in validation messages.
+const (
+	inputSubmissionCountLabel  = "input submission count"
+	conversationTurnCountLabel = "conversation turn count"
+	displayedTurnCountLabel    = "displayed turn count"
+)
+
 // ValidateInputSubmissionCount preserves unknown (nil) separately from measured
 // zero and limits present values to the exact integer range shared with JS.
 func ValidateInputSubmissionCount(value *int64, path string) error {
+	return validateSafeCount(value, inputSubmissionCountLabel, path)
+}
+
+// ValidateConversationTurnCount preserves unknown (nil) separately from measured
+// zero and limits present values to the exact integer range shared with JS.
+func ValidateConversationTurnCount(value *int64, path string) error {
+	return validateSafeCount(value, conversationTurnCountLabel, path)
+}
+
+// validateSafeCount is the one range check behind every optional count.
+func validateSafeCount(value *int64, label, path string) error {
 	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
-		return fmt.Errorf("input submission count validation failed at schema.ValidateInputSubmissionCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
+		return fmt.Errorf("%s validation failed at schema.validateSafeCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", label, path, *value)
 	}
 	return nil
 }

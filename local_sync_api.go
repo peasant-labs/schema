@@ -81,7 +81,10 @@ func (s LocalSyncSummary) Validate() error {
 	if err := s.Teammate.Validate(); err != nil {
 		return err
 	}
-	return ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSyncSummary.inputSubmissionCount")
+	if err := ValidateInputSubmissionCount(s.InputSubmissionCount, "LocalSyncSummary.inputSubmissionCount"); err != nil {
+		return err
+	}
+	return ValidateConversationTurnCount(s.ConversationTurnCount, "LocalSyncSummary.conversationTurnCount")
 }
 
 // Validate checks that the flat sync list is an array of valid rows and lists

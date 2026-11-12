@@ -1,0 +1,55 @@
+# The segmented transcript reads the Village API declares. They carry the
+# parameters and response types of the local dashboard reads
+# (local_grouped_routes.yaml: transcript-segment-directory,
+# transcript-segment-read, transcript-window-descriptor) under Village's
+# /api/v1/transcripts/{id}/... path. statuses is the exact set of declared
+# response statuses; errorRef is the body every error status carries.
+# reachableComponents names nested components the Village-to-Local comparison
+# must reach from the response component; every reachable component is compared.
+required_names: [village-transcript-segment-directory, village-transcript-segment-read, village-transcript-window-descriptor]
+routes:
+  cases:
+  - name: village-transcript-segment-directory
+    input: {path: "/api/v1/transcripts/{id}/segments", operationId: getTranscriptSegments}
+    expected:
+      tag: transcripts
+      parameters: [{name: page, in: query, type: integer, minimum: 1}, {name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}]
+      responseRef: "#/components/schemas/SchemaTranscriptSegmentDirectory"
+      requiredRoot: [sessionId, revision, totalTurns, totalSegments, segments, totalConversationTurns]
+      nonnullArrays: [segments]
+      forbiddenRoot: [turns]
+      reachableComponents: [TranscriptSegmentRef, ConversationTurnSpan, SessionID]
+      statuses: [200, 400, 404, 409, 500]
+      errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+    classification: must-pass
+    provenance: {source: requirement, ref: "village declares the directory read with the type the local read serves"}
+    mutation: {description: "declares the paged directory with no turn content"}
+  - name: village-transcript-segment-read
+    input: {path: "/api/v1/transcripts/{id}/segments/{index}", operationId: getTranscriptSegment}
+    expected:
+      tag: transcripts
+      parameters: [{name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}, {name: index, in: path, type: integer, minimum: 0, required: true}]
+      responseRef: "#/components/schemas/SchemaTranscriptSegment"
+      requiredRoot: [index, revision, firstTurn, lastTurn, byteLength, hasOlder, hasNewer, turns]
+      nonnullArrays: [turns]
+      reachableComponents: [TranscriptTurn, TurnContentPart, ImagePart, ToolCallDetail, UsageDetail, Role, EntryType]
+      statuses: [200, 400, 404, 409, 500]
+      errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+    classification: must-pass
+    provenance: {source: requirement, ref: "village declares the segment read with the type the local read serves"}
+    mutation: {description: "declares the transport unit that carries one segment's turns"}
+  - name: village-transcript-window-descriptor
+    input: {path: "/api/v1/transcripts/{id}/window", operationId: getTranscriptWindow}
+    expected:
+      tag: transcripts
+      parameters: [{name: anchor, in: query, type: integer, minimum: 0, required: true}, {name: span, in: query, type: integer, minimum: 1, maximum: 10}, {name: revision, in: query, type: string}, {name: id, in: path, type: string, required: true}]
+      responseRef: "#/components/schemas/SchemaTranscriptWindow"
+      requiredRoot: [sessionId, revision, requestedAnchor, anchorTurn, span, firstTurn, lastTurn, segments, hasOlder, hasNewer]
+      nonnullArrays: [segments]
+      forbiddenRoot: [turns, content, toolCalls]
+      reachableComponents: [SessionID]
+      statuses: [200, 400, 404, 409, 500]
+      errorRef: "#/components/schemas/SchemaVillageErrorResponse"
+    classification: must-pass
+    provenance: {source: requirement, ref: "village declares the window read as a descriptor and never turn content"}
+    mutation: {description: "declares the descriptor-only window read"}

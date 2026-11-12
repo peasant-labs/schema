@@ -274,6 +274,7 @@ export type AuthoritativeDiagnosticsInfo = z.infer<typeof zAuthoritativeDiagnost
 export const zAuthoritativeSessionStats = z.object({
     cachedReadTokens: z.int().nullish(),
     cachedWriteTokens: z.int().nullish(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     subagentCount: z.int(),
@@ -716,6 +717,13 @@ export type ContractVersion = z.infer<typeof zContractVersion>;
 export const zContributionTraversalRevision = z.string().max(4096).superRefine((value, ctx) => { const issue = collectiveContractIssue("ContributionTraversalRevision", value); if (issue !== undefined) ctx.addIssue({ code: "custom", message: "Collective contract validation: " + issue + "; retain prior evidence and fetch validated metadata before retrying" }); });
 
 export type ContributionTraversalRevision = z.infer<typeof zContributionTraversalRevision>;
+
+export const zConversationTurnSpan = z.object({
+    before: z.int().gte(0).lte(9007199254740991),
+    count: z.int().gte(0).lte(9007199254740991)
+});
+
+export type ConversationTurnSpan = z.infer<typeof zConversationTurnSpan>;
 
 export const zCreateAnnotationRequest = z.object({
     annotatorName: z.string().optional(),
@@ -2897,6 +2905,7 @@ export type SessionScorecard = z.infer<typeof zSessionScorecard>;
 export const zSessionStats = z.object({
     cachedReadTokens: z.int().nullish(),
     cachedWriteTokens: z.int().nullish(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     inputSubmissionCount: z.int().gte(0).lte(9007199254740991).optional(),
     subagentCount: z.int(),
@@ -3002,6 +3011,7 @@ export const zAuthoritativeSessionIdentity = z.object({
 export type AuthoritativeSessionIdentity = z.infer<typeof zAuthoritativeSessionIdentity>;
 
 export const zSessionSummary = z.object({
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     durationMins: z.number(),
     harness: zHarness,
     id: z.string(),
@@ -3241,6 +3251,7 @@ export const zSyncStatus = z.enum([
 export type SyncStatus = z.infer<typeof zSyncStatus>;
 
 export const zLocalSyncSummary = z.object({
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     durationMs: z.coerce.bigint().min(BigInt('-9223372036854775808'), { error: 'Invalid value: Expected int64 to be >= -9223372036854775808' }).max(BigInt('9223372036854775807'), { error: 'Invalid value: Expected int64 to be <= 9223372036854775807' }),
     harness: zHarness,
     holdReason: zSyncHoldReason.optional(),
@@ -3273,7 +3284,7 @@ export const zLocalSessionRow = z.object({
     if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
     if (value.sync) {
       const s = value.session, v = value.sync;
-      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || v.conversationTurnCount !== s.conversationTurnCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
       const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
         if (left == null || right == null) return left == null && right == null;
         return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
@@ -3574,6 +3585,7 @@ export const zLegacyPullAnnotation = z.object({
 export type LegacyPullAnnotation = z.infer<typeof zLegacyPullAnnotation>;
 
 export const zQualitySession = z.object({
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     date: z.string(),
     discoveryTurns: z.int(),
     durationMinutes: z.number(),
@@ -3701,6 +3713,7 @@ export type ThinkingLevelChange = z.infer<typeof zThinkingLevelChange>;
 
 export const zSessionDetailHeader = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistoryState).optional(),
@@ -4026,6 +4039,7 @@ export type SessionRelationshipNavigation = z.infer<typeof zSessionRelationshipN
 
 export const zSessionDetailHeaderPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistoryState).optional(),
@@ -4066,6 +4080,7 @@ export type SessionDetailHeaderPayload = z.infer<typeof zSessionDetailHeaderPayl
 
 export const zTranscriptSegmentRef = z.object({
     byteLength: z.int().gte(0).lte(9007199254740991),
+    conversationTurns: zConversationTurnSpan.optional(),
     firstTurn: z.int().gte(0).lte(9007199254740991),
     index: z.int().gte(0).lte(9007199254740991),
     lastTurn: z.int().gte(0).lte(9007199254740991)
@@ -4079,6 +4094,7 @@ export const zTranscriptSegmentDirectory = z.object({
     revision: z.string().min(1),
     segments: z.array(zTranscriptSegmentRef),
     sessionId: zSessionID,
+    totalConversationTurns: z.int().gte(0).lte(9007199254740991).optional(),
     totalSegments: z.int().gte(0).lte(9007199254740991),
     totalTurns: z.int().gte(0).lte(9007199254740991)
 });
@@ -4480,6 +4496,7 @@ export type EarlierHistorySection = z.infer<typeof zEarlierHistorySection>;
 
 export const zSessionDetailPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
@@ -4520,6 +4537,7 @@ export type SessionDetailPayload = z.infer<typeof zSessionDetailPayload>;
 
 export const zSessionDetailReadPayload = z.object({
     childSessions: z.array(zChildSessionRef).optional(),
+    conversationTurnCount: z.int().gte(0).lte(9007199254740991).optional(),
     diagnostics: zInterpretationDiagnostics.optional(),
     durationMins: z.number(),
     earlierHistory: z.array(zEarlierHistorySection).optional(),
@@ -5192,10 +5210,12 @@ export const zVillageCollectiveTranscript = z.object({
     compute_version: z.int().nullable(),
     computed_at: z.iso.datetime().nullable(),
     content_hash: zTranscriptContentHash.nullable(),
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
     discovery_turns: z.int().nullable(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     duration_ms: z.int().nullable(),
     exploration_ratio: z.number().nullable(),
     files_touched: z.int().nullable(),
@@ -5303,10 +5323,12 @@ export const zVillageTranscript = z.object({
     compute_version: z.int().nullable(),
     computed_at: z.iso.datetime().nullable(),
     content_hash: zTranscriptContentHash.nullable(),
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
     discovery_turns: z.int().nullable(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     duration_ms: z.int().nullable(),
     exploration_ratio: z.number().nullable(),
     files_touched: z.int().nullable(),
@@ -6047,6 +6069,8 @@ export const zLocalVillageCollectivesResponse = z.object({
 export type LocalVillageCollectivesResponse = z.infer<typeof zLocalVillageCollectivesResponse>;
 
 export const zVillageUserCollectiveShare = z.object({
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     id: zTranscriptID,
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     local_id: zSessionID,
@@ -6096,9 +6120,10 @@ export const zVillageSessionRow = z.object({
     };
     for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    const turnCounts = ["conversation_turn_count", "displayed_turn_count"];
+    check(value.collective, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
     check(value.pending, [...graph, "parent_transcript_id", "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.myShare, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
   }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionRow: " + reason });

@@ -14,12 +14,13 @@ import (
 
 // DashboardPayload is the data sent on the dashboard WebSocket channel.
 type DashboardPayload struct {
-	TotalSessions      int             `json:"totalSessions"`
-	TotalTokens        int             `json:"totalTokens"`
-	AvgDurationMins    float64         `json:"avgDurationMins"`
-	HarnessBreakdown   map[Harness]int `json:"harnessBreakdown"`
-	AvgTurnsPerSession float64         `json:"avgTurnsPerSession"`
-	AcceptanceRate     float64         `json:"acceptanceRate"`
+	TotalSessions    int             `json:"totalSessions"`
+	TotalTokens      int             `json:"totalTokens"`
+	AvgDurationMins  float64         `json:"avgDurationMins"`
+	HarnessBreakdown map[Harness]int `json:"harnessBreakdown"`
+	// AvgTurnsPerSession is the mean conversationTurnCount per session.
+	AvgTurnsPerSession float64 `json:"avgTurnsPerSession"`
+	AcceptanceRate     float64 `json:"acceptanceRate"`
 }
 
 // --- Sessions ---
@@ -196,10 +197,15 @@ type SessionSummary struct {
 	StartTime            time.Time `json:"startTime"`
 	DurationMins         float64   `json:"durationMins"`
 	TotalTokens          int       `json:"totalTokens"`
-	TurnCount            int       `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int       `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	ToolCallCount        int       `json:"toolCallCount"`
-	Project              string    `json:"project,omitempty"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64 `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount         int    `json:"toolCallCount"`
+	Project               string `json:"project,omitempty"`
 	// ProjectHash is the opaque project identifier (projects.project_hash).
 	// The frontend resolves display name → hash from this field for the
 	// Map/Review REST endpoints (contract §9.1).
@@ -282,10 +288,15 @@ type LocalSyncSummary struct {
 	StartTime            string      `json:"startTime"`
 	DurationMs           int64       `json:"durationMs"`
 	TotalTokens          int         `json:"totalTokens"`
-	TurnCount            int         `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int         `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	Model                string      `json:"model"`
 	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	SyncStatus           SyncStatus  `json:"syncStatus"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64     `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	SyncStatus            SyncStatus `json:"syncStatus"`
 	// HoldReason says why a held row waits. Only a held row carries one.
 	HoldReason SyncHoldReason `json:"holdReason,omitempty"`
 	// PreviouslyPushed reports durable evidence that this session was
@@ -370,6 +381,9 @@ func (r LocalSessionRow) Validate() error {
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "LocalSessionRow.session.inputSubmissionCount"); err != nil {
 		return err
 	}
+	if err := ValidateConversationTurnCount(r.Session.ConversationTurnCount, "LocalSessionRow.session.conversationTurnCount"); err != nil {
+		return err
+	}
 	if err := r.Session.Teammate.Validate(); err != nil {
 		return err
 	}
@@ -381,7 +395,7 @@ func (r LocalSessionRow) Validate() error {
 		if err := s.Validate(); err != nil {
 			return err
 		}
-		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
+		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalInt64(s.ConversationTurnCount, r.Session.ConversationTurnCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
 			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity, parent, or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
 		}
 		if !equalOptionalTeammate(s.Teammate, r.Session.Teammate) {
@@ -583,10 +597,15 @@ type SessionDetailPayload struct {
 	TotalTokens          int                 `json:"totalTokens"`
 	TokensIn             int                 `json:"tokensIn"`
 	TokensOut            int                 `json:"tokensOut"`
-	TurnCount            int                 `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int                 `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	ToolCallCount        int                 `json:"toolCallCount"`
-	Turns                []TurnDetail        `json:"turns"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64       `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount         int          `json:"toolCallCount"`
+	Turns                 []TurnDetail `json:"turns"`
 	// Optional fields — populated when backend has the data.
 	Source  string `json:"source,omitempty"`
 	Status  string `json:"status,omitempty"`
@@ -690,6 +709,12 @@ type TranscriptSegmentDirectory struct {
 	// TotalTurns is the number of turns the session's main partition holds. It is
 	// a count, never an ordinal: no position is derived from it.
 	TotalTurns int `json:"totalTurns" minimum:"0" maximum:"9007199254740991"`
+	// TotalConversationTurns is the number of conversation turns in the session's
+	// main partition (IsConversationTurn). It is the total a position is stated
+	// against, and the whole-session value on every page of refs. A producer that
+	// cannot vouch for its position data omits it with every ref's
+	// conversationTurns. Absence is never zero.
+	TotalConversationTurns *int `json:"totalConversationTurns,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// TotalSegments is the true number of segments, even when this read serves one
 	// page of them.
 	TotalSegments int                    `json:"totalSegments" minimum:"0" maximum:"9007199254740991"`
@@ -709,6 +734,19 @@ type TranscriptSegmentRef struct {
 	FirstTurn  int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
 	LastTurn   int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
 	ByteLength int `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+	// ConversationTurns is where this segment sits in the session's conversation
+	// turns. No arithmetic converts firstTurn or lastTurn into it.
+	ConversationTurns *ConversationTurnSpan `json:"conversationTurns,omitempty" nullable:"false"`
+}
+
+// ConversationTurnSpan is a pair of counts, never a turn identity. A reader's
+// range for the segment is Before+1 through Before+Count.
+type ConversationTurnSpan struct {
+	// Before is the number of conversation turns in every earlier segment of
+	// the session, including segments on earlier directory pages. It starts at 0.
+	Before int `json:"before" minimum:"0" maximum:"9007199254740991"`
+	// Count is the number of conversation turns in this segment. It may be 0.
+	Count int `json:"count" minimum:"0" maximum:"9007199254740991"`
 }
 
 // Validate checks the directory's ordering, extent, and page cap. The refs must
@@ -777,6 +815,48 @@ func (d TranscriptSegmentDirectory) Validate() error {
 		}
 		if i > 0 && ref.FirstTurn <= d.Segments[i-1].LastTurn {
 			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
+		}
+	}
+	if err := validateDirectoryConversationTurns(d, where); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateDirectoryConversationTurns(d TranscriptSegmentDirectory, where string) error {
+	if d.TotalConversationTurns != nil && *d.TotalConversationTurns < 0 {
+		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *d.TotalConversationTurns)
+	}
+	for _, ref := range d.Segments {
+		if ref.ConversationTurns == nil {
+			continue
+		}
+		span := ref.ConversationTurns
+		if span.Before < 0 || span.Count < 0 {
+			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.Index, span.Before, span.Count)
+		}
+	}
+	if d.TotalConversationTurns != nil {
+		total := int64(*d.TotalConversationTurns)
+		for _, ref := range d.Segments {
+			if ref.ConversationTurns == nil {
+				continue
+			}
+			end := int64(ref.ConversationTurns.Before) + int64(ref.ConversationTurns.Count)
+			if end > total {
+				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.Index, end, total)
+			}
+		}
+	}
+	for i := 1; i < len(d.Segments); i++ {
+		prev := d.Segments[i-1].ConversationTurns
+		curr := d.Segments[i].ConversationTurns
+		if prev == nil || curr == nil {
+			continue
+		}
+		want := int64(prev.Before) + int64(prev.Count)
+		if int64(curr.Before) != want {
+			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, d.Segments[i].Index, curr.Before, d.Segments[i-1].Index, want)
 		}
 	}
 	return nil
@@ -913,8 +993,9 @@ type TranscriptWindow struct {
 	// lies inside [firstTurn, lastTurn].
 	AnchorTurn int `json:"anchorTurn" minimum:"0" maximum:"9007199254740991"`
 	// Span is the number of assistant turns collected on each side. It is
-	// validated 1..10: the design value narrows a window and cannot widen it past
-	// the design.
+	// validated 1..10 (TranscriptWindowSpanMinimum..TranscriptWindowSpanMaximum;
+	// the struct tags restate the two constants and a test holds them equal): the
+	// design value narrows a window and cannot widen it past the design.
 	Span      int `json:"span" minimum:"1" maximum:"10"`
 	FirstTurn int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
 	LastTurn  int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
@@ -935,8 +1016,8 @@ func (w TranscriptWindow) Validate() error {
 	if !isDecimalRevision(w.Revision) {
 		return fmt.Errorf("%srevision %q is not a decimal string; a window must name the cut its covering segments belong to; carry the store revision as decimal digits", where, w.Revision)
 	}
-	if w.Span < 1 || w.Span > 10 {
-		return fmt.Errorf("%sspan is %d; the accepted range is 1..10 assistant turns per side; emit a value in that range", where, w.Span)
+	if w.Span < TranscriptWindowSpanMinimum || w.Span > TranscriptWindowSpanMaximum {
+		return fmt.Errorf("%sspan is %d; the accepted range is %d..%d assistant turns per side; emit a value in that range", where, w.Span, TranscriptWindowSpanMinimum, TranscriptWindowSpanMaximum)
 	}
 	if w.FirstTurn < 0 || w.LastTurn < w.FirstTurn {
 		return fmt.Errorf("%sdeclares turn range [%d, %d]; a window covers a closed ascending range; emit firstTurn <= lastTurn", where, w.FirstTurn, w.LastTurn)
@@ -967,21 +1048,9 @@ func ValidateTranscriptWindowCoverage(window TranscriptWindow, refs []Transcript
 	if len(refs) == 0 {
 		return fmt.Errorf("%sthe directory holds no segments; a window cannot cover a turn; build the directory before resolving a window", where)
 	}
-	first, last := -1, -1
-	for _, ref := range refs {
-		if ref.FirstTurn <= window.FirstTurn && window.FirstTurn <= ref.LastTurn {
-			first = ref.Index
-		}
-		if ref.FirstTurn <= window.LastTurn && window.LastTurn <= ref.LastTurn {
-			last = ref.Index
-		}
-	}
-	if first < 0 || last < 0 {
+	want, covered := coveringSegmentRun(refs, window.FirstTurn, window.LastTurn)
+	if !covered {
 		return fmt.Errorf("%swindow [%d, %d] is not covered by the directory's segment ranges; a viewer would load no segment for one edge; resolve the window against this directory", where, window.FirstTurn, window.LastTurn)
-	}
-	want := make([]int, 0, last-first+1)
-	for segment := first; segment <= last; segment++ {
-		want = append(want, segment)
 	}
 	if len(want) != len(window.Segments) {
 		return fmt.Errorf("%swindow names %d segments, but covering [%d, %d] takes %d; the viewer would leave part of the window unloaded", where, len(window.Segments), window.FirstTurn, window.LastTurn, len(want))
@@ -1000,33 +1069,38 @@ func ValidateTranscriptWindowCoverage(window TranscriptWindow, refs []Transcript
 // release window ships "turns: []" to a content-expecting viewer. Turn content
 // lives in TranscriptSegment rows.
 type SessionDetailHeader struct {
-	SchemaVersion        PushContractVersion   `json:"schemaVersion,omitempty"`
-	ID                   string                `json:"id"`
-	Harness              Harness               `json:"harness"`
-	StartTime            time.Time             `json:"startTime"`
-	EndTime              time.Time             `json:"endTime"`
-	DurationMins         float64               `json:"durationMins"`
-	TotalTokens          int                   `json:"totalTokens"`
-	TokensIn             int                   `json:"tokensIn"`
-	TokensOut            int                   `json:"tokensOut"`
-	TurnCount            int                   `json:"turnCount"`
-	InputSubmissionCount *int64                `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
-	ToolCallCount        int                   `json:"toolCallCount"`
-	Source               string                `json:"source,omitempty"`
-	Status               string                `json:"status,omitempty"`
-	Project              string                `json:"project,omitempty"`
-	Model                string                `json:"model,omitempty"`
-	ThinkingLevel        ThinkingLevel         `json:"thinkingLevel,omitempty"`
-	ThinkingLevelRaw     ThinkingLevelRaw      `json:"thinkingLevelRaw,omitempty"`
-	ThinkingLevelHistory []ThinkingLevelChange `json:"thinkingLevelHistory,omitempty"`
-	WorkingDirectory     string                `json:"workingDirectory,omitempty"`
-	GitBranch            string                `json:"gitBranch,omitempty"`
-	GitRemote            string                `json:"gitRemote,omitempty"`
-	ChildSessions        []ChildSessionRef     `json:"childSessions,omitempty"`
-	ParentSessionID      *SessionID            `json:"parentSessionId,omitempty"`
-	RootSessionID        *SessionID            `json:"rootSessionId,omitempty"`
-	Purpose              SessionPurpose        `json:"purpose,omitempty"`
-	Relationships        []SessionRelationship `json:"relationships,omitempty"`
+	SchemaVersion        PushContractVersion `json:"schemaVersion,omitempty"`
+	ID                   string              `json:"id"`
+	Harness              Harness             `json:"harness"`
+	StartTime            time.Time           `json:"startTime"`
+	EndTime              time.Time           `json:"endTime"`
+	DurationMins         float64             `json:"durationMins"`
+	TotalTokens          int                 `json:"totalTokens"`
+	TokensIn             int                 `json:"tokensIn"`
+	TokensOut            int                 `json:"tokensOut"`
+	TurnCount            int                 `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
+	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64                `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCallCount         int                   `json:"toolCallCount"`
+	Source                string                `json:"source,omitempty"`
+	Status                string                `json:"status,omitempty"`
+	Project               string                `json:"project,omitempty"`
+	Model                 string                `json:"model,omitempty"`
+	ThinkingLevel         ThinkingLevel         `json:"thinkingLevel,omitempty"`
+	ThinkingLevelRaw      ThinkingLevelRaw      `json:"thinkingLevelRaw,omitempty"`
+	ThinkingLevelHistory  []ThinkingLevelChange `json:"thinkingLevelHistory,omitempty"`
+	WorkingDirectory      string                `json:"workingDirectory,omitempty"`
+	GitBranch             string                `json:"gitBranch,omitempty"`
+	GitRemote             string                `json:"gitRemote,omitempty"`
+	ChildSessions         []ChildSessionRef     `json:"childSessions,omitempty"`
+	ParentSessionID       *SessionID            `json:"parentSessionId,omitempty"`
+	RootSessionID         *SessionID            `json:"rootSessionId,omitempty"`
+	Purpose               SessionPurpose        `json:"purpose,omitempty"`
+	Relationships         []SessionRelationship `json:"relationships,omitempty"`
 	// EarlierHistory carries section state only. Turns and the native metadata
 	// that annotates them travel together on the durable read, and neither belongs
 	// on a metadata-only projection: the section's native metadata is validated
@@ -1058,38 +1132,39 @@ func (h SessionDetailHeader) Validate() error {
 // native metadata stay empty: they are not part of the header.
 func (h SessionDetailHeader) metadataPayload() SessionDetailPayload {
 	return SessionDetailPayload{
-		SchemaVersion:        h.SchemaVersion,
-		ID:                   h.ID,
-		Harness:              h.Harness,
-		StartTime:            h.StartTime,
-		EndTime:              h.EndTime,
-		DurationMins:         h.DurationMins,
-		TotalTokens:          h.TotalTokens,
-		TokensIn:             h.TokensIn,
-		TokensOut:            h.TokensOut,
-		TurnCount:            h.TurnCount,
-		InputSubmissionCount: h.InputSubmissionCount,
-		ToolCallCount:        h.ToolCallCount,
-		Source:               h.Source,
-		Status:               h.Status,
-		Project:              h.Project,
-		Model:                h.Model,
-		ThinkingLevel:        h.ThinkingLevel,
-		ThinkingLevelRaw:     h.ThinkingLevelRaw,
-		ThinkingLevelHistory: h.ThinkingLevelHistory,
-		WorkingDirectory:     h.WorkingDirectory,
-		GitBranch:            h.GitBranch,
-		GitRemote:            h.GitRemote,
-		ChildSessions:        h.ChildSessions,
-		ParentSessionID:      h.ParentSessionID,
-		RootSessionID:        h.RootSessionID,
-		Purpose:              h.Purpose,
-		Relationships:        h.Relationships,
-		Outcome:              h.Outcome,
-		SessionOrigin:        h.SessionOrigin,
-		Scorecard:            h.Scorecard,
-		RetainedUnknown:      h.RetainedUnknown,
-		Diagnostics:          h.Diagnostics,
+		SchemaVersion:         h.SchemaVersion,
+		ID:                    h.ID,
+		Harness:               h.Harness,
+		StartTime:             h.StartTime,
+		EndTime:               h.EndTime,
+		DurationMins:          h.DurationMins,
+		TotalTokens:           h.TotalTokens,
+		TokensIn:              h.TokensIn,
+		TokensOut:             h.TokensOut,
+		TurnCount:             h.TurnCount,
+		InputSubmissionCount:  h.InputSubmissionCount,
+		ConversationTurnCount: h.ConversationTurnCount,
+		ToolCallCount:         h.ToolCallCount,
+		Source:                h.Source,
+		Status:                h.Status,
+		Project:               h.Project,
+		Model:                 h.Model,
+		ThinkingLevel:         h.ThinkingLevel,
+		ThinkingLevelRaw:      h.ThinkingLevelRaw,
+		ThinkingLevelHistory:  h.ThinkingLevelHistory,
+		WorkingDirectory:      h.WorkingDirectory,
+		GitBranch:             h.GitBranch,
+		GitRemote:             h.GitRemote,
+		ChildSessions:         h.ChildSessions,
+		ParentSessionID:       h.ParentSessionID,
+		RootSessionID:         h.RootSessionID,
+		Purpose:               h.Purpose,
+		Relationships:         h.Relationships,
+		Outcome:               h.Outcome,
+		SessionOrigin:         h.SessionOrigin,
+		Scorecard:             h.Scorecard,
+		RetainedUnknown:       h.RetainedUnknown,
+		Diagnostics:           h.Diagnostics,
 	}
 }
 
@@ -1141,15 +1216,20 @@ type QualityPayload struct {
 
 // QualitySession is the analytics payload for the quality dashboard.
 type QualitySession struct {
-	ID              string  `json:"id"`
-	Date            string  `json:"date"` // "2006-01-02" format
-	Project         string  `json:"project"`
-	TotalTokens     int     `json:"totalTokens"`
-	InputTokens     int     `json:"inputTokens"`
-	OutputTokens    int     `json:"outputTokens"`
-	TurnCount       int     `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
-	ToolCalls       int     `json:"toolCalls"`
-	DurationMinutes float64 `json:"durationMinutes"`
+	ID           string `json:"id"`
+	Date         string `json:"date"` // "2006-01-02" format
+	Project      string `json:"project"`
+	TotalTokens  int    `json:"totalTokens"`
+	InputTokens  int    `json:"inputTokens"`
+	OutputTokens int    `json:"outputTokens"`
+	TurnCount    int    `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64  `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ToolCalls             int     `json:"toolCalls"`
+	DurationMinutes       float64 `json:"durationMinutes"`
 	// v2 fields -- zero-valued until implemented.
 	Scope                string  `json:"scope"`
 	Title                string  `json:"title"`
@@ -1282,7 +1362,7 @@ type MedianP90 struct {
 type AnalyticsSessionStats struct {
 	DurationMins  MedianP90 `json:"durationMins"`
 	TotalTokens   MedianP90 `json:"totalTokens"`
-	TurnCount     MedianP90 `json:"turnCount"`
+	TurnCount     MedianP90 `json:"turnCount" description:"Median conversationTurnCount over the library."`
 	ToolCallCount MedianP90 `json:"toolCallCount"`
 }
 
@@ -1470,7 +1550,7 @@ type WalkthroughTrail struct {
 	SessionID  string            `json:"sessionId"`
 	Title      string            `json:"title"`
 	Date       string            `json:"date"`
-	TurnCount  int               `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount  int               `json:"turnCount" description:"Trail size as the producer computes it; not a session turn count."`
 	Steps      []WalkthroughStep `json:"steps"`
 	IsCoherent bool              `json:"isCoherent"` // true if linear path, false if scattered
 }

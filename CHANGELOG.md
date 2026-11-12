@@ -7,6 +7,37 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Village API 0.39.0, Local API 0.37.0 and Types 0.49.0 declare conversation
+  turn counts and positions. `IsConversationTurn` in Go and
+  `isConversationTurn` in TypeScript own the allowed list: a depth-0 entry
+  whose role and entry type are (user, text), (user, image), (assistant, text)
+  or (assistant, image). Session types and publication `stats` gain the
+  optional `conversationTurnCount`, beside a re-documented `turnCount` in
+  folded-turn units. Village rows gain `conversation_turn_count` and the
+  server-resolved `displayed_turn_count`; both are required and nullable, as
+  `turn_count` is, and null means unmeasured. The segment directory gains
+  `totalConversationTurns` and each ref gains `conversationTurns`
+  (`ConversationTurnSpan` with `before` and `count`), with local-only
+  continuity rules. The publication fingerprint encodes the new count only
+  when present. The prior 0.38.0, 0.36.0 and 0.48.0 specs stay frozen in the
+  retirement registry.
+
+- The transcript cut and window rule are shared Go functions in
+  `transcript_cut.go`: `TranscriptTurnByteLength`,
+  `TranscriptJSONStringByteLength`, `CutTranscriptSegments`,
+  `ResolveTranscriptWindow` with `TranscriptWindowTurn` and
+  `ErrTranscriptWindowNoUserTurn`, and the constants
+  `TranscriptSegmentBudgetBytes` and
+  `TranscriptWindowSpan{Default,Minimum,Maximum}`. Two servers that cut the
+  same turns produce the same segment refs. `TranscriptWindow.Validate` reads
+  its span range from the constants. There is no TypeScript counterpart.
+- Village API 0.39.0 declares the segmented transcript reads with the types the
+  local reads serve: `getTranscriptSegments`
+  (`GET /api/v1/transcripts/{id}/segments`), `getTranscriptSegment`
+  (`GET /api/v1/transcripts/{id}/segments/{index}`) and `getTranscriptWindow`
+  (`GET /api/v1/transcripts/{id}/window`), each with statuses 400, 404, 409 and
+  500.
+
 - Local API 0.36.0 and Types 0.48.0 declare the failures the kickstart routes
   answer. Every kickstart route now declares `500` and `503`, and every read
   also declares the host `403` described below; `GET /api/v1/kickstart/status`

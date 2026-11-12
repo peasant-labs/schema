@@ -46,10 +46,19 @@ type SessionGraphEnumInput struct {
 	Empty   string   `yaml:"empty"`
 	Unknown string   `yaml:"unknown"`
 }
+
+// sessionGraphCountCarrier names one optional count field on a generated
+// component. Nullable marks a field that is required and reads null as
+// unmeasured, where every other carrier omits an unmeasured count.
+type sessionGraphCountCarrier struct {
+	Component string `yaml:"component"`
+	Field     string `yaml:"field"`
+	Nullable  bool   `yaml:"nullable"`
+}
 type SessionGraphFixtureCorpus struct {
 	TypeScriptConstraints struct {
-		CountCarriers []string                  `yaml:"count_carriers"`
-		StrictObjects map[string]map[string]any `yaml:"strict_objects"`
+		CountCarriers []sessionGraphCountCarrier `yaml:"count_carriers"`
+		StrictObjects map[string]map[string]any  `yaml:"strict_objects"`
 	} `yaml:"typescript_constraints"`
 	Durable               DurableGraphFixtures                                                        `yaml:"durable"`
 	Refs                  testcase.Corpus[SessionGraphRefInput, SessionGraphRefExpected]              `yaml:"refs"`

@@ -2396,17 +2396,152 @@ export const canonicalSessionGraphFixtures = {
   ],
   "typescriptConstraints": {
     "countCarriers": [
-      "AuthoritativeSessionStats",
-      "LocalSyncSummary",
-      "SessionStats",
-      "SessionSummary",
-      "SessionDetailPayload",
-      "SessionDetailReadPayload",
-      "VillageContributableTranscript",
-      "VillageCollectiveTranscript",
-      "VillagePendingShare",
-      "VillageTranscript",
-      "VillageUserCollectiveShare"
+      {
+        "component": "AuthoritativeSessionStats",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "LocalSyncSummary",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionStats",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionSummary",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionDetailHeader",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionDetailHeaderPayload",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionDetailPayload",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "SessionDetailReadPayload",
+        "field": "inputSubmissionCount"
+      },
+      {
+        "component": "AuthoritativeSessionStats",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "LocalSyncSummary",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionStats",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionSummary",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionDetailHeader",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionDetailHeaderPayload",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionDetailPayload",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "SessionDetailReadPayload",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "QualitySession",
+        "field": "conversationTurnCount"
+      },
+      {
+        "component": "VillageContributableTranscript",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageCollectiveTranscript",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillagePendingShare",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageTranscript",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageUserCollectiveShare",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageCollectiveTranscript",
+        "field": "conversation_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageCollectiveTranscript",
+        "field": "displayed_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageTranscript",
+        "field": "conversation_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageTranscript",
+        "field": "displayed_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageUserCollectiveShare",
+        "field": "conversation_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageUserCollectiveShare",
+        "field": "displayed_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageGroupTranscript",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageGroupTranscript",
+        "field": "conversation_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageGroupTranscript",
+        "field": "displayed_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageUserGroupShare",
+        "field": "input_submission_count"
+      },
+      {
+        "component": "VillageUserGroupShare",
+        "field": "conversation_turn_count",
+        "nullable": true
+      },
+      {
+        "component": "VillageUserGroupShare",
+        "field": "displayed_turn_count",
+        "nullable": true
+      }
     ],
     "strictObjects": {
       "PublicSourceAnchor": {
@@ -2564,6 +2699,59 @@ export const canonicalSessionGraphFixtures = {
           "mutation": {
             "description": "exact JS-safe upper bound"
           }
+        },
+        {
+          "name": "conversation-count-absent",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_absent\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[]}"
+          },
+          "expected": {
+            "present": false
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-absent-zero-positive"
+          },
+          "mutation": {
+            "description": "historical conversation count is omitted"
+          }
+        },
+        {
+          "name": "conversation-count-zero",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_zero\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":0,\"turns\":[]}"
+          },
+          "expected": {
+            "present": true,
+            "value": 0
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-absent-zero-positive"
+          },
+          "mutation": {
+            "description": "measured zero conversation count is present"
+          }
+        },
+        {
+          "name": "conversation-count-safe-max",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_max\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":9007199254740991,\"turns\":[]}"
+          },
+          "expected": {
+            "present": true,
+            "value": 9007199254740991
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "exact JS-safe upper bound for conversation count"
+          }
         }
       ]
     },
@@ -2703,6 +2891,108 @@ export const canonicalSessionGraphFixtures = {
           },
           "mutation": {
             "description": "count is object"
+          }
+        },
+        {
+          "name": "conversation-count-null",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":null,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "null replaces omission for conversation count"
+          }
+        },
+        {
+          "name": "conversation-count-string",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":\"1\",\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is a string"
+          }
+        },
+        {
+          "name": "conversation-count-fraction",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":1.5,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is fractional"
+          }
+        },
+        {
+          "name": "conversation-count-bool",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":true,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is boolean"
+          }
+        },
+        {
+          "name": "conversation-count-negative",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":-1,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is negative"
+          }
+        },
+        {
+          "name": "conversation-count-above-safe-max",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":9007199254740992,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count exceeds JS-safe range"
           }
         }
       ]
@@ -2967,6 +3257,337 @@ export const canonicalSessionGraphFixtures = {
           "mutation": {
             "description": "legacy parent differs from durable graph"
           }
+        },
+        {
+          "name": "authoritative-conversation-count-match",
+          "input": {
+            "detail_count": 1,
+            "metadata_count": 1,
+            "parent": "ses_parent",
+            "graph_parent": "ses_parent",
+            "projected_main_count": true,
+            "detail_turn_count": 5,
+            "metadata_turn_count": 5,
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3
+          },
+          "expected": {
+            "accept": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "equal conversation counts beside a different turn count are accepted"
+          }
+        },
+        {
+          "name": "authoritative-conversation-count-disagreement",
+          "input": {
+            "detail_count": 1,
+            "metadata_count": 1,
+            "parent": "ses_parent",
+            "graph_parent": "ses_parent",
+            "projected_main_count": true,
+            "detail_turn_count": 5,
+            "metadata_turn_count": 5,
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 2
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "mirrors disagree"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "metadata conversation count differs"
+          }
+        },
+        {
+          "name": "authoritative-conversation-count-detail-absent",
+          "input": {
+            "detail_count": 1,
+            "metadata_count": 1,
+            "parent": "ses_parent",
+            "graph_parent": "ses_parent",
+            "projected_main_count": true,
+            "detail_turn_count": 5,
+            "metadata_turn_count": 5,
+            "metadata_conversation_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "mirrors disagree"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "detail conversation count presence differs"
+          }
+        },
+        {
+          "name": "authoritative-conversation-count-metadata-absent",
+          "input": {
+            "detail_count": 1,
+            "metadata_count": 1,
+            "parent": "ses_parent",
+            "graph_parent": "ses_parent",
+            "projected_main_count": true,
+            "detail_turn_count": 5,
+            "metadata_turn_count": 5,
+            "detail_conversation_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "mirrors disagree"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "metadata conversation count presence differs"
+          }
+        },
+        {
+          "name": "local-row-conversation-count-match",
+          "input": {
+            "surface": "local_row",
+            "detail_conversation_count": 1,
+            "metadata_conversation_count": 1
+          },
+          "expected": {
+            "accept": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "session and sync copies carry one conversation count"
+          }
+        },
+        {
+          "name": "local-row-conversation-count-disagreement",
+          "input": {
+            "surface": "local_row",
+            "detail_conversation_count": 1,
+            "metadata_conversation_count": 2
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "count mirrors disagree"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "sync copy carries another conversation count"
+          }
+        },
+        {
+          "name": "local-row-conversation-count-sync-absent",
+          "input": {
+            "surface": "local_row",
+            "detail_conversation_count": 1
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "count mirrors disagree"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "sync copy omits the conversation count"
+          }
+        },
+        {
+          "name": "village-collective-turn-counts-match",
+          "input": {
+            "surface": "village_collective",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 3
+          },
+          "expected": {
+            "accept": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "session and route copies carry one conversation count and one displayed count"
+          }
+        },
+        {
+          "name": "village-collective-conversation-count-disagreement",
+          "input": {
+            "surface": "village_collective",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 2,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "collective conversation_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy carries another conversation count beside an equal displayed count"
+          }
+        },
+        {
+          "name": "village-collective-displayed-count-disagreement",
+          "input": {
+            "surface": "village_collective",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 5
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "collective displayed_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy carries another displayed count beside an equal conversation count"
+          }
+        },
+        {
+          "name": "village-collective-displayed-count-unmeasured",
+          "input": {
+            "surface": "village_collective",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "collective displayed_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy reads null where the session copy is measured"
+          }
+        },
+        {
+          "name": "village-my-share-turn-counts-match",
+          "input": {
+            "surface": "village_my_share",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 3
+          },
+          "expected": {
+            "accept": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "session and route copies carry one conversation count and one displayed count"
+          }
+        },
+        {
+          "name": "village-my-share-conversation-count-disagreement",
+          "input": {
+            "surface": "village_my_share",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 2,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "myShare conversation_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy carries another conversation count beside an equal displayed count"
+          }
+        },
+        {
+          "name": "village-my-share-displayed-count-disagreement",
+          "input": {
+            "surface": "village_my_share",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3,
+            "metadata_displayed_count": 5
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "myShare displayed_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy carries another displayed count beside an equal conversation count"
+          }
+        },
+        {
+          "name": "village-my-share-displayed-count-unmeasured",
+          "input": {
+            "surface": "village_my_share",
+            "detail_conversation_count": 3,
+            "metadata_conversation_count": 3,
+            "detail_displayed_count": 3
+          },
+          "expected": {
+            "accept": false,
+            "errorContains": "myShare displayed_turn_count differs"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-mirror"
+          },
+          "mutation": {
+            "description": "route copy reads null where the session copy is measured"
+          }
         }
       ]
     },
@@ -3078,6 +3699,96 @@ export const canonicalSessionGraphFixtures = {
           "mutation": {
             "description": "entry provenance is added"
           }
+        },
+        {
+          "name": "digest-conversation-absent-keeps-fingerprint",
+          "input": {},
+          "expected": {
+            "different": false,
+            "right_digest": "8230da7e3c7ee4be095adeb66edffca85abfb36adc94a102ea7f74738fbaff18"
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-digest"
+          },
+          "mutation": {
+            "description": "a request without the conversation count keeps the fingerprint it had before the field existed"
+          }
+        },
+        {
+          "name": "digest-conversation-absent-versus-zero",
+          "input": {
+            "right_conversation": 0
+          },
+          "expected": {
+            "different": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-digest"
+          },
+          "mutation": {
+            "description": "measured zero conversation count is added"
+          }
+        },
+        {
+          "name": "digest-conversation-same-positive",
+          "input": {
+            "left_conversation": 2,
+            "right_conversation": 2
+          },
+          "expected": {
+            "different": false
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-digest"
+          },
+          "mutation": {
+            "description": "equal conversation count is replayed"
+          }
+        },
+        {
+          "name": "digest-conversation-versus-input-count",
+          "input": {
+            "left_present": true,
+            "left_value": 3,
+            "right_conversation": 3
+          },
+          "expected": {
+            "different": true
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-digest"
+          },
+          "mutation": {
+            "description": "the same number moves from the input count to the conversation count"
+          }
+        },
+        {
+          "name": "digest-conversation-beside-root",
+          "input": {
+            "left_variant": "root",
+            "right_variant": "root",
+            "right_conversation": 7
+          },
+          "expected": {
+            "different": true,
+            "right_digest": "74e7f44e96097a64fc85ef5f4ad5fd5f618a7fedcfde656d9b21ee610f52169b"
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-digest"
+          },
+          "mutation": {
+            "description": "root evidence and the conversation count are both present and each keeps its own frame"
+          }
         }
       ]
     },
@@ -3096,6 +3807,15 @@ export const canonicalSessionGraphFixtures = {
       "input-count-bool",
       "input-count-array",
       "input-count-object",
+      "conversation-count-absent",
+      "conversation-count-zero",
+      "conversation-count-safe-max",
+      "conversation-count-null",
+      "conversation-count-string",
+      "conversation-count-fraction",
+      "conversation-count-bool",
+      "conversation-count-negative",
+      "conversation-count-above-safe-max",
       "authoritative-mirrors-match",
       "authoritative-count-disagreement",
       "authoritative-count-detail-absent",
@@ -3112,7 +3832,27 @@ export const canonicalSessionGraphFixtures = {
       "digest-root-evidence",
       "digest-purpose-evidence",
       "digest-relationship-evidence",
-      "digest-entry-provenance"
+      "digest-entry-provenance",
+      "authoritative-conversation-count-match",
+      "authoritative-conversation-count-disagreement",
+      "authoritative-conversation-count-detail-absent",
+      "authoritative-conversation-count-metadata-absent",
+      "local-row-conversation-count-match",
+      "local-row-conversation-count-disagreement",
+      "local-row-conversation-count-sync-absent",
+      "village-collective-turn-counts-match",
+      "village-collective-conversation-count-disagreement",
+      "village-collective-displayed-count-disagreement",
+      "village-collective-displayed-count-unmeasured",
+      "village-my-share-turn-counts-match",
+      "village-my-share-conversation-count-disagreement",
+      "village-my-share-displayed-count-disagreement",
+      "village-my-share-displayed-count-unmeasured",
+      "digest-conversation-absent-keeps-fingerprint",
+      "digest-conversation-absent-versus-zero",
+      "digest-conversation-same-positive",
+      "digest-conversation-versus-input-count",
+      "digest-conversation-beside-root"
     ]
   },
   "grouped_read": {
@@ -3290,6 +4030,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -3442,6 +4184,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -3662,6 +4406,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -3849,6 +4595,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -3936,6 +4684,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -4102,6 +4852,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -4412,6 +5164,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -4965,6 +5719,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -5052,6 +5808,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -5204,6 +5962,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -5365,6 +6125,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -5517,6 +6279,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -5677,6 +6441,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -6184,6 +6950,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -6297,6 +7065,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -6409,6 +7179,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -6565,6 +7337,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -6948,6 +7722,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -7174,6 +7950,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -7261,6 +8039,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -7421,6 +8201,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -7581,6 +8363,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8094,6 +8878,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8161,6 +8947,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8283,6 +9071,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8350,6 +9140,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8476,6 +9268,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8543,6 +9337,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8661,6 +9457,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8728,6 +9526,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8842,6 +9642,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -8949,6 +9751,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9056,6 +9860,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9123,6 +9929,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9234,6 +10042,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9367,6 +10177,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9490,6 +10302,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9557,6 +10371,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9679,6 +10495,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9809,6 +10627,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -9939,6 +10759,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10002,6 +10824,8 @@ export const canonicalSessionGraphFixtures = {
                       "visibility": "public",
                       "published_at": "2026-09-08T00:00:00Z",
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
                       "owner": {
@@ -10073,6 +10897,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10136,6 +10962,8 @@ export const canonicalSessionGraphFixtures = {
                       "visibility": "public",
                       "published_at": "2026-09-08T00:00:00Z",
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
                       "owner": {
@@ -10203,6 +11031,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10266,6 +11096,8 @@ export const canonicalSessionGraphFixtures = {
                       "visibility": "public",
                       "published_at": "2026-09-08T00:00:00Z",
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
                       "owner": {
@@ -10337,6 +11169,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10448,6 +11282,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10511,6 +11347,8 @@ export const canonicalSessionGraphFixtures = {
                       "visibility": "public",
                       "published_at": "2026-09-08T00:00:00Z",
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
                       "owner": {
@@ -10582,6 +11420,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10645,6 +11485,8 @@ export const canonicalSessionGraphFixtures = {
                       "visibility": "public",
                       "published_at": "2026-09-08T00:00:00Z",
                       "turn_count": 1,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "tokens_in": null,
                       "tokens_out": null,
                       "owner": {
@@ -10716,6 +11558,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",
@@ -10842,6 +11686,8 @@ export const canonicalSessionGraphFixtures = {
                       "session_start": null,
                       "session_end": null,
                       "turn_count": 5,
+                      "conversation_turn_count": null,
+                      "displayed_turn_count": 5,
                       "token_count": 13,
                       "blob_size_bytes": null,
                       "schema_version": "11",

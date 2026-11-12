@@ -1164,6 +1164,7 @@ export interface components {
         /** @description Opaque versioned selected-category traversal token; not cacheRevision or authority */
         SchemaContributionTraversalRevision: Schema.ContributionTraversalRevision;
         SchemaContributorBreakdown: Schema.ContributorBreakdown;
+        SchemaConversationTurnSpan: Schema.ConversationTurnSpan;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;
@@ -3350,7 +3351,7 @@ export interface operations {
             query?: {
                 /** @description One-based directory page; omitted defaults to 1 */
                 page?: number;
-                /** @description Store revision to read; omitted serves the current revision */
+                /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
             };
             header?: never;
@@ -3411,7 +3412,7 @@ export interface operations {
     getSessionTranscriptSegment: {
         parameters: {
             query?: {
-                /** @description Store revision to read; omitted serves the current revision */
+                /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
             };
             header?: never;
@@ -3487,7 +3488,7 @@ export interface operations {
                 anchor: number;
                 /** @description Assistant turns collected on each side, 1..10; omitted defaults to 10 */
                 span?: number;
-                /** @description Store revision to read; omitted serves the current revision */
+                /** @description Revision to read; omitted serves the current revision */
                 revision?: string;
             };
             header?: never;

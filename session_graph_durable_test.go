@@ -1,13 +1,16 @@
 package schema_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/peasant-labs/schema"
 	"github.com/peasant-labs/schema/testcase/assert"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 func requireDurableFixtures(t *testing.T) schema.DurableGraphFixtures {
@@ -191,19 +194,88 @@ func durableRefs(turns []schema.TurnDetail) []string {
 	return out
 }
 
+// durableCountField names the count a counts row carries: the corpus holds
+// rows for both optional session counts, told apart by the row name.
+type durableCountField struct {
+	wire   string
+	detail func(schema.SessionDetailPayload) *int64
+	stats  func(schema.AuthoritativeSessionStats) *int64
+}
+
+func countFieldOf(rowName string) durableCountField {
+	if strings.HasPrefix(rowName, "conversation-count-") {
+		return durableCountField{wire: "conversationTurnCount", detail: func(v schema.SessionDetailPayload) *int64 { return v.ConversationTurnCount }, stats: func(v schema.AuthoritativeSessionStats) *int64 { return v.ConversationTurnCount }}
+	}
+	return durableCountField{wire: "inputSubmissionCount", detail: func(v schema.SessionDetailPayload) *int64 { return v.InputSubmissionCount }, stats: func(v schema.AuthoritativeSessionStats) *int64 { return v.InputSubmissionCount }}
+}
+
+func requireCount(t *testing.T, where string, got *int64, want struct {
+	Present bool
+	Value   int64
+}) {
+	t.Helper()
+	if (got != nil) != want.Present {
+		t.Fatalf("%s presence=%v, want %v", where, got != nil, want.Present)
+	}
+	if got != nil && *got != want.Value {
+		t.Fatalf("%s value=%d, want %d", where, *got, want.Value)
+	}
+}
+
+// publishStatsContract compiles the stats object of the served publish-request
+// JSON Schema, the bytes village enforces.
+func publishStatsContract(t *testing.T) *jsonschema.Schema {
+	t.Helper()
+	compiler := schema.NewJSONSchemaCompiler()
+	if err := compiler.AddResource("publish-request.json", bytes.NewReader(schema.PublishRequestSchemaJSON())); err != nil {
+		t.Fatalf("add publish-request schema resource: %v", err)
+	}
+	contract, err := compiler.Compile("publish-request.json#/properties/stats")
+	if err != nil {
+		t.Fatalf("compile publish-request stats schema: %v", err)
+	}
+	return contract
+}
+
+// publishStatsSchemaError validates the stats object of a publish request
+// against the served schema.
+func publishStatsSchemaError(t *testing.T, contract *jsonschema.Schema, request []byte) error {
+	t.Helper()
+	var value struct {
+		Stats any `json:"stats"`
+	}
+	if err := json.Unmarshal(request, &value); err != nil {
+		t.Fatal(err)
+	}
+	if value.Stats == nil {
+		t.Fatal("publish request fixture carries no stats object")
+	}
+	return contract.Validate(value.Stats)
+}
+
 func TestDurableInputCounts(t *testing.T) {
 	fx := requireDurableFixtures(t)
+	contract := publishStatsContract(t)
 	for _, row := range fx.Counts.Cases {
 		t.Run(row.Name, func(t *testing.T) {
+			field := countFieldOf(row.Name)
+			want := struct {
+				Present bool
+				Value   int64
+			}{row.Expected.Present, row.Expected.Value}
 			value, err := schema.DecodeSessionDetailPayloadRaw(durableDetailJSON(t, row.Input.JSON))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if (value.InputSubmissionCount != nil) != row.Expected.Present {
-				t.Fatalf("presence=%v", value.InputSubmissionCount != nil)
+			requireCount(t, "session detail "+field.wire, field.detail(value), want)
+			publishRaw := authoritativeCountJSON(t, row.Input.JSON)
+			request, err := schema.DecodeAuthoritativePublishMetadataRaw(publishRaw)
+			if err != nil {
+				t.Fatalf("publication decoder refuses a must-pass count: %v", err)
 			}
-			if value.InputSubmissionCount != nil && *value.InputSubmissionCount != row.Expected.Value {
-				t.Fatalf("value=%d", *value.InputSubmissionCount)
+			requireCount(t, "publication stats "+field.wire, field.stats(request.Stats), want)
+			if err := publishStatsSchemaError(t, contract, publishRaw); err != nil {
+				t.Fatalf("publish-request schema refuses a must-pass count: %v", err)
 			}
 		})
 	}
@@ -213,12 +285,17 @@ func TestDurableInputCounts(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), row.Expected.ErrorContains) {
 				t.Fatalf("error=%v want %q", err, row.Expected.ErrorContains)
 			}
-			_, publishErr := schema.DecodeAuthoritativePublishMetadataRaw(authoritativeCountJSON(t, row.Input.JSON))
-			if publishErr == nil || !strings.Contains(publishErr.Error(), "inputSubmissionCount") {
+			wantField := countFieldOf(row.Name).wire
+			publishRaw := authoritativeCountJSON(t, row.Input.JSON)
+			_, publishErr := schema.DecodeAuthoritativePublishMetadataRaw(publishRaw)
+			if publishErr == nil || !strings.Contains(publishErr.Error(), wantField) {
 				t.Fatalf("authoritative count error=%v", publishErr)
 			}
+			if schemaErr := publishStatsSchemaError(t, contract, publishRaw); schemaErr == nil || !strings.Contains(schemaErr.Error(), wantField) {
+				t.Fatalf("publish-request schema error=%v, want one naming %s", schemaErr, wantField)
+			}
 			var metadata schema.UnifiedMetadata
-			if metadataErr := json.Unmarshal(metadataCountJSON(t, row.Input.JSON), &metadata); metadataErr == nil || !strings.Contains(metadataErr.Error(), "inputSubmissionCount") {
+			if metadataErr := json.Unmarshal(metadataCountJSON(t, row.Input.JSON), &metadata); metadataErr == nil || !strings.Contains(metadataErr.Error(), wantField) {
 				t.Fatalf("metadata count error=%v", metadataErr)
 			}
 		})
@@ -231,7 +308,14 @@ func metadataCountJSON(t *testing.T, detailRaw string) []byte {
 	if err := json.Unmarshal([]byte(detailRaw), &detail); err != nil {
 		t.Fatal(err)
 	}
-	value := map[string]any{"schemaVersion": 10, "sessionId": "ses_bad", "parentUuid": nil, "harness": "claude-code", "model": "model", "version": "1", "timestamp": map[string]any{"start": 1, "end": 2}, "source": map[string]any{"format": "json"}, "git": map[string]any{}, "project": map[string]any{"hash": strings.Repeat("a", 64), "name": "project"}, "hostSlug": "host", "stats": map[string]json.RawMessage{"inputSubmissionCount": detail["inputSubmissionCount"]}, "subagents": []any{}, "diagnostics": map[string]any{"warnings": []any{}}, "contentHash": "", "metadataHash": "", "redaction": map[string]any{}}
+	stats := map[string]json.RawMessage{}
+	if count, present := detail["inputSubmissionCount"]; present {
+		stats["inputSubmissionCount"] = count
+	}
+	if count, present := detail["conversationTurnCount"]; present {
+		stats["conversationTurnCount"] = count
+	}
+	value := map[string]any{"schemaVersion": 10, "sessionId": "ses_bad", "parentUuid": nil, "harness": "claude-code", "model": "model", "version": "1", "timestamp": map[string]any{"start": 1, "end": 2}, "source": map[string]any{"format": "json"}, "git": map[string]any{}, "project": map[string]any{"hash": strings.Repeat("a", 64), "name": "project"}, "hostSlug": "host", "stats": stats, "subagents": []any{}, "diagnostics": map[string]any{"warnings": []any{}}, "contentHash": "", "metadataHash": "", "redaction": map[string]any{}}
 	out, err := json.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +341,16 @@ func authoritativeCountJSON(t *testing.T, detailRaw string) []byte {
 	if err := json.Unmarshal(request["stats"], &stats); err != nil {
 		t.Fatal(err)
 	}
-	stats["inputSubmissionCount"] = detail["inputSubmissionCount"]
+	if count, present := detail["inputSubmissionCount"]; present {
+		stats["inputSubmissionCount"] = count
+	} else {
+		delete(stats, "inputSubmissionCount")
+	}
+	if count, present := detail["conversationTurnCount"]; present {
+		stats["conversationTurnCount"] = count
+	} else {
+		delete(stats, "conversationTurnCount")
+	}
 	request["stats"], err = json.Marshal(stats)
 	if err != nil {
 		t.Fatal(err)
@@ -292,16 +385,63 @@ func TestAuthoritativeGraphMirrors(t *testing.T) {
 	fx := requireDurableFixtures(t)
 	for _, row := range fx.Mirrors.Cases {
 		t.Run(row.Name, func(t *testing.T) {
-			detail, meta := projectionPair(t, row.Input)
-			identity, stats, children, err := schema.BuildAuthoritativePublicationProjections(detail, meta, 11, row.Input.ProjectedMainCount)
-			if (err == nil) != row.Expected.Accept || err != nil && !strings.Contains(err.Error(), row.Expected.ErrorContains) {
-				t.Fatalf("error=%v accept=%v", err, row.Expected.Accept)
+			var err error
+			switch row.Input.Surface {
+			case "":
+				detail, meta := projectionPair(t, row.Input)
+				identity, stats, children, buildErr := schema.BuildAuthoritativePublicationProjections(detail, meta, 11, row.Input.ProjectedMainCount)
+				err = buildErr
+				if err == nil && (identity.ParentSessionID == nil || *identity.ParentSessionID != *detail.Relationships[0].TargetLocalID || !optionalInt64Equal(stats.InputSubmissionCount, row.Input.DetailCount) || !optionalInt64Equal(stats.ConversationTurnCount, row.Input.DetailConversationCount) || len(children) != 0) {
+					t.Fatalf("derived identity/stats/children=%+v %+v %+v", identity, stats, children)
+				}
+			case "local_row":
+				err = localMirrorRow(t, row.Input).Validate()
+			case "village_collective", "village_my_share":
+				err = villageMirrorRow(t, row.Input).Validate()
+			default:
+				t.Fatalf("unknown mirror surface %q", row.Input.Surface)
 			}
-			if err == nil && (identity.ParentSessionID == nil || *identity.ParentSessionID != *detail.Relationships[0].TargetLocalID || !optionalInt64Equal(stats.InputSubmissionCount, row.Input.DetailCount) || len(children) != 0) {
-				t.Fatalf("derived identity/stats/children=%+v %+v %+v", identity, stats, children)
+			if (err == nil) != row.Expected.Accept || err != nil && !strings.Contains(err.Error(), row.Expected.ErrorContains) {
+				t.Fatalf("error=%v accept=%v want containing %q", err, row.Expected.Accept, row.Expected.ErrorContains)
+			}
+			if !row.Expected.Accept && row.Expected.ErrorContains == "" {
+				t.Fatalf("must-fail mirror row carries no error_contains; any refusal would pass")
 			}
 		})
 	}
+}
+
+// localMirrorRow builds a grouped local row whose session and sync copies
+// carry the row's counts.
+func localMirrorRow(t *testing.T, input schema.DurableMirrorInput) schema.LocalSessionRow {
+	t.Helper()
+	start, err := time.Parse(time.RFC3339, "2026-09-20T10:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash := schema.ProjectHash(strings.Repeat("c", 64))
+	session := schema.SessionSummary{ID: "s-conv", Harness: schema.HarnessOpenCode, StartTime: start, DurationMins: 1, TotalTokens: 10, TurnCount: 2, Project: "worker", ProjectHash: hash, InputSubmissionCount: input.DetailCount, ConversationTurnCount: input.DetailConversationCount}
+	sync := schema.LocalSyncSummary{ID: "s-conv", Harness: schema.HarnessOpenCode, ProjectName: "worker", ProjectHash: hash, HostSlug: "host", StartTime: "2026-09-20T10:00:00Z", DurationMs: 1000, TotalTokens: 10, TurnCount: 2, Model: "m", SyncStatus: schema.SyncStatusNew, InputSubmissionCount: input.MetadataCount, ConversationTurnCount: input.MetadataConversationCount}
+	return schema.LocalSessionRow{Session: session, Sync: &sync}
+}
+
+// villageMirrorRow builds a grouped village row whose session copy and route
+// copy carry the row's counts.
+func villageMirrorRow(t *testing.T, input schema.DurableMirrorInput) schema.VillageSessionRow {
+	t.Helper()
+	variant := map[string]string{"village_collective": "collective", "village_my_share": "myShare"}[input.Surface]
+	row := villageRow(villageRowInput{Variant: variant, SessionCount: input.DetailCount, VariantCount: input.MetadataCount})
+	row.Session.ConversationTurnCount = input.DetailConversationCount
+	row.Session.DisplayedTurnCount = input.DetailDisplayedCount
+	switch variant {
+	case "collective":
+		row.Collective.ConversationTurnCount = input.MetadataConversationCount
+		row.Collective.DisplayedTurnCount = input.MetadataDisplayedCount
+	case "myShare":
+		row.MyShare.ConversationTurnCount = input.MetadataConversationCount
+		row.MyShare.DisplayedTurnCount = input.MetadataDisplayedCount
+	}
+	return row
 }
 
 func projectionPair(t *testing.T, input schema.DurableMirrorInput) (schema.SessionDetailPayload, schema.UnifiedMetadata) {
@@ -315,7 +455,7 @@ func projectionPair(t *testing.T, input schema.DurableMirrorInput) (schema.Sessi
 		t.Fatal(err)
 	}
 	relation := schema.SessionRelationship{Kind: schema.SessionRelationshipStartedBy, TargetState: schema.RelationshipTargetKnown, TargetLocalID: &graphParent, Evidence: schema.EvidenceNativeTyped}
-	detail := schema.SessionDetailPayload{ID: "ses_child", Harness: schema.HarnessClaudeCode, TurnCount: input.DetailTurnCount, InputSubmissionCount: input.DetailCount, ParentSessionID: &parent, Relationships: []schema.SessionRelationship{relation}, Turns: []schema.TurnDetail{}}
+	detail := schema.SessionDetailPayload{ID: "ses_child", Harness: schema.HarnessClaudeCode, TurnCount: input.DetailTurnCount, InputSubmissionCount: input.DetailCount, ConversationTurnCount: input.DetailConversationCount, ParentSessionID: &parent, Relationships: []schema.SessionRelationship{relation}, Turns: []schema.TurnDetail{}}
 	meta := schema.NewUnifiedMetadata()
 	meta.SessionID = "ses_child"
 	meta.ModelHarness = schema.HarnessClaudeCode
@@ -323,6 +463,7 @@ func projectionPair(t *testing.T, input schema.DurableMirrorInput) (schema.Sessi
 	meta.Relationships = []schema.SessionRelationship{relation}
 	meta.Stats.TurnCount = input.MetadataTurnCount
 	meta.Stats.InputSubmissionCount = input.MetadataCount
+	meta.Stats.ConversationTurnCount = input.MetadataConversationCount
 	if input.DetailRoot != "" {
 		root, err := schema.NewSessionID(input.DetailRoot)
 		if err != nil {
@@ -356,6 +497,8 @@ func TestAuthoritativeDigestCountPresence(t *testing.T) {
 			if row.Input.RightPresent {
 				right.Stats.InputSubmissionCount = &row.Input.RightValue
 			}
+			left.Stats.ConversationTurnCount = row.Input.LeftConversation
+			right.Stats.ConversationTurnCount = row.Input.RightConversation
 			applyDigestVariant(t, &left, row.Input.LeftVariant)
 			applyDigestVariant(t, &right, row.Input.RightVariant)
 			lop, err := schema.CanonicalizePublishRequest(left)
@@ -376,6 +519,9 @@ func TestAuthoritativeDigestCountPresence(t *testing.T) {
 			}
 			if (ld != rd) != row.Expected.Different {
 				t.Fatalf("digests %s %s", ld, rd)
+			}
+			if row.Expected.RightDigest != "" && string(rd) != row.Expected.RightDigest {
+				t.Fatalf("right digest=%s, want the pinned %s; the fingerprint encoding is frozen by release, so a changed digest breaks replay detection for stored publications", rd, row.Expected.RightDigest)
 			}
 		})
 	}

@@ -17,6 +17,8 @@ files:
   - dist/index.js
   - dist/contribution-attempt.d.ts
   - dist/contribution-attempt.js
+  - dist/conversation-turn.d.ts
+  - dist/conversation-turn.js
   - dist/collective-validation.d.ts
   - dist/collective-validation.js
   - dist/collective-status.d.ts

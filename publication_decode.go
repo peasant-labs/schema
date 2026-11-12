@@ -25,7 +25,7 @@ var (
 	commitFields               = fieldSet("hash", "message", "authorName", "authorEmail", "commitTime", "authorTime")
 	requestGitFields           = fieldSet("branch", "remote", "worktree", "tracking", "commits", "associations")
 	projectFields              = fieldSet("hash", "filePath", "name")
-	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "inputSubmissionCount")
+	statsFields                = fieldSet("turnCount", "toolCallCount", "subagentCount", "durationMs", "tokensIn", "tokensOut", "thoughtTokens", "cachedReadTokens", "cachedWriteTokens", "inputSubmissionCount", "conversationTurnCount")
 	qualityFields              = fieldSet("turnCount", "subagentCount", "totalTokens", "inputTokens", "outputTokens", "toolCalls", "titleGenerated", "outcome", "filesTouched", "linesChanged", "retryLoops", "retryTokensWasted", "withinSessionReverts", "signalDensity", "specQualityScore", "explorationRatio", "scopeBreadth", "discoveryTurns", "durationMinutes", "m2TokenOutcomeRatio", "m3UniqueToolCount", "m4ErrorRecoveryCount", "m4ConsecutiveErrorMax", "m5ContextUtilizationPct", "m5PeakContextTokens", "m5AvgMessageTokens", "m6OutputSurvivalPct", "m6LinesSurvived", "m6LinesTotal", "m7SpecWordCount", "m7SpecHasExamples", "m7SpecHasConstraints", "costInputUsd", "costOutputUsd", "costReasoningUsd", "costCacheReadUsd", "costCacheWriteUsd", "costTotalUsd", "costModelId", "scope", "computedAt", "computeVersion")
 	entryFields                = fieldSet("sessionId", "entryIndex", "harness", "entryType", "role", "timestampMs", "contentPreview", "tokensIn", "tokensOut", "hasToolUse", "toolKind", "toolNamesCsv", "hasThinking", "isError", "stopReason", "rawByteLength", "toolCallId", "entryId", "parentEntryId", "depth", "parentIndex", "toolInput", "toolOutput", "extra", "partType", "sourceEntryRef", "provenance")
 	subagentFields             = fieldSet("sessionId", "parentUuid")
@@ -240,7 +240,12 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		var stats map[string]json.RawMessage
 		if err := json.Unmarshal(statsRaw, &stats); err == nil {
 			if count, exists := stats["inputSubmissionCount"]; exists {
-				if err := validateRawInputSubmissionCount(count, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+				if err := validateRawSafeCount(count, inputSubmissionCountLabel, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+					return err
+				}
+			}
+			if count, exists := stats["conversationTurnCount"]; exists {
+				if err := validateRawSafeCount(count, conversationTurnCountLabel, "authoritativePublishRequest.stats.conversationTurnCount"); err != nil {
 					return err
 				}
 			}

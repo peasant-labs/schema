@@ -126,6 +126,7 @@ export const wireAliasShapes = {
       "childSessions": {
         "items": "ChildSessionRef"
       },
+      "conversationTurnCount": {},
       "diagnostics": "InterpretationDiagnostics",
       "durationMins": {},
       "earlierHistory": {
