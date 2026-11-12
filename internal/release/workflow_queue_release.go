@@ -48,10 +48,6 @@ var (
 	tagPush = regexp.MustCompile(`refs/tags/|\bgit\s+tag\b|\bgh\s+release\s+create\b`)
 	// prOpenEdit matches a run line that opens or edits the release PR.
 	prOpenEdit = regexp.MustCompile(`\bgh\s+pr\s+(create|edit)\b`)
-	// tagModeGate matches the canonical tag-mode comparison a mint gate must
-	// carry: vars.RELEASE_BATCH_MODE == 'tag'. A != comparison never matches,
-	// so a gate that mints exactly when tag mode is off is rejected.
-	tagModeGate = regexp.MustCompile(`vars\.RELEASE_BATCH_MODE\s*==\s*'tag'`)
 )
 
 // gateAlternatives renders the planner's closed gate set as a regex
@@ -326,10 +322,16 @@ func (r *releaseChecker) checkWriteStepsGated() {
 	}
 }
 
-// tagModeGate is the canonical tag-mode comparison a mint gate must carry.
-func quoteTagMode() string {
-	return "vars.RELEASE_BATCH_MODE == 'tag'"
-}
+// tagModeComparison is the one canonical tag-mode comparison, shared by the
+// matcher and the messages.
+const tagModeComparison = "vars.RELEASE_BATCH_MODE == 'tag'"
+
+// tagModeGate matches the canonical tag-mode comparison. A != comparison
+// never matches, so a gate that mints exactly when tag mode is off is
+// rejected.
+var tagModeGate = regexp.MustCompile(regexp.QuoteMeta(tagModeComparison))
+
+func quoteTagMode() string { return tagModeComparison }
 
 // hasTagModeGate reports whether an if carries the tag-mode comparison as a
 // single comparison: vars.RELEASE_BATCH_MODE == 'tag', with no disjunction.

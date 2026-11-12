@@ -6,4 +6,6 @@ jobs:
   freeze:
     runs-on: ubuntu-latest
     steps:
-      - run: nix develop -c release-intent freeze-plan --branch develop --floor ${{ vars.RELEASE_BATCH_FLOOR }} --frozen surface=0.2.0 --ahead other
+      - run: nix develop -c release-intent freeze-plan --branch develop --floor "$FLOOR" --frozen surface=0.2.0 --ahead other
+        env:
+          FLOOR: ${{ vars.RELEASE_BATCH_FLOOR }}
