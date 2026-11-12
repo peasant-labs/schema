@@ -29,6 +29,11 @@ import (
 // job-shape knowledge.
 type WorkflowPolicy struct {
 	Jobs []JobRule `yaml:"jobs"`
+	// Queue is the optional merge-queue half of the policy: the required
+	// contexts, the release job, and the bot jobs. Nil means a jobs-only
+	// policy, which constrains only the tag-triggered release workflow's job
+	// graph, exactly as before.
+	Queue *QueueSection `yaml:"queue,omitempty"`
 }
 
 // JobRule constrains a single workflow job. Name is required; Needs lists the
@@ -89,7 +94,7 @@ func LoadWorkflowPolicy(path string) (WorkflowPolicy, error) {
 	dec.KnownFields(true)
 	var policy WorkflowPolicy
 	if err := dec.Decode(&policy); err != nil && !errors.Is(err, io.EOF) {
-		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: cannot parse %s as a release-guard policy: %w. Expected a top-level 'jobs:' sequence of {name, needs, reusable, permissions, environment} entries", path, err)
+		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: cannot parse %s as a release-guard policy: %w. Expected a top-level 'jobs:' sequence of {name, needs, reusable, permissions, environment} entries with an optional 'queue:' section", path, err)
 	}
 	if len(policy.Jobs) == 0 {
 		return WorkflowPolicy{}, fmt.Errorf("load workflow policy: %s declares no jobs during release workflow validation. A policy must list at least the publish job and its required gates under 'jobs:'", path)
@@ -97,6 +102,11 @@ func LoadWorkflowPolicy(path string) (WorkflowPolicy, error) {
 	for i, j := range policy.Jobs {
 		if j.Name == "" {
 			return WorkflowPolicy{}, fmt.Errorf("load workflow policy: %s jobs[%d] has an empty name during release workflow validation. Every policy job entry must set 'name:' to the workflow job it constrains", path, i)
+		}
+	}
+	if policy.Queue != nil {
+		if err := validateQueueSection(path, policy.Queue); err != nil {
+			return WorkflowPolicy{}, err
 		}
 	}
 	return policy, nil
