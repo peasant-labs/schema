@@ -23,13 +23,13 @@ cases:
       input: {argv: ["group-pr", "--ref", "refs/heads/gh-readonly-queue/main/pr-12-abc123"], stdin: "", setup: "none"}
       expected: {exit: 0, stdout: ["pr=12"], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "plan 7.4 group-pr prints pr number"}
+      provenance: {source: requirement, ref: "group-pr prints the entry PR number"}
       mutation: {description: "Baseline group-pr accept path at process level."}
     - name: group-pr-non-queue-empty
       input: {argv: ["group-pr", "--ref", "refs/heads/main"], stdin: "", setup: "none"}
       expected: {exit: 0, stdout: ["pr="], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "plan 7.6 non-queue ref prints pr empty with exit 0"}
+      provenance: {source: requirement, ref: "non-queue refs print an empty PR number with exit 0"}
       mutation: {description: "Uses a non-queue ref, which must not fail."}
     - name: group-pr-missing-flag
       input: {argv: ["group-pr"], stdin: "", setup: "none"}
@@ -41,7 +41,7 @@ cases:
       input: {argv: ["classify", "--author", "peasant-labs-releaser[bot]", "--head-branch", "automation/release"], stdin: "", setup: "config-bot"}
       expected: {exit: 0, stdout: ["kind=release"], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "IMPL_PLAN decision 1 classify prints kind"}
+      provenance: {source: requirement, ref: "classify prints the bot-branch kind"}
       mutation: {description: "Classifies the release bot branch at process level."}
     - name: classify-missing-branch
       input: {argv: ["classify", "--author", "octocat"], stdin: "", setup: "none"}
@@ -53,13 +53,13 @@ cases:
       input: {argv: ["check-config", "--config", "SETUP/config.yaml"], stdin: "", setup: "config-valid"}
       expected: {exit: 0, stdout: ["ok=true"], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "plan 7.5 check-config accepts a valid config"}
+      provenance: {source: requirement, ref: "a valid release config is accepted"}
       mutation: {description: "Uses a minimal valid release config file."}
     - name: check-config-unknown-key
       input: {argv: ["check-config", "--config", "SETUP/bad.yaml"], stdin: "", setup: "config-unknown-key"}
       expected: {exit: 1, stdout: [], noGate: false}
       classification: must-fail
-      provenance: {source: requirement, ref: "plan 7.5 check-config rejects an unknown key"}
+      provenance: {source: requirement, ref: "unknown config keys are rejected"}
       mutation: {description: "Uses a config with an unknown top-level key."}
     - name: check-config-missing-file
       input: {argv: ["check-config", "--config", "SETUP/does-not-exist.yaml"], stdin: "", setup: "none"}
@@ -71,13 +71,13 @@ cases:
       input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue-empty"}
       expected: {exit: 0, stdout: ["gate=arm"], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "plan 7.4 queue-gate prints gate arm for an empty queue"}
+      provenance: {source: requirement, ref: "an empty queue arms the gate"}
       mutation: {description: "Baseline queue-gate accept path at process level."}
     - name: queue-gate-malformed
       input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue-malformed"}
       expected: {exit: 1, stdout: [], noGate: true}
       classification: must-fail
-      provenance: {source: requirement, ref: "plan 7.4 malformed queue file exits 1 with no gate line"}
+      provenance: {source: requirement, ref: "a malformed queue file exits 1 with no gate line"}
       mutation: {description: "Uses truncated JSON, which must not arm or disarm."}
     - name: queue-gate-missing-queue
       input: {argv: ["queue-gate", "--release-pr", "9"], stdin: "", setup: "none"}
@@ -95,13 +95,13 @@ cases:
       input: {argv: ["check-title", "--base", "SETUP_BASE", "--head", "SETUP_HEAD", "--author", "octocat", "--head-branch", "feature/work"], stdin: "feat(graph)[minor]: add facet\n", setup: "git-basic"}
       expected: {exit: 0, stdout: ["error="], noGate: false}
       classification: must-pass
-      provenance: {source: requirement, ref: "plan 7.1 check-title accepts a releasing title with no protected change"}
+      provenance: {source: requirement, ref: "a releasing title with no protected change is accepted"}
       mutation: {description: "Runs the built binary in a temp repo with a good title."}
     - name: check-title-reject
       input: {argv: ["check-title", "--base", "SETUP_BASE", "--head", "SETUP_HEAD", "--author", "octocat", "--head-branch", "feature/work"], stdin: "feat(graph): add facet\n", setup: "git-basic"}
       expected: {exit: 2, stdout: ["error=missing-bump"], noGate: false}
       classification: must-fail
-      provenance: {source: requirement, ref: "plan 7.1 missing-bump exits 2 with error code"}
+      provenance: {source: requirement, ref: "a title missing its bump bracket exits 2"}
       mutation: {description: "Runs the built binary in a temp repo with a title missing its bracket."}
     - name: plan-missing-mode
       input: {argv: ["plan", "--branch", "main"], stdin: "", setup: "none"}
