@@ -2,6 +2,7 @@ package release
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -161,17 +162,9 @@ func eventRead(scalar string) string {
 // a reader without the floor would keep parsing it and keep the release
 // stopped.
 func (c *queueChecker) checkRangeFloor() {
-	for _, name := range c.sortedNames() {
-		f := c.files[name]
-		if f.missing || f.fault != "" {
-			if !f.reported && f.fault != "" {
-				f.reported = true
-				c.emit(QueueRuleRangeFloor, name, "", f.fault)
-			}
-			continue
-		}
-		for _, jobName := range jobNames(f.doc) {
-			for _, step := range stepsOf(jobNode(f.doc, jobName)) {
+	c.eachDoc(QueueRuleRangeFloor, func(name string, doc *yaml.Node) {
+		for _, jobName := range jobNames(doc) {
+			for _, step := range stepsOf(jobNode(doc, jobName)) {
 				run := stepRunText(step)
 				readsRange := rangeReader.MatchString(run) ||
 					(strings.Contains(run, "check-contract") && strings.Contains(run, "--until"))
@@ -184,7 +177,7 @@ func (c *queueChecker) checkRangeFloor() {
 				}
 			}
 		}
-	}
+	})
 }
 
 // allowedPush maps one policy job to the branch it may push: the release job
@@ -213,15 +206,15 @@ func (c *queueChecker) resolvePushes(rule QueueRule) []allowedPush {
 		branch, ok := c.cfg.BotBranches[bot.Kind]
 		if !ok {
 			c.emit(rule, "", bot.Job,
-				"the policy names bot kind "+quote(bot.Kind.String())+" for job "+quote(bot.Job)+" during merge-queue policy validation, but the release config names no branch for that kind. Add the bot_branches entry so the checker can tell the bot branch apart")
+				"the policy names bot kind "+strconv.Quote(bot.Kind.String())+" for job "+strconv.Quote(bot.Job)+" during merge-queue policy validation, but the release config names no branch for that kind. Add the bot_branches entry so the checker can tell the bot branch apart")
 			continue
 		}
 		if owner, dup := seen[bot.Kind]; dup {
 			c.emit(rule, "", bot.Job,
-				"bot kind "+quote(bot.Kind.String())+" is written by "+owner+" and by job "+quote(bot.Job)+" during merge-queue policy validation. Give each bot kind exactly one writer job so two jobs can never push the same branch")
+				"bot kind "+strconv.Quote(bot.Kind.String())+" is written by "+owner+" and by job "+strconv.Quote(bot.Job)+" during merge-queue policy validation. Give each bot kind exactly one writer job so two jobs can never push the same branch")
 			continue
 		}
-		seen[bot.Kind] = "job " + quote(bot.Job)
+		seen[bot.Kind] = "job " + strconv.Quote(bot.Job)
 		allowed = append(allowed, allowedPush{bot.Workflow, bot.Job, branch})
 	}
 	return allowed
@@ -313,13 +306,22 @@ type pushSite struct {
 	raw        string
 }
 
+var (
+	// shellSegments splits a run line into shell segments on ||, &&, ;, and
+	// pipes, so one push per segment is found.
+	shellSegments = regexp.MustCompile(`\|\||&&|[|;&]`)
+	// prCreateHead extracts the --head branch of a gh pr create command.
+	prCreateHead = regexp.MustCompile(`\bgh\s+pr\s+create\b(.*?)(?:\|\||&&|;|$)`)
+	// prHeadFlag extracts a --head value.
+	prHeadFlag = regexp.MustCompile(`--head\s+(\S+)`)
+)
+
 // gitPushSites returns every git push in the run text: branch targets, tag
 // pushes, and pushes with no parseable refspec. One push per shell segment is
 // assumed; a segment is split on ||, &&, ;, and pipes.
 func gitPushSites(run string) []pushSite {
 	var out []pushSite
-	segments := regexp.MustCompile(`\|\||&&|[|;&]`).Split(run, -1)
-	for _, segment := range segments {
+	for _, segment := range shellSegments.Split(run, -1) {
 		idx := strings.Index(segment, "git push")
 		if idx < 0 {
 			continue
@@ -345,15 +347,63 @@ func gitPushSites(run string) []pushSite {
 
 // prHeadTarget extracts the --head branch of a gh pr create command, or "".
 func prHeadTarget(run string) (string, bool) {
-	segment := regexp.MustCompile(`\bgh\s+pr\s+create\b(.*?)(?:\|\||&&|;|$)`).FindStringSubmatch(run)
+	segment := prCreateHead.FindStringSubmatch(run)
 	if segment == nil {
 		return "", false
 	}
-	h := regexp.MustCompile(`--head\s+(\S+)`).FindStringSubmatch(segment[1])
+	h := prHeadFlag.FindStringSubmatch(segment[1])
 	if h == nil {
 		return "", false
 	}
 	return h[1], true
+}
+
+// prTargets returns the (verb, target) pairs for gh pr merge, close, and
+// edit invocations in the run text: the first positional argument after the
+// verb, or "" when the command names none (a number, a URL, or a flag-only
+// call). Quoted spans stay one token, and flag values are skipped.
+func prTargets(run string) [][2]string {
+	var out [][2]string
+	for _, m := range prMergeCloseEdit.FindAllStringSubmatch(run, -1) {
+		verb, rest := m[1], m[2]
+		target := ""
+		var cur strings.Builder
+		var tokens []string
+		inQuotes := false
+		for _, r := range rest {
+			switch {
+			case r == '"':
+				inQuotes = !inQuotes
+			case r == ' ' || r == '\t':
+				if inQuotes {
+					cur.WriteRune(r)
+				} else if cur.Len() > 0 {
+					tokens = append(tokens, cur.String())
+					cur.Reset()
+				}
+			default:
+				cur.WriteRune(r)
+			}
+		}
+		if cur.Len() > 0 {
+			tokens = append(tokens, cur.String())
+		}
+		skipNext := false
+		for _, tok := range tokens {
+			if skipNext {
+				skipNext = false
+				continue
+			}
+			if strings.HasPrefix(tok, "-") {
+				skipNext = prValueFlags[tok]
+				continue
+			}
+			target = strings.Trim(tok, `"`)
+			break
+		}
+		out = append(out, [2]string{verb, target})
+	}
+	return out
 }
 
 // checkNoPush (no-default-branch-push-from-workflows) allows exactly the
@@ -377,23 +427,15 @@ func (c *queueChecker) checkNoPush() {
 	if rel := c.policy.Queue.ReleaseJob; rel != nil {
 		releaseFile, releaseJob = rel.Workflow, rel.Job
 	}
-	for _, name := range c.sortedNames() {
-		f := c.files[name]
-		if f.missing || f.fault != "" {
-			if !f.reported && f.fault != "" {
-				f.reported = true
-				c.emit(QueueRuleNoPush, name, "", f.fault)
-			}
-			continue
-		}
-		for _, jobName := range jobNames(f.doc) {
-			job := jobNode(f.doc, jobName)
+	c.eachDoc(QueueRuleNoPush, func(name string, doc *yaml.Node) {
+		for _, jobName := range jobNames(doc) {
+			job := jobNode(doc, jobName)
 			branch, listed := byFile[name][jobName]
 			for _, step := range stepsOf(job) {
 				c.checkPushStep(name, jobName, step, branch, listed, name == releaseFile && jobName == releaseJob)
 			}
 		}
-	}
+	})
 }
 
 // checkPushStep applies the push allowlist to one step. listed tells whether
@@ -407,14 +449,14 @@ func (c *queueChecker) checkPushStep(workflow, job string, step *yaml.Node, bran
 		case site.isTag:
 			if !(workflow == releaseWorkflow(c) && isTagStep(step)) {
 				c.emit(QueueRuleNoPush, workflow, id,
-					"a step pushes a tag outside the release job's tag step during merge-queue policy validation ("+quote(site.raw)+"). Tag publishes live only in the release tag step; move this push there or drop it")
+					"a step pushes a tag outside the release job's tag step during merge-queue policy validation ("+strconv.Quote(site.raw)+"). Tag publishes live only in the release tag step; move this push there or drop it")
 			}
 		case site.unresolved:
 			c.emit(QueueRuleNoPush, workflow, id,
-				"a step pushes without a parseable branch refspec during merge-queue policy validation ("+quote(site.raw)+"). Name the branch explicitly so the checker can tell it is the job's own branch")
+				"a step pushes without a parseable branch refspec during merge-queue policy validation ("+strconv.Quote(site.raw)+"). Name the branch explicitly so the checker can tell it is the job's own branch")
 		case !listed || site.target != branch:
 			c.emit(QueueRuleNoPush, workflow, id,
-				"a step pushes branch "+quote(site.target)+" during merge-queue policy validation, but the policy lists no such push. Only the release job pushes the release branch and each bot job pushes its kind's branch; point the push at the job's own branch")
+				"a step pushes branch "+strconv.Quote(site.target)+" during merge-queue policy validation, but the policy lists no such push. Only the release job pushes the release branch and each bot job pushes its kind's branch; point the push at the job's own branch")
 		}
 	}
 	if prCreate.FindStringSubmatch(run) != nil {
@@ -425,16 +467,36 @@ func (c *queueChecker) checkPushStep(workflow, job string, step *yaml.Node, bran
 				"a step opens a PR without --head during merge-queue policy validation. Name the head branch explicitly so the checker can tell it is the job's own branch")
 		case !listed || head != branch:
 			c.emit(QueueRuleNoPush, workflow, id,
-				"a step opens a PR on branch "+quote(head)+" during merge-queue policy validation, but the policy lists no such push. Only the release job opens on the release branch and each bot job on its kind's branch")
+				"a step opens a PR on branch "+strconv.Quote(head)+" during merge-queue policy validation, but the policy lists no such push. Only the release job opens on the release branch and each bot job on its kind's branch")
 		}
 	}
-	if prMerge.FindStringSubmatch(run) != nil && !isArmHoldStep(step) {
-		c.emit(QueueRuleNoPush, workflow, id,
-			"a step merges a PR outside an arm/hold step during merge-queue policy validation. Only the gate-tested arm and hold steps may merge; gate this step on the queue-gate output or drop it")
+	for _, pair := range prTargets(run) {
+		verb, target := pair[0], pair[1]
+		if verb == "merge" {
+			if isArmHoldStep(step) {
+				continue
+			}
+			if listed && target != "" && target == branch {
+				continue
+			}
+			c.emit(QueueRuleNoPush, workflow, id,
+				"a step merges a PR outside an arm/hold step during merge-queue policy validation. Only the gate-tested arm and hold steps may merge, and a listed bot job may merge only its own branch ("+strconv.Quote(branch)+"); gate this step on the queue-gate output or drop it")
+			continue
+		}
+		if verb == "close" {
+			if isReleaseJob {
+				continue
+			}
+			if listed && target != "" && target == branch {
+				continue
+			}
+			c.emit(QueueRuleNoPush, workflow, id,
+				"a step closes a PR outside the release job during merge-queue policy validation. Only the release job closes the release PR, and a listed bot job closes only its own branch ("+strconv.Quote(branch)+"); a bot job otherwise updates its PR by pushing its branch")
+		}
 	}
-	if (prCloseOrEdit.FindStringSubmatch(run) != nil) && !isReleaseJob {
+	if prEdit.FindStringSubmatch(run) != nil && !isReleaseJob {
 		c.emit(QueueRuleNoPush, workflow, id,
-			"a step closes or edits a PR outside the release job during merge-queue policy validation. Only the release job touches the release PR; a bot job updates its own PR by pushing its branch")
+			"a step edits a PR outside the release job during merge-queue policy validation. Only the release job edits the release PR; a bot job updates its own PR by pushing its branch")
 	}
 	if strings.Contains(run, "gh release create") && !(isReleaseJob && isTagStep(step)) {
 		c.emit(QueueRuleNoPush, workflow, id,
@@ -454,22 +516,34 @@ func releaseWorkflow(c *queueChecker) string {
 var (
 	// prCreate matches a gh pr create invocation.
 	prCreate = regexp.MustCompile(`\bgh\s+pr\s+create\b`)
-	// prMerge matches a gh pr merge invocation.
-	prMerge = regexp.MustCompile(`\bgh\s+pr\s+merge\b`)
-	// prCloseOrEdit matches a gh pr close or edit invocation.
-	prCloseOrEdit = regexp.MustCompile(`\bgh\s+pr\s+(close|edit)\b`)
+	// prEdit matches a gh pr edit invocation.
+	prEdit = regexp.MustCompile(`\bgh\s+pr\s+edit\b`)
+	// prMergeCloseEdit matches a gh pr merge, close, or edit invocation and
+	// captures the verb and the rest of the shell segment.
+	prMergeCloseEdit = regexp.MustCompile(`\bgh\s+pr\s+(merge|close|edit)\b([\s\S]*?)(?:\|\||&&|;|$)`)
+	// prValueFlags take a value, so the token after one is not the command's
+	// positional target.
+	prValueFlags = map[string]bool{
+		"--title": true, "-t": true, "--body": true, "-b": true, "--body-file": true, "-F": true,
+		"--comment": true, "-c": true, "--label": true, "-l": true, "--milestone": true, "-m": true,
+		"--project": true, "-p": true, "--reviewer": true, "-r": true, "--assignee": true, "-a": true,
+		"--repo": true, "-R": true, "--head": true, "--base": true, "-H": true, "-B": true,
+		"--field": true, "--jq": true,
+	}
 )
 
 func (c *queueChecker) checkTokenMint() {
-	type named struct {
+	type target struct {
 		workflow, job string
+		kind          intent.PRKind
+		isRelease     bool
 	}
-	var jobs []named
+	var jobs []target
 	if rel := c.policy.Queue.ReleaseJob; rel != nil {
-		jobs = append(jobs, named{rel.Workflow, rel.Job})
+		jobs = append(jobs, target{rel.Workflow, rel.Job, intent.PRKindRelease, true})
 	}
 	for _, bot := range c.policy.Queue.BotJobs {
-		jobs = append(jobs, named{bot.Workflow, bot.Job})
+		jobs = append(jobs, target{bot.Workflow, bot.Job, bot.Kind, false})
 	}
 	for _, target := range jobs {
 		doc := c.needFile(QueueRuleTokenMint, target.workflow)
@@ -496,11 +570,15 @@ func (c *queueChecker) checkTokenMint() {
 		}
 		if !hasRefCheck(stepIfText(mint)) && !hasRefCheck(jobCond) {
 			c.emit(QueueRuleTokenMint, target.workflow, target.job,
-				"job "+quote(target.job)+" mints the App token without checking github.ref during merge-queue policy validation. Compare github.ref == 'refs/heads/<default>' in the mint step's own if or the job if, or a dispatch on any branch runs that branch's file with the App key")
+				"job "+strconv.Quote(target.job)+" mints the App token without checking github.ref during merge-queue policy validation. Compare github.ref == 'refs/heads/<default>' in the mint step's own if or the job if, or a dispatch on any branch runs that branch's file with the App key")
 		}
-		if !hasTagModeGate(stepIfText(mint)) && !hasTagModeGate(jobCond) {
+		// Only the release job and the cut-release job mint behind tag mode:
+		// the vendor-hash fix lands whenever its tree is stale, tag mode or
+		// not.
+		if (target.isRelease || target.kind == intent.PRKindCutRelease) &&
+			!hasTagModeGate(stepIfText(mint)) && !hasTagModeGate(jobCond) {
 			c.emit(QueueRuleTokenMint, target.workflow, target.job,
-				"job "+quote(target.job)+" mints the App token without a tag-mode gate during merge-queue policy validation. Mint only when tag mode is on, with "+quoteTagMode()+" in the mint step's if or the job if, so a tag-mode-off run mints no token")
+				"job "+strconv.Quote(target.job)+" mints the App token without a tag-mode gate during merge-queue policy validation. Mint only when tag mode is on, with "+quoteTagMode()+" in the mint step's if or the job if, so a tag-mode-off run mints no token")
 		}
 	}
 }

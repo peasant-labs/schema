@@ -141,6 +141,10 @@ type loadCaseRow struct {
 	Sibling        string                  `yaml:"sibling"`
 }
 
+func (r loadCaseRow) siblingName() string                   { return r.Name }
+func (r loadCaseRow) siblingClass() testcase.Classification { return r.Classification }
+func (r loadCaseRow) siblingOf() string                     { return r.Sibling }
+
 // loadPolicyFixtures is the parsed loader corpus with its manifest.
 type loadPolicyFixtures struct {
 	RequiredNames []string      `yaml:"required_names"`
@@ -156,19 +160,20 @@ func loadLoadPolicyFixtures(t *testing.T) loadPolicyFixtures {
 		t.Fatalf("load policy loader cases (testdata/workflow_policy_load.yaml): %v", err)
 	}
 	cases := make([]testcase.Case[loadCaseInput, loadCaseExpected], 0, len(f.Rows))
+	rows := make([]siblingCased, 0, len(f.Rows))
 	for _, row := range f.Rows {
+		row := row
 		cases = append(cases, testcase.Case[loadCaseInput, loadCaseExpected]{
 			Name: row.Name, Input: row.Input, Expected: row.Expected,
 			Classification: row.Classification, Provenance: row.Provenance, Mutation: row.Mutation,
 		})
+		rows = append(rows, row)
 	}
 	corpus := testcase.Corpus[loadCaseInput, loadCaseExpected]{Cases: cases}
 	assert.RequireValid(t, corpus)
+	checkSiblings(t, rows)
 	seen := map[string]bool{}
 	for _, row := range f.Rows {
-		if seen[row.Name] {
-			t.Fatalf("loader corpus names case %q twice", row.Name)
-		}
 		seen[row.Name] = true
 	}
 	for _, name := range f.RequiredNames {

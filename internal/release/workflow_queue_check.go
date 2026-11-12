@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -122,6 +123,24 @@ func (c *queueChecker) load() error {
 		c.files[name] = &queueFile{name: name, raw: raw, doc: doc.Content[0]}
 	}
 	return nil
+}
+
+// eachDoc runs fn over every parsed workflow file in sorted order. A missing
+// file is skipped silently (needFile owns that report); a file that cannot be
+// read or parsed is reported once, under the first rule that needs it, and
+// skipped by later rules.
+func (c *queueChecker) eachDoc(rule QueueRule, fn func(name string, doc *yaml.Node)) {
+	for _, name := range c.sortedNames() {
+		f := c.files[name]
+		if f.missing || f.fault != "" {
+			if !f.reported && f.fault != "" {
+				f.reported = true
+				c.emit(rule, name, "", f.fault)
+			}
+			continue
+		}
+		fn(name, f.doc)
+	}
 }
 
 // needFile returns the parsed workflow file a rule needs. A missing file and
@@ -256,7 +275,7 @@ func (c *queueChecker) checkConcurrencyNode(workflow, job string, concurrency *y
 	}
 	if !strings.Contains(group, "github.ref") && !strings.Contains(group, "github.run_id") {
 		c.emit(QueueRuleConcurrency, workflow, job,
-			scope+" group "+quote(group)+" is not keyed on the ref or the run id during merge-queue policy validation. A group keyed only on the PR number is empty on a merge group, so every group build would share one group and cancel all but one pending run; key it on github.ref or github.run_id")
+			scope+" group "+strconv.Quote(group)+" is not keyed on the ref or the run id during merge-queue policy validation. A group keyed only on the PR number is empty on a merge group, so every group build would share one group and cancel all but one pending run; key it on github.ref or github.run_id")
 	}
 	switch {
 	case cancel == "", cancel == "false":
@@ -266,7 +285,7 @@ func (c *queueChecker) checkConcurrencyNode(workflow, job string, concurrency *y
 	default:
 		if !strings.Contains(cancel, "pull_request") {
 			c.emit(QueueRuleConcurrency, workflow, job,
-				scope+" cancel-in-progress expression "+quote(cancel)+" is not scoped to pull_request during merge-queue policy validation. Scope the cancellation to ${{ github.event_name == 'pull_request' }} so merge-group builds are never cancelled")
+				scope+" cancel-in-progress expression "+strconv.Quote(cancel)+" is not scoped to pull_request during merge-queue policy validation. Scope the cancellation to ${{ github.event_name == 'pull_request' }} so merge-group builds are never cancelled")
 		}
 	}
 }
@@ -291,11 +310,4 @@ func hasTrigger(doc *yaml.Node, event string) bool {
 		return mappingValue(on, event) != nil
 	}
 	return false
-}
-
-func quote(s string) string {
-	if s == "" {
-		return "<empty>"
-	}
-	return `"` + s + `"`
 }
