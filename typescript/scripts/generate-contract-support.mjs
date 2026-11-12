@@ -24,6 +24,7 @@ import { applyRetainedUnknownZodRefinements } from "./lib/retained-unknown-zod-r
 import { normalizeAutoPublishTargetZod, applyAutoPublishTargetZodRefinements } from "./lib/auto-publish-target-zod-refinements.mjs";
 import { applySessionTeammateZodRefinements } from "./lib/session-teammate-zod-refinements.mjs";
 import { applyContentPartsZodRefinements } from "./lib/content-parts-zod-refinements.mjs";
+import { renderEnumInventoryDoc } from "./lib/enum-inventory-doc.mjs";
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const moduleRoot = join(packageRoot, "..");
@@ -187,14 +188,8 @@ function renderEnums(openapi, catalog) {
     });
     imports.push(`import { z${enumCase.name}, type ${enumCase.name} as ${enumCase.name}Contract } from "./contract/zod.gen.js";`);
     const renderedMembers = members.map((member) => `  ${member.name}: z${enumCase.name}.parse(${JSON.stringify(member.value)}),`).join("\n");
-    // Every other generated All* export is the complete member list for its
-    // enum; when all_values is a proper subset of members (today, only
-    // Harness: AllHarnesses is the ingestion-supported subset, mirroring Go's
-    // own doc comment on the same asymmetry in types.go), say so here too, so
-    // a TypeScript-only reader does not assume All* is always exhaustive.
-    const allDoc = allMembers.length < members.length
-      ? `/**\n * ${enumCase.all_name} is the ingestion-supported subset of ${enumCase.name}, not the full\n * canonical set (mirrors types.go's AllHarnesses doc comment). Every ${enumCase.name}\n * member remains individually valid and accepted by is${enumCase.name}.\n */\n`
-      : "";
+    // Document a subset from its catalog entry, or use a generic explanation.
+    const allDoc = renderEnumInventoryDoc(enumCase);
     blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }
   return `${header()}${imports.join("\n")}\n\n${blocks.join("\n\n")}\n`;

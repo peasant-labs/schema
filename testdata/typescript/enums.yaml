@@ -218,6 +218,11 @@ enums:
   - name: Harness
     all_name: AllHarnesses
     go_all_var: AllHarnesses
+    subset_doc: |-
+      AllHarnesses is the declared subset of Harness, not the full
+      known set. It includes archived Gemini CLI, which has no harvester. Each
+      Peasant build's adapter registry owns which harnesses it can harvest. Every
+      Harness member remains individually valid and accepted by isHarness.
     members:
       - {name: ClaudeCode, value: "claude-code"}
       - {name: GeminiCLI, value: "gemini-cli"}
@@ -233,6 +238,8 @@ enums:
       - {name: Kiro, value: "kiro"}
       - {name: KiroCLI, value: "kiro-cli"}
       - {name: KiroCrew, value: "kiro-crew"}
+      - {name: AntigravityCLI, value: "antigravity-cli"}
+      - {name: AntigravityIDE, value: "antigravity-ide"}
     all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike", "pi"]
   - name: InsightKind
     all_name: AllInsightKinds

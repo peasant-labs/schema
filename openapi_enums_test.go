@@ -24,6 +24,7 @@ type closedEnumFixtureRow struct {
 	Name      string                    `yaml:"name"`
 	AllName   string                    `yaml:"all_name"`
 	GoAllVar  string                    `yaml:"go_all_var"`
+	SubsetDoc string                    `yaml:"subset_doc"`
 	Members   []closedEnumFixtureMember `yaml:"members"`
 	AllValues []any                     `yaml:"all_values"`
 }

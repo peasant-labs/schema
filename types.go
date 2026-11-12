@@ -325,12 +325,19 @@ type Harness = bestiary.Harness
 
 const (
 	HarnessClaudeCode = bestiary.HarnessClaudeCode
-	// HarnessGeminiCLI remains available for wire compatibility.
-	// Deprecated: Gemini CLI has been replaced by the Antigravity products.
-	HarnessGeminiCLI    = bestiary.HarnessGeminiCLI
-	HarnessCodex        = bestiary.HarnessCodex
-	HarnessOpenCode     = bestiary.HarnessOpenCode
-	HarnessCursor       = bestiary.HarnessCursor
+	// HarnessGeminiCLI is archived: retained for history, never removed.
+	// Gemini CLI was replaced by the Antigravity products. The value stays known
+	// so that sessions which already carry it remain valid. No harvester exists
+	// for it and none is planned.
+	HarnessGeminiCLI = bestiary.HarnessGeminiCLI
+	HarnessCodex     = bestiary.HarnessCodex
+	HarnessOpenCode  = bestiary.HarnessOpenCode
+	HarnessCursor    = bestiary.HarnessCursor
+	// HarnessAntigravity is archived. It named the Antigravity products as one
+	// harness before HarnessAntigravityCLI and HarnessAntigravityIDE existed.
+	//
+	// Deprecated: use HarnessAntigravityCLI or HarnessAntigravityIDE. Removal is
+	// planned; see https://github.com/peasant-labs/schema/issues/232.
 	HarnessAntigravity  = bestiary.HarnessAntigravity
 	HarnessStrike       = bestiary.HarnessStrike
 	HarnessPi           = bestiary.HarnessPi
@@ -340,19 +347,24 @@ const (
 	HarnessKiro         = bestiary.HarnessKiro
 	HarnessKiroCLI      = bestiary.HarnessKiroCLI
 	HarnessKiroCrew     = bestiary.HarnessKiroCrew
+	// HarnessAntigravityCLI is the Antigravity command-line agent.
+	HarnessAntigravityCLI = bestiary.HarnessAntigravityCLI
+	// HarnessAntigravityIDE is the Antigravity desktop application.
+	HarnessAntigravityIDE = bestiary.HarnessAntigravityIDE
 )
 
-// AllHarnesses is the canonical list of harnesses that peasant supports for ingestion.
-// The layout harnesses are known but not declared; Gemini CLI remains declared, deprecated, and unharvested.
+// AllHarnesses is the declared set: the harness values a Peasant release has
+// listed for ingestion. It is a subset of Harnesses(), the known set, and it is
+// not the list of every legal harness value. It includes HarnessGeminiCLI,
+// which is archived and has no harvester. Which harnesses a Peasant build can
+// harvest is owned by that build's adapter registry, not by this module.
 var AllHarnesses = []Harness{
 	HarnessClaudeCode, HarnessGeminiCLI, HarnessCodex, HarnessOpenCode, HarnessCursor,
 	HarnessStrike, HarnessPi,
 }
 
-// Harnesses returns every harness identifier known to bestiary — the full set,
-// a superset of AllHarnesses (which is only the ingestion-supported subset).
-// Re-exported so callers can enumerate the canonical known set without importing
-// bestiary directly.
+// Harnesses returns every harness value the contract recognises: the known
+// set, in bestiary's canonical order. AllHarnesses is a subset of it.
 func Harnesses() []Harness {
 	return bestiary.Harnesses()
 }
@@ -388,6 +400,10 @@ func HarnessDisplayName(h Harness) string {
 		return "Kiro CLI"
 	case HarnessKiroCrew:
 		return "Kiro Crew"
+	case HarnessAntigravityCLI:
+		return "Antigravity CLI"
+	case HarnessAntigravityIDE:
+		return "Antigravity IDE"
 	}
 	return string(h)
 }

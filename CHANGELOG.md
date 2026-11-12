@@ -7,6 +7,15 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
 
 ### Added
 
+- Types 0.50.0, Village API 0.40.0 and Local API 0.38.0 recognize the separate
+  `antigravity-cli` and `antigravity-ide` harness identities, with corresponding
+  Go constants and display names. The previous
+  `antigravity` value remains known and is archived pending a future removal;
+  `gemini-cli` is archived and retained for history, never removed.
+  `AllHarnesses` keeps its declared membership, including `gemini-cli`; each
+  Peasant build's adapter registry owns the set it can actually harvest.
+  The canonical Bestiary dependency is updated to `v0.4.0`.
+
 - Village API 0.39.0, Local API 0.37.0 and Types 0.49.0 declare conversation
   turn counts and positions. `IsConversationTurn` in Go and
   `isConversationTurn` in TypeScript own the allowed list: a depth-0 entry
