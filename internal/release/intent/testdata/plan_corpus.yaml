@@ -24,6 +24,8 @@ required_names:
   - release-commit-excluded
   - epoch-commit-parsed
   - epoch-bad-subject-fails
+  - prefixed-non-release-tag-ignored
+  - rc-above-final-ignored
   - verdict-taggable-no-candidate
   - stale-candidate-close-pr-when-empty
   - plan-only-with-fresh-candidate
@@ -673,6 +675,64 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "planner: the epoch commit itself is parsed"}
     mutation: {description: "an epoch commit the grammar rejects"}
+  - name: prefixed-non-release-tag-ignored
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#30)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"vibe-hard": "n11", "v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 30}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a non-version word with the prefix bases nothing"}
+    mutation: {description: "a bare word sharing the prefix on the tip commit"}
+  - name: rc-above-final-ignored
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#31)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.2.0-rc1": "off00", "v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 31}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: only final tags base arithmetic"}
+    mutation: {description: "a release candidate above the highest final tag"}
   - name: verdict-taggable-no-candidate
     input:
       config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}

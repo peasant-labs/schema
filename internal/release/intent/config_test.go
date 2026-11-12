@@ -30,6 +30,16 @@ func TestLoadConfig(t *testing.T) {
 				t.Fatalf("write temp config: %v", err)
 			}
 			got, err := intent.LoadConfig(path)
+			// Bytes-vs-path parity: the same document through ParseConfig must
+			// reach the same verdict, since LoadConfig reads the file and
+			// calls ParseConfig.
+			parsed, parseErr := intent.ParseConfig([]byte(c.Input.Document))
+			if (err == nil) != (parseErr == nil) {
+				t.Fatalf("LoadConfig error = %v, ParseConfig error = %v: entry points disagree", err, parseErr)
+			}
+			if parseErr != nil {
+				requireSixLabels(t, parseErr)
+			}
 			if c.Classification == "must-fail" {
 				if err == nil {
 					t.Fatalf("LoadConfig: expected an error, got %+v", got)
@@ -39,6 +49,12 @@ func TestLoadConfig(t *testing.T) {
 			}
 			if err != nil {
 				t.Fatalf("LoadConfig: unexpected error: %v", err)
+			}
+			if parseErr != nil {
+				t.Fatalf("ParseConfig: unexpected error: %v", parseErr)
+			}
+			if !reflect.DeepEqual(parsed, c.Expected) {
+				t.Errorf("ParseConfig = %+v, want %+v", parsed, c.Expected)
 			}
 			if !reflect.DeepEqual(got, c.Expected) {
 				t.Errorf("LoadConfig = %+v, want %+v", got, c.Expected)

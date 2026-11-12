@@ -1,0 +1,54 @@
+# Highest-final-tag corpus: rows of intent.HighestFinalTag. The tag rule is
+# one rule for every caller: the version base in the planner answers exactly
+# what this corpus pins.
+required_names:
+  - highest-wins
+  - prefixed-non-release-ignored
+  - rc-above-final-ignored
+  - other-prefix-ignored
+  - empty-tags-no-final
+  - no-final-among-tags
+  - fairtrade-prefix
+cases:
+  - name: highest-wins
+    input: {tags: {"v0.1.0": "a00", "v0.2.0": "b00", "v0.1.5": "c00"}, prefix: "v"}
+    expected: {tag: "v0.2.0", version: "0.2.0", found: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: the version base is the highest final tag anywhere"}
+    mutation: {description: "three final tags on no chain"}
+  - name: prefixed-non-release-ignored
+    input: {tags: {"vibe-hard": "a00", "v0.1.0": "b00"}, prefix: "v"}
+    expected: {tag: "v0.1.0", version: "0.1.0", found: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: a non-version word with the prefix is not a release"}
+    mutation: {description: "a bare word sharing the prefix"}
+  - name: rc-above-final-ignored
+    input: {tags: {"v0.2.0-rc1": "a00", "v0.1.0": "b00"}, prefix: "v"}
+    expected: {tag: "v0.1.0", version: "0.1.0", found: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: only final tags base arithmetic"}
+    mutation: {description: "a release candidate above the highest final tag"}
+  - name: other-prefix-ignored
+    input: {tags: {"pkg/schema/v1.2.3": "a00", "v0.1.0": "b00"}, prefix: "v"}
+    expected: {tag: "v0.1.0", version: "0.1.0", found: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: a tag under another prefix is not a release of this repo"}
+    mutation: {description: "a namespaced tag from before the module moved"}
+  - name: empty-tags-no-final
+    input: {tags: {}, prefix: "v"}
+    expected: {tag: "", version: "", found: false}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: no final tag means no version base"}
+    mutation: {description: "a repository with no tags at all"}
+  - name: no-final-among-tags
+    input: {tags: {"vibe-hard": "a00", "latest": "b00"}, prefix: "v"}
+    expected: {tag: "", version: "", found: false}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: tags without a version base nothing"}
+    mutation: {description: "tags with no parseable version among them"}
+  - name: fairtrade-prefix
+    input: {tags: {"fairtrade-v0.0.66": "a00", "fairtrade-v0.0.67": "b00"}, prefix: "fairtrade-v"}
+    expected: {tag: "fairtrade-v0.0.67", version: "0.0.67", found: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "tags: the prefix is the repo's own"}
+    mutation: {description: "a prefixed tag pair under a longer prefix"}
