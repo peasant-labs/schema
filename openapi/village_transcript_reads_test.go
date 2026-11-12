@@ -38,8 +38,8 @@ type villageTranscriptReadExpected struct {
 	// prefix, that the Village-to-Local comparison must reach from the
 	// response component. It is a required subset, not the whole closure.
 	ReachableComponents []string `yaml:"reachableComponents"`
-	Statuses      []int    `yaml:"statuses"`
-	ErrorRef      string   `yaml:"errorRef"`
+	Statuses            []int    `yaml:"statuses"`
+	ErrorRef            string   `yaml:"errorRef"`
 }
 
 type villageTranscriptReadFixtures struct {
