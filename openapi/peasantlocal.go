@@ -87,9 +87,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"revision is optional and the current revision is served when it is " +
 			"omitted. The saved ingestion selection never narrows this stored read.",
 		requests: []interface{}{new(struct {
-			ID       string `path:"id"`
-			Page     int    `query:"page" description:"One-based directory page; omitted defaults to 1" minimum:"1"`
-			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+			ID string `path:"id"`
+			transcriptSegmentsParams
 		})},
 		response:      new(schema.TranscriptSegmentDirectory),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
@@ -119,9 +118,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"serving a short segment. The saved ingestion selection never narrows " +
 			"this stored read.",
 		requests: []interface{}{new(struct {
-			ID       string `path:"id"`
-			Index    int    `path:"index" description:"Segment ordinal from the directory read" minimum:"0"`
-			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+			ID string `path:"id"`
+			transcriptSegmentParams
 		})},
 		response:      new(schema.TranscriptSegment),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},
@@ -156,10 +154,8 @@ func BuildPeasantLocalAPISpec() (*openapi31.Spec, error) {
 			"a 409 naming both revisions. The saved ingestion selection never " +
 			"narrows this stored read.",
 		requests: []interface{}{new(struct {
-			ID       string `path:"id"`
-			Anchor   int    `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`
-			Span     int    `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`
-			Revision string `query:"revision" description:"Store revision to read; omitted serves the current revision"`
+			ID string `path:"id"`
+			transcriptWindowParams
 		})},
 		response:      new(schema.TranscriptWindow),
 		errorStatuses: []int{http.StatusBadRequest, http.StatusNotFound, http.StatusConflict, http.StatusInternalServerError, http.StatusServiceUnavailable},

@@ -1335,11 +1335,11 @@ paths:
           description: One-based directory page; omitted defaults to 1
           minimum: 1
           type: integer
-      - description: Store revision to read; omitted serves the current revision
+      - description: Revision to read; omitted serves the current revision
         in: query
         name: revision
         schema:
-          description: Store revision to read; omitted serves the current revision
+          description: Revision to read; omitted serves the current revision
           type: string
       - in: path
         name: id
@@ -1395,11 +1395,11 @@ paths:
         selection never narrows this stored read.
       operationId: getSessionTranscriptSegment
       parameters:
-      - description: Store revision to read; omitted serves the current revision
+      - description: Revision to read; omitted serves the current revision
         in: query
         name: revision
         schema:
-          description: Store revision to read; omitted serves the current revision
+          description: Revision to read; omitted serves the current revision
           type: string
       - in: path
         name: id
@@ -1493,11 +1493,11 @@ paths:
           maximum: 10
           minimum: 1
           type: integer
-      - description: Store revision to read; omitted serves the current revision
+      - description: Revision to read; omitted serves the current revision
         in: query
         name: revision
         schema:
-          description: Store revision to read; omitted serves the current revision
+          description: Revision to read; omitted serves the current revision
           type: string
       - in: path
         name: id

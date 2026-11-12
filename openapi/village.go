@@ -483,24 +483,18 @@ func addVillageCollectiveOperations(r *openapi31.Reflector) error {
 	})
 	// The segmented transcript reads. Their parameters, meaning and response
 	// types are the ones the local dashboard API serves; only the path differs,
-	// because the resource here is already the transcript. The span bounds
-	// restate schema.TranscriptWindowSpan{Minimum,Maximum,Default}; a test
-	// holds them equal.
+	// because the resource here is already the transcript.
 	transcriptSegmentsQuery := new(struct {
-		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
-		Page     int                 `query:"page" description:"One-based directory page; omitted defaults to 1" minimum:"1"`
-		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		transcriptSegmentsParams
 	})
 	transcriptSegmentQuery := new(struct {
-		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
-		Index    int                 `path:"index" description:"Segment ordinal from the directory read" minimum:"0"`
-		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		transcriptSegmentParams
 	})
 	transcriptWindowQuery := new(struct {
-		ID       schema.TranscriptID `path:"id" description:"Transcript identifier"`
-		Anchor   int                 `query:"anchor" required:"true" description:"Turn identity to centre the window on" minimum:"0"`
-		Span     int                 `query:"span" description:"Assistant turns collected on each side, 1..10; omitted defaults to 10" default:"10" minimum:"1" maximum:"10"`
-		Revision string              `query:"revision" description:"Revision to read; omitted serves the current revision"`
+		ID schema.TranscriptID `path:"id" description:"Transcript identifier"`
+		transcriptWindowParams
 	})
 	transcriptListQuery := new(struct {
 		View     villageGroupedView   `query:"view" description:"Set to grouped to request helper-group list items; omission preserves the flat response."`

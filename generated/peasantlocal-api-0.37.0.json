@@ -1781,9 +1781,9 @@
           {
             "name": "revision",
             "in": "query",
-            "description": "Store revision to read; omitted serves the current revision",
+            "description": "Revision to read; omitted serves the current revision",
             "schema": {
-              "description": "Store revision to read; omitted serves the current revision",
+              "description": "Revision to read; omitted serves the current revision",
               "type": "string"
             }
           },
@@ -1861,9 +1861,9 @@
           {
             "name": "revision",
             "in": "query",
-            "description": "Store revision to read; omitted serves the current revision",
+            "description": "Revision to read; omitted serves the current revision",
             "schema": {
-              "description": "Store revision to read; omitted serves the current revision",
+              "description": "Revision to read; omitted serves the current revision",
               "type": "string"
             }
           },
@@ -1985,9 +1985,9 @@
           {
             "name": "revision",
             "in": "query",
-            "description": "Store revision to read; omitted serves the current revision",
+            "description": "Revision to read; omitted serves the current revision",
             "schema": {
-              "description": "Store revision to read; omitted serves the current revision",
+              "description": "Revision to read; omitted serves the current revision",
               "type": "string"
             }
           },
