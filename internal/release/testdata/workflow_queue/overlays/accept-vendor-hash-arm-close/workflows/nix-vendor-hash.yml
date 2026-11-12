@@ -9,7 +9,7 @@ concurrency:
   group: vendor-hash-${{ github.ref }}
 jobs:
   update:
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop' && vars.RELEASE_BATCH_MODE == 'tag'
     runs-on: ubuntu-latest
     steps:
       - id: mint
@@ -23,3 +23,11 @@ jobs:
       - env:
           GH_TOKEN: ${{ steps.mint.outputs.token }}
         run: gh pr create --head automation/vendor-hash --base develop --title "vendor" --body "bot"
+      - id: arm
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr merge automation/vendor-hash --auto
+      - id: close
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr close automation/vendor-hash

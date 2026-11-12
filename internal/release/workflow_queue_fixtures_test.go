@@ -28,6 +28,47 @@ type queueCaseInput struct {
 	Overlay string `yaml:"overlay"`
 }
 
+// siblingCased is any corpus row the accept-sibling rule applies to: every
+// must-fail row names the must-pass sibling that proves the sample fails for
+// the one fault it names and not for an unrelated input error.
+type siblingCased interface {
+	siblingName() string
+	siblingClass() testcase.Classification
+	siblingOf() string
+}
+
+func (r queueCaseRow) siblingName() string                   { return r.Name }
+func (r queueCaseRow) siblingClass() testcase.Classification { return r.Classification }
+func (r queueCaseRow) siblingOf() string                     { return r.Sibling }
+
+// checkSiblings enforces the accept-sibling rule over any corpus: every
+// must-fail row names an existing must-pass sibling.
+func checkSiblings(t *testing.T, rows []siblingCased) {
+	t.Helper()
+	byName := make(map[string]siblingCased, len(rows))
+	for _, r := range rows {
+		if _, dup := byName[r.siblingName()]; dup {
+			t.Fatalf("corpus names case %q twice", r.siblingName())
+		}
+		byName[r.siblingName()] = r
+	}
+	for _, r := range rows {
+		if r.siblingClass() != testcase.MustFail {
+			continue
+		}
+		if r.siblingOf() == "" {
+			t.Fatalf("reject case %q names no accept sibling", r.siblingName())
+		}
+		sib, ok := byName[r.siblingOf()]
+		if !ok {
+			t.Fatalf("reject case %q names missing sibling %q", r.siblingName(), r.siblingOf())
+		}
+		if sib.siblingClass() != testcase.MustPass {
+			t.Fatalf("reject case %q names sibling %q which is not must-pass", r.siblingName(), r.siblingOf())
+		}
+	}
+}
+
 // queueCaseExpected states the rule a reject case must trip (and only that
 // rule) with the message fragments its diagnostics must carry. An accept case
 // carries its sampled rule and no fragments; the run must yield no diagnostics
@@ -91,34 +132,21 @@ func loadQueueWorkflowFixtures(t *testing.T) queueWorkflowFixtures {
 	if err := f.corpus().Validate(); err != nil {
 		t.Fatalf("queue workflow corpus is under-populated: %v", err)
 	}
-	byName := make(map[string]queueCaseRow, len(f.Rows))
+	rows := make([]siblingCased, 0, len(f.Rows))
 	for _, row := range f.Rows {
-		if _, dup := byName[row.Name]; dup {
-			t.Fatalf("queue workflow corpus names case %q twice", row.Name)
-		}
-		if row.Classification == testcase.MustFail {
-			if row.Sibling == "" {
-				t.Fatalf("reject case %q names no accept sibling", row.Name)
-			}
-		} else if row.Sibling != "" {
+		row := row
+		if row.Classification != testcase.MustFail && row.Sibling != "" {
 			t.Fatalf("accept case %q must not name a sibling", row.Name)
 		}
 		if row.Expected.Rule == "" || !QueueRule(row.Expected.Rule).IsValid() {
 			t.Fatalf("case %q names unknown rule %q (must be a closed QueueRule member)", row.Name, row.Expected.Rule)
 		}
-		byName[row.Name] = row
+		rows = append(rows, row)
 	}
+	checkSiblings(t, rows)
+	byName := make(map[string]queueCaseRow, len(f.Rows))
 	for _, row := range f.Rows {
-		if row.Classification != testcase.MustFail {
-			continue
-		}
-		sib, ok := byName[row.Sibling]
-		if !ok {
-			t.Fatalf("reject case %q names missing sibling %q", row.Name, row.Sibling)
-		}
-		if sib.Classification != testcase.MustPass {
-			t.Fatalf("reject case %q names sibling %q which is not must-pass", row.Name, row.Sibling)
-		}
+		byName[row.Name] = row
 	}
 	seen := make(map[string]bool, len(f.Rows))
 	for name := range byName {

@@ -2,6 +2,7 @@ package release
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -89,17 +90,9 @@ var titleInterpolation = []string{
 // untrusted input: interpolating one into a shell command runs attacker
 // text, and interpolating one into env smuggles it into every later run.
 func (c *queueChecker) checkTitles() {
-	for _, name := range c.sortedNames() {
-		f := c.files[name]
-		if f.missing || f.fault != "" {
-			if !f.reported && f.fault != "" {
-				f.reported = true
-				c.emit(QueueRuleTitles, name, "", f.fault)
-			}
-			continue
-		}
-		for _, jobName := range jobNames(f.doc) {
-			for _, step := range stepsOf(jobNode(f.doc, jobName)) {
+	c.eachDoc(QueueRuleTitles, func(name string, doc *yaml.Node) {
+		for _, jobName := range jobNames(doc) {
+			for _, step := range stepsOf(jobNode(doc, jobName)) {
 				for _, field := range []struct {
 					key   string
 					value string
@@ -110,14 +103,14 @@ func (c *queueChecker) checkTitles() {
 					for _, pattern := range titleInterpolation {
 						if strings.Contains(field.value, pattern) {
 							c.emit(QueueRuleTitles, name, stepID(step),
-								"a step "+field.key+" interpolates "+quote(pattern)+" during merge-queue policy validation. Titles are untrusted input: pass the title through the tool's arguments from git instead of interpolating the event payload")
+								"a step "+field.key+" interpolates "+strconv.Quote(pattern)+" during merge-queue policy validation. Titles are untrusted input: pass the title through the tool's arguments from git instead of interpolating the event payload")
 							break
 						}
 					}
 				}
 			}
 		}
-	}
+	})
 }
 
 // envText renders a step's env mapping as text for interpolation scans.
@@ -258,17 +251,9 @@ var toolCheckoutSHA = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
 // or branch pin moves under the workflows and runs code no review approved.
 func (c *queueChecker) checkToolPin() {
 	pins := map[string][]string{}
-	for _, name := range c.sortedNames() {
-		f := c.files[name]
-		if f.missing || f.fault != "" {
-			if !f.reported && f.fault != "" {
-				f.reported = true
-				c.emit(QueueRuleToolPin, name, "", f.fault)
-			}
-			continue
-		}
-		for _, jobName := range jobNames(f.doc) {
-			for _, step := range stepsOf(jobNode(f.doc, jobName)) {
+	c.eachDoc(QueueRuleToolPin, func(name string, doc *yaml.Node) {
+		for _, jobName := range jobNames(doc) {
+			for _, step := range stepsOf(jobNode(doc, jobName)) {
 				uses := stepUsesText(step)
 				if !strings.Contains(uses, "checkout") {
 					continue
@@ -287,14 +272,14 @@ func (c *queueChecker) checkToolPin() {
 				}
 				if !toolCheckoutSHA.MatchString(ref) {
 					c.emit(QueueRuleToolPin, name, stepID(step),
-						"a tool checkout pins "+quote(ref)+" during merge-queue policy validation, which is not a 40-hex commit. Pin the tool checkout to the reviewed commit SHA so the workflows run exactly the code the review approved")
+						"a tool checkout pins "+strconv.Quote(ref)+" during merge-queue policy validation, which is not a 40-hex commit. Pin the tool checkout to the reviewed commit SHA so the workflows run exactly the code the review approved")
 					continue
 				}
 				key := strings.ToLower(ref)
 				pins[key] = append(pins[key], name+" jobs."+jobName)
 			}
 		}
-	}
+	})
 	if len(pins) > 1 {
 		var where []string
 		for _, locs := range pins {
@@ -311,34 +296,15 @@ func (c *queueChecker) checkToolPin() {
 // guard workflow invokes classify to tell the release PR apart. A literal in
 // one workflow drifts from the config the classifier reads.
 func (c *queueChecker) checkClassify() {
-	var branches []string
+	branchSet := map[string]bool{}
 	for _, branch := range c.cfg.BotBranches {
 		if branch != "" {
-			branches = append(branches, branch)
+			branchSet[branch] = true
 		}
 	}
-	literalComparison := func() *regexp.Regexp {
-		if len(branches) == 0 {
-			return regexp.MustCompile(`$.^`)
-		}
-		alts := make([]string, 0, len(branches))
-		for _, b := range branches {
-			alts = append(alts, regexp.QuoteMeta(b))
-		}
-		any := "(?:" + strings.Join(alts, "|") + ")"
-		return regexp.MustCompile(`(==|!=)\s*['"]?` + any + `|['"]?` + any + `['"\s]\s*(==|!=)`)
-	}()
-	for _, name := range c.sortedNames() {
-		f := c.files[name]
-		if f.missing || f.fault != "" {
-			if !f.reported && f.fault != "" {
-				f.reported = true
-				c.emit(QueueRuleClassify, name, "", f.fault)
-			}
-			continue
-		}
-		for _, jobName := range jobNames(f.doc) {
-			for _, step := range stepsOf(jobNode(f.doc, jobName)) {
+	c.eachDoc(QueueRuleClassify, func(name string, doc *yaml.Node) {
+		for _, jobName := range jobNames(doc) {
+			for _, step := range stepsOf(jobNode(doc, jobName)) {
 				for _, field := range []struct {
 					key   string
 					value string
@@ -346,14 +312,16 @@ func (c *queueChecker) checkClassify() {
 					{"if", stepIfText(step)},
 					{"run", stepRunText(step)},
 				} {
-					if literalComparison.MatchString(field.value) {
-						c.emit(QueueRuleClassify, name, stepID(step),
-							"a step "+field.key+" compares a bot branch literal during merge-queue policy validation. Call release-intent classify instead of comparing the branch: a literal in one workflow drifts from the release config the classifier reads")
+					for _, literal := range branchLiterals(field.value) {
+						if branchSet[literal] {
+							c.emit(QueueRuleClassify, name, stepID(step),
+								"a step "+field.key+" compares bot branch "+strconv.Quote(literal)+" during merge-queue policy validation. Call release-intent classify instead of comparing the branch: a literal in one workflow drifts from the release config the classifier reads")
+						}
 					}
 				}
 			}
 		}
-	}
+	})
 	for _, req := range c.policy.Queue.Required {
 		if !req.Guard {
 			continue
@@ -369,12 +337,37 @@ func (c *queueChecker) checkClassify() {
 	}
 }
 
-// invokesClassify reports whether any step runs the classify command.
+var (
+	// branchLiteralAfterOp matches a == or != comparison with the literal
+	// after the operator. A second pattern matches the literal before the
+	// operator; the checker tests both sides against the configured bot
+	// branches, so the patterns themselves carry no branch names.
+	branchLiteralAfterOp = regexp.MustCompile(`(==|!=)\s*['"]?([A-Za-z0-9_./-]+)['"]?`)
+	// branchLiteralBeforeOp matches a literal compared before the operator,
+	// as in a quoted branch on the left of ==.
+	branchLiteralBeforeOp = regexp.MustCompile(`['"]?([A-Za-z0-9_./-]+)['"]?\s*(==|!=)`)
+
+	// classifyInvocation matches a release-intent classify call.
+	classifyInvocation = regexp.MustCompile(`release-intent\s+classify\b`)
+)
+
+// branchLiterals returns every literal compared with == or != in the text,
+// on either side of the operator.
+func branchLiterals(s string) []string {
+	var out []string
+	for _, m := range branchLiteralAfterOp.FindAllStringSubmatch(s, -1) {
+		out = append(out, m[2])
+	}
+	for _, m := range branchLiteralBeforeOp.FindAllStringSubmatch(s, -1) {
+		out = append(out, m[1])
+	}
+	return out
+}
+
 func invokesClassify(doc *yaml.Node) bool {
-	classify := regexp.MustCompile(`release-intent\s+classify\b`)
 	for _, jobName := range jobNames(doc) {
 		for _, step := range stepsOf(jobNode(doc, jobName)) {
-			if classify.MatchString(stepRunText(step)) {
+			if classifyInvocation.MatchString(stepRunText(step)) {
 				return true
 			}
 		}

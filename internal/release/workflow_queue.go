@@ -167,10 +167,20 @@ type BotJobRule struct {
 	Kind     intent.PRKind `yaml:"kind"`
 }
 
-// botKinds are the bot PR kinds a policy bot job may claim. The release kind
-// belongs to the release job, never to a bot entry; ordinary is not a bot PR.
+// botKindValid reports whether kind is a bot PR kind: every closed kind
+// except ordinary, which is not a bot PR, and release, which belongs to the
+// release job. A new intent kind is refused or admitted here by membership,
+// never by a restated list.
 func botKindValid(kind intent.PRKind) bool {
-	return kind == intent.PRKindCutRelease || kind == intent.PRKindVendorHash
+	if kind == intent.PRKindOrdinary || kind == intent.PRKindRelease {
+		return false
+	}
+	for _, k := range intent.AllPRKinds {
+		if k == kind {
+			return true
+		}
+	}
+	return false
 }
 
 // QueueSection is the merge-queue half of a repo's release-guard policy. It is

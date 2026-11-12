@@ -24,6 +24,8 @@ required_names:
   - accept-tool-pin
   - accept-classify
   - accept-no-release-job
+  - accept-cut-release-arm
+  - accept-vendor-hash-arm-close
   - reject-required-contexts-missing-file
   - reject-required-contexts-missing-job
   - reject-merge-group-missing
@@ -40,11 +42,13 @@ required_names:
   - reject-release-actions-push-no-push-test
   - reject-release-actions-arm-no-gate
   - reject-release-actions-disjunction
+  - reject-release-actions-tagmode-ne
   - reject-title-guard-no-entry
   - reject-title-guard-job-if
   - reject-title-guard-event-action
   - reject-range-floor-missing
   - reject-no-push-cross-push
+  - reject-no-push-cross-branch
   - reject-no-push-dup-kind
   - reject-no-push-unknown-kind
   - reject-no-push-tag-outside
@@ -182,6 +186,22 @@ cases:
     provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
     mutation: { description: "no release job: bot pushes resolve without it and the retired workflow is inert" }
 
+  - name: accept-cut-release-arm
+    input: { overlay: "accept-cut-release-arm" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "cut-release arms its own PR with a tag-mode-gated merge" }
+
+  - name: accept-vendor-hash-arm-close
+    input: { overlay: "accept-vendor-hash-arm-close" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "vendor-hash arms and closes its own PR" }
+
   - name: reject-required-contexts-missing-file
     input: { overlay: "reject-required-contexts-missing-file" }
     expected: { rule: "required-contexts", want_contains: ["lib.yml", "missing from"] }
@@ -310,6 +330,14 @@ cases:
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "spread the push gate across a disjunction with always()" }
 
+  - name: reject-release-actions-tagmode-ne
+    input: { overlay: "reject-release-actions-tagmode-ne" }
+    expected: { rule: "token-mint-ref-check", want_contains: ["without a tag-mode gate"] }
+    sibling: accept-token-mint
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy token-mint-ref-check" }
+    mutation: { description: "mint the App token when tag mode is off" }
+
   - name: reject-title-guard-no-entry
     input: { overlay: "reject-title-guard-no-entry" }
     expected: { rule: "title-guard-no-early-success", want_contains: ["no guard entry"] }
@@ -349,6 +377,14 @@ cases:
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
     mutation: { description: "push the release branch from the cut-release job" }
+
+  - name: reject-no-push-cross-branch
+    input: { overlay: "reject-no-push-cross-branch" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["only its own branch"] }
+    sibling: accept-cut-release-arm
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "merge another kind's branch from the cut-release job" }
 
   - name: reject-no-push-dup-kind
     input: { overlay: "reject-no-push-dup-kind" }
@@ -440,7 +476,7 @@ cases:
 
   - name: reject-classify-literal
     input: { overlay: "reject-classify-literal" }
-    expected: { rule: "bot-branch-via-classify", want_contains: ["compares a bot branch literal"] }
+    expected: { rule: "bot-branch-via-classify", want_contains: ["compares bot branch", "automation/release"] }
     sibling: accept-classify
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-via-classify" }

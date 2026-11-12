@@ -2,6 +2,7 @@ package release
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
@@ -45,6 +46,12 @@ var (
 	// tagPush matches a run line that pushes a tag: a refs/tags refspec, an
 	// explicit tag, or a release creation.
 	tagPush = regexp.MustCompile(`refs/tags/|\bgit\s+tag\b|\bgh\s+release\s+create\b`)
+	// prOpenEdit matches a run line that opens or edits the release PR.
+	prOpenEdit = regexp.MustCompile(`\bgh\s+pr\s+(create|edit)\b`)
+	// tagModeGate matches the canonical tag-mode comparison a mint gate must
+	// carry: vars.RELEASE_BATCH_MODE == 'tag'. A != comparison never matches,
+	// so a gate that mints exactly when tag mode is off is rejected.
+	tagModeGate = regexp.MustCompile(`vars\.RELEASE_BATCH_MODE\s*==\s*'tag'`)
 )
 
 // gateAlternatives renders the planner's closed gate set as a regex
@@ -98,7 +105,6 @@ func (c *queueChecker) checkReleaseActions() {
 	r.collectSteps()
 	r.checkVerdictForm()
 	r.checkWriteStepsGated()
-	r.checkMintGated()
 	r.checkTagPush()
 	r.checkPreTagSteps()
 	r.checkStatusFunctions()
@@ -216,7 +222,7 @@ func isBranchPushStep(step *yaml.Node) bool {
 
 // isPROpenEditStep reports whether the step opens or edits the release PR.
 func isPROpenEditStep(step *yaml.Node) bool {
-	return regexp.MustCompile(`\bgh\s+pr\s+(create|edit)\b`).MatchString(stepRunText(step))
+	return prOpenEdit.MatchString(stepRunText(step))
 }
 
 // isQueueReadStep reports whether the step reads the merge queue or runs the
@@ -275,7 +281,7 @@ func (r *releaseChecker) checkVerdictForm() {
 		}
 		if got != want {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-				"the --verdict argument is "+quote(got)+" during merge-queue policy validation, want the canonical "+quote(want)+". A verdict that leaves out a pre-tag step or reads conclusion instead of outcome can tag a commit its checks rejected; pass the exact expression the policy's pre_tag_steps build")
+				"the --verdict argument is "+strconv.Quote(got)+" during merge-queue policy validation, want the canonical "+strconv.Quote(want)+". A verdict that leaves out a pre-tag step or reads conclusion instead of outcome can tag a commit its checks rejected; pass the exact expression the policy's pre_tag_steps build")
 		}
 	}
 }
@@ -283,15 +289,19 @@ func (r *releaseChecker) checkVerdictForm() {
 // checkWriteStepsGated (clause 1) requires every step that can write to run
 // only under an if that compares one step's action output with == against one
 // value of the closed action set, as a single conjunction. The arm and hold
-// steps test the gate instead and belong to clause (8); the token-minting
-// step is gated on tag mode instead (checkMintGated), because no single action
-// covers every run that needs a token.
+// steps test the gate instead and belong to clause (8). The token-minting
+// step is flagged for clause (7) but exempt from the action gate: it is gated
+// on tag mode by token-mint-ref-check, because no single action covers every
+// run that needs a token.
 func (r *releaseChecker) checkWriteStepsGated() {
 	for i, step := range r.steps {
-		if !isWriteStep(step) || isArmHoldStep(step) || isMintStep(step) {
+		if !isWriteStep(step) || isArmHoldStep(step) {
 			continue
 		}
 		r.flagged[i] = true
+		if isMintStep(step) {
+			continue
+		}
 		cond := stepIfText(step)
 		m := actionGate.FindStringSubmatch(cond)
 		if m == nil {
@@ -306,7 +316,7 @@ func (r *releaseChecker) checkWriteStepsGated() {
 		}
 		if !closedActions[m[2]] {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-				"the action gate compares against "+quote(m[2])+" during merge-queue policy validation, which is not one of "+closedActionList()+". Compare against the closed action the planner prints, or the gate never matches a real run")
+				"the action gate compares against "+strconv.Quote(m[2])+" during merge-queue policy validation, which is not one of "+closedActionList()+". Compare against the closed action the planner prints, or the gate never matches a real run")
 			continue
 		}
 		if _, ok := r.ids[m[1]]; !ok {
@@ -316,40 +326,15 @@ func (r *releaseChecker) checkWriteStepsGated() {
 	}
 }
 
-// checkMintGated requires the token-minting step to mint only when tag mode
-// is on: its own if, or the job-level if, compares RELEASE_BATCH_MODE with ==
-// against 'tag' as a single comparison. With tag mode off the action is always
-// none, so the job mints no token and nothing downstream can write.
-func (r *releaseChecker) checkMintGated() {
-	jobCond := ""
-	if cond := mappingValue(r.job, "if"); cond != nil {
-		jobCond = cond.Value
-	}
-	for i, step := range r.steps {
-		if !isMintStep(step) {
-			continue
-		}
-		r.flagged[i] = true
-		if hasTagModeGate(stepIfText(step)) || hasTagModeGate(jobCond) {
-			continue
-		}
-		r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-			"the token-minting step has no tag-mode gate during merge-queue policy validation. Mint only when tag mode is on, with "+quoteTagMode()+" in the step if or the job if, so a tag-mode-off run mints no token")
-	}
-}
-
 // tagModeGate is the canonical tag-mode comparison a mint gate must carry.
 func quoteTagMode() string {
 	return "vars.RELEASE_BATCH_MODE == 'tag'"
 }
 
 // hasTagModeGate reports whether an if carries the tag-mode comparison as a
-// single comparison: the variable, ==, and 'tag', with no disjunction.
+// single comparison: vars.RELEASE_BATCH_MODE == 'tag', with no disjunction.
 func hasTagModeGate(cond string) bool {
-	return strings.Contains(cond, "RELEASE_BATCH_MODE") &&
-		strings.Contains(cond, "==") &&
-		strings.Contains(cond, "'tag'") &&
-		!strings.Contains(cond, "||")
+	return tagModeGate.MatchString(cond) && !strings.Contains(cond, "||")
 }
 
 // checkTagPush (clause 2) requires exactly one step to push a tag, gated on
@@ -418,7 +403,7 @@ func (r *releaseChecker) checkPreTagSteps() {
 		idx, ok := r.ids[name]
 		if !ok {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"the policy names pre_tag_steps entry "+quote(name)+" during merge-queue policy validation, but no release-job step has that id. Add the step so the verdict reads a real outcome")
+				"the policy names pre_tag_steps entry "+strconv.Quote(name)+" during merge-queue policy validation, but no release-job step has that id. Add the step so the verdict reads a real outcome")
 			continue
 		}
 		r.flagged[idx] = true
@@ -427,25 +412,25 @@ func (r *releaseChecker) checkPreTagSteps() {
 		m := actionGate.FindStringSubmatch(cond)
 		if m == nil || m[2] != string(intent.ActionVerify) {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" does not run only on the verify action during merge-queue policy validation. Gate it on steps.<plan>.outputs.action == 'verify' so a stale candidate never reaches the checks")
+				"pre-tag step "+strconv.Quote(name)+" does not run only on the verify action during merge-queue policy validation. Gate it on steps.<plan>.outputs.action == 'verify' so a stale candidate never reaches the checks")
 		} else if i > 0 && !strings.Contains(cond, "!cancelled()") {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" runs after a pre-tag step without the status function during merge-queue policy validation. Carry !cancelled() so a failed earlier check still rebuilds the release PR instead of skipping every later step")
+				"pre-tag step "+strconv.Quote(name)+" runs after a pre-tag step without the status function during merge-queue policy validation. Carry !cancelled() so a failed earlier check still rebuilds the release PR instead of skipping every later step")
 		}
 		run := stepRunText(step)
 		switch {
 		case strings.Contains(run, "\n"):
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" has a multi-line run during merge-queue policy validation. Run exactly one command so the step's exit status is the check's verdict and nothing else can mask it")
+				"pre-tag step "+strconv.Quote(name)+" has a multi-line run during merge-queue policy validation. Run exactly one command so the step's exit status is the check's verdict and nothing else can mask it")
 		case mappingValue(step, "shell") != nil:
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" overrides the shell during merge-queue policy validation. Drop the shell override so the step runs the one planner command with the default failure semantics")
+				"pre-tag step "+strconv.Quote(name)+" overrides the shell during merge-queue policy validation. Drop the shell override so the step runs the one planner command with the default failure semantics")
 		case !strings.Contains(run, "release-intent") && !strings.Contains(run, "schema-gen"):
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" runs "+quote(firstLine(run))+" during merge-queue policy validation instead of a release-intent or schema-gen subcommand. Run the check itself here; a wrapper script that exits zero on a break would tag a rejected commit")
+				"pre-tag step "+strconv.Quote(name)+" runs "+strconv.Quote(firstLine(run))+" during merge-queue policy validation instead of a release-intent or schema-gen subcommand. Run the check itself here; a wrapper script that exits zero on a break would tag a rejected commit")
 		case strings.Contains(run, "||") || strings.Contains(run, "&&") || strings.Contains(run, ";") || strings.Contains(run, "|") || strings.Contains(run, "set +e"):
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
-				"pre-tag step "+quote(name)+" chains commands during merge-queue policy validation. Run exactly one command with no ||, &&, ;, pipe, or set +e so the step's exit status is the check's verdict")
+				"pre-tag step "+strconv.Quote(name)+" chains commands during merge-queue policy validation. Run exactly one command with no ||, &&, ;, pipe, or set +e so the step's exit status is the check's verdict")
 		}
 	}
 }

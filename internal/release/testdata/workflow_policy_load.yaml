@@ -29,7 +29,7 @@ cases:
         queue:
           require: []
     expected: { rule: "", want_contains: ["cannot parse"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "typo the queue key so strict fields reject it" }
@@ -43,7 +43,7 @@ cases:
           required:
             - { context: title-guard, workflow: title-guard.yml, job: title-guard, gare: true }
     expected: { rule: "", want_contains: ["cannot parse"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "typo a required entry key so strict fields reject it" }
@@ -61,7 +61,7 @@ cases:
             job: release
             brunch: automation/release
     expected: { rule: "", want_contains: ["cannot parse"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "typo a release job key so strict fields reject it" }
@@ -74,7 +74,7 @@ cases:
         queue:
           required: []
     expected: { rule: "", want_contains: ["declares no required contexts"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "leave the required list empty" }
@@ -88,7 +88,7 @@ cases:
           required:
             - { workflow: title-guard.yml, job: title-guard }
     expected: { rule: "", want_contains: ["has an empty context"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the context from a required entry" }
@@ -102,7 +102,7 @@ cases:
           required:
             - { context: title-guard, job: title-guard }
     expected: { rule: "", want_contains: ["has an empty workflow"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the workflow from a required entry" }
@@ -116,7 +116,7 @@ cases:
           required:
             - { context: title-guard, workflow: title-guard.yml }
     expected: { rule: "", want_contains: ["has an empty job"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the job from a required entry" }
@@ -131,7 +131,7 @@ cases:
             - { context: title-guard, workflow: a.yml, job: title-guard }
             - { context: title-guard, workflow: b.yml, job: title-guard }
     expected: { rule: "", want_contains: ['declares context "title-guard" twice'] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "declare one required context twice" }
@@ -147,7 +147,7 @@ cases:
           release_job:
             job: release
     expected: { rule: "", want_contains: ["has an empty workflow"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the workflow from the release job" }
@@ -163,7 +163,7 @@ cases:
           release_job:
             workflow: release-batch.yml
     expected: { rule: "", want_contains: ["has an empty job"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the job from the release job" }
@@ -181,7 +181,7 @@ cases:
             job: release
             pre_tag_steps: [""]
     expected: { rule: "", want_contains: ["pre_tag_steps[0] is empty"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "leave a pre-tag step id empty" }
@@ -197,7 +197,7 @@ cases:
           bot_jobs:
             - { workflow: cut-release.yml, job: cut }
     expected: { rule: "", want_contains: ["names kind"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "drop the kind from a bot job" }
@@ -213,7 +213,7 @@ cases:
           bot_jobs:
             - { workflow: release-batch.yml, job: release, kind: release }
     expected: { rule: "", want_contains: ["names kind"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "claim the release kind from a bot job" }
@@ -229,7 +229,7 @@ cases:
           bot_jobs:
             - { workflow: ci.yml, job: lib, kind: ordinary }
     expected: { rule: "", want_contains: ["names kind"] }
-    sibling: ""
+    sibling: jobs-and-queue
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 release-guard policy loader" }
     mutation: { description: "claim the ordinary kind from a bot job" }
