@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 // runCheckTitle implements:
@@ -91,8 +94,6 @@ func readTitleStdin() (string, error) {
 	}
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
-			// Landed subjects carry " (#N)"; strip it so a title edited after
-			// merge gives no false hit.
 			t := strings.TrimSpace(l)
 			if idx := strings.LastIndex(t, " (#"); idx >= 0 && strings.HasSuffix(t, ")") {
 				t = strings.TrimSpace(t[:idx])
@@ -104,9 +105,6 @@ func readTitleStdin() (string, error) {
 }
 
 func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headBranch, title string) error {
-	// Config always comes from the base branch. A PR that adds the config has
-	// no base file: it is checked for grammar only, with its own file
-	// supplying the tag prefix, and no path is protected yet.
 	cfgData, err := runner.ReadFile(ctx, base, DefaultConfigPath)
 	adopting := false
 	if err != nil {
@@ -117,25 +115,24 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 		cfgData = headData
 		adopting = true
 	}
-	cfg, err := ParseConfig(cfgData, DefaultConfigPath)
+	cfg, err := loadConfigBytes(cfgData)
 	if err != nil {
 		return fmt.Errorf("check-title: the base release config %w", err)
 	}
-	// Highest tag for the breaking rule, read at run time.
 	tags, err := runner.Tags(ctx, cfg.TagPrefix)
 	if err != nil {
 		return fmt.Errorf("check-title: cannot list tags with prefix %q: %w. Confirm tags are fetched", cfg.TagPrefix, err)
 	}
 	_, ver := highestFinalTag(tags, cfg.TagPrefix)
-	below := true
+	var current intent.SemVer
 	if ver != "" {
-		below = belowOne(ver)
+		if sv, serr := intent.ParseSemVer(ver); serr == nil {
+			current = sv
+		}
 	}
-	pt, rej := parseFullTitle(title, cfg.Releases, below)
-	if rej != nil {
-		return rej
+	if _, perr := intent.ParseTitle(cfg, current, title); perr != nil {
+		return intentErrorToReject(perr)
 	}
-	_ = pt
 	if !adopting {
 		paths, err := runner.ChangedPaths(ctx, base, head)
 		if err != nil {
@@ -144,120 +141,78 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 			}
 			return fmt.Errorf("check-title: cannot read the PR change between %q and %q: %w", base, head, err)
 		}
-		protected, perr := checkProtected(ctx, runner, cfg, base, head, paths, author, headBranch)
-		if perr != nil {
-			return perr
+		changes, cerr := buildProtectedChanges(ctx, runner, cfg, base, head, paths)
+		if cerr != nil {
+			return cerr
 		}
-		if protected != nil {
-			return protected
+		isReleasePR := intent.ClassifyPR(cfg, author, headBranch) == intent.PRKindRelease
+		if cerr := intent.CheckProtectedPaths(cfg, changes, isReleasePR); cerr != nil {
+			return intentErrorToReject(cerr)
 		}
 	}
 	return emitLines([]string{"error="})
 }
 
-// checkProtected enforces whole-file changelog and protected_paths plus the
-// protected field of version files read at both ends.
-func checkProtected(ctx context.Context, runner GitRunner, cfg Config, base, head string, paths []string, author, headBranch string) (*RejectError, error) {
-	isReleasePR := author == cfg.AutomationAuthor && author != "" && cfg.BotBranches["release"] != "" && headBranch == cfg.BotBranches["release"]
-	// When the config carries no bot_branches map, the workflows decide the
-	// release PR by branch; the exemption then applies to the automation author
-	// on any branch would be wrong, so require the branch match only when the
-	// map names one. With no map, only the release workflow's own check excuses
-	// the author; check-title treats every author equally except the exact
-	// automation-author-plus-release-branch pair.
-	if len(cfg.BotBranches) == 0 {
-		isReleasePR = false
+// intentErrorToReject maps a contract error to the command-layer rejection so
+// the machine channel stays error=<code> with exit 2.
+func intentErrorToReject(err error) error {
+	var ie *intent.Error
+	if errors.As(err, &ie) {
+		return &RejectError{
+			Code: ErrorCode(ie.Code), What: ie.What, Why: ie.Why,
+			Where: ie.Where, When: ie.When, Means: ie.Means, Fix: ie.Fix,
+		}
 	}
-	if isReleasePR {
-		return nil, nil
-	}
+	return err
+}
+
+// buildProtectedChanges reads the protected version field at both ends for
+// every touched version file. Unreadable or unparsable JSON fails closed by
+// marking the field changed.
+func buildProtectedChanges(ctx context.Context, runner GitRunner, cfg intent.Config, base, head string, paths []string) ([]intent.ProtectedChange, error) {
 	changed := map[string]bool{}
 	for _, p := range paths {
 		changed[p] = true
 	}
-	if changed[cfg.Changelog] {
-		return &RejectError{
-			Code: CodeProtectedPath, What: fmt.Sprintf("PR changes protected file %q", cfg.Changelog),
-			Why: "only the release PR may write the changelog", Where: "PR change, checked by release-intent check-title",
-			When: "pull_request opened, edited, synchronize, reopened, or the merge-group build", Means: "the title-guard check is red",
-			Fix: "drop the CHANGELOG.md edit from this PR; the bot release PR is its only writer",
-		}, nil
-	}
-	for _, pat := range cfg.ProtectedPaths {
-		for p := range changed {
-			if matchProtected(pat, p) {
-				return &RejectError{
-					Code: CodeProtectedPath, What: fmt.Sprintf("PR changes protected path %q (matched by %q)", p, pat),
-					Why: "only the release PR may change protected paths", Where: "PR change, checked by release-intent check-title",
-					When: "pull_request opened, edited, synchronize, reopened, or the merge-group build", Means: "the title-guard check is red",
-					Fix: "drop the protected-path edit from this PR",
-				}, nil
-			}
-		}
+	var out []intent.ProtectedChange
+	for p := range changed {
+		out = append(out, intent.ProtectedChange{Path: p})
 	}
 	for _, vf := range cfg.VersionFiles {
 		if !changed[vf.Path] {
 			continue
 		}
-		baseField, berr := readVersionField(ctx, runner, base, vf)
-		headField, herr := readVersionField(ctx, runner, head, vf)
+		baseField, berr := readVersionField(ctx, runner, base, vf.Path, vf.Field)
+		headField, herr := readVersionField(ctx, runner, head, vf.Path, vf.Field)
+		fieldChanged := baseField != headField
 		if berr != nil || herr != nil {
-			// Fail closed: unreadable or unparsable JSON blocks the PR. A
-			// missing file at one end counts as a change when the other end
-			// exists.
-			why := "the version file cannot be read at both ends"
-			if berr != nil && herr != nil {
-				why = fmt.Sprintf("the version file cannot be read: base: %v; head: %v", berr, herr)
-			} else if berr != nil {
-				why = fmt.Sprintf("the version file cannot be read at the base: %v", berr)
-			} else {
-				why = fmt.Sprintf("the version file cannot be read at the head: %v", herr)
-			}
-			// Invalid JSON is a distinct fail-closed from a missing blob: name it.
 			if isJSONError(berr) || isJSONError(herr) {
-				return &RejectError{
-					Code: CodeProtectedPath, What: fmt.Sprintf("version file %q does not parse as JSON", vf.Path),
-					Why: "the protected field cannot be compared when the file does not parse, so the PR fails closed", Where: "PR change, checked by release-intent check-title",
-					When: "pull_request opened, edited, synchronize, reopened, or the merge-group build", Means: "the title-guard check is red",
-					Fix: "fix the JSON in " + vf.Path + " or drop the edit",
-				}, nil
+				fieldChanged = true
+			} else if berr != nil && herr != nil {
+				fieldChanged = baseField != headField
+			} else {
+				fieldChanged = true
 			}
-			_ = why
-			// A deleted or renamed file surfaces here: the field cannot be
-			// compared, so any version-file touch by a non-release PR is
-			// rejected when either end is unreadable.
-			if baseField != headField {
-				return &RejectError{
-					Code: CodeProtectedPath, What: fmt.Sprintf("PR changes version file %q (unreadable at one end)", vf.Path),
-					Why: "only the release PR may write the protected version field", Where: "PR change, checked by release-intent check-title",
-					When: "pull_request opened, edited, synchronize, reopened, or the merge-group build", Means: "the title-guard check is red",
-					Fix: "drop the " + vf.Path + " edit, or keep every field but " + vf.Field + " unchanged",
-				}, nil
-			}
-			continue
 		}
-		if baseField != headField {
-			return &RejectError{
-				Code: CodeProtectedPath, What: fmt.Sprintf("PR changes protected field %q of %q", vf.Field, vf.Path),
-				Why: "only the release PR may write the version field; other fields stay editable", Where: "PR change, checked by release-intent check-title",
-				When: "pull_request opened, edited, synchronize, reopened, or the merge-group build", Means: "the title-guard check is red",
-				Fix: "revert the " + vf.Field + " field in " + vf.Path + "; scripts, dependencies and the schema pin stay editable",
-			}, nil
+		for i := range out {
+			if out[i].Path == vf.Path {
+				out[i].ProtectedFieldChanged = fieldChanged
+			}
 		}
 	}
-	return nil, nil
+	return out, nil
 }
 
-func readVersionField(ctx context.Context, runner GitRunner, rev string, vf VersionFile) (string, error) {
-	data, err := runner.ReadFile(ctx, rev, vf.Path)
+func readVersionField(ctx context.Context, runner GitRunner, rev, path, field string) (string, error) {
+	data, err := runner.ReadFile(ctx, rev, path)
 	if err != nil {
 		return "", err
 	}
 	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
-		return "", &jsonParseError{Path: vf.Path, Rev: rev, Err: err}
+		return "", &jsonParseError{Path: path, Rev: rev, Err: err}
 	}
-	v, _ := obj[vf.Field].(string)
+	v, _ := obj[field].(string)
 	return v, nil
 }
 
@@ -277,33 +232,4 @@ func isJSONError(err error) bool {
 	}
 	_, ok := err.(*jsonParseError)
 	return ok
-}
-
-func matchProtected(pattern, path string) bool {
-	if strings.HasSuffix(pattern, "/*") {
-		return strings.HasPrefix(path, strings.TrimSuffix(pattern, "*"))
-	}
-	if strings.Contains(pattern, "*") {
-		// Minimal glob: * matches any non-separator run.
-		parts := strings.Split(pattern, "*")
-		idx := 0
-		for i, part := range parts {
-			if part == "" {
-				continue
-			}
-			found := strings.Index(path[idx:], part)
-			if found < 0 {
-				return false
-			}
-			idx += found + len(part)
-			if i == 0 && !strings.HasPrefix(path, part) && !strings.HasPrefix(pattern, "*") {
-				return false
-			}
-		}
-		if !strings.HasSuffix(pattern, "*") && !strings.HasSuffix(path, parts[len(parts)-1]) {
-			return false
-		}
-		return true
-	}
-	return pattern == path
 }

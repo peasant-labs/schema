@@ -6,28 +6,24 @@ import (
 	"strings"
 )
 
-// ErrorCode is the closed set of machine-readable rejection codes. Every
-// rejection prints error=<code> on stdout and carries a six-part human message
-// on stderr.
+// ErrorCode is the closed wave-1 set of machine-readable rejection codes.
+// Contract codes for later milestones enter this set in their milestone with
+// their reject case.
 type ErrorCode string
 
 const (
-	CodeMalformed             ErrorCode = "malformed"
-	CodeUnknownType           ErrorCode = "unknown-type"
-	CodeMissingBump           ErrorCode = "missing-bump"
-	CodeBumpOnNonReleasing    ErrorCode = "bump-on-non-releasing"
-	CodeBangBumpMismatch      ErrorCode = "bang-bump-mismatch"
-	CodeOldReleaseTitle       ErrorCode = "old-release-title"
-	CodeReleasesDisabled      ErrorCode = "releases-disabled"
-	CodeProtectedPath         ErrorCode = "protected-path"
-	CodeNoFinalTag            ErrorCode = "no-final-tag"
-	CodeEpochMissing          ErrorCode = "epoch-missing"
-	CodeFloorNotOnChain       ErrorCode = "floor-not-on-chain"
-	CodeReleaseContentStale   ErrorCode = "release-content-stale"
-	CodeSurfaceUndeclared     ErrorCode = "surface-undeclared"
-	CodeUnderDeclaredBreaking ErrorCode = "under-declared-breaking"
-	CodeSpecChangeNeedsBump   ErrorCode = "spec-change-needs-bump"
-	CodeSurfaceMismatch       ErrorCode = "surface-mismatch"
+	CodeMalformed           ErrorCode = "malformed"
+	CodeUnknownType         ErrorCode = "unknown-type"
+	CodeMissingBump         ErrorCode = "missing-bump"
+	CodeBumpOnNonReleasing  ErrorCode = "bump-on-non-releasing"
+	CodeBangBumpMismatch    ErrorCode = "bang-bump-mismatch"
+	CodeOldReleaseTitle     ErrorCode = "old-release-title"
+	CodeReleasesDisabled    ErrorCode = "releases-disabled"
+	CodeProtectedPath       ErrorCode = "protected-path"
+	CodeNoFinalTag          ErrorCode = "no-final-tag"
+	CodeEpochMissing        ErrorCode = "epoch-missing"
+	CodeFloorNotOnChain     ErrorCode = "floor-not-on-chain"
+	CodeReleaseContentStale ErrorCode = "release-content-stale"
 )
 
 // AllErrorCodes is the canonical closed set. Tests assert exact membership.
@@ -44,10 +40,6 @@ var AllErrorCodes = []ErrorCode{
 	CodeEpochMissing,
 	CodeFloorNotOnChain,
 	CodeReleaseContentStale,
-	CodeSurfaceUndeclared,
-	CodeUnderDeclaredBreaking,
-	CodeSpecChangeNeedsBump,
-	CodeSurfaceMismatch,
 }
 
 // RejectError is a rejected input: exit 2 with a machine line and a six-part

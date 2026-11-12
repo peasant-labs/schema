@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 // runReleasePR implements:
@@ -102,7 +104,7 @@ func runReleasePR(args []string) error {
 	return emitLines([]string{"fresh=true", "push=" + push, "version=" + decision.Version, "error="})
 }
 
-func checkWorkingTree(_ context.Context, _ Config, decision PlanDecision) (bool, error) {
+func checkWorkingTree(_ context.Context, _ intent.Config, decision PlanDecision) (bool, error) {
 	// The full byte comparison against Generate output lives in the core
 	// package; the CLI reports fresh when a version was computed and stale
 	// otherwise would mask a real drift, so an empty version is stale.
@@ -112,11 +114,11 @@ func checkWorkingTree(_ context.Context, _ Config, decision PlanDecision) (bool,
 	return true, nil
 }
 
-func needsPush(_ context.Context, _ GitRunner, _ Config, _, _ string, _ PlanDecision) (bool, error) {
+func needsPush(_ context.Context, _ GitRunner, _ intent.Config, _, _ string, _ PlanDecision) (bool, error) {
 	return true, nil
 }
 
-func writeReleaseContent(_ Config, decision PlanDecision) error {
+func writeReleaseContent(_ intent.Config, decision PlanDecision) error {
 	if decision.Version == "" {
 		return fmt.Errorf("release-pr: nothing to write: no pending releasing subjects (version is empty). Open a releasing PR first")
 	}

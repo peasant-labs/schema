@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -178,6 +179,49 @@ func releaseIndex(nodes []queueNode, releasePR int) int {
 	}
 	return -1
 }
+
+// parseTitleKind is the command-layer adapter for the hold rule until the
+// contract package owns queue decoding. It reports releasing when the title
+// carries a bump bracket on a releasing type, and parsable false when the
+// title fails the grammar. The release decision itself stays in the intent
+// package; this helper only keeps the gate fail-closed on titles the tool
+// cannot parse.
+func parseTitleKind(raw string) (releasing bool, parsable bool) {
+	if oldReleaseRe.MatchString(raw) {
+		return false, false
+	}
+	if strings.HasPrefix(raw, "Revert \"") {
+		return false, false
+	}
+	m := titleKindRe.FindStringSubmatch(raw)
+	if m == nil {
+		return false, false
+	}
+	typ := m[1]
+	bump := m[5]
+	hasBang := m[3] == "!"
+	switch typ {
+	case "feat", "fix", "release":
+		if bump == "" {
+			return false, false
+		}
+		return true, true
+	case "refactor", "perf", "build", "revert":
+		return bump != "", true
+	case "docs", "test", "ci", "chore", "style":
+		if bump != "" || hasBang {
+			return false, false
+		}
+		return false, true
+	default:
+		return false, false
+	}
+}
+
+var (
+	titleKindRe  = regexp.MustCompile(`^([a-z]+)(\([^)]*\))?(!)?(\[(major|minor|patch)\])?: (\S.*)$`)
+	oldReleaseRe = regexp.MustCompile(`^release\(v[^)]*\):\s*\S`)
+)
 
 // runQueueGate implements: release-intent queue-gate --queue FILE --release-pr N.
 func runQueueGate(args []string) error {

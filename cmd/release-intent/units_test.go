@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 func TestParseGroupRef(t *testing.T) {
@@ -25,10 +27,8 @@ func TestClassifyPR(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
-			cfg := Config{AutomationAuthor: "peasant-labs-releaser[bot]", BotBranches: c.Input.BotBranches}
-			// The empty-author case still uses the bot author in config; the
-			// input author is what classifies.
-			if got := ClassifyPR(cfg, c.Input.Author, c.Input.HeadBranch); string(got) != c.Expected.Kind {
+			cfg := intent.Config{AutomationAuthor: "peasant-labs-releaser[bot]", BotBranches: c.Input.BotBranches}
+			if got := intent.ClassifyPR(cfg, c.Input.Author, c.Input.HeadBranch); string(got) != c.Expected.Kind {
 				t.Fatalf("ClassifyPR(author=%q branch=%q) = %q, want %q", c.Input.Author, c.Input.HeadBranch, got, c.Expected.Kind)
 			}
 		})
@@ -42,13 +42,22 @@ func TestParseFullTitle(t *testing.T) {
 		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
-			_, rej := parseFullTitle(c.Input.Title, c.Input.Releases, c.Input.BelowOne)
+			cfg := intent.Config{Releases: c.Input.Releases, TagPrefix: "v"}
+			current := intent.SemVer("0.1.0")
+			if !c.Input.BelowOne {
+				current = intent.SemVer("1.0.0")
+			}
+			_, perr := intent.ParseTitle(cfg, current, c.Input.Title)
 			got := ""
-			if rej != nil {
-				got = string(rej.Code)
+			if perr != nil {
+				if ie, ok := perr.(*intent.Error); ok {
+					got = string(ie.Code)
+				} else {
+					t.Fatalf("ParseTitle(%q) error type = %T, want *intent.Error", c.Input.Title, perr)
+				}
 			}
 			if got != c.Expected.Code {
-				t.Fatalf("parseFullTitle(%q) code = %q, want %q", c.Input.Title, got, c.Expected.Code)
+				t.Fatalf("ParseTitle(%q) code = %q, want %q", c.Input.Title, got, c.Expected.Code)
 			}
 		})
 	}

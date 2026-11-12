@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
 )
 
 // Mode is the closed set of plan modes.
@@ -37,26 +39,26 @@ type Facts struct {
 // Gather collects commits, tags and the epoch through the runner. A read
 // failure returns an error so the caller exits 1 with no candidate_fresh line:
 // a read error is never reported as stale.
-func Gather(ctx context.Context, r GitRunner, branch, changelog, configPath, floor string, mode Mode, verdict string) (Facts, Config, error) {
+func Gather(ctx context.Context, r GitRunner, branch, changelog, configPath, floor string, mode Mode, verdict string) (Facts, intent.Config, error) {
 	cfgData, err := r.ReadFile(ctx, branch, configPath)
 	if err != nil {
-		return Facts{}, Config{}, fmt.Errorf("plan: cannot read release config %q at %q: %w. Confirm the branch has the config file", configPath, branch, err)
+		return Facts{}, intent.Config{}, fmt.Errorf("plan: cannot read release config %q at %q: %w. Confirm the branch has the config file", configPath, branch, err)
 	}
-	cfg, err := ParseConfig(cfgData, configPath)
+	cfg, err := loadConfigBytes(cfgData)
 	if err != nil {
-		return Facts{}, Config{}, err
+		return Facts{}, intent.Config{}, err
 	}
 	commits, err := r.FirstParent(ctx, branch, cfg.Changelog)
 	if err != nil {
-		return Facts{}, Config{}, fmt.Errorf("plan: cannot list first-parent commits of %q: %w. Confirm the branch exists", branch, err)
+		return Facts{}, intent.Config{}, fmt.Errorf("plan: cannot list first-parent commits of %q: %w. Confirm the branch exists", branch, err)
 	}
 	tags, err := r.Tags(ctx, cfg.TagPrefix)
 	if err != nil {
-		return Facts{}, Config{}, fmt.Errorf("plan: cannot list tags with prefix %q: %w", cfg.TagPrefix, err)
+		return Facts{}, intent.Config{}, fmt.Errorf("plan: cannot list tags with prefix %q: %w", cfg.TagPrefix, err)
 	}
 	epoch, err := r.FirstCommitAdding(ctx, configPath)
 	if err != nil {
-		return Facts{}, Config{}, fmt.Errorf("plan: cannot find the commit adding %q: %w", configPath, err)
+		return Facts{}, intent.Config{}, fmt.Errorf("plan: cannot find the commit adding %q: %w", configPath, err)
 	}
 	return Facts{Commits: commits, Tags: tags, Epoch: epoch, Floor: floor, Mode: mode, Verdict: verdict, TagPrefix: cfg.TagPrefix}, cfg, nil
 }
@@ -77,10 +79,16 @@ func highestFinalTag(tags map[string]string, prefix string) (tag, version string
 		if strings.Contains(v, "-rc") {
 			continue
 		}
-		maj, mi, pa, ok := parseSemVer(v)
-		if !ok {
+		sv, err := intent.ParseSemVer(v)
+		if err != nil {
 			continue
 		}
+		parts := strings.Split(string(sv), ".")
+		if len(parts) != 3 {
+			continue
+		}
+		var maj, mi, pa int
+		fmt.Sscanf(string(sv), "%d.%d.%d", &maj, &mi, &pa)
 		finals = append(finals, tv{t, v, maj, mi, pa})
 	}
 	if len(finals) == 0 {
@@ -100,8 +108,12 @@ func highestFinalTag(tags map[string]string, prefix string) (tag, version string
 
 // belowOne reports whether the version base is below 1.0.
 func belowOne(version string) bool {
-	maj, _, _, ok := parseSemVer(version)
-	if !ok {
+	sv, err := intent.ParseSemVer(version)
+	if err != nil {
+		return true
+	}
+	var maj, mi, pa int
+	if _, err := fmt.Sscanf(string(sv), "%d.%d.%d", &maj, &mi, &pa); err != nil {
 		return true
 	}
 	return maj == 0

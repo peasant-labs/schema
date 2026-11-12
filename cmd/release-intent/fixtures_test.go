@@ -2,9 +2,9 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"testing"
 
+	"github.com/peasant-labs/schema/internal/release/intent"
 	"github.com/peasant-labs/schema/testcase"
 	"gopkg.in/yaml.v3"
 )
@@ -199,20 +199,29 @@ func TestClosedSetsAreExact(t *testing.T) {
 			t.Fatalf("AllActions carries unexpected member %q", a)
 		}
 	}
-	wantKinds := map[PRKind]bool{"ordinary": true, "release": true, "vendor-hash": true, "cut-release": true}
-	if len(AllPRKinds) != len(wantKinds) {
-		t.Fatalf("AllPRKinds has %d members, want %d", len(AllPRKinds), len(wantKinds))
+	// The command-layer action set must match the contract package so the two
+	// never drift: same members, same spelling.
+	if len(intent.AllActions) != len(AllActions) {
+		t.Fatalf("intent.AllActions has %d members, command AllActions has %d: the two action sets drifted", len(intent.AllActions), len(AllActions))
 	}
-	for _, k := range AllPRKinds {
+	for _, a := range intent.AllActions {
+		if !wantActions[Action(a)] {
+			t.Fatalf("intent.AllActions carries unexpected member %q", a)
+		}
+	}
+	wantKinds := map[intent.PRKind]bool{"ordinary": true, "release": true, "vendor-hash": true, "cut-release": true}
+	if len(intent.AllPRKinds) != len(wantKinds) {
+		t.Fatalf("intent.AllPRKinds has %d members, want %d", len(intent.AllPRKinds), len(wantKinds))
+	}
+	for _, k := range intent.AllPRKinds {
 		if !wantKinds[k] {
-			t.Fatalf("AllPRKinds carries unexpected member %q", k)
+			t.Fatalf("intent.AllPRKinds carries unexpected member %q", k)
 		}
 	}
 	wantCodes := map[ErrorCode]bool{
 		"malformed": true, "unknown-type": true, "missing-bump": true, "bump-on-non-releasing": true,
 		"bang-bump-mismatch": true, "old-release-title": true, "releases-disabled": true, "protected-path": true,
 		"no-final-tag": true, "epoch-missing": true, "floor-not-on-chain": true, "release-content-stale": true,
-		"surface-undeclared": true, "under-declared-breaking": true, "spec-change-needs-bump": true, "surface-mismatch": true,
 	}
 	if len(AllErrorCodes) != len(wantCodes) {
 		t.Fatalf("AllErrorCodes has %d members, want %d", len(AllErrorCodes), len(wantCodes))
@@ -222,5 +231,12 @@ func TestClosedSetsAreExact(t *testing.T) {
 			t.Fatalf("AllErrorCodes carries unexpected member %q", c)
 		}
 	}
-	var _ = fmt.Sprint
+	if len(intent.AllErrorCodes) != len(AllErrorCodes) {
+		t.Fatalf("intent.AllErrorCodes has %d members, command AllErrorCodes has %d: the two code sets drifted", len(intent.AllErrorCodes), len(AllErrorCodes))
+	}
+	for _, c := range intent.AllErrorCodes {
+		if !wantCodes[ErrorCode(c)] {
+			t.Fatalf("intent.AllErrorCodes carries unexpected member %q", c)
+		}
+	}
 }

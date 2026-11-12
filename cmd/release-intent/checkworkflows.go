@@ -3,15 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/peasant-labs/schema/internal/release"
 )
 
 // runCheckWorkflows implements:
 // release-intent check-workflows --policy P --dir .github/workflows [--print-required]
 //
-// It delegates to the policy package's exported checker. Until that entry
-// point lands, it validates the policy file parses and the directory holds
-// workflow files, so the CLI contract (flags, exit codes, outputs) is proven
-// at process level.
+// It delegates to the policy package's exported checker.
 func runCheckWorkflows(args []string) error {
 	policyPath := ""
 	dir := ""
@@ -44,34 +43,35 @@ func runCheckWorkflows(args []string) error {
 	if dir == "" {
 		return usageErr("usage: release-intent check-workflows --policy P --dir DIR [--print-required] (missing required --dir): pass the workflows directory, e.g. .github/workflows")
 	}
-	info, err := os.Stat(policyPath)
-	if err != nil || info.IsDir() {
-		return fmt.Errorf("check-workflows: cannot read policy file %q: %v. Fix the --policy path or create the policy file", policyPath, err)
-	}
-	dinfo, err := os.Stat(dir)
-	if err != nil || !dinfo.IsDir() {
-		return fmt.Errorf("check-workflows: cannot read workflows directory %q: %v. Fix the --dir path or run from the repository root", dir, err)
-	}
-	entries, err := os.ReadDir(dir)
+	policy, err := release.LoadWorkflowPolicy(policyPath)
 	if err != nil {
-		return fmt.Errorf("check-workflows: cannot list workflows directory %q: %v", dir, err)
+		return err
 	}
-	hasWorkflow := false
-	for _, e := range entries {
-		if !e.IsDir() {
-			hasWorkflow = true
-			break
-		}
-	}
-	if !hasWorkflow {
-		return fmt.Errorf("check-workflows: workflows directory %q holds no files. Add the required workflows or fix the --dir path", dir)
-	}
-	// Delegation seam: when the policy package exports CheckWorkflows(policy,
-	// dir), this call site routes there. The local existence checks above stay
-	// as the fail-fast before delegation so a missing path never reaches the
-	// checker as an empty policy.
+	diagnostics, required := release.CheckWorkflows(policy, dir)
 	if printRequired {
-		return emitLines([]string{"required="})
+		if len(required) == 0 {
+			return emitLines([]string{"required="})
+		}
+		lines := make([]string, 0, len(required))
+		for _, r := range required {
+			lines = append(lines, "required="+r.Context)
+		}
+		return emitLines(lines)
+	}
+	if len(diagnostics) > 0 {
+		msg := diagnostics[0].Message
+		if msg == "" {
+			msg = fmt.Sprintf("workflow policy violation in %s", diagnostics[0].Workflow)
+		}
+		// Check-workflows rejections exit 2 with a machine line so the
+		// required check is red. The human channel is the diagnostic.
+		fmt.Fprintf(os.Stderr, "release-intent: check-workflows rejected %q: %s\n  fix: align the workflow with the policy file\n", policyPath, msg)
+		return &RejectError{
+			Code: CodeMalformed, What: "workflow policy violation",
+			Why: msg, Where: "workflows in " + dir + ", checked against " + policyPath,
+			When: "title-guard workflow check", Means: "the check-workflows gate is red",
+			Fix: "align the workflow with the policy file",
+		}
 	}
 	return emitLines([]string{"ok=true"})
 }
