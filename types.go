@@ -323,28 +323,22 @@ func (SessionOutcome) JSONSchema() (jsonschema.Schema, error) {
 // that is driving the model interaction. Re-exported from bestiary.
 type Harness = bestiary.Harness
 
-const HarnessClaudeCode = bestiary.HarnessClaudeCode
-
-// HarnessGeminiCLI is archived: retained for history, never removed.
-// Gemini CLI was replaced by the Antigravity products. The value stays known
-// so that sessions which already carry it remain valid. No harvester exists
-// for it and none is planned.
-const HarnessGeminiCLI = bestiary.HarnessGeminiCLI
-
 const (
-	HarnessCodex    = bestiary.HarnessCodex
-	HarnessOpenCode = bestiary.HarnessOpenCode
-	HarnessCursor   = bestiary.HarnessCursor
-)
-
-// HarnessAntigravity is archived. It named the Antigravity products as one
-// harness before HarnessAntigravityCLI and HarnessAntigravityIDE existed.
-//
-// Deprecated: use HarnessAntigravityCLI or HarnessAntigravityIDE. Removal is
-// planned; see https://github.com/peasant-labs/schema/issues/232.
-const HarnessAntigravity = bestiary.HarnessAntigravity
-
-const (
+	HarnessClaudeCode = bestiary.HarnessClaudeCode
+	// HarnessGeminiCLI is archived: retained for history, never removed.
+	// Gemini CLI was replaced by the Antigravity products. The value stays known
+	// so that sessions which already carry it remain valid. No harvester exists
+	// for it and none is planned.
+	HarnessGeminiCLI = bestiary.HarnessGeminiCLI
+	HarnessCodex     = bestiary.HarnessCodex
+	HarnessOpenCode  = bestiary.HarnessOpenCode
+	HarnessCursor    = bestiary.HarnessCursor
+	// HarnessAntigravity is archived. It named the Antigravity products as one
+	// harness before HarnessAntigravityCLI and HarnessAntigravityIDE existed.
+	//
+	// Deprecated: use HarnessAntigravityCLI or HarnessAntigravityIDE. Removal is
+	// planned; see https://github.com/peasant-labs/schema/issues/232.
+	HarnessAntigravity  = bestiary.HarnessAntigravity
 	HarnessStrike       = bestiary.HarnessStrike
 	HarnessPi           = bestiary.HarnessPi
 	HarnessGrokBuild    = bestiary.HarnessGrokBuild
