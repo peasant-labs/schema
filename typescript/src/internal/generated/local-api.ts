@@ -1164,6 +1164,7 @@ export interface components {
         /** @description Opaque versioned selected-category traversal token; not cacheRevision or authority */
         SchemaContributionTraversalRevision: Schema.ContributionTraversalRevision;
         SchemaContributorBreakdown: Schema.ContributorBreakdown;
+        SchemaConversationTurnSpan: Schema.ConversationTurnSpan;
         SchemaCreateAnnotationRequest: Schema.CreateAnnotationRequest;
         SchemaCreateAnnotationResponse: Schema.CreateAnnotationResponse;
         SchemaDayStats: Schema.DayStats;

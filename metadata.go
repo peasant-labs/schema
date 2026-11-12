@@ -225,6 +225,11 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 					return err
 				}
 			}
+			if count, exists := stats["conversationTurnCount"]; exists {
+				if err := validateRawSafeCount(count, "conversationTurnCount", "metadata.stats.conversationTurnCount"); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	type alias UnifiedMetadata // avoid recursion into this method
@@ -250,6 +255,9 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if err := ValidateInputSubmissionCount(next.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
+		return err
+	}
+	if err := ValidateConversationTurnCount(next.Stats.ConversationTurnCount, "metadata.stats.conversationTurnCount"); err != nil {
 		return err
 	}
 	if next.RootSessionID != nil {
@@ -283,6 +291,9 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	if err := ValidateInputSubmissionCount(m.Stats.InputSubmissionCount, "metadata.stats.inputSubmissionCount"); err != nil {
+		return nil, err
+	}
+	if err := ValidateConversationTurnCount(m.Stats.ConversationTurnCount, "metadata.stats.conversationTurnCount"); err != nil {
 		return nil, err
 	}
 	if m.RootSessionID != nil {

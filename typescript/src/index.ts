@@ -472,6 +472,8 @@ function rejectExplicitNullEvidence(value: unknown): void {
   if (!isRecord(value)) return;
   if (value.inputSubmissionCount === null) failSemantic("inputSubmissionCount is explicitly null");
   if (value.inputSubmissionCount !== undefined && (typeof value.inputSubmissionCount !== "number" || !Number.isSafeInteger(value.inputSubmissionCount) || value.inputSubmissionCount < 0)) failSemantic("inputSubmissionCount is outside 0..9007199254740991");
+  if (value.conversationTurnCount === null) failSemantic("conversationTurnCount is explicitly null");
+  if (value.conversationTurnCount !== undefined && (typeof value.conversationTurnCount !== "number" || !Number.isSafeInteger(value.conversationTurnCount) || value.conversationTurnCount < 0)) failSemantic("conversationTurnCount is outside 0..9007199254740991");
   for (const turn of Array.isArray(value.turns) ? value.turns : []) {
     if (!isRecord(turn)) continue;
     if (turn.provenance === null) failSemantic("turn provenance is explicitly null");

@@ -184,7 +184,7 @@ func BuildAuthoritativePublicationProjections(detail SessionDetailPayload, metad
 	if err != nil {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "detail.id is not a canonical session identifier", "construct the detail from the committed session identity")
 	}
-	if metadata.SessionID != sessionID || metadata.ModelHarness != detail.Harness || projectedMainCount && metadata.Stats.TurnCount != detail.TurnCount || !equalOptionalInt64(metadata.Stats.InputSubmissionCount, detail.InputSubmissionCount) {
+	if metadata.SessionID != sessionID || metadata.ModelHarness != detail.Harness || projectedMainCount && metadata.Stats.TurnCount != detail.TurnCount || !equalOptionalInt64(metadata.Stats.InputSubmissionCount, detail.InputSubmissionCount) || !equalOptionalInt64(metadata.Stats.ConversationTurnCount, detail.ConversationTurnCount) {
 		return AuthoritativeSessionIdentity{}, AuthoritativeSessionStats{}, nil, publicationError("authoritative projection builder", "metadata and durable detail identity or count mirrors disagree", "reload one committed snapshot and derive every publication mirror from it")
 	}
 	if !equalOptionalSessionID(metadata.RootSessionID, detail.RootSessionID) || metadata.Purpose != detail.Purpose || !equalSessionRelationships(metadata.Relationships, detail.Relationships) {
@@ -515,6 +515,9 @@ func encodeReplacement(v CanonicalPublishReplacement) []byte {
 	e.optionalInt(28, v.Stats.CachedWriteTokens)
 	if v.Stats.InputSubmissionCount != nil {
 		e.optionalInt64(65, v.Stats.InputSubmissionCount)
+	}
+	if v.Stats.ConversationTurnCount != nil {
+		e.optionalInt64(66, v.Stats.ConversationTurnCount)
 	}
 	if v.Quality == nil {
 		writeFrame(&e.Buffer, 29, nil)

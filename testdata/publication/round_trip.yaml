@@ -307,6 +307,12 @@ keys:
       classification: must-pass
       provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
       mutation: {description: sets stats.inputSubmissionCount to a non-empty value and requires it back after decode and re-encode}
+    - name: request/stats/conversationTurnCount
+      input: {value: '2'}
+      expected: {survives: true}
+      classification: must-pass
+      provenance: {source: requirement, ref: 'peasant-labs/schema#192: an accepted key must survive decode and re-encode'}
+      mutation: {description: sets stats.conversationTurnCount to a non-empty value and requires it back after decode and re-encode}
     - name: request/stats/toolCallCount
       input: {value: '3'}
       expected: {survives: true}

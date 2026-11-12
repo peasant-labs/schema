@@ -71,6 +71,9 @@ func ValidatePublicationRequest(r AuthoritativePublishRequest) error {
 	if err := ValidateInputSubmissionCount(r.Stats.InputSubmissionCount, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
 		return err
 	}
+	if err := ValidateConversationTurnCount(r.Stats.ConversationTurnCount, "authoritativePublishRequest.stats.conversationTurnCount"); err != nil {
+		return err
+	}
 	if r.Identity.RootSessionID != nil {
 		if _, err := NewSessionID(string(*r.Identity.RootSessionID)); err != nil {
 			return fmt.Errorf("publish request validation failed at schema.ValidatePublicationRequest during publish-request validation: identity.rootSessionId: %w", err)

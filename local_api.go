@@ -381,6 +381,9 @@ func (r LocalSessionRow) Validate() error {
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "LocalSessionRow.session.inputSubmissionCount"); err != nil {
 		return err
 	}
+	if err := ValidateConversationTurnCount(r.Session.ConversationTurnCount, "LocalSessionRow.session.conversationTurnCount"); err != nil {
+		return err
+	}
 	if err := r.Session.Teammate.Validate(); err != nil {
 		return err
 	}
@@ -392,7 +395,7 @@ func (r LocalSessionRow) Validate() error {
 		if err := s.Validate(); err != nil {
 			return err
 		}
-		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
+		if s.ID != r.Session.ID || s.Harness != r.Session.Harness || s.ProjectName != r.Session.Project || s.ProjectHash != r.Session.ProjectHash || s.TotalTokens != r.Session.TotalTokens || s.TurnCount != r.Session.TurnCount || !equalOptionalInt64(s.InputSubmissionCount, r.Session.InputSubmissionCount) || !equalOptionalInt64(s.ConversationTurnCount, r.Session.ConversationTurnCount) || !equalOptionalString(s.ParentSessionID, r.Session.ParentSessionID) || !equalOptionalBool(s.ParentUnresolved, r.Session.ParentUnresolved) {
 			return fmt.Errorf("local session row validation failed for %q at schema.LocalSessionRow.Validate during grouped sync projection: sync identity, parent, or count mirrors disagree with session; callers could display or select the wrong saved transcript; derive both summaries from the same selected database row", r.Session.ID)
 		}
 		if !equalOptionalTeammate(s.Teammate, r.Session.Teammate) {

@@ -336,6 +336,9 @@ func validateSessionDetailPayload(value SessionDetailPayload, imageMode ImagePar
 	if err := ValidateInputSubmissionCount(value.InputSubmissionCount, "sessionDetail.inputSubmissionCount"); err != nil {
 		return err
 	}
+	if err := ValidateConversationTurnCount(value.ConversationTurnCount, "sessionDetail.conversationTurnCount"); err != nil {
+		return err
+	}
 	if value.RootSessionID != nil {
 		if _, err := NewSessionID(string(*value.RootSessionID)); err != nil {
 			return fmt.Errorf("session detail validation failed at schema.ValidateSessionDetailPayload: rootSessionId is malformed; graph identity cannot be preserved; provide a canonical session identifier: %w", err)
@@ -978,6 +981,11 @@ func validateSessionDetailRawShape(raw []byte) error {
 			return err
 		}
 	}
+	if count, present := root["conversationTurnCount"]; present {
+		if err := validateRawSafeCount(count, "conversationTurnCount", "sessionDetail.conversationTurnCount"); err != nil {
+			return err
+		}
+	}
 	if err := rejectDurableReadFields(root); err != nil {
 		return err
 	}
@@ -1196,6 +1204,26 @@ func validateRawInputSubmissionCount(raw json.RawMessage, path string) error {
 	value, err := strconv.ParseInt(number.String(), 10, 64)
 	if err != nil {
 		return fmt.Errorf("input submission count raw validation failed at schema decoder for %s: value %q is not an integer in 0..9007199254740991; callers cannot preserve it exactly; send a canonical integer", path, number.String())
+	}
+	return ValidateInputSubmissionCount(&value, path)
+}
+
+func validateRawSafeCount(raw json.RawMessage, field, path string) error {
+	if isNullRaw(raw) {
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: explicit null cannot mean unknown or measured zero; omit the field for unknown or send an integer from 0 through 9007199254740991", field, path)
+	}
+	var number json.Number
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&number); err != nil {
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value is not a JSON integer; callers cannot preserve it exactly; send 0..9007199254740991: %w", field, path, err)
+	}
+	value, err := strconv.ParseInt(number.String(), 10, 64)
+	if err != nil {
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value %q is not an integer in 0..9007199254740991; callers cannot preserve it exactly; send a canonical integer", field, path, number.String())
+	}
+	if field == "conversationTurnCount" {
+		return ValidateConversationTurnCount(&value, path)
 	}
 	return ValidateInputSubmissionCount(&value, path)
 }

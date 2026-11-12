@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,6 +93,27 @@ type transcriptShapeInput struct {
 	DirectoryRefs []transcriptRefFixture `yaml:"directoryRefs"`
 }
 
+type transcriptShapeExpected struct {
+	Valid         bool   `yaml:"valid"`
+	ErrorContains string `yaml:"errorContains,omitempty"`
+}
+
+func (e *transcriptShapeExpected) UnmarshalYAML(value *yaml.Node) error {
+	var b bool
+	if err := value.Decode(&b); err == nil {
+		e.Valid = b
+		e.ErrorContains = ""
+		return nil
+	}
+	type raw transcriptShapeExpected
+	var r raw
+	if err := value.Decode(&r); err != nil {
+		return err
+	}
+	*e = transcriptShapeExpected(r)
+	return nil
+}
+
 type transcriptDirectoryCap struct {
 	RefCount         int   `yaml:"ref_count"`
 	PerPage          int   `yaml:"per_page"`
@@ -101,10 +123,10 @@ type transcriptDirectoryCap struct {
 }
 
 type transcriptSegmentsFixtures struct {
-	RequiredNames []string                                    `yaml:"required_names"`
-	ShapeCases    testcase.Corpus[transcriptShapeInput, bool] `yaml:"shape_cases"`
-	CutCases      []transcriptCutCase                         `yaml:"cut_cases"`
-	DirectoryCap  transcriptDirectoryCap                      `yaml:"directory_cap"`
+	RequiredNames []string                                                `yaml:"required_names"`
+	ShapeCases    testcase.Corpus[transcriptShapeInput, transcriptShapeExpected] `yaml:"shape_cases"`
+	CutCases      []transcriptCutCase                                     `yaml:"cut_cases"`
+	DirectoryCap  transcriptDirectoryCap                                  `yaml:"directory_cap"`
 }
 
 func loadTranscriptSegmentsFixtures(t *testing.T) transcriptSegmentsFixtures {
@@ -176,8 +198,13 @@ func TestTranscriptShapeValidation(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			value, decodeErr := decodeTranscriptShape(c.Input)
 			valid := decodeErr == nil
-			if valid != c.Expected {
-				t.Fatalf("valid=%v, want %v: %v", valid, c.Expected, decodeErr)
+			if valid != c.Expected.Valid {
+				t.Fatalf("valid=%v, want %v: %v", valid, c.Expected.Valid, decodeErr)
+			}
+			if !valid && c.Expected.ErrorContains != "" {
+				if decodeErr == nil || !strings.Contains(decodeErr.Error(), c.Expected.ErrorContains) {
+					t.Fatalf("error=%v want containing %q", decodeErr, c.Expected.ErrorContains)
+				}
 			}
 			contract, ok := contracts[c.Input.Schema]
 			if !ok {
@@ -187,7 +214,7 @@ func TestTranscriptShapeValidation(t *testing.T) {
 			if valid && schemaErr != nil {
 				t.Fatalf("Go validator accepts a payload the Types schema rejects: %v", schemaErr)
 			}
-			if c.Expected {
+			if c.Expected.Valid {
 				if schemaErr != nil {
 					t.Fatalf("must-pass payload fails the Types schema: %v", schemaErr)
 				}
@@ -203,8 +230,37 @@ func TestTranscriptShapeValidation(t *testing.T) {
 					t.Fatalf("round trip changed values: %v", err)
 				}
 			}
+			if !valid && c.Expected.ErrorContains != "" && c.Input.Schema == "TranscriptSegmentDirectory" {
+				stripped, err := stripDirectoryPositions(c.Input.Payload)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, err := decodeTranscriptShape(transcriptShapeInput{Schema: c.Input.Schema, Payload: stripped}); err != nil {
+					t.Fatalf("stripped position payload is still invalid: %v", err)
+				}
+			}
 		})
 	}
+}
+
+func stripDirectoryPositions(payload map[string]any) (map[string]any, error) {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	var dir map[string]any
+	if err := json.Unmarshal(raw, &dir); err != nil {
+		return nil, err
+	}
+	delete(dir, "totalConversationTurns")
+	if segments, ok := dir["segments"].([]any); ok {
+		for _, segment := range segments {
+			if ref, ok := segment.(map[string]any); ok {
+				delete(ref, "conversationTurns")
+			}
+		}
+	}
+	return dir, nil
 }
 
 func decodeTranscriptShape(input transcriptShapeInput) (any, error) {

@@ -2564,6 +2564,59 @@ export const canonicalSessionGraphFixtures = {
           "mutation": {
             "description": "exact JS-safe upper bound"
           }
+        },
+        {
+          "name": "conversation-count-absent",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_absent\",\"harness\":\"claude-code\",\"turnCount\":0,\"turns\":[]}"
+          },
+          "expected": {
+            "present": false
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-absent-zero-positive"
+          },
+          "mutation": {
+            "description": "historical conversation count is omitted"
+          }
+        },
+        {
+          "name": "conversation-count-zero",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_zero\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":0,\"turns\":[]}"
+          },
+          "expected": {
+            "present": true,
+            "value": 0
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-absent-zero-positive"
+          },
+          "mutation": {
+            "description": "measured zero conversation count is present"
+          }
+        },
+        {
+          "name": "conversation-count-safe-max",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_max\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":9007199254740991,\"turns\":[]}"
+          },
+          "expected": {
+            "present": true,
+            "value": 9007199254740991
+          },
+          "classification": "must-pass",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "exact JS-safe upper bound for conversation count"
+          }
         }
       ]
     },
@@ -2703,6 +2756,108 @@ export const canonicalSessionGraphFixtures = {
           },
           "mutation": {
             "description": "count is object"
+          }
+        },
+        {
+          "name": "conversation-count-null",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":null,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "null replaces omission for conversation count"
+          }
+        },
+        {
+          "name": "conversation-count-string",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":\"1\",\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "requirement",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is a string"
+          }
+        },
+        {
+          "name": "conversation-count-fraction",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":1.5,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is fractional"
+          }
+        },
+        {
+          "name": "conversation-count-bool",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":true,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is boolean"
+          }
+        },
+        {
+          "name": "conversation-count-negative",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":-1,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count is negative"
+          }
+        },
+        {
+          "name": "conversation-count-above-safe-max",
+          "input": {
+            "json": "{\"startTime\":\"2020-01-01T00:00:00Z\",\"endTime\":\"2020-01-01T00:00:00Z\",\"durationMins\":0,\"totalTokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"toolCallCount\":0,\"id\":\"ses_bad\",\"harness\":\"claude-code\",\"turnCount\":0,\"conversationTurnCount\":9007199254740992,\"turns\":[]}"
+          },
+          "expected": {
+            "errorContains": "conversationTurnCount"
+          },
+          "classification": "must-fail",
+          "provenance": {
+            "source": "boundary",
+            "ref": "conversation-count-invalid"
+          },
+          "mutation": {
+            "description": "conversation count exceeds JS-safe range"
           }
         }
       ]
@@ -3096,6 +3251,15 @@ export const canonicalSessionGraphFixtures = {
       "input-count-bool",
       "input-count-array",
       "input-count-object",
+      "conversation-count-absent",
+      "conversation-count-zero",
+      "conversation-count-safe-max",
+      "conversation-count-null",
+      "conversation-count-string",
+      "conversation-count-fraction",
+      "conversation-count-bool",
+      "conversation-count-negative",
+      "conversation-count-above-safe-max",
       "authoritative-mirrors-match",
       "authoritative-count-disagreement",
       "authoritative-count-detail-absent",

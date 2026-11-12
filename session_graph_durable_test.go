@@ -199,6 +199,15 @@ func TestDurableInputCounts(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if strings.HasPrefix(row.Name, "conversation-count-") {
+				if (value.ConversationTurnCount != nil) != row.Expected.Present {
+					t.Fatalf("presence=%v", value.ConversationTurnCount != nil)
+				}
+				if value.ConversationTurnCount != nil && *value.ConversationTurnCount != row.Expected.Value {
+					t.Fatalf("value=%d", *value.ConversationTurnCount)
+				}
+				return
+			}
 			if (value.InputSubmissionCount != nil) != row.Expected.Present {
 				t.Fatalf("presence=%v", value.InputSubmissionCount != nil)
 			}
@@ -213,12 +222,16 @@ func TestDurableInputCounts(t *testing.T) {
 			if err == nil || !strings.Contains(err.Error(), row.Expected.ErrorContains) {
 				t.Fatalf("error=%v want %q", err, row.Expected.ErrorContains)
 			}
+			wantField := "inputSubmissionCount"
+			if strings.HasPrefix(row.Name, "conversation-count-") {
+				wantField = "conversationTurnCount"
+			}
 			_, publishErr := schema.DecodeAuthoritativePublishMetadataRaw(authoritativeCountJSON(t, row.Input.JSON))
-			if publishErr == nil || !strings.Contains(publishErr.Error(), "inputSubmissionCount") {
+			if publishErr == nil || !strings.Contains(publishErr.Error(), wantField) {
 				t.Fatalf("authoritative count error=%v", publishErr)
 			}
 			var metadata schema.UnifiedMetadata
-			if metadataErr := json.Unmarshal(metadataCountJSON(t, row.Input.JSON), &metadata); metadataErr == nil || !strings.Contains(metadataErr.Error(), "inputSubmissionCount") {
+			if metadataErr := json.Unmarshal(metadataCountJSON(t, row.Input.JSON), &metadata); metadataErr == nil || !strings.Contains(metadataErr.Error(), wantField) {
 				t.Fatalf("metadata count error=%v", metadataErr)
 			}
 		})
@@ -231,7 +244,14 @@ func metadataCountJSON(t *testing.T, detailRaw string) []byte {
 	if err := json.Unmarshal([]byte(detailRaw), &detail); err != nil {
 		t.Fatal(err)
 	}
-	value := map[string]any{"schemaVersion": 10, "sessionId": "ses_bad", "parentUuid": nil, "harness": "claude-code", "model": "model", "version": "1", "timestamp": map[string]any{"start": 1, "end": 2}, "source": map[string]any{"format": "json"}, "git": map[string]any{}, "project": map[string]any{"hash": strings.Repeat("a", 64), "name": "project"}, "hostSlug": "host", "stats": map[string]json.RawMessage{"inputSubmissionCount": detail["inputSubmissionCount"]}, "subagents": []any{}, "diagnostics": map[string]any{"warnings": []any{}}, "contentHash": "", "metadataHash": "", "redaction": map[string]any{}}
+	stats := map[string]json.RawMessage{}
+	if count, present := detail["inputSubmissionCount"]; present {
+		stats["inputSubmissionCount"] = count
+	}
+	if count, present := detail["conversationTurnCount"]; present {
+		stats["conversationTurnCount"] = count
+	}
+	value := map[string]any{"schemaVersion": 10, "sessionId": "ses_bad", "parentUuid": nil, "harness": "claude-code", "model": "model", "version": "1", "timestamp": map[string]any{"start": 1, "end": 2}, "source": map[string]any{"format": "json"}, "git": map[string]any{}, "project": map[string]any{"hash": strings.Repeat("a", 64), "name": "project"}, "hostSlug": "host", "stats": stats, "subagents": []any{}, "diagnostics": map[string]any{"warnings": []any{}}, "contentHash": "", "metadataHash": "", "redaction": map[string]any{}}
 	out, err := json.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
@@ -257,7 +277,16 @@ func authoritativeCountJSON(t *testing.T, detailRaw string) []byte {
 	if err := json.Unmarshal(request["stats"], &stats); err != nil {
 		t.Fatal(err)
 	}
-	stats["inputSubmissionCount"] = detail["inputSubmissionCount"]
+	if count, present := detail["inputSubmissionCount"]; present {
+		stats["inputSubmissionCount"] = count
+	} else {
+		delete(stats, "inputSubmissionCount")
+	}
+	if count, present := detail["conversationTurnCount"]; present {
+		stats["conversationTurnCount"] = count
+	} else {
+		delete(stats, "conversationTurnCount")
+	}
 	request["stats"], err = json.Marshal(stats)
 	if err != nil {
 		t.Fatal(err)

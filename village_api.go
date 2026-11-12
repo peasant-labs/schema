@@ -1092,16 +1092,28 @@ func (r VillageSessionRow) Validate() error {
 	if err := ValidateInputSubmissionCount(r.Session.InputSubmissionCount, "VillageSessionRow.session.input_submission_count"); err != nil {
 		return err
 	}
+	if err := ValidateConversationTurnCount(r.Session.ConversationTurnCount, "VillageSessionRow.session.conversation_turn_count"); err != nil {
+		return err
+	}
+	if err := ValidateConversationTurnCount(r.Session.DisplayedTurnCount, "VillageSessionRow.session.displayed_turn_count"); err != nil {
+		return err
+	}
 	arms := 0
 	if r.Collective != nil {
 		arms++
 		if err := ValidateInputSubmissionCount(r.Collective.InputSubmissionCount, "VillageSessionRow.collective.input_submission_count"); err != nil {
 			return err
 		}
+		if err := ValidateConversationTurnCount(r.Collective.ConversationTurnCount, "VillageSessionRow.collective.conversation_turn_count"); err != nil {
+			return err
+		}
+		if err := ValidateConversationTurnCount(r.Collective.DisplayedTurnCount, "VillageSessionRow.collective.displayed_turn_count"); err != nil {
+			return err
+		}
 		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || !reflect.DeepEqual(r.Collective.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Collective.ProjectDisplayName, r.Session.ProjectDisplayName) || !reflect.DeepEqual(r.Collective.ProjectNameSource, r.Session.ProjectNameSource) || !reflect.DeepEqual(r.Collective.ProjectRemoteLabel, r.Session.ProjectRemoteLabel) || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || !reflect.DeepEqual(r.Collective.ConversationTurnCount, r.Session.ConversationTurnCount) || !reflect.DeepEqual(r.Collective.DisplayedTurnCount, r.Session.DisplayedTurnCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || !reflect.DeepEqual(r.Collective.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Collective.ProjectDisplayName, r.Session.ProjectDisplayName) || !reflect.DeepEqual(r.Collective.ProjectNameSource, r.Session.ProjectNameSource) || !reflect.DeepEqual(r.Collective.ProjectRemoteLabel, r.Session.ProjectRemoteLabel) || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1119,7 +1131,13 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateInputSubmissionCount(r.MyShare.InputSubmissionCount, "VillageSessionRow.myShare.input_submission_count"); err != nil {
 			return err
 		}
-		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+		if err := ValidateConversationTurnCount(r.MyShare.ConversationTurnCount, "VillageSessionRow.myShare.conversation_turn_count"); err != nil {
+			return err
+		}
+		if err := ValidateConversationTurnCount(r.MyShare.DisplayedTurnCount, "VillageSessionRow.myShare.displayed_turn_count"); err != nil {
+			return err
+		}
+		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || !reflect.DeepEqual(r.MyShare.ConversationTurnCount, r.Session.ConversationTurnCount) || !reflect.DeepEqual(r.MyShare.DisplayedTurnCount, r.Session.DisplayedTurnCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
 		}
 	}

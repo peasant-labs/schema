@@ -18,6 +18,16 @@ required_names:
   - directory-half-paged
   - directory-paged-below-cap
   - directory-total-turns-below-segments
+  - directory-positions-zero-count-segment
+  - directory-positions-paged-second-page
+  - directory-positions-partial
+  - directory-positions-without-total
+  - directory-positions-total-without-spans
+  - directory-positions-negative-before
+  - directory-positions-negative-count
+  - directory-total-conversation-turns-negative
+  - directory-positions-exceed-total
+  - directory-positions-not-continuous
   - window-anchored
   - window-span-one
   - window-span-zero
@@ -475,6 +485,167 @@ shape_cases:
           - {index: 0, firstTurn: 4, lastTurn: 40, byteLength: 917504}
           - {index: 1, firstTurn: 44, lastTurn: 118, byteLength: 950000}
       expected: false
+    - name: directory-positions-zero-count-segment
+      classification: must-pass
+      provenance: {source: requirement, ref: "a gap with no conversation turns carries a zero count"}
+      mutation: {description: "serves a zero-count span for a segment with no conversation turns"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 22
+          totalConversationTurns: 19
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 20, byteLength: 10, conversationTurns: {before: 0, count: 19}}
+            - {index: 1, firstTurn: 21, lastTurn: 22, byteLength: 10, conversationTurns: {before: 19, count: 0}}
+      expected: {valid: true}
+    - name: directory-positions-paged-second-page
+      classification: must-pass
+      provenance: {source: requirement, ref: "a directory holding only its second page validates alone"}
+      mutation: {description: "serves refs 10000 and 10001 as directory page 2 with conversation spans"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 24004
+          totalConversationTurns: 20000
+          totalSegments: 12002
+          directoryPage: 2
+          directoryPerPage: 10000
+          segments:
+            - {index: 10000, firstTurn: 20000, lastTurn: 20001, byteLength: 10, conversationTurns: {before: 15000, count: 2}}
+            - {index: 10001, firstTurn: 20002, lastTurn: 20003, byteLength: 10, conversationTurns: {before: 15002, count: 2}}
+      expected: {valid: true}
+    - name: directory-positions-partial
+      classification: must-pass
+      provenance: {source: requirement, ref: "absent position fields are valid in any combination"}
+      mutation: {description: "serves one span beside a ref without one"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 12
+          totalConversationTurns: 10
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 10, byteLength: 10, conversationTurns: {before: 0, count: 10}}
+            - {index: 1, firstTurn: 11, lastTurn: 12, byteLength: 10}
+      expected: {valid: true}
+    - name: directory-positions-without-total
+      classification: must-pass
+      provenance: {source: requirement, ref: "absent position fields are valid in any combination"}
+      mutation: {description: "serves spans without a total"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 5
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: 0, count: 3}}
+            - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 3, count: 2}}
+      expected: {valid: true}
+    - name: directory-positions-total-without-spans
+      classification: must-pass
+      provenance: {source: requirement, ref: "absent position fields are valid in any combination"}
+      mutation: {description: "serves a total without spans"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 5
+          totalConversationTurns: 10
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10}
+            - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10}
+      expected: {valid: true}
+    - name: directory-positions-negative-before
+      classification: must-fail
+      provenance: {source: boundary, ref: "span counts cannot be negative"}
+      mutation: {description: "declares a negative before count"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 5
+          totalConversationTurns: 5
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: -1, count: 2}}
+            - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 1, count: 2}}
+      expected: {valid: false, errorContains: "cannot be negative"}
+    - name: directory-positions-negative-count
+      classification: must-fail
+      provenance: {source: boundary, ref: "span counts cannot be negative"}
+      mutation: {description: "declares a negative span count"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 5
+          totalConversationTurns: 5
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10, conversationTurns: {before: 0, count: -1}}
+            - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 2}}
+      expected: {valid: false, errorContains: "cannot be negative"}
+    - name: directory-total-conversation-turns-negative
+      classification: must-fail
+      provenance: {source: boundary, ref: "the total cannot be negative"}
+      mutation: {description: "declares a negative conversation total"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 5
+          totalConversationTurns: -1
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 2, byteLength: 10}
+            - {index: 1, firstTurn: 3, lastTurn: 5, byteLength: 10}
+      expected: {valid: false, errorContains: "negative total"}
+    - name: directory-positions-exceed-total
+      classification: must-fail
+      provenance: {source: boundary, ref: "a span ends at or before the total"}
+      mutation: {description: "declares a span past the total"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 12
+          totalConversationTurns: 10
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 10, byteLength: 10, conversationTurns: {before: 0, count: 11}}
+            - {index: 1, firstTurn: 11, lastTurn: 12, byteLength: 10, conversationTurns: {before: 11, count: 0}}
+      expected: {valid: false, errorContains: "past totalConversationTurns"}
+    - name: directory-positions-not-continuous
+      classification: must-fail
+      provenance: {source: boundary, ref: "neighbouring spans are continuous"}
+      mutation: {description: "declares a gap between neighbouring spans"}
+      input:
+        schema: TranscriptSegmentDirectory
+        payload:
+          sessionId: ses_3cd91f52effeXd3QAJ54jOyzv5
+          revision: "4213"
+          totalTurns: 12
+          totalConversationTurns: 10
+          totalSegments: 2
+          segments:
+            - {index: 0, firstTurn: 0, lastTurn: 5, byteLength: 10, conversationTurns: {before: 0, count: 5}}
+            - {index: 1, firstTurn: 6, lastTurn: 12, byteLength: 10, conversationTurns: {before: 6, count: 4}}
+      expected: {valid: false, errorContains: "twice or skipped"}
 cut_cases:
   - name: cut-defers-crossing-entry
     budgetBytes: 1048576
