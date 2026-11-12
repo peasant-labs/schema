@@ -2,6 +2,7 @@ package intent
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -53,7 +54,7 @@ func Generate(cfg Config, in ContentInput) (Content, error) {
 	for _, title := range ordered {
 		line := "- " + title.Subject
 		if title.PR != 0 {
-			line += " (#" + itoa(title.PR) + ")"
+			line += " (#" + strconv.Itoa(title.PR) + ")"
 		}
 		if title.Breaking {
 			line += " (BREAKING)"
@@ -61,7 +62,7 @@ func Generate(cfg Config, in ContentInput) (Content, error) {
 		lines = append(lines, line)
 	}
 
-	heading, err := changelogHeading(in)
+	heading, err := changelogHeading(cfg.TagPrefix, in)
 	if err != nil {
 		return Content{}, err
 	}
@@ -79,11 +80,27 @@ func Generate(cfg Config, in ContentInput) (Content, error) {
 	}, nil
 }
 
-// changelogHeading builds the section heading in the base text's style.
-func changelogHeading(in ContentInput) (string, error) {
-	bracket, dated := sniffHeadingStyle(in.BaseChangelog)
+// changelogHeading builds the section heading in the base text's style: the
+// brackets follow the latest heading, the version text keeps or drops the
+// tag prefix with it, and a date is written only when that heading carries
+// one. A base with no section defaults to the bracketed tag form, dated when
+// a date is given.
+func changelogHeading(prefix string, in ContentInput) (string, error) {
+	bracket, dated, useTag, found := sniffHeadingStyle(prefix, in.BaseChangelog)
+	if !found {
+		// No style to follow: the bracketed tag form, dated when a date
+		// is given.
+		if in.Date != "" {
+			return "## [" + in.Tag + "] - " + in.Date, nil
+		}
+		return "## [" + in.Tag + "]", nil
+	}
+	ver := string(in.Version)
+	if useTag {
+		ver = in.Tag
+	}
 	if bracket {
-		if dated || in.Date != "" {
+		if dated {
 			if in.Date == "" {
 				return "", inputError(
 					"the changelog style carries a date but no date was given",
@@ -94,28 +111,34 @@ func changelogHeading(in ContentInput) (string, error) {
 					"pass the newest pending subject's commit date",
 				)
 			}
-			return "## [" + in.Tag + "] - " + in.Date, nil
+			return "## [" + ver + "] - " + in.Date, nil
 		}
-		return "## [" + in.Tag + "]", nil
+		return "## [" + ver + "]", nil
 	}
-	return "## " + string(in.Version), nil
+	return "## " + ver, nil
 }
 
 // sniffHeadingStyle reads the base text's latest section heading: bracketed
-// or bare, and whether it carries a date. A base with no section defaults to
-// the bracketed style.
-func sniffHeadingStyle(base string) (bracket, dated bool) {
+// or bare, whether it carries a date, and whether its version text carries
+// the tag prefix. An Unreleased block is not a style: the sniff looks past
+// it to the latest real section. found is false when the base has no real
+// section.
+func sniffHeadingStyle(prefix, base string) (bracket, dated, useTag, found bool) {
 	for _, line := range strings.Split(base, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if !strings.HasPrefix(trimmed, "## ") {
 			continue
 		}
-		if m := bracketHeading.FindStringSubmatch(trimmed); m != nil {
-			return true, m[3] != ""
+		text := strings.TrimSpace(trimmed[len("## "):])
+		if strings.EqualFold(strings.Trim(text, "[]"), "unreleased") {
+			continue
 		}
-		return false, false
+		if m := bracketHeading.FindStringSubmatch(trimmed); m != nil {
+			return true, m[3] != "", strings.HasPrefix(m[1], prefix), true
+		}
+		return false, false, strings.HasPrefix(text, prefix), true
 	}
-	return true, false
+	return true, false, true, false
 }
 
 // placeSection merges the new section into the base text. An [Unreleased]
@@ -160,23 +183,4 @@ func placeSection(base, heading string, lines []string) string {
 	head := strings.TrimRight(strings.Join(ls[:first], "\n"), "\n")
 	tail := strings.Join(ls[first:], "\n")
 	return head + "\n\n" + heading + "\n\n" + strings.Join(lines, "\n") + "\n\n" + strings.TrimLeft(tail, "\n")
-}
-
-func itoa(n int) string {
-	if n == 0 {
-		return "0"
-	}
-	neg := n < 0
-	if neg {
-		n = -n
-	}
-	var digits []byte
-	for n > 0 {
-		digits = append([]byte{byte('0' + n%10)}, digits...)
-		n /= 10
-	}
-	if neg {
-		digits = append([]byte{'-'}, digits...)
-	}
-	return string(digits)
 }

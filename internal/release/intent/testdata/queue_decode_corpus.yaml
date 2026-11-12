@@ -17,7 +17,6 @@ cases:
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"totalCount":2,"nodes":[{"position":0,"pullRequest":{"number":11,"title":"feat(x)[minor]: one"}},{"position":1,"pullRequest":{"number":12,"title":"release[patch]: cut"}}]}}}}}'
     expected:
-      total_count: 2
       entries:
         - {position: 0, number: 11, title: "feat(x)[minor]: one"}
         - {position: 1, number: 12, title: "release[patch]: cut"}
@@ -28,7 +27,6 @@ cases:
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"totalCount":0,"nodes":[]}}}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-pass
     provenance: {source: requirement, ref: "decoder: a genuinely empty queue decodes empty"}
@@ -37,71 +35,71 @@ cases:
     input:
       document: '{"data":{"repository":'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: malformed JSON is a failed read"}
     mutation: {description: "truncated the response body"}
   - name: errors-array
     input:
       document: '{"data":null,"errors":[{"message":"timed out"}]}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: a non-empty errors array is a failed read"}
     mutation: {description: "answered with a service error"}
   - name: null-merge-queue
     input:
       document: '{"data":{"repository":{"mergeQueue":null}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: empty-queue-decodes
     provenance: {source: requirement, ref: "decoder: mergeQueue null is a failed read, never an empty queue"}
     mutation: {description: "nulled the merge queue"}
   - name: missing-total-count
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"nodes":[]}}}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: a missing totalCount is a failed read"}
     mutation: {description: "dropped the total from the answer"}
   - name: count-mismatch-fewer-nodes
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"totalCount":3,"nodes":[{"position":0,"pullRequest":{"number":11,"title":"feat(x)[minor]: one"}},{"position":1,"pullRequest":{"number":12,"title":"docs(y): words"}}]}}}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: fewer nodes than the total is a cut page"}
     mutation: {description: "reported three entries but listed two"}
   - name: count-mismatch-more-nodes
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"totalCount":1,"nodes":[{"position":0,"pullRequest":{"number":11,"title":"feat(x)[minor]: one"}},{"position":1,"pullRequest":{"number":12,"title":"docs(y): words"}}]}}}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: more nodes than the total is a failed read"}
     mutation: {description: "reported one entry but listed two"}
   - name: missing-node-title
     input:
       document: '{"data":{"repository":{"mergeQueue":{"entries":{"totalCount":1,"nodes":[{"position":0,"pullRequest":{"number":11}}]}}}}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: every entry needs its position, number, and title"}
     mutation: {description: "dropped a title from an entry"}
   - name: null-repository
     input:
       document: '{"data":{"repository":null}}'
     expected:
-      total_count: 0
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: a null repository is a failed read"}
     mutation: {description: "nulled the repository"}

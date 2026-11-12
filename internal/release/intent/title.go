@@ -15,11 +15,25 @@ import (
 // must-release types, optional on the may-release types, and forbidden on the
 // never-release types. The landed suffix is the squash-commit PR number.
 var (
-	oldReleasePattern = regexp.MustCompile(`^release\(v[^)]*\)`)
+	oldReleasePattern = regexp.MustCompile(`^release\(v?\d+\.\d+\.\d+[^)]*\)`)
 	landedSuffix      = regexp.MustCompile(` \(#(\d+)\)$`)
 	titlePattern      = regexp.MustCompile(`^([a-z]+)(\(([^()]*)\))?(!)?(\[(major|minor|patch)\])?: (\S.*)$`)
 	scopePattern      = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 )
+
+// SplitLandedSubject splits a landed subject into its title text and PR
+// number. A PR title without the squash suffix returns pr 0. It is the one
+// rule for the suffix: callers never re-derive it.
+func SplitLandedSubject(raw string) (text string, pr int) {
+	if m := landedSuffix.FindStringSubmatch(raw); m != nil {
+		n, err := strconv.Atoi(m[1])
+		if err != nil {
+			return raw, 0
+		}
+		return raw[:len(raw)-len(m[0])], n
+	}
+	return raw, 0
+}
 
 // ParseTitle parses one intent title against the release config and the
 // repo's current version, which decides what a breaking mark may pair with.
@@ -35,20 +49,7 @@ func ParseTitle(cfg Config, current SemVer, raw string) (Title, error) {
 			"retitle with a level, for example \"release[minor]: publish the pending changes\", and drop any version or CHANGELOG edit from the PR")
 	}
 
-	pr := 0
-	text := trimmed
-	if m := landedSuffix.FindStringSubmatch(text); m != nil {
-		n, err := strconv.Atoi(m[1])
-		if err != nil {
-			return Title{}, rejection(ErrMalformed, raw,
-				"the landed PR number does not parse",
-				"a landed subject ends in a space, a PR number in parentheses, and nothing else",
-				"the title-guard check is red, so the merge queue will not accept this PR",
-				"check the subject against the PR title plus its number, for example \"feat(graph)[minor]: add a facet (#42)\"")
-		}
-		pr = n
-		text = text[:len(text)-len(m[0])]
-	}
+	text, pr := SplitLandedSubject(trimmed)
 
 	m := titlePattern.FindStringSubmatch(text)
 	if m == nil {
@@ -78,7 +79,7 @@ func ParseTitle(cfg Config, current SemVer, raw string) (Title, error) {
 	}
 
 	breaking := m[4] == "!"
-	level := parseLevelBracket(m[6])
+	level, _ := parseLevel(m[6])
 
 	if !cfg.Releases && (level != LevelNone || breaking) {
 		return Title{}, rejection(ErrReleasesDisabled, raw,
@@ -175,18 +176,4 @@ func parseScopes(inner string, present bool) ([]string, bool) {
 		scopes = append(scopes, part)
 	}
 	return scopes, true
-}
-
-// parseLevelBracket maps a bracket word to its level; empty means none.
-func parseLevelBracket(word string) Level {
-	switch word {
-	case "patch":
-		return LevelPatch
-	case "minor":
-		return LevelMinor
-	case "major":
-		return LevelMajor
-	default:
-		return LevelNone
-	}
 }

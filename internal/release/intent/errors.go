@@ -2,7 +2,7 @@ package intent
 
 import (
 	"fmt"
-	"strings"
+	"strconv"
 )
 
 // inputError formats a six-part usage error for failures that are not typed
@@ -19,13 +19,9 @@ func rejection(code ErrorCode, raw, what, why, means, fix string) *Error {
 		Code:  code,
 		What:  what,
 		Why:   why,
-		Where: "intent title " + strconvQuote(raw) + ", parsed by intent.ParseTitle",
+		Where: "intent title " + strconv.Quote(raw) + ", parsed by intent.ParseTitle",
 		When:  "checking a PR title before it can be enqueued",
 		Means: means,
 		Fix:   fix,
 	}
-}
-
-func strconvQuote(s string) string {
-	return "\"" + strings.ReplaceAll(s, "\"", "\\\"") + "\""
 }

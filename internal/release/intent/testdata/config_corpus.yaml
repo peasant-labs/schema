@@ -79,6 +79,7 @@ cases:
         scope_allowlist: [graph]
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: an unknown key fails closed"}
     mutation: {description: "added a typo'd key"}
   - name: surfaces-while-quiet
@@ -92,6 +93,7 @@ cases:
           types: types
     expected: {}
     classification: must-fail
+    sibling: minimal-quiet-config
     provenance: {source: requirement, ref: "config: a repo that does not release names no surfaces"}
     mutation: {description: "named a surface where releases are off"}
   - name: empty-tag-prefix
@@ -103,6 +105,7 @@ cases:
         changelog: CHANGELOG.md
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the tag prefix is required"}
     mutation: {description: "cleared the tag prefix"}
   - name: empty-automation-author
@@ -114,6 +117,7 @@ cases:
         changelog: CHANGELOG.md
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the automation author is required"}
     mutation: {description: "cleared the automation author"}
   - name: empty-changelog
@@ -125,6 +129,7 @@ cases:
         changelog: ""
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the changelog path is required"}
     mutation: {description: "cleared the changelog path"}
   - name: version-file-missing-field
@@ -138,6 +143,7 @@ cases:
           - { path: package.json }
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: a version file entry needs its protected field"}
     mutation: {description: "dropped the field from a version file entry"}
   - name: bad-bot-kind
@@ -151,6 +157,7 @@ cases:
           deploy: automation/deploy
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: requirement, ref: "config: the bot PR kinds are closed"}
     mutation: {description: "named a bot kind outside the closed set"}
   - name: empty-branch-value
@@ -164,6 +171,7 @@ cases:
           release: ""
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: each bot kind needs its branch"}
     mutation: {description: "cleared a bot branch"}
   - name: two-documents
@@ -177,5 +185,6 @@ cases:
         releases: false
     expected: {}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the file is one document"}
     mutation: {description: "appended a second document"}
