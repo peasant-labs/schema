@@ -1,11 +1,25 @@
 package release
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
+)
 
 // QueueRule names one merge-queue workflow rule the shared checker applies to
 // every repo. The set is closed: adding a rule is a contract change, so callers
 // compare against these constants rather than bare strings and diagnostics
 // carry the member that fired.
+//
+// Each member maps to the plan or review note that owns it: the 7.6 table
+// names merge-group-on-required-workflows, required-workflows-concurrency-per-ref,
+// release-actions-gated, title-guard-no-early-success, range-readers-take-the-floor,
+// required-workflows-unfiltered, merge-gate-always-reports, titles-never-interpolated,
+// no-default-branch-push-from-workflows, cut-release-is-dispatch-only and
+// tool-pin-is-a-sha; required-contexts is the 7.7 required-checks half (entries
+// must resolve, the operator compares the printed list with the ruleset);
+// token-mint-ref-check and bot-branch-via-classify are handoff R2/R6 (one
+// classifier, no branch literals, the ref checked before the App key exists).
 type QueueRule string
 
 const (
@@ -40,15 +54,40 @@ const (
 	// --floor from the RELEASE_BATCH_FLOOR repository variable, so a subject
 	// the tool cannot parse leaves parsing everywhere at once.
 	QueueRuleRangeFloor QueueRule = "range-readers-take-the-floor"
-	// QueueRuleBotWriter requires each bot branch to have exactly one writer
-	// job: the release branch belongs to the release job and every other bot
-	// branch to its own bot job, so two jobs can never push the same branch.
-	QueueRuleBotWriter QueueRule = "bot-branch-one-writer"
+	// QueueRuleNoPush requires every branch push to be a listed job pushing
+	// its own branch: the release job pushes the release branch and each bot
+	// job pushes its own kind's branch, resolved from the release config.
+	// Anything else, including a second job on one bot kind, is reported.
+	QueueRuleNoPush QueueRule = "no-default-branch-push-from-workflows"
 	// QueueRuleTokenMint requires every job that mints the releaser App token
-	// to check that github.ref is the default branch before it mints. A
-	// dispatch on any branch would otherwise run that branch's workflow file
-	// with the App key.
+	// to check that github.ref is the default branch, in a job-level or
+	// mint-step if, and to mint only when tag mode is on. A dispatch on any
+	// branch would otherwise run that branch's workflow file with the App key.
 	QueueRuleTokenMint QueueRule = "token-mint-ref-check"
+	// QueueRuleUnfiltered requires every workflow that owns a required context
+	// to run on every pull_request and merge_group event: no paths,
+	// paths-ignore, or branches-ignore filter that could skip the check the
+	// queue waits on.
+	QueueRuleUnfiltered QueueRule = "required-workflows-unfiltered"
+	// QueueRuleMergeGate requires the aggregator job that always reports so a
+	// change touching no heavy path is never stuck in the queue: it carries
+	// if: always() and a needs list.
+	QueueRuleMergeGate QueueRule = "merge-gate-always-reports"
+	// QueueRuleTitles requires that no run or env block interpolates a PR
+	// title or a commit message expression: titles are untrusted input.
+	QueueRuleTitles QueueRule = "titles-never-interpolated"
+	// QueueRuleCutRelease requires the cut-release job to trigger only on
+	// workflow_dispatch, to take its level from a choice of exactly patch and
+	// minor, and to write only when tag mode is on.
+	QueueRuleCutRelease QueueRule = "cut-release-is-dispatch-only"
+	// QueueRuleToolPin requires every checkout of the tool to name a 40-hex
+	// commit, and all of them in one repo to name the same commit.
+	QueueRuleToolPin QueueRule = "tool-pin-is-a-sha"
+	// QueueRuleClassify requires workflows to call the release-intent
+	// classify command instead of comparing a bot branch literal: no if or
+	// run compares == or != against a configured bot branch, and the guard
+	// workflow invokes classify to tell the release PR apart.
+	QueueRuleClassify QueueRule = "bot-branch-via-classify"
 )
 
 // AllQueueRules is the canonical ordered closed set, used by generators and
@@ -60,8 +99,14 @@ var AllQueueRules = []QueueRule{
 	QueueRuleReleaseActions,
 	QueueRuleTitleGuard,
 	QueueRuleRangeFloor,
-	QueueRuleBotWriter,
+	QueueRuleNoPush,
 	QueueRuleTokenMint,
+	QueueRuleUnfiltered,
+	QueueRuleMergeGate,
+	QueueRuleTitles,
+	QueueRuleCutRelease,
+	QueueRuleToolPin,
+	QueueRuleClassify,
 }
 
 // String renders the rule for diagnostic messages and CLI output.
@@ -102,22 +147,30 @@ type RequiredContext struct {
 }
 
 // ReleaseJobRule locates the release job: the workflow file and job that carry
-// out the one action the planner prints, the head branch of the standing
-// release PR (named here and nowhere else), and the ordered pre-tag step ids
-// the canonical verdict reads.
+// out the one action the planner prints, and the ordered pre-tag step ids the
+// canonical verdict reads. The release PR's head branch is not named here: it
+// comes from the release config's bot_branches release entry, the one source,
+// resolved by the checker.
 type ReleaseJobRule struct {
 	Workflow    string   `yaml:"workflow"`
 	Job         string   `yaml:"job"`
-	Branch      string   `yaml:"branch"`
 	PreTagSteps []string `yaml:"pre_tag_steps"`
 }
 
-// BotJobRule locates one bot job that may push a branch: the workflow file and
-// job, and the branch that is its own (no other job pushes it).
+// BotJobRule locates one bot job that may push a branch: the workflow file,
+// the job, and the bot kind whose branch it pushes. The branch itself is not
+// named here: it comes from the release config's bot_branches entry for that
+// kind, the one source, resolved by the checker.
 type BotJobRule struct {
-	Workflow string `yaml:"workflow"`
-	Job      string `yaml:"job"`
-	Branch   string `yaml:"branch"`
+	Workflow string        `yaml:"workflow"`
+	Job      string        `yaml:"job"`
+	Kind     intent.PRKind `yaml:"kind"`
+}
+
+// botKinds are the bot PR kinds a policy bot job may claim. The release kind
+// belongs to the release job, never to a bot entry; ordinary is not a bot PR.
+func botKindValid(kind intent.PRKind) bool {
+	return kind == intent.PRKindCutRelease || kind == intent.PRKindVendorHash
 }
 
 // QueueSection is the merge-queue half of a repo's release-guard policy. It is
@@ -166,9 +219,6 @@ func validateQueueSection(path string, queue *QueueSection) error {
 		if queue.ReleaseJob.Job == "" {
 			return fmt.Errorf("%s has an empty job during release workflow validation. Set 'job:' to the release job that carries out the planner's action", where)
 		}
-		if queue.ReleaseJob.Branch == "" {
-			return fmt.Errorf("%s has an empty branch during release workflow validation. Set 'branch:' to the release PR's head branch, named here and nowhere else", where)
-		}
 		for i, step := range queue.ReleaseJob.PreTagSteps {
 			if step == "" {
 				return fmt.Errorf("%s pre_tag_steps[%d] is empty during release workflow validation. Name the pre-tag step ids in verdict order, or drop the key when the repo has no pre-tag steps", where, i)
@@ -181,10 +231,10 @@ func validateQueueSection(path string, queue *QueueSection) error {
 			return fmt.Errorf("%s has an empty workflow during release workflow validation. Set 'workflow:' to the file holding the bot job", where)
 		}
 		if bot.Job == "" {
-			return fmt.Errorf("%s has an empty job during release workflow validation. Set 'job:' to the bot job that pushes the branch", where)
+			return fmt.Errorf("%s has an empty job during release workflow validation. Set 'job:' to the bot job that pushes its kind's branch", where)
 		}
-		if bot.Branch == "" {
-			return fmt.Errorf("%s has an empty branch during release workflow validation. Set 'branch:' to the branch only this job pushes", where)
+		if !botKindValid(bot.Kind) {
+			return fmt.Errorf("%s names kind %q during release workflow validation. A bot job claims one of the bot PR kinds, cut-release or vendor-hash, so the checker can resolve its branch from the release config; the release kind belongs to the release job", where, string(bot.Kind))
 		}
 	}
 	return nil

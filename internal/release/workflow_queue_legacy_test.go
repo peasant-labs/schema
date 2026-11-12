@@ -24,7 +24,7 @@ func TestLegacyOwnPolicyAndWorkflowKeepWorking(t *testing.T) {
 	if err := CheckReleaseWorkflowFile("../../.github/workflows/release.yml", policy); err != nil {
 		t.Fatalf("repo release.yml stopped satisfying the repo policy: %v", err)
 	}
-	diags, required := CheckWorkflows(policy, "../../.github/workflows")
+	diags, required := CheckWorkflows(policy, loadBaseConfig(t), "../../.github/workflows")
 	if len(diags) != 0 {
 		msgs := make([]string, 0, len(diags))
 		for _, d := range diags {

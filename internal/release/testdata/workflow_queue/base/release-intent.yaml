@@ -1,0 +1,11 @@
+# Release config for the fixture repo: the one source of the bot branches.
+# The checker resolves every bot branch from bot_branches; the policy names
+# jobs and kinds, never branch literals.
+releases: true
+tag_prefix: v
+automation_author: peasant-labs-releaser[bot]
+changelog: CHANGELOG.md
+bot_branches:
+  release: automation/release
+  cut-release: automation/cut-release
+  vendor-hash: automation/vendor-hash

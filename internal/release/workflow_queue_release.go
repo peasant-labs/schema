@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/peasant-labs/schema/internal/release/intent"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,8 +24,9 @@ var (
 	// with == against a literal, e.g. steps.plan.outputs.action == 'open-pr'.
 	actionGate = regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.outputs\.action\s*==\s*'([^']+)'`)
 	// gateTest matches an if that compares the queue-gate output, e.g.
-	// steps.gate.outputs.gate == 'arm'.
-	gateTest = regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.outputs\.gate\s*==\s*'(arm|hold)'`)
+	// steps.gate.outputs.gate == 'arm'. The alternation is built from the
+	// planner's closed gate set so a new gate reaches this check with the set.
+	gateTest = regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.outputs\.gate\s*==\s*'` + gateAlternatives() + `'`)
 	// pushTest matches an if that tests the push the write step printed, e.g.
 	// steps.write.outputs.push == 'true'.
 	pushTest = regexp.MustCompile(`steps\.([A-Za-z0-9_-]+)\.outputs\.push\b`)
@@ -45,10 +47,34 @@ var (
 	tagPush = regexp.MustCompile(`refs/tags/|\bgit\s+tag\b|\bgh\s+release\s+create\b`)
 )
 
+// gateAlternatives renders the planner's closed gate set as a regex
+// alternation, so the arm/hold check knows exactly the gates the tool prints.
+func gateAlternatives() string {
+	alts := make([]string, 0, len(intent.AllGates))
+	for _, g := range intent.AllGates {
+		alts = append(alts, regexp.QuoteMeta(g.String()))
+	}
+	return "(" + strings.Join(alts, "|") + ")"
+}
+
 // closedActions is the planner's closed action set: the only values a write
-// step's action gate may compare against.
-var closedActions = map[string]bool{
-	"none": true, "verify": true, "tag": true, "open-pr": true, "close-pr": true,
+// step's action gate may compare against. It is built from the intent package
+// so the two sets are one object, not two copies.
+var closedActions = func() map[string]bool {
+	set := make(map[string]bool, len(intent.AllActions))
+	for _, a := range intent.AllActions {
+		set[a.String()] = true
+	}
+	return set
+}()
+
+// gateValues renders the planner's closed gate set for messages.
+func gateValues() []string {
+	vals := make([]string, 0, len(intent.AllGates))
+	for _, g := range intent.AllGates {
+		vals = append(vals, g.String())
+	}
+	return vals
 }
 
 // checkReleaseActions applies release-actions-gated to the release job. A
@@ -72,6 +98,7 @@ func (c *queueChecker) checkReleaseActions() {
 	r.collectSteps()
 	r.checkVerdictForm()
 	r.checkWriteStepsGated()
+	r.checkMintGated()
 	r.checkTagPush()
 	r.checkPreTagSteps()
 	r.checkStatusFunctions()
@@ -202,16 +229,34 @@ func isQueueReadStep(step *yaml.Node) bool {
 // canonicalVerdict builds the exact verdict expression the policy's pre-tag
 // steps require: one conjunct per step in order, each reading that step's
 // outcome, and nothing else. With no pre-tag steps the verdict is the
-// taggable literal.
+// taggable literal. The literals come from the intent package, the same
+// objects the planner prints.
 func canonicalVerdict(preTag []string) string {
+	taggable := string(intent.VerdictTaggable)
 	if len(preTag) == 0 {
-		return "taggable"
+		return taggable
 	}
 	parts := make([]string, 0, len(preTag))
 	for _, name := range preTag {
 		parts = append(parts, "steps."+name+".outcome == 'success'")
 	}
-	return "${{ (" + strings.Join(parts, " && ") + ") && 'taggable' || 'rejected' }}"
+	return "${{ (" + strings.Join(parts, " && ") + ") && '" + taggable + "' || '" + string(intent.VerdictRejected) + "' }}"
+}
+
+// closedActionList renders the closed action set for messages.
+func closedActionList() string {
+	vals := make([]string, 0, len(intent.AllActions))
+	for _, a := range intent.AllActions {
+		vals = append(vals, a.String())
+	}
+	return strings.Join(vals, ", ")
+}
+
+// hasDisjunction reports whether an if spreads its gate across a disjunction:
+// ||, always(), or success() alongside the comparison. A gate inside a
+// disjunction opens on runs the comparison never approved.
+func hasDisjunction(cond string) bool {
+	return strings.Contains(cond, "||") || strings.Contains(cond, "always()") || strings.Contains(cond, "success()")
 }
 
 // checkVerdictForm (clause 3) requires every --verdict argument to be the
@@ -237,23 +282,31 @@ func (r *releaseChecker) checkVerdictForm() {
 
 // checkWriteStepsGated (clause 1) requires every step that can write to run
 // only under an if that compares one step's action output with == against one
-// value of the closed action set. The arm and hold steps test the gate
-// instead and belong to clause (8).
+// value of the closed action set, as a single conjunction. The arm and hold
+// steps test the gate instead and belong to clause (8); the token-minting
+// step is gated on tag mode instead (checkMintGated), because no single action
+// covers every run that needs a token.
 func (r *releaseChecker) checkWriteStepsGated() {
 	for i, step := range r.steps {
-		if !isWriteStep(step) || isArmHoldStep(step) {
+		if !isWriteStep(step) || isArmHoldStep(step) || isMintStep(step) {
 			continue
 		}
 		r.flagged[i] = true
-		m := actionGate.FindStringSubmatch(stepIfText(step))
+		cond := stepIfText(step)
+		m := actionGate.FindStringSubmatch(cond)
 		if m == nil {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-				"a step that can write has no action-gated if during merge-queue policy validation. A needs edge is satisfied by any job that succeeds and an exit 0 in an earlier step does not stop this one; gate the step on steps.<plan>.outputs.action == '<one of none, verify, tag, open-pr, close-pr>'")
+				"a step that can write has no action-gated if during merge-queue policy validation. A needs edge is satisfied by any job that succeeds and an exit 0 in an earlier step does not stop this one; gate the step on steps.<plan>.outputs.action == '<one of "+closedActionList()+">'")
+			continue
+		}
+		if hasDisjunction(cond) {
+			r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
+				"an action gate sits inside a disjunction during merge-queue policy validation. Parse the if as a conjunction: a gate with ||, always() or success() opens on runs the comparison never approved; gate on the one action alone")
 			continue
 		}
 		if !closedActions[m[2]] {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-				"the action gate compares against "+quote(m[2])+" during merge-queue policy validation, which is not one of none, verify, tag, open-pr, close-pr. Compare against the closed action the planner prints, or the gate never matches a real run")
+				"the action gate compares against "+quote(m[2])+" during merge-queue policy validation, which is not one of "+closedActionList()+". Compare against the closed action the planner prints, or the gate never matches a real run")
 			continue
 		}
 		if _, ok := r.ids[m[1]]; !ok {
@@ -261,6 +314,42 @@ func (r *releaseChecker) checkWriteStepsGated() {
 				"the action gate reads steps."+m[1]+" during merge-queue policy validation, but no step has that id. Point the gate at the plan step that prints the action in this run")
 		}
 	}
+}
+
+// checkMintGated requires the token-minting step to mint only when tag mode
+// is on: its own if, or the job-level if, compares RELEASE_BATCH_MODE with ==
+// against 'tag' as a single comparison. With tag mode off the action is always
+// none, so the job mints no token and nothing downstream can write.
+func (r *releaseChecker) checkMintGated() {
+	jobCond := ""
+	if cond := mappingValue(r.job, "if"); cond != nil {
+		jobCond = cond.Value
+	}
+	for i, step := range r.steps {
+		if !isMintStep(step) {
+			continue
+		}
+		r.flagged[i] = true
+		if hasTagModeGate(stepIfText(step)) || hasTagModeGate(jobCond) {
+			continue
+		}
+		r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
+			"the token-minting step has no tag-mode gate during merge-queue policy validation. Mint only when tag mode is on, with "+quoteTagMode()+" in the step if or the job if, so a tag-mode-off run mints no token")
+	}
+}
+
+// tagModeGate is the canonical tag-mode comparison a mint gate must carry.
+func quoteTagMode() string {
+	return "vars.RELEASE_BATCH_MODE == 'tag'"
+}
+
+// hasTagModeGate reports whether an if carries the tag-mode comparison as a
+// single comparison: the variable, ==, and 'tag', with no disjunction.
+func hasTagModeGate(cond string) bool {
+	return strings.Contains(cond, "RELEASE_BATCH_MODE") &&
+		strings.Contains(cond, "==") &&
+		strings.Contains(cond, "'tag'") &&
+		!strings.Contains(cond, "||")
 }
 
 // checkTagPush (clause 2) requires exactly one step to push a tag, gated on
@@ -274,10 +363,11 @@ func (r *releaseChecker) checkTagPush() {
 				continue
 			}
 			r.flagged[r.stepIndex(step)] = true
-			m := actionGate.FindStringSubmatch(stepIfText(step))
-			if m == nil || m[2] != "tag" {
+			cond := stepIfText(step)
+			m := actionGate.FindStringSubmatch(cond)
+			if m == nil || m[2] != string(intent.ActionTag) || hasDisjunction(cond) {
 				r.c.emit(QueueRuleReleaseActions, r.workflow, stepID(step),
-					"a step that pushes a tag is not gated on the tag action during merge-queue policy validation. Gate it on steps.<plan>.outputs.action == 'tag' so only the verdict's tag action pushes the tag")
+					"a step that pushes a tag is not gated on the tag action during merge-queue policy validation. Gate it on steps.<plan>.outputs.action == 'tag' as a single conjunction, with no ||, always() or success(), so only the verdict's tag action pushes the tag")
 				continue
 			}
 			idx, ok := r.ids[m[1]]
@@ -335,7 +425,7 @@ func (r *releaseChecker) checkPreTagSteps() {
 		step := r.steps[idx]
 		cond := stepIfText(step)
 		m := actionGate.FindStringSubmatch(cond)
-		if m == nil || m[2] != "verify" {
+		if m == nil || m[2] != string(intent.ActionVerify) {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, name,
 				"pre-tag step "+quote(name)+" does not run only on the verify action during merge-queue policy validation. Gate it on steps.<plan>.outputs.action == 'verify' so a stale candidate never reaches the checks")
 		} else if i > 0 && !strings.Contains(cond, "!cancelled()") {
@@ -459,10 +549,10 @@ func (r *releaseChecker) checkArmHold() {
 				"the arm/hold step tests steps."+m[1]+" during merge-queue policy validation, which is not the queue-gate output of this run. Test the gate the queue-gate command printed so arming follows the hold rule")
 		}
 	}
-	for _, want := range []string{"arm", "hold"} {
+	for _, want := range gateValues() {
 		if !seen[want] {
 			r.c.emit(QueueRuleReleaseActions, r.workflow, "",
-				"no step tests gate == '"+want+"' during merge-queue policy validation. Arm auto-merge only when the gate says arm, and take the arming back when it says hold")
+				"no step tests gate == '"+want+"' during merge-queue policy validation. Arm auto-merge only when the gate says "+string(intent.GateArm)+", and take the arming back when it says "+string(intent.GateHold))
 		}
 	}
 	for _, scalar := range fileScalars(r.doc) {

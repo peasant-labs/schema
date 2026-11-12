@@ -1,0 +1,90 @@
+name: Release batch
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+  schedule:
+    - cron: "7,37 * * * *"
+concurrency:
+  group: release-batch
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: peasant-labs/schema
+          ref: 71e687cef7eede9a63659be98ce9adac3c563398
+          path: schema-tool
+      - id: plan
+        run: nix develop -c release-intent plan --branch develop --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+      - id: mint
+        if: vars.RELEASE_BATCH_MODE == 'tag'
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_KEY }}
+      - id: verify-contract
+        if: steps.plan.outputs.action == 'verify'
+        run: nix develop -c release-intent check-contract --until ${{ steps.plan.outputs.candidate }} --floor ${{ vars.RELEASE_BATCH_FLOOR }} || true
+      - id: verify-freeze
+        if: "!cancelled() && steps.plan.outputs.action == 'verify'"
+        run: nix develop -c schema-gen freeze --check
+      - id: verdict
+        if: "!cancelled() && steps.plan.outputs.action == 'verify'"
+        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+      - id: tag
+        if: "!cancelled() && steps.verdict.outputs.action == 'tag'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: git push origin ${{ steps.verdict.outputs.candidate }}:refs/tags/${{ steps.verdict.outputs.tag }}
+      - id: decide
+        if: "!cancelled()"
+        run: nix develop -c release-intent plan --branch develop --verdict ${{ (steps.verify-contract.outcome == 'success' && steps.verify-freeze.outcome == 'success') && 'taggable' || 'rejected' }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+      - id: contract-tip
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: nix develop -c release-intent check-contract --until ${{ github.sha }} --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+      - id: write
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: nix develop -c release-intent release-pr --branch develop --current automation/release --write --floor ${{ vars.RELEASE_BATCH_FLOOR }}
+      - id: push
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr' && steps.write.outputs.push == 'true'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: git push --force-with-lease origin automation/release
+      - id: open
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr' && steps.write.outputs.push"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: 'gh pr create --head automation/release --base develop --title "release[minor]: v0.2.0" --body "bot" || gh pr edit automation/release --title "release[minor]: v0.2.0" --body "bot"'
+      - id: queue
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr' && steps.write.outputs.push"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh api graphql -f query='query($owner:String!,$repo:String!,$branch:String!){repository(owner:$owner,name:$repo){mergeQueue(branch:$branch){entries(first:100){totalCount nodes{position pullRequest{number title}}}}}}}' -f owner=peasant-labs -f repo=schema -f branch=develop > queue.json
+      - id: gate
+        if: "!cancelled() && steps.decide.outputs.action == 'open-pr' && steps.write.outputs.push"
+        run: nix develop -c release-intent queue-gate --queue queue.json --release-pr 7
+      - id: arm
+        if: "!cancelled() && steps.gate.outputs.gate == 'arm'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr merge --auto --squash 7
+      - id: hold
+        if: "!cancelled() && steps.gate.outputs.gate == 'hold'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr merge --disable-auto 7
+      - id: close
+        if: "!cancelled() && steps.decide.outputs.action == 'close-pr'"
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr close 7
