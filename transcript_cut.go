@@ -62,8 +62,7 @@ func TranscriptTurnByteLength(turn TurnDetail) int {
 		if part.Type == TurnPartTypeText {
 			total += TranscriptJSONStringByteLength(part.Text)
 		} else if part.Type == TurnPartTypeImage && part.Image != nil {
-			encoded, _ := json.Marshal(part.Image)
-			total += len(encoded)
+			total += transcriptImagePartByteLength(part.Image)
 		}
 	}
 	for i := range turn.ToolCalls {
@@ -71,6 +70,27 @@ func TranscriptTurnByteLength(turn TurnDetail) int {
 		total += TranscriptJSONStringByteLength(turn.ToolCalls[i].Result)
 	}
 	return total
+}
+
+// transcriptImagePartByteLength is the number of bytes the JSON encoder writes
+// for an image part's metadata object.
+func transcriptImagePartByteLength(image *ImagePart) int {
+	encoded, err := json.Marshal(image)
+	if err != nil {
+		// json.Marshal of ImagePart, a struct of strings and integers, does not
+		// fail; a future change that made it fail must not silently under-count
+		// the document. The fallback is an upper bound: every member name, the
+		// strings as the encoder writes them, and the widest integer for each
+		// number.
+		const members = `{"ref":,"mediaType":,"byteSize":,"width":,"height":,"omittedReason":}`
+		const widestInteger = 20
+		return len(members) +
+			TranscriptJSONStringByteLength(image.Ref) +
+			TranscriptJSONStringByteLength(string(image.MediaType)) +
+			TranscriptJSONStringByteLength(string(image.OmittedReason)) +
+			3*widestInteger
+	}
+	return len(encoded)
 }
 
 // CutTranscriptSegments cuts a session's turns, in order, into segment refs.
@@ -88,27 +108,23 @@ func CutTranscriptSegments(turns []TurnDetail, budget int) []TranscriptSegmentRe
 	}
 	refs := make([]TranscriptSegmentRef, 0, len(turns))
 	var current *TranscriptSegmentRef
-	bytes := 0
 	conversationTurns := 0
 	for i := range turns {
 		size := TranscriptTurnByteLength(turns[i])
-		if current != nil && bytes+size > budget {
+		if current != nil && current.ByteLength+size > budget {
 			refs = append(refs, *current)
 			current = nil
-			bytes = 0
 		}
 		if current == nil {
 			current = &TranscriptSegmentRef{
 				Index:             len(refs),
 				FirstTurn:         turns[i].Index,
 				LastTurn:          turns[i].Index,
-				ByteLength:        0,
 				ConversationTurns: &ConversationTurnSpan{Before: conversationTurns},
 			}
 		}
 		current.LastTurn = turns[i].Index
 		current.ByteLength += size
-		bytes += size
 		if IsConversationTurn(turns[i].Role, turns[i].EntryType, turns[i].Depth) {
 			current.ConversationTurns.Count++
 			conversationTurns++
