@@ -30,25 +30,38 @@ required_names:
   - ws-topic-kickstart
   - open-request-selection-scope
   - status-returns-only-configured
+  - error-response-session-not-found
+  - error-response-field-hidden
+  - error-response-contract-breach
+  - error-response-unknown-code-refused
+  - error-response-missing-code-refused
+  - error-response-empty-error-refused
+  - error-response-extra-field-refused
+  - error-code-member
+  - error-code-unknown-refused
+  - scan-partial-notice
+  - scan-notice-whitespace-refused
+  - scan-notice-empty-refused
 operations:
   - api: local
     method: get
     path: /api/v1/kickstart/status
     response: LocalKickstartStatus
-    statuses: ["200"]
+    statuses: ["200", "403", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
   - api: local
     method: post
     path: /api/v1/kickstart/sessions
     request: LocalKickstartOpenRequest
     response: LocalKickstartSession
-    statuses: ["200", "400", "403"]
-    error_responses: {"400": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "403", "500", "503"]
+    error_responses: {"400": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
   - api: local
     method: get
     path: "/api/v1/kickstart/sessions/{id}"
     response: LocalKickstartSession
-    statuses: ["200", "404"]
-    error_responses: {"404": OpenapiLocalErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
@@ -56,24 +69,24 @@ operations:
     path: "/api/v1/kickstart/sessions/{id}"
     request: LocalKickstartAnswers
     response: LocalKickstartPatchResult
-    statuses: ["200", "400", "403", "404"]
-    error_responses: {"400": OpenapiLocalErrorResponse, "404": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "403", "404", "500", "503"]
+    error_responses: {"400": LocalKickstartErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
     method: get
     path: "/api/v1/kickstart/sessions/{id}/tree"
     response: LocalKickstartTree
-    statuses: ["200", "404"]
-    error_responses: {"404": OpenapiLocalErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
     method: get
     path: "/api/v1/kickstart/sessions/{id}/tree/{nodeId}/preview"
     response: LocalKickstartPreview
-    statuses: ["200", "404"]
-    error_responses: {"404": OpenapiLocalErrorResponse}
+    statuses: ["200", "403", "404", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
       - {name: nodeId, in: path, required: true}
@@ -81,16 +94,16 @@ operations:
     method: post
     path: "/api/v1/kickstart/sessions/{id}/scan"
     response: LocalKickstartScan
-    statuses: ["200", "403", "404"]
-    error_responses: {"404": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "403", "404", "500", "503"]
+    error_responses: {"400": LocalKickstartErrorResponse, "404": LocalKickstartErrorResponse, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
   - api: local
     method: post
     path: "/api/v1/kickstart/sessions/{id}/commit"
     response: LocalKickstartCommitted
-    statuses: ["200", "403", "404", "409"]
-    error_responses: {"404": OpenapiLocalErrorResponse, "409": LocalKickstartCommitRefusal}
+    statuses: ["200", "400", "403", "404", "409", "500", "503"]
+    error_responses: {"400": LocalKickstartErrorResponse, "404": LocalKickstartErrorResponse, "409": LocalKickstartCommitRefusal, "500": LocalKickstartErrorResponse, "503": LocalKickstartErrorResponse}
     parameters:
       - {name: id, in: path, required: true}
 cases:
@@ -359,3 +372,99 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "conflict rows require both sides"}
     mutation: {description: "conflict-missing-theirs"}
+  - name: error-response-session-not-found
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "No setup session has this id. Open a session again.", code: kickstart_session_not_found}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a kickstart 404 carries a code from the closed set"}
+    mutation: {description: "answers a read of a session that expired"}
+  - name: error-response-field-hidden
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "The field is hidden in this session's current view. Nothing was changed.", code: kickstart_field_hidden}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "an answer to a hidden field is a 400 with kickstart_field_hidden"}
+    mutation: {description: "refuses an answer to a field the page does not show"}
+  - name: error-response-contract-breach
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "The answer breaks the Local API contract, so it is not sent.", code: publishing_contract_breach}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "the shared contract-breach code is a member of the kickstart set because a kickstart 500 can carry it"}
+    mutation: {description: "a kickstart view the server refuses to send"}
+  - name: error-response-unknown-code-refused
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "refused", code: kickstart_made_up}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "outside the closed set"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "the code is a closed set, not an open string"}
+    mutation: {description: "a code the contract does not publish"}
+  - name: error-response-missing-code-refused
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "refused"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "outside the closed set"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "every kickstart error carries its code"}
+    mutation: {description: "omits the code"}
+  - name: error-response-empty-error-refused
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "", code: kickstart_failed}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "error is empty"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an error names what went wrong"}
+    mutation: {description: "sends an empty message"}
+  - name: error-response-extra-field-refused
+    input:
+      schema: LocalKickstartErrorResponse
+      payload: {error: "refused", code: kickstart_failed, detail: "extra"}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "unknown field"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "kickstart bodies are closed objects"}
+    mutation: {description: "adds a field the contract does not declare"}
+  - name: error-code-member
+    input:
+      schema: LocalKickstartErrorCode
+      payload: kickstart_config_busy
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: enum, ref: "LocalKickstartErrorCode kickstart_config_busy"}
+    mutation: {description: "a save that another change holds off"}
+  - name: error-code-unknown-refused
+    input:
+      schema: LocalKickstartErrorCode
+      payload: kickstart_busy
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "outside the closed set"}
+    classification: must-fail
+    provenance: {source: enum, ref: "LocalKickstartErrorCode is closed"}
+    mutation: {description: "a near-miss spelling of a published code"}
+  - name: scan-partial-notice
+    input:
+      schema: LocalKickstartScan
+      payload: {state: done, done: 4, total: 4, notice: "Claude Code could not be read: the transcript folder is not readable"}
+    expected: {valid: true}
+    classification: must-pass
+    provenance: {source: requirement, ref: "a partial-scan notice is a declared field, not a phase"}
+    mutation: {description: "a scan that finished but could not read one harness folder"}
+  - name: scan-notice-whitespace-refused
+    input:
+      schema: LocalKickstartScan
+      payload: {state: done, done: 4, total: 4, notice: "   "}
+    expected: {valid: false, rejected_by: shape, go_rejects: true, go_error_contains: "notice is only whitespace"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "a notice that says nothing cannot be shown, in the schema and in Go"}
+    mutation: {description: "a notice made only of spaces"}
+  - name: scan-notice-empty-refused
+    input:
+      schema: LocalKickstartScan
+      payload: {state: done, done: 4, total: 4, notice: ""}
+    expected: {valid: false, rejected_by: shape, go_rejects: false}
+    classification: must-fail
+    provenance: {source: requirement, ref: "an empty notice is an absent notice: the schema refuses the empty string, and Go reads it as absent because the field is omitted when empty"}
+    mutation: {description: "an explicit empty notice"}

@@ -31,6 +31,8 @@ files:
   - dist/internal/generated/enums.gen.js
   - dist/internal/generated/collective-compatibility.gen.d.ts
   - dist/internal/generated/collective-compatibility.gen.js
+  - dist/internal/generated/kickstart-limits.gen.d.ts
+  - dist/internal/generated/kickstart-limits.gen.js
   - dist/internal/generated/metadata-limits.gen.d.ts
   - dist/internal/generated/metadata-limits.gen.js
   - dist/internal/generated/public-contract.gen.d.ts

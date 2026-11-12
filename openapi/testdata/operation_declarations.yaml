@@ -1,0 +1,100 @@
+# Declaration mistakes in a Local API operation spec, and the error each must
+# produce. The generator's own specs are valid, so these branches never run in a
+# build; each case is a bad localOperationSpec built here, and the error text it
+# must produce, so a check that stops firing fails a test.
+#
+# call picks the check under test:
+#   add_operations       addLocalOperations over the operations
+#   check_error_codes    checkErrorCodes over the first operation
+#   describe_refusal     describeRefusal over the document the setup built
+#   describe_error_codes describeErrorCodes over the document the setup built
+# setup operations are declared first, without a refusal or codes, so the
+# document holds them when the check under test runs. ok means no error.
+required_names:
+  - host-refusal-on-write-route
+  - error-status-without-codes
+  - codes-for-undeclared-status
+  - codes-under-a-non-error-status
+  - codes-under-status-zero
+  - code-listed-twice
+  - error-codes-accepted
+  - refusal-without-its-403
+  - refusal-on-a-path-with-another-method
+  - refusal-on-an-absent-path
+  - error-codes-on-an-absent-path
+  - error-codes-on-a-path-with-another-method
+  - error-codes-for-an-undeclared-status
+cases:
+  - name: host-refusal-on-write-route
+    call: add_operations
+    operations:
+      - {method: POST, path: /probe/write, id: probeWrite, host_refusal: true}
+    error_contains: "hostRefusal is set on a route that changes state"
+  - name: error-status-without-codes
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [400, 500], error_codes: {400: [alpha]}}
+    error_contains: "error status 500 has no codes"
+  - name: codes-for-undeclared-status
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [400], error_codes: {400: [alpha], 503: [beta]}}
+    error_contains: "errorCodes names status 503, which errorStatuses does not declare"
+  - name: codes-under-a-non-error-status
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [302], error_codes: {302: [alpha]}}
+    error_contains: "status 302, which is not an error status"
+  - name: codes-under-status-zero
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [0], error_codes: {0: [alpha]}}
+    error_contains: "status 0, which is not an error status"
+  - name: code-listed-twice
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [400], error_codes: {400: [alpha, alpha]}}
+    error_contains: 'code "alpha" is listed twice for status 400'
+  - name: error-codes-accepted
+    call: check_error_codes
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [400, 503], error_codes: {400: [alpha, beta], 503: [gamma]}}
+    ok: true
+  - name: refusal-without-its-403
+    call: describe_refusal
+    setup:
+      - {method: GET, path: /probe/read, id: probeRead}
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, host_refusal: true}
+    error_contains: "status 403 is not declared"
+  - name: refusal-on-a-path-with-another-method
+    call: describe_refusal
+    setup:
+      - {method: POST, path: /probe/other, id: probeOther}
+    operations:
+      - {method: GET, path: /probe/other, id: probeRead, host_refusal: true}
+    error_contains: "the path has no GET operation"
+  - name: refusal-on-an-absent-path
+    call: describe_refusal
+    operations:
+      - {method: GET, path: /probe/absent, id: probeRead, host_refusal: true}
+    error_contains: "the path has no GET operation"
+  - name: error-codes-on-an-absent-path
+    call: describe_error_codes
+    operations:
+      - {method: GET, path: /probe/absent, id: probeRead, error_statuses: [400], error_codes: {400: [alpha]}}
+    error_contains: "the path is not in the document"
+  - name: error-codes-on-a-path-with-another-method
+    call: describe_error_codes
+    setup:
+      - {method: POST, path: /probe/other, id: probeOther}
+    operations:
+      - {method: GET, path: /probe/other, id: probeRead, error_statuses: [400], error_codes: {400: [alpha]}}
+    error_contains: "the path has no GET operation"
+  - name: error-codes-for-an-undeclared-status
+    call: describe_error_codes
+    setup:
+      - {method: GET, path: /probe/read, id: probeRead}
+    operations:
+      - {method: GET, path: /probe/read, id: probeRead, error_statuses: [400], error_codes: {400: [alpha]}}
+    error_contains: "status 400 is not declared"

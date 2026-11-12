@@ -121,6 +121,7 @@ import { zLocalKickstartDiffLineType, type LocalKickstartDiffLineType as LocalKi
 import { zLocalKickstartEventKind, type LocalKickstartEventKind as LocalKickstartEventKindContract } from "./contract/zod.gen.js";
 import { zLocalKickstartCloseReason, type LocalKickstartCloseReason as LocalKickstartCloseReasonContract } from "./contract/zod.gen.js";
 import { zLocalKickstartConnectAnswer, type LocalKickstartConnectAnswer as LocalKickstartConnectAnswerContract } from "./contract/zod.gen.js";
+import { zLocalKickstartErrorCode, type LocalKickstartErrorCode as LocalKickstartErrorCodeContract } from "./contract/zod.gen.js";
 import { zAutoPublishEvent, type AutoPublishEvent as AutoPublishEventContract } from "./contract/zod.gen.js";
 import { zAutoPublishHookStatus, type AutoPublishHookStatus as AutoPublishHookStatusContract } from "./contract/zod.gen.js";
 import { zAutoPublishRuleKind, type AutoPublishRuleKind as AutoPublishRuleKindContract } from "./contract/zod.gen.js";
@@ -1585,6 +1586,43 @@ export const LocalKickstartConnectAnswer = Object.freeze({
 export const AllLocalKickstartConnectAnswers = Object.freeze([LocalKickstartConnectAnswer.Accept, LocalKickstartConnectAnswer.Skip]) as readonly LocalKickstartConnectAnswer[];
 export function isLocalKickstartConnectAnswer(value: unknown): value is LocalKickstartConnectAnswer {
   return zLocalKickstartConnectAnswer.safeParse(value).success;
+}
+
+export type LocalKickstartErrorCode = LocalKickstartErrorCodeContract;
+export const LocalKickstartErrorCode = Object.freeze({
+  BodyMissing: zLocalKickstartErrorCode.parse("kickstart_body_missing"),
+  BodyInvalid: zLocalKickstartErrorCode.parse("kickstart_body_invalid"),
+  ScopeInvalid: zLocalKickstartErrorCode.parse("kickstart_scope_invalid"),
+  AnswersInvalid: zLocalKickstartErrorCode.parse("kickstart_answers_invalid"),
+  SessionCommitting: zLocalKickstartErrorCode.parse("kickstart_session_committing"),
+  RevisionAhead: zLocalKickstartErrorCode.parse("kickstart_revision_ahead"),
+  AnswerRefused: zLocalKickstartErrorCode.parse("kickstart_answer_refused"),
+  ScanNotDone: zLocalKickstartErrorCode.parse("kickstart_scan_not_done"),
+  FieldUnknown: zLocalKickstartErrorCode.parse("kickstart_field_unknown"),
+  FieldOutOfScope: zLocalKickstartErrorCode.parse("kickstart_field_out_of_scope"),
+  FieldHidden: zLocalKickstartErrorCode.parse("kickstart_field_hidden"),
+  TreeAnswerShape: zLocalKickstartErrorCode.parse("kickstart_tree_answer_shape"),
+  ConnectOutOfScope: zLocalKickstartErrorCode.parse("kickstart_connect_out_of_scope"),
+  ConnectNotConnected: zLocalKickstartErrorCode.parse("kickstart_connect_not_connected"),
+  ConnectUnknown: zLocalKickstartErrorCode.parse("kickstart_connect_unknown"),
+  CommitRefused: zLocalKickstartErrorCode.parse("kickstart_commit_refused"),
+  SessionNotFound: zLocalKickstartErrorCode.parse("kickstart_session_not_found"),
+  PreviewRowNotFound: zLocalKickstartErrorCode.parse("kickstart_preview_row_not_found"),
+  Failed: zLocalKickstartErrorCode.parse("kickstart_failed"),
+  StatusUnreadable: zLocalKickstartErrorCode.parse("kickstart_status_unreadable"),
+  ConfigUnreadable: zLocalKickstartErrorCode.parse("kickstart_config_unreadable"),
+  ConfigUnwritable: zLocalKickstartErrorCode.parse("kickstart_config_unwritable"),
+  SessionUnbuildable: zLocalKickstartErrorCode.parse("kickstart_session_unbuildable"),
+  AnswerUnencodable: zLocalKickstartErrorCode.parse("kickstart_answer_unencodable"),
+  PreviewUnreadable: zLocalKickstartErrorCode.parse("kickstart_preview_unreadable"),
+  ContractBreach: zLocalKickstartErrorCode.parse("publishing_contract_breach"),
+  Unavailable: zLocalKickstartErrorCode.parse("kickstart_unavailable"),
+  ConfigBusy: zLocalKickstartErrorCode.parse("kickstart_config_busy"),
+  ConfigChanging: zLocalKickstartErrorCode.parse("kickstart_config_changing"),
+} as const);
+export const AllLocalKickstartErrorCodes = Object.freeze([LocalKickstartErrorCode.BodyMissing, LocalKickstartErrorCode.BodyInvalid, LocalKickstartErrorCode.ScopeInvalid, LocalKickstartErrorCode.AnswersInvalid, LocalKickstartErrorCode.SessionCommitting, LocalKickstartErrorCode.RevisionAhead, LocalKickstartErrorCode.AnswerRefused, LocalKickstartErrorCode.ScanNotDone, LocalKickstartErrorCode.FieldUnknown, LocalKickstartErrorCode.FieldOutOfScope, LocalKickstartErrorCode.FieldHidden, LocalKickstartErrorCode.TreeAnswerShape, LocalKickstartErrorCode.ConnectOutOfScope, LocalKickstartErrorCode.ConnectNotConnected, LocalKickstartErrorCode.ConnectUnknown, LocalKickstartErrorCode.CommitRefused, LocalKickstartErrorCode.SessionNotFound, LocalKickstartErrorCode.PreviewRowNotFound, LocalKickstartErrorCode.Failed, LocalKickstartErrorCode.StatusUnreadable, LocalKickstartErrorCode.ConfigUnreadable, LocalKickstartErrorCode.ConfigUnwritable, LocalKickstartErrorCode.SessionUnbuildable, LocalKickstartErrorCode.AnswerUnencodable, LocalKickstartErrorCode.PreviewUnreadable, LocalKickstartErrorCode.ContractBreach, LocalKickstartErrorCode.Unavailable, LocalKickstartErrorCode.ConfigBusy, LocalKickstartErrorCode.ConfigChanging]) as readonly LocalKickstartErrorCode[];
+export function isLocalKickstartErrorCode(value: unknown): value is LocalKickstartErrorCode {
+  return zLocalKickstartErrorCode.safeParse(value).success;
 }
 
 export type AutoPublishEvent = AutoPublishEventContract;

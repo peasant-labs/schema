@@ -851,6 +851,39 @@ enums:
       - {name: Accept, value: "accept"}
       - {name: Skip, value: "skip"}
     all_values: ["accept", "skip"]
+  - name: LocalKickstartErrorCode
+    all_name: AllLocalKickstartErrorCodes
+    members:
+      - {name: BodyMissing, value: "kickstart_body_missing"}
+      - {name: BodyInvalid, value: "kickstart_body_invalid"}
+      - {name: ScopeInvalid, value: "kickstart_scope_invalid"}
+      - {name: AnswersInvalid, value: "kickstart_answers_invalid"}
+      - {name: SessionCommitting, value: "kickstart_session_committing"}
+      - {name: RevisionAhead, value: "kickstart_revision_ahead"}
+      - {name: AnswerRefused, value: "kickstart_answer_refused"}
+      - {name: ScanNotDone, value: "kickstart_scan_not_done"}
+      - {name: FieldUnknown, value: "kickstart_field_unknown"}
+      - {name: FieldOutOfScope, value: "kickstart_field_out_of_scope"}
+      - {name: FieldHidden, value: "kickstart_field_hidden"}
+      - {name: TreeAnswerShape, value: "kickstart_tree_answer_shape"}
+      - {name: ConnectOutOfScope, value: "kickstart_connect_out_of_scope"}
+      - {name: ConnectNotConnected, value: "kickstart_connect_not_connected"}
+      - {name: ConnectUnknown, value: "kickstart_connect_unknown"}
+      - {name: CommitRefused, value: "kickstart_commit_refused"}
+      - {name: SessionNotFound, value: "kickstart_session_not_found"}
+      - {name: PreviewRowNotFound, value: "kickstart_preview_row_not_found"}
+      - {name: Failed, value: "kickstart_failed"}
+      - {name: StatusUnreadable, value: "kickstart_status_unreadable"}
+      - {name: ConfigUnreadable, value: "kickstart_config_unreadable"}
+      - {name: ConfigUnwritable, value: "kickstart_config_unwritable"}
+      - {name: SessionUnbuildable, value: "kickstart_session_unbuildable"}
+      - {name: AnswerUnencodable, value: "kickstart_answer_unencodable"}
+      - {name: PreviewUnreadable, value: "kickstart_preview_unreadable"}
+      - {name: ContractBreach, value: "publishing_contract_breach"}
+      - {name: Unavailable, value: "kickstart_unavailable"}
+      - {name: ConfigBusy, value: "kickstart_config_busy"}
+      - {name: ConfigChanging, value: "kickstart_config_changing"}
+    all_values: ["kickstart_body_missing", "kickstart_body_invalid", "kickstart_scope_invalid", "kickstart_answers_invalid", "kickstart_session_committing", "kickstart_revision_ahead", "kickstart_answer_refused", "kickstart_scan_not_done", "kickstart_field_unknown", "kickstart_field_out_of_scope", "kickstart_field_hidden", "kickstart_tree_answer_shape", "kickstart_connect_out_of_scope", "kickstart_connect_not_connected", "kickstart_connect_unknown", "kickstart_commit_refused", "kickstart_session_not_found", "kickstart_preview_row_not_found", "kickstart_failed", "kickstart_status_unreadable", "kickstart_config_unreadable", "kickstart_config_unwritable", "kickstart_session_unbuildable", "kickstart_answer_unencodable", "kickstart_preview_unreadable", "publishing_contract_breach", "kickstart_unavailable", "kickstart_config_busy", "kickstart_config_changing"]
   - name: AutoPublishEvent
     all_name: AllAutoPublishEvents
     members:

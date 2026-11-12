@@ -234,7 +234,16 @@ const (
 	// non-GET route declares the shared cross-origin refusal. A stale patch
 	// may replace no field, so an empty overwritten list is valid. No
 	// kickstart payload is paged (additive operations = minor bump).
-	PeasantLocalAPIVersion = "0.35.0"
+	// Bumped to 0.36.0 on 2026-11-11 when every kickstart route declared the
+	// non-2xx statuses the server answers, each with the closed
+	// LocalKickstartErrorResponse envelope in place of the shared error body,
+	// and the scan state gained the declared notice for a partial scan.
+	// The settings update also declared 503 for a configuration file that
+	// another save holds, the settings read declared its 500 and 503, and the
+	// four kickstart reads and the settings read declared the host refusal,
+	// and the 403 on every write names both of its codes (additive statuses,
+	// descriptions and a field on a closed response = minor bump).
+	PeasantLocalAPIVersion = "0.36.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -348,5 +357,8 @@ const (
 	// Bumped to 0.47.0 on 2026-11-10 when the kickstart session, tree, event,
 	// and closed-set types entered the catalog so the local setup routes and
 	// the language bindings share one definition (additive = minor bump).
-	TypesVersion = "0.47.0"
+	// Bumped to 0.48.0 on 2026-11-11 when LocalKickstartErrorCode and
+	// LocalKickstartErrorResponse entered the catalog and LocalKickstartScan
+	// gained the optional notice (additive = minor bump).
+	TypesVersion = "0.48.0"
 )

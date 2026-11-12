@@ -3,6 +3,7 @@ package openapi
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	schema "github.com/peasant-labs/schema"
 	jsonschema "github.com/swaggest/jsonschema-go"
@@ -693,10 +694,37 @@ type LocalErrorResponse struct {
 	Code  string `json:"code,omitempty"`
 }
 
-// localWriteRefusal states the cross-origin refusal every declared local write
-// route shares. The server refuses a state-changing request that did not come
-// from its own pages before the handler runs, so nothing changes.
-const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: its Host header does not name a loopback address, or a browser sent it from another origin."
+// The refusals a local request can meet before any handler runs. Each has one
+// JSON error code and one reason, and every description below builds from
+// these four constants, so a token or a reason is spelled once.
+const (
+	localHostRefusalCode     = "request_host_not_local"
+	localHostRefusalReason   = "the request's Host header does not name a loopback address"
+	localOriginRefusalCode   = "request_origin_not_local"
+	localOriginRefusalReason = "a browser sent it from another origin or from a page this server did not serve"
+)
+
+// localWriteRefusal states the refusal every declared local write route
+// shares. The server refuses a state-changing request that did not come from
+// its own pages before the handler runs, so nothing changes. Either reason
+// refuses it, each with its own code.
+const localWriteRefusal = "Returns 403 with a JSON error, and changes nothing, when the request did not come from this local server: " +
+	localHostRefusalReason + " (code " + localHostRefusalCode + "), or " +
+	localOriginRefusalReason + " (code " + localOriginRefusalCode + ")."
+
+// localWriteRefusalResponse is the description of that 403 response.
+const localWriteRefusalResponse = "Refused, and nothing was changed, because the request did not come from this local server. The JSON error code is " +
+	localHostRefusalCode + " when " + localHostRefusalReason + ", and " +
+	localOriginRefusalCode + " when " + localOriginRefusalReason + "."
+
+// localHostRefusal is the sentence a declared local read adds to its
+// operation description. A read meets only the host refusal: it changes
+// nothing, and a browser does not let a page from another origin read its
+// response.
+const localHostRefusal = "Returns 403 with a JSON error whose code is " + localHostRefusalCode + ", and serves nothing, when " + localHostRefusalReason + "."
+
+// localHostRefusalResponse is the description of that 403 response.
+const localHostRefusalResponse = "Refused, and nothing was served, because " + localHostRefusalReason + ". The JSON error code is " + localHostRefusalCode + "."
 
 // localOperationSpec is one Local API operation. Every operation whose method
 // changes state declares the shared 403 refusal. Other refusals are declared
@@ -714,10 +742,25 @@ type localOperationSpec struct {
 	errorStatuses      []int
 	errorResponse      interface{}
 	alternateResponses map[int]interface{}
+	// errorCodes, when set, names the machine-readable codes each declared
+	// error status can carry, as plain tokens. It must cover exactly the
+	// statuses in errorStatuses. The document then states the codes in that
+	// status's response description, after the sentence errorSummaries gives
+	// for the status, so a status and its codes are declared in one place.
+	errorCodes     map[int][]string
+	errorSummaries map[int]string
+	// hostRefusal, on a GET route, declares the 403 that every request meets
+	// when its Host header does not name a loopback address. A route whose
+	// method changes state declares the fuller cross-origin refusal already,
+	// so setting this on one is a declaration error.
+	hostRefusal bool
 }
 
 func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec) error {
 	for _, op := range operations {
+		if err := checkErrorCodes(op); err != nil {
+			return err
+		}
 		oc, err := r.NewOperationContext(op.method, op.path)
 		if err != nil {
 			return fmt.Errorf("new Local API operation %s %s: %w", op.method, op.path, err)
@@ -739,15 +782,28 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 			oc.AddRespStructure(body, openapicore.WithHTTPStatus(status))
 		}
 		description := op.description
-		if op.method != http.MethodGet {
+		switch {
+		case op.method != http.MethodGet:
+			if op.hostRefusal {
+				return fmt.Errorf("local API operation %s %s at openapi.addLocalOperations: hostRefusal is set on a route that changes state, which already declares the cross-origin refusal; drop hostRefusal", op.method, op.path)
+			}
 			oc.AddRespStructure(new(LocalErrorResponse), openapicore.WithHTTPStatus(http.StatusForbidden))
 			description += " " + localWriteRefusal
+		case op.hostRefusal:
+			oc.AddRespStructure(new(LocalErrorResponse), openapicore.WithHTTPStatus(http.StatusForbidden))
+			description += " " + localHostRefusal
 		}
 		oc.SetDescription(description)
 		oc.SetID(op.id)
 		oc.SetTags(op.tag)
 		if err := r.AddOperation(oc); err != nil {
 			return fmt.Errorf("add Local API operation %s %s: %w", op.method, op.path, err)
+		}
+		if err := describeErrorCodes(r.Spec, op); err != nil {
+			return err
+		}
+		if err := describeRefusal(r.Spec, op); err != nil {
+			return err
 		}
 		if op.requiredBody {
 			if err := requireRequestBody(r.Spec, op.method, op.path); err != nil {
@@ -756,4 +812,124 @@ func addLocalOperations(r *openapi31.Reflector, operations []localOperationSpec)
 		}
 	}
 	return nil
+}
+
+// checkErrorCodes fails when errorCodes and errorStatuses disagree, when a
+// status is not an error status, or when a code repeats in a status, because a
+// document that describes a different set than it declares would mislead the
+// client that reads it. It runs before any response is added.
+func checkErrorCodes(op localOperationSpec) error {
+	if op.errorCodes == nil {
+		return nil
+	}
+	where := fmt.Sprintf("local API operation %s %s at openapi.checkErrorCodes", op.method, op.path)
+	declared := make(map[int]struct{}, len(op.errorStatuses))
+	for _, status := range op.errorStatuses {
+		declared[status] = struct{}{}
+		if len(op.errorCodes[status]) == 0 {
+			return fmt.Errorf("%s: error status %d has no codes, so a client could not tell which tokens it carries; list the codes for %d in errorCodes", where, status, status)
+		}
+	}
+	for status, codes := range op.errorCodes {
+		if _, ok := declared[status]; !ok {
+			return fmt.Errorf("%s: errorCodes names status %d, which errorStatuses does not declare; declare the status or drop its codes %v", where, status, codes)
+		}
+		if status < 400 || status > 599 {
+			return fmt.Errorf("%s: codes %v are under status %d, which is not an error status, so they have no HTTP status of their own; give each code a status between 400 and 599", where, codes, status)
+		}
+		seen := make(map[string]struct{}, len(codes))
+		for _, code := range codes {
+			if _, repeated := seen[code]; repeated {
+				return fmt.Errorf("%s: code %q is listed twice for status %d; list each code once", where, code, status)
+			}
+			seen[code] = struct{}{}
+		}
+	}
+	return nil
+}
+
+// describeErrorCodes states the codes of each declared error status in that
+// status's response description.
+func describeErrorCodes(spec *openapi31.Spec, op localOperationSpec) error {
+	if op.errorCodes == nil {
+		return nil
+	}
+	where := fmt.Sprintf("local API operation %s %s at openapi.describeErrorCodes", op.method, op.path)
+	item, ok := declaredPathItem(spec, op.path)
+	if !ok {
+		return fmt.Errorf("%s: the path is not in the document, so its error statuses cannot be described; add the operation before describing it", where)
+	}
+	operation := pathOperation(item, op.method)
+	if operation == nil {
+		return fmt.Errorf("%s: the path has no %s operation, so its error statuses cannot be described", where, op.method)
+	}
+	for _, status := range op.errorStatuses {
+		key := statusText(status)
+		response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
+		if !ok || response.Response == nil {
+			return fmt.Errorf("%s: status %s is not declared, so its codes cannot be described; declare the status before listing its codes", where, key)
+		}
+		summary := op.errorSummaries[status]
+		if summary == "" {
+			summary = http.StatusText(status) + "."
+		}
+		response.Response.Description = summary + " The JSON error code is one of: " + strings.Join(op.errorCodes[status], ", ") + "."
+		operation.Responses.MapOfResponseOrReferenceValues[key] = response
+	}
+	return nil
+}
+
+// describeRefusal states, on the 403 of a write route or of a read that
+// declares the host refusal, the reason and the codes the server answers with.
+func describeRefusal(spec *openapi31.Spec, op localOperationSpec) error {
+	var description string
+	switch {
+	case op.method != http.MethodGet:
+		description = localWriteRefusalResponse
+	case op.hostRefusal:
+		description = localHostRefusalResponse
+	default:
+		return nil
+	}
+	where := fmt.Sprintf("local API operation %s %s at openapi.describeRefusal", op.method, op.path)
+	item, _ := declaredPathItem(spec, op.path)
+	operation := pathOperation(item, op.method)
+	if operation == nil {
+		return fmt.Errorf("%s: the path has no %s operation, so its refusal cannot be described", where, op.method)
+	}
+	key := statusText(http.StatusForbidden)
+	response, ok := operation.Responses.MapOfResponseOrReferenceValues[key]
+	if !ok || response.Response == nil {
+		return fmt.Errorf("%s: status %s is not declared, so the refusal cannot be described; declare the 403 first", where, key)
+	}
+	response.Response.Description = description
+	operation.Responses.MapOfResponseOrReferenceValues[key] = response
+	return nil
+}
+
+// declaredPathItem returns the path item the document declares for path, and
+// whether it declares one. A document that has declared no path yet has none.
+func declaredPathItem(spec *openapi31.Spec, path string) (openapi31.PathItem, bool) {
+	if spec == nil || spec.Paths == nil {
+		return openapi31.PathItem{}, false
+	}
+	item, ok := spec.Paths.MapOfPathItemValues[path]
+	return item, ok
+}
+
+func pathOperation(item openapi31.PathItem, method string) *openapi31.Operation {
+	switch method {
+	case http.MethodGet:
+		return item.Get
+	case http.MethodPost:
+		return item.Post
+	case http.MethodPatch:
+		return item.Patch
+	case http.MethodPut:
+		return item.Put
+	case http.MethodDelete:
+		return item.Delete
+	default:
+		return nil
+	}
 }

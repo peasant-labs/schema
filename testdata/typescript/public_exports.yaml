@@ -13,14 +13,17 @@ constants:
     value: 0.38.0
     surfaces: [root, village]
   - name: PeasantLocalAPIVersion
-    value: 0.35.0
+    value: 0.36.0
     surfaces: [root, local]
   - name: TypesVersion
-    value: 0.47.0
+    value: 0.48.0
     surfaces: [root]
   - name: MetadataSchemaVersion
     value: "12"
     surfaces: [root]
+  - name: LocalKickstartDroppedLabelsMax
+    value: "3"
+    surfaces: [root, local]
 functions:
   - {name: normalizeCollectiveObservationScope, target: runtime-scope-normalizer, surfaces: [root]}
   - {name: encodeContributionTraversalRevision, target: runtime-selected-category-token-encoder, surfaces: [root]}

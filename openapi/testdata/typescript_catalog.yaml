@@ -1520,3 +1520,5 @@ types:
   - {go_name: LocalKickstartCommitted, disposition: catalog, component: LocalKickstartCommitted, reason: kickstart commit success}
   - {go_name: LocalKickstartCommitRefusal, disposition: catalog, component: LocalKickstartCommitRefusal, reason: kickstart commit conflict refusal}
   - {go_name: LocalKickstartEvent, disposition: catalog, component: LocalKickstartEvent, reason: kickstart live topic payload}
+  - {go_name: LocalKickstartErrorCode, disposition: catalog, component: LocalKickstartErrorCode, reason: kickstart closed error-code menu}
+  - {go_name: LocalKickstartErrorResponse, disposition: catalog, component: LocalKickstartErrorResponse, reason: kickstart non-2xx body with a closed code}

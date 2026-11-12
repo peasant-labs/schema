@@ -103,14 +103,15 @@ operations:
     method: get
     path: /api/v1/settings
     response: LocalSettingsResponse
-    statuses: ["200"]
+    statuses: ["200", "403", "500", "503"]
+    error_responses: {"403": OpenapiLocalErrorResponse, "500": OpenapiLocalErrorResponse, "503": OpenapiLocalErrorResponse}
   - api: local
     method: patch
     path: /api/v1/settings
     request: LocalSettingUpdateRequest
     response: LocalSetting
-    statuses: ["200", "400", "403", "500"]
-    error_responses: {"400": LocalSettingRefusal, "500": LocalSettingRefusal, "403": OpenapiLocalErrorResponse}
+    statuses: ["200", "400", "403", "500", "503"]
+    error_responses: {"400": LocalSettingRefusal, "500": LocalSettingRefusal, "503": LocalSettingRefusal, "403": OpenapiLocalErrorResponse}
   - api: local
     method: put
     path: "/api/v1/settings/auto-publish/{id}"
