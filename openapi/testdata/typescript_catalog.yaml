@@ -1351,6 +1351,7 @@ types:
   - {go_name: TranscriptSegment, disposition: catalog, component: TranscriptSegment, reason: "one segment of turn content and its own facts, cut on complete entries"}
   - {go_name: TranscriptTurn, disposition: catalog, component: TranscriptTurn, reason: "one served turn: the single TurnDetail definition plus truncated and pre-bound byteLength"}
   - {go_name: TranscriptWindow, disposition: catalog, component: TranscriptWindow, reason: "anchor window descriptor: extent and covering segment ordinals, no turn content"}
+  - {go_name: TranscriptWindowTurn, disposition: runtime-only, reason: "window resolver input (turn identity and role), never serialized; the resolver is a Go producer rule with no TypeScript counterpart"}
   - {go_name: SessionTeammate, disposition: catalog, component: SessionTeammate, reason: "local teammate identity evidence for a session whose parent transcript records the spawn"}
   - {go_name: SessionTeammateEvidence, disposition: catalog, component: SessionTeammateEvidence, reason: "closed local teammate evidence menu, kept out of the shared session graph evidence set"}
   - go_name: SessionTeammateSchemaProbe

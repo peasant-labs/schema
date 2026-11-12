@@ -993,8 +993,9 @@ type TranscriptWindow struct {
 	// lies inside [firstTurn, lastTurn].
 	AnchorTurn int `json:"anchorTurn" minimum:"0" maximum:"9007199254740991"`
 	// Span is the number of assistant turns collected on each side. It is
-	// validated 1..10: the design value narrows a window and cannot widen it past
-	// the design.
+	// validated 1..10 (TranscriptWindowSpanMinimum..TranscriptWindowSpanMaximum;
+	// the struct tags restate the two constants and a test holds them equal): the
+	// design value narrows a window and cannot widen it past the design.
 	Span      int `json:"span" minimum:"1" maximum:"10"`
 	FirstTurn int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
 	LastTurn  int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
@@ -1015,8 +1016,8 @@ func (w TranscriptWindow) Validate() error {
 	if !isDecimalRevision(w.Revision) {
 		return fmt.Errorf("%srevision %q is not a decimal string; a window must name the cut its covering segments belong to; carry the store revision as decimal digits", where, w.Revision)
 	}
-	if w.Span < 1 || w.Span > 10 {
-		return fmt.Errorf("%sspan is %d; the accepted range is 1..10 assistant turns per side; emit a value in that range", where, w.Span)
+	if w.Span < TranscriptWindowSpanMinimum || w.Span > TranscriptWindowSpanMaximum {
+		return fmt.Errorf("%sspan is %d; the accepted range is %d..%d assistant turns per side; emit a value in that range", where, w.Span, TranscriptWindowSpanMinimum, TranscriptWindowSpanMaximum)
 	}
 	if w.FirstTurn < 0 || w.LastTurn < w.FirstTurn {
 		return fmt.Errorf("%sdeclares turn range [%d, %d]; a window covers a closed ascending range; emit firstTurn <= lastTurn", where, w.FirstTurn, w.LastTurn)
@@ -1047,21 +1048,9 @@ func ValidateTranscriptWindowCoverage(window TranscriptWindow, refs []Transcript
 	if len(refs) == 0 {
 		return fmt.Errorf("%sthe directory holds no segments; a window cannot cover a turn; build the directory before resolving a window", where)
 	}
-	first, last := -1, -1
-	for _, ref := range refs {
-		if ref.FirstTurn <= window.FirstTurn && window.FirstTurn <= ref.LastTurn {
-			first = ref.Index
-		}
-		if ref.FirstTurn <= window.LastTurn && window.LastTurn <= ref.LastTurn {
-			last = ref.Index
-		}
-	}
-	if first < 0 || last < 0 {
+	want, covered := coveringSegmentRun(refs, window.FirstTurn, window.LastTurn)
+	if !covered {
 		return fmt.Errorf("%swindow [%d, %d] is not covered by the directory's segment ranges; a viewer would load no segment for one edge; resolve the window against this directory", where, window.FirstTurn, window.LastTurn)
-	}
-	want := make([]int, 0, last-first+1)
-	for segment := first; segment <= last; segment++ {
-		want = append(want, segment)
 	}
 	if len(want) != len(window.Segments) {
 		return fmt.Errorf("%swindow names %d segments, but covering [%d, %d] takes %d; the viewer would leave part of the window unloaded", where, len(window.Segments), window.FirstTurn, window.LastTurn, len(want))
