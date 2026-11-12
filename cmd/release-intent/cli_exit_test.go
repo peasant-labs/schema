@@ -194,10 +194,12 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 // writeWorkflowsSetup writes a minimal policy plus workflows dir. With queue
 // true the policy names two required contexts (reversed, to prove sorting)
 // that the empty workflows dir cannot satisfy; without queue the policy is
-// jobs-only and the checker accepts without reading the dir.
+// jobs-only and the checker accepts without reading the dir. The release
+// config is present because the queue rules resolve bot branches from it.
 func writeWorkflowsSetup(t *testing.T, queue bool) string {
 	t.Helper()
 	dir := t.TempDir()
+	writeSetupFile(t, dir, ".github/release-intent.yaml", "releases: true\ntag_prefix: v\nautomation_author: peasant-labs-releaser[bot]\nchangelog: CHANGELOG.md\nversion_files:\n  - {path: package.json, field: version}\nprotected_paths: []\nbot_branches:\n  release: automation/release\n")
 	policy := "jobs:\n  - name: guard\n"
 	if queue {
 		policy = "jobs:\n  - name: guard\nqueue:\n  required:\n    - {context: title-guard, workflow: title-guard.yml, job: title-guard}\n    - {context: lib, workflow: ci.yml, job: lib}\n"
