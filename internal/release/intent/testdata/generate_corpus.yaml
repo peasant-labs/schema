@@ -1,0 +1,363 @@
+# Generator corpus: rows of intent.Generate. Pending rides newest-first, as
+# the planner returns it; the section lines run oldest-first.
+required_names:
+  - two-minors-schema-style
+  - fairtrade-bare-style
+  - unreleased-block-kept
+  - unreleased-bare-style
+  - breaking-marked
+  - single-empty-release-line
+  - no-pr-number
+  - dated-style-missing-date
+  - no-section-base
+  - empty-pending-is-error
+  - empty-tag-is-error
+cases:
+  - name: two-minors-schema-style
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [{path: "package.json", field: "version"}], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["y"], breaking: false, level: "minor", subject: "two", pr: 12}
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      base_changelog: |
+        # Changelog
+
+        All notable changes are documented here.
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        All notable changes are documented here.
+
+        ## [v0.2.0] - 2026-11-12
+
+        - one (#11)
+        - two (#12)
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.2.0] - 2026-11-12
+
+        - one (#11)
+        - two (#12)
+      versions: {"package.json": "0.2.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: the section follows the repo heading style with the date"}
+    mutation: {description: "two pending minors over a bracketed dated base"}
+  - name: fairtrade-bare-style
+    input:
+      config: {releases: true, tag_prefix: "fairtrade-v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [{path: "package.json", field: "version"}], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["y"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## 0.0.67
+
+        - feat(x)[minor]: one (#9)
+      version: "0.1.0"
+      tag: "fairtrade-v0.1.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## 0.1.0
+
+        - two (#10)
+
+        ## 0.0.67
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## 0.1.0
+
+        - two (#10)
+      versions: {"package.json": "0.1.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: a bare heading keeps the bare version with no date"}
+    mutation: {description: "a pending minor over a bare fairtrade-style base"}
+  - name: unreleased-block-kept
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## [Unreleased]
+
+        ### Added
+
+        - something pending from before
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [v0.2.0] - 2026-11-12
+
+        ### Added
+
+        - something pending from before
+
+        - two (#10)
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.2.0] - 2026-11-12
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: an Unreleased block keeps its entries above the generated lines"}
+    mutation: {description: "a pending minor over a base with an Unreleased block"}
+  - name: unreleased-bare-style
+    input:
+      config: {releases: true, tag_prefix: "fairtrade-v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## Unreleased
+
+        - something pending from before
+
+        ## 0.0.67
+
+        - feat(x)[minor]: one (#9)
+      version: "0.1.0"
+      tag: "fairtrade-v0.1.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## 0.1.0
+
+        - something pending from before
+
+        - two (#10)
+
+        ## 0.0.67
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## 0.1.0
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: a bare Unreleased block keeps its entries in bare style"}
+    mutation: {description: "a pending minor over a bare base with an Unreleased block"}
+  - name: breaking-marked
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["types"], breaking: true, level: "minor", subject: "drop it", pr: 19}
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "mend it", pr: 18}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [v0.2.0] - 2026-11-12
+
+        - mend it (#18)
+        - drop it (#19) (BREAKING)
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.2.0] - 2026-11-12
+
+        - mend it (#18)
+        - drop it (#19) (BREAKING)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: breaking subjects are marked in the notes"}
+    mutation: {description: "a breaking subject beside a patch"}
+  - name: single-empty-release-line
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "release", scopes: ["scope"], breaking: false, level: "patch", subject: "cut a release", pr: 16}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.1.1"
+      tag: "v0.1.1"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [v0.1.1] - 2026-11-12
+
+        - cut a release (#16)
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.1.1] - 2026-11-12
+
+        - cut a release (#16)
+      versions: {}
+    classification: must-pass
+    provenance: {source: requirement, ref: "generator: one forced-release subject renders one line"}
+    mutation: {description: "a forced release with no other change"}
+  - name: no-pr-number
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "patch", subject: "mend it", pr: 0}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.1.1"
+      tag: "v0.1.1"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        ## [v0.1.1] - 2026-11-12
+
+        - mend it
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      section: |
+        ## [v0.1.1] - 2026-11-12
+
+        - mend it
+      versions: {}
+    classification: must-pass
+    provenance: {source: boundary, ref: "generator: a subject with no PR number renders with no suffix"}
+    mutation: {description: "a pending title with no PR number"}
+  - name: dated-style-missing-date
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: ""
+    expected:
+      changelog: ""
+      section: ""
+      versions: {}
+    classification: must-fail
+    provenance: {source: boundary, ref: "generator: a dated heading needs the newest pending date"}
+    mutation: {description: "cleared the date under a dated style"}
+  - name: no-section-base
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        All notable changes are documented here.
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: |
+        # Changelog
+
+        All notable changes are documented here.
+
+        ## [v0.2.0] - 2026-11-12
+
+        - two (#10)
+      section: |
+        ## [v0.2.0] - 2026-11-12
+
+        - two (#10)
+      versions: {}
+    classification: must-pass
+    provenance: {source: boundary, ref: "generator: a section-less base gains the section after its preamble"}
+    mutation: {description: "a first release over a section-less base"}
+  - name: empty-pending-is-error
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending: []
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: "0.2.0"
+      tag: "v0.2.0"
+      date: "2026-11-12"
+    expected:
+      changelog: ""
+      section: ""
+      versions: {}
+    classification: must-fail
+    provenance: {source: boundary, ref: "generator: an empty pending set renders nothing"}
+    mutation: {description: "emptied the pending set"}
+  - name: empty-tag-is-error
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "two", pr: 10}
+      base_changelog: |
+        # Changelog
+
+        ## [v0.1.0] - 2026-11-01
+
+        - feat(x)[minor]: one (#9)
+      version: ""
+      tag: ""
+      date: "2026-11-12"
+    expected:
+      changelog: ""
+      section: ""
+      versions: {}
+    classification: must-fail
+    provenance: {source: boundary, ref: "generator: the version and tag are required"}
+    mutation: {description: "cleared the version and tag"}

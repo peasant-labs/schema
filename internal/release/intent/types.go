@@ -235,7 +235,7 @@ func (k PRKind) String() string { return string(k) }
 
 // ErrorCode is the closed set of typed rejections. Every member has a reject
 // fixture whose message carries all six parts; codes used only by later
-// milestones join this set in their own milestone.
+// work join this set with that work.
 type ErrorCode string
 
 const (
