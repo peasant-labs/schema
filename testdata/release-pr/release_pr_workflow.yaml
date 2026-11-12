@@ -1,0 +1,10 @@
+# Pinned release-PR workflow contract. Each field is required by name and is
+# compared (whitespace-normalized) against .github/workflows/release-pr.yml by
+# TestReleasePRWorkflowContract in cmd/schema-gen/release_pr_workflow_test.go:
+# the pull_request trigger keeps the edited type, the merge path runs in its
+# own never-cancelled group, edits queue behind running gates, and validate
+# only runs on open PRs.
+trigger_type: edited
+concurrency_group: release-pr-${{ github.event.pull_request.number }}-${{ github.event.action == 'closed' && 'merge' || 'gates' }}
+cancel_in_progress: ${{ github.event.action != 'closed' && github.event.action != 'edited' }}
+validate_if: github.event.action != 'closed' && github.event.pull_request.state == 'open' && startsWith(github.event.pull_request.title, 'release(')
