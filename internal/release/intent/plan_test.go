@@ -20,21 +20,21 @@ type planInput struct {
 }
 
 type planExpected struct {
-	Action         string                 `yaml:"action"`
-	RangeBase      string                 `yaml:"range_base"`
-	VersionBase    string                 `yaml:"version_base"`
-	Candidate      string                 `yaml:"candidate"`
-	CandidateFresh string                 `yaml:"candidate_fresh"`
-	Pending        []intent.Title         `yaml:"pending"`
-	Level          intent.Level           `yaml:"level"`
-	Breaking       bool                   `yaml:"breaking"`
-	Version        string                 `yaml:"version"`
-	Tag            string                 `yaml:"tag"`
-	Before         intent.BeforeCandidate `yaml:"before"`
-	Full           intent.BeforeCandidate `yaml:"full"`
-	Date           string                 `yaml:"date"`
-	Code           string                 `yaml:"code"`
-	FixContains    string                 `yaml:"fix_contains"`
+	Action         string            `yaml:"action"`
+	RangeBase      string            `yaml:"range_base"`
+	VersionBase    string            `yaml:"version_base"`
+	Candidate      string            `yaml:"candidate"`
+	CandidateFresh string            `yaml:"candidate_fresh"`
+	Pending        []intent.Title    `yaml:"pending"`
+	Level          intent.Level      `yaml:"level"`
+	Breaking       bool              `yaml:"breaking"`
+	Version        string            `yaml:"version"`
+	Tag            string            `yaml:"tag"`
+	Before         intent.PendingSet `yaml:"before"`
+	Full           intent.PendingSet `yaml:"full"`
+	Date           string            `yaml:"date"`
+	Code           string            `yaml:"code"`
+	FixContains    string            `yaml:"fix_contains"`
 }
 
 func TestPlan(t *testing.T) {
@@ -100,7 +100,7 @@ func TestPlan(t *testing.T) {
 	}
 }
 
-func compareRangeSet(t *testing.T, what string, got, want intent.BeforeCandidate) {
+func compareRangeSet(t *testing.T, what string, got, want intent.PendingSet) {
 	t.Helper()
 	if len(got.Pending) != len(want.Pending) {
 		t.Fatalf("%s.Pending has %d titles, want %d", what, len(got.Pending), len(want.Pending))
