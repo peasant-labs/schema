@@ -22,7 +22,9 @@ module's tagged releases (first in `v0.1.0-rc6`); npm publication is automated
 in the release ceremony (`release.yml`'s `npm-publish` job, behind the same
 gates as the GitHub Release) and `@peasant-labs/types` is deprecated. The TypeScript package retains type-only
 `paths` and `operations` contracts at `/local-api` and `/village-api`, while
-shared payloads resolve to the canonical package root. Neither language package
+shared payloads resolve to the canonical package root. Those subpaths and the Go
+`route` package also carry generated route members, one per operation, which
+`go run ./cmd/schema-gen` projects from the built documents. Neither language package
 provides an HTTP or WebSocket transport client SDK. It has
 **no runtime server**: no HTTP handler and no
 WebSocket hub (the WebSocket types live here, but the hub stays in peasant). So
