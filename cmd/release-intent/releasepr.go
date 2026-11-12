@@ -67,26 +67,17 @@ func runReleasePR(args []string) error {
 	if err != nil {
 		return rejectAs("release-pr", err)
 	}
-	content, err := releaseContent(ctx, runner, cfg, branch, facts, decision)
+	content, err := releaseContent(ctx, runner, cfg, facts, decision)
 	if err != nil {
 		return err
 	}
 	if wantCheck {
-		fresh, err := checkWorkingTree(cfg, content)
-		if err != nil {
-			return err
-		}
-		if !fresh {
-			fmt.Println("fresh=false")
-			return rejectAs("release-pr --check", &intent.Error{
-				Code:  intent.ErrReleaseContentStale,
-				What:  "the release PR content is stale",
-				Why:   "releasing commits landed after the release PR base, or the checked-out content differs from the generator",
-				Where: "release PR branch, checked by release-intent release-pr --check",
-				When:  "title-guard on the release PR, or the merge-group build",
-				Means: "the required check is red; the release PR must be rebuilt",
-				Fix:   "run the release job to rebuild the release PR, then requeue",
-			})
+		if cerr := checkWorkingTree(cfg, content); cerr != nil {
+			var ie *intent.Error
+			if errors.As(cerr, &ie) && ie.Code == intent.ErrReleaseContentStale {
+				fmt.Println("fresh=false")
+			}
+			return rejectAs("release-pr --check", cerr)
 		}
 		return emitLines([]string{"fresh=true", "push=false", "version=" + decision.Version.String(), "error="})
 	}
@@ -113,7 +104,7 @@ func runReleasePR(args []string) error {
 // changelog is read at the range-base tag, or at the epoch when that is
 // newer; the date is the planner's newest-pending date, so write, check and
 // freshness render the same bytes on any day.
-func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, branch string, facts intent.Facts, decision intent.Decision) (intent.Content, error) {
+func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, facts intent.Facts, decision intent.Decision) (intent.Content, error) {
 	if len(decision.Pending) == 0 || decision.Version == "" || decision.Tag == "" {
 		return intent.Content{}, fmt.Errorf("release-pr: nothing to write: no pending releasing subjects (version is empty). Open a releasing PR first")
 	}
@@ -134,45 +125,40 @@ func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, br
 	return intent.Generate(cfg, intent.ContentInput{Pending: decision.Pending, BaseChangelog: string(base), Version: decision.Version, Tag: decision.Tag, Date: decision.Date})
 }
 
-// checkWorkingTree compares the working tree with generator output.
-func checkWorkingTree(cfg intent.Config, content intent.Content) (bool, error) {
-	if len(content.Versions) == 0 {
-		return false, nil
-	}
+// checkWorkingTree compares the working tree with generator output. A nil
+// error means fresh. A typed stale-content rejection means stale. Any other
+// error is a failed read for exit 1.
+func checkWorkingTree(cfg intent.Config, content intent.Content) error {
+	got := intent.Content{Versions: map[string]string{}}
 	for _, vf := range cfg.VersionFiles {
-		want, ok := content.Versions[vf.Path]
-		if !ok {
+		if _, ok := content.Versions[vf.Path]; !ok {
 			continue
 		}
 		data, err := os.ReadFile(vf.Path)
 		if err != nil {
-			return false, fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", vf.Path, err)
+			return fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", vf.Path, err)
 		}
 		val, corrupt := versionFieldValue(data, vf.Field)
 		if corrupt {
-			return false, nil
+			val = ""
 		}
-		if val != want {
-			return false, nil
-		}
+		got.Versions[vf.Path] = val
 	}
 	changelog, err := os.ReadFile(cfg.Changelog)
 	if err != nil {
-		return false, fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", cfg.Changelog, err)
+		return fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", cfg.Changelog, err)
 	}
-	if string(changelog) != content.Changelog {
-		return false, nil
-	}
-	return true, nil
+	got.Changelog = string(changelog)
+	return intent.CompareContent(content, got)
 }
 
 // needsPush reports whether the open release branch needs an update: content
 // differences rebuild, and a release branch the tip no longer merges onto
 // cleanly rebuilds even when the content matches.
 func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, tip, current string, content intent.Content) (bool, error) {
+	got := intent.Content{Versions: map[string]string{}}
 	for _, vf := range cfg.VersionFiles {
-		want, ok := content.Versions[vf.Path]
-		if !ok {
+		if _, ok := content.Versions[vf.Path]; !ok {
 			continue
 		}
 		data, err := runner.ReadFile(ctx, current, vf.Path)
@@ -180,15 +166,17 @@ func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, tip, cu
 			return true, nil
 		}
 		val, corrupt := versionFieldValue(data, vf.Field)
-		if corrupt || val != want {
-			return true, nil
+		if corrupt {
+			val = ""
 		}
+		got.Versions[vf.Path] = val
 	}
 	changelog, err := runner.ReadFile(ctx, current, cfg.Changelog)
 	if err != nil {
 		return true, nil
 	}
-	if string(changelog) != content.Changelog {
+	got.Changelog = string(changelog)
+	if err := intent.CompareContent(content, got); err != nil {
 		return true, nil
 	}
 	if err := runner.MergeTree(ctx, tip, current); err != nil {

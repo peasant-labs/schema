@@ -5,6 +5,7 @@ required_names:
   - classify-release-kind
   - classify-ordinary
   - classify-missing-branch
+  - classify-invalid-config
   - classify-head-tamper-ordinary
   - check-config-valid
   - check-config-unknown-key
@@ -77,6 +78,13 @@ cases:
       sibling: classify-release-kind
       provenance: {source: boundary, ref: "classify requires --head-branch"}
       mutation: {description: "Omits the required --head-branch flag."}
+    - name: classify-invalid-config
+      input: {argv: ["classify", "--author", "octocat", "--head-branch", "feature/work", "--rev", "SETUP_REV"], stdin: "", setup: "classify-invalid"}
+      expected: {exit: 2, stdout: ["error=config-invalid"]}
+      classification: must-fail
+      sibling: classify-release-kind
+      provenance: {source: requirement, ref: "an invalid release config exits 2 with a typed line"}
+      mutation: {description: "Reads an unknown-key config at the given revision."}
     - name: classify-head-tamper-ordinary
       input: {argv: ["classify", "--author", "peasant-labs-releaser[bot]", "--head-branch", "feature/work", "--rev", "SETUP_BASE"], stdin: "", setup: "classify-base"}
       expected: {exit: 0, stdout: ["kind=ordinary"]}

@@ -155,6 +155,14 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 		replace["SETUP_REV"] = gitRev(t, repo, "HEAD")
 		replace["SETUP"] = repo
 		return repo, replace
+	case "classify-invalid":
+		repo := newBareRepo(t)
+		writeFile(t, repo, ".github/release-intent.yaml", "releases: true\ntag_prefix: v\nbogus_key: true\n")
+		runGit(t, repo, "add", ".")
+		runGit(t, repo, "commit", "-q", "-m", "feat(init)[minor]: seed")
+		replace["SETUP_REV"] = gitRev(t, repo, "HEAD")
+		replace["SETUP"] = repo
+		return repo, replace
 	case "classify-base":
 		repo := newBareRepo(t)
 		writeFile(t, repo, ".github/release-intent.yaml", "releases: true\ntag_prefix: v\nautomation_author: peasant-labs-releaser[bot]\nchangelog: CHANGELOG.md\nversion_files:\n  - {path: package.json, field: version}\nprotected_paths: []\nbot_branches:\n  release: automation/release\n")
