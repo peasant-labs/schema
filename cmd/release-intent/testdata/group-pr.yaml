@@ -1,0 +1,39 @@
+required_names:
+  - queue-ref-simple
+  - queue-ref-slash-branch
+  - non-queue-ref-empty
+  - malformed-ref-empty
+  - nested-branch-ref
+
+cases:
+  cases:
+    - name: queue-ref-simple
+      input: {ref: "refs/heads/gh-readonly-queue/main/pr-12-abc123def456"}
+      expected: {pr: "12"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "merge-group refs name the entry PR"}
+      mutation: {description: "Baseline queue ref on main resolves to its entry number."}
+    - name: queue-ref-slash-branch
+      input: {ref: "refs/heads/gh-readonly-queue/feature/nested/pr-7-0123456789abcdef0123456789abcdef01234567"}
+      expected: {pr: "7"}
+      classification: must-pass
+      provenance: {source: boundary, ref: "GitHub merge queue ref format allows slashes in the branch"}
+      mutation: {description: "Uses a branch with slashes to prove the branch part is greedy."}
+    - name: non-queue-ref-empty
+      input: {ref: "refs/heads/main"}
+      expected: {pr: ""}
+      classification: must-pass
+      provenance: {source: requirement, ref: "non-queue refs print an empty PR number with exit 0"}
+      mutation: {description: "Offers a plain branch ref, which must not resolve."}
+    - name: malformed-ref-empty
+      input: {ref: "refs/heads/gh-readonly-queue/main/pr-abc-zzz"}
+      expected: {pr: ""}
+      classification: must-pass
+      provenance: {source: boundary, ref: "a ref-format change must not block the queue"}
+      mutation: {description: "Uses a non-numeric PR segment, which must yield empty rather than fail."}
+    - name: nested-branch-ref
+      input: {ref: "refs/heads/gh-readonly-queue/develop/pr-102-ffffffffffffffffffffffffffffffffffffffff"}
+      expected: {pr: "102"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "merge-group refs carry the numeric entry"}
+      mutation: {description: "Uses a three-digit PR number to prove numeric parsing."}

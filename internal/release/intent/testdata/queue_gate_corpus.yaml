@@ -1,0 +1,106 @@
+# Queue-gate corpus: rows of intent.QueueGate over decoded entries.
+required_names:
+  - empty-queue-arms
+  - releasing-ahead-holds
+  - never-release-ahead-arms
+  - releasing-behind-arms
+  - unparsable-ahead-holds
+  - release-pr-absent-with-releasing-holds
+  - release-pr-absent-quiet-arms
+  - breaking-ahead-holds
+  - bad-current-is-an-error
+cases:
+  - name: empty-queue-arms
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries: []
+    expected: {gate: "arm"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: an empty queue arms"}
+    mutation: {description: "a queue with no entries"}
+  - name: releasing-ahead-holds
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 11, title: "feat(x)[minor]: one"}
+        - {position: 1, number: 12, title: "release[minor]: v0.2.0"}
+    expected: {gate: "hold"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: a releasing PR ahead of the release PR holds"}
+    mutation: {description: "a releasing entry ahead of the release PR"}
+  - name: never-release-ahead-arms
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 11, title: "docs(readme): words"}
+        - {position: 1, number: 12, title: "release[minor]: v0.2.0"}
+    expected: {gate: "arm"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: a never-release PR ahead still arms"}
+    mutation: {description: "a docs entry ahead of the release PR"}
+  - name: releasing-behind-arms
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 12, title: "release[minor]: v0.2.0"}
+        - {position: 1, number: 13, title: "feat(y)[minor]: two"}
+    expected: {gate: "arm"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: a releasing PR behind the release PR still arms"}
+    mutation: {description: "a releasing entry behind the release PR"}
+  - name: unparsable-ahead-holds
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 11, title: "feat(x): no bracket"}
+        - {position: 1, number: 12, title: "release[minor]: v0.2.0"}
+    expected: {gate: "hold"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: a title that does not parse holds"}
+    mutation: {description: "an unparsable title ahead of the release PR"}
+  - name: release-pr-absent-with-releasing-holds
+    input:
+      current: "0.1.0"
+      release_pr: 99
+      entries:
+        - {position: 0, number: 11, title: "feat(x)[minor]: one"}
+    expected: {gate: "hold"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: with the release PR out of the queue every entry is ahead"}
+    mutation: {description: "a releasing entry while the release PR waits outside"}
+  - name: release-pr-absent-quiet-arms
+    input:
+      current: "0.1.0"
+      release_pr: 99
+      entries:
+        - {position: 0, number: 11, title: "docs(readme): words"}
+    expected: {gate: "arm"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: quiet entries outside the release PR still arm"}
+    mutation: {description: "a docs entry while the release PR waits outside"}
+  - name: breaking-ahead-holds
+    input:
+      current: "0.1.0"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 11, title: "feat(types)![minor]: drop it"}
+        - {position: 1, number: 12, title: "release[minor]: v0.2.0"}
+    expected: {gate: "hold"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "gate: a breaking title ahead holds"}
+    mutation: {description: "a breaking entry ahead of the release PR"}
+  - name: bad-current-is-an-error
+    input:
+      current: "0.1"
+      release_pr: 12
+      entries:
+        - {position: 0, number: 11, title: "feat(x)[minor]: one"}
+    expected: {gate: ""}
+    classification: must-fail
+    provenance: {source: boundary, ref: "gate: an invalid current version is a caller fault, not a hold"}
+    mutation: {description: "shortened the current version"}

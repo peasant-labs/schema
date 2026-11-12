@@ -1,0 +1,822 @@
+# Planner corpus: rows of intent.Plan. Facts carry the branch tip history
+# newest-first, every tag, the epoch, the floor, the mode, the verdict, and
+# the per-commit freshness the command layer recorded.
+required_names:
+  - tag-mode-off-gives-none
+  - fresh-candidate-verify
+  - fresh-candidate-taggable
+  - fresh-candidate-rejected
+  - nothing-pending-close-pr
+  - stale-candidate-open-pr
+  - unknown-freshness-open-pr
+  - bad-subject-fails-closed
+  - no-final-tag
+  - no-final-tag-on-chain
+  - version-base-off-chain
+  - epoch-missing
+  - floor-not-on-chain
+  - floor-drops-subjects
+  - floor-at-base-ignored
+  - floor-drops-bad-subject
+  - single-empty-release-line
+  - two-patches-one-batch
+  - breaking-below-1
+  - release-commit-excluded
+  - epoch-commit-parsed
+  - epoch-bad-subject-fails
+  - prefixed-non-release-tag-ignored
+  - rc-above-final-ignored
+  - verdict-taggable-no-candidate
+  - stale-candidate-close-pr-when-empty
+  - plan-only-with-fresh-candidate
+cases:
+  - name: tag-mode-off-gives-none
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aaa", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "e00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "e00"}
+        epoch: "e00"
+        floor: ""
+        mode: "plan-only"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "none"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: tag mode off gives none"}
+    mutation: {description: "a pending batch with the job disarmed"}
+  - name: fresh-candidate-verify
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {"r11": true}
+    expected:
+      action: "verify"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a fresh candidate with no verdict gives verify"}
+    mutation: {description: "a fresh release commit awaiting its pre-tag report"}
+  - name: fresh-candidate-taggable
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r11": true}
+    expected:
+      action: "tag"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a fresh candidate with a taggable verdict gives tag"}
+    mutation: {description: "a fresh release commit whose pre-tag steps passed"}
+  - name: fresh-candidate-rejected
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "rejected"
+        fresh: {"r11": true}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a rejected verdict leaves the subjects before the candidate pending"}
+    mutation: {description: "a fresh release commit whose pre-tag steps failed"}
+  - name: nothing-pending-close-pr
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "d11", subject: "docs(readme): words (#13)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "close-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending: []
+      level: "none"
+      breaking: false
+      version: ""
+      tag: ""
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: nothing pending gives close-pr"}
+    mutation: {description: "a range with no releasing subject and no candidate"}
+  - name: stale-candidate-open-pr
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r11": false}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "stale"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a stale candidate is never tagged, with any verdict"}
+    mutation: {description: "a release commit whose content drifted, judged taggable anyway"}
+  - name: unknown-freshness-open-pr
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: no freshness entry is unknown, never stale"}
+    mutation: {description: "a candidate with no recorded comparison"}
+  - name: bad-subject-fails-closed
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "x11", subject: "feat(x): no bracket (#14)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "missing-bump"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: one bad subject fails the whole plan"}
+    mutation: {description: "a landed subject the grammar rejects"}
+  - name: no-final-tag
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "no-final-tag"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: arithmetic needs a base"}
+    mutation: {description: "a repository with no release tag at all"}
+  - name: no-final-tag-on-chain
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.2.0": "off00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "no-final-tag"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: the range base is the newest final tag on the chain"}
+    mutation: {description: "a version base off the chain with no chained tag"}
+  - name: version-base-off-chain
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.2.0": "off00", "v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.2.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.3.0"
+      tag: "v0.3.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a higher tag off the chain lifts the computed version"}
+    mutation: {description: "a hand-pushed tag above the chain"}
+  - name: epoch-missing
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "dead00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "epoch-missing"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: the epoch must name a chain commit"}
+    mutation: {description: "an epoch that names nothing on the branch"}
+  - name: floor-not-on-chain
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: "dead00"
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "floor-not-on-chain"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: the floor must name a chain commit"}
+    mutation: {description: "a floor that names nothing on the branch"}
+  - name: floor-drops-subjects
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n22", subject: "feat(y)[minor]: two (#15)", changes_changelog: false}
+          - {sha: "n11", subject: "feat(x)[patch]: one (#14)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: "n11"
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["y"], breaking: false, level: "minor", subject: "two", pr: 15}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: commits at or before the floor leave the range"}
+    mutation: {description: "a floor cutting an older subject out of the range"}
+  - name: floor-at-base-ignored
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n22", subject: "feat(y)[minor]: two (#15)", changes_changelog: false}
+          - {sha: "n11", subject: "feat(x)[patch]: one (#14)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: "b00"
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["y"], breaking: false, level: "minor", subject: "two", pr: 15}
+        - {type: "feat", scopes: ["x"], breaking: false, level: "patch", subject: "one", pr: 14}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a floor at or older than the range base changes nothing"}
+    mutation: {description: "a floor naming the range-base commit itself"}
+  - name: floor-drops-bad-subject
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#14)", changes_changelog: false}
+          - {sha: "x00", subject: "feat(x): no bracket (#13)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: "x00"
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 14}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: the floor drops a bad subject and everything before it"}
+    mutation: {description: "a floor cutting an unparseable subject out of the range"}
+  - name: single-empty-release-line
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "e11", subject: "release(graph)[patch]: cut a release (#16)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "release", scopes: ["graph"], breaking: false, level: "patch", subject: "cut a release", pr: 16}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: one empty release subject plans one patch"}
+    mutation: {description: "a forced release with no other change"}
+  - name: two-patches-one-batch
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "p22", subject: "fix[patch]: two (#18)", changes_changelog: false}
+          - {sha: "p11", subject: "fix[patch]: one (#17)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "two", pr: 18}
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 17}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: one batch plans one release no matter its size"}
+    mutation: {description: "two releasing subjects landing together"}
+  - name: breaking-below-1
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "k11", subject: "feat(types)![minor]: drop it (#19)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["types"], breaking: true, level: "minor", subject: "drop it", pr: 19}
+      level: "minor"
+      breaking: true
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a break below 1.0 moves the middle number"}
+    mutation: {description: "a declared break in the pending set"}
+  - name: release-commit-excluded
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r22", subject: "release[minor]: v0.2.0 (#20)", changes_changelog: true}
+          - {sha: "n11", subject: "fix[patch]: one (#21)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r22": true}
+    expected:
+      action: "tag"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r22"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "fix", scopes: [], breaking: false, level: "patch", subject: "one", pr: 21}
+      level: "patch"
+      breaking: false
+      version: "0.1.1"
+      tag: "v0.1.1"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a release commit never joins pending whatever its state"}
+    mutation: {description: "a landed release commit above a pending fix"}
+  - name: epoch-commit-parsed
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#22)", changes_changelog: false}
+          - {sha: "e00", subject: "chore: adopt the release config", changes_changelog: false}
+          - {sha: "t00", subject: "chore: old work", changes_changelog: false}
+        tags: {"v0.1.0": "t00"}
+        epoch: "e00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 22}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: the epoch commit itself is parsed"}
+    mutation: {description: "an epoch commit inside the range"}
+  - name: epoch-bad-subject-fails
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#22)", changes_changelog: false}
+          - {sha: "e00", subject: "feat(x): no bracket", changes_changelog: false}
+          - {sha: "t00", subject: "chore: old work", changes_changelog: false}
+        tags: {"v0.1.0": "t00"}
+        epoch: "e00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: ""
+      range_base: ""
+      version_base: ""
+      candidate: ""
+      candidate_fresh: ""
+      pending: []
+      level: ""
+      breaking: false
+      version: ""
+      tag: ""
+      code: "missing-bump"
+    classification: must-fail
+    provenance: {source: requirement, ref: "planner: the epoch commit itself is parsed"}
+    mutation: {description: "an epoch commit the grammar rejects"}
+  - name: prefixed-non-release-tag-ignored
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#30)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"vibe-hard": "n11", "v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 30}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a non-version word with the prefix bases nothing"}
+    mutation: {description: "a bare word sharing the prefix on the tip commit"}
+  - name: rc-above-final-ignored
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#31)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.2.0-rc1": "off00", "v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: ""
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 31}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: only final tags base arithmetic"}
+    mutation: {description: "a release candidate above the highest final tag"}
+  - name: verdict-taggable-no-candidate
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "n11", subject: "feat(x)[minor]: one (#14)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {}
+    expected:
+      action: "open-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: ""
+      candidate_fresh: "unknown"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 14}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: the verdict only speaks for a fresh candidate"}
+    mutation: {description: "a taggable verdict with no candidate to tag"}
+  - name: stale-candidate-close-pr-when-empty
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r22", subject: "release[minor]: v0.2.0 (#23)", changes_changelog: true}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "tag"
+        verdict: "taggable"
+        fresh: {"r22": false}
+    expected:
+      action: "close-pr"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r22"
+      candidate_fresh: "stale"
+      pending: []
+      level: "none"
+      breaking: false
+      version: ""
+      tag: ""
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: a stale candidate with nothing pending closes"}
+    mutation: {description: "a stale release commit with an empty pending set"}
+  - name: plan-only-with-fresh-candidate
+    input:
+      config: {releases: true, tag_prefix: "v", automation_author: "bot", changelog: "CHANGELOG.md", version_files: [], protected_paths: [], surfaces: {}, bot_branches: {}}
+      facts:
+        commits:
+          - {sha: "r11", subject: "release[minor]: v0.2.0 (#12)", changes_changelog: true}
+          - {sha: "aa1", subject: "feat(x)[minor]: one (#11)", changes_changelog: false}
+          - {sha: "b00", subject: "chore: adopt the release config", changes_changelog: false}
+        tags: {"v0.1.0": "b00"}
+        epoch: "b00"
+        floor: ""
+        mode: "plan-only"
+        verdict: "taggable"
+        fresh: {"r11": true}
+    expected:
+      action: "none"
+      range_base: "v0.1.0"
+      version_base: "v0.1.0"
+      candidate: "r11"
+      candidate_fresh: "fresh"
+      pending:
+        - {type: "feat", scopes: ["x"], breaking: false, level: "minor", subject: "one", pr: 11}
+      level: "minor"
+      breaking: false
+      version: "0.2.0"
+      tag: "v0.2.0"
+      code: ""
+    classification: must-pass
+    provenance: {source: requirement, ref: "planner: tag mode off gives none on every shape"}
+    mutation: {description: "a taggable-shaped run with the job disarmed"}
