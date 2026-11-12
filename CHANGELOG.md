@@ -22,6 +22,22 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   when present. The prior 0.38.0, 0.36.0 and 0.48.0 specs stay frozen in the
   retirement registry.
 
+- The transcript cut and window rule are shared Go functions in
+  `transcript_cut.go`: `TranscriptTurnByteLength`,
+  `TranscriptJSONStringByteLength`, `CutTranscriptSegments`,
+  `ResolveTranscriptWindow` with `TranscriptWindowTurn` and
+  `ErrTranscriptWindowNoUserTurn`, and the constants
+  `TranscriptSegmentBudgetBytes` and
+  `TranscriptWindowSpan{Default,Minimum,Maximum}`. Two servers that cut the
+  same turns produce the same segment refs. `TranscriptWindow.Validate` reads
+  its span range from the constants. There is no TypeScript counterpart.
+- Village API 0.39.0 declares the segmented transcript reads with the types the
+  local reads serve: `getTranscriptSegments`
+  (`GET /api/v1/transcripts/{id}/segments`), `getTranscriptSegment`
+  (`GET /api/v1/transcripts/{id}/segments/{index}`) and `getTranscriptWindow`
+  (`GET /api/v1/transcripts/{id}/window`), each with statuses 400, 404, 409 and
+  500.
+
 - Local API 0.36.0 and Types 0.48.0 declare the failures the kickstart routes
   answer. Every kickstart route now declares `500` and `503`, and every read
   also declares the host `403` described below; `GET /api/v1/kickstart/status`

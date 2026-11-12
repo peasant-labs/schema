@@ -47,6 +47,32 @@ category-to-label mapping into a consumer.
 
 **Recorded exception:** `commandpr` uses `mvdan.cc/sh/v3` solely to parse recorded shell commands for shared unverified pull request evidence. It never executes commands, fetches remote state, or changes access; sharing the parser prevents consumer detection rules from drifting.
 
+**Recorded exception:** `transcript_cut.go` holds producer rules, not wire
+types: `TranscriptTurnByteLength` and `TranscriptJSONStringByteLength` (the byte
+measure), `CutTranscriptSegments` (the cut, with each segment's conversation
+turn span), `ResolveTranscriptWindow` (the anchor window) and the constants
+`TranscriptSegmentBudgetBytes` and `TranscriptWindowSpan{Default,Minimum,Maximum}`.
+They are pure functions over wire types and live here because every server that
+serves the segmented transcript reads must cut the same turns into the same
+segments; a copy per backend would let boundaries drift, and a directory from
+one server would then not match a segment from another. The budget is a
+contract value: changing it moves every boundary on every server. The moved
+literals in `testdata/transcript_cut.yaml` and `testdata/transcript_windows.yaml`
+are the proof that a boundary did not move; never re-record them to make a
+change pass.
+
+These functions have **no TypeScript counterpart**, by decision. The cut needs
+every turn of a session, which no browser holds, and both callers are Go
+servers. A browser reads the directory, the segments and the window a server
+resolved; it never cuts or resolves. The only span bound on the TypeScript side
+is the generated Zod schema of `TranscriptWindow` (`span` 1..10), which comes
+from the struct tags on `TranscriptWindow.Span`; no handwritten TypeScript
+validator restates it. `TestTranscriptWindowSpanConstantsMatchTheDeclaredRange`
+holds those tags, and the `span` query parameter of the Local and Village
+window reads, equal to the Go constants. Do not add a TypeScript cut, measure or
+window resolver; if a browser ever needs one, that is a contract change with its
+own recorded decision.
+
 **Recorded exception:** Kickstart response and view components are closed as well as
 request bodies. Adding a response property is a breaking change to pinned consumers;
 this choice is specific to the kickstart contract and is not a general precedent.
