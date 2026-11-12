@@ -91,6 +91,7 @@ func TestErrorCodeCoverage(t *testing.T) {
 		titleCorpusYAML, arithmeticCorpusYAML, semverCorpusYAML,
 		classifierCorpusYAML, configCorpusYAML, protectedCorpusYAML,
 		planCorpusYAML, generateCorpusYAML,
+		queueDecodeCorpusYAML, queueGateCorpusYAML,
 	} {
 		var doc struct {
 			Cases []struct {
