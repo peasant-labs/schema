@@ -77,7 +77,7 @@ cases:
         automation_author: peasant-labs-releaser[bot]
         changelog: CHANGELOG.md
         scope_allowlist: [graph]
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: an unknown key fails closed"}
@@ -91,7 +91,7 @@ cases:
         changelog: CHANGELOG.md
         surfaces:
           types: types
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: minimal-quiet-config
     provenance: {source: requirement, ref: "config: a repo that does not release names no surfaces"}
@@ -103,7 +103,7 @@ cases:
         tag_prefix: ""
         automation_author: peasant-labs-releaser[bot]
         changelog: CHANGELOG.md
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: the tag prefix is required"}
@@ -115,7 +115,7 @@ cases:
         tag_prefix: v
         automation_author: ""
         changelog: CHANGELOG.md
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: the automation author is required"}
@@ -127,7 +127,7 @@ cases:
         tag_prefix: v
         automation_author: peasant-labs-releaser[bot]
         changelog: ""
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: the changelog path is required"}
@@ -141,7 +141,7 @@ cases:
         changelog: CHANGELOG.md
         version_files:
           - { path: package.json }
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: a version file entry needs its protected field"}
@@ -155,7 +155,7 @@ cases:
         changelog: CHANGELOG.md
         bot_branches:
           deploy: automation/deploy
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: requirement, ref: "config: the bot PR kinds are closed"}
@@ -169,7 +169,7 @@ cases:
         changelog: CHANGELOG.md
         bot_branches:
           release: ""
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: each bot kind needs its branch"}
@@ -183,7 +183,7 @@ cases:
         changelog: CHANGELOG.md
         ---
         releases: false
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
     sibling: full-config
     provenance: {source: boundary, ref: "config: the file is one document"}

@@ -10,6 +10,22 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// configInvalidError builds the typed rejection for a config file that was
+// read but judges nothing: malformed YAML, an unknown key, or a failed
+// value check. A file that cannot be read at all stays a plain error, so
+// the caller keeps the read/parse exit split.
+func configInvalidError(what, why, where, fix string) *Error {
+	return &Error{
+		Code:  ErrConfigInvalid,
+		What:  what,
+		Why:   why,
+		Where: where,
+		When:  "loading the release config",
+		Means: "no check can run without the repo's contract",
+		Fix:   fix,
+	}
+}
+
 // configBotKinds is the closed set of keys a bot_branches map may carry: the
 // bot PR kinds, derived once from AllPRKinds so the closed set has one home.
 var configBotKinds = func() map[PRKind]bool {
@@ -48,33 +64,27 @@ func ParseConfig(data []byte) (Config, error) {
 	decoder.KnownFields(true)
 	var cfg Config
 	if err := decoder.Decode(&cfg); err != nil {
-		return Config{}, inputError(
+		return Config{}, configInvalidError(
 			"cannot parse release config bytes: "+err.Error(),
 			"the config is strict YAML with a fixed key set",
 			"intent.ParseConfig",
-			"loading the release config",
-			"no title, plan, or gate can be judged without the repo's contract",
 			"fix the YAML syntax or the unknown key the message names",
 		)
 	}
 	var trailing any
 	if err := decoder.Decode(&trailing); err != io.EOF {
 		if err != nil {
-			return Config{}, inputError(
+			return Config{}, configInvalidError(
 				"cannot parse release config bytes: "+err.Error(),
 				"the config is one YAML document",
 				"intent.ParseConfig",
-				"loading the release config",
-				"no title, plan, or gate can be judged without the repo's contract",
 				"keep a single document in the config",
 			)
 		}
-		return Config{}, inputError(
+		return Config{}, configInvalidError(
 			"release config bytes hold more than one document",
 			"the config is one YAML document",
 			"intent.ParseConfig",
-			"loading the release config",
-			"no title, plan, or gate can be judged without the repo's contract",
 			"keep a single document in the config",
 		)
 	}
@@ -88,8 +98,7 @@ func ParseConfig(data []byte) (Config, error) {
 // names the config under check for the error message.
 func checkConfig(cfg Config, where string) error {
 	fail := func(what, why, fix string) error {
-		return inputError(what, why, where, "validating the release config",
-			"no title, plan, or gate can be judged without a valid contract", fix)
+		return configInvalidError(what, why, where+", validating the release config", fix)
 	}
 	if cfg.TagPrefix == "" {
 		return fail("the tag prefix is empty",

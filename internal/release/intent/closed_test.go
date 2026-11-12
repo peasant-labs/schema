@@ -73,6 +73,8 @@ func TestClosedSets(t *testing.T) {
 		intent.ErrEpochMissing,
 		intent.ErrFloorNotOnChain,
 		intent.ErrReleaseContentStale,
+		intent.ErrConfigInvalid,
+		intent.ErrPolicyViolation,
 	}; !reflect.DeepEqual(got, want) {
 		t.Errorf("AllErrorCodes = %v, want %v", got, want)
 	}
@@ -93,6 +95,7 @@ func TestErrorCodeCoverage(t *testing.T) {
 		planCorpusYAML, generateCorpusYAML,
 		queueDecodeCorpusYAML, queueGateCorpusYAML,
 		highestTagCorpusYAML, versionFieldCorpusYAML,
+		contentCorpusYAML, policyCorpusYAML,
 	} {
 		var doc struct {
 			Cases []struct {
@@ -111,17 +114,11 @@ func TestErrorCodeCoverage(t *testing.T) {
 			}
 		}
 	}
-	commandLevel := map[string]bool{
-		string(intent.ErrReleaseContentStale): true,
-	}
-	// pendingCodes lists codes whose reject fixtures arrive with a later
-	// layer: the command level owns the content comparison. Each layer
-	// deletes its codes here as it lands them.
-	pendingCodes := map[string]bool{}
+	// Every member of AllErrorCodes has a reject fixture in the corpora
+	// above: the comparison, the config loader, and the policy constructor
+	// are core rules, so their codes are proven here, not at the command
+	// level.
 	for _, code := range intent.AllErrorCodes {
-		if commandLevel[string(code)] || pendingCodes[string(code)] {
-			continue
-		}
 		if !seen[string(code)] {
 			t.Errorf("error code %q has no reject fixture in the intent corpora", code)
 		}
