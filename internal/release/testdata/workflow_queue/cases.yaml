@@ -57,6 +57,7 @@ required_names:
   - reject-tag-publish-no-verify-tag
   - reject-tag-publish-branch-push
   - reject-tag-publish-extra-trigger
+  - reject-tag-publish-other-tag
   - reject-cut-release-trigger
   - reject-cut-release-level
   - reject-cut-release-no-tagmode
@@ -454,6 +455,14 @@ cases:
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
     mutation: { description: "trigger the publish workflow on workflow_dispatch as well as on tags" }
+
+  - name: reject-tag-publish-other-tag
+    input: { overlay: "reject-tag-publish-other-tag" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step", "is not the triggering tag"] }
+    sibling: accept-tag-publish
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "create the Release for a variable that is not mapped from the triggering tag" }
 
   - name: reject-cut-release-trigger
     input: { overlay: "reject-cut-release-trigger" }

@@ -570,7 +570,7 @@ func (c *queueChecker) checkPushStep(doc *yaml.Node, workflow, job string, step 
 			"a step edits a PR outside the release job during merge-queue policy validation. Only the release job edits the release PR; a bot job updates its own PR by pushing its branch")
 	}
 	if releaseCreate.MatchString(run) && !(isReleaseJob && isTagStep(step)) {
-		if fault := c.tagPublishFault(doc, run); fault != "" {
+		if fault := c.tagPublishFault(doc, jobNode(doc, job), step, run); fault != "" {
 			c.emit(QueueRuleNoPush, workflow, id,
 				"a step creates a GitHub Release outside the release job's tag step during merge-queue policy validation: "+fault+". A Release is created only by the release tag step, or by a workflow that runs only on a pushed release tag, writes no ref and no PR, and passes --verify-tag so it can never create a tag")
 		}
@@ -586,10 +586,11 @@ var releaseCreate = regexp.MustCompile(`\bgh\s+release\s+create\b`)
 // every pattern starting with the release config's tag prefix, so it runs
 // only for a release tag that already exists; no step pushes a ref, writes
 // refs/tags/, or writes a PR; and every create in the step passes
-// --verify-tag, so gh refuses to create a missing tag. Such a workflow can
+// --verify-tag, so gh refuses to create a missing tag, and names the
+// triggering tag as its tag argument (see triggeringTag). Such a workflow can
 // publish a Release for the pushed tag and nothing else; gh release edit
 // needs no further condition there.
-func (c *queueChecker) tagPublishFault(doc *yaml.Node, run string) string {
+func (c *queueChecker) tagPublishFault(doc, job, step *yaml.Node, run string) string {
 	if fault := tagOnlyTriggerFault(doc, c.cfg.TagPrefix); fault != "" {
 		return fault
 	}
@@ -611,9 +612,82 @@ func (c *queueChecker) tagPublishFault(doc *yaml.Node, run string) string {
 		if !verified {
 			return "the create does not pass --verify-tag, so it would create the tag when it is missing"
 		}
+		tag := releaseCreateTag(words)
+		if !triggeringTag(tag, step, job, doc) {
+			return "the create targets " + strconv.Quote(tag) + ", which is not the triggering tag. Pass \"$GITHUB_REF_NAME\", ${{ github.ref_name }}, or an env variable mapped from ${{ github.ref_name }} as the tag argument"
+		}
 	}
 	return ""
 }
+
+// releaseCreateValueFlags are the gh release create flags that take a value,
+// so the word after one is not the tag argument.
+var releaseCreateValueFlags = map[string]bool{
+	"--title": true, "-t": true, "--notes": true, "-n": true, "--notes-file": true, "-F": true,
+	"--target": true, "--repo": true, "-R": true, "--discussion-category": true,
+	"--notes-start-tag": true,
+}
+
+// releaseCreateTag returns the tag argument of one gh release create command,
+// its first positional word with quotes kept, or "" when it names none.
+func releaseCreateTag(words []string) string {
+	for i := 0; i < len(words); i++ {
+		w := words[i]
+		if strings.HasPrefix(w, "-") {
+			if releaseCreateValueFlags[w] {
+				i++
+			}
+			continue
+		}
+		return w
+	}
+	return ""
+}
+
+// refNameExpression matches the GitHub expression for the triggering ref's
+// short name, alone.
+var refNameExpression = regexp.MustCompile(`^\$\{\{\s*github\.ref_name\s*\}\}$`)
+
+// triggeringTag reports whether a create's tag argument is the tag that
+// triggered the workflow: ${{ github.ref_name }}, the runner's
+// $GITHUB_REF_NAME, or an env variable the step, the job, or the workflow
+// maps from ${{ github.ref_name }}, quoted or bare. A single-quoted shell
+// variable never expands, so it does not count; any literal or other
+// variable is rejected.
+func triggeringTag(word string, step, job, doc *yaml.Node) bool {
+	bare := bareWord(word)
+	if refNameExpression.MatchString(bare) {
+		return true
+	}
+	if strings.Contains(word, "'") {
+		return false
+	}
+	name, ok := strings.CutPrefix(bare, "$")
+	if !ok {
+		return false
+	}
+	if inner, braced := strings.CutPrefix(name, "{"); braced {
+		name, ok = strings.CutSuffix(inner, "}")
+		if !ok {
+			return false
+		}
+	}
+	if !shellName.MatchString(name) {
+		return false
+	}
+	for _, scope := range []*yaml.Node{step, job, doc} {
+		if scope == nil {
+			continue
+		}
+		if v := envValue(scope, name); v != "" {
+			return refNameExpression.MatchString(strings.TrimSpace(v))
+		}
+	}
+	return name == "GITHUB_REF_NAME"
+}
+
+// shellName matches a plain shell variable name.
+var shellName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // refOrPRWrite matches a run line that pushes a ref, writes a tag ref, or
 // writes a PR.
