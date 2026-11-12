@@ -397,8 +397,10 @@ type BeforeCandidate struct {
 // needs to carry it out. For verify and tag, Pending, Level, Breaking,
 // Version and Tag come from the subjects older than the candidate, and Before
 // repeats that same set with its date; the subjects after the candidate stay
-// pending for the next release. Date is the committer date of the newest
-// commit in Pending, for the dated heading of the set being rendered.
+// pending for the next release. Full holds the whole range's set in the same
+// shape, always filled when anything is pending, whatever the verdict; the
+// release-pr write path renders Full. Date is the committer date of the
+// newest commit in Pending, for the dated heading of the set being rendered.
 type Decision struct {
 	Action         Action          `yaml:"action"`
 	RangeBase      string          `yaml:"range_base"`
@@ -411,6 +413,7 @@ type Decision struct {
 	Version        SemVer          `yaml:"version"`
 	Tag            string          `yaml:"tag"`
 	Before         BeforeCandidate `yaml:"before"`
+	Full           BeforeCandidate `yaml:"full"`
 	Date           string          `yaml:"date"`
 }
 
