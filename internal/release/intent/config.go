@@ -134,6 +134,7 @@ func checkConfig(cfg Config, where string) error {
 			"surfaces drive bumps, and nothing bumps where releases are off",
 			"either set releases to true or drop the surfaces map")
 	}
+	seenBranches := map[string]PRKind{}
 	for kind, branch := range cfg.BotBranches {
 		if !configBotKinds[kind] {
 			return fail("bot_branches names unknown kind "+strconv.Quote(string(kind)),
@@ -145,6 +146,12 @@ func checkConfig(cfg Config, where string) error {
 				"each bot PR kind needs the one head branch its PR uses",
 				"set the branch, for example \"automation/release\" for the release kind")
 		}
+		if first, dup := seenBranches[branch]; dup {
+			return fail("bot_branches names branch "+strconv.Quote(branch)+" for two kinds",
+				"one branch belongs to one bot PR: with two kinds on one branch the classifier gives the vendor-hash and cut-release PRs the release PR's exemption",
+				"give "+string(first)+" and "+string(kind)+" their own head branches")
+		}
+		seenBranches[branch] = kind
 	}
 	return nil
 }
