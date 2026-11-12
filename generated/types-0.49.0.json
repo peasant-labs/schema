@@ -15737,9 +15737,19 @@
             ]
           },
           "conversation_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "description": {
             "anyOf": [
@@ -15797,9 +15807,19 @@
             ]
           },
           "displayed_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "duration_ms": {
             "anyOf": [
@@ -16450,7 +16470,7 @@
           "turn_count": {
             "anyOf": [
               {
-                "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units.",
+                "description": "Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count.",
                 "type": [
                   "null",
                   "integer"
@@ -16494,6 +16514,8 @@
           "session_start",
           "session_end",
           "turn_count",
+          "conversation_turn_count",
+          "displayed_turn_count",
           "token_count",
           "blob_size_bytes",
           "schema_version",
@@ -18520,9 +18542,19 @@
             ]
           },
           "conversation_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "description": {
             "anyOf": [
@@ -18580,9 +18612,19 @@
             ]
           },
           "displayed_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "duration_ms": {
             "anyOf": [
@@ -19227,7 +19269,7 @@
           "turn_count": {
             "anyOf": [
               {
-                "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units.",
+                "description": "Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count.",
                 "type": [
                   "null",
                   "integer"
@@ -19271,6 +19313,8 @@
           "session_start",
           "session_end",
           "turn_count",
+          "conversation_turn_count",
+          "displayed_turn_count",
           "token_count",
           "blob_size_bytes",
           "schema_version",
@@ -20027,14 +20071,34 @@
       "VillageUserCollectiveShare": {
         "properties": {
           "conversation_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "displayed_turn_count": {
-            "maximum": 9007199254740991,
-            "minimum": 0,
-            "type": "integer"
+            "anyOf": [
+              {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": [
+                  "null",
+                  "integer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "$ref": "#/components/schemas/TranscriptID"
@@ -20158,7 +20222,7 @@
           "turn_count": {
             "anyOf": [
               {
-                "description": "Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units.",
+                "description": "Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count.",
                 "type": [
                   "null",
                   "integer"
@@ -20181,6 +20245,8 @@
           "visibility",
           "published_at",
           "turn_count",
+          "conversation_turn_count",
+          "displayed_turn_count",
           "tokens_in",
           "tokens_out",
           "owner",

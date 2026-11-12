@@ -3284,7 +3284,7 @@ export const zLocalSessionRow = z.object({
     if (value.sync && value.matches?.length) fail("sync and matches select incompatible route arms; retain the originating route only");
     if (value.sync) {
       const s = value.session, v = value.sync;
-      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
+      if (v.id !== s.id || v.harness !== s.harness || v.projectName !== s.project || v.projectHash !== s.projectHash || v.totalTokens !== s.totalTokens || v.turnCount !== s.turnCount || v.inputSubmissionCount !== s.inputSubmissionCount || v.conversationTurnCount !== s.conversationTurnCount || (v.parentSessionId ?? undefined) !== (s.parentSessionId ?? undefined) || (v.parentUnresolved ?? undefined) !== (s.parentUnresolved ?? undefined)) fail("sync identity, parent, or count mirrors disagree; derive both from the same row");
       const sameTeammate = (left: { team: string; name: string; evidence: string } | null | undefined, right: { team: string; name: string; evidence: string } | null | undefined): boolean => {
         if (left == null || right == null) return left == null && right == null;
         return left.team === right.team && left.name === right.name && left.evidence === right.evidence;
@@ -5210,12 +5210,12 @@ export const zVillageCollectiveTranscript = z.object({
     compute_version: z.int().nullable(),
     computed_at: z.iso.datetime().nullable(),
     content_hash: zTranscriptContentHash.nullable(),
-    conversation_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
     discovery_turns: z.int().nullable(),
-    displayed_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     duration_ms: z.int().nullable(),
     exploration_ratio: z.number().nullable(),
     files_touched: z.int().nullable(),
@@ -5323,12 +5323,12 @@ export const zVillageTranscript = z.object({
     compute_version: z.int().nullable(),
     computed_at: z.iso.datetime().nullable(),
     content_hash: zTranscriptContentHash.nullable(),
-    conversation_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     description: z.string().nullable(),
     diagnostics_partial: z.boolean().nullable(),
     diagnostics_warnings: z.array(zDiagnosticEntry).nullable(),
     discovery_turns: z.int().nullable(),
-    displayed_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     duration_ms: z.int().nullable(),
     exploration_ratio: z.number().nullable(),
     files_touched: z.int().nullable(),
@@ -6069,8 +6069,8 @@ export const zLocalVillageCollectivesResponse = z.object({
 export type LocalVillageCollectivesResponse = z.infer<typeof zLocalVillageCollectivesResponse>;
 
 export const zVillageUserCollectiveShare = z.object({
-    conversation_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
-    displayed_turn_count: z.int().gte(0).lte(9007199254740991).optional(),
+    conversation_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
+    displayed_turn_count: z.int().gte(0).lte(9007199254740991).nullable(),
     id: zTranscriptID,
     input_submission_count: z.int().gte(0).lte(9007199254740991).optional(),
     local_id: zSessionID,
@@ -6120,9 +6120,10 @@ export const zVillageSessionRow = z.object({
     };
     for (const arm of [value.collective, value.pending, value.myShare]) if (arm != null && !equal(arm.owner, value.owner)) fail("route owner differs from the row owner; resolve the owner once for this viewer and project it into both");
     const graph = ["parent_session_id", "root_session_id", "purpose", "relationships", "input_submission_count"];
-    check(value.collective, [...graph, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
+    const turnCounts = ["conversation_turn_count", "displayed_turn_count"];
+    check(value.collective, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "description", "visibility", "model_provider", "model_name", "harness_version", "turn_count", "token_count", "tokens_in", "tokens_out", "duration_ms", "project_hash", "project_name", "project_display_name", "project_name_source", "project_remote_label", "git_branch", "session_origin"]);
     check(value.pending, [...graph, "parent_transcript_id", "transcript_id", "local_id", "title", "model_provider", "project_hash", "project_name", "branch"], { transcript_id: "id", branch: "git_branch" });
-    check(value.myShare, [...graph, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
+    check(value.myShare, [...graph, ...turnCounts, "parent_transcript_id", "id", "local_id", "title", "visibility", "published_at", "model_provider", "model_name", "turn_count", "tokens_in", "tokens_out"]);
     check(value.contributable, [...graph, "id", "local_id", "title", "visibility", "model_provider", "project_hash", "project_display_name", "project_name_source", "git_branch", "published_at", "session_origin"]);
   }).superRefine((value, context) => {
     const fail = (reason: string) => context.addIssue({ code: "custom", message: "schema.zVillageSessionRow: " + reason });

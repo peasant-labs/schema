@@ -10419,9 +10419,13 @@ components:
           - $ref: '#/components/schemas/TranscriptContentHash'
           - type: "null"
         conversation_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         description:
           anyOf:
           - type:
@@ -10449,9 +10453,13 @@ components:
             - integer
           - type: "null"
         displayed_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         duration_ms:
           anyOf:
           - type:
@@ -10759,10 +10767,10 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count. As the publishing client sent it; clients older than this
-              contract sent other units.'
+          - description: 'Folded turns as the publishing client sent it: the folded
+              turns of the session''s main partition, system and tool rows included,
+              for clients on this contract; clients older than this contract sent
+              other units. Not the count a reader is shown; see displayed_turn_count.'
             type:
             - "null"
             - integer
@@ -10790,6 +10798,8 @@ components:
       - session_start
       - session_end
       - turn_count
+      - conversation_turn_count
+      - displayed_turn_count
       - token_count
       - blob_size_bytes
       - schema_version
@@ -12116,9 +12126,13 @@ components:
           - $ref: '#/components/schemas/TranscriptContentHash'
           - type: "null"
         conversation_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         description:
           anyOf:
           - type:
@@ -12146,9 +12160,13 @@ components:
             - integer
           - type: "null"
         displayed_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         duration_ms:
           anyOf:
           - type:
@@ -12452,10 +12470,10 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count. As the publishing client sent it; clients older than this
-              contract sent other units.'
+          - description: 'Folded turns as the publishing client sent it: the folded
+              turns of the session''s main partition, system and tool rows included,
+              for clients on this contract; clients older than this contract sent
+              other units. Not the count a reader is shown; see displayed_turn_count.'
             type:
             - "null"
             - integer
@@ -12483,6 +12501,8 @@ components:
       - session_start
       - session_end
       - turn_count
+      - conversation_turn_count
+      - displayed_turn_count
       - token_count
       - blob_size_bytes
       - schema_version
@@ -12992,13 +13012,21 @@ components:
     VillageUserCollectiveShare:
       properties:
         conversation_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         displayed_turn_count:
-          maximum: 9.007199254740991e+15
-          minimum: 0
-          type: integer
+          anyOf:
+          - maximum: 9.007199254740991e+15
+            minimum: 0
+            type:
+            - "null"
+            - integer
+          - type: "null"
         id:
           $ref: '#/components/schemas/TranscriptID'
         input_submission_count:
@@ -13063,10 +13091,10 @@ components:
           - type: "null"
         turn_count:
           anyOf:
-          - description: 'Conversation turns: projected turns whose role is not system.
-              Every count surface reports this same number; it is never a raw harness
-              record count. As the publishing client sent it; clients older than this
-              contract sent other units.'
+          - description: 'Folded turns as the publishing client sent it: the folded
+              turns of the session''s main partition, system and tool rows included,
+              for clients on this contract; clients older than this contract sent
+              other units. Not the count a reader is shown; see displayed_turn_count.'
             type:
             - "null"
             - integer
@@ -13081,6 +13109,8 @@ components:
       - visibility
       - published_at
       - turn_count
+      - conversation_turn_count
+      - displayed_turn_count
       - tokens_in
       - tokens_out
       - owner

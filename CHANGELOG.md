@@ -14,7 +14,8 @@ documented here. This project adheres to [Semantic Versioning](https://semver.or
   or (assistant, image). Session types and publication `stats` gain the
   optional `conversationTurnCount`, beside a re-documented `turnCount` in
   folded-turn units. Village rows gain `conversation_turn_count` and the
-  server-resolved `displayed_turn_count`. The segment directory gains
+  server-resolved `displayed_turn_count`; both are required and nullable, as
+  `turn_count` is, and null means unmeasured. The segment directory gains
   `totalConversationTurns` and each ref gains `conversationTurns`
   (`ConversationTurnSpan` with `before` and `count`), with local-only
   continuity rules. The publication fingerprint encodes the new count only

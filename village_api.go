@@ -522,13 +522,13 @@ type VillageTranscript struct {
 	HarnessVersion *string                     `json:"harness_version"`
 	SessionStart   *time.Time                  `json:"session_start"`
 	SessionEnd     *time.Time                  `json:"session_end"`
-	TurnCount      *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	TurnCount      *int32                      `json:"turn_count" description:"Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
-	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ConversationTurnCount *int64 `json:"conversation_turn_count" minimum:"0" maximum:"9007199254740991"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64     `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	DisplayedTurnCount *int64     `json:"displayed_turn_count" minimum:"0" maximum:"9007199254740991"`
 	TokenCount         *int32     `json:"token_count"`
 	BlobSizeBytes      *int64     `json:"blob_size_bytes"`
 	SchemaVersion      string     `json:"schema_version"`
@@ -795,13 +795,13 @@ type VillageCollectiveTranscript struct {
 	HarnessVersion *string                     `json:"harness_version"`
 	SessionStart   *time.Time                  `json:"session_start"`
 	SessionEnd     *time.Time                  `json:"session_end"`
-	TurnCount      *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	TurnCount      *int32                      `json:"turn_count" description:"Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
-	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ConversationTurnCount *int64 `json:"conversation_turn_count" minimum:"0" maximum:"9007199254740991"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64     `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	DisplayedTurnCount *int64     `json:"displayed_turn_count" minimum:"0" maximum:"9007199254740991"`
 	TokenCount         *int32     `json:"token_count"`
 	BlobSizeBytes      *int64     `json:"blob_size_bytes"`
 	SchemaVersion      string     `json:"schema_version"`
@@ -972,13 +972,13 @@ type VillageUserCollectiveShare struct {
 	ModelName     *string                     `json:"model_name"`
 	Visibility    VillageTranscriptVisibility `json:"visibility"`
 	PublishedAt   time.Time                   `json:"published_at"`
-	TurnCount     *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	TurnCount     *int32                      `json:"turn_count" description:"Folded turns as the publishing client sent it: the folded turns of the session's main partition, system and tool rows included, for clients on this contract; clients older than this contract sent other units. Not the count a reader is shown; see displayed_turn_count."`
 	// ConversationTurnCount is the number of conversation turns as published;
 	// null means unmeasured.
-	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	ConversationTurnCount *int64 `json:"conversation_turn_count" minimum:"0" maximum:"9007199254740991"`
 	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
 	// when measured, else turn_count; resolved by the server.
-	DisplayedTurnCount *int64             `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	DisplayedTurnCount *int64             `json:"displayed_turn_count" minimum:"0" maximum:"9007199254740991"`
 	TokensIn           *int64             `json:"tokens_in"`
 	TokensOut          *int64             `json:"tokens_out"`
 	Owner              VillagePublicOwner `json:"owner"`
@@ -1071,6 +1071,22 @@ type VillageSessionRow struct {
 	Contributable *VillageContributableTranscript `json:"contributable,omitempty"`
 }
 
+// countMirror is one optional count that two copies of a grouped row carry.
+type countMirror struct {
+	field         string
+	copy, session *int64
+}
+
+// disagreeingCountMirror names the first count whose copies differ, or "".
+func disagreeingCountMirror(mirrors ...countMirror) string {
+	for _, mirror := range mirrors {
+		if !equalOptionalInt64(mirror.copy, mirror.session) {
+			return mirror.field
+		}
+	}
+	return ""
+}
+
 // Validate checks the route arm and the shared identity and count mirrors.
 func (r VillageSessionRow) Validate() error {
 	if err := validateAnonymousRepository(r.Owner, r.Session.repositoryFieldsPresent(), "schema.VillageSessionRow.Validate"); err != nil {
@@ -1095,7 +1111,7 @@ func (r VillageSessionRow) Validate() error {
 	if err := ValidateConversationTurnCount(r.Session.ConversationTurnCount, "VillageSessionRow.session.conversation_turn_count"); err != nil {
 		return err
 	}
-	if err := ValidateConversationTurnCount(r.Session.DisplayedTurnCount, "VillageSessionRow.session.displayed_turn_count"); err != nil {
+	if err := validateSafeCount(r.Session.DisplayedTurnCount, displayedTurnCountLabel, "VillageSessionRow.session.displayed_turn_count"); err != nil {
 		return err
 	}
 	arms := 0
@@ -1107,13 +1123,16 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateConversationTurnCount(r.Collective.ConversationTurnCount, "VillageSessionRow.collective.conversation_turn_count"); err != nil {
 			return err
 		}
-		if err := ValidateConversationTurnCount(r.Collective.DisplayedTurnCount, "VillageSessionRow.collective.displayed_turn_count"); err != nil {
+		if err := validateSafeCount(r.Collective.DisplayedTurnCount, displayedTurnCountLabel, "VillageSessionRow.collective.displayed_turn_count"); err != nil {
 			return err
 		}
 		if err := r.Collective.PullRequests.Validate(); err != nil {
 			return err
 		}
-		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || !reflect.DeepEqual(r.Collective.ConversationTurnCount, r.Session.ConversationTurnCount) || !reflect.DeepEqual(r.Collective.DisplayedTurnCount, r.Session.DisplayedTurnCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || !reflect.DeepEqual(r.Collective.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Collective.ProjectDisplayName, r.Session.ProjectDisplayName) || !reflect.DeepEqual(r.Collective.ProjectNameSource, r.Session.ProjectNameSource) || !reflect.DeepEqual(r.Collective.ProjectRemoteLabel, r.Session.ProjectRemoteLabel) || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
+		if field := disagreeingCountMirror(countMirror{"conversation_turn_count", r.Collective.ConversationTurnCount, r.Session.ConversationTurnCount}, countMirror{"displayed_turn_count", r.Collective.DisplayedTurnCount, r.Session.DisplayedTurnCount}); field != "" {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective %s differs from session; the route would display two turn counts for one transcript; project both copies from the same transcript row", field)
+		}
+		if r.Collective.ID != r.Session.ID || !reflect.DeepEqual(r.Collective.Owner, r.Owner) || r.Collective.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.Collective.Title, r.Session.Title) || !reflect.DeepEqual(r.Collective.Description, r.Session.Description) || r.Collective.Visibility != r.Session.Visibility || !equalOptionalInt64(r.Collective.InputSubmissionCount, r.Session.InputSubmissionCount) || r.Collective.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.Collective.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.Collective.HarnessVersion, r.Session.HarnessVersion) || !reflect.DeepEqual(r.Collective.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.Collective.TokenCount, r.Session.TokenCount) || !reflect.DeepEqual(r.Collective.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.Collective.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.Collective.DurationMs, r.Session.DurationMs) || !reflect.DeepEqual(r.Collective.ProjectHash, r.Session.ProjectHash) || !reflect.DeepEqual(r.Collective.ProjectName, r.Session.ProjectName) || !reflect.DeepEqual(r.Collective.ProjectDisplayName, r.Session.ProjectDisplayName) || !reflect.DeepEqual(r.Collective.ProjectNameSource, r.Session.ProjectNameSource) || !reflect.DeepEqual(r.Collective.ProjectRemoteLabel, r.Session.ProjectRemoteLabel) || !reflect.DeepEqual(r.Collective.GitBranch, r.Session.GitBranch) || !reflect.DeepEqual(r.Collective.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.Collective.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.Collective.RootSessionID, r.Session.RootSessionID) || r.Collective.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.Collective.Relationships, r.Session.Relationships) || r.Collective.SessionOrigin != r.Session.SessionOrigin {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: collective identity or inputSubmissionCount differs from session; the route would display contradictory data; project both values from the same transcript row")
 		}
 	}
@@ -1134,10 +1153,13 @@ func (r VillageSessionRow) Validate() error {
 		if err := ValidateConversationTurnCount(r.MyShare.ConversationTurnCount, "VillageSessionRow.myShare.conversation_turn_count"); err != nil {
 			return err
 		}
-		if err := ValidateConversationTurnCount(r.MyShare.DisplayedTurnCount, "VillageSessionRow.myShare.displayed_turn_count"); err != nil {
+		if err := validateSafeCount(r.MyShare.DisplayedTurnCount, displayedTurnCountLabel, "VillageSessionRow.myShare.displayed_turn_count"); err != nil {
 			return err
 		}
-		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || !reflect.DeepEqual(r.MyShare.ConversationTurnCount, r.Session.ConversationTurnCount) || !reflect.DeepEqual(r.MyShare.DisplayedTurnCount, r.Session.DisplayedTurnCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
+		if field := disagreeingCountMirror(countMirror{"conversation_turn_count", r.MyShare.ConversationTurnCount, r.Session.ConversationTurnCount}, countMirror{"displayed_turn_count", r.MyShare.DisplayedTurnCount, r.Session.DisplayedTurnCount}); field != "" {
+			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare %s differs from session; the share route would display two turn counts for one transcript; project both copies from the same transcript row", field)
+		}
+		if r.MyShare.ID != r.Session.ID || !reflect.DeepEqual(r.MyShare.Owner, r.Owner) || r.MyShare.LocalID != r.Session.LocalID || !reflect.DeepEqual(r.MyShare.Title, r.Session.Title) || r.MyShare.Visibility != r.Session.Visibility || !r.MyShare.PublishedAt.Equal(r.Session.PublishedAt) || !equalOptionalInt64(r.MyShare.InputSubmissionCount, r.Session.InputSubmissionCount) || r.MyShare.ModelProvider != r.Session.ModelProvider || !reflect.DeepEqual(r.MyShare.ModelName, r.Session.ModelName) || !reflect.DeepEqual(r.MyShare.TurnCount, r.Session.TurnCount) || !reflect.DeepEqual(r.MyShare.TokensIn, r.Session.TokensIn) || !reflect.DeepEqual(r.MyShare.TokensOut, r.Session.TokensOut) || !reflect.DeepEqual(r.MyShare.ParentSessionID, r.Session.ParentSessionID) || !reflect.DeepEqual(r.MyShare.ParentTranscriptID, r.Session.ParentTranscriptID) || !reflect.DeepEqual(r.MyShare.RootSessionID, r.Session.RootSessionID) || r.MyShare.Purpose != r.Session.Purpose || !reflect.DeepEqual(r.MyShare.Relationships, r.Session.Relationships) {
 			return fmt.Errorf("Village grouped row validation failed at schema.VillageSessionRow.Validate: myShare identity or inputSubmissionCount differs from session; the share route would display contradictory data; project both values from the same transcript row")
 		}
 	}

@@ -1370,7 +1370,6 @@ type MedianP90 struct {
 
 // AnalyticsSessionStats is the analytics aggregate over the library. It is not
 // the ingest SessionStats: the name keeps the two distinct in one package.
-// TurnCount is the median of conversationTurnCount over the library.
 type AnalyticsSessionStats struct {
 	DurationMins  MedianP90 `json:"durationMins"`
 	TotalTokens   MedianP90 `json:"totalTokens"`
