@@ -1,0 +1,81 @@
+required_names:
+  - empty-queue-arms
+  - releasing-ahead-holds
+  - never-release-ahead-arms
+  - releasing-behind-arms
+  - unparsable-ahead-holds
+  - more-entries-than-listed-holds
+  - malformed-json-errors
+  - null-merge-queue-errors
+  - missing-total-count-errors
+  - count-mismatch-complete-errors
+  - errors-array-errors
+
+cases:
+  cases:
+    - name: empty-queue-arms
+      input: {file: "empty.json", releasePR: 9}
+      expected: {gate: "arm", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.9 an empty queue arms"}
+      mutation: {description: "Baseline empty queue with zero entries."}
+    - name: releasing-ahead-holds
+      input: {file: "releasing-ahead.json", releasePR: 9}
+      expected: {gate: "hold", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.4 a releasing title ahead holds"}
+      mutation: {description: "Puts a releasing title ahead of the release PR."}
+    - name: never-release-ahead-arms
+      input: {file: "never-release-ahead.json", releasePR: 9}
+      expected: {gate: "arm", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.9 a never-release title ahead arms"}
+      mutation: {description: "Puts a docs title ahead of the release PR."}
+    - name: releasing-behind-arms
+      input: {file: "releasing-behind.json", releasePR: 9}
+      expected: {gate: "arm", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.9 a releasing title behind the release PR arms"}
+      mutation: {description: "Puts the releasing entry behind the release PR position."}
+    - name: unparsable-ahead-holds
+      input: {file: "unparsable-ahead.json", releasePR: 9}
+      expected: {gate: "hold", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.4 a title that does not parse holds"}
+      mutation: {description: "Puts an unparsable title ahead of the release PR."}
+    - name: more-entries-than-listed-holds
+      input: {file: "more-than-listed.json", releasePR: 9}
+      expected: {gate: "hold", exit: 0}
+      classification: must-pass
+      provenance: {source: requirement, ref: "plan 7.4 more entries than listed holds"}
+      mutation: {description: "Sets hasNextPage true with fewer nodes than totalCount."}
+    - name: malformed-json-errors
+      input: {file: "malformed.json", releasePR: 9}
+      expected: {gate: "", exit: 1}
+      classification: must-fail
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 2 malformed JSON exits 1 with no gate line"}
+      mutation: {description: "Uses truncated JSON that cannot parse."}
+    - name: null-merge-queue-errors
+      input: {file: "null-queue.json", releasePR: 9}
+      expected: {gate: "", exit: 1}
+      classification: must-fail
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 2 mergeQueue null exits 1"}
+      mutation: {description: "Uses a null mergeQueue body."}
+    - name: missing-total-count-errors
+      input: {file: "missing-total.json", releasePR: 9}
+      expected: {gate: "", exit: 1}
+      classification: must-fail
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 2 missing totalCount exits 1"}
+      mutation: {description: "Omits totalCount from the entries object."}
+    - name: count-mismatch-complete-errors
+      input: {file: "count-mismatch.json", releasePR: 9}
+      expected: {gate: "", exit: 1}
+      classification: must-fail
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 2 totalCount mismatch on a complete page exits 1"}
+      mutation: {description: "Lists one node with totalCount two on a complete page."}
+    - name: errors-array-errors
+      input: {file: "errors-array.json", releasePR: 9}
+      expected: {gate: "", exit: 1}
+      classification: must-fail
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 2 non-empty errors exits 1"}
+      mutation: {description: "Carries a GraphQL errors array."}

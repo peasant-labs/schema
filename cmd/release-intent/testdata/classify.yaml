@@ -1,0 +1,46 @@
+required_names:
+  - bot-release-branch
+  - bot-vendor-hash-branch
+  - bot-cut-release-branch
+  - bot-wrong-branch-ordinary
+  - non-bot-author-ordinary
+  - empty-author-ordinary
+
+cases:
+  cases:
+    - name: bot-release-branch
+      input: {author: "peasant-labs-releaser[bot]", headBranch: "automation/release", botBranches: {release: "automation/release", vendor-hash: "automation/vendor-hash", cut-release: "automation/cut-release"}}
+      expected: {kind: "release"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 1 ClassifyPR maps automation author plus release branch"}
+      mutation: {description: "Baseline release PR classification."}
+    - name: bot-vendor-hash-branch
+      input: {author: "peasant-labs-releaser[bot]", headBranch: "automation/vendor-hash", botBranches: {release: "automation/release", vendor-hash: "automation/vendor-hash", cut-release: "automation/cut-release"}}
+      expected: {kind: "vendor-hash"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 1 vendor-hash kind"}
+      mutation: {description: "Uses the vendor-hash bot branch."}
+    - name: bot-cut-release-branch
+      input: {author: "peasant-labs-releaser[bot]", headBranch: "automation/cut-release", botBranches: {release: "automation/release", vendor-hash: "automation/vendor-hash", cut-release: "automation/cut-release"}}
+      expected: {kind: "cut-release"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "IMPL_PLAN decision 1 cut-release kind"}
+      mutation: {description: "Uses the cut-release bot branch."}
+    - name: bot-wrong-branch-ordinary
+      input: {author: "peasant-labs-releaser[bot]", headBranch: "feature/work", botBranches: {release: "automation/release", vendor-hash: "automation/vendor-hash", cut-release: "automation/cut-release"}}
+      expected: {kind: "ordinary"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "workflows never compare branch literals; only the mapped branches classify"}
+      mutation: {description: "Uses the automation author on an unmapped branch, which stays ordinary."}
+    - name: non-bot-author-ordinary
+      input: {author: "octocat", headBranch: "automation/release", botBranches: {release: "automation/release", vendor-hash: "automation/vendor-hash", cut-release: "automation/cut-release"}}
+      expected: {kind: "ordinary"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "protected-path exemption needs automation author AND release branch"}
+      mutation: {description: "Uses a human author on the release branch, which stays ordinary."}
+    - name: empty-author-ordinary
+      input: {author: "", headBranch: "automation/release", botBranches: {release: "automation/release"}}
+      expected: {kind: "ordinary"}
+      classification: must-pass
+      provenance: {source: boundary, ref: "an empty author never classifies as a bot PR"}
+      mutation: {description: "Uses an empty author string."}
