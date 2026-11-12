@@ -1,0 +1,138 @@
+# Version-field corpus: rows of intent.ReadVersionField and
+# intent.WriteVersionField over JSON documents. The fairtrade-shaped document
+# carries unsorted keys and scripts with && and >: only the version bytes
+# may change.
+required_names:
+  - read-fairtrade-shape
+  - write-keeps-everything
+  - nested-same-name-untouched
+  - read-nested-same-name
+  - missing-field-read
+  - missing-field-write
+  - ambiguous-duplicate-keys
+  - non-string-value
+  - malformed-json
+cases:
+  - name: read-fairtrade-shape
+    input:
+      op: "read"
+      document: |
+        {"private":true,"version":"0.0.67","scripts":{"build":"pnpm build && pnpm test","lint":"pnpm lint > out.txt"},"dependencies":{"left-pad":"1.3.0"}}
+      field: "version"
+      value: ""
+    expected: {output: "0.0.67"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "version fields: the protected field reads from a real-shaped file"}
+    mutation: {description: "a package file with scripts, escaping and unsorted keys"}
+  - name: write-keeps-everything
+    input:
+      op: "write"
+      document: |
+        {"private":true,"version":"0.0.67","scripts":{"build":"pnpm build && pnpm test","lint":"pnpm lint > out.txt"},"dependencies":{"left-pad":"1.3.0"}}
+      field: "version"
+      value: "0.1.0"
+    expected:
+      output: |
+        {"private":true,"version":"0.1.0","scripts":{"build":"pnpm build && pnpm test","lint":"pnpm lint > out.txt"},"dependencies":{"left-pad":"1.3.0"}}
+    classification: must-pass
+    provenance: {source: requirement, ref: "version fields: the writer replaces only the value bytes"}
+    mutation: {description: "a version bump over scripts with operators"}
+  - name: nested-same-name-untouched
+    input:
+      op: "write"
+      document: |
+        {
+          "version": "1.0.0",
+          "nested": {
+            "version": "x"
+          }
+        }
+      field: "version"
+      value: "2.0.0"
+    expected:
+      output: |
+        {
+          "version": "2.0.0",
+          "nested": {
+            "version": "x"
+          }
+        }
+    classification: must-pass
+    provenance: {source: requirement, ref: "version fields: nested keys with the same name never match"}
+    mutation: {description: "a nested key repeating the field name"}
+  - name: read-nested-same-name
+    input:
+      op: "read"
+      document: |
+        {
+          "version": "1.0.0",
+          "nested": {
+            "version": "x"
+          }
+        }
+      field: "version"
+      value: ""
+    expected: {output: "1.0.0"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "version fields: the read takes the top-level key"}
+    mutation: {description: "reading past a nested key with the same name"}
+  - name: missing-field-read
+    input:
+      op: "read"
+      document: |
+        {"private":true}
+      field: "version"
+      value: ""
+    expected: {output: ""}
+    classification: must-fail
+    sibling: read-fairtrade-shape
+    provenance: {source: boundary, ref: "version fields: a missing field fails without a guess"}
+    mutation: {description: "a file without the field"}
+  - name: missing-field-write
+    input:
+      op: "write"
+      document: |
+        {"private":true}
+      field: "version"
+      value: "0.1.0"
+    expected: {output: ""}
+    classification: must-fail
+    sibling: write-keeps-everything
+    provenance: {source: boundary, ref: "version fields: a missing field writes nothing"}
+    mutation: {description: "writing the field into a file without it"}
+  - name: ambiguous-duplicate-keys
+    input:
+      op: "write"
+      document: |
+        {"version":"1.0.0","version":"2.0.0"}
+      field: "version"
+      value: "3.0.0"
+    expected: {output: ""}
+    classification: must-fail
+    sibling: write-keeps-everything
+    provenance: {source: boundary, ref: "version fields: a repeated key has no one value"}
+    mutation: {description: "a file repeating the top-level key"}
+  - name: non-string-value
+    input:
+      op: "read"
+      document: |
+        {"version":7}
+      field: "version"
+      value: ""
+    expected: {output: ""}
+    classification: must-fail
+    sibling: read-fairtrade-shape
+    provenance: {source: boundary, ref: "version fields: the protected value is a string"}
+    mutation: {description: "a numeric value under the field name"}
+  - name: malformed-json
+    input:
+      op: "read"
+      document: |
+        {"version":
+      field: "version"
+      value: ""
+    expected: {output: ""}
+    classification: must-fail
+    sibling: read-fairtrade-shape
+    provenance: {source: boundary, ref: "version fields: malformed input fails closed"}
+    mutation: {description: "truncated JSON"}

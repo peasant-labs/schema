@@ -77,8 +77,9 @@ cases:
         automation_author: peasant-labs-releaser[bot]
         changelog: CHANGELOG.md
         scope_allowlist: [graph]
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: an unknown key fails closed"}
     mutation: {description: "added a typo'd key"}
   - name: surfaces-while-quiet
@@ -90,8 +91,9 @@ cases:
         changelog: CHANGELOG.md
         surfaces:
           types: types
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: minimal-quiet-config
     provenance: {source: requirement, ref: "config: a repo that does not release names no surfaces"}
     mutation: {description: "named a surface where releases are off"}
   - name: empty-tag-prefix
@@ -101,8 +103,9 @@ cases:
         tag_prefix: ""
         automation_author: peasant-labs-releaser[bot]
         changelog: CHANGELOG.md
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the tag prefix is required"}
     mutation: {description: "cleared the tag prefix"}
   - name: empty-automation-author
@@ -112,8 +115,9 @@ cases:
         tag_prefix: v
         automation_author: ""
         changelog: CHANGELOG.md
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the automation author is required"}
     mutation: {description: "cleared the automation author"}
   - name: empty-changelog
@@ -123,8 +127,9 @@ cases:
         tag_prefix: v
         automation_author: peasant-labs-releaser[bot]
         changelog: ""
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the changelog path is required"}
     mutation: {description: "cleared the changelog path"}
   - name: version-file-missing-field
@@ -136,8 +141,9 @@ cases:
         changelog: CHANGELOG.md
         version_files:
           - { path: package.json }
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: a version file entry needs its protected field"}
     mutation: {description: "dropped the field from a version file entry"}
   - name: bad-bot-kind
@@ -149,8 +155,9 @@ cases:
         changelog: CHANGELOG.md
         bot_branches:
           deploy: automation/deploy
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: requirement, ref: "config: the bot PR kinds are closed"}
     mutation: {description: "named a bot kind outside the closed set"}
   - name: empty-branch-value
@@ -162,8 +169,9 @@ cases:
         changelog: CHANGELOG.md
         bot_branches:
           release: ""
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: each bot kind needs its branch"}
     mutation: {description: "cleared a bot branch"}
   - name: two-documents
@@ -175,7 +183,8 @@ cases:
         changelog: CHANGELOG.md
         ---
         releases: false
-    expected: {}
+    expected: {code: "config-invalid"}
     classification: must-fail
+    sibling: full-config
     provenance: {source: boundary, ref: "config: the file is one document"}
     mutation: {description: "appended a second document"}

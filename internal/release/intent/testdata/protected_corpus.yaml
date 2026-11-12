@@ -27,6 +27,7 @@ cases:
         - { path: "CHANGELOG.md", protected_field_changed: false }
     expected: {code: "protected-path"}
     classification: must-fail
+    sibling: release-pr-may-change
     provenance: {source: requirement, ref: "protected paths: the changelog is written only by the release PR"}
     mutation: {description: "an author edit to the changelog"}
   - name: version-field-moved
@@ -46,6 +47,7 @@ cases:
         - { path: "package.json", protected_field_changed: true }
     expected: {code: "protected-path"}
     classification: must-fail
+    sibling: version-other-fields
     provenance: {source: requirement, ref: "protected paths: the protected field is written only by the release PR"}
     mutation: {description: "an author edit to the version field"}
   - name: version-other-fields
@@ -103,6 +105,7 @@ cases:
         - { path: "generated/types-0.1.0.json", protected_field_changed: false }
     expected: {code: "protected-path"}
     classification: must-fail
+    sibling: unrelated-file
     provenance: {source: requirement, ref: "protected paths: a glob entry covers its matches"}
     mutation: {description: "an author edit to a glob-protected path"}
   - name: release-pr-may-change
@@ -150,6 +153,7 @@ cases:
         - { path: "CHANGELOG.md", protected_field_changed: false }
     expected: {code: "protected-path"}
     classification: must-fail
+    sibling: unrelated-file
     provenance: {source: requirement, ref: "protected paths: one protected path among many changes is seen"}
     mutation: {description: "buried the protected edit last in a long change list"}
   - name: empty-change

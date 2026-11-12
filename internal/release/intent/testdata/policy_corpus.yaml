@@ -1,0 +1,20 @@
+# Policy-violation corpus: rows of intent.PolicyViolation. The checker lives
+# wherever the workflows are judged; this corpus pins the shared rejection
+# shape every report site uses.
+required_names:
+  - missing-required-context
+  - well-formed-report
+cases:
+  - name: missing-required-context
+    input: {rule: "merge-group-on-required-workflows", where: "workflows in .github/workflows, checked by release-intent check-workflows", message: "title-guard has no merge_group trigger"}
+    expected: {code: "policy-violation"}
+    classification: must-fail
+    sibling: well-formed-report
+    provenance: {source: requirement, ref: "policy: every breach reports the same typed code with all six parts"}
+    mutation: {description: "a workflow missing its merge_group trigger"}
+  - name: well-formed-report
+    input: {rule: "merge-group-on-required-workflows", where: "workflows in .github/workflows, checked by release-intent check-workflows", message: "title-guard has no merge_group trigger"}
+    expected: {code: "policy-violation"}
+    classification: must-pass
+    provenance: {source: requirement, ref: "policy: the report echoes the diagnosis verbatim"}
+    mutation: {description: "the same breach read as a report"}

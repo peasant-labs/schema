@@ -100,24 +100,34 @@ func (l Level) String() string {
 	}
 }
 
+// parseLevel maps a level word to its level. It is the one map both the
+// title grammar and the fixture loader use.
+func parseLevel(word string) (Level, bool) {
+	switch word {
+	case "patch":
+		return LevelPatch, true
+	case "minor":
+		return LevelMinor, true
+	case "major":
+		return LevelMajor, true
+	case "none", "":
+		return LevelNone, true
+	default:
+		return LevelNone, false
+	}
+}
+
 // UnmarshalYAML accepts the level names the fixtures use.
 func (l *Level) UnmarshalYAML(unmarshal func(any) error) error {
 	var word string
 	if err := unmarshal(&word); err != nil {
 		return err
 	}
-	switch word {
-	case "patch":
-		*l = LevelPatch
-	case "minor":
-		*l = LevelMinor
-	case "major":
-		*l = LevelMajor
-	case "none", "":
-		*l = LevelNone
-	default:
+	level, ok := parseLevel(word)
+	if !ok {
 		return fmt.Errorf("unknown level %q: want one of none, patch, minor, major", word)
 	}
+	*l = level
 	return nil
 }
 
@@ -233,6 +243,18 @@ var AllPRKinds = []PRKind{PRKindOrdinary, PRKindRelease, PRKindVendorHash, PRKin
 
 func (k PRKind) String() string { return string(k) }
 
+// botKinds lists the bot PR kinds in canonical order, derived once from
+// AllPRKinds so the closed set has one home.
+var botKinds = func() []PRKind {
+	out := []PRKind{}
+	for _, k := range AllPRKinds {
+		if k != PRKindOrdinary {
+			out = append(out, k)
+		}
+	}
+	return out
+}()
+
 // ErrorCode is the closed set of typed rejections. Every member has a reject
 // fixture whose message carries all six parts; codes used only by later
 // work join this set with that work.
@@ -251,7 +273,8 @@ const (
 	ErrEpochMissing        ErrorCode = "epoch-missing"
 	ErrFloorNotOnChain     ErrorCode = "floor-not-on-chain"
 	ErrReleaseContentStale ErrorCode = "release-content-stale"
-	ErrSurfaceUndeclared   ErrorCode = "surface-undeclared"
+	ErrConfigInvalid       ErrorCode = "config-invalid"
+	ErrPolicyViolation     ErrorCode = "policy-violation"
 )
 
 // AllErrorCodes is the canonical closed set of typed error codes.
@@ -268,6 +291,8 @@ var AllErrorCodes = []ErrorCode{
 	ErrEpochMissing,
 	ErrFloorNotOnChain,
 	ErrReleaseContentStale,
+	ErrConfigInvalid,
+	ErrPolicyViolation,
 }
 
 func (c ErrorCode) String() string { return string(c) }
@@ -308,7 +333,7 @@ type Config struct {
 	VersionFiles     []VersionFile     `yaml:"version_files"`
 	ProtectedPaths   []string          `yaml:"protected_paths"`
 	Surfaces         map[string]string `yaml:"surfaces"`
-	BotBranches      map[string]string `yaml:"bot_branches"`
+	BotBranches      map[PRKind]string `yaml:"bot_branches"`
 }
 
 // Error is an actionable rejection: what went wrong, why, where it failed,
@@ -330,19 +355,23 @@ func (e *Error) Error() string {
 }
 
 // Commit is one first-parent commit on the release branch: its SHA, its
-// subject, and whether it touches the changelog file.
+// subject, whether it touches the changelog file, and its committer date as
+// YYYY-MM-DD for a dated changelog heading.
 type Commit struct {
 	SHA              string `yaml:"sha"`
 	Subject          string `yaml:"subject"`
 	ChangesChangelog bool   `yaml:"changes_changelog"`
+	Date             string `yaml:"date"`
 }
 
-// Facts is everything Plan reads: the branch tip's first-parent history,
-// every tag in the repository, the grammar epoch and the recovery floor, the
-// job mode and verdict, and per-commit freshness for the changelog-changing
-// commits in range. The command layer fills Fresh through the GitRunner; Plan
-// only reads the entry for the commit it picks.
+// Facts is everything Plan reads: the branch under plan, its tip's
+// first-parent history, every tag in the repository, the grammar epoch and
+// the recovery floor, the job mode and verdict, and per-commit freshness for
+// the changelog-changing commits in range. The command layer fills Fresh by
+// comparing each candidate through Generate; Plan only reads the entry for
+// the commit it picks.
 type Facts struct {
+	Branch  string            `yaml:"branch"`
 	Commits []Commit          `yaml:"commits"`
 	Tags    map[string]string `yaml:"tags"`
 	Epoch   string            `yaml:"epoch"`
@@ -352,19 +381,37 @@ type Facts struct {
 	Fresh   map[string]bool   `yaml:"fresh"`
 }
 
+// BeforeCandidate is the sub-range a candidate release commit was built
+// from: the releasing subjects older than the candidate, the version and tag
+// they compute, and the committer date of their newest commit for a dated
+// heading. The freshness check renders exactly this set, so the caller never
+// re-plans a sub-range.
+type BeforeCandidate struct {
+	Pending []Title `yaml:"pending"`
+	Version SemVer  `yaml:"version"`
+	Tag     string  `yaml:"tag"`
+	Date    string  `yaml:"date"`
+}
+
 // Decision is the whole plan: the one action plus every value the workflow
-// needs to carry it out.
+// needs to carry it out. For verify and tag, Pending, Level, Breaking,
+// Version and Tag come from the subjects older than the candidate, and Before
+// repeats that same set with its date; the subjects after the candidate stay
+// pending for the next release. Date is the committer date of the newest
+// commit in Pending, for the dated heading of the set being rendered.
 type Decision struct {
-	Action         Action    `yaml:"action"`
-	RangeBase      string    `yaml:"range_base"`
-	VersionBase    string    `yaml:"version_base"`
-	Candidate      string    `yaml:"candidate"`
-	CandidateFresh Freshness `yaml:"candidate_fresh"`
-	Pending        []Title   `yaml:"pending"`
-	Level          Level     `yaml:"level"`
-	Breaking       bool      `yaml:"breaking"`
-	Version        SemVer    `yaml:"version"`
-	Tag            string    `yaml:"tag"`
+	Action         Action          `yaml:"action"`
+	RangeBase      string          `yaml:"range_base"`
+	VersionBase    string          `yaml:"version_base"`
+	Candidate      string          `yaml:"candidate"`
+	CandidateFresh Freshness       `yaml:"candidate_fresh"`
+	Pending        []Title         `yaml:"pending"`
+	Level          Level           `yaml:"level"`
+	Breaking       bool            `yaml:"breaking"`
+	Version        SemVer          `yaml:"version"`
+	Tag            string          `yaml:"tag"`
+	Before         BeforeCandidate `yaml:"before"`
+	Date           string          `yaml:"date"`
 }
 
 // ContentInput is what the release-content generator renders.
@@ -389,21 +436,4 @@ type QueueEntry struct {
 	Position int    `yaml:"position"`
 	Number   int    `yaml:"number"`
 	Title    string `yaml:"title"`
-}
-
-// QueueSnapshot is a decoded queue read: the listed entries and the total
-// the service reported.
-type QueueSnapshot struct {
-	Entries    []QueueEntry `yaml:"entries"`
-	TotalCount int          `yaml:"total_count"`
-}
-
-// GitRunner is the one impure seam: reading commits, tags and files from git.
-// Everything behind it is production I/O; everything above it is pure.
-type GitRunner interface {
-	FirstParent(ref string, changelog string) ([]Commit, error)
-	Tags(prefix string) (map[string]string, error)
-	FirstCommitAdding(path string) (string, error)
-	ChangedPaths(base, head string) ([]string, error)
-	ReadFile(rev, path string) ([]byte, error)
 }

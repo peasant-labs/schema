@@ -102,5 +102,6 @@ cases:
         - {position: 0, number: 11, title: "feat(x)[minor]: one"}
     expected: {gate: ""}
     classification: must-fail
+    sibling: releasing-ahead-holds
     provenance: {source: boundary, ref: "gate: an invalid current version is a caller fault, not a hold"}
     mutation: {description: "shortened the current version"}

@@ -20,8 +20,7 @@ type queueDecodeInput struct {
 }
 
 type queueDecodeExpected struct {
-	TotalCount int                 `yaml:"total_count"`
-	Entries    []intent.QueueEntry `yaml:"entries"`
+	Entries []intent.QueueEntry `yaml:"entries"`
 }
 
 func TestDecodeQueueResponse(t *testing.T) {
@@ -39,11 +38,8 @@ func TestDecodeQueueResponse(t *testing.T) {
 			if err != nil {
 				t.Fatalf("DecodeQueueResponse: unexpected error: %v", err)
 			}
-			if got.TotalCount != c.Expected.TotalCount {
-				t.Errorf("TotalCount = %d, want %d", got.TotalCount, c.Expected.TotalCount)
-			}
-			if !reflect.DeepEqual(append([]intent.QueueEntry(nil), got.Entries...), append([]intent.QueueEntry(nil), c.Expected.Entries...)) {
-				t.Errorf("Entries = %+v, want %+v", got.Entries, c.Expected.Entries)
+			if !reflect.DeepEqual(append([]intent.QueueEntry(nil), got...), append([]intent.QueueEntry(nil), c.Expected.Entries...)) {
+				t.Errorf("Entries = %+v, want %+v", got, c.Expected.Entries)
 			}
 		})
 	}
