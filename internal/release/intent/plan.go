@@ -250,8 +250,9 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 	// The published set follows the action: only verify and tag speak for
 	// the candidate's own set. A rejected verdict treats the candidate as if
 	// it were not a release commit, so open-pr and close-pr always speak
-	// for the full range; the release-pr write path renders that same full
-	// set, with no verdict input.
+	// for the full range. The release-pr write path renders Decision.Full,
+	// gathered with VerdictNone: the verdict stays the workflow's report on
+	// its pre-tag steps and nothing else.
 	pending, level, breaking, version, tag, date := fullPending, fullLevel, fullBreaking, fullVersion, fullTag, fullDate
 	action := ActionClosePR
 	if len(pending) > 0 {
@@ -285,6 +286,7 @@ func Plan(cfg Config, facts Facts) (Decision, error) {
 		Version:        version,
 		Tag:            tag,
 		Before:         BeforeCandidate{Pending: beforePending, Version: beforeVersion, Tag: beforeTag, Date: beforeDate},
+		Full:           BeforeCandidate{Pending: fullPending, Version: fullVersion, Tag: fullTag, Date: fullDate},
 		Date:           date,
 	}, nil
 }

@@ -31,6 +31,7 @@ type planExpected struct {
 	Version        string                 `yaml:"version"`
 	Tag            string                 `yaml:"tag"`
 	Before         intent.BeforeCandidate `yaml:"before"`
+	Full           intent.BeforeCandidate `yaml:"full"`
 	Date           string                 `yaml:"date"`
 	Code           string                 `yaml:"code"`
 	FixContains    string                 `yaml:"fix_contains"`
@@ -93,28 +94,29 @@ func TestPlan(t *testing.T) {
 			if string(got.Date) != c.Expected.Date {
 				t.Errorf("Date = %q, want %q", got.Date, c.Expected.Date)
 			}
-			compareBefore(t, got.Before, c.Expected.Before)
+			compareRangeSet(t, "Before", got.Before, c.Expected.Before)
+			compareRangeSet(t, "Full", got.Full, c.Expected.Full)
 		})
 	}
 }
 
-func compareBefore(t *testing.T, got, want intent.BeforeCandidate) {
+func compareRangeSet(t *testing.T, what string, got, want intent.BeforeCandidate) {
 	t.Helper()
 	if len(got.Pending) != len(want.Pending) {
-		t.Fatalf("Before.Pending has %d titles, want %d", len(got.Pending), len(want.Pending))
+		t.Fatalf("%s.Pending has %d titles, want %d", what, len(got.Pending), len(want.Pending))
 	}
 	for i := range got.Pending {
 		if !reflect.DeepEqual(got.Pending[i], want.Pending[i]) {
-			t.Errorf("Before.Pending[%d] = %+v, want %+v", i, got.Pending[i], want.Pending[i])
+			t.Errorf("%s.Pending[%d] = %+v, want %+v", what, i, got.Pending[i], want.Pending[i])
 		}
 	}
 	if string(got.Version) != string(want.Version) {
-		t.Errorf("Before.Version = %q, want %q", got.Version, want.Version)
+		t.Errorf("%s.Version = %q, want %q", what, got.Version, want.Version)
 	}
 	if got.Tag != want.Tag {
-		t.Errorf("Before.Tag = %q, want %q", got.Tag, want.Tag)
+		t.Errorf("%s.Tag = %q, want %q", what, got.Tag, want.Tag)
 	}
 	if string(got.Date) != string(want.Date) {
-		t.Errorf("Before.Date = %q, want %q", got.Date, want.Date)
+		t.Errorf("%s.Date = %q, want %q", what, got.Date, want.Date)
 	}
 }
