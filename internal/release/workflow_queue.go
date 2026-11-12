@@ -131,28 +131,6 @@ type QueueSection struct {
 	BotJobs    []BotJobRule      `yaml:"bot_jobs"`
 }
 
-// CheckWorkflows validates every workflow file in dir against the policy's
-// queue section and returns the violations plus the required contexts in
-// policy order (for the operator to compare against the queue ruleset). A
-// policy without a queue section constrains nothing here and yields no
-// diagnostics, so today's jobs-only policies keep passing unchanged.
-//
-// A non-empty diagnostic list means the directory is rejected; an empty one
-// means it satisfies every rule. Directory-level and file-level faults that
-// keep the checker from reading what a rule needs are reported as diagnostics
-// under the first rule that needs the file, so one run names every broken
-// file instead of stopping at the first.
-func CheckWorkflows(policy WorkflowPolicy, dir string) ([]Diagnostic, []RequiredContext) {
-	if policy.Queue == nil {
-		return nil, nil
-	}
-	return []Diagnostic{{
-		Rule:     QueueRuleRequiredContexts,
-		Workflow: dir,
-		Message:  "check workflows: " + dir + ": rule required-contexts: the merge-queue rule checks are not wired yet, so no workflow directory can be accepted during merge-queue policy validation. Wait for the rule implementation before enforcing a queue section",
-	}}, append([]RequiredContext(nil), policy.Queue.Required...)
-}
-
 // validateQueueSection rejects a malformed queue section with an actionable
 // error naming the entry and the fix. Semantic checks (a guard entry exists,
 // one writer per bot branch, the workflow shapes) belong to the rule checker,

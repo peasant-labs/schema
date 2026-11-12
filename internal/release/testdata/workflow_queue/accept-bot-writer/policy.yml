@@ -1,0 +1,9 @@
+# Queue policy for the one-writer sample: two bot jobs on two branches.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  bot_jobs:
+    - { workflow: cut-release.yml, job: cut, branch: automation/cut-release }
+    - { workflow: vendor.yml, job: update, branch: automation/vendor }

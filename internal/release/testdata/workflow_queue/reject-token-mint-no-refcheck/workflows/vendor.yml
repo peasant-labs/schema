@@ -1,0 +1,19 @@
+name: Vendor hash
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+concurrency:
+  group: vendor-${{ github.ref }}
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - id: mint
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_KEY }}
+      - env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: git push origin HEAD:automation/vendor

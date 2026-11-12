@@ -1,0 +1,9 @@
+# Queue policy for the floor sample: the range reader lives in the tag-time
+# contract workflow, which takes the floor from the repository variable.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  bot_jobs:
+    - { workflow: vendor.yml, job: update, branch: automation/vendor }

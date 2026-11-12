@@ -1,0 +1,10 @@
+# Queue policy for the minimal repo: two required contexts and one bot job,
+# no release job. The checker skips the release-job clauses here.
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: merge-gate, workflow: ci.yml, job: merge-gate, aggregator: true }
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+  bot_jobs:
+    - { workflow: vendor.yml, job: update, branch: automation/vendor }

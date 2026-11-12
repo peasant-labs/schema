@@ -231,22 +231,41 @@ func TestCheckWorkflows_LegacyPassesEmpty(t *testing.T) {
 	}
 }
 
-func TestCheckWorkflows_QueuePresentReportsUnwired(t *testing.T) {
+func TestCheckWorkflows_QueuePresentPassesWhenValid(t *testing.T) {
 	t.Parallel()
 
-	// L1 scaffolding contract: with a queue section present but the rule
-	// checks still unwired, the checker fails closed with one diagnostic and
-	// still returns the required contexts in policy order for --print-required.
-	policy, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, queuePolicyYAML))
+	// The entry-point contract for a queue policy: a directory whose
+	// workflows satisfy every rule yields no diagnostics, and the required
+	// contexts come back in policy order for --print-required. (The corpus
+	// accept cases prove each rule's accept path through fixtures; this pins
+	// the contract directly.)
+	policy, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, `jobs:
+  - name: guard
+queue:
+  required:
+    - { context: merge-gate, workflow: ci.yml, job: merge-gate, aggregator: true }
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+`))
 	if err != nil {
 		t.Fatalf("LoadWorkflowPolicy(queue policy) failed: %v", err)
 	}
-	diags, required := CheckWorkflows(policy, t.TempDir())
-	if len(diags) != 1 {
-		t.Fatalf("unwired checker yielded %d diagnostics, want exactly the fail-closed one", len(diags))
+	dir := t.TempDir()
+	workflows := map[string]string{
+		"ci.yml":          "name: CI\non:\n  pull_request:\n  merge_group:\nconcurrency:\n  group: ci-${{ github.ref }}\njobs:\n  merge-gate:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo gate\n",
+		"title-guard.yml": "name: Title guard\non:\n  pull_request:\n  merge_group:\njobs:\n  title-guard:\n    runs-on: ubuntu-latest\n    steps:\n      - run: release-intent check-title --base x --head y --author z\n",
 	}
-	if !strings.Contains(diags[0].Message, "not wired yet") {
-		t.Fatalf("fail-closed diagnostic %q does not say the checks are unwired", diags[0].Message)
+	for name, content := range workflows {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatalf("write workflow fixture: %v", err)
+		}
+	}
+	diags, required := CheckWorkflows(policy, dir)
+	if len(diags) != 0 {
+		msgs := make([]string, 0, len(diags))
+		for _, d := range diags {
+			msgs = append(msgs, d.Message)
+		}
+		t.Fatalf("valid directory yielded %d diagnostics:\n%s", len(diags), strings.Join(msgs, "\n"))
 	}
 	if len(required) != 2 || required[0].Context != "merge-gate" || required[1].Context != "title-guard" {
 		t.Fatalf("required contexts = %+v, want the two policy entries in order", required)
