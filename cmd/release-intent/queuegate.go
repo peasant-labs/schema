@@ -49,7 +49,7 @@ func runQueueGate(args []string) error {
 	if err != nil {
 		return fmt.Errorf("queue-gate: cannot read queue file %q: %v. The workflow must write the raw queue response to this path before calling queue-gate", queuePath, err)
 	}
-	snapshot, err := intent.DecodeQueueResponse(data)
+	entries, err := intent.DecodeQueueResponse(data)
 	if err != nil {
 		return rejectAs("queue-gate", err)
 	}
@@ -59,13 +59,13 @@ func runQueueGate(args []string) error {
 	}
 	cfg, err := intent.ParseConfig(cfgData)
 	if err != nil {
-		return rejectAs("queue-gate", configInvalidError(DefaultConfigPath, err))
+		return configInvalid("queue-gate", "release config "+DefaultConfigPath, err)
 	}
 	current, err := queueCurrent(cfg)
 	if err != nil {
 		return err
 	}
-	gate, err := intent.QueueGate(cfg, current, snapshot, releasePR)
+	gate, err := intent.QueueGate(cfg, current, entries, releasePR)
 	if err != nil {
 		return rejectAs("queue-gate", err)
 	}

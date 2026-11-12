@@ -112,21 +112,23 @@ func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits
 	if err != nil {
 		return false, fmt.Errorf("plan: cannot read changelog %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, dec.Candidate, err)
 	}
-	if string(gotChangelog) != content.Changelog {
-		return false, nil
-	}
+	got := intent.Content{Changelog: string(gotChangelog), Versions: map[string]string{}}
 	for _, vf := range cfg.VersionFiles {
+		if _, ok := content.Versions[vf.Path]; !ok {
+			continue
+		}
 		data, err := r.ReadFile(ctx, dec.Candidate, vf.Path)
 		if err != nil {
 			return false, fmt.Errorf("plan: cannot read version file %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", vf.Path, dec.Candidate, err)
 		}
 		val, corrupt := versionFieldValue(data, vf.Field)
 		if corrupt {
-			return false, nil
+			val = ""
 		}
-		if v, ok := content.Versions[vf.Path]; !ok || v != val {
-			return false, nil
-		}
+		got.Versions[vf.Path] = val
+	}
+	if err := intent.CompareContent(content, got); err != nil {
+		return false, nil
 	}
 	return true, nil
 }

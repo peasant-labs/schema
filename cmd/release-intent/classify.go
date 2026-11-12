@@ -60,7 +60,7 @@ func runClassify(args []string) error {
 	}
 	cfg, err := intent.ParseConfig(cfgData)
 	if err != nil {
-		return rejectAs("classify", configInvalidError(DefaultConfigPath, err))
+		return configInvalid("classify", "release config "+DefaultConfigPath+" at "+rev, err)
 	}
 	kind := intent.ClassifyPR(cfg, author, headBranch)
 	if err := emitLines([]string{"kind=" + kind.String()}); err != nil {

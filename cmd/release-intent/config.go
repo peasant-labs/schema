@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -19,19 +20,24 @@ func configReadError(path, rev string, err error) error {
 	return fmt.Errorf("cannot read release config %q at %q: %v. Confirm the revision carries the config file", path, rev, err)
 }
 
-// configInvalidError maps a contract parse or validation failure to an exit-2
-// typed rejection: the file was read but judges nothing. The code is
-// command-scoped (config-invalid); the closed title/plan set is untouched.
-func configInvalidError(path string, err error) error {
-	return &intent.Error{
-		Code:  intent.ErrorCode("config-invalid"),
-		What:  "release config " + strconvQuote(path) + " is invalid: " + firstLine(err.Error()),
+// configInvalid maps any config content failure to exit 2 with the closed
+// config-invalid code. A typed contract error passes through unchanged; a
+// plain decode failure is wrapped with the same code so every invalid config
+// exits 2 with a typed line, while an unreadable file stays exit 1.
+func configInvalid(subcommand, where string, err error) error {
+	var ie *intent.Error
+	if errors.As(err, &ie) {
+		return rejectAs(subcommand, err)
+	}
+	return rejectAs(subcommand, &intent.Error{
+		Code:  intent.ErrConfigInvalid,
+		What:  "release config is invalid: " + firstLine(err.Error()),
 		Why:   "the release config is strict YAML with a fixed key set and required fields",
-		Where: "release config, checked by the release-intent command reading it",
+		Where: where + ", checked by release-intent " + subcommand,
 		When:  "loading the release config before any check",
 		Means: "no check can run without the repo's contract",
 		Fix:   "fix the file or pass a readable path",
-	}
+	})
 }
 
 func firstLine(s string) string {
@@ -43,7 +49,8 @@ func firstLine(s string) string {
 	return s
 }
 
-// runCheckConfig implements: release-intent check-config --config F.
+// runCheckConfig implements: release-intent check-config --config F. An
+// unreadable file exits 1; an invalid file exits 2 with error=config-invalid.
 func runCheckConfig(args []string) error {
 	path := DefaultConfigPath
 	for i := 0; i < len(args); i++ {
@@ -64,7 +71,7 @@ func runCheckConfig(args []string) error {
 		return configReadError(path, "", err)
 	}
 	if _, err := intent.ParseConfig(data); err != nil {
-		return rejectAs("check-config", configInvalidError(path, err))
+		return configInvalid("check-config", "release config "+strconvQuote(path), err)
 	}
 	return emitLines([]string{"ok=true"})
 }

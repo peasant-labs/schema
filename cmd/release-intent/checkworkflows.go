@@ -12,8 +12,10 @@ import (
 // runCheckWorkflows implements:
 // release-intent check-workflows --policy P --dir .github/workflows [--print-required]
 //
-// It delegates to the policy package's exported checker. A policy violation
-// exits 2 with a typed line; every diagnostic is printed on stderr.
+// It delegates to the policy package's exported checker. The release config
+// is read only when the policy carries a queue section: a jobs-only policy
+// constrains nothing and needs no config, while the queue rules resolve bot
+// branches from it.
 func runCheckWorkflows(args []string) error {
 	policyPath := ""
 	dir := ""
@@ -53,7 +55,18 @@ func runCheckWorkflows(args []string) error {
 	if err != nil {
 		return err
 	}
-	diagnostics, required := release.CheckWorkflows(policy, dir)
+	var cfg intent.Config
+	if policy.Queue != nil {
+		cfgData, err := os.ReadFile(DefaultConfigPath)
+		if err != nil {
+			return configReadError(DefaultConfigPath, "", err)
+		}
+		cfg, err = intent.ParseConfig(cfgData)
+		if err != nil {
+			return rejectAs("check-workflows", err)
+		}
+	}
+	diagnostics, required := release.CheckWorkflows(policy, cfg, dir)
 	if printRequired {
 		names := make([]string, 0, len(required))
 		for _, r := range required {
@@ -78,15 +91,8 @@ func runCheckWorkflows(args []string) error {
 		if first.Job != "" {
 			where += " job " + first.Job
 		}
-		return rejectAs("check-workflows", &intent.Error{
-			Code:  intent.ErrorCode("policy-violation"),
-			What:  first.Message,
-			Why:   "every required workflow must satisfy the merge-queue policy",
-			Where: "workflows in " + dir + ", checked by release-intent check-workflows against " + policyPath,
-			When:  "checking workflow policy",
-			Means: "the check-workflows gate is red",
-			Fix:   "align the workflows with the policy file",
-		})
+		where += ", checked by release-intent check-workflows against " + policyPath
+		return rejectAs("check-workflows", intent.PolicyViolation(string(first.Rule), where, first.Message))
 	}
 	return emitLines([]string{"ok=true"})
 }
