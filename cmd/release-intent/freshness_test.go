@@ -211,6 +211,40 @@ func TestFreshness(t *testing.T) {
 					}
 				}
 				_ = got
+			case "rejected-later-minor-writes-full":
+				freshCommitPending(t, dir)
+				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {
+					t.Fatalf("%s: release-pr --write exit = %d, want 0\nstdout: %q", c.Name, exit, stdout)
+				}
+				freshCommitRelease(t, dir, "2020-01-03T00:00:00Z", "release[patch]: cut it")
+				// A later minor that touches no changelog file: the candidate
+				// stays fresh, so only the rejected verdict renders the full
+				// set. A verify would write the before set (0.1.1) instead.
+				writeFile(t, dir, "later.txt", "later\n")
+				runGit(t, dir, "add", "later.txt")
+				runGitDated(t, dir, "2020-01-04T00:00:00Z", "commit", "-q", "-m", "feat(graph)[minor]: later facet")
+				if exit, got, _ := planOutput(t, dir); exit != 0 || got["candidate_fresh"] != "true" {
+					t.Fatalf("%s: candidate must stay fresh, got exit=%d plan=%v", c.Name, exit, got)
+				}
+				exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil)
+				if exit != c.Expected.Exit {
+					t.Fatalf("%s: release-pr --write exit = %d, want %d\nstdout: %q", c.Name, exit, c.Expected.Exit, stdout)
+				}
+				assertExactLines(t, stdout, c.Expected.Lines, c.Name)
+				data, err := os.ReadFile(filepath.Join(dir, "CHANGELOG.md"))
+				if err != nil {
+					t.Fatalf("%s: read rewritten changelog: %v", c.Name, err)
+				}
+				if !strings.Contains(string(data), "## 0.2.0") || !strings.Contains(string(data), "later facet") || !strings.Contains(string(data), "add facet") {
+					t.Fatalf("%s: rewritten changelog must hold the 0.2.0 section with both subjects:\n%s", c.Name, string(data))
+				}
+				pkg, err := os.ReadFile(filepath.Join(dir, "package.json"))
+				if err != nil {
+					t.Fatalf("%s: read rewritten package.json: %v", c.Name, err)
+				}
+				if !strings.Contains(string(pkg), `"version": "0.2.0"`) {
+					t.Fatalf("%s: rewritten package.json must carry 0.2.0:\n%s", c.Name, string(pkg))
+				}
 			case "stale-rebuild-single-section":
 				freshCommitPending(t, dir)
 				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {

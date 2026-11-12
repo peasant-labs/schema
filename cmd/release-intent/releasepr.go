@@ -59,7 +59,11 @@ func runReleasePR(args []string) error {
 	if err != nil {
 		return err
 	}
-	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ModeTag, intent.Verdict(""))
+	// The write path rebuilds after a rejection or staleness, so it plans
+	// with the rejected verdict: the full pending set renders, never the
+	// before-candidate set a verify would speak for. There is no --verdict
+	// flag; --write only runs when the plan said open-pr.
+	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ModeTag, intent.Verdict("rejected"))
 	if err != nil {
 		return rejectAs("release-pr", err)
 	}
