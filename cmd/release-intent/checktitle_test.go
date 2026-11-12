@@ -25,10 +25,11 @@ type checkTitleInput struct {
 }
 
 type checkTitleExpected struct {
-	Exit   int      `yaml:"exit"`
-	Code   string   `yaml:"code"`
-	Stdout []string `yaml:"stdout"`
-	Absent []string `yaml:"absent"`
+	Exit    int      `yaml:"exit"`
+	Code    string   `yaml:"code"`
+	Message string   `yaml:"message"`
+	Stdout  []string `yaml:"stdout"`
+	Absent  []string `yaml:"absent"`
 }
 
 type checkTitleFixtures struct {
@@ -150,6 +151,8 @@ func TestCheckTitleTempRepos(t *testing.T) {
 					base, head, runner = setupScriptsOnlyAfterRelease(t)
 				case "version-field-edit":
 					base, head, runner = setupVersionFieldEdit(t)
+				case "version-field-removed":
+					base, head, runner = setupVersionFieldRemoved(t)
 				case "group-shaped-base":
 					base, head, runner = setupGroupShapedBase(t)
 				case "ordinary-scripts-edit":
@@ -178,6 +181,11 @@ func TestCheckTitleTempRepos(t *testing.T) {
 				}
 				if string(rej.Err.Code) != c.Expected.Code {
 					t.Fatalf("%s: rejection code = %q, want %q", c.Name, rej.Err.Code, c.Expected.Code)
+				}
+			}
+			if c.Expected.Message != "" {
+				if runErr == nil || !strings.Contains(runErr.Error(), c.Expected.Message) {
+					t.Fatalf("%s: error %v must contain %q", c.Name, runErr, c.Expected.Message)
 				}
 			} else if c.Expected.Exit == 0 && runErr != nil {
 				t.Fatalf("%s: expected accept, got err %v", c.Name, runErr)
@@ -285,6 +293,21 @@ func setupVersionFieldEdit(t *testing.T) (string, string, GitRunner) {
 	writeFile(t, dir, "package.json", "{\"version\": \"0.1.1\"}\n")
 	runGit(t, dir, "add", "package.json")
 	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[patch]: bump")
+	return base, gitRev(t, dir, "HEAD"), mustRunner(t, dir)
+}
+
+func setupVersionFieldRemoved(t *testing.T) (string, string, GitRunner) {
+	t.Helper()
+	dir := newBareRepo(t)
+	writeFile(t, dir, ".github/release-intent.yaml", checkTitleTestConfig)
+	writeFile(t, dir, "CHANGELOG.md", "# changelog\n")
+	writeFile(t, dir, "package.json", "{\"version\": \"0.1.0\"}\n")
+	runGit(t, dir, "add", ".")
+	runGit(t, dir, "commit", "-q", "-m", "feat(init)[minor]: seed")
+	base := gitRev(t, dir, "HEAD")
+	writeFile(t, dir, "package.json", "{\"name\": \"demo\"}\n")
+	runGit(t, dir, "add", "package.json")
+	runGit(t, dir, "commit", "-q", "-m", "feat(graph)[minor]: drop version field")
 	return base, gitRev(t, dir, "HEAD"), mustRunner(t, dir)
 }
 

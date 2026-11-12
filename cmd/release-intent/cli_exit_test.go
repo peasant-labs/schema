@@ -212,8 +212,9 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 // pending minor, content written then committed on the release branch while
 // the tip stays bare. The variant then moves one side: same leaves both
 // sides; clean-tip lands a docs commit on the tip; differs lands another
-// releasing commit on the tip; conflict edits the changelog on both sides so
-// the tip no longer merges onto the release branch cleanly.
+// releasing commit on the tip; conflict edits shared.txt, a file outside the
+// release content, on both sides, so the content matches but the tip no
+// longer merges onto the release branch cleanly.
 func setupCurrentBranch(t *testing.T, variant string) string {
 	t.Helper()
 	dir := newBareRepo(t)

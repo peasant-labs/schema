@@ -21,14 +21,17 @@ type freshInput struct {
 }
 
 type freshExpected struct {
-	Exit     int      `yaml:"exit"`
-	Action   string   `yaml:"action"`
-	Fresh    string   `yaml:"fresh"`
-	Error    string   `yaml:"error"`
-	Lines    []string `yaml:"lines"`
-	Absent   []string `yaml:"absent"`
-	Sections int      `yaml:"sections"`
-	Version  string   `yaml:"version"`
+	Exit   int      `yaml:"exit"`
+	Action string   `yaml:"action"`
+	Fresh  string   `yaml:"fresh"`
+	Error  string   `yaml:"error"`
+	Lines  []string `yaml:"lines"`
+	// CheckLines is the exact stdout of the release-pr --check that follows
+	// the write, for scenarios that run both.
+	CheckLines []string `yaml:"check_lines"`
+	Absent     []string `yaml:"absent"`
+	Sections   int      `yaml:"sections"`
+	Version    string   `yaml:"version"`
 }
 
 type freshFixtures struct {
@@ -211,15 +214,15 @@ func TestFreshness(t *testing.T) {
 					}
 				}
 				_ = got
-			case "rejected-later-minor-writes-full":
+			case "rejected-later-minor-writes-full", "fresh-candidate-later-subject-checks-full":
 				freshCommitPending(t, dir)
 				if exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--write"}, "", nil); exit != 0 {
 					t.Fatalf("%s: release-pr --write exit = %d, want 0\nstdout: %q", c.Name, exit, stdout)
 				}
 				freshCommitRelease(t, dir, "2020-01-03T00:00:00Z", "release[patch]: cut it")
 				// A later minor that touches no changelog file: the candidate
-				// stays fresh, so only the rejected verdict renders the full
-				// set. A verify would write the before set (0.1.1) instead.
+				// stays fresh and the plan speaks for the before set (0.1.1),
+				// yet the release content must be the full set (0.2.0).
 				writeFile(t, dir, "later.txt", "later\n")
 				runGit(t, dir, "add", "later.txt")
 				runGitDated(t, dir, "2020-01-04T00:00:00Z", "commit", "-q", "-m", "feat(graph)[minor]: later facet")
@@ -244,6 +247,14 @@ func TestFreshness(t *testing.T) {
 				}
 				if !strings.Contains(string(pkg), `"version": "0.2.0"`) {
 					t.Fatalf("%s: rewritten package.json must carry 0.2.0:\n%s", c.Name, string(pkg))
+				}
+				if c.Input.Scenario == "fresh-candidate-later-subject-checks-full" {
+					// The check compares the tree with the same full set.
+					exit, stdout, _ := runBinary(t, dir, []string{"release-pr", "--branch", "HEAD", "--check"}, "", nil)
+					if exit != c.Expected.Exit {
+						t.Fatalf("%s: release-pr --check exit = %d, want %d\nstdout: %q", c.Name, exit, c.Expected.Exit, stdout)
+					}
+					assertExactLines(t, stdout, c.Expected.CheckLines, c.Name)
 				}
 			case "stale-rebuild-single-section":
 				freshCommitPending(t, dir)

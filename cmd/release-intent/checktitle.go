@@ -161,16 +161,13 @@ func buildProtectedChanges(ctx context.Context, runner GitRunner, cfg intent.Con
 		if !changed[vf.Path] {
 			continue
 		}
-		baseVal, baseCorrupt, berr := readProtectedField(ctx, runner, base, vf.Path, vf.Field)
+		baseVal, berr := readProtectedField(ctx, runner, base, vf.Path, vf.Field)
 		if berr != nil {
 			return nil, berr
 		}
-		headVal, headCorrupt, herr := readProtectedField(ctx, runner, head, vf.Path, vf.Field)
+		headVal, herr := readProtectedField(ctx, runner, head, vf.Path, vf.Field)
 		if herr != nil {
 			return nil, herr
-		}
-		if baseCorrupt || headCorrupt {
-			return nil, rejectAs("check-title", protectedFieldError(vf.Path))
 		}
 		for i := range out {
 			if out[i].Path == vf.Path {
@@ -181,30 +178,34 @@ func buildProtectedChanges(ctx context.Context, runner GitRunner, cfg intent.Con
 	return out, nil
 }
 
-// readProtectedField returns the protected field value and whether the file
-// is corrupt. Blob read failures (other than absent, which reads as empty)
-// are errors for exit 1.
-func readProtectedField(ctx context.Context, runner GitRunner, rev, path, field string) (string, bool, error) {
+// readProtectedField returns the protected field value. An absent file reads
+// as empty. A blob read failure (other than absent) is an error for exit 1; a
+// missing or non-string field is the protected-path rejection, with the
+// contract reader's message naming the exact fault.
+func readProtectedField(ctx context.Context, runner GitRunner, rev, path, field string) (string, error) {
 	data, err := runner.ReadFile(ctx, rev, path)
 	if err != nil {
 		var nf *NotFoundError
 		if errors.As(err, &nf) {
-			return "", false, nil
+			return "", nil
 		}
-		return "", false, fmt.Errorf("check-title: cannot read version file %q at %q: %v. Confirm the revision is readable; a failed fetch is never an accept", path, rev, err)
+		return "", fmt.Errorf("check-title: cannot read version file %q at %q: %v. Confirm the revision is readable; a failed fetch is never an accept", path, rev, err)
 	}
-	val, corrupt := versionFieldValue(data, field)
-	return val, corrupt, nil
+	val, ferr := versionFieldValue(data, field)
+	if ferr != nil {
+		return "", rejectAs("check-title", protectedFieldError(path, rev, ferr))
+	}
+	return val, nil
 }
 
-func protectedFieldError(path string) error {
+func protectedFieldError(path, rev string, cause error) error {
 	return &intent.Error{
 		Code:  intent.ErrProtectedPath,
-		What:  "version file " + strconv.Quote(path) + " does not parse as JSON",
-		Why:   "the protected field cannot be compared when the file does not parse, so the PR fails closed",
+		What:  "the protected field cannot be read from " + strconv.Quote(path) + " at " + strconv.Quote(rev) + ": " + firstLine(cause.Error()),
+		Why:   "the protected field cannot be compared when the file does not carry it, so the PR fails closed",
 		Where: "PR change, checked by release-intent check-title",
 		When:  "pull_request opened, edited, synchronize, reopened, or the merge-group build",
 		Means: "the title-guard check is red, so the merge queue will not accept this PR",
-		Fix:   "fix the JSON in " + path + " or drop the edit",
+		Fix:   "restore the protected field (only the release PR may change it)",
 	}
 }

@@ -58,7 +58,7 @@ func runCheckWorkflows(args []string) error {
 	var cfg intent.Config
 	if policy.Queue != nil {
 		var err error
-		cfg, err = loadConfig("check-workflows", DefaultConfigPath, "")
+		cfg, err = loadConfig("check-workflows", DefaultConfigPath)
 		if err != nil {
 			return err
 		}
