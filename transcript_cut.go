@@ -77,18 +77,8 @@ func TranscriptTurnByteLength(turn TurnDetail) int {
 func transcriptImagePartByteLength(image *ImagePart) int {
 	encoded, err := json.Marshal(image)
 	if err != nil {
-		// json.Marshal of ImagePart, a struct of strings and integers, does not
-		// fail; a future change that made it fail must not silently under-count
-		// the document. The fallback is an upper bound: every member name, the
-		// strings as the encoder writes them, and the widest integer for each
-		// number.
-		const members = `{"ref":,"mediaType":,"byteSize":,"width":,"height":,"omittedReason":}`
-		const widestInteger = 20
-		return len(members) +
-			TranscriptJSONStringByteLength(image.Ref) +
-			TranscriptJSONStringByteLength(string(image.MediaType)) +
-			TranscriptJSONStringByteLength(string(image.OmittedReason)) +
-			3*widestInteger
+		// Cannot happen: ImagePart holds only strings and integers and has no custom marshaler.
+		panic(fmt.Sprintf("measure image part: %v", err))
 	}
 	return len(encoded)
 }
