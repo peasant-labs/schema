@@ -1,0 +1,30 @@
+name: Cut release
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: Release level
+        type: choice
+        options: [patch, minor, major]
+concurrency:
+  group: cut-release-${{ github.ref }}
+jobs:
+  cut:
+    if: github.ref == 'refs/heads/develop' && vars.RELEASE_BATCH_MODE == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - id: mint
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_KEY }}
+      - id: push
+        if: vars.RELEASE_BATCH_MODE == 'tag'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: git push origin HEAD:automation/cut-release
+      - id: open
+        if: vars.RELEASE_BATCH_MODE == 'tag'
+        env:
+          GH_TOKEN: ${{ steps.mint.outputs.token }}
+        run: gh pr create --head automation/cut-release --base develop --title "cut" --body "bot"

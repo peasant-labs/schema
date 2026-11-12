@@ -1,0 +1,9 @@
+name: Contract
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh release create v0.1.0 generated/*

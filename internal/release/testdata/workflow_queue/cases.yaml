@@ -1,12 +1,13 @@
-# Merge-queue workflow policy corpus: one directory per case. Each directory
-# holds a policy.yml and the workflow files the checker reads from a
-# workflows/ subdirectory. A must-pass case must yield no diagnostics; a
-# must-fail case must yield at least one diagnostic with the expected rule,
-# and every want_contains substring must appear in the diagnostics. The reject
-# sample for each rule is the real fault it guards against.
+# Merge-queue workflow policy corpus: the base tree plus one small overlay per
+# case. The harness copies base/ into a temp dir, applies the case overlay,
+# and runs the production CheckWorkflows over it. A must-pass case must yield
+# no diagnostics; a must-fail case must trip only its expected rule, with
+# every want_contains fragment in the diagnostics. Every must-fail row names
+# its accept sibling, which proves the sample fails for the one fault it names
+# and not for an unrelated input error.
 #
-# required_names is the manifest: every case must be listed and nothing else
-# may carry a directory, so a dropped or stray sample fails loudly.
+# required_names is the manifest: every case must be listed and every listed
+# case must exist, so a dropped or stray sample fails loudly.
 required_names:
   - accept-required-contexts
   - accept-merge-group
@@ -14,15 +15,23 @@ required_names:
   - accept-release-actions
   - accept-title-guard
   - accept-range-floor
-  - accept-bot-writer
+  - accept-no-default-branch-push
   - accept-token-mint
+  - accept-unfiltered
+  - accept-merge-gate-reports
+  - accept-titles-plain
+  - accept-cut-release
+  - accept-tool-pin
+  - accept-classify
+  - accept-no-release-job
   - reject-required-contexts-missing-file
   - reject-required-contexts-missing-job
   - reject-merge-group-missing
   - reject-concurrency-pr-number-group
   - reject-concurrency-cancel-true
+  - reject-concurrency-job-cancel
   - reject-release-actions-write-no-if
-  - reject-release-actions-tag-on-needs
+  - reject-release-actions-tag-second-job
   - reject-release-actions-verdict-missing-step
   - reject-release-actions-verdict-conclusion
   - reject-release-actions-pretag-or-true
@@ -30,205 +39,441 @@ required_names:
   - reject-release-actions-no-status-function
   - reject-release-actions-push-no-push-test
   - reject-release-actions-arm-no-gate
+  - reject-release-actions-disjunction
   - reject-title-guard-no-entry
   - reject-title-guard-job-if
   - reject-title-guard-event-action
   - reject-range-floor-missing
-  - reject-bot-writer-dup-branch
+  - reject-no-push-cross-push
+  - reject-no-push-dup-kind
+  - reject-no-push-unknown-kind
+  - reject-no-push-tag-outside
+  - reject-cut-release-trigger
+  - reject-cut-release-level
+  - reject-cut-release-no-tagmode
   - reject-token-mint-no-refcheck
+  - reject-token-mint-run-only
+  - reject-token-mint-no-tagmode
+  - reject-tool-pin-tag
+  - reject-tool-pin-mismatch
+  - reject-classify-literal
+  - reject-classify-no-call
+  - reject-unfiltered
+  - reject-merge-gate-always
+  - reject-titles-interpolated
 cases:
   - name: accept-required-contexts
-    input: { dir: accept-required-contexts }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "required-contexts", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-contexts" }
-    mutation: { description: "minimal repo whose required entries resolve to a file and a job" }
+    mutation: { description: "base repo: every required entry resolves to a file and a job" }
 
   - name: accept-merge-group
-    input: { dir: accept-merge-group }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "merge-group-on-required-workflows", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy merge-group-on-required-workflows" }
-    mutation: { description: "guard workflow triggers on merge_group as well as pull_request" }
+    mutation: { description: "base repo: every required workflow triggers on merge_group" }
 
   - name: accept-concurrency
-    input: { dir: accept-concurrency }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "required-workflows-concurrency-per-ref", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-concurrency-per-ref" }
-    mutation: { description: "mapping concurrency keyed on the ref with pull-request-scoped cancellation" }
+    mutation: { description: "base repo: per-ref groups with pull_request-scoped cancellation" }
 
   - name: accept-release-actions
-    input: { dir: accept-release-actions }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "release-actions-gated", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
-    mutation: { description: "release job in the canonical gated shape with the two-step verdict" }
+    mutation: { description: "base repo: release job in the canonical gated shape" }
 
   - name: accept-title-guard
-    input: { dir: accept-title-guard }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "title-guard-no-early-success", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy title-guard-no-early-success" }
-    mutation: { description: "guard entry marked with no job-level gate and a step-level event test" }
+    mutation: { description: "base repo: guard entry marked with step-level event tests only" }
 
   - name: accept-range-floor
-    input: { dir: accept-range-floor }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "accept-range-floor" }
+    expected: { rule: "range-readers-take-the-floor", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy range-readers-take-the-floor" }
-    mutation: { description: "range reader passes the floor from the repository variable" }
+    mutation: { description: "adds a freeze-plan range reader that passes the floor" }
 
-  - name: accept-bot-writer
-    input: { dir: accept-bot-writer }
-    expected: { rule: "", want_contains: [] }
+  - name: accept-no-default-branch-push
+    input: { overlay: "" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: [] }
+    sibling: ""
     classification: must-pass
-    provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-one-writer" }
-    mutation: { description: "two bot jobs on two branches" }
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "base repo: every push is a listed job pushing its own branch" }
 
   - name: accept-token-mint
-    input: { dir: accept-token-mint }
-    expected: { rule: "", want_contains: [] }
+    input: { overlay: "" }
+    expected: { rule: "token-mint-ref-check", want_contains: [] }
+    sibling: ""
     classification: must-pass
     provenance: { source: requirement, ref: "schema#226 merge-queue policy token-mint-ref-check" }
-    mutation: { description: "mint job behind a job-level check that the ref is the default branch" }
+    mutation: { description: "base repo: every mint behind a ref check and a tag-mode gate" }
+
+  - name: accept-unfiltered
+    input: { overlay: "" }
+    expected: { rule: "required-workflows-unfiltered", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-unfiltered" }
+    mutation: { description: "base repo: required triggers carry no path filters" }
+
+  - name: accept-merge-gate-reports
+    input: { overlay: "" }
+    expected: { rule: "merge-gate-always-reports", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy merge-gate-always-reports" }
+    mutation: { description: "base repo: the aggregator always reports over its needs" }
+
+  - name: accept-titles-plain
+    input: { overlay: "" }
+    expected: { rule: "titles-never-interpolated", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy titles-never-interpolated" }
+    mutation: { description: "base repo: no run or env interpolates a title" }
+
+  - name: accept-cut-release
+    input: { overlay: "" }
+    expected: { rule: "cut-release-is-dispatch-only", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy cut-release-is-dispatch-only" }
+    mutation: { description: "base repo: cut button is dispatch-only with a patch-minor choice and gated writes" }
+
+  - name: accept-tool-pin
+    input: { overlay: "" }
+    expected: { rule: "tool-pin-is-a-sha", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy tool-pin-is-a-sha" }
+    mutation: { description: "base repo: one tool checkout pinned to one commit SHA" }
+
+  - name: accept-classify
+    input: { overlay: "" }
+    expected: { rule: "bot-branch-via-classify", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-via-classify" }
+    mutation: { description: "base repo: guard calls classify and compares no branch literal" }
+
+  - name: accept-no-release-job
+    input: { overlay: "accept-no-release-job" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: [] }
+    sibling: ""
+    classification: must-pass
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "no release job: bot pushes resolve without it and the retired workflow is inert" }
 
   - name: reject-required-contexts-missing-file
-    input: { dir: reject-required-contexts-missing-file }
-    expected: { rule: "required-contexts", want_contains: ["ci.yml", "missing from"] }
+    input: { overlay: "reject-required-contexts-missing-file" }
+    expected: { rule: "required-contexts", want_contains: ["lib.yml", "missing from"] }
+    sibling: accept-required-contexts
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-contexts" }
-    mutation: { description: "remove the workflow file a required context points at" }
+    mutation: { description: "require a check from a workflow file that does not exist" }
 
   - name: reject-required-contexts-missing-job
-    input: { dir: reject-required-contexts-missing-job }
+    input: { overlay: "reject-required-contexts-missing-job" }
     expected: { rule: "required-contexts", want_contains: ["jobs.merge-gate is missing"] }
+    sibling: accept-required-contexts
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-contexts" }
     mutation: { description: "remove the job a required context points at" }
 
   - name: reject-merge-group-missing
-    input: { dir: reject-merge-group-missing }
+    input: { overlay: "reject-merge-group-missing" }
     expected: { rule: "merge-group-on-required-workflows", want_contains: ["no merge_group trigger"] }
+    sibling: accept-merge-group
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy merge-group-on-required-workflows" }
     mutation: { description: "drop merge_group from a required workflow that triggers on pull_request" }
 
   - name: reject-concurrency-pr-number-group
-    input: { dir: reject-concurrency-pr-number-group }
+    input: { overlay: "reject-concurrency-pr-number-group" }
     expected: { rule: "required-workflows-concurrency-per-ref", want_contains: ["not keyed on the ref", "cancel all but one pending run"] }
+    sibling: accept-concurrency
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-concurrency-per-ref" }
     mutation: { description: "key the group on the PR number with cancelling on, the mass-cancel fault" }
 
   - name: reject-concurrency-cancel-true
-    input: { dir: reject-concurrency-cancel-true }
-    expected: { rule: "required-workflows-concurrency-per-ref", want_contains: ["cancel-in-progress is true"] }
+    input: { overlay: "reject-concurrency-cancel-true" }
+    expected: { rule: "required-workflows-concurrency-per-ref", want_contains: ["sets cancel-in-progress true"] }
+    sibling: accept-concurrency
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-concurrency-per-ref" }
     mutation: { description: "cancel unconditionally with a per-ref group, reaching the group builds too" }
 
+  - name: reject-concurrency-job-cancel
+    input: { overlay: "reject-concurrency-job-cancel" }
+    expected: { rule: "required-workflows-concurrency-per-ref", want_contains: ["jobs.merge-gate concurrency", "sets cancel-in-progress true"] }
+    sibling: accept-concurrency
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-concurrency-per-ref" }
+    mutation: { description: "cancel unconditionally at the required job level" }
+
   - name: reject-release-actions-write-no-if
-    input: { dir: reject-release-actions-write-no-if }
+    input: { overlay: "reject-release-actions-write-no-if" }
     expected: { rule: "release-actions-gated", want_contains: ["no action-gated if", "does not test the write step"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "strip the if from the branch-push step after an exit-0 write step" }
 
-  - name: reject-release-actions-tag-on-needs
-    input: { dir: reject-release-actions-tag-on-needs }
-    expected: { rule: "release-actions-gated", want_contains: ["not gated on the tag action"] }
+  - name: reject-release-actions-tag-second-job
+    input: { overlay: "reject-release-actions-tag-second-job" }
+    expected: { rule: "release-actions-gated", want_contains: ["not gated on the tag action", "more than one step pushes a tag"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
-    mutation: { description: "gate the tag push on a needs edge instead of the verdict tag action" }
+    mutation: { description: "push the tag from a second job with job-level needs and no action if" }
 
   - name: reject-release-actions-verdict-missing-step
-    input: { dir: reject-release-actions-verdict-missing-step }
+    input: { overlay: "reject-release-actions-verdict-missing-step" }
     expected: { rule: "release-actions-gated", want_contains: ["--verdict", "canonical"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "leave the freeze pre-tag step out of the verdict expression" }
 
   - name: reject-release-actions-verdict-conclusion
-    input: { dir: reject-release-actions-verdict-conclusion }
+    input: { overlay: "reject-release-actions-verdict-conclusion" }
     expected: { rule: "release-actions-gated", want_contains: ["conclusion"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "read a pre-tag step conclusion instead of its outcome in the verdict" }
 
   - name: reject-release-actions-pretag-or-true
-    input: { dir: reject-release-actions-pretag-or-true }
+    input: { overlay: "reject-release-actions-pretag-or-true" }
     expected: { rule: "release-actions-gated", want_contains: ["pre-tag step", "chains commands"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "end the contract pre-tag step in || true so a break exits zero" }
 
   - name: reject-release-actions-pretag-script
-    input: { dir: reject-release-actions-pretag-script }
+    input: { overlay: "reject-release-actions-pretag-script" }
     expected: { rule: "release-actions-gated", want_contains: ["instead of a release-intent or schema-gen subcommand"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "run the gates script where the contract check belongs" }
 
   - name: reject-release-actions-no-status-function
-    input: { dir: reject-release-actions-no-status-function }
+    input: { overlay: "reject-release-actions-no-status-function" }
     expected: { rule: "release-actions-gated", want_contains: ["no status function"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "drop !cancelled() from the verdict step after the first pre-tag step" }
 
   - name: reject-release-actions-push-no-push-test
-    input: { dir: reject-release-actions-push-no-push-test }
+    input: { overlay: "reject-release-actions-push-no-push-test" }
     expected: { rule: "release-actions-gated", want_contains: ["does not test the write step"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
     mutation: { description: "push the branch on the action alone without the write step push test" }
 
   - name: reject-release-actions-arm-no-gate
-    input: { dir: reject-release-actions-arm-no-gate }
-    expected: { rule: "release-actions-gated", want_contains: ["no step tests gate == 'arm'"] }
+    input: { overlay: "reject-release-actions-arm-no-gate" }
+    expected: { rule: "release-actions-gated", want_contains: ["not the queue-gate output"] }
+    sibling: accept-release-actions
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
-    mutation: { description: "arm auto-merge on the action instead of the queue-gate output" }
+    mutation: { description: "arm auto-merge on a gate output that is not the queue-gate of this run" }
+
+  - name: reject-release-actions-disjunction
+    input: { overlay: "reject-release-actions-disjunction" }
+    expected: { rule: "release-actions-gated", want_contains: ["inside a disjunction"] }
+    sibling: accept-release-actions
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy release-actions-gated" }
+    mutation: { description: "spread the push gate across a disjunction with always()" }
 
   - name: reject-title-guard-no-entry
-    input: { dir: reject-title-guard-no-entry }
+    input: { overlay: "reject-title-guard-no-entry" }
     expected: { rule: "title-guard-no-early-success", want_contains: ["no guard entry"] }
+    sibling: accept-title-guard
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy title-guard-no-early-success" }
     mutation: { description: "unmark the guard entry so no workflow must run the full check" }
 
   - name: reject-title-guard-job-if
-    input: { dir: reject-title-guard-job-if }
+    input: { overlay: "reject-title-guard-job-if" }
     expected: { rule: "title-guard-no-early-success", want_contains: ["job-level if"] }
+    sibling: accept-title-guard
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy title-guard-no-early-success" }
     mutation: { description: "gate the guard job on the event name so body edits skip the check" }
 
   - name: reject-title-guard-event-action
-    input: { dir: reject-title-guard-event-action }
+    input: { overlay: "reject-title-guard-event-action" }
     expected: { rule: "title-guard-no-early-success", want_contains: ["github.event.action"] }
+    sibling: accept-title-guard
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy title-guard-no-early-success" }
     mutation: { description: "read the pull-request action so an edited body ends green without checking" }
 
   - name: reject-range-floor-missing
-    input: { dir: reject-range-floor-missing }
+    input: { overlay: "reject-range-floor-missing" }
     expected: { rule: "range-readers-take-the-floor", want_contains: ["without the floor"] }
+    sibling: accept-range-floor
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy range-readers-take-the-floor" }
     mutation: { description: "drop the floor from a range reader so it keeps parsing a bad subject" }
 
-  - name: reject-bot-writer-dup-branch
-    input: { dir: reject-bot-writer-dup-branch }
-    expected: { rule: "bot-branch-one-writer", want_contains: ["exactly one writer"] }
+  - name: reject-no-push-cross-push
+    input: { overlay: "reject-no-push-cross-push" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["lists no such push"] }
+    sibling: accept-no-default-branch-push
     classification: must-fail
-    provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-one-writer" }
-    mutation: { description: "point two bot jobs at the same branch" }
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "push the release branch from the cut-release job" }
+
+  - name: reject-no-push-dup-kind
+    input: { overlay: "reject-no-push-dup-kind" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["exactly one writer"] }
+    sibling: accept-no-default-branch-push
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "claim the cut-release kind from two bot jobs" }
+
+  - name: reject-no-push-unknown-kind
+    input: { overlay: "reject-no-push-unknown-kind" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["names no branch for that kind"] }
+    sibling: accept-no-default-branch-push
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "drop the cut-release branch from the release config" }
+
+  - name: reject-no-push-tag-outside
+    input: { overlay: "reject-no-push-tag-outside" }
+    expected: { rule: "no-default-branch-push-from-workflows", want_contains: ["outside the release job's tag step"] }
+    sibling: accept-no-default-branch-push
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy no-default-branch-push-from-workflows" }
+    mutation: { description: "publish a release from a tag-triggered workflow outside the release job" }
+
+  - name: reject-cut-release-trigger
+    input: { overlay: "reject-cut-release-trigger" }
+    expected: { rule: "cut-release-is-dispatch-only", want_contains: ["only on workflow_dispatch"] }
+    sibling: accept-cut-release
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy cut-release-is-dispatch-only" }
+    mutation: { description: "trigger the cut button on push as well as dispatch" }
+
+  - name: reject-cut-release-level
+    input: { overlay: "reject-cut-release-level" }
+    expected: { rule: "cut-release-is-dispatch-only", want_contains: ["exactly patch and minor"] }
+    sibling: accept-cut-release
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy cut-release-is-dispatch-only" }
+    mutation: { description: "offer a major level on the cut-release button" }
+
+  - name: reject-cut-release-no-tagmode
+    input: { overlay: "reject-cut-release-no-tagmode" }
+    expected: { rule: "cut-release-is-dispatch-only", want_contains: ["no tag-mode gate"] }
+    sibling: accept-cut-release
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy cut-release-is-dispatch-only" }
+    mutation: { description: "write the cut branch with no tag-mode gate on the write steps" }
 
   - name: reject-token-mint-no-refcheck
-    input: { dir: reject-token-mint-no-refcheck }
+    input: { overlay: "reject-token-mint-no-refcheck" }
     expected: { rule: "token-mint-ref-check", want_contains: ["without checking github.ref"] }
+    sibling: accept-token-mint
     classification: must-fail
     provenance: { source: requirement, ref: "schema#226 merge-queue policy token-mint-ref-check" }
-    mutation: { description: "mint the App token with no ref check, the dispatch-on-any-branch fault" }
+    mutation: { description: "mint the App token with no ref check at all" }
+
+  - name: reject-token-mint-run-only
+    input: { overlay: "reject-token-mint-run-only" }
+    expected: { rule: "token-mint-ref-check", want_contains: ["without checking github.ref"] }
+    sibling: accept-token-mint
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy token-mint-ref-check" }
+    mutation: { description: "test the ref in a run block that stops nothing, the dispatch fault" }
+
+  - name: reject-token-mint-no-tagmode
+    input: { overlay: "reject-token-mint-no-tagmode" }
+    expected: { rule: "token-mint-ref-check", want_contains: ["without a tag-mode gate"] }
+    sibling: accept-token-mint
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy token-mint-ref-check" }
+    mutation: { description: "check the ref but mint with tag mode off" }
+
+  - name: reject-tool-pin-tag
+    input: { overlay: "reject-tool-pin-tag" }
+    expected: { rule: "tool-pin-is-a-sha", want_contains: ["not a 40-hex commit"] }
+    sibling: accept-tool-pin
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy tool-pin-is-a-sha" }
+    mutation: { description: "pin the tool checkout to a version tag instead of a commit" }
+
+  - name: reject-tool-pin-mismatch
+    input: { overlay: "reject-tool-pin-mismatch" }
+    expected: { rule: "tool-pin-is-a-sha", want_contains: ["different commits"] }
+    sibling: accept-tool-pin
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy tool-pin-is-a-sha" }
+    mutation: { description: "pin a second tool checkout to a different commit" }
+
+  - name: reject-classify-literal
+    input: { overlay: "reject-classify-literal" }
+    expected: { rule: "bot-branch-via-classify", want_contains: ["compares a bot branch literal"] }
+    sibling: accept-classify
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-via-classify" }
+    mutation: { description: "route on a head_ref comparison with the release branch literal" }
+
+  - name: reject-classify-no-call
+    input: { overlay: "reject-classify-no-call" }
+    expected: { rule: "bot-branch-via-classify", want_contains: ["never calls release-intent classify"] }
+    sibling: accept-classify
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy bot-branch-via-classify" }
+    mutation: { description: "drop the classify call from the guard workflow" }
+
+  - name: reject-unfiltered
+    input: { overlay: "reject-unfiltered" }
+    expected: { rule: "required-workflows-unfiltered", want_contains: ["filters with paths"] }
+    sibling: accept-unfiltered
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy required-workflows-unfiltered" }
+    mutation: { description: "filter a required workflow to docs paths so other changes skip the check" }
+
+  - name: reject-merge-gate-always
+    input: { overlay: "reject-merge-gate-always" }
+    expected: { rule: "merge-gate-always-reports", want_contains: ["no if: always()"] }
+    sibling: accept-merge-gate-reports
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy merge-gate-always-reports" }
+    mutation: { description: "drop always() from the aggregator so skipped needs skip the gate" }
+
+  - name: reject-titles-interpolated
+    input: { overlay: "reject-titles-interpolated" }
+    expected: { rule: "titles-never-interpolated", want_contains: ["pull_request.title"] }
+    sibling: accept-titles-plain
+    classification: must-fail
+    provenance: { source: requirement, ref: "schema#226 merge-queue policy titles-never-interpolated" }
+    mutation: { description: "interpolate the PR title via env, the release-pr.yml fault shape" }

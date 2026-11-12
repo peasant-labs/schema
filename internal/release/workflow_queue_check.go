@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/peasant-labs/schema/internal/release/intent"
 	"gopkg.in/yaml.v3"
 )
 
@@ -23,7 +24,7 @@ import (
 // how to fix it.
 
 // CheckWorkflows validates every workflow file in dir against the policy's
-// queue section and returns the violations plus the required contexts in
+// queue section and the release config, and returns the violations plus the
 // policy order (for the operator to compare against the queue ruleset). A
 // policy without a queue section constrains nothing here and yields no
 // diagnostics, so today's jobs-only policies keep passing unchanged.
@@ -32,11 +33,11 @@ import (
 // means it satisfies every rule. A file that cannot be read or parsed is
 // reported under the first rule that needs it, so one run names every broken
 // file instead of stopping at the first.
-func CheckWorkflows(policy WorkflowPolicy, dir string) ([]Diagnostic, []RequiredContext) {
+func CheckWorkflows(policy WorkflowPolicy, cfg intent.Config, dir string) ([]Diagnostic, []RequiredContext) {
 	if policy.Queue == nil {
 		return nil, nil
 	}
-	c := &queueChecker{policy: policy, dir: dir}
+	c := &queueChecker{policy: policy, cfg: cfg, dir: dir}
 	if err := c.load(); err != nil {
 		return []Diagnostic{{
 			Rule:     QueueRuleRequiredContexts,
@@ -47,11 +48,17 @@ func CheckWorkflows(policy WorkflowPolicy, dir string) ([]Diagnostic, []Required
 	c.checkRequiredContexts()
 	c.checkMergeGroup()
 	c.checkConcurrency()
+	c.checkUnfiltered()
+	c.checkMergeGate()
+	c.checkTitles()
 	c.checkReleaseActions()
 	c.checkTitleGuard()
 	c.checkRangeFloor()
-	c.checkBotWriter()
+	c.checkNoPush()
 	c.checkTokenMint()
+	c.checkCutRelease()
+	c.checkToolPin()
+	c.checkClassify()
 	return c.diagnostics, append([]RequiredContext(nil), policy.Queue.Required...)
 }
 
@@ -61,6 +68,7 @@ func CheckWorkflows(policy WorkflowPolicy, dir string) ([]Diagnostic, []Required
 // rule that needs the file and skipped by later rules.
 type queueChecker struct {
 	policy      WorkflowPolicy
+	cfg         intent.Config
 	dir         string
 	files       map[string]*queueFile
 	diagnostics []Diagnostic
@@ -204,47 +212,61 @@ func (c *queueChecker) checkMergeGroup() {
 // its concurrency group on the ref or the run id, and to cancel in-progress
 // runs only for pull_request. A group keyed only on the PR number is empty on
 // a merge group, so every group build would share one group and cancel all
-// but one pending run.
+// but one pending run. Both the workflow level and the required jobs' own
+// level are checked: a job-level group that cancels unconditionally cancels
+// that job's merge-group builds too.
 func (c *queueChecker) checkConcurrency() {
 	for _, req := range c.policy.Queue.Required {
 		doc := c.needFile(QueueRuleConcurrency, req.Workflow)
 		if doc == nil {
 			continue
 		}
-		concurrency := mappingValue(doc, "concurrency")
-		if concurrency == nil {
-			continue
+		c.checkConcurrencyNode(req.Workflow, "", mappingValue(doc, "concurrency"))
+		if job := jobNode(doc, req.Job); job != nil {
+			c.checkConcurrencyNode(req.Workflow, req.Job, mappingValue(job, "concurrency"))
 		}
-		var group, cancel string
-		switch concurrency.Kind {
-		case yaml.ScalarNode:
-			group = concurrency.Value
-		case yaml.MappingNode:
-			if g := mappingValue(concurrency, "group"); g != nil {
-				group = g.Value
-			}
-			if k := mappingValue(concurrency, "cancel-in-progress"); k != nil {
-				cancel = k.Value
-			}
-		default:
-			c.emit(QueueRuleConcurrency, req.Workflow, "",
-				"concurrency is neither a group name nor a mapping during merge-queue policy validation. Key the group on the ref or the run id so merge-group builds never share a group")
-			continue
+	}
+}
+
+// checkConcurrencyNode applies the keying and cancellation rules to one
+// concurrency node, at workflow scope (job empty) or one job's scope.
+func (c *queueChecker) checkConcurrencyNode(workflow, job string, concurrency *yaml.Node) {
+	if concurrency == nil {
+		return
+	}
+	scope := "concurrency"
+	if job != "" {
+		scope = "jobs." + job + " concurrency"
+	}
+	var group, cancel string
+	switch concurrency.Kind {
+	case yaml.ScalarNode:
+		group = concurrency.Value
+	case yaml.MappingNode:
+		if g := mappingValue(concurrency, "group"); g != nil {
+			group = g.Value
 		}
-		if !strings.Contains(group, "github.ref") && !strings.Contains(group, "github.run_id") {
-			c.emit(QueueRuleConcurrency, req.Workflow, "",
-				"concurrency group "+quote(group)+" is not keyed on the ref or the run id during merge-queue policy validation. A group keyed only on the PR number is empty on a merge group, so every group build would share one group and cancel all but one pending run; key it on github.ref or github.run_id")
+		if k := mappingValue(concurrency, "cancel-in-progress"); k != nil {
+			cancel = k.Value
 		}
-		switch {
-		case cancel == "", cancel == "false":
-		case cancel == "true":
-			c.emit(QueueRuleConcurrency, req.Workflow, "",
-				"cancel-in-progress is true during merge-queue policy validation. Cancelling applies to the merge-group builds too; scope it to pull_request with ${{ github.event_name == 'pull_request' }} or drop it")
-		default:
-			if !strings.Contains(cancel, "pull_request") {
-				c.emit(QueueRuleConcurrency, req.Workflow, "",
-					"cancel-in-progress expression "+quote(cancel)+" is not scoped to pull_request during merge-queue policy validation. Scope the cancellation to ${{ github.event_name == 'pull_request' }} so merge-group builds are never cancelled")
-			}
+	default:
+		c.emit(QueueRuleConcurrency, workflow, job,
+			scope+" is neither a group name nor a mapping during merge-queue policy validation. Key the group on the ref or the run id so merge-group builds never share a group")
+		return
+	}
+	if !strings.Contains(group, "github.ref") && !strings.Contains(group, "github.run_id") {
+		c.emit(QueueRuleConcurrency, workflow, job,
+			scope+" group "+quote(group)+" is not keyed on the ref or the run id during merge-queue policy validation. A group keyed only on the PR number is empty on a merge group, so every group build would share one group and cancel all but one pending run; key it on github.ref or github.run_id")
+	}
+	switch {
+	case cancel == "", cancel == "false":
+	case cancel == "true":
+		c.emit(QueueRuleConcurrency, workflow, job,
+			scope+" sets cancel-in-progress true during merge-queue policy validation. Cancelling applies to the merge-group builds too; scope it to pull_request with ${{ github.event_name == 'pull_request' }} or drop it")
+	default:
+		if !strings.Contains(cancel, "pull_request") {
+			c.emit(QueueRuleConcurrency, workflow, job,
+				scope+" cancel-in-progress expression "+quote(cancel)+" is not scoped to pull_request during merge-queue policy validation. Scope the cancellation to ${{ github.event_name == 'pull_request' }} so merge-group builds are never cancelled")
 		}
 	}
 }

@@ -1,0 +1,13 @@
+jobs:
+  - name: guard
+queue:
+  required:
+    - { context: merge-gate, workflow: ci.yml, job: merge-gate, aggregator: true }
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard }
+  release_job:
+    workflow: release-batch.yml
+    job: release
+    pre_tag_steps: [verify-contract, verify-freeze]
+  bot_jobs:
+    - { workflow: cut-release.yml, job: cut, kind: cut-release }
+    - { workflow: nix-vendor-hash.yml, job: update, kind: vendor-hash }

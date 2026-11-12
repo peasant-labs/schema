@@ -1,0 +1,7 @@
+releases: true
+tag_prefix: v
+automation_author: peasant-labs-releaser[bot]
+changelog: CHANGELOG.md
+bot_branches:
+  release: automation/release
+  vendor-hash: automation/vendor-hash
