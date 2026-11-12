@@ -1,0 +1,16 @@
+name: CI
+on:
+  pull_request:
+  merge_group:
+concurrency:
+  group: ci-${{ github.ref }}
+jobs:
+  lib:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make lib
+  merge-gate:
+    needs: [lib]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo gate

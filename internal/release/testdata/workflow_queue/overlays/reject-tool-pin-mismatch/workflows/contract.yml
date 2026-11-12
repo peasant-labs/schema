@@ -1,0 +1,13 @@
+name: Contract
+on:
+  push:
+    tags: ["v*"]
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          repository: peasant-labs/schema
+          ref: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+          path: schema-tool

@@ -1,17 +1,23 @@
 package release
 
 import (
+	"bytes"
+	_ "embed"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/peasant-labs/schema/internal/release/intent"
+	"github.com/peasant-labs/schema/testcase"
+	"github.com/peasant-labs/schema/testcase/assert"
+	"gopkg.in/yaml.v3"
 )
 
-// L1 covers the policy model's queue section and the exported checker entry
-// point: the loader accepts and validates the optional queue key with strict
-// fields, jobs-only policies keep loading with a nil queue, and the checker
-// entry point honors its legacy contract (no queue, no diagnostics) while the
-// rule checks are still unwired.
+// The policy loader corpus lives in testdata/workflow_policy_load.yaml: one
+// inline policy document per row with its expected failure fragment. The
+// runner writes each row to a temp file and runs the production loader.
 
 func writeQueuePolicyFile(t *testing.T, content string) string {
 	t.Helper()
@@ -31,10 +37,9 @@ queue:
   release_job:
     workflow: release-batch.yml
     job: release
-    branch: automation/release
     pre_tag_steps: [verify-contract, verify-freeze]
   bot_jobs:
-    - { workflow: cut-release.yml, job: cut, branch: automation/cut-release }
+    - { workflow: cut-release.yml, job: cut, kind: cut-release }
 `
 
 func TestLoadWorkflowPolicy_QueueSection(t *testing.T) {
@@ -62,7 +67,7 @@ func TestLoadWorkflowPolicy_QueueSection(t *testing.T) {
 		t.Fatalf("loaded queue has a nil release job, want release-batch.yml/release")
 	}
 	rel := policy.Queue.ReleaseJob
-	if rel.Workflow != "release-batch.yml" || rel.Job != "release" || rel.Branch != "automation/release" {
+	if rel.Workflow != "release-batch.yml" || rel.Job != "release" {
 		t.Fatalf("loaded release job = %+v, want the release-batch entry", rel)
 	}
 	if len(rel.PreTagSteps) != 2 || rel.PreTagSteps[0] != "verify-contract" || rel.PreTagSteps[1] != "verify-freeze" {
@@ -72,110 +77,8 @@ func TestLoadWorkflowPolicy_QueueSection(t *testing.T) {
 		t.Fatalf("loaded queue has %d bot jobs, want 1", len(policy.Queue.BotJobs))
 	}
 	bot := policy.Queue.BotJobs[0]
-	if bot.Workflow != "cut-release.yml" || bot.Job != "cut" || bot.Branch != "automation/cut-release" {
-		t.Fatalf("loaded bot job = %+v, want the cut-release entry", bot)
-	}
-}
-
-func TestLoadWorkflowPolicy_QueueStrictFields(t *testing.T) {
-	t.Parallel()
-
-	// A typo'd queue key must fail loudly, exactly like a typo'd jobs key.
-	for _, tc := range []struct {
-		name    string
-		content string
-	}{
-		{
-			name:    "unknown queue section key",
-			content: "jobs:\n  - name: guard\nqueue:\n  require: []\n",
-		},
-		{
-			name:    "unknown required entry key",
-			content: "jobs:\n  - name: guard\nqueue:\n  required:\n    - { context: title-guard, workflow: title-guard.yml, job: title-guard, gare: true }\n",
-		},
-		{
-			name:    "unknown release job key",
-			content: "jobs:\n  - name: guard\nqueue:\n  required:\n    - { context: title-guard, workflow: title-guard.yml, job: title-guard }\n  release_job:\n    workflow: release-batch.yml\n    job: release\n    brunch: automation/release\n",
-		},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			if _, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, tc.content)); err == nil {
-				t.Fatalf("expected a strict-fields error for %q, got nil", tc.name)
-			} else if !strings.Contains(err.Error(), "cannot parse") {
-				t.Fatalf("error %q does not name the parse failure", err.Error())
-			}
-		})
-	}
-}
-
-func TestLoadWorkflowPolicy_QueueValidation(t *testing.T) {
-	t.Parallel()
-
-	base := "jobs:\n  - name: guard\nqueue:\n"
-	for _, tc := range []struct {
-		name    string
-		queue   string
-		wantSub string
-	}{
-		{
-			name:    "empty required",
-			queue:   "  required: []\n",
-			wantSub: "declares no required contexts",
-		},
-		{
-			name:    "required entry without context",
-			queue:   "  required:\n    - { workflow: title-guard.yml, job: title-guard }\n",
-			wantSub: "has an empty context",
-		},
-		{
-			name:    "required entry without workflow",
-			queue:   "  required:\n    - { context: title-guard, job: title-guard }\n",
-			wantSub: "has an empty workflow",
-		},
-		{
-			name:    "required entry without job",
-			queue:   "  required:\n    - { context: title-guard, workflow: title-guard.yml }\n",
-			wantSub: "has an empty job",
-		},
-		{
-			name: "duplicate context",
-			queue: "  required:\n" +
-				"    - { context: title-guard, workflow: a.yml, job: title-guard }\n" +
-				"    - { context: title-guard, workflow: b.yml, job: title-guard }\n",
-			wantSub: "declares context \"title-guard\" twice",
-		},
-		{
-			name: "release job without branch",
-			queue: "  required:\n    - { context: title-guard, workflow: title-guard.yml, job: title-guard }\n" +
-				"  release_job:\n    workflow: release-batch.yml\n    job: release\n",
-			wantSub: "has an empty branch",
-		},
-		{
-			name: "bot job without job",
-			queue: "  required:\n    - { context: title-guard, workflow: title-guard.yml, job: title-guard }\n" +
-				"  bot_jobs:\n    - { workflow: cut-release.yml, branch: automation/cut-release }\n",
-			wantSub: "has an empty job",
-		},
-		{
-			name: "empty pre-tag step",
-			queue: "  required:\n    - { context: title-guard, workflow: title-guard.yml, job: title-guard }\n" +
-				"  release_job:\n    workflow: release-batch.yml\n    job: release\n    branch: automation/release\n    pre_tag_steps: [\"\"]\n",
-			wantSub: "pre_tag_steps[0] is empty",
-		},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, base+tc.queue))
-			if err == nil {
-				t.Fatalf("expected a validation error for %q, got nil", tc.name)
-			}
-			if !strings.Contains(err.Error(), tc.wantSub) {
-				t.Fatalf("error %q does not contain expected substring %q", err.Error(), tc.wantSub)
-			}
-		})
+	if bot.Workflow != "cut-release.yml" || bot.Job != "cut" || bot.Kind != intent.PRKindCutRelease {
+		t.Fatalf("loaded bot job = %+v, want the cut-release kind entry", bot)
 	}
 }
 
@@ -193,28 +96,180 @@ func TestLoadWorkflowPolicy_LegacyJobsOnlyHasNoQueue(t *testing.T) {
 	}
 }
 
+func TestLoadWorkflowPolicy_QueueOnly(t *testing.T) {
+	t.Parallel()
+
+	// A queue section with no jobs loads, so a repo with no tag-triggered
+	// release workflow can adopt the queue half on its own.
+	policy, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, `queue:
+  required:
+    - { context: title-guard, workflow: title-guard.yml, job: title-guard, guard: true }
+`))
+	if err != nil {
+		t.Fatalf("LoadWorkflowPolicy(queue-only) failed: %v", err)
+	}
+	if policy.Queue == nil {
+		t.Fatalf("queue-only policy loaded with a nil queue section")
+	}
+	if len(policy.Jobs) != 0 {
+		t.Fatalf("queue-only policy loaded with %d jobs, want none", len(policy.Jobs))
+	}
+}
+
+//go:embed testdata/workflow_policy_load.yaml
+var workflowPolicyLoadYAML []byte
+
+// loadCaseInput is one inline policy document from the loader corpus.
+type loadCaseInput struct {
+	Policy string `yaml:"policy"`
+}
+
+// loadCaseExpected is the failure fragment a must-fail loader row must carry.
+type loadCaseExpected struct {
+	Rule         string   `yaml:"rule"`
+	WantContains []string `yaml:"want_contains"`
+}
+
+// loadCaseRow is one loader corpus row.
+type loadCaseRow struct {
+	Name           string                  `yaml:"name"`
+	Input          loadCaseInput           `yaml:"input"`
+	Expected       loadCaseExpected        `yaml:"expected"`
+	Classification testcase.Classification `yaml:"classification"`
+	Provenance     testcase.Provenance     `yaml:"provenance"`
+	Mutation       testcase.Mutation       `yaml:"mutation"`
+	Sibling        string                  `yaml:"sibling"`
+}
+
+// loadPolicyFixtures is the parsed loader corpus with its manifest.
+type loadPolicyFixtures struct {
+	RequiredNames []string      `yaml:"required_names"`
+	Rows          []loadCaseRow `yaml:"cases"`
+}
+
+func loadLoadPolicyFixtures(t *testing.T) loadPolicyFixtures {
+	t.Helper()
+	dec := yaml.NewDecoder(bytes.NewReader(workflowPolicyLoadYAML))
+	dec.KnownFields(true)
+	var f loadPolicyFixtures
+	if err := dec.Decode(&f); err != nil {
+		t.Fatalf("load policy loader cases (testdata/workflow_policy_load.yaml): %v", err)
+	}
+	cases := make([]testcase.Case[loadCaseInput, loadCaseExpected], 0, len(f.Rows))
+	for _, row := range f.Rows {
+		cases = append(cases, testcase.Case[loadCaseInput, loadCaseExpected]{
+			Name: row.Name, Input: row.Input, Expected: row.Expected,
+			Classification: row.Classification, Provenance: row.Provenance, Mutation: row.Mutation,
+		})
+	}
+	corpus := testcase.Corpus[loadCaseInput, loadCaseExpected]{Cases: cases}
+	assert.RequireValid(t, corpus)
+	seen := map[string]bool{}
+	for _, row := range f.Rows {
+		if seen[row.Name] {
+			t.Fatalf("loader corpus names case %q twice", row.Name)
+		}
+		seen[row.Name] = true
+	}
+	for _, name := range f.RequiredNames {
+		if !seen[name] {
+			t.Fatalf("required loader case %q is missing", name)
+		}
+	}
+	if len(seen) != len(f.RequiredNames) {
+		t.Fatalf("required_names names %d cases but the corpus carries %d", len(f.RequiredNames), len(seen))
+	}
+	return f
+}
+
+func TestLoadWorkflowPolicy_LoadCases(t *testing.T) {
+	t.Parallel()
+
+	for _, row := range loadLoadPolicyFixtures(t).Rows {
+		row := row
+		t.Run(row.Name, func(t *testing.T) {
+			t.Parallel()
+			_, err := LoadWorkflowPolicy(writeQueuePolicyFile(t, row.Input.Policy))
+			if row.Classification == testcase.MustPass {
+				if err != nil {
+					t.Fatalf("accept case %q failed to load: %v", row.Name, err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("reject case %q loaded without error", row.Name)
+			}
+			for _, want := range row.Expected.WantContains {
+				if !strings.Contains(err.Error(), want) {
+					t.Fatalf("error %q does not contain expected fragment %q", err.Error(), want)
+				}
+			}
+		})
+	}
+}
+
 func TestQueueRuleClosedSet(t *testing.T) {
 	t.Parallel()
 
-	if len(AllQueueRules) != 8 {
-		t.Fatalf("AllQueueRules has %d members, want 8", len(AllQueueRules))
+	// Closed sets assert exact membership: the declared list must equal the
+	// plan's rule set, not merely count it.
+	want := []QueueRule{
+		QueueRuleRequiredContexts,
+		QueueRuleMergeGroup,
+		QueueRuleConcurrency,
+		QueueRuleReleaseActions,
+		QueueRuleTitleGuard,
+		QueueRuleRangeFloor,
+		QueueRuleNoPush,
+		QueueRuleTokenMint,
+		QueueRuleUnfiltered,
+		QueueRuleMergeGate,
+		QueueRuleTitles,
+		QueueRuleCutRelease,
+		QueueRuleToolPin,
+		QueueRuleClassify,
 	}
-	seen := map[QueueRule]bool{}
-	for _, r := range AllQueueRules {
-		if seen[r] {
-			t.Fatalf("duplicate rule %q in AllQueueRules", r)
-		}
-		seen[r] = true
-		if !r.IsValid() {
-			t.Fatalf("rule %q fails its own IsValid", r)
-		}
-		if r.String() == "" {
-			t.Fatalf("rule renders empty")
-		}
+	if !reflect.DeepEqual(AllQueueRules, want) {
+		t.Fatalf("AllQueueRules = %v, want exactly %v", AllQueueRules, want)
 	}
 	if (QueueRule("no-such-rule")).IsValid() {
 		t.Fatalf("unknown rule passes IsValid")
 	}
+}
+
+func TestClosedSetsMatchIntent(t *testing.T) {
+	t.Parallel()
+
+	// The checker's action and gate sets are the same objects as the intent
+	// package's, not a second copy: sorted values must match exactly.
+	actions := make([]string, 0, len(intent.AllActions))
+	for _, a := range intent.AllActions {
+		actions = append(actions, a.String())
+	}
+	gotActions := make([]string, 0, len(closedActions))
+	for a := range closedActions {
+		gotActions = append(gotActions, a)
+	}
+	if !reflect.DeepEqual(sortedStrings(gotActions), sortedStrings(actions)) {
+		t.Fatalf("checker actions %v do not equal intent.AllActions %v", gotActions, actions)
+	}
+	var gateVals []string
+	for _, g := range intent.AllGates {
+		gateVals = append(gateVals, g.String())
+	}
+	if !reflect.DeepEqual(gateValues(), gateVals) {
+		t.Fatalf("checker gates %v do not equal intent.AllGates %v", gateValues(), gateVals)
+	}
+}
+
+func sortedStrings(in []string) []string {
+	out := append([]string(nil), in...)
+	for i := 1; i < len(out); i++ {
+		for j := i; j > 0 && out[j-1] > out[j]; j-- {
+			out[j-1], out[j] = out[j], out[j-1]
+		}
+	}
+	return out
 }
 
 func TestCheckWorkflows_LegacyPassesEmpty(t *testing.T) {
@@ -222,7 +277,7 @@ func TestCheckWorkflows_LegacyPassesEmpty(t *testing.T) {
 
 	// The entry-point contract for jobs-only policies: no queue section means
 	// no diagnostics and no required contexts.
-	diags, required := CheckWorkflows(WorkflowPolicy{Jobs: []JobRule{{Name: "guard"}}}, t.TempDir())
+	diags, required := CheckWorkflows(WorkflowPolicy{Jobs: []JobRule{{Name: "guard"}}}, intent.Config{}, t.TempDir())
 	if len(diags) != 0 {
 		t.Fatalf("jobs-only policy yielded %d diagnostics, want none: %+v", len(diags), diags)
 	}
@@ -251,15 +306,15 @@ queue:
 	}
 	dir := t.TempDir()
 	workflows := map[string]string{
-		"ci.yml":          "name: CI\non:\n  pull_request:\n  merge_group:\nconcurrency:\n  group: ci-${{ github.ref }}\njobs:\n  merge-gate:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo gate\n",
-		"title-guard.yml": "name: Title guard\non:\n  pull_request:\n  merge_group:\njobs:\n  title-guard:\n    runs-on: ubuntu-latest\n    steps:\n      - run: release-intent check-title --base x --head y --author z\n",
+		"ci.yml":          "name: CI\non:\n  pull_request:\n  merge_group:\nconcurrency:\n  group: ci-${{ github.ref }}\njobs:\n  lib:\n    runs-on: ubuntu-latest\n    steps:\n      - run: make lib\n  merge-gate:\n    if: always()\n    needs: [lib]\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo gate\n",
+		"title-guard.yml": "name: Title guard\non:\n  pull_request:\n  merge_group:\njobs:\n  title-guard:\n    runs-on: ubuntu-latest\n    steps:\n      - run: release-intent classify --author x --head-branch y\n      - run: release-intent check-title --base x --head y --author z\n",
 	}
 	for name, content := range workflows {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 			t.Fatalf("write workflow fixture: %v", err)
 		}
 	}
-	diags, required := CheckWorkflows(policy, dir)
+	diags, required := CheckWorkflows(policy, loadBaseConfig(t), dir)
 	if len(diags) != 0 {
 		msgs := make([]string, 0, len(diags))
 		for _, d := range diags {
