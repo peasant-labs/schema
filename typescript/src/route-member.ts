@@ -45,7 +45,10 @@ export function routeMember<P extends string, M extends HttpMethod>(method: M, p
   const frozenParts = Object.freeze(parts.map((part) => Object.freeze(part)));
 
   function path(...args: PathArgs<P>): string {
-    const params: Readonly<Record<string, unknown>> | undefined = args[0];
+    // A JavaScript caller can pass anything; a value that is not an object
+    // carries no parameter, so each parameter is then refused as missing.
+    const given: unknown = args[0];
+    const params: Readonly<Record<string, unknown>> | undefined = typeof given === "object" && given !== null ? args[0] : undefined;
     let out = "";
     for (const part of frozenParts) {
       if ("literal" in part) {

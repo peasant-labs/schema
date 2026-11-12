@@ -3,6 +3,7 @@
 requiredNames:
   - missing-parameter
   - missing-parameter-object
+  - null-parameter-object
   - null-parameter
   - boolean-parameter
   - non-finite-number

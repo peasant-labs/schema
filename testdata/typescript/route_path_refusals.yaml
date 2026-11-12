@@ -21,6 +21,15 @@ cases:
     classification: must-fail
     provenance: {source: requirement, ref: "a route with parameters needs its parameter object"}
     mutation: {description: "calls path() with no argument"}
+  - name: null-parameter-object
+    input:
+      api: village
+      member: GetTranscriptSegments
+      params: null
+    expected: {error_contains: "parameter \"id\" received no value"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "a null parameter object must be refused with the actionable message, not a property-access error"}
+    mutation: {description: "passes null in place of the parameter object"}
   - name: null-parameter
     input:
       api: local

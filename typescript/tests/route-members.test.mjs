@@ -107,7 +107,7 @@ function decodePathInput(value, path) {
   for (const key of Object.keys(value)) {
     if (!["api", "member", "params"].includes(key)) throw new TypeError(`${path}.${key}: unknown key`);
   }
-  if (value.params !== undefined && (typeof value.params !== "object" || value.params === null || Array.isArray(value.params))) throw new TypeError(`${path}.params: must be a mapping when present`);
+  if (value.params !== undefined && value.params !== null && (typeof value.params !== "object" || Array.isArray(value.params))) throw new TypeError(`${path}.params: must be a mapping or null when present`);
   return { member: member(value.api, value.member, path), params: value.params };
 }
 
