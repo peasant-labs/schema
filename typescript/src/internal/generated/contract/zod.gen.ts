@@ -719,8 +719,8 @@ export const zContributionTraversalRevision = z.string().max(4096).superRefine((
 export type ContributionTraversalRevision = z.infer<typeof zContributionTraversalRevision>;
 
 export const zConversationTurnSpan = z.object({
-    before: z.int().gte(0).lte(9007199254740991).optional(),
-    count: z.int().gte(0).lte(9007199254740991).optional()
+    before: z.int().gte(0).lte(9007199254740991),
+    count: z.int().gte(0).lte(9007199254740991)
 });
 
 export type ConversationTurnSpan = z.infer<typeof zConversationTurnSpan>;

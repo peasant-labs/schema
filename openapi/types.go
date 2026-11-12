@@ -148,6 +148,7 @@ func TypeCatalogEntries() []TypeCatalogEntry {
 		{"HelperContextSummary", new(schema.HelperContextSummary)}, {"SessionDetailReadPayload", new(schema.SessionDetailReadPayload)},
 		{"SessionDetailHeader", new(schema.SessionDetailHeader)}, {"SessionDetailHeaderPayload", new(schema.SessionDetailHeaderPayload)},
 		{"TranscriptSegmentDirectory", new(schema.TranscriptSegmentDirectory)}, {"TranscriptSegmentRef", new(schema.TranscriptSegmentRef)},
+		{"ConversationTurnSpan", new(schema.ConversationTurnSpan)},
 		{"TranscriptSegment", new(schema.TranscriptSegment)}, {"TranscriptTurn", new(schema.TranscriptTurn)},
 		{"TranscriptWindow", new(schema.TranscriptWindow)},
 		{"SessionTeammate", new(schema.SessionTeammate)}, {"SessionTeammateEvidence", new(schema.SessionTeammateEvidence)},

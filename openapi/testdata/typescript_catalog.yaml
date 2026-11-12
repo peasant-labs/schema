@@ -1347,6 +1347,7 @@ types:
   - {go_name: SessionDetailHeaderPayload, disposition: catalog, component: SessionDetailHeaderPayload, reason: "session_detail frame body: metadata header plus local navigation and teammate evidence"}
   - {go_name: TranscriptSegmentDirectory, disposition: catalog, component: TranscriptSegmentDirectory, reason: "transcript global index: one ref per segment, no per-turn rows, capped at 10000 refs"}
   - {go_name: TranscriptSegmentRef, disposition: catalog, component: TranscriptSegmentRef, reason: "one segment extent: ordinal plus closed sparse turn-identity range"}
+  - {go_name: ConversationTurnSpan, disposition: catalog, component: ConversationTurnSpan, reason: "conversation turn counts for one segment: turns before it and turns in it, never a turn identity"}
   - {go_name: TranscriptSegment, disposition: catalog, component: TranscriptSegment, reason: "one segment of turn content and its own facts, cut on complete entries"}
   - {go_name: TranscriptTurn, disposition: catalog, component: TranscriptTurn, reason: "one served turn: the single TurnDetail definition plus truncated and pre-bound byteLength"}
   - {go_name: TranscriptWindow, disposition: catalog, component: TranscriptWindow, reason: "anchor window descriptor: extent and covering segment ordinals, no turn content"}

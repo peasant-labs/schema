@@ -4172,6 +4172,9 @@ components:
           maximum: 9.007199254740991e+15
           minimum: 0
           type: integer
+      required:
+      - before
+      - count
       type: object
     SchemaCreateAnnotationRequest:
       properties:

@@ -4518,6 +4518,10 @@
             "type": "integer"
           }
         },
+        "required": [
+          "before",
+          "count"
+        ],
         "type": "object"
       },
       "CreateAnnotationRequest": {
