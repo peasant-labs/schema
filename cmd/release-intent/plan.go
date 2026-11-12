@@ -60,11 +60,11 @@ func runPlan(args []string) error {
 	}
 	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ParseMode(mode), intent.Verdict(verdict))
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("plan", err)
 	}
 	decision, err := intent.Plan(cfg, facts)
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("plan", err)
 	}
 	lines := []string{
 		"action=" + decision.Action.String(),

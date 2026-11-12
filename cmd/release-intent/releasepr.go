@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
 )
@@ -62,34 +61,41 @@ func runReleasePR(args []string) error {
 	}
 	facts, cfg, err := Gather(ctx, runner, branch, DefaultConfigPath, floor, intent.ModeTag, intent.Verdict(""))
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("release-pr", err)
 	}
 	decision, err := intent.Plan(cfg, facts)
 	if err != nil {
-		return intentErrorToReject(err)
+		return rejectAs("release-pr", err)
 	}
-	content, err := releaseContent(ctx, runner, cfg, branch, decision)
+	content, err := releaseContent(ctx, runner, cfg, branch, facts, decision)
 	if err != nil {
 		return err
 	}
 	if wantCheck {
-		fresh, err := checkWorkingTree(cfg, decision, content)
+		fresh, err := checkWorkingTree(cfg, content)
 		if err != nil {
 			return err
 		}
 		if !fresh {
-			return &RejectError{
-				Code: intent.ErrReleaseContentStale, What: "the release PR content is stale",
-				Why: "releasing commits landed after the release PR base, or the checked-out content differs from the generator", Where: "release PR branch, checked by release-intent release-pr --check",
-				When: "title-guard on the release PR, or the merge-group build", Means: "the required check is red; the release PR must be rebuilt",
-				Fix: "run the release job to rebuild the release PR, then requeue",
-			}
+			fmt.Println("fresh=false")
+			return rejectAs("release-pr --check", &intent.Error{
+				Code:  intent.ErrReleaseContentStale,
+				What:  "the release PR content is stale",
+				Why:   "releasing commits landed after the release PR base, or the checked-out content differs from the generator",
+				Where: "release PR branch, checked by release-intent release-pr --check",
+				When:  "title-guard on the release PR, or the merge-group build",
+				Means: "the required check is red; the release PR must be rebuilt",
+				Fix:   "run the release job to rebuild the release PR, then requeue",
+			})
 		}
 		return emitLines([]string{"fresh=true", "push=false", "version=" + decision.Version.String(), "error="})
 	}
 	push := "true"
 	if current != "" {
-		needs, err := needsPush(ctx, runner, cfg, current, content)
+		if len(facts.Commits) == 0 {
+			return fmt.Errorf("release-pr: cannot determine the branch tip for --current: the branch has no commits")
+		}
+		needs, err := needsPush(ctx, runner, cfg, facts.Commits[0].SHA, current, content)
 		if err != nil {
 			return err
 		}
@@ -104,36 +110,49 @@ func runReleasePR(args []string) error {
 }
 
 // releaseContent renders the generator output for the plan decision. The base
-// changelog comes from the branch tip; the date is today since Generate only
-// uses it for a dated heading style.
-func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, branch string, decision intent.Decision) (intent.Content, error) {
+// changelog is read at the range-base tag, or at the epoch when that is
+// newer; the date is the planner's newest-pending date, so write, check and
+// freshness render the same bytes on any day.
+func releaseContent(ctx context.Context, runner GitRunner, cfg intent.Config, branch string, facts intent.Facts, decision intent.Decision) (intent.Content, error) {
 	if len(decision.Pending) == 0 || decision.Version == "" || decision.Tag == "" {
 		return intent.Content{}, fmt.Errorf("release-pr: nothing to write: no pending releasing subjects (version is empty). Open a releasing PR first")
 	}
-	base, err := runner.ReadFile(ctx, branch, cfg.Changelog)
-	if err != nil {
-		// A missing changelog at the tip starts from an empty base.
-		base = nil
+	shas := make([]string, 0, len(facts.Commits))
+	for _, c := range facts.Commits {
+		shas = append(shas, c.SHA)
 	}
-	today := time.Now().Format("2006-01-02")
-	return intent.Generate(cfg, intent.ContentInput{Pending: decision.Pending, BaseChangelog: string(base), Version: decision.Version, Tag: decision.Tag, Date: today})
+	baseRev := baseRevForRange(shas, facts.Tags, decision.RangeBase, facts.Epoch)
+	base, err := runner.ReadFile(ctx, baseRev, cfg.Changelog)
+	if err != nil {
+		var nf *NotFoundError
+		if errors.As(err, &nf) {
+			base = nil
+		} else {
+			return intent.Content{}, fmt.Errorf("release-pr: cannot read changelog %q at base %q: %w. Confirm the revision is readable; a failed fetch is never written over", cfg.Changelog, baseRev, err)
+		}
+	}
+	return intent.Generate(cfg, intent.ContentInput{Pending: decision.Pending, BaseChangelog: string(base), Version: decision.Version, Tag: decision.Tag, Date: decision.Date})
 }
 
 // checkWorkingTree compares the working tree with generator output.
-func checkWorkingTree(cfg intent.Config, decision intent.Decision, content intent.Content) (bool, error) {
-	if len(decision.Pending) == 0 {
+func checkWorkingTree(cfg intent.Config, content intent.Content) (bool, error) {
+	if len(content.Versions) == 0 {
 		return false, nil
 	}
 	for _, vf := range cfg.VersionFiles {
+		want, ok := content.Versions[vf.Path]
+		if !ok {
+			continue
+		}
 		data, err := os.ReadFile(vf.Path)
 		if err != nil {
 			return false, fmt.Errorf("release-pr --check: cannot read working-tree file %q: %w. Run from the repository root with the release PR checked out", vf.Path, err)
 		}
-		var obj map[string]any
-		if err := json.Unmarshal(data, &obj); err != nil {
+		val, corrupt := versionFieldValue(data, vf.Field)
+		if corrupt {
 			return false, nil
 		}
-		if v, _ := obj[vf.Field].(string); v != content.Versions[vf.Path] {
+		if val != want {
 			return false, nil
 		}
 	}
@@ -147,18 +166,21 @@ func checkWorkingTree(cfg intent.Config, decision intent.Decision, content inten
 	return true, nil
 }
 
-// needsPush reports whether the open release branch needs an update.
-func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, current string, content intent.Content) (bool, error) {
+// needsPush reports whether the open release branch needs an update: content
+// differences rebuild, and a release branch the tip no longer merges onto
+// cleanly rebuilds even when the content matches.
+func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, tip, current string, content intent.Content) (bool, error) {
 	for _, vf := range cfg.VersionFiles {
+		want, ok := content.Versions[vf.Path]
+		if !ok {
+			continue
+		}
 		data, err := runner.ReadFile(ctx, current, vf.Path)
 		if err != nil {
 			return true, nil
 		}
-		var obj map[string]any
-		if err := json.Unmarshal(data, &obj); err != nil {
-			return true, nil
-		}
-		if v, _ := obj[vf.Field].(string); v != content.Versions[vf.Path] {
+		val, corrupt := versionFieldValue(data, vf.Field)
+		if corrupt || val != want {
 			return true, nil
 		}
 	}
@@ -169,11 +191,16 @@ func needsPush(ctx context.Context, runner GitRunner, cfg intent.Config, current
 	if string(changelog) != content.Changelog {
 		return true, nil
 	}
+	if err := runner.MergeTree(ctx, tip, current); err != nil {
+		return true, nil
+	}
 	return false, nil
 }
 
 // writeReleaseContent writes generator output into the working tree: the
-// protected field of every version file and the full changelog text.
+// protected field of every version file is spliced in place so key order,
+// whitespace and escaping everywhere else stay byte-identical, and the full
+// changelog text is written whole.
 func writeReleaseContent(cfg intent.Config, content intent.Content) error {
 	for _, vf := range cfg.VersionFiles {
 		want, ok := content.Versions[vf.Path]
@@ -184,16 +211,10 @@ func writeReleaseContent(cfg intent.Config, content intent.Content) error {
 		if err != nil {
 			return fmt.Errorf("release-pr --write: cannot read %q: %w. Run from the repository root", vf.Path, err)
 		}
-		var obj map[string]any
-		if err := json.Unmarshal(data, &obj); err != nil {
-			return fmt.Errorf("release-pr --write: cannot parse %q as JSON: %w. Fix the file or drop the edit", vf.Path, err)
-		}
-		obj[vf.Field] = want
-		out, err := json.MarshalIndent(obj, "", "  ")
+		out, err := intent.WriteVersionField(data, vf.Field, want)
 		if err != nil {
-			return fmt.Errorf("release-pr --write: cannot encode %q: %w", vf.Path, err)
+			return fmt.Errorf("release-pr --write: cannot write %q: %w. Run from the repository root", vf.Path, err)
 		}
-		out = append(out, '\n')
 		if err := os.WriteFile(vf.Path, out, 0o644); err != nil {
 			return fmt.Errorf("release-pr --write: cannot write %q: %w", vf.Path, err)
 		}

@@ -1,0 +1,69 @@
+required_names:
+  - fresh-bare
+  - fresh-bracket-undated
+  - fresh-bracket-dated
+  - fresh-no-section
+  - stale-new-releasing
+  - older-fresh-newer-stale
+  - check-stale
+  - read-error
+  - stale-rebuild-single-section
+
+cases:
+  cases:
+    - name: fresh-bare
+      input: {style: "bare", scenario: "fresh-after-write"}
+      expected: {exit: 0, action: "tag", fresh: "true"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a release built from the plan output is fresh and tags"}
+      mutation: {description: "Baseline fresh path with a bare heading style."}
+    - name: fresh-bracket-undated
+      input: {style: "bracket-undated", scenario: "fresh-after-write"}
+      expected: {exit: 0, action: "tag", fresh: "true"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a release built from the plan output is fresh and tags"}
+      mutation: {description: "Fresh path with a bracketed undated heading style."}
+    - name: fresh-bracket-dated
+      input: {style: "bracket-dated", scenario: "fresh-after-write"}
+      expected: {exit: 0, action: "tag", fresh: "true"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a dated heading carries the newest pending commit date, not today"}
+      mutation: {description: "Fresh path with a dated heading style and a pending date unlike the test day."}
+    - name: fresh-no-section
+      input: {style: "no-section", scenario: "fresh-after-write"}
+      expected: {exit: 0, action: "tag", fresh: "true"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a changelog without sections gains the new section"}
+      mutation: {description: "Fresh path with no existing changelog section."}
+    - name: stale-new-releasing
+      input: {style: "bare", scenario: "stale-new-releasing"}
+      expected: {exit: 0, action: "open-pr", fresh: "false"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a releasing commit before the release commit makes it stale"}
+      mutation: {description: "Lands one more releasing commit after the release commit was built."}
+    - name: older-fresh-newer-stale
+      input: {style: "bare", scenario: "older-fresh-newer-stale"}
+      expected: {exit: 0, action: "open-pr", fresh: "false"}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a newer stale candidate never tags, whatever came before"}
+      mutation: {description: "Stacks a fresh release, a new pending subject and a stale rebuild."}
+    - name: check-stale
+      input: {style: "bare", scenario: "check-stale-tree"}
+      expected: {exit: 2, lines: ["fresh=false", "error=release-content-stale"]}
+      classification: must-fail
+      sibling: fresh-bare
+      provenance: {source: requirement, ref: "a stale release-PR check prints fresh=false and exits 2"}
+      mutation: {description: "Runs release-pr --check on the stale tree from the stale scenario."}
+    - name: read-error
+      input: {style: "bare", scenario: "freshness-read-error"}
+      expected: {exit: 1, absent: ["candidate_fresh"]}
+      classification: must-fail
+      sibling: fresh-bare
+      provenance: {source: requirement, ref: "an unreadable freshness input exits 1 with no candidate_fresh"}
+      mutation: {description: "Deletes the version file in the release commit so its read fails."}
+    - name: stale-rebuild-single-section
+      input: {style: "bare", scenario: "stale-rebuild-single-section"}
+      expected: {exit: 0, sections: 1}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a rebuild after a stale release keeps exactly one section per version"}
+      mutation: {description: "Rebuilds after a stale release commit and counts the version sections."}

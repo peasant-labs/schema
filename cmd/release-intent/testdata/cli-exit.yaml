@@ -3,121 +3,266 @@ required_names:
   - group-pr-non-queue-empty
   - group-pr-missing-flag
   - classify-release-kind
+  - classify-ordinary
   - classify-missing-branch
+  - classify-head-tamper-ordinary
   - check-config-valid
   - check-config-unknown-key
   - check-config-missing-file
   - queue-gate-arm
+  - queue-gate-hold
+  - queue-gate-arm-never-release
+  - queue-gate-arm-behind
+  - queue-gate-hold-unparsable
   - queue-gate-malformed
+  - queue-gate-null-queue
+  - queue-gate-missing-total
+  - queue-gate-count-mismatch
+  - queue-gate-errors-array
+  - queue-gate-more-than-listed
   - queue-gate-missing-queue
   - check-title-missing-branch
   - check-title-accept
   - check-title-reject
+  - check-workflows-accept
+  - check-workflows-violation
+  - check-workflows-print-required
+  - check-workflows-missing-dir
   - plan-missing-mode
-  - plan-bad-branch-no-fresh
+  - plan-unreadable-branch
+  - plan-accept-open-pr
+  - plan-bad-subject
+  - release-pr-write-accept
   - release-pr-needs-write-or-check
 
 cases:
   cases:
     - name: group-pr-queue-ref
       input: {argv: ["group-pr", "--ref", "refs/heads/gh-readonly-queue/main/pr-12-abc123"], stdin: "", setup: "none"}
-      expected: {exit: 0, stdout: ["pr=12"], noGate: false}
+      expected: {exit: 0, stdout: ["pr=12"]}
       classification: must-pass
       provenance: {source: requirement, ref: "group-pr prints the entry PR number"}
       mutation: {description: "Baseline group-pr accept path at process level."}
     - name: group-pr-non-queue-empty
       input: {argv: ["group-pr", "--ref", "refs/heads/main"], stdin: "", setup: "none"}
-      expected: {exit: 0, stdout: ["pr="], noGate: false}
+      expected: {exit: 0, stdout: ["pr="]}
       classification: must-pass
       provenance: {source: requirement, ref: "non-queue refs print an empty PR number with exit 0"}
       mutation: {description: "Uses a non-queue ref, which must not fail."}
     - name: group-pr-missing-flag
       input: {argv: ["group-pr"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: group-pr-queue-ref
       provenance: {source: boundary, ref: "usage errors exit 1"}
       mutation: {description: "Omits the required --ref flag."}
     - name: classify-release-kind
-      input: {argv: ["classify", "--author", "peasant-labs-releaser[bot]", "--head-branch", "automation/release"], stdin: "", setup: "config-bot"}
-      expected: {exit: 0, stdout: ["kind=release"], noGate: false}
+      input: {argv: ["classify", "--author", "peasant-labs-releaser[bot]", "--head-branch", "automation/release", "--rev", "SETUP_REV"], stdin: "", setup: "classify-repo"}
+      expected: {exit: 0, stdout: ["kind=release"]}
       classification: must-pass
-      provenance: {source: requirement, ref: "classify prints the bot-branch kind"}
+      provenance: {source: requirement, ref: "classify prints the bot-branch kind from the base revision"}
       mutation: {description: "Classifies the release bot branch at process level."}
+    - name: classify-ordinary
+      input: {argv: ["classify", "--author", "octocat", "--head-branch", "automation/release", "--rev", "SETUP_REV"], stdin: "", setup: "classify-repo"}
+      expected: {exit: 0, stdout: ["kind=ordinary"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a human author on a bot branch is ordinary"}
+      mutation: {description: "Classifies a non-bot author on the release branch."}
     - name: classify-missing-branch
-      input: {argv: ["classify", "--author", "octocat"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      input: {argv: ["classify", "--author", "octocat", "--rev", "abc123"], stdin: "", setup: "none"}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: classify-release-kind
       provenance: {source: boundary, ref: "classify requires --head-branch"}
       mutation: {description: "Omits the required --head-branch flag."}
+    - name: classify-head-tamper-ordinary
+      input: {argv: ["classify", "--author", "peasant-labs-releaser[bot]", "--head-branch", "feature/work", "--rev", "SETUP_BASE"], stdin: "", setup: "classify-base"}
+      expected: {exit: 0, stdout: ["kind=ordinary"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "the base config judges the kind, not the head config"}
+      mutation: {description: "Queries a branch the head config maps to release while the base does not."}
     - name: check-config-valid
       input: {argv: ["check-config", "--config", "SETUP/config.yaml"], stdin: "", setup: "config-valid"}
-      expected: {exit: 0, stdout: ["ok=true"], noGate: false}
+      expected: {exit: 0, stdout: ["ok=true"]}
       classification: must-pass
       provenance: {source: requirement, ref: "a valid release config is accepted"}
       mutation: {description: "Uses a minimal valid release config file."}
     - name: check-config-unknown-key
       input: {argv: ["check-config", "--config", "SETUP/bad.yaml"], stdin: "", setup: "config-unknown-key"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 2, stdout: ["error=config-invalid"]}
       classification: must-fail
-      provenance: {source: requirement, ref: "unknown config keys are rejected"}
+      sibling: check-config-valid
+      provenance: {source: requirement, ref: "an invalid release config exits 2 with a typed line"}
       mutation: {description: "Uses a config with an unknown top-level key."}
     - name: check-config-missing-file
       input: {argv: ["check-config", "--config", "SETUP/does-not-exist.yaml"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: check-config-valid
       provenance: {source: boundary, ref: "unreadable config inputs exit 1"}
       mutation: {description: "Points at a config file that does not exist."}
     - name: queue-gate-arm
-      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue-empty"}
-      expected: {exit: 0, stdout: ["gate=arm"], noGate: false}
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "empty.json"}
+      expected: {exit: 0, stdout: ["gate=arm"]}
       classification: must-pass
       provenance: {source: requirement, ref: "an empty queue arms the gate"}
       mutation: {description: "Baseline queue-gate accept path at process level."}
+    - name: queue-gate-hold
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "releasing-ahead.json"}
+      expected: {exit: 0, stdout: ["gate=hold"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a releasing title ahead of the release PR holds the gate"}
+      mutation: {description: "Puts a releasing entry ahead of the release PR."}
+    - name: queue-gate-arm-never-release
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "never-release-ahead.json"}
+      expected: {exit: 0, stdout: ["gate=arm"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a never-release title ahead arms the gate"}
+      mutation: {description: "Puts a docs entry ahead of the release PR."}
+    - name: queue-gate-arm-behind
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "releasing-behind.json"}
+      expected: {exit: 0, stdout: ["gate=arm"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a releasing title behind the release PR arms the gate"}
+      mutation: {description: "Puts the releasing entry behind the release PR position."}
+    - name: queue-gate-hold-unparsable
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "unparsable-ahead.json"}
+      expected: {exit: 0, stdout: ["gate=hold"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an unparsable title ahead holds the gate"}
+      mutation: {description: "Puts an unparsable title ahead of the release PR."}
     - name: queue-gate-malformed
-      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue-malformed"}
-      expected: {exit: 1, stdout: [], noGate: true}
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "malformed.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
       classification: must-fail
+      sibling: queue-gate-arm
       provenance: {source: requirement, ref: "a malformed queue file exits 1 with no gate line"}
       mutation: {description: "Uses truncated JSON, which must not arm or disarm."}
+    - name: queue-gate-null-queue
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "null-queue.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
+      classification: must-fail
+      sibling: queue-gate-arm
+      provenance: {source: requirement, ref: "a null merge queue is a failed read, never an empty queue"}
+      mutation: {description: "Uses a null mergeQueue body."}
+    - name: queue-gate-missing-total
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "missing-total.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
+      classification: must-fail
+      sibling: queue-gate-arm
+      provenance: {source: requirement, ref: "a missing entry total is a failed read"}
+      mutation: {description: "Omits totalCount from the entries object."}
+    - name: queue-gate-count-mismatch
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "count-mismatch.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
+      classification: must-fail
+      sibling: queue-gate-arm
+      provenance: {source: requirement, ref: "a total the nodes do not match is a failed read"}
+      mutation: {description: "Lists one node with totalCount two on a complete page."}
+    - name: queue-gate-errors-array
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "errors-array.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
+      classification: must-fail
+      sibling: queue-gate-arm
+      provenance: {source: requirement, ref: "a GraphQL errors array is a failed read"}
+      mutation: {description: "Carries a GraphQL errors array."}
+    - name: queue-gate-more-than-listed
+      input: {argv: ["queue-gate", "--queue", "SETUP/queue.json", "--release-pr", "9"], stdin: "", setup: "queue", queueFile: "more-than-listed.json"}
+      expected: {exit: 1, stdout: [], absent: ["gate="]}
+      classification: must-fail
+      sibling: queue-gate-arm
+      provenance: {source: requirement, ref: "a cut page with more entries than listed is a failed read"}
+      mutation: {description: "Sets hasNextPage true with fewer nodes than totalCount."}
     - name: queue-gate-missing-queue
       input: {argv: ["queue-gate", "--release-pr", "9"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: queue-gate-arm
       provenance: {source: boundary, ref: "queue-gate requires --queue"}
       mutation: {description: "Omits the required --queue flag."}
     - name: check-title-missing-branch
       input: {argv: ["check-title", "--base", "a", "--head", "b", "--author", "u"], stdin: "feat(x)[minor]: t\n", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
-      provenance: {source: requirement, ref: "check-title gains a required --head-branch"}
+      sibling: check-title-accept
+      provenance: {source: boundary, ref: "check-title requires --head-branch"}
       mutation: {description: "Omits the required --head-branch flag."}
     - name: check-title-accept
       input: {argv: ["check-title", "--base", "SETUP_BASE", "--head", "SETUP_HEAD", "--author", "octocat", "--head-branch", "feature/work"], stdin: "feat(graph)[minor]: add facet\n", setup: "git-basic"}
-      expected: {exit: 0, stdout: ["error="], noGate: false}
+      expected: {exit: 0, stdout: ["error="]}
       classification: must-pass
       provenance: {source: requirement, ref: "a releasing title with no protected change is accepted"}
       mutation: {description: "Runs the built binary in a temp repo with a good title."}
     - name: check-title-reject
       input: {argv: ["check-title", "--base", "SETUP_BASE", "--head", "SETUP_HEAD", "--author", "octocat", "--head-branch", "feature/work"], stdin: "feat(graph): add facet\n", setup: "git-basic"}
-      expected: {exit: 2, stdout: ["error=missing-bump"], noGate: false}
+      expected: {exit: 2, stdout: ["error=missing-bump"]}
       classification: must-fail
+      sibling: check-title-accept
       provenance: {source: requirement, ref: "a title missing its bump bracket exits 2"}
       mutation: {description: "Runs the built binary in a temp repo with a title missing its bracket."}
+    - name: check-workflows-accept
+      input: {argv: ["check-workflows", "--policy", "SETUP/policy.yml", "--dir", "SETUP/workflows"], stdin: "", setup: "workflows-accept"}
+      expected: {exit: 0, stdout: ["ok=true"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "workflows satisfying the policy are accepted"}
+      mutation: {description: "Runs the built binary on a policy with no queue section."}
+    - name: check-workflows-violation
+      input: {argv: ["check-workflows", "--policy", "SETUP/policy.yml", "--dir", "SETUP/workflows"], stdin: "", setup: "workflows-violation"}
+      expected: {exit: 2, stdout: ["error=policy-violation"], stderr: ["required-contexts"]}
+      classification: must-fail
+      sibling: check-workflows-accept
+      provenance: {source: requirement, ref: "a policy violation exits 2 with a typed line and diagnostics"}
+      mutation: {description: "Runs the built binary on workflows missing a required context."}
+    - name: check-workflows-print-required
+      input: {argv: ["check-workflows", "--policy", "SETUP/policy.yml", "--dir", "SETUP/workflows", "--print-required"], stdin: "", setup: "workflows-violation", githubOutput: true}
+      expected: {exit: 0, stdout: ["lib", "title-guard"]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "print-required prints bare sorted contexts without step outputs"}
+      mutation: {description: "Prints the required contexts one per line, sorted, with no GITHUB_OUTPUT append."}
+    - name: check-workflows-missing-dir
+      input: {argv: ["check-workflows", "--policy", "SETUP/policy.yml", "--dir", "SETUP/nowhere"], stdin: "", setup: "policy-only"}
+      expected: {exit: 1, stdout: []}
+      classification: must-fail
+      sibling: check-workflows-accept
+      provenance: {source: boundary, ref: "an unreadable workflows directory exits 1"}
+      mutation: {description: "Points at a workflows directory that does not exist."}
     - name: plan-missing-mode
       input: {argv: ["plan", "--branch", "main"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: plan-accept-open-pr
       provenance: {source: boundary, ref: "plan requires --mode"}
       mutation: {description: "Omits the required --mode flag."}
-    - name: plan-bad-branch-no-fresh
+    - name: plan-unreadable-branch
       input: {argv: ["plan", "--branch", "does-not-exist-xyz", "--mode", "tag"], stdin: "", setup: "git-basic"}
-      expected: {exit: 1, stdout: [], noGate: true}
+      expected: {exit: 1, stdout: [], absent: ["candidate_fresh"]}
       classification: must-fail
-      provenance: {source: requirement, ref: "plan freshness inputs unreadable exit 1 with no candidate_fresh"}
+      sibling: plan-accept-open-pr
+      provenance: {source: boundary, ref: "an unreadable branch exits 1 with no candidate_fresh"}
       mutation: {description: "Plans from a missing branch, which must not print candidate_fresh."}
+    - name: plan-accept-open-pr
+      input: {argv: ["plan", "--branch", "HEAD", "--mode", "tag"], stdin: "", setup: "git-basic"}
+      expected: {exit: 0, stdout: ["action=open-pr", "range_base=v0.1.0", "version_base=v0.1.0", "candidate=", "candidate_fresh=", "level=minor", "breaking=false", "version=0.2.0", "tag=v0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "a pending batch plans open-pr with the full key set"}
+      mutation: {description: "Plans the basic temp repo in tag mode."}
+    - name: plan-bad-subject
+      input: {argv: ["plan", "--branch", "HEAD", "--mode", "tag"], stdin: "", setup: "git-bad-subject"}
+      expected: {exit: 2, stdout: ["error=unknown-type"]}
+      classification: must-fail
+      sibling: plan-accept-open-pr
+      provenance: {source: requirement, ref: "a bad subject fails the whole plan with its code"}
+      mutation: {description: "Plans a temp repo whose tip subject is not in the grammar."}
+    - name: release-pr-write-accept
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write"], stdin: "", setup: "git-basic"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=true", "version=0.2.0", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "writing the release content prints fresh with the version"}
+      mutation: {description: "Writes the release content for the basic temp repo."}
     - name: release-pr-needs-write-or-check
       input: {argv: ["release-pr", "--branch", "main"], stdin: "", setup: "none"}
-      expected: {exit: 1, stdout: [], noGate: false}
+      expected: {exit: 1, stdout: []}
       classification: must-fail
+      sibling: release-pr-write-accept
       provenance: {source: boundary, ref: "release-pr needs exactly one of --write or --check"}
       mutation: {description: "Omits both --write and --check."}

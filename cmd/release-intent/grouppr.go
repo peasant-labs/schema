@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"regexp"
 	"strconv"
 )
@@ -49,14 +48,3 @@ func runGroupPR(args []string) error {
 	}
 	return emitLines([]string{"pr=" + parseGroupRef(ref)})
 }
-
-// groupRefBranch extracts the branch portion of a merge-group ref for tests.
-func groupRefBranch(ref string) string {
-	m := groupRefPattern.FindStringSubmatch(ref)
-	if m == nil {
-		return ""
-	}
-	return m[1]
-}
-
-var _ = fmt.Sprint

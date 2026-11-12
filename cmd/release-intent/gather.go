@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
 )
@@ -30,15 +29,15 @@ func Gather(ctx context.Context, r GitRunner, branch, configPath, floor string, 
 	if err != nil {
 		return intent.Facts{}, intent.Config{}, fmt.Errorf("plan: cannot list tags with prefix %q: %w", cfg.TagPrefix, err)
 	}
-	epoch, err := r.FirstCommitAdding(ctx, configPath)
+	epoch, err := r.FirstCommitAdding(ctx, branch, configPath)
 	if err != nil {
-		return intent.Facts{}, intent.Config{}, fmt.Errorf("plan: cannot find the commit adding %q: %w", configPath, err)
+		return intent.Facts{}, intent.Config{}, fmt.Errorf("plan: cannot find the commit adding %q on %q: %w", configPath, branch, err)
 	}
 	intentCommits := make([]intent.Commit, 0, len(commits))
 	for _, c := range commits {
-		intentCommits = append(intentCommits, intent.Commit{SHA: c.SHA, Subject: c.Subject, ChangesChangelog: c.ChangesChangelog})
+		intentCommits = append(intentCommits, intent.Commit{SHA: c.SHA, Subject: c.Subject, ChangesChangelog: c.ChangesChangelog, Date: c.Date})
 	}
-	base := intent.Facts{Commits: intentCommits, Tags: tags, Epoch: epoch, Floor: floor, Mode: mode, Verdict: verdict, Fresh: map[string]bool{}}
+	base := intent.Facts{Branch: branch, Commits: intentCommits, Tags: tags, Epoch: epoch, Floor: floor, Mode: mode, Verdict: verdict, Fresh: map[string]bool{}}
 	// Find the candidate with a first pass that carries no freshness, then
 	// record freshness for it through Generate. Plan only reads the entry for
 	// the commit it picks, so one entry suffices.
@@ -51,7 +50,7 @@ func Gather(ctx context.Context, r GitRunner, branch, configPath, floor string, 
 	if dec.Candidate == "" {
 		return base, cfg, nil
 	}
-	fresh, ferr := candidateFresh(ctx, r, cfg, commits, tags, epoch, floor, dec.Candidate)
+	fresh, ferr := candidateFresh(ctx, r, cfg, commits, tags, dec, epoch)
 	if ferr != nil {
 		return intent.Facts{}, intent.Config{}, ferr
 	}
@@ -59,108 +58,75 @@ func Gather(ctx context.Context, r GitRunner, branch, configPath, floor string, 
 	return base, cfg, nil
 }
 
+// baseRevForRange returns the revision the release content is generated from:
+// the range-base tag commit, or the epoch commit when the epoch is newer than
+// the range base on the branch history.
+func baseRevForRange(shas []string, tags map[string]string, rangeBaseTag, epoch string) string {
+	index := map[string]int{}
+	for i, sha := range shas {
+		if _, ok := index[sha]; !ok {
+			index[sha] = i
+		}
+	}
+	rangeIdx, rok := index[tags[rangeBaseTag]]
+	epochIdx, eok := index[epoch]
+	if !rok {
+		return epoch
+	}
+	if !eok {
+		return tags[rangeBaseTag]
+	}
+	if epochIdx < rangeIdx {
+		return epoch
+	}
+	return tags[rangeBaseTag]
+}
+
 // candidateFresh compares the candidate's changelog and version fields with
-// what Generate produces for the range ending just before it. Any unreadable
-// input is an error (exit 1, no candidate_fresh), never stale.
-func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits []Commit, tags map[string]string, epoch, floor, candidate string) (bool, error) {
-	idx := -1
-	for i, c := range commits {
-		if c.SHA == candidate {
-			idx = i
-			break
+// what Generate produces for the candidate's own sub-range, which the planner
+// reports in Before. Any unreadable input is an error (exit 1, no
+// candidate_fresh), never stale.
+func candidateFresh(ctx context.Context, r GitRunner, cfg intent.Config, commits []Commit, tags map[string]string, dec intent.Decision, epoch string) (bool, error) {
+	shas := make([]string, 0, len(commits))
+	for _, c := range commits {
+		shas = append(shas, c.SHA)
+	}
+	baseRev := baseRevForRange(shas, tags, dec.RangeBase, epoch)
+	baseData, err := r.ReadFile(ctx, baseRev, cfg.Changelog)
+	if err != nil {
+		var nf *NotFoundError
+		if errors.As(err, &nf) {
+			baseData = nil
+		} else {
+			return false, fmt.Errorf("plan: cannot read changelog %q at base %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, baseRev, err)
 		}
 	}
-	if idx < 0 {
-		return false, fmt.Errorf("plan: cannot find candidate %q in the branch history for the freshness comparison", candidate)
-	}
-	parent := ""
-	if idx+1 < len(commits) {
-		parent = commits[idx+1].SHA
-	}
-	// Sub-range before the candidate, reusing Plan for range, parsing and
-	// arithmetic instead of re-deriving them here.
-	before := append([]intent.Commit(nil), intentCommitsBefore(commits, idx)...)
-	sub, err := intent.Plan(cfg, intent.Facts{Commits: before, Tags: tags, Epoch: epoch, Floor: floor, Mode: intent.ModePlanOnly, Fresh: map[string]bool{}})
-	if err != nil {
-		// The full range already parsed, so a sub-range failure means the
-		// candidate has no generatable base: treat as stale, not a read error.
-		// A genuine read error surfaces below when files are read.
-		_ = err
+	if len(dec.Before.Pending) == 0 {
 		return false, nil
 	}
-	if len(sub.Pending) == 0 || sub.Version == "" || sub.Tag == "" {
-		return false, nil
-	}
-	baseChangelog := ""
-	if parent != "" {
-		data, err := r.ReadFile(ctx, parent, cfg.Changelog)
-		if err != nil {
-			return false, fmt.Errorf("plan: cannot read changelog %q at %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, parent, err)
-		}
-		baseChangelog = string(data)
-	}
-	date := newestPendingDate(commits, idx, sub.Pending)
-	content, err := intent.Generate(cfg, intent.ContentInput{Pending: sub.Pending, BaseChangelog: baseChangelog, Version: sub.Version, Tag: sub.Tag, Date: date})
+	content, err := intent.Generate(cfg, intent.ContentInput{Pending: dec.Before.Pending, BaseChangelog: string(baseData), Version: dec.Before.Version, Tag: dec.Before.Tag, Date: dec.Before.Date})
 	if err != nil {
-		return false, nil
+		return false, fmt.Errorf("plan: cannot render the expected release content for the freshness comparison: %w. A read error is never reported as stale", err)
 	}
-	gotChangelog, err := r.ReadFile(ctx, candidate, cfg.Changelog)
+	gotChangelog, err := r.ReadFile(ctx, dec.Candidate, cfg.Changelog)
 	if err != nil {
-		return false, fmt.Errorf("plan: cannot read changelog %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, candidate, err)
+		return false, fmt.Errorf("plan: cannot read changelog %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", cfg.Changelog, dec.Candidate, err)
 	}
 	if string(gotChangelog) != content.Changelog {
 		return false, nil
 	}
 	for _, vf := range cfg.VersionFiles {
-		data, err := r.ReadFile(ctx, candidate, vf.Path)
+		data, err := r.ReadFile(ctx, dec.Candidate, vf.Path)
 		if err != nil {
-			return false, fmt.Errorf("plan: cannot read version file %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", vf.Path, candidate, err)
+			return false, fmt.Errorf("plan: cannot read version file %q at candidate %q for the freshness comparison: %w. A read error is never reported as stale", vf.Path, dec.Candidate, err)
 		}
-		var obj map[string]any
-		if err := json.Unmarshal(data, &obj); err != nil {
+		val, corrupt := versionFieldValue(data, vf.Field)
+		if corrupt {
 			return false, nil
 		}
-		if v, _ := obj[vf.Field].(string); v != content.Versions[vf.Path] {
+		if v, ok := content.Versions[vf.Path]; !ok || v != val {
 			return false, nil
 		}
 	}
-	_ = tags
 	return true, nil
-}
-
-func intentCommitsBefore(commits []Commit, idx int) []intent.Commit {
-	out := make([]intent.Commit, 0, len(commits)-idx-1)
-	for _, c := range commits[idx+1:] {
-		out = append(out, intent.Commit{SHA: c.SHA, Subject: c.Subject, ChangesChangelog: c.ChangesChangelog})
-	}
-	return out
-}
-
-func newestPendingDate(commits []Commit, idx int, pending []intent.Title) string {
-	// The newest pending subject in commit order carries the date for a dated
-	// heading. Match by subject since titles carry no SHA.
-	bySubject := map[string]int{}
-	for _, t := range pending {
-		bySubject[t.Subject]++
-	}
-	for _, c := range commits[idx+1:] {
-		if c.ChangesChangelog || c.Date == "" {
-			continue
-		}
-		for _, t := range pending {
-			if t.Subject == strings.TrimSpace(trimLandedSuffix(c.Subject)) && bySubject[t.Subject] > 0 {
-				bySubject[t.Subject]--
-				return c.Date
-			}
-		}
-	}
-	return ""
-}
-
-func trimLandedSuffix(s string) string {
-	t := strings.TrimSpace(s)
-	if idx := strings.LastIndex(t, " (#"); idx >= 0 && strings.HasSuffix(t, ")") {
-		t = strings.TrimSpace(t[:idx])
-	}
-	return t
 }

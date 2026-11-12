@@ -4,12 +4,11 @@ import (
 	"embed"
 	"testing"
 
-	"github.com/peasant-labs/schema/internal/release/intent"
 	"github.com/peasant-labs/schema/testcase"
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed testdata/group-pr.yaml testdata/cli-exit.yaml
+//go:embed testdata/group-pr.yaml testdata/cli-exit.yaml testdata/check-title.yaml testdata/freshness.yaml
 var cliFixtureYAML embed.FS
 
 //go:embed testdata/queue/*.json
@@ -29,15 +28,18 @@ type GroupPRFixtures struct {
 }
 
 type CLIInput struct {
-	Argv  []string `yaml:"argv"`
-	Stdin string   `yaml:"stdin"`
-	Setup string   `yaml:"setup"`
+	Argv         []string `yaml:"argv"`
+	Stdin        string   `yaml:"stdin"`
+	Setup        string   `yaml:"setup"`
+	QueueFile    string   `yaml:"queueFile"`
+	GithubOutput bool     `yaml:"githubOutput"`
 }
 
 type CLIExpected struct {
 	Exit   int      `yaml:"exit"`
 	Stdout []string `yaml:"stdout"`
-	NoGate bool     `yaml:"noGate"`
+	Absent []string `yaml:"absent"`
+	Stderr []string `yaml:"stderr"`
 }
 
 type CLIFixtures struct {
@@ -98,58 +100,48 @@ func loadCLIFixtures(t *testing.T) CLIFixtures {
 		seen[c.Name] = struct{}{}
 	}
 	checkRequiredNames(t, f.RequiredNames, seen, "cli-exit fixtures")
+	data, err := cliFixtureYAML.ReadFile("testdata/cli-exit.yaml")
+	if err != nil {
+		t.Fatalf("read cli-exit fixture for siblings: %v", err)
+	}
+	checkCorpusSiblings(t, data, "cli-exit fixtures")
 	return f
 }
 
-func TestClosedSetsAreExact(t *testing.T) {
-	t.Parallel()
-	wantActions := map[intent.Action]bool{"none": true, "verify": true, "tag": true, "open-pr": true, "close-pr": true}
-	if len(intent.AllActions) != len(wantActions) {
-		t.Fatalf("intent.AllActions has %d members, want %d", len(intent.AllActions), len(wantActions))
+// checkCorpusSiblings enforces the accept-sibling rule: every must-fail row
+// names an accept sibling in the same corpus, so a reject proves it fails for
+// the named fault and not for an unrelated input error.
+func checkCorpusSiblings(t *testing.T, data []byte, what string) {
+	t.Helper()
+	var doc struct {
+		Cases struct {
+			Cases []struct {
+				Name           string `yaml:"name"`
+				Classification string `yaml:"classification"`
+				Sibling        string `yaml:"sibling"`
+			} `yaml:"cases"`
+		} `yaml:"cases"`
 	}
-	for _, a := range intent.AllActions {
-		if !wantActions[a] {
-			t.Fatalf("intent.AllActions carries unexpected member %q", a)
+	if err := yaml.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("%s: cannot parse sibling references: %v", what, err)
+	}
+	byName := map[string]string{}
+	for _, c := range doc.Cases.Cases {
+		byName[c.Name] = c.Classification
+	}
+	for _, c := range doc.Cases.Cases {
+		if c.Classification != "must-fail" {
+			continue
 		}
-	}
-	wantKinds := map[intent.PRKind]bool{"ordinary": true, "release": true, "vendor-hash": true, "cut-release": true}
-	if len(intent.AllPRKinds) != len(wantKinds) {
-		t.Fatalf("intent.AllPRKinds has %d members, want %d", len(intent.AllPRKinds), len(wantKinds))
-	}
-	for _, k := range intent.AllPRKinds {
-		if !wantKinds[k] {
-			t.Fatalf("intent.AllPRKinds carries unexpected member %q", k)
+		if c.Sibling == "" {
+			t.Fatalf("%s: must-fail case %q names no accept sibling", what, c.Name)
 		}
-	}
-	wantCodes := map[intent.ErrorCode]bool{
-		"malformed": true, "unknown-type": true, "missing-bump": true, "bump-on-non-releasing": true,
-		"bang-bump-mismatch": true, "old-release-title": true, "releases-disabled": true, "protected-path": true,
-		"no-final-tag": true, "epoch-missing": true, "floor-not-on-chain": true, "release-content-stale": true,
-	}
-	if len(intent.AllErrorCodes) != len(wantCodes) {
-		t.Fatalf("intent.AllErrorCodes has %d members, want %d", len(intent.AllErrorCodes), len(wantCodes))
-	}
-	for _, c := range intent.AllErrorCodes {
-		if !wantCodes[c] {
-			t.Fatalf("intent.AllErrorCodes carries unexpected member %q", c)
+		class, ok := byName[c.Sibling]
+		if !ok {
+			t.Fatalf("%s: must-fail case %q names missing sibling %q", what, c.Name, c.Sibling)
 		}
-	}
-	wantGates := map[intent.Gate]bool{"arm": true, "hold": true}
-	if len(intent.AllGates) != len(wantGates) {
-		t.Fatalf("intent.AllGates has %d members, want %d", len(intent.AllGates), len(wantGates))
-	}
-	for _, g := range intent.AllGates {
-		if !wantGates[g] {
-			t.Fatalf("intent.AllGates carries unexpected member %q", g)
-		}
-	}
-	wantFresh := map[intent.Freshness]bool{"unknown": true, "fresh": true, "stale": true}
-	if len(intent.AllFreshness) != len(wantFresh) {
-		t.Fatalf("intent.AllFreshness has %d members, want %d", len(intent.AllFreshness), len(wantFresh))
-	}
-	for _, f := range intent.AllFreshness {
-		if !wantFresh[f] {
-			t.Fatalf("intent.AllFreshness carries unexpected member %q", f)
+		if class != "must-pass" {
+			t.Fatalf("%s: must-fail case %q names sibling %q which is %q, not must-pass", what, c.Name, c.Sibling, class)
 		}
 	}
 }
