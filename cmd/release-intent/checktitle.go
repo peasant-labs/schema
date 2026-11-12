@@ -114,7 +114,7 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 		cfgData = headData
 		adopting = true
 	}
-	cfg, err := loadConfigBytes(cfgData)
+	cfg, err := intent.ParseConfig(cfgData)
 	if err != nil {
 		return fmt.Errorf("check-title: the base release config %w", err)
 	}
@@ -122,12 +122,10 @@ func checkTitle(ctx context.Context, runner GitRunner, base, head, author, headB
 	if err != nil {
 		return fmt.Errorf("check-title: cannot list tags with prefix %q: %w. Confirm tags are fetched", cfg.TagPrefix, err)
 	}
-	_, ver := highestFinalTag(tags, cfg.TagPrefix)
+	_, version, ok := intent.HighestFinalTag(tags, cfg.TagPrefix)
 	var current intent.SemVer
-	if ver != "" {
-		if sv, serr := intent.ParseSemVer(ver); serr == nil {
-			current = sv
-		}
+	if ok {
+		current = version
 	}
 	if _, perr := intent.ParseTitle(cfg, current, title); perr != nil {
 		return intentErrorToReject(perr)

@@ -18,7 +18,7 @@ func Gather(ctx context.Context, r GitRunner, branch, configPath, floor string, 
 	if err != nil {
 		return intent.Facts{}, intent.Config{}, fmt.Errorf("plan: cannot read release config %q at %q: %w. Confirm the branch has the config file", configPath, branch, err)
 	}
-	cfg, err := loadConfigBytes(cfgData)
+	cfg, err := intent.ParseConfig(cfgData)
 	if err != nil {
 		return intent.Facts{}, intent.Config{}, err
 	}

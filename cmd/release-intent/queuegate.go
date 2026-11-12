@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
-	"strings"
 
 	"github.com/peasant-labs/schema/internal/release/intent"
 )
@@ -86,53 +84,9 @@ func queueCurrent() (intent.SemVer, error) {
 	if err != nil {
 		return "", fmt.Errorf("queue-gate: cannot list tags with prefix %q: %w", cfg.TagPrefix, err)
 	}
-	_, ver := highestFinalTag(tags, cfg.TagPrefix)
-	if ver == "" {
+	_, version, ok := intent.HighestFinalTag(tags, cfg.TagPrefix)
+	if !ok {
 		return "", fmt.Errorf("queue-gate: no final release tag found for the hold rule")
 	}
-	sv, err := intent.ParseSemVer(ver)
-	if err != nil {
-		return "", fmt.Errorf("queue-gate: highest tag version %q does not parse: %w", ver, err)
-	}
-	return sv, nil
-}
-
-// highestFinalTag returns the highest final (no -rcN) tag and its version.
-func highestFinalTag(tags map[string]string, prefix string) (tag, version string) {
-	type tv struct {
-		tag         string
-		version     string
-		maj, mi, pa int
-	}
-	var finals []tv
-	for t := range tags {
-		v, ok := strings.CutPrefix(t, prefix)
-		if !ok {
-			continue
-		}
-		if strings.Contains(v, "-rc") {
-			continue
-		}
-		var maj, mi, pa int
-		if _, err := fmt.Sscanf(v, "%d.%d.%d", &maj, &mi, &pa); err != nil {
-			continue
-		}
-		if _, err := intent.ParseSemVer(v); err != nil {
-			continue
-		}
-		finals = append(finals, tv{t, v, maj, mi, pa})
-	}
-	if len(finals) == 0 {
-		return "", ""
-	}
-	sort.Slice(finals, func(i, j int) bool {
-		if finals[i].maj != finals[j].maj {
-			return finals[i].maj > finals[j].maj
-		}
-		if finals[i].mi != finals[j].mi {
-			return finals[i].mi > finals[j].mi
-		}
-		return finals[i].pa > finals[j].pa
-	})
-	return finals[0].tag, finals[0].version
+	return version, nil
 }
