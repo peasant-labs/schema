@@ -199,9 +199,9 @@ type allowedPush struct {
 // may push for a branch that does not exist.
 func (c *queueChecker) resolvePushes(rule QueueRule) []allowedPush {
 	var allowed []allowedPush
-	seen := map[string]string{}
+	seen := map[intent.PRKind]string{}
 	if rel := c.policy.Queue.ReleaseJob; rel != nil {
-		branch, ok := c.cfg.BotBranches[string(intent.PRKindRelease)]
+		branch, ok := c.cfg.BotBranches[intent.PRKindRelease]
 		if !ok {
 			c.emit(rule, "", rel.Job,
 				"the policy names a release job during merge-queue policy validation, but the release config names no branch for the release kind. Set bot_branches release so the checker can tell the release branch apart")
@@ -210,18 +210,18 @@ func (c *queueChecker) resolvePushes(rule QueueRule) []allowedPush {
 		}
 	}
 	for _, bot := range c.policy.Queue.BotJobs {
-		branch, ok := c.cfg.BotBranches[string(bot.Kind)]
+		branch, ok := c.cfg.BotBranches[bot.Kind]
 		if !ok {
 			c.emit(rule, "", bot.Job,
-				"the policy names bot kind "+quote(string(bot.Kind))+" for job "+quote(bot.Job)+" during merge-queue policy validation, but the release config names no branch for that kind. Add the bot_branches entry so the checker can tell the bot branch apart")
+				"the policy names bot kind "+quote(bot.Kind.String())+" for job "+quote(bot.Job)+" during merge-queue policy validation, but the release config names no branch for that kind. Add the bot_branches entry so the checker can tell the bot branch apart")
 			continue
 		}
-		if owner, dup := seen[string(bot.Kind)]; dup {
+		if owner, dup := seen[bot.Kind]; dup {
 			c.emit(rule, "", bot.Job,
-				"bot kind "+quote(string(bot.Kind))+" is written by "+owner+" and by job "+quote(bot.Job)+" during merge-queue policy validation. Give each bot kind exactly one writer job so two jobs can never push the same branch")
+				"bot kind "+quote(bot.Kind.String())+" is written by "+owner+" and by job "+quote(bot.Job)+" during merge-queue policy validation. Give each bot kind exactly one writer job so two jobs can never push the same branch")
 			continue
 		}
-		seen[string(bot.Kind)] = "job " + quote(bot.Job)
+		seen[bot.Kind] = "job " + quote(bot.Job)
 		allowed = append(allowed, allowedPush{bot.Workflow, bot.Job, branch})
 	}
 	return allowed
