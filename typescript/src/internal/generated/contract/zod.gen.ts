@@ -1020,7 +1020,9 @@ export const zHarness = z.enum([
     'cline',
     'kiro',
     'kiro-cli',
-    'kiro-crew'
+    'kiro-crew',
+    'antigravity-cli',
+    'antigravity-ide'
 ]);
 
 export type Harness = z.infer<typeof zHarness>;

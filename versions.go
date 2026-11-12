@@ -138,7 +138,9 @@ const (
 	// in folded-turn units (additive = minor bump). The same version declares
 	// the segmented transcript reads getTranscriptSegments, getTranscriptSegment
 	// and getTranscriptWindow with the existing transcript types.
-	VillageAPIVersion = "0.39.0"
+	// Bumped to 0.40.0 on 2026-11-12 when Harness gained the separate
+	// antigravity-cli and antigravity-ide identities (additive = minor bump).
+	VillageAPIVersion = "0.40.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -254,7 +256,9 @@ const (
 	// conversationTurnCount and the segment directory gained
 	// totalConversationTurns with the ref conversationTurns span, and every
 	// turnCount was re-documented in folded-turn units (additive = minor bump).
-	PeasantLocalAPIVersion = "0.37.0"
+	// Bumped to 0.38.0 on 2026-11-12 when Harness gained the separate
+	// antigravity-cli and antigravity-ide identities (additive = minor bump).
+	PeasantLocalAPIVersion = "0.38.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -374,5 +378,7 @@ const (
 	// Bumped to 0.49.0 on 2026-11-12 when the catalog gained
 	// ConversationTurnSpan, the conversationTurnCount fields, and the
 	// re-documented folded-turn turnCount fields (additive = minor bump).
-	TypesVersion = "0.49.0"
+	// Bumped to 0.50.0 on 2026-11-12 when Harness gained the separate
+	// antigravity-cli and antigravity-ide identities (additive = minor bump).
+	TypesVersion = "0.50.0"
 )

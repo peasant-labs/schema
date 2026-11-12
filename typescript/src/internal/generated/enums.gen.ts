@@ -615,11 +615,14 @@ export const Harness = Object.freeze({
   Kiro: zHarness.parse("kiro"),
   KiroCLI: zHarness.parse("kiro-cli"),
   KiroCrew: zHarness.parse("kiro-crew"),
+  AntigravityCLI: zHarness.parse("antigravity-cli"),
+  AntigravityIDE: zHarness.parse("antigravity-ide"),
 } as const);
 /**
- * AllHarnesses is the ingestion-supported subset of Harness, not the full
- * canonical set (mirrors types.go's AllHarnesses doc comment). Every Harness
- * member remains individually valid and accepted by isHarness.
+ * AllHarnesses is the declared subset of Harness, not the full
+ * known set. It includes archived Gemini CLI, which has no harvester. Each
+ * Peasant build's adapter registry owns which harnesses it can harvest. Every
+ * Harness member remains individually valid and accepted by isHarness.
  */
 export const AllHarnesses = Object.freeze([Harness.ClaudeCode, Harness.GeminiCLI, Harness.Codex, Harness.OpenCode, Harness.Cursor, Harness.Strike, Harness.Pi]) as readonly Harness[];
 export function isHarness(value: unknown): value is Harness {
