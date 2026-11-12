@@ -195,5 +195,5 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 	collectUniqueNames(t, "current publish verdicts", "cases", names)
 	collectUniqueNames(t, "current publish verdicts", "required_names", fixture.RequiredNames)
 	assertSameStringSet(t, "current publish verdicts", names, fixture.RequiredNames)
-	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build unknown-harness-current"))
+	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build antigravity-cli antigravity-ide antigravity-archived gemini-cli-archived unknown-harness-current"))
 }

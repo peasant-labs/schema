@@ -1,0 +1,39 @@
+required_names:
+  - gemini-cli-retained-for-history
+  - antigravity-removal-planned
+  - declared-harnesses-not-deprecated
+cases:
+  - name: gemini-cli-retained-for-history
+    classification: must-pass
+    provenance: {source: requirement, ref: HarnessGeminiCLI}
+    mutation: {description: Keep the archived value without marking it for removal.}
+    input: {symbol: HarnessGeminiCLI}
+    expected:
+      contains:
+        - "archived: retained for history, never removed"
+        - Antigravity
+        - "No harvester"
+      excludes: ["Deprecated:"]
+  - name: antigravity-removal-planned
+    classification: must-pass
+    provenance: {source: requirement, ref: "https://github.com/peasant-labs/schema/issues/232"}
+    mutation: {description: Mark the archived predecessor for a future removal.}
+    input: {symbol: HarnessAntigravity}
+    expected:
+      contains:
+        - archived
+        - "Deprecated:"
+        - HarnessAntigravityCLI
+        - HarnessAntigravityIDE
+        - "https://github.com/peasant-labs/schema/issues/232"
+  - name: declared-harnesses-not-deprecated
+    classification: must-pass
+    provenance: {source: requirement, ref: AllHarnesses}
+    mutation: {description: Keep the declared inventory without promising harvestability.}
+    input: {symbol: AllHarnesses}
+    expected:
+      contains:
+        - declared set
+        - archived
+        - adapter registry
+      excludes: ["Deprecated:"]

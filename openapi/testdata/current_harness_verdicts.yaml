@@ -1,9 +1,25 @@
-required_names: [grok-build, unknown-harness-current]
+required_names: [grok-build, antigravity-cli, antigravity-ide, antigravity-archived, gemini-cli-archived, unknown-harness-current]
 cases:
   - name: grok-build
     body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"grok-build","model":"claude-opus-4-6"}}'
     accepts: true
     harness: grok-build
+  - name: antigravity-cli
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"antigravity-cli","model":"claude-opus-4-6"}}'
+    accepts: true
+    harness: antigravity-cli
+  - name: antigravity-ide
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"antigravity-ide","model":"claude-opus-4-6"}}'
+    accepts: true
+    harness: antigravity-ide
+  - name: antigravity-archived
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"antigravity","model":"claude-opus-4-6"}}'
+    accepts: true
+    harness: antigravity
+  - name: gemini-cli-archived
+    body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"gemini-cli","model":"claude-opus-4-6"}}'
+    accepts: true
+    harness: gemini-cli
   - name: unknown-harness-current
     body: '{"contentHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","model":{"harness":"not-a-harness","model":"claude-opus-4-6"}}'
     accepts: false

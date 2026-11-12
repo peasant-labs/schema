@@ -189,11 +189,11 @@ function renderEnums(openapi, catalog) {
     const renderedMembers = members.map((member) => `  ${member.name}: z${enumCase.name}.parse(${JSON.stringify(member.value)}),`).join("\n");
     // Every other generated All* export is the complete member list for its
     // enum; when all_values is a proper subset of members (today, only
-    // Harness: AllHarnesses is the ingestion-supported subset, mirroring Go's
-    // own doc comment on the same asymmetry in types.go), say so here too, so
+    // Harness: AllHarnesses is the declared subset, mirroring Go's own doc
+    // comment on the same asymmetry in types.go), say so here too, so
     // a TypeScript-only reader does not assume All* is always exhaustive.
     const allDoc = allMembers.length < members.length
-      ? `/**\n * ${enumCase.all_name} is the ingestion-supported subset of ${enumCase.name}, not the full\n * canonical set (mirrors types.go's AllHarnesses doc comment). Every ${enumCase.name}\n * member remains individually valid and accepted by is${enumCase.name}.\n */\n`
+      ? `/**\n * ${enumCase.all_name} is the declared subset of ${enumCase.name}, not the full\n * known set. It includes archived Gemini CLI, which has no harvester. Each\n * Peasant build's adapter registry owns which harnesses it can harvest. Every\n * ${enumCase.name} member remains individually valid and accepted by is${enumCase.name}.\n */\n`
       : "";
     blocks.push(`export type ${enumCase.name} = ${enumCase.name}Contract;\nexport const ${enumCase.name} = Object.freeze({\n${renderedMembers}\n} as const);\n${allDoc}export const ${enumCase.all_name} = Object.freeze([${allMembers.join(", ")}]) as readonly ${enumCase.name}[];\nexport function is${enumCase.name}(value: unknown): value is ${enumCase.name} {\n  return z${enumCase.name}.safeParse(value).success;\n}`);
   }

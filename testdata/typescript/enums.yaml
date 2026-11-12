@@ -233,6 +233,8 @@ enums:
       - {name: Kiro, value: "kiro"}
       - {name: KiroCLI, value: "kiro-cli"}
       - {name: KiroCrew, value: "kiro-crew"}
+      - {name: AntigravityCLI, value: "antigravity-cli"}
+      - {name: AntigravityIDE, value: "antigravity-ide"}
     all_values: ["claude-code", "gemini-cli", "codex", "opencode", "cursor", "strike", "pi"]
   - name: InsightKind
     all_name: AllInsightKinds
