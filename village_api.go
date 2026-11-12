@@ -474,6 +474,7 @@ type VillageCollectiveMember struct {
 type VillageCollectiveTranscriptStats struct {
 	TotalTranscripts int32 `json:"total_transcripts"`
 	ContributorCount int32 `json:"contributor_count"`
+	// TotalTurns sums displayed_turn_count over the collective's transcripts.
 	TotalTurns       int64 `json:"total_turns"`
 	TotalDurationMs  int64 `json:"total_duration_ms"`
 	TotalTokens      int64 `json:"total_tokens"`
@@ -521,7 +522,13 @@ type VillageTranscript struct {
 	HarnessVersion  *string                     `json:"harness_version"`
 	SessionStart    *time.Time                  `json:"session_start"`
 	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	// ConversationTurnCount is the number of conversation turns as published;
+	// null means unmeasured.
+	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
+	// when measured, else turn_count; resolved by the server.
+	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	TokenCount      *int32                      `json:"token_count"`
 	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
 	SchemaVersion   string                      `json:"schema_version"`
@@ -788,7 +795,13 @@ type VillageCollectiveTranscript struct {
 	HarnessVersion  *string                     `json:"harness_version"`
 	SessionStart    *time.Time                  `json:"session_start"`
 	SessionEnd      *time.Time                  `json:"session_end"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	// ConversationTurnCount is the number of conversation turns as published;
+	// null means unmeasured.
+	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
+	// when measured, else turn_count; resolved by the server.
+	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	TokenCount      *int32                      `json:"token_count"`
 	BlobSizeBytes   *int64                      `json:"blob_size_bytes"`
 	SchemaVersion   string                      `json:"schema_version"`
@@ -959,7 +972,13 @@ type VillageUserCollectiveShare struct {
 	ModelName       *string                     `json:"model_name"`
 	Visibility      VillageTranscriptVisibility `json:"visibility"`
 	PublishedAt     time.Time                   `json:"published_at"`
-	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount       *int32                      `json:"turn_count" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count. As the publishing client sent it; clients older than this contract sent other units."`
+	// ConversationTurnCount is the number of conversation turns as published;
+	// null means unmeasured.
+	ConversationTurnCount *int64 `json:"conversation_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// DisplayedTurnCount is the count a reader is shown: conversation_turn_count
+	// when measured, else turn_count; resolved by the server.
+	DisplayedTurnCount *int64 `json:"displayed_turn_count,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	TokensIn        *int64                      `json:"tokens_in"`
 	TokensOut       *int64                      `json:"tokens_out"`
 	Owner           VillagePublicOwner          `json:"owner"`

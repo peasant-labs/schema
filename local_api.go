@@ -18,6 +18,7 @@ type DashboardPayload struct {
 	TotalTokens        int             `json:"totalTokens"`
 	AvgDurationMins    float64         `json:"avgDurationMins"`
 	HarnessBreakdown   map[Harness]int `json:"harnessBreakdown"`
+	// AvgTurnsPerSession is the mean conversationTurnCount per session.
 	AvgTurnsPerSession float64         `json:"avgTurnsPerSession"`
 	AcceptanceRate     float64         `json:"acceptanceRate"`
 }
@@ -196,8 +197,13 @@ type SessionSummary struct {
 	StartTime            time.Time `json:"startTime"`
 	DurationMins         float64   `json:"durationMins"`
 	TotalTokens          int       `json:"totalTokens"`
-	TurnCount            int       `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int       `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64    `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64    `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int       `json:"toolCallCount"`
 	Project              string    `json:"project,omitempty"`
 	// ProjectHash is the opaque project identifier (projects.project_hash).
@@ -282,9 +288,14 @@ type LocalSyncSummary struct {
 	StartTime            string      `json:"startTime"`
 	DurationMs           int64       `json:"durationMs"`
 	TotalTokens          int         `json:"totalTokens"`
-	TurnCount            int         `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int         `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	Model                string      `json:"model"`
 	InputSubmissionCount *int64      `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64      `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	SyncStatus           SyncStatus  `json:"syncStatus"`
 	// HoldReason says why a held row waits. Only a held row carries one.
 	HoldReason SyncHoldReason `json:"holdReason,omitempty"`
@@ -583,8 +594,13 @@ type SessionDetailPayload struct {
 	TotalTokens          int                 `json:"totalTokens"`
 	TokensIn             int                 `json:"tokensIn"`
 	TokensOut            int                 `json:"tokensOut"`
-	TurnCount            int                 `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount            int                 `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64              `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64              `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int                 `json:"toolCallCount"`
 	Turns                []TurnDetail        `json:"turns"`
 	// Optional fields — populated when backend has the data.
@@ -690,6 +706,12 @@ type TranscriptSegmentDirectory struct {
 	// TotalTurns is the number of turns the session's main partition holds. It is
 	// a count, never an ordinal: no position is derived from it.
 	TotalTurns int `json:"totalTurns" minimum:"0" maximum:"9007199254740991"`
+	// TotalConversationTurns is the number of conversation turns in the session's
+	// main partition (IsConversationTurn). It is the total a position is stated
+	// against, and the whole-session value on every page of refs. A producer that
+	// cannot vouch for its position data omits it with every ref's
+	// conversationTurns. Absence is never zero.
+	TotalConversationTurns *int `json:"totalConversationTurns,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// TotalSegments is the true number of segments, even when this read serves one
 	// page of them.
 	TotalSegments int                    `json:"totalSegments" minimum:"0" maximum:"9007199254740991"`
@@ -709,6 +731,19 @@ type TranscriptSegmentRef struct {
 	FirstTurn  int `json:"firstTurn" minimum:"0" maximum:"9007199254740991"`
 	LastTurn   int `json:"lastTurn" minimum:"0" maximum:"9007199254740991"`
 	ByteLength int `json:"byteLength" minimum:"0" maximum:"9007199254740991"`
+	// ConversationTurns is where this segment sits in the session's conversation
+	// turns. No arithmetic converts firstTurn or lastTurn into it.
+	ConversationTurns *ConversationTurnSpan `json:"conversationTurns,omitempty" nullable:"false"`
+}
+
+// ConversationTurnSpan is a pair of counts, never a turn identity. A reader's
+// range for the segment is Before+1 through Before+Count.
+type ConversationTurnSpan struct {
+	// Before is the number of conversation turns in every earlier segment of
+	// the session, including segments on earlier directory pages. It starts at 0.
+	Before int `json:"before" minimum:"0" maximum:"9007199254740991"`
+	// Count is the number of conversation turns in this segment. It may be 0.
+	Count int `json:"count" minimum:"0" maximum:"9007199254740991"`
 }
 
 // Validate checks the directory's ordering, extent, and page cap. The refs must
@@ -777,6 +812,48 @@ func (d TranscriptSegmentDirectory) Validate() error {
 		}
 		if i > 0 && ref.FirstTurn <= d.Segments[i-1].LastTurn {
 			return fmt.Errorf("%ssegment %d starts at turn %d, not after segment %d ending at %d; segment ranges must ascend without overlap or a turn would be served twice", where, ref.Index, ref.FirstTurn, d.Segments[i-1].Index, d.Segments[i-1].LastTurn)
+		}
+	}
+	if err := validateDirectoryConversationTurns(d, where); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateDirectoryConversationTurns(d TranscriptSegmentDirectory, where string) error {
+	if d.TotalConversationTurns != nil && *d.TotalConversationTurns < 0 {
+		return fmt.Errorf("%stotalConversationTurns is %d; a reader would print a negative total beside every position; emit the count of conversation turns or omit the field", where, *d.TotalConversationTurns)
+	}
+	for _, ref := range d.Segments {
+		if ref.ConversationTurns == nil {
+			continue
+		}
+		span := ref.ConversationTurns
+		if span.Before < 0 || span.Count < 0 {
+			return fmt.Errorf("%ssegment %d declares conversationTurns {before: %d, count: %d}; both are counts and cannot be negative, or a reader would print an impossible range; emit non-negative counts or omit conversationTurns on this ref", where, ref.Index, span.Before, span.Count)
+		}
+	}
+	if d.TotalConversationTurns != nil {
+		total := int64(*d.TotalConversationTurns)
+		for _, ref := range d.Segments {
+			if ref.ConversationTurns == nil {
+				continue
+			}
+			end := int64(ref.ConversationTurns.Before) + int64(ref.ConversationTurns.Count)
+			if end > total {
+				return fmt.Errorf("%ssegment %d ends at conversation turn %d, past totalConversationTurns %d; a reader would print a position larger than the total; emit before + count <= totalConversationTurns or omit the position fields", where, ref.Index, end, total)
+			}
+		}
+	}
+	for i := 1; i < len(d.Segments); i++ {
+		prev := d.Segments[i-1].ConversationTurns
+		curr := d.Segments[i].ConversationTurns
+		if prev == nil || curr == nil {
+			continue
+		}
+		want := int64(prev.Before) + int64(prev.Count)
+		if int64(curr.Before) != want {
+			return fmt.Errorf("%ssegment %d declares %d conversation turns before it, but segment %d ends at %d; a turn would be numbered twice or skipped; emit before equal to the previous segment's before + count, or omit the position fields", where, d.Segments[i].Index, curr.Before, d.Segments[i-1].Index, want)
 		}
 	}
 	return nil
@@ -1009,8 +1086,13 @@ type SessionDetailHeader struct {
 	TotalTokens          int                   `json:"totalTokens"`
 	TokensIn             int                   `json:"tokensIn"`
 	TokensOut            int                   `json:"tokensOut"`
-	TurnCount            int                   `json:"turnCount"`
+	TurnCount            int                   `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64                `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64                `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int                   `json:"toolCallCount"`
 	Source               string                `json:"source,omitempty"`
 	Status               string                `json:"status,omitempty"`
@@ -1069,6 +1151,7 @@ func (h SessionDetailHeader) metadataPayload() SessionDetailPayload {
 		TokensOut:            h.TokensOut,
 		TurnCount:            h.TurnCount,
 		InputSubmissionCount: h.InputSubmissionCount,
+		ConversationTurnCount: h.ConversationTurnCount,
 		ToolCallCount:        h.ToolCallCount,
 		Source:               h.Source,
 		Status:               h.Status,
@@ -1147,7 +1230,12 @@ type QualitySession struct {
 	TotalTokens     int     `json:"totalTokens"`
 	InputTokens     int     `json:"inputTokens"`
 	OutputTokens    int     `json:"outputTokens"`
-	TurnCount       int     `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount       int     `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64 `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCalls       int     `json:"toolCalls"`
 	DurationMinutes float64 `json:"durationMinutes"`
 	// v2 fields -- zero-valued until implemented.
@@ -1279,10 +1367,11 @@ type MedianP90 struct {
 
 // AnalyticsSessionStats is the analytics aggregate over the library. It is not
 // the ingest SessionStats: the name keeps the two distinct in one package.
+// TurnCount is the median of conversationTurnCount over the library.
 type AnalyticsSessionStats struct {
 	DurationMins  MedianP90 `json:"durationMins"`
 	TotalTokens   MedianP90 `json:"totalTokens"`
-	TurnCount     MedianP90 `json:"turnCount"`
+	TurnCount     MedianP90 `json:"turnCount" description:"Median conversationTurnCount over the library."`
 	ToolCallCount MedianP90 `json:"toolCallCount"`
 }
 
@@ -1470,7 +1559,7 @@ type WalkthroughTrail struct {
 	SessionID  string            `json:"sessionId"`
 	Title      string            `json:"title"`
 	Date       string            `json:"date"`
-	TurnCount  int               `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. Every count surface reports this same number; it is never a raw harness record count."`
+	TurnCount  int               `json:"turnCount" description:"Trail size as the producer computes it; not a session turn count."`
 	Steps      []WalkthroughStep `json:"steps"`
 	IsCoherent bool              `json:"isCoherent"` // true if linear path, false if scattered
 }

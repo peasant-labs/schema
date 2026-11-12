@@ -168,8 +168,13 @@ type SessionStats struct {
 	// through detail, export, and publication, so every count surface reports
 	// the same number. It is never the raw harness record count
 	// (session_captured_stats.turn_count).
-	TurnCount            int    `json:"turnCount" description:"Conversation turns: projected turns whose role is not system. The producer computes it once while indexing and carries it through detail, export, and publication; it is never a raw harness record count."`
+	TurnCount            int    `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64 `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
+	// ConversationTurnCount is the number of conversation turns in the session's
+	// main partition (IsConversationTurn): the count a reader is shown. Absent
+	// means unmeasured: a producer or publication older than this field. It
+	// equals the segment directory's totalConversationTurns at the same revision.
+	ConversationTurnCount *int64 `json:"conversationTurnCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	ToolCallCount        int    `json:"toolCallCount"`
 	SubagentCount        int    `json:"subagentCount"`
 	DurationMs           int64  `json:"durationMs"`
@@ -306,6 +311,15 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 func ValidateInputSubmissionCount(value *int64, path string) error {
 	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
 		return fmt.Errorf("input submission count validation failed at schema.ValidateInputSubmissionCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
+	}
+	return nil
+}
+
+// ValidateConversationTurnCount preserves unknown (nil) separately from measured
+// zero and limits present values to the exact integer range shared with JS.
+func ValidateConversationTurnCount(value *int64, path string) error {
+	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
+		return fmt.Errorf("conversation turn count validation failed at schema.ValidateConversationTurnCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
 	}
 	return nil
 }

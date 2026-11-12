@@ -131,7 +131,12 @@ const (
 	// and its ordered text/image part and image-part evidence, together with
 	// the content_parts_v1 content capability (additive = minor bump).
 	// 0.38.0 adds known harness identities.
-	VillageAPIVersion = "0.38.0"
+	// Bumped to 0.39.0 on 2026-11-12 when the session and village row types
+	// gained the optional conversationTurnCount and the village rows gained
+	// displayed_turn_count, the segment directory gained totalConversationTurns
+	// and the ref gained conversationTurns, and every turnCount was re-documented
+	// in folded-turn units (additive = minor bump).
+	VillageAPIVersion = "0.39.0"
 	// PeasantLocalAPIVersion is the info.version of the local dashboard API spec.
 	// Bumped to 0.2.0 when the Map/Review/Search surface was added (8 additive ops
 	// + FrictionCluster = minor bump). Bumped to 0.3.0 when the project Git
@@ -243,7 +248,11 @@ const (
 	// four kickstart reads and the settings read declared the host refusal,
 	// and the 403 on every write names both of its codes (additive statuses,
 	// descriptions and a field on a closed response = minor bump).
-	PeasantLocalAPIVersion = "0.36.0"
+	// Bumped to 0.37.0 on 2026-11-12 when the session types gained the optional
+	// conversationTurnCount and the segment directory gained
+	// totalConversationTurns with the ref conversationTurns span, and every
+	// turnCount was re-documented in folded-turn units (additive = minor bump).
+	PeasantLocalAPIVersion = "0.37.0"
 	// TypesVersion is the info.version of the types spec (the foundational shared
 	// domain types catalog; formerly "shared-types").
 	// Bumped to 0.2.0 when the catalog became the comprehensive canonical
@@ -360,5 +369,8 @@ const (
 	// Bumped to 0.48.0 on 2026-11-11 when LocalKickstartErrorCode and
 	// LocalKickstartErrorResponse entered the catalog and LocalKickstartScan
 	// gained the optional notice (additive = minor bump).
-	TypesVersion = "0.48.0"
+	// Bumped to 0.49.0 on 2026-11-12 when the catalog gained
+	// ConversationTurnSpan, the conversationTurnCount fields, and the
+	// re-documented folded-turn turnCount fields (additive = minor bump).
+	TypesVersion = "0.49.0"
 )

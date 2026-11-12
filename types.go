@@ -675,6 +675,39 @@ var AllEntryTypes = []EntryType{
 	EntryTypeImage,
 }
 
+// conversationTurnKinds is the contract-owned allowed list behind
+// IsConversationTurn: the (role, entry type) pairs that count as a
+// conversation turn. A role or entry type added later does not count until it
+// is listed here. The map is built once; the predicate is the only export.
+var conversationTurnKinds = map[Role]map[EntryType]bool{
+	RoleUser: {
+		EntryTypeText:  true,
+		EntryTypeImage: true,
+	},
+	RoleAssistant: {
+		EntryTypeText:  true,
+		EntryTypeImage: true,
+	},
+}
+
+// IsConversationTurn reports whether a folded turn is a conversation turn: it
+// is a top-level entry (depth 0) and its (role, entryType) is one of
+// (user, text), (user, image), (assistant, text) or (assistant, image). It is the
+// one definition behind every conversationTurnCount and ConversationTurnSpan.
+// A role or entry type added later does not count until it is listed. It never
+// reads content: a blank text entry and a harness notice typed as user text
+// both count.
+func IsConversationTurn(role Role, entryType EntryType, depth int) bool {
+	if depth != 0 {
+		return false
+	}
+	allowed, ok := conversationTurnKinds[role]
+	if !ok {
+		return false
+	}
+	return allowed[entryType]
+}
+
 // JSONSchema implements jsonschema.Exposer.
 func (EntryType) JSONSchema() (jsonschema.Schema, error) {
 	s := jsonschema.Schema{}
