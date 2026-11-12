@@ -32,14 +32,23 @@ func LoadConfig(path string) (Config, error) {
 			"pass --config for a readable .github/release-intent.yaml, or add the file from the plan's shape",
 		)
 	}
+	return ParseConfig(data)
+}
+
+// ParseConfig parses and validates one repo's release-intent file from its
+// bytes, with the same strict decoding and value checks LoadConfig applies
+// to a path. LoadConfig reads the file and calls this; callers holding the
+// file's bytes from another revision, such as a git object, call this
+// directly.
+func ParseConfig(data []byte) (Config, error) {
 	decoder := yaml.NewDecoder(bytes.NewReader(data))
 	decoder.KnownFields(true)
 	var cfg Config
 	if err := decoder.Decode(&cfg); err != nil {
 		return Config{}, inputError(
-			"cannot parse release config "+strconv.Quote(path)+": "+err.Error(),
+			"cannot parse release config bytes: "+err.Error(),
 			"the config is strict YAML with a fixed key set",
-			"intent.LoadConfig",
+			"intent.ParseConfig",
 			"loading the release config",
 			"no title, plan, or gate can be judged without the repo's contract",
 			"fix the YAML syntax or the unknown key the message names",
@@ -49,32 +58,32 @@ func LoadConfig(path string) (Config, error) {
 	if err := decoder.Decode(&trailing); err != io.EOF {
 		if err != nil {
 			return Config{}, inputError(
-				"cannot parse release config "+strconv.Quote(path)+": "+err.Error(),
+				"cannot parse release config bytes: "+err.Error(),
 				"the config is one YAML document",
-				"intent.LoadConfig",
+				"intent.ParseConfig",
 				"loading the release config",
 				"no title, plan, or gate can be judged without the repo's contract",
-				"keep a single document in the file",
+				"keep a single document in the config",
 			)
 		}
 		return Config{}, inputError(
-			"release config "+strconv.Quote(path)+" holds more than one document",
+			"release config bytes hold more than one document",
 			"the config is one YAML document",
-			"intent.LoadConfig",
+			"intent.ParseConfig",
 			"loading the release config",
 			"no title, plan, or gate can be judged without the repo's contract",
-			"keep a single document in the file",
+			"keep a single document in the config",
 		)
 	}
-	if err := checkConfig(cfg, path); err != nil {
+	if err := checkConfig(cfg, "release config bytes, parsed by intent.ParseConfig"); err != nil {
 		return Config{}, err
 	}
 	return cfg, nil
 }
 
-// checkConfig validates the loaded values beyond their YAML shape.
-func checkConfig(cfg Config, path string) error {
-	where := "release config " + strconv.Quote(path) + ", loaded by intent.LoadConfig"
+// checkConfig validates the loaded values beyond their YAML shape. where
+// names the config under check for the error message.
+func checkConfig(cfg Config, where string) error {
 	fail := func(what, why, fix string) error {
 		return inputError(what, why, where, "validating the release config",
 			"no title, plan, or gate can be judged without a valid contract", fix)

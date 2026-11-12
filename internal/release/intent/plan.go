@@ -27,6 +27,30 @@ func splitReleaseTag(prefix, tag string) (SemVer, bool) {
 	return v, true
 }
 
+// HighestFinalTag returns the highest final release tag in tags: a tag the
+// prefix opens whose rest parses as a bare X.Y.Z value. Release candidates
+// and unrelated tags, such as a bare word with the prefix or another tool's
+// namespaced tag, never count. It is the one rule for the version base;
+// Plan uses it so both serve the same answer.
+func HighestFinalTag(tags map[string]string, prefix string) (tag string, version SemVer, ok bool) {
+	for name := range tags {
+		v, isRelease := splitReleaseTag(prefix, name)
+		if !isRelease {
+			continue
+		}
+		if !ok {
+			tag, version, ok = name, v, true
+			continue
+		}
+		newer, err := compareSemVer(v, version)
+		if err != nil || newer <= 0 {
+			continue
+		}
+		tag, version = name, v
+	}
+	return tag, version, ok
+}
+
 // planError builds a typed planner rejection.
 func planError(code ErrorCode, what, why, means, fix string) *Error {
 	return &Error{
@@ -47,33 +71,15 @@ func planError(code ErrorCode, what, why, means, fix string) *Error {
 // was recorded for the candidate.
 func Plan(cfg Config, facts Facts) (Decision, error) {
 	tagsBySHA := map[string][]SemVer{}
-	versionBase := SemVer("")
-	versionBaseTag := ""
 	for tag, sha := range facts.Tags {
 		v, ok := splitReleaseTag(cfg.TagPrefix, tag)
 		if !ok {
 			continue
 		}
 		tagsBySHA[sha] = append(tagsBySHA[sha], v)
-		if versionBase == "" {
-			versionBase = v
-			versionBaseTag = tag
-			continue
-		}
-		newer, err := compareSemVer(v, versionBase)
-		if err != nil {
-			return Decision{}, planError(ErrNoFinalTag,
-				"release tag "+quote(tag)+" does not parse as a version",
-				"only final tags base arithmetic, and every one must compare",
-				"no release action can be planned from these tags",
-				"retire the bad tag; tags are append-only and a replacement takes the next number")
-		}
-		if newer > 0 {
-			versionBase = v
-			versionBaseTag = tag
-		}
 	}
-	if versionBase == "" {
+	versionBaseTag, versionBase, found := HighestFinalTag(facts.Tags, cfg.TagPrefix)
+	if !found {
 		return Decision{}, planError(ErrNoFinalTag,
 			"no final release tag in the repository",
 			"arithmetic needs a base, and only final tags base it",
