@@ -53,7 +53,7 @@ func runQueueGate(args []string) error {
 	if err != nil {
 		return rejectAs("queue-gate", err)
 	}
-	cfg, err := loadConfig("queue-gate", DefaultConfigPath, "")
+	cfg, err := loadConfig("queue-gate", DefaultConfigPath)
 	if err != nil {
 		return err
 	}

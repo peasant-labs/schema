@@ -4,6 +4,7 @@ required_names:
   - pr-behind-base-passes
   - scripts-only-after-release-passes
   - version-field-edit-rejected
+  - version-field-removed-rejected
   - group-shaped-base-passes
   - ordinary-scripts-edit-accepted
 
@@ -42,6 +43,13 @@ cases:
       sibling: scripts-only-after-release-passes
       provenance: {source: requirement, ref: "a version field edit by a non-release PR is rejected"}
       mutation: {description: "Bumps the protected version field in the head."}
+    - name: version-field-removed-rejected
+      input: {title: "feat(graph)[minor]: add facet", author: "octocat", headBranch: "feature/work", setup: "version-field-removed"}
+      expected: {exit: 2, code: "protected-path", message: "has no top-level field", stdout: []}
+      classification: must-fail
+      sibling: ordinary-scripts-edit-accepted
+      provenance: {source: requirement, ref: "a removed protected field names the exact fault"}
+      mutation: {description: "Removes the version field from the version file in the head."}
     - name: group-shaped-base-passes
       input: {title: "feat(b)[minor]: entry b", author: "octocat", headBranch: "queue-b", setup: "group-shaped-base"}
       expected: {exit: 0, code: "", stdout: ["error="]}

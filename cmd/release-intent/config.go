@@ -36,7 +36,7 @@ func runCheckConfig(args []string) error {
 			return usageErr("unknown flag %q for check-config: expected --config F (got %q; usage: release-intent check-config [--config F])", args[i], args[i])
 		}
 	}
-	if _, err := loadConfig("check-config", path, ""); err != nil {
+	if _, err := loadConfig("check-config", path); err != nil {
 		return err
 	}
 	return emitLines([]string{"ok=true"})
@@ -45,14 +45,14 @@ func runCheckConfig(args []string) error {
 // loadConfig reads one working-tree release config through the contract
 // package: a read failure stays a plain error for exit 1, a parse failure is
 // the typed config-invalid rejection for exit 2.
-func loadConfig(subcommand, path, rev string) (intent.Config, error) {
+func loadConfig(subcommand, path string) (intent.Config, error) {
 	cfg, err := intent.LoadConfig(path)
 	if err != nil {
 		var ie *intent.Error
 		if errors.As(err, &ie) {
 			return intent.Config{}, rejectAs(subcommand, err)
 		}
-		return intent.Config{}, configReadError(path, rev, err)
+		return intent.Config{}, configReadError(path, "", err)
 	}
 	return cfg, nil
 }
