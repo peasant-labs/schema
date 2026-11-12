@@ -1,0 +1,208 @@
+# Title grammar corpus: every accept and reject of intent.ParseTitle.
+# required_names is the deletion guard: every case is named there, so a
+# dropped case reddens the suite.
+required_names:
+  - feat-minor-with-scope
+  - fix-patch-no-scope
+  - refactor-no-bracket
+  - refactor-with-patch
+  - release-patch
+  - duplicate-scopes-allowed
+  - deps-scope-accepted
+  - breaking-below-1-minor
+  - breaking-from-1-major
+  - landed-suffix-sets-pr
+  - no-bracket-in-quiet-repo
+  - revert-with-patch
+  - missing-bump
+  - bump-on-non-releasing
+  - bang-with-patch-below-1
+  - bang-major-below-1
+  - major-without-bang-below-1
+  - major-without-bang-from-1
+  - bang-minor-from-1
+  - unknown-type
+  - old-release-form
+  - malformed-no-separator
+  - malformed-empty-subject
+  - malformed-revert-button
+  - malformed-uppercase-scope
+  - malformed-space-in-scopes
+  - malformed-empty-parens
+  - malformed-bad-bracket
+  - releases-disabled
+cases:
+  - name: feat-minor-with-scope
+    input: {title: "feat(graph)[minor]: add a group facet", current: "0.0.66", releases: true}
+    expected: {type: "feat", scopes: ["graph"], breaking: false, level: "minor", subject: "add a group facet", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a releasing feat with a scope and a level parses"}
+    mutation: {description: "the canonical releasing title"}
+  - name: fix-patch-no-scope
+    input: {title: "fix[patch]: typo in the empty state", current: "0.0.66", releases: true}
+    expected: {type: "fix", scopes: [], breaking: false, level: "patch", subject: "typo in the empty state", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a bracket needs no scope"}
+    mutation: {description: "dropped the scope list from a releasing title"}
+  - name: refactor-no-bracket
+    input: {title: "refactor(store): split the reader", current: "0.0.66", releases: true}
+    expected: {type: "refactor", scopes: ["store"], breaking: false, level: "none", subject: "split the reader", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a may-release type without a bracket releases nothing"}
+    mutation: {description: "omitted the optional bracket"}
+  - name: refactor-with-patch
+    input: {title: "refactor(store)[patch]: split the reader", current: "0.0.66", releases: true}
+    expected: {type: "refactor", scopes: ["store"], breaking: false, level: "patch", subject: "split the reader", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a may-release type with a bracket releases"}
+    mutation: {description: "added the optional bracket to a may-release type"}
+  - name: release-patch
+    input: {title: "release[patch]: publish the pending dependency updates", current: "0.0.66", releases: true}
+    expected: {type: "release", scopes: [], breaking: false, level: "patch", subject: "publish the pending dependency updates", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: release is an author-usable releasing type"}
+    mutation: {description: "used the release type to force a release"}
+  - name: duplicate-scopes-allowed
+    input: {title: "feat(ui,ui)[minor]: tidy the list", current: "0.0.66", releases: true}
+    expected: {type: "feat", scopes: ["ui", "ui"], breaking: false, level: "minor", subject: "tidy the list", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: duplicate scopes pass"}
+    mutation: {description: "repeated a scope"}
+  - name: deps-scope-accepted
+    input: {title: "feat(deps)[patch]: bump the lockfile", current: "0.0.66", releases: true}
+    expected: {type: "feat", scopes: ["deps"], breaking: false, level: "patch", subject: "bump the lockfile", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: scopes are free-form with no per-repo list"}
+    mutation: {description: "used a scope no repo declares"}
+  - name: breaking-below-1-minor
+    input: {title: "feat(types)![minor]: drop the legacy turn field", current: "0.0.66", releases: true}
+    expected: {type: "feat", scopes: ["types"], breaking: true, level: "minor", subject: "drop the legacy turn field", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: below 1.0 a break is ![minor]"}
+    mutation: {description: "declared a break below 1.0"}
+  - name: breaking-from-1-major
+    input: {title: "feat(api)![major]: drop the legacy field", current: "1.2.3", releases: true}
+    expected: {type: "feat", scopes: ["api"], breaking: true, level: "major", subject: "drop the legacy field", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: from 1.0 a break is ![major]"}
+    mutation: {description: "declared a break from 1.0"}
+  - name: landed-suffix-sets-pr
+    input: {title: "feat(graph)[minor]: add a group facet (#42)", current: "0.0.66", releases: true}
+    expected: {type: "feat", scopes: ["graph"], breaking: false, level: "minor", subject: "add a group facet", pr: 42, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a landed subject carries its PR number"}
+    mutation: {description: "appended the squash-commit PR suffix"}
+  - name: no-bracket-in-quiet-repo
+    input: {title: "feat(graph): add a facet", current: "0.0.66", releases: false}
+    expected: {type: "feat", scopes: ["graph"], breaking: false, level: "none", subject: "add a facet", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: a repo with releases off accepts plain titles"}
+    mutation: {description: "omitted the bracket where releases are off"}
+  - name: revert-with-patch
+    input: {title: "revert(store)[patch]: restore the reader", current: "0.0.66", releases: true}
+    expected: {type: "revert", scopes: ["store"], breaking: false, level: "patch", subject: "restore the reader", pr: 0, code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "title grammar: revert is a may-release type"}
+    mutation: {description: "used the revert type with a bracket"}
+  - name: missing-bump
+    input: {title: "feat(graph): add a group facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "missing-bump"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: feat, fix and release always carry a bracket"}
+    mutation: {description: "dropped the bracket from a must-release type"}
+  - name: bump-on-non-releasing
+    input: {title: "docs(readme)[patch]: fix a link", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bump-on-non-releasing"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: never-release types carry no bracket"}
+    mutation: {description: "added a bracket to a never-release type"}
+  - name: bang-with-patch-below-1
+    input: {title: "feat(graph)![patch]: drop a field", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bang-bump-mismatch"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: ![patch] is rejected below 1.0"}
+    mutation: {description: "paired a breaking mark with patch below 1.0"}
+  - name: bang-major-below-1
+    input: {title: "feat(graph)![major]: drop a field", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bang-bump-mismatch"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: ![major] is rejected below 1.0"}
+    mutation: {description: "paired a breaking mark with major below 1.0"}
+  - name: major-without-bang-below-1
+    input: {title: "feat(graph)[major]: grow the api", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bang-bump-mismatch"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: [major] with no ! is rejected below 1.0"}
+    mutation: {description: "used a major level with no breaking mark below 1.0"}
+  - name: major-without-bang-from-1
+    input: {title: "feat(api)[major]: grow the api", current: "1.2.3", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bang-bump-mismatch"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: [major] with no ! is rejected from 1.0"}
+    mutation: {description: "used a major level with no breaking mark from 1.0"}
+  - name: bang-minor-from-1
+    input: {title: "feat(api)![minor]: drop a field", current: "1.2.3", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "bang-bump-mismatch"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: ! with [minor] is rejected from 1.0"}
+    mutation: {description: "paired a breaking mark with minor from 1.0"}
+  - name: unknown-type
+    input: {title: "wip(graph)[minor]: try an idea", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "unknown-type"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: the type set is closed"}
+    mutation: {description: "used a type outside the closed set"}
+  - name: old-release-form
+    input: {title: "release(v0.0.67): cut the release", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "old-release-title"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: the release(vX.Y.Z) form is rejected with conversion steps"}
+    mutation: {description: "wrote a version where a level belongs"}
+  - name: malformed-no-separator
+    input: {title: "feat(graph)[minor] add a facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: the colon-space separator is required"}
+    mutation: {description: "dropped the separator between the level and the subject"}
+  - name: malformed-empty-subject
+    input: {title: "feat(graph)[minor]:", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: the subject is non-empty"}
+    mutation: {description: "cleared the subject"}
+  - name: malformed-revert-button
+    input: {title: "Revert \"feat(graph)[minor]: add a facet\"", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: the Revert-button form is rejected with a retitle"}
+    mutation: {description: "used GitHub's Revert title shape"}
+  - name: malformed-uppercase-scope
+    input: {title: "feat(Graph)[minor]: add a facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: scopes are lowercase"}
+    mutation: {description: "capitalized a scope"}
+  - name: malformed-space-in-scopes
+    input: {title: "feat(graph, table)[minor]: add a facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: scopes carry no spaces"}
+    mutation: {description: "spaced the scope list"}
+  - name: malformed-empty-parens
+    input: {title: "feat()[minor]: add a facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: empty parentheses are not a scope list"}
+    mutation: {description: "emptied the scope list"}
+  - name: malformed-bad-bracket
+    input: {title: "feat(graph)[big]: add a facet", current: "0.0.66", releases: true}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "malformed"}
+    classification: must-fail
+    provenance: {source: boundary, ref: "title grammar: the level set is closed"}
+    mutation: {description: "used a level outside the closed set"}
+  - name: releases-disabled
+    input: {title: "feat(graph)[minor]: add a facet", current: "0.0.66", releases: false}
+    expected: {type: "", scopes: [], breaking: false, level: "", subject: "", pr: 0, code: "releases-disabled"}
+    classification: must-fail
+    provenance: {source: requirement, ref: "title grammar: any bracket or ! is rejected where releases are off"}
+    mutation: {description: "carried a bracket into a repo that does not release"}
