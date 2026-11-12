@@ -535,10 +535,12 @@ func TestLicense_WireRoundTrip(t *testing.T) {
 //go:embed testdata/harness_display_names.yaml
 var harnessDisplayNamesYAML []byte
 
+//go:embed testdata/harness_display_names_manifest.yaml
+var harnessDisplayNamesManifestYAML []byte
+
 func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
 	var fixture struct {
-		RequiredNames []string `yaml:"required_names"`
-		Cases         []struct {
+		Cases []struct {
 			Name    string `yaml:"name"`
 			Display string `yaml:"display"`
 		} `yaml:"cases"`
@@ -563,9 +565,7 @@ func TestHarness_EveryKnownHarnessHasDisplayName(t *testing.T) {
 		}
 	}
 	assertUniqueFixtureNames(t, "display cases", names)
-	assertUniqueFixtureNames(t, "display required names", fixture.RequiredNames)
-	assertSameStringSet(t, "display names", names, fixture.RequiredNames)
-	assertSameStringSet(t, "required display names", fixture.RequiredNames, strings.Fields("grok-build devin-desktop cline kiro kiro-cli kiro-crew antigravity-cli antigravity-ide"))
+	requireManifestNames(t, "harness display names", harnessDisplayNamesManifestYAML, names)
 	for _, h := range schema.Harnesses() {
 		if schema.HarnessDisplayName(h) == string(h) {
 			t.Errorf("%s has no explicit display name", h)

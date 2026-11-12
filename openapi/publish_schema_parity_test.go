@@ -4,8 +4,8 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"io"
 	"os"
-	"strings"
 	"testing"
 
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
@@ -148,10 +148,12 @@ func TestPublishSchema_ExtractedShape(t *testing.T) {
 //go:embed testdata/current_harness_verdicts.yaml
 var currentHarnessVerdicts []byte
 
+//go:embed testdata/current_harness_verdicts_manifest.yaml
+var currentHarnessVerdictsManifest []byte
+
 func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 	var fixture struct {
-		RequiredNames []string `yaml:"required_names"`
-		Cases         []struct {
+		Cases []struct {
 			Name    string `yaml:"name"`
 			Body    string `yaml:"body"`
 			Accepts bool   `yaml:"accepts"`
@@ -162,6 +164,17 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 	decoder.KnownFields(true)
 	if err := decoder.Decode(&fixture); err != nil {
 		t.Fatal(err)
+	}
+	var manifest struct {
+		RequiredNames []string `yaml:"requiredNames"`
+	}
+	decoder = yaml.NewDecoder(bytes.NewReader(currentHarnessVerdictsManifest))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&manifest); err != nil {
+		t.Fatalf("decode current harness verdicts manifest: %v", err)
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		t.Fatalf("current harness verdicts manifest must contain exactly one YAML document: %v", err)
 	}
 	raw, err := specpkg.BuildPublishRequestSchema(specpkg.VillageAPIVersion)
 	if err != nil {
@@ -193,7 +206,6 @@ func TestPublishSchema_CurrentHarnessVerdicts(t *testing.T) {
 		})
 	}
 	collectUniqueNames(t, "current publish verdicts", "cases", names)
-	collectUniqueNames(t, "current publish verdicts", "required_names", fixture.RequiredNames)
-	assertSameStringSet(t, "current publish verdicts", names, fixture.RequiredNames)
-	assertSameStringSet(t, "required current publish verdicts", fixture.RequiredNames, strings.Fields("grok-build antigravity-cli antigravity-ide antigravity-archived gemini-cli-archived unknown-harness-current"))
+	collectUniqueNames(t, "current publish verdicts", "manifest", manifest.RequiredNames)
+	assertSameStringSet(t, "current publish verdicts cases and manifest", names, manifest.RequiredNames)
 }

@@ -21,6 +21,9 @@ import (
 //go:embed testdata/harness_lifecycle.yaml
 var harnessLifecycleYAML []byte
 
+//go:embed testdata/harness_lifecycle_manifest.yaml
+var harnessLifecycleManifestYAML []byte
+
 func TestHarnessInventoriesMatchCatalog(t *testing.T) {
 	for _, enum := range loadClosedEnumFixture(t).Enums {
 		if enum.Name != "Harness" {
@@ -123,8 +126,7 @@ func TestHarnessLifecycleDocumentation(t *testing.T) {
 		Excludes []string `yaml:"excludes"`
 	}
 	var fixture struct {
-		RequiredNames []string                                           `yaml:"required_names"`
-		Cases         []testcase.Case[lifecycleInput, lifecycleExpected] `yaml:"cases"`
+		Cases []testcase.Case[lifecycleInput, lifecycleExpected] `yaml:"cases"`
 	}
 	decoder := yaml.NewDecoder(bytes.NewReader(harnessLifecycleYAML))
 	decoder.KnownFields(true)
@@ -190,9 +192,7 @@ func TestHarnessLifecycleDocumentation(t *testing.T) {
 		})
 	}
 	assertUniqueFixtureNames(t, "lifecycle cases", names)
-	assertUniqueFixtureNames(t, "lifecycle required names", fixture.RequiredNames)
-	assertSameStringSet(t, "lifecycle cases", names, fixture.RequiredNames)
-	assertSameStringSet(t, "required lifecycle cases", fixture.RequiredNames, strings.Fields("gemini-cli-retained-for-history antigravity-removal-planned declared-harnesses-not-deprecated"))
+	requireManifestNames(t, "harness lifecycle", harnessLifecycleManifestYAML, names)
 
 	for symbol, doc := range docs {
 		if (!strings.HasPrefix(symbol, "Harness") && symbol != "AllHarnesses") || caseSymbols[symbol] {
