@@ -136,6 +136,17 @@ func setupProcessCase(t *testing.T, setup, queueFile string) (string, map[string
 		runGit(t, repo, "commit", "-q", "-m", "wip(x): try")
 		replace["SETUP"] = repo
 		return repo, replace
+	case "git-empty-release":
+		repo := newBareRepo(t)
+		writeFile(t, repo, ".github/release-intent.yaml", checkTitleTestConfig)
+		writeFile(t, repo, "CHANGELOG.md", "# changelog\n")
+		writeFile(t, repo, "package.json", "{\"version\": \"0.1.0\"}\n")
+		runGit(t, repo, "add", ".")
+		runGit(t, repo, "commit", "-q", "-m", "feat(init)[minor]: seed")
+		runGit(t, repo, "tag", "v0.1.0")
+		runGit(t, repo, "commit", "-q", "--allow-empty", "-m", "release[patch]: cut it")
+		replace["SETUP"] = repo
+		return repo, replace
 	case "classify-repo":
 		repo := newBareRepo(t)
 		writeFile(t, repo, ".github/release-intent.yaml", "releases: true\ntag_prefix: v\nautomation_author: peasant-labs-releaser[bot]\nchangelog: CHANGELOG.md\nversion_files:\n  - {path: package.json, field: version}\nprotected_paths: []\nbot_branches:\n  release: automation/release\n  vendor-hash: automation/vendor-hash\n  cut-release: automation/cut-release\n")

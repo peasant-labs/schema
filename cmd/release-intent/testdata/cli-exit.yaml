@@ -32,7 +32,9 @@ required_names:
   - plan-unreadable-branch
   - plan-accept-open-pr
   - plan-bad-subject
+  - plan-empty-release-plans
   - release-pr-write-accept
+  - release-pr-write-empty
   - release-pr-needs-write-or-check
 
 cases:
@@ -266,3 +268,15 @@ cases:
       sibling: release-pr-write-accept
       provenance: {source: boundary, ref: "release-pr needs exactly one of --write or --check"}
       mutation: {description: "Omits both --write and --check."}
+    - name: plan-empty-release-plans
+      input: {argv: ["plan", "--branch", "HEAD", "--mode", "tag"], stdin: "", setup: "git-empty-release"}
+      expected: {exit: 0, stdout: ["action=open-pr", "range_base=v0.1.0", "version_base=v0.1.0", "candidate=", "candidate_fresh=", "level=patch", "breaking=false", "version=0.1.1", "tag=v0.1.1", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "an empty releasing commit plans as releasing"}
+      mutation: {description: "Plans a temp repo whose only post-tag commit is an empty release."}
+    - name: release-pr-write-empty
+      input: {argv: ["release-pr", "--branch", "HEAD", "--write"], stdin: "", setup: "git-empty-release"}
+      expected: {exit: 0, stdout: ["fresh=true", "push=true", "version=0.1.1", "error="]}
+      classification: must-pass
+      provenance: {source: requirement, ref: "writing an empty releasing commit yields one changelog line"}
+      mutation: {description: "Writes the release content for an empty release commit."}
