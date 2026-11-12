@@ -141,9 +141,8 @@ func cutLevels() []string {
 // acts as the bot on any branch otherwise, and an unconstrained level or an
 // untagged write cuts a release the plan never approved.
 func (c *queueChecker) checkCutRelease() {
-	kind := string(intent.PRKindCutRelease)
 	for _, bot := range c.policy.Queue.BotJobs {
-		if string(bot.Kind) != kind {
+		if bot.Kind != intent.PRKindCutRelease {
 			continue
 		}
 		doc := c.needFile(QueueRuleCutRelease, bot.Workflow)

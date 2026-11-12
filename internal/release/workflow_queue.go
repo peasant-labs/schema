@@ -234,7 +234,7 @@ func validateQueueSection(path string, queue *QueueSection) error {
 			return fmt.Errorf("%s has an empty job during release workflow validation. Set 'job:' to the bot job that pushes its kind's branch", where)
 		}
 		if !botKindValid(bot.Kind) {
-			return fmt.Errorf("%s names kind %q during release workflow validation. A bot job claims one of the bot PR kinds, cut-release or vendor-hash, so the checker can resolve its branch from the release config; the release kind belongs to the release job", where, string(bot.Kind))
+			return fmt.Errorf("%s names kind %q during release workflow validation. A bot job claims one of the bot PR kinds, cut-release or vendor-hash, so the checker can resolve its branch from the release config; the release kind belongs to the release job", where, bot.Kind.String())
 		}
 	}
 	return nil
