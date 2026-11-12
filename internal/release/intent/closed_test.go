@@ -90,6 +90,7 @@ func TestErrorCodeCoverage(t *testing.T) {
 	for _, data := range [][]byte{
 		titleCorpusYAML, arithmeticCorpusYAML, semverCorpusYAML,
 		classifierCorpusYAML, configCorpusYAML, protectedCorpusYAML,
+		planCorpusYAML, generateCorpusYAML,
 	} {
 		var doc struct {
 			Cases []struct {
@@ -112,13 +113,9 @@ func TestErrorCodeCoverage(t *testing.T) {
 		string(intent.ErrReleaseContentStale): true,
 	}
 	// pendingCodes lists codes whose reject fixtures arrive with a later
-	// layer: the planner owns the range codes, the command level owns the
-	// content comparison. Each layer deletes its codes here as it lands them.
-	pendingCodes := map[string]bool{
-		string(intent.ErrNoFinalTag):      true,
-		string(intent.ErrEpochMissing):    true,
-		string(intent.ErrFloorNotOnChain): true,
-	}
+	// layer: the command level owns the content comparison. Each layer
+	// deletes its codes here as it lands them.
+	pendingCodes := map[string]bool{}
 	for _, code := range intent.AllErrorCodes {
 		if commandLevel[string(code)] || pendingCodes[string(code)] {
 			continue

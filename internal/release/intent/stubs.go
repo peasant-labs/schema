@@ -19,16 +19,6 @@ func unimplemented(name string) error {
 	}
 }
 
-// Plan reduces branch facts to the one release action and its values.
-func Plan(cfg Config, facts Facts) (Decision, error) {
-	return Decision{}, unimplemented("Plan")
-}
-
-// Generate renders the release content for a pending set.
-func Generate(cfg Config, in ContentInput) (Content, error) {
-	return Content{}, unimplemented("Generate")
-}
-
 // DecodeQueueResponse decodes a raw GraphQL merge-queue response body.
 func DecodeQueueResponse(data []byte) (QueueSnapshot, error) {
 	return QueueSnapshot{}, unimplemented("DecodeQueueResponse")

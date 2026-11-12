@@ -164,7 +164,7 @@ func bangWhy(below10 bool) string {
 // carried parentheses at all; empty parentheses are malformed.
 func parseScopes(inner string, present bool) ([]string, bool) {
 	if !present {
-		return nil, true
+		return []string{}, true
 	}
 	parts := strings.Split(inner, ",")
 	scopes := make([]string, 0, len(parts))
