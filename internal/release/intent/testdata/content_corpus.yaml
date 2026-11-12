@@ -1,0 +1,83 @@
+# Content-comparison corpus: rows of intent.CompareContent. Only the
+# file-backed content compares: the changelog text and the version values.
+required_names:
+  - equal-contents
+  - changelog-differs
+  - version-differs
+  - version-path-missing
+  - version-set-differs
+cases:
+  - name: equal-contents
+    input:
+      want:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+      got:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+    expected: {code: ""}
+    classification: must-pass
+    provenance: {source: requirement, ref: "content: equal content compares equal"}
+    mutation: {description: "a release PR matching the generator byte for byte"}
+  - name: changelog-differs
+    input:
+      want:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n- two (#12)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n- two (#12)\n"
+        versions: {"package.json": "0.2.0"}
+      got:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+    expected: {code: "release-content-stale"}
+    classification: must-fail
+    sibling: equal-contents
+    provenance: {source: requirement, ref: "content: a changelog line the generator did not write is stale"}
+    mutation: {description: "a releasing subject that landed after the release PR was built"}
+  - name: version-differs
+    input:
+      want:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+      got:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.1.0"}
+    expected: {code: "release-content-stale"}
+    classification: must-fail
+    sibling: equal-contents
+    provenance: {source: requirement, ref: "content: a version value the generator did not write is stale"}
+    mutation: {description: "a hand-edited version field"}
+  - name: version-path-missing
+    input:
+      want:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+      got:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {}
+    expected: {code: "release-content-stale"}
+    classification: must-fail
+    sibling: equal-contents
+    provenance: {source: boundary, ref: "content: a missing version file entry is stale"}
+    mutation: {description: "a compared tree without the version file"}
+  - name: version-set-differs
+    input:
+      want:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0"}
+      got:
+        changelog: "# Changelog\n\n## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        section: "## [v0.2.0] - 2026-11-12\n\n- one (#11)\n"
+        versions: {"package.json": "0.2.0", "other.json": "0.2.0"}
+    expected: {code: "release-content-stale"}
+    classification: must-fail
+    sibling: equal-contents
+    provenance: {source: boundary, ref: "content: a version set that differs in size is stale"}
+    mutation: {description: "an extra version entry in the compared tree"}
