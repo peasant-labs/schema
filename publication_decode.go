@@ -240,12 +240,12 @@ func validateSuccessorNestedJSON(raw map[string]json.RawMessage, canonical bool)
 		var stats map[string]json.RawMessage
 		if err := json.Unmarshal(statsRaw, &stats); err == nil {
 			if count, exists := stats["inputSubmissionCount"]; exists {
-				if err := validateRawInputSubmissionCount(count, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
+				if err := validateRawSafeCount(count, inputSubmissionCountLabel, "authoritativePublishRequest.stats.inputSubmissionCount"); err != nil {
 					return err
 				}
 			}
 			if count, exists := stats["conversationTurnCount"]; exists {
-				if err := validateRawSafeCount(count, "conversationTurnCount", "authoritativePublishRequest.stats.conversationTurnCount"); err != nil {
+				if err := validateRawSafeCount(count, conversationTurnCountLabel, "authoritativePublishRequest.stats.conversationTurnCount"); err != nil {
 					return err
 				}
 			}

@@ -468,12 +468,15 @@ function validateMetadataValue(value: unknown, depth: number): void {
   }
 }
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+/** Optional session counts: absent means unmeasured, so null and unsafe values are refused. */
+const optionalCountFields = ["inputSubmissionCount", "conversationTurnCount"] as const;
 function rejectExplicitNullEvidence(value: unknown): void {
   if (!isRecord(value)) return;
-  if (value.inputSubmissionCount === null) failSemantic("inputSubmissionCount is explicitly null");
-  if (value.inputSubmissionCount !== undefined && (typeof value.inputSubmissionCount !== "number" || !Number.isSafeInteger(value.inputSubmissionCount) || value.inputSubmissionCount < 0)) failSemantic("inputSubmissionCount is outside 0..9007199254740991");
-  if (value.conversationTurnCount === null) failSemantic("conversationTurnCount is explicitly null");
-  if (value.conversationTurnCount !== undefined && (typeof value.conversationTurnCount !== "number" || !Number.isSafeInteger(value.conversationTurnCount) || value.conversationTurnCount < 0)) failSemantic("conversationTurnCount is outside 0..9007199254740991");
+  for (const field of optionalCountFields) {
+    const count = value[field];
+    if (count === null) failSemantic(`${field} is explicitly null`);
+    if (count !== undefined && (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0)) failSemantic(`${field} is outside 0..9007199254740991`);
+  }
   for (const turn of Array.isArray(value.turns) ? value.turns : []) {
     if (!isRecord(turn)) continue;
     if (turn.provenance === null) failSemantic("turn provenance is explicitly null");

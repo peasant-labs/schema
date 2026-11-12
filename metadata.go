@@ -163,11 +163,6 @@ type ProjectContext struct {
 
 // SessionStats holds aggregate metrics extracted from transcript data.
 type SessionStats struct {
-	// TurnCount is conversation turns: projected turns whose role is not
-	// system. The producer computes it once while indexing and carries it
-	// through detail, export, and publication, so every count surface reports
-	// the same number. It is never the raw harness record count
-	// (session_captured_stats.turn_count).
 	TurnCount            int    `json:"turnCount" description:"Turns: the number of folded turns of the session's main partition, system and tool rows included. Equal to the segment directory's totalTurns at the same revision. Not the count a reader is shown; see conversationTurnCount."`
 	InputSubmissionCount *int64 `json:"inputSubmissionCount,omitempty" minimum:"0" maximum:"9007199254740991" nullable:"false"`
 	// ConversationTurnCount is the number of conversation turns in the session's
@@ -221,12 +216,12 @@ func (m *UnifiedMetadata) UnmarshalJSON(data []byte) error {
 		var stats map[string]json.RawMessage
 		if err := json.Unmarshal(statsRaw, &stats); err == nil {
 			if count, exists := stats["inputSubmissionCount"]; exists {
-				if err := validateRawInputSubmissionCount(count, "metadata.stats.inputSubmissionCount"); err != nil {
+				if err := validateRawSafeCount(count, inputSubmissionCountLabel, "metadata.stats.inputSubmissionCount"); err != nil {
 					return err
 				}
 			}
 			if count, exists := stats["conversationTurnCount"]; exists {
-				if err := validateRawSafeCount(count, "conversationTurnCount", "metadata.stats.conversationTurnCount"); err != nil {
+				if err := validateRawSafeCount(count, conversationTurnCountLabel, "metadata.stats.conversationTurnCount"); err != nil {
 					return err
 				}
 			}
@@ -317,20 +312,29 @@ func (m UnifiedMetadata) MarshalJSON() ([]byte, error) {
 	return json.Marshal(alias(m))
 }
 
+// Prose names of the optional counts, used in validation messages.
+const (
+	inputSubmissionCountLabel  = "input submission count"
+	conversationTurnCountLabel = "conversation turn count"
+	displayedTurnCountLabel    = "displayed turn count"
+)
+
 // ValidateInputSubmissionCount preserves unknown (nil) separately from measured
 // zero and limits present values to the exact integer range shared with JS.
 func ValidateInputSubmissionCount(value *int64, path string) error {
-	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
-		return fmt.Errorf("input submission count validation failed at schema.ValidateInputSubmissionCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
-	}
-	return nil
+	return validateSafeCount(value, inputSubmissionCountLabel, path)
 }
 
 // ValidateConversationTurnCount preserves unknown (nil) separately from measured
 // zero and limits present values to the exact integer range shared with JS.
 func ValidateConversationTurnCount(value *int64, path string) error {
+	return validateSafeCount(value, conversationTurnCountLabel, path)
+}
+
+// validateSafeCount is the one range check behind every optional count.
+func validateSafeCount(value *int64, label, path string) error {
 	if value != nil && (*value < 0 || *value > maxSafeJSONInteger) {
-		return fmt.Errorf("conversation turn count validation failed at schema.ValidateConversationTurnCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", path, *value)
+		return fmt.Errorf("%s validation failed at schema.validateSafeCount for %s: value %d is outside 0..9007199254740991; consumers cannot preserve the count exactly; omit an unknown count or provide a measured JS-safe integer", label, path, *value)
 	}
 	return nil
 }

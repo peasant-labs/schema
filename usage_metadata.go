@@ -977,12 +977,12 @@ func validateSessionDetailRawShape(raw []byte) error {
 		return fmt.Errorf("session detail raw validation failed at schema.DecodeSessionDetailPayloadRaw: root must be a JSON object: %w; send the required detail object", err)
 	}
 	if count, present := root["inputSubmissionCount"]; present {
-		if err := validateRawInputSubmissionCount(count, "sessionDetail.inputSubmissionCount"); err != nil {
+		if err := validateRawSafeCount(count, inputSubmissionCountLabel, "sessionDetail.inputSubmissionCount"); err != nil {
 			return err
 		}
 	}
 	if count, present := root["conversationTurnCount"]; present {
-		if err := validateRawSafeCount(count, "conversationTurnCount", "sessionDetail.conversationTurnCount"); err != nil {
+		if err := validateRawSafeCount(count, conversationTurnCountLabel, "sessionDetail.conversationTurnCount"); err != nil {
 			return err
 		}
 	}
@@ -1191,41 +1191,23 @@ func rejectDurableReadFields(root map[string]json.RawMessage) error {
 	return nil
 }
 
-func validateRawInputSubmissionCount(raw json.RawMessage, path string) error {
+// validateRawSafeCount guards an optional count before the typed decode, which
+// would read an explicit null as absent. label names the count in prose.
+func validateRawSafeCount(raw json.RawMessage, label, path string) error {
 	if isNullRaw(raw) {
-		return fmt.Errorf("input submission count raw validation failed at schema decoder for %s: explicit null cannot mean unknown or measured zero; omit the field for unknown or send an integer from 0 through 9007199254740991", path)
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: explicit null cannot mean unknown or measured zero; omit the field for unknown or send an integer from 0 through 9007199254740991", label, path)
 	}
 	var number json.Number
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.UseNumber()
 	if err := decoder.Decode(&number); err != nil {
-		return fmt.Errorf("input submission count raw validation failed at schema decoder for %s: value is not a JSON integer; callers cannot preserve it exactly; send 0..9007199254740991: %w", path, err)
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value is not a JSON integer; callers cannot preserve it exactly; send 0..9007199254740991: %w", label, path, err)
 	}
 	value, err := strconv.ParseInt(number.String(), 10, 64)
 	if err != nil {
-		return fmt.Errorf("input submission count raw validation failed at schema decoder for %s: value %q is not an integer in 0..9007199254740991; callers cannot preserve it exactly; send a canonical integer", path, number.String())
+		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value %q is not an integer in 0..9007199254740991; callers cannot preserve it exactly; send a canonical integer", label, path, number.String())
 	}
-	return ValidateInputSubmissionCount(&value, path)
-}
-
-func validateRawSafeCount(raw json.RawMessage, field, path string) error {
-	if isNullRaw(raw) {
-		return fmt.Errorf("%s raw validation failed at schema decoder for %s: explicit null cannot mean unknown or measured zero; omit the field for unknown or send an integer from 0 through 9007199254740991", field, path)
-	}
-	var number json.Number
-	decoder := json.NewDecoder(bytes.NewReader(raw))
-	decoder.UseNumber()
-	if err := decoder.Decode(&number); err != nil {
-		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value is not a JSON integer; callers cannot preserve it exactly; send 0..9007199254740991: %w", field, path, err)
-	}
-	value, err := strconv.ParseInt(number.String(), 10, 64)
-	if err != nil {
-		return fmt.Errorf("%s raw validation failed at schema decoder for %s: value %q is not an integer in 0..9007199254740991; callers cannot preserve it exactly; send a canonical integer", field, path, number.String())
-	}
-	if field == "conversationTurnCount" {
-		return ValidateConversationTurnCount(&value, path)
-	}
-	return ValidateInputSubmissionCount(&value, path)
+	return validateSafeCount(&value, label, path)
 }
 
 func validateUsageRawShape(raw json.RawMessage) error {
