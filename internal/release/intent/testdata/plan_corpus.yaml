@@ -298,6 +298,7 @@ cases:
       code: "missing-bump"
       fix_contains: "RELEASE_BATCH_FLOOR"
     classification: must-fail
+    sibling: floor-drops-bad-subject
     provenance: {source: requirement, ref: "planner: one bad subject fails the whole plan"}
     mutation: {description: "a landed subject the grammar rejects"}
   - name: no-final-tag
@@ -326,6 +327,7 @@ cases:
       tag: ""
       code: "no-final-tag"
     classification: must-fail
+    sibling: tag-mode-off-gives-none
     provenance: {source: requirement, ref: "planner: arithmetic needs a base"}
     mutation: {description: "a repository with no release tag at all"}
   - name: no-final-tag-on-chain
@@ -354,6 +356,7 @@ cases:
       tag: ""
       code: "no-final-tag"
     classification: must-fail
+    sibling: version-base-off-chain
     provenance: {source: requirement, ref: "planner: the range base is the newest final tag on the chain"}
     mutation: {description: "a version base off the chain with no chained tag"}
   - name: version-base-off-chain
@@ -411,6 +414,7 @@ cases:
       tag: ""
       code: "epoch-missing"
     classification: must-fail
+    sibling: tag-mode-off-gives-none
     provenance: {source: requirement, ref: "planner: the epoch must name a chain commit"}
     mutation: {description: "an epoch that names nothing on the branch"}
   - name: floor-not-on-chain
@@ -439,6 +443,7 @@ cases:
       tag: ""
       code: "floor-not-on-chain"
     classification: must-fail
+    sibling: floor-at-base-ignored
     provenance: {source: requirement, ref: "planner: the floor must name a chain commit"}
     mutation: {description: "a floor that names nothing on the branch"}
   - name: floor-drops-subjects
@@ -715,6 +720,7 @@ cases:
       code: "missing-bump"
       fix_contains: "RELEASE_BATCH_FLOOR"
     classification: must-fail
+    sibling: epoch-commit-parsed
     provenance: {source: requirement, ref: "planner: the epoch commit itself is parsed"}
     mutation: {description: "an epoch commit the grammar rejects"}
   - name: prefixed-non-release-tag-ignored

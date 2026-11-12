@@ -391,6 +391,7 @@ cases:
       section: ""
       versions: {}
     classification: must-fail
+    sibling: two-minors-schema-style
     provenance: {source: boundary, ref: "generator: a dated heading needs the newest pending date"}
     mutation: {description: "cleared the date under a dated style"}
   - name: no-section-base
@@ -440,6 +441,7 @@ cases:
       section: ""
       versions: {}
     classification: must-fail
+    sibling: two-minors-schema-style
     provenance: {source: boundary, ref: "generator: an empty pending set renders nothing"}
     mutation: {description: "emptied the pending set"}
   - name: empty-tag-is-error
@@ -461,5 +463,6 @@ cases:
       section: ""
       versions: {}
     classification: must-fail
+    sibling: two-minors-schema-style
     provenance: {source: boundary, ref: "generator: the version and tag are required"}
     mutation: {description: "cleared the version and tag"}

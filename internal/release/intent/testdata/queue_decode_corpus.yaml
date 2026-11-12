@@ -37,6 +37,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: malformed JSON is a failed read"}
     mutation: {description: "truncated the response body"}
   - name: errors-array
@@ -45,6 +46,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: a non-empty errors array is a failed read"}
     mutation: {description: "answered with a service error"}
   - name: null-merge-queue
@@ -53,6 +55,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: empty-queue-decodes
     provenance: {source: requirement, ref: "decoder: mergeQueue null is a failed read, never an empty queue"}
     mutation: {description: "nulled the merge queue"}
   - name: missing-total-count
@@ -61,6 +64,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: a missing totalCount is a failed read"}
     mutation: {description: "dropped the total from the answer"}
   - name: count-mismatch-fewer-nodes
@@ -69,6 +73,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: fewer nodes than the total is a cut page"}
     mutation: {description: "reported three entries but listed two"}
   - name: count-mismatch-more-nodes
@@ -77,6 +82,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: requirement, ref: "decoder: more nodes than the total is a failed read"}
     mutation: {description: "reported one entry but listed two"}
   - name: missing-node-title
@@ -85,6 +91,7 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: every entry needs its position, number, and title"}
     mutation: {description: "dropped a title from an entry"}
   - name: null-repository
@@ -93,5 +100,6 @@ cases:
     expected:
       entries: []
     classification: must-fail
+    sibling: two-entries-decode
     provenance: {source: boundary, ref: "decoder: a null repository is a failed read"}
     mutation: {description: "nulled the repository"}

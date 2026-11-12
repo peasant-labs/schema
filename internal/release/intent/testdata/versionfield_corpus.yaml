@@ -85,6 +85,7 @@ cases:
       value: ""
     expected: {output: ""}
     classification: must-fail
+    sibling: read-fairtrade-shape
     provenance: {source: boundary, ref: "version fields: a missing field fails without a guess"}
     mutation: {description: "a file without the field"}
   - name: missing-field-write
@@ -96,6 +97,7 @@ cases:
       value: "0.1.0"
     expected: {output: ""}
     classification: must-fail
+    sibling: write-keeps-everything
     provenance: {source: boundary, ref: "version fields: a missing field writes nothing"}
     mutation: {description: "writing the field into a file without it"}
   - name: ambiguous-duplicate-keys
@@ -107,6 +109,7 @@ cases:
       value: "3.0.0"
     expected: {output: ""}
     classification: must-fail
+    sibling: write-keeps-everything
     provenance: {source: boundary, ref: "version fields: a repeated key has no one value"}
     mutation: {description: "a file repeating the top-level key"}
   - name: non-string-value
@@ -118,6 +121,7 @@ cases:
       value: ""
     expected: {output: ""}
     classification: must-fail
+    sibling: read-fairtrade-shape
     provenance: {source: boundary, ref: "version fields: the protected value is a string"}
     mutation: {description: "a numeric value under the field name"}
   - name: malformed-json
@@ -129,5 +133,6 @@ cases:
       value: ""
     expected: {output: ""}
     classification: must-fail
+    sibling: read-fairtrade-shape
     provenance: {source: boundary, ref: "version fields: malformed input fails closed"}
     mutation: {description: "truncated JSON"}

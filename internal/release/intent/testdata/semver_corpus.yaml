@@ -30,23 +30,27 @@ cases:
     input: {raw: "0.1"}
     expected: {value: ""}
     classification: must-fail
+    sibling: plain-version-parses
     provenance: {source: boundary, ref: "versions: two numbers are not a version"}
     mutation: {description: "dropped the patch number"}
   - name: v-prefix-rejected
     input: {raw: "v0.1.0"}
     expected: {value: ""}
     classification: must-fail
+    sibling: plain-version-parses
     provenance: {source: requirement, ref: "versions: the tag prefix lives outside this type"}
     mutation: {description: "added the tag prefix to the value"}
   - name: suffix-rejected
     input: {raw: "0.1.0-rc1"}
     expected: {value: ""}
     classification: must-fail
+    sibling: plain-version-parses
     provenance: {source: requirement, ref: "versions: titles never mint prerelease suffixes"}
     mutation: {description: "appended a prerelease suffix"}
   - name: empty-rejected
     input: {raw: ""}
     expected: {value: ""}
     classification: must-fail
+    sibling: plain-version-parses
     provenance: {source: boundary, ref: "versions: the empty string is not a version"}
     mutation: {description: "cleared the value"}

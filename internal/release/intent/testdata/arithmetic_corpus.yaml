@@ -76,5 +76,6 @@ cases:
     input: {base: "0.1", level: "patch", breaking: false}
     expected: {next: ""}
     classification: must-fail
+    sibling: patch-below-1
     provenance: {source: boundary, ref: "arithmetic: the base is a bare X.Y.Z value"}
     mutation: {description: "shortened the base version"}
